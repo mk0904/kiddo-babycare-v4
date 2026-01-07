@@ -1,0 +1,486 @@
+// Shopify Admin API Service
+// For operations that require Admin privileges (Draft Orders, Order Editing, etc.)
+
+import axios from 'axios';
+import {
+  SHOPIFY_STORE_DOMAIN,
+  SHOPIFY_ADMIN_ACCESS_TOKEN,
+} from '@/config/shopify';
+
+// Admin API GraphQL Client
+const adminClient = axios.create({
+  baseURL: `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/graphql.json`,
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Shopify-Access-Token': SHOPIFY_ADMIN_ACCESS_TOKEN,
+  },
+});
+
+// Types
+export interface LineItemInput {
+  variantId: string;
+  quantity: number;
+  title?: string;
+  originalUnitPrice?: string;
+}
+
+export interface AddressInput {
+  address1: string;
+  address2?: string;
+  city: string;
+  province?: string;
+  country: string;
+  zip: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface DraftOrderInput {
+  customerId?: string;
+  lineItems: LineItemInput[];
+  shippingAddress?: AddressInput;
+  billingAddress?: AddressInput;
+  tags?: string[];
+  note?: string;
+  customAttributes?: Array<{ key: string; value: string }>;
+}
+
+export interface DraftOrder {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  totalPrice: string;
+  subtotalPrice: string;
+  currencyCode: string;
+  tags: string[];
+  lineItems: {
+    edges: Array<{
+      node: {
+        id: string;
+        title: string;
+        quantity: number;
+        originalUnitPrice: string;
+        variant?: {
+          id: string;
+          image?: { url: string };
+        };
+      };
+    }>;
+  };
+}
+
+// GraphQL Mutations
+const DRAFT_ORDER_CREATE_MUTATION = `
+  mutation draftOrderCreate($input: DraftOrderInput!) {
+    draftOrderCreate(input: $input) {
+      draftOrder {
+        id
+        name
+        status
+        createdAt
+        updatedAt
+        totalPrice
+        subtotalPrice
+        totalTax
+        currencyCode
+        customer {
+          id
+          displayName
+          email
+        }
+        lineItems(first: 250) {
+          edges {
+            node {
+              id
+              title
+              quantity
+              originalUnitPrice
+              variant {
+                id
+                image {
+                  url
+                }
+              }
+            }
+          }
+        }
+        shippingAddress {
+          address1
+          address2
+          city
+          province
+          country
+          zip
+          firstName
+          lastName
+          phone
+        }
+        tags
+        customAttributes {
+          key
+          value
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const DRAFT_ORDER_UPDATE_MUTATION = `
+  mutation draftOrderUpdate($id: ID!, $input: DraftOrderInput!) {
+    draftOrderUpdate(id: $id, input: $input) {
+      draftOrder {
+        id
+        name
+        status
+        tags
+        note
+        lineItems(first: 250) {
+          edges {
+            node {
+              id
+              title
+              quantity
+              originalUnitPrice
+            }
+          }
+        }
+        customAttributes {
+          key
+          value
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const DRAFT_ORDER_COMPLETE_MUTATION = `
+  mutation draftOrderComplete($id: ID!, $paymentPending: Boolean) {
+    draftOrderComplete(id: $id, paymentPending: $paymentPending) {
+      draftOrder {
+        id
+        status
+        order {
+          id
+          name
+          createdAt
+          totalPriceSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+          tags
+          customAttributes {
+            key
+            value
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const DRAFT_ORDER_DELETE_MUTATION = `
+  mutation draftOrderDelete($input: DraftOrderDeleteInput!) {
+    draftOrderDelete(input: $input) {
+      deletedId
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const GET_DRAFT_ORDER_QUERY = `
+  query getDraftOrder($id: ID!) {
+    draftOrder(id: $id) {
+      id
+      name
+      status
+      createdAt
+      updatedAt
+      totalPrice
+      subtotalPrice
+      currencyCode
+      tags
+      note
+      customer {
+        id
+        displayName
+        email
+      }
+      lineItems(first: 250) {
+        edges {
+          node {
+            id
+            title
+            quantity
+            originalUnitPrice
+            variant {
+              id
+              title
+              image {
+                url
+              }
+            }
+          }
+        }
+      }
+      shippingAddress {
+        address1
+        address2
+        city
+        province
+        country
+        zip
+        firstName
+        lastName
+        phone
+      }
+      customAttributes {
+        key
+        value
+      }
+    }
+  }
+`;
+
+// Admin API Service
+export const shopifyAdminApi = {
+  /**
+   * Create a draft order (used for Try & Buy)
+   */
+  createDraftOrder: async (input: DraftOrderInput): Promise<DraftOrder> => {
+    try {
+      // Format line items for GraphQL
+      const lineItems = input.lineItems.map((item) => {
+        const variantId = item.variantId.includes('gid://')
+          ? item.variantId
+          : `gid://shopify/ProductVariant/${item.variantId}`;
+        return {
+          variantId,
+          quantity: item.quantity,
+          ...(item.originalUnitPrice && { originalUnitPrice: item.originalUnitPrice }),
+        };
+      });
+
+      // Format customer ID if provided
+      const customerId = input.customerId
+        ? input.customerId.includes('gid://')
+          ? input.customerId
+          : `gid://shopify/Customer/${input.customerId.replace('shopify-', '')}`
+        : undefined;
+
+      const variables = {
+        input: {
+          lineItems,
+          ...(customerId && { customerId }),
+          ...(input.shippingAddress && { shippingAddress: input.shippingAddress }),
+          ...(input.billingAddress && { billingAddress: input.billingAddress }),
+          ...(input.tags && input.tags.length > 0 && { tags: input.tags }),
+          ...(input.note && { note: input.note }),
+          ...(input.customAttributes && input.customAttributes.length > 0 && {
+            customAttributes: input.customAttributes,
+          }),
+        },
+      };
+
+      console.log('[AdminAPI] Creating draft order:', JSON.stringify(variables, null, 2));
+
+      const response = await adminClient.post('', {
+        query: DRAFT_ORDER_CREATE_MUTATION,
+        variables,
+      });
+
+      if (response.data.errors) {
+        console.error('[AdminAPI] GraphQL errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to create draft order');
+      }
+
+      const result = response.data.data.draftOrderCreate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        console.error('[AdminAPI] User errors:', result.userErrors);
+        throw new Error(result.userErrors[0].message || 'Failed to create draft order');
+      }
+
+      console.log('[AdminAPI] Draft order created:', result.draftOrder.id);
+      return result.draftOrder;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error creating draft order:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Update a draft order (used for modifying items in Try & Buy)
+   */
+  updateDraftOrder: async (
+    draftOrderId: string,
+    updates: Partial<DraftOrderInput>
+  ): Promise<DraftOrder> => {
+    try {
+      const id = draftOrderId.includes('gid://')
+        ? draftOrderId
+        : `gid://shopify/DraftOrder/${draftOrderId}`;
+
+      const input: any = {};
+
+      if (updates.lineItems) {
+        input.lineItems = updates.lineItems.map((item) => ({
+          variantId: item.variantId.includes('gid://')
+            ? item.variantId
+            : `gid://shopify/ProductVariant/${item.variantId}`,
+          quantity: item.quantity,
+        }));
+      }
+
+      if (updates.tags) input.tags = updates.tags;
+      if (updates.note !== undefined) input.note = updates.note;
+      if (updates.customAttributes) input.customAttributes = updates.customAttributes;
+
+      console.log('[AdminAPI] Updating draft order:', id, input);
+
+      const response = await adminClient.post('', {
+        query: DRAFT_ORDER_UPDATE_MUTATION,
+        variables: { id, input },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to update draft order');
+      }
+
+      const result = response.data.data.draftOrderUpdate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        throw new Error(result.userErrors[0].message || 'Failed to update draft order');
+      }
+
+      return result.draftOrder;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error updating draft order:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Complete a draft order (convert to real order)
+   */
+  completeDraftOrder: async (
+    draftOrderId: string,
+    paymentPending: boolean = false
+  ): Promise<{ draftOrder: DraftOrder; order: any }> => {
+    try {
+      const id = draftOrderId.includes('gid://')
+        ? draftOrderId
+        : `gid://shopify/DraftOrder/${draftOrderId}`;
+
+      console.log('[AdminAPI] Completing draft order:', id, { paymentPending });
+
+      const response = await adminClient.post('', {
+        query: DRAFT_ORDER_COMPLETE_MUTATION,
+        variables: { id, paymentPending },
+      });
+
+      console.log('[AdminAPI] Complete response status:', response.status);
+      if (response.data?.errors) {
+        console.error('[AdminAPI] GraphQL Errors in complete:', JSON.stringify(response.data.errors));
+      }
+      if (response.data?.data?.draftOrderComplete?.userErrors?.length > 0) {
+        console.error('[AdminAPI] User Errors in complete:', JSON.stringify(response.data.data.draftOrderComplete.userErrors));
+      }
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to complete draft order');
+      }
+
+      const result = response.data.data.draftOrderComplete;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        throw new Error(result.userErrors[0].message || 'Failed to complete draft order');
+      }
+
+      console.log('[AdminAPI] Draft order completed successfully. Order ID:', result.draftOrder?.order?.id);
+
+      return {
+        draftOrder: result.draftOrder,
+        order: result.draftOrder.order,
+      };
+    } catch (error: any) {
+      console.error('[AdminAPI] Error completing draft order:', error.message, error.response?.data);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a draft order by ID
+   */
+  getDraftOrder: async (draftOrderId: string): Promise<DraftOrder | null> => {
+    try {
+      const id = draftOrderId.includes('gid://')
+        ? draftOrderId
+        : `gid://shopify/DraftOrder/${draftOrderId}`;
+
+      const response = await adminClient.post('', {
+        query: GET_DRAFT_ORDER_QUERY,
+        variables: { id },
+      });
+
+      if (response.data.errors) {
+        console.error('[AdminAPI] GraphQL errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.draftOrder;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error fetching draft order:', error.message);
+      return null;
+    }
+  },
+
+  /**
+   * Delete a draft order
+   */
+  deleteDraftOrder: async (draftOrderId: string): Promise<boolean> => {
+    try {
+      const id = draftOrderId.includes('gid://')
+        ? draftOrderId
+        : `gid://shopify/DraftOrder/${draftOrderId}`;
+
+      const response = await adminClient.post('', {
+        query: DRAFT_ORDER_DELETE_MUTATION,
+        variables: { input: { id } },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to delete draft order');
+      }
+
+      const result = response.data.data.draftOrderDelete;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        throw new Error(result.userErrors[0].message || 'Failed to delete draft order');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error deleting draft order:', error.message);
+      return false;
+    }
+  },
+};

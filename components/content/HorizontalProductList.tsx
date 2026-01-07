@@ -1,0 +1,363 @@
+import React, { useState, useEffect, memo, useMemo, useCallback, useRef } from 'react';
+import {
+    View,
+    Text,
+    ImageBackground,
+    StyleSheet,
+    TouchableOpacity,
+    Dimensions,
+    InteractionManager,
+} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { shopifyApi } from '@/services/shopifyApi';
+import { ProductCard } from '@/components/product/ProductCard';
+import { Colors, Fonts } from '@/constants/theme';
+import { HorizontalProductListSkeleton } from '@/components/ui/SkeletonLoader';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+interface HorizontalProductListProps {
+    collectionIds?: string[];
+    products?: any[];
+    config?: {
+        limit?: number;
+        itemsPerView?: number;
+        itemSpacing?: number;
+        sidePadding?: number;
+    };
+    styles?: any;
+    title?: string;
+    onProductPress?: (product: any) => void;
+    onAddToCart?: (product: any) => void;
+    onSeeMore?: () => void;
+    onCollectionPress?: (collection: any) => void;
+    showSeeMore?: boolean;
+}
+
+const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
+    collectionIds = [],
+    products: directProducts,
+    config = {},
+    styles: customStyles = {},
+    title,
+    onProductPress,
+    onAddToCart,
+    onSeeMore,
+    onCollectionPress,
+    showSeeMore = false,
+}) => {
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [collections, setCollections] = useState<any[]>([]);
+    const flatListRef = useRef<any>(null);
+
+    const {
+        limit = 10,
+        itemsPerView = 2.2, // Default to showing a bit of the next item
+        itemSpacing = 12,
+        sidePadding = 20,
+    } = config;
+
+    const paddingLeft = sidePadding > 0 ? sidePadding : 20;
+
+    const itemWidth = useMemo(() => {
+        const paddingRight = sidePadding > 0 ? sidePadding : 20;
+        const totalPadding = paddingLeft + paddingRight;
+        const totalSpacing = itemSpacing * (Math.ceil(itemsPerView) - 1);
+        const availableWidth = SCREEN_WIDTH - totalPadding - totalSpacing;
+        return availableWidth / itemsPerView;
+    }, [itemsPerView, itemSpacing, paddingLeft, sidePadding]);
+
+    const collectionIdsKey = useMemo(() => {
+        return JSON.stringify(collectionIds?.sort() || []);
+    }, [collectionIds]);
+
+    useEffect(() => {
+        if (directProducts && directProducts.length > 0) {
+            setProducts(directProducts);
+            setLoading(false);
+            return;
+        }
+
+        const task = InteractionManager.runAfterInteractions(() => {
+            loadProducts();
+        });
+        return () => task.cancel();
+    }, [collectionIdsKey, directProducts]);
+
+    const loadProducts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const allProducts: any[] = [];
+            const loadedCollections: any[] = [];
+
+            const collectionPromises = collectionIds.map(async (collectionId) => {
+                try {
+                    const [collectionDetails, collection] = await Promise.all([
+                        shopifyApi.getCollectionById(collectionId).catch(() => null),
+                        shopifyApi.getProductsByCollection(collectionId, limit || 20),
+                    ]);
+
+                    if (collectionDetails) {
+                        loadedCollections.push(collectionDetails);
+                    }
+
+                    if (collection?.products?.edges) {
+                        return collection.products.edges.map((edge: any) => edge.node);
+                    }
+                    return [];
+                } catch (err) {
+                    return [];
+                }
+            });
+
+            const productsArrays = await Promise.all(collectionPromises);
+
+            productsArrays.forEach(prods => {
+                allProducts.push(...prods);
+            });
+
+            setCollections(loadedCollections);
+            const limitedProducts = limit > 0 ? allProducts.slice(0, limit) : allProducts;
+            setProducts(limitedProducts);
+        } catch (error) {
+            console.error('Error loading products:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [collectionIds, limit]);
+
+    const {
+        backgroundImage,
+        ...containerStylesWithoutBg
+    } = customStyles.container || {};
+
+    const containerStyle = useMemo(() => [
+        defaultStyles.container,
+        containerStylesWithoutBg,
+    ], [containerStylesWithoutBg]);
+
+    const titleStyle = useMemo(() => [
+        defaultStyles.title,
+        customStyles.title,
+    ], [customStyles.title]);
+
+    const contentStyle = useMemo(() => [
+        defaultStyles.content,
+        customStyles.content,
+    ], [customStyles.content]);
+
+    const contentContainerStyle = useMemo(() => [
+        {
+            paddingLeft: paddingLeft,
+            paddingRight: sidePadding > 0 ? sidePadding : 20,
+            paddingBottom: 8,
+        }
+    ], [paddingLeft, sidePadding]);
+
+    const keyExtractor = useCallback((item: any, index: number) => {
+        return item?.id || item?.node?.id || `product-${index}`;
+    }, []);
+
+    const normalizedProducts = useMemo(() => {
+        return products.map((item) => ({
+            ...item,
+            id: item.id || item.node?.id,
+            handle: item.handle || item.node?.handle,
+            title: item.title || item.node?.title,
+            variants: item.variants || item.node?.variants,
+            images: item.images || item.node?.images,
+        }));
+    }, [products]);
+
+    const productCardContainerStyle = useMemo(() => ({
+        width: '100%',
+        margin: 0,
+    }), []);
+
+    const itemWrapperStyle = useMemo(() => ({
+        width: itemWidth,
+        backgroundColor: 'transparent',
+    }), [itemWidth]);
+
+    const renderItem = useCallback(({ item }: { item: any }) => {
+        const handlePress = onProductPress ? () => onProductPress(item) : undefined;
+        const handleAddToCart = onAddToCart ? () => onAddToCart(item) : undefined;
+
+        return (
+            <View style={itemWrapperStyle}>
+                <ProductCard
+                    product={item}
+                    onPress={handlePress}
+                    onAddToCart={handleAddToCart}
+                    containerStyle={productCardContainerStyle}
+                />
+            </View>
+        );
+    }, [itemWrapperStyle, onProductPress, onAddToCart, productCardContainerStyle]);
+
+    const ItemSeparator = useCallback(() => {
+        return <View style={{ width: itemSpacing }} />;
+    }, [itemSpacing]);
+
+    const handleScrollToIndexFailed = useCallback((info: any) => {
+        if (flatListRef.current && info.highestMeasuredFrameIndex >= 0) {
+            flatListRef.current.scrollToIndex({
+                index: info.highestMeasuredFrameIndex,
+                animated: true,
+            });
+        }
+    }, []);
+
+    const ContainerWrapper = backgroundImage ? ImageBackground : (View as any);
+
+    const containerWrapperProps = useMemo(() => {
+        if (backgroundImage) {
+            return {
+                source: { uri: backgroundImage },
+                style: containerStyle,
+                imageStyle: customStyles.container?.backgroundImageStyle || {},
+                resizeMode: customStyles.container?.backgroundResizeMode || 'cover',
+            };
+        }
+        return { style: containerStyle };
+    }, [backgroundImage, containerStyle, customStyles.container]);
+
+    const handleSeeMore = useCallback(() => {
+        if (onSeeMore) {
+            onSeeMore();
+        } else if (onCollectionPress && collections.length > 0) {
+            onCollectionPress(collections[0]);
+        } else if (onCollectionPress && collectionIds.length > 0) {
+            shopifyApi.getCollectionById(collectionIds[0]).then(collection => {
+                if (collection) {
+                    onCollectionPress(collection);
+                }
+            }).catch(() => { });
+        }
+    }, [onSeeMore, onCollectionPress, collections, collectionIds]);
+
+    if (loading) {
+        return (
+            <View style={[containerStyle as any, defaultStyles.loadingContainer]}>
+                {title && title.trim() && (
+                    <View style={[defaultStyles.titleContainer, { paddingHorizontal: sidePadding }]}>
+                        <Text style={titleStyle as any}>{title}</Text>
+                    </View>
+                )}
+                <HorizontalProductListSkeleton count={Math.ceil(itemsPerView)} />
+            </View>
+        );
+    }
+
+    if (!normalizedProducts || normalizedProducts.length === 0) {
+        return null;
+    }
+
+    return (
+        <ContainerWrapper {...containerWrapperProps}>
+            {title && title.trim() && (
+                <View style={[defaultStyles.titleContainer, { paddingHorizontal: sidePadding }]}>
+                    <Text style={titleStyle as any}>{title}</Text>
+                    {showSeeMore && (
+                        <TouchableOpacity
+                            onPress={handleSeeMore}
+                            style={defaultStyles.seeMoreButton}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={defaultStyles.seeMoreText}>See More</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+            <View style={contentStyle as any}>
+                <FlashList
+                    {...({
+                        ref: flatListRef,
+                        data: normalizedProducts,
+                        renderItem: renderItem,
+                        keyExtractor: keyExtractor,
+                        horizontal: true,
+                        showsHorizontalScrollIndicator: false,
+                        contentContainerStyle: contentContainerStyle as any,
+                        estimatedItemSize: itemWidth + itemSpacing,
+                        drawDistance: (itemWidth + itemSpacing) * 2,
+                        decelerationRate: "normal",
+                        nestedScrollEnabled: true,
+                        scrollEnabled: true,
+                        bounces: false,
+                        scrollEventThrottle: 32,
+                        directionalLockEnabled: true,
+                        windowSize: 3,
+                        removeClippedSubviews: true,
+                        ItemSeparatorComponent: ItemSeparator,
+                        onScrollToIndexFailed: handleScrollToIndexFailed,
+                        overrideItemLayout: (layout: any) => {
+                            layout.size = itemWidth + itemSpacing;
+                        },
+                    } as any)}
+                />
+            </View>
+        </ContainerWrapper>
+    );
+};
+
+const defaultStyles = StyleSheet.create({
+    container: {
+        width: '100%',
+        paddingVertical: 10,
+    },
+    loadingContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 200,
+    },
+    titleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    title: {
+        fontSize: 20,
+        letterSpacing: 0.3,
+        color: Colors.text,
+        fontFamily: Fonts.Bold,
+        flex: 1,
+    },
+    seeMoreButton: {
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+    },
+    seeMoreText: {
+        fontSize: 14,
+        color: Colors.primary,
+        fontFamily: Fonts.SemiBold,
+    },
+    content: {
+        width: '100%',
+    },
+});
+
+const areEqual = (prevProps: any, nextProps: any) => {
+    const prevIds = JSON.stringify(prevProps.collectionIds?.sort() || []);
+    const nextIds = JSON.stringify(nextProps.collectionIds?.sort() || []);
+    if (prevIds !== nextIds) return false;
+
+    const prevProducts = JSON.stringify(prevProps.products || []);
+    const nextProducts = JSON.stringify(nextProps.products || []);
+    if (prevProducts !== nextProducts) return false;
+
+    return (
+        prevProps.title === nextProps.title &&
+        prevProps.showSeeMore === nextProps.showSeeMore &&
+        JSON.stringify(prevProps.config) === JSON.stringify(nextProps.config) &&
+        prevProps.onProductPress === nextProps.onProductPress &&
+        prevProps.onAddToCart === nextProps.onAddToCart &&
+        prevProps.onSeeMore === nextProps.onSeeMore &&
+        prevProps.onCollectionPress === nextProps.onCollectionPress
+    );
+};
+
+export default memo(HorizontalProductList, areEqual);

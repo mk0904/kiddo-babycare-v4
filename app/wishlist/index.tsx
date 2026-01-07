@@ -1,0 +1,179 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ActivityIndicator,
+    Dimensions,
+    Platform,
+    FlatList,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useWishlist } from '@/context/WishlistContext';
+import { useRouter } from 'expo-router';
+import { Colors, Fonts } from '@/constants/theme';
+import ProductCard from '@/components/product/ProductCard';
+import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { EmptyState } from '@/components/ui/EmptyState';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GAP = 8; // Consistent gap between product cards
+const HORIZONTAL_PADDING = 20;
+const CARD_WIDTH = (SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - GAP) / 2;
+
+export default function WishlistScreen() {
+    const { wishlistItems, removeFromWishlist, loading } = useWishlist();
+    const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
+    const router = useRouter();
+    const [showLoginRequired, setShowLoginRequired] = useState(false);
+
+    // Assuming we might have auth check here later, for now we just show list
+    // If you have useAuth hook, uncomment and use it similar to Kiddo
+    // const { isAuthenticated } = useAuth();
+    // useEffect(() => { if (!isAuthenticated) setShowLoginRequired(true); }, [isAuthenticated]);
+
+    // Reset tab bar visibility when entering the screen
+    useEffect(() => {
+        resetTabBar();
+        return () => resetTabBar();
+    }, []);
+
+    const handleProductPress = (product: any) => {
+        router.push(`/product/${encodeURIComponent(product.id)}`);
+    };
+
+    const handleAddToCart = (product: any) => {
+        router.push(`/product/${encodeURIComponent(product.id)}`);
+    };
+
+
+    const renderItem = useCallback(({ item, index }: { item: any, index: number }) => {
+        // Construct product object compatible with ProductCard
+        const product = {
+            id: item.id || item.productId,
+            title: item.title || item.productTitle,
+            price: { amount: item.priceRange?.minVariantPrice?.amount || item.price || '0', currencyCode: 'INR' },
+            images: { edges: [{ node: { url: item.images?.edges?.[0]?.node?.url || item.image } }] },
+            // Add other fields as needed by your ProductCard
+        };
+
+        const isLastInRow = (index + 1) % 2 === 0;
+
+        return (
+            <View style={[styles.productWrapper, {
+                width: CARD_WIDTH,
+                marginRight: isLastInRow ? 0 : GAP,
+                marginBottom: GAP
+            }]}>
+                <ProductCard
+                    product={product}
+                    onPress={() => handleProductPress(product)}
+                    onAddToCart={() => handleAddToCart(product)}
+                    numColumns={2}
+                    horizontalPadding={HORIZONTAL_PADDING}
+                    gap={GAP}
+                    containerStyle={{ width: '100%' }}
+                />
+            </View>
+        );
+    }, [removeFromWishlist]);
+
+    const handleScroll = (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const isAtTop = offsetY <= 0;
+        setScrollDirection(offsetY, isAtTop);
+    };
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Wishlist</Text>
+            </View>
+
+            {wishlistItems.length === 0 ? (
+                <EmptyState
+                    icon="heart-outline"
+                    title="Your Wishlist is Empty"
+                    subtitle="Tap the heart icon on any product to add it to your wishlist"
+                    buttonText="Start Shopping"
+                    onButtonPress={() => router.push('/')}
+                />
+            ) : (
+                <View style={{ flex: 1, minHeight: 2 }}>
+                    <FlatList
+                        data={wishlistItems}
+                        renderItem={renderItem}
+                        numColumns={2}
+                        contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+                        showsVerticalScrollIndicator={false}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                        columnWrapperStyle={styles.columnWrapper}
+                        removeClippedSubviews={Platform.OS === 'android'}
+                        initialNumToRender={12}
+                        maxToRenderPerBatch={12}
+                        windowSize={Platform.OS === 'ios' ? 15 : 10}
+                        updateCellsBatchingPeriod={50}
+                    />
+                </View>
+            )}
+
+            <LoginRequiredModal
+                visible={showLoginRequired}
+                onClose={() => {
+                    setShowLoginRequired(false);
+                    router.back();
+                }}
+                onLogin={() => router.push('/login')} // Update with actual login route
+            />
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F9FAFB', // Using the light grey/white background
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#F9FAFB',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listContent: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingTop: 12,
+        paddingBottom: 40,
+    },
+    columnWrapper: {
+        justifyContent: 'space-between',
+    },
+    productWrapper: {
+        position: 'relative',
+    },
+});

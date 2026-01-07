@@ -1,0 +1,1472 @@
+// Shopify API Service - Similar to Kiddo's implementation
+import axios from 'axios';
+import { SHOPIFY_API_URL, SHOPIFY_STOREFRONT_ACCESS_TOKEN } from '@/config/shopify';
+
+const client = axios.create({
+  baseURL: SHOPIFY_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+  },
+});
+
+// GraphQL Queries
+const GET_PRODUCTS_QUERY = `
+  query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
+    products(first: $first, query: $query, sortKey: $sortKey, reverse: $reverse) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          tags
+          vendor
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 1) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          variants(first: 1) {
+            edges {
+              node {
+                price {
+                  amount
+                  currencyCode
+                }
+                compareAtPrice {
+                   amount
+                   currencyCode
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const GET_COLLECTION_BY_ID_QUERY = `
+  query getCollection($id: ID!) {
+    collection(id: $id) {
+      id
+      title
+      description
+      image {
+        url
+        altText
+      }
+    }
+  }
+`;
+
+const GET_PRODUCTS_BY_COLLECTION_QUERY = `
+  query getProductsByCollection($id: ID!, $first: Int!, $after: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean, $filters: [ProductFilter!]) {
+    collection(id: $id) {
+      id
+      title
+      products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            tags
+            vendor
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 5) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                  quantityAvailable
+                  selectedOptions {
+                    name
+                    value
+                  }
+                  image {
+                    url
+                  }
+                  compareAtPrice {
+                      amount
+                      currencyCode
+                  }
+                }
+              }
+            }
+            compareAtPriceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+        filters {
+          id
+          label
+          type
+          values {
+            id
+            label
+            count
+            input
+          }
+        }
+      }
+    }
+  }
+`;
+
+const GET_PRODUCT_BY_HANDLE_QUERY = `
+  query getProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      id
+      title
+      description
+      handle
+      tags
+      vendor
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      images(first: 10) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+      variants(first: 20) {
+        edges {
+          node {
+            id
+            title
+            price {
+              amount
+              currencyCode
+            }
+            availableForSale
+            quantityAvailable
+            selectedOptions {
+              name
+              value
+            }
+            image {
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+
+`;
+
+const GET_PRODUCT_BY_ID_QUERY = `
+  query getProductById($id: ID!) {
+    product(id: $id) {
+      id
+      title
+      description
+      handle
+      tags
+      vendor
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      images(first: 10) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+      variants(first: 20) {
+        edges {
+          node {
+            id
+            title
+            price {
+              amount
+              currencyCode
+            }
+            availableForSale
+            quantityAvailable
+            selectedOptions {
+              name
+              value
+            }
+            image {
+              url
+            }
+            compareAtPrice {
+              amount
+              currencyCode
+            }
+          }
+        }
+      }
+      options {
+        id
+        name
+        values
+      }
+      metafields(identifiers: [{namespace: "custom", key: "fabric"}, {namespace: "custom", key: "wash_care"}]) {
+        id
+        key
+        value
+        namespace
+      }
+    }
+  }
+
+`;
+
+const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
+  query getProductRecommendations($productId: ID!) {
+    productRecommendations(productId: $productId) {
+      id
+      title
+      handle
+      availableForSale
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      images(first: 1) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+      variants(first: 10) {
+        edges {
+          node {
+            id
+            title
+            price {
+               amount
+               currencyCode
+            }
+            compareAtPrice {
+               amount
+               currencyCode
+            }
+            availableForSale
+            quantityAvailable
+            selectedOptions {
+              name
+              value
+            }
+            image {
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+
+`;
+
+const GET_CUSTOMER_ORDERS_QUERY = `
+  query getCustomerOrders($customerAccessToken: String!, $first: Int!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      id
+      orders(first: $first, sortKey: PROCESSED_AT, reverse: true) {
+        totalCount
+        edges {
+          node {
+            id
+            orderNumber
+            processedAt
+            financialStatus
+            fulfillmentStatus
+            currentTotalPrice {
+              amount
+              currencyCode
+            }
+            lineItems(first: 5) {
+              edges {
+                node {
+                  title
+                  quantity
+                  variant {
+                    image {
+                      url
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const GET_ORDER_BY_ID_QUERY = `
+  query getOrderById($id: ID!) {
+    node(id: $id) {
+      ... on Order {
+        id
+        orderNumber
+        processedAt
+        financialStatus
+        fulfillmentStatus
+        currentTotalPrice {
+          amount
+          currencyCode
+        }
+        totalShippingPrice {
+          amount
+          currencyCode
+        }
+        totalTax {
+          amount
+          currencyCode
+        }
+        subtotalPrice {
+          amount
+          currencyCode
+        }
+        shippingAddress {
+          address1
+          city
+          province
+          zip
+          country
+        }
+        lineItems(first: 20) {
+          edges {
+            node {
+              title
+              quantity
+              originalTotalPrice {
+                amount
+                currencyCode
+              }
+              variant {
+                title
+                image {
+                  url
+                }
+                price {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const CUSTOMER_ADDRESS_CREATE_MUTATION = `
+  mutation customerAddressCreate($customerAccessToken: String!, $address: MailingAddressInput!) {
+    customerAddressCreate(customerAccessToken: $customerAccessToken, address: $address) {
+      customerAddress {
+        id
+        address1
+        address2
+        city
+        province
+        country
+        zip
+        firstName
+        lastName
+        phone
+        company
+      }
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const CUSTOMER_ADDRESS_UPDATE_MUTATION = `
+  mutation customerAddressUpdate($customerAccessToken: String!, $id: ID!, $address: MailingAddressInput!) {
+    customerAddressUpdate(customerAccessToken: $customerAccessToken, id: $id, address: $address) {
+      customerAddress {
+        id
+        address1
+        address2
+        city
+        province
+        country
+        zip
+        firstName
+        lastName
+        phone
+        company
+      }
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const CUSTOMER_ADDRESS_DELETE_MUTATION = `
+  mutation customerAddressDelete($customerAccessToken: String!, $id: ID!) {
+    customerAddressDelete(customerAccessToken: $customerAccessToken, id: $id) {
+      deletedCustomerAddressId
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const CUSTOMER_ADDRESSES_QUERY = `
+  query customerAddresses($customerAccessToken: String!, $first: Int!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      addresses(first: $first) {
+        edges {
+          node {
+            id
+            address1
+            address2
+            city
+            province
+            country
+            zip
+            firstName
+            lastName
+            phone
+            company
+          }
+        }
+      }
+      defaultAddress {
+        id
+        address1
+        address2
+        city
+        province
+        country
+        zip
+        firstName
+        lastName
+        phone
+        company
+      }
+    }
+  }
+`;
+
+const CUSTOMER_DEFAULT_ADDRESS_UPDATE_MUTATION = `
+  mutation customerDefaultAddressUpdate($customerAccessToken: String!, $addressId: ID!) {
+    customerDefaultAddressUpdate(customerAccessToken: $customerAccessToken, addressId: $addressId) {
+      customer {
+        id
+        defaultAddress {
+          id
+        }
+      }
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const CART_DISCOUNT_CODES_UPDATE_MUTATION = `
+  mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
+    cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
+      cart {
+        id
+        checkoutUrl
+        discountCodes {
+          code
+          applicable
+        }
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        discountAllocations {
+          discountedAmount {
+            amount
+            currencyCode
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_ATTRIBUTES_UPDATE_MUTATION = `
+  mutation cartAttributesUpdate($cartId: ID!, $attributes: [AttributeInput!]!) {
+    cartAttributesUpdate(cartId: $cartId, attributes: $attributes) {
+      cart {
+        id
+        attribute(key: "Gift Wrapping") {
+            key
+            value
+        }
+        lines(first: 100) {
+            edges {
+             node {
+                 id
+                 quantity
+             }
+            }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_CREATE_MUTATION = `
+  mutation cartCreate($input: CartInput!) {
+    cartCreate(input: $input) {
+      cart {
+        id
+        checkoutUrl
+        discountCodes {
+          code
+          applicable
+        }
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        discountAllocations {
+          discountedAmount {
+            amount
+            currencyCode
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const CART_LINES_ADD_MUTATION = `
+  mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart {
+        id
+        checkoutUrl
+        discountCodes {
+          code
+          applicable
+        }
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        discountAllocations {
+          discountedAmount {
+            amount
+            currencyCode
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const GET_CART_QUERY = `
+  query getCart($cartId: ID!) {
+    cart(id: $cartId) {
+      id
+      checkoutUrl
+      discountCodes {
+        code
+        applicable
+      }
+      cost {
+        totalAmount {
+          amount
+          currencyCode
+        }
+        subtotalAmount {
+          amount
+          currencyCode
+        }
+        totalTaxAmount {
+          amount
+          currencyCode
+        }
+      }
+      discountAllocations {
+        discountedAmount {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+`;
+
+export interface ShopifyProduct {
+  id: string;
+  title: string;
+  description?: string;
+  handle: string;
+  tags?: string[];
+  vendor?: string;
+  priceRange?: {
+    minVariantPrice: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
+  images?: {
+    edges: Array<{
+      node: {
+        url: string;
+        altText?: string;
+      };
+    }>;
+  };
+  variants?: {
+    edges: Array<{
+      node: {
+        id: string;
+        title: string;
+        price: {
+          amount: string;
+          currencyCode: string;
+        };
+        availableForSale?: boolean;
+        quantityAvailable?: number;
+        image?: {
+          url: string;
+        };
+      };
+    }>;
+  };
+}
+
+export interface CollectionResponse {
+  collection: {
+    id: string;
+    title: string;
+    description?: string;
+    image?: {
+      url: string;
+      altText?: string;
+    };
+    products?: {
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string | null;
+      };
+      edges: Array<{
+        node: ShopifyProduct;
+      }>;
+      filters?: Array<{
+        id: string;
+        label: string;
+        type: string;
+        values: Array<{
+          id: string;
+          label: string;
+          count: number;
+          input: string;
+        }>;
+      }>;
+    };
+  };
+}
+
+export const shopifyApi = {
+  /**
+   * Get collection by ID
+   */
+  getCollectionById: async (collectionId: string) => {
+    try {
+      const response = await client.post('', {
+        query: GET_COLLECTION_BY_ID_QUERY,
+        variables: { id: collectionId },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.collection;
+    } catch (error) {
+      console.error('Error fetching collection:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get products by collection ID with pagination, sorting and filtering
+   */
+  getProductsByCollection: async (
+    collectionId: string,
+    first: number = 20,
+    after: string | null = null,
+    sortKey: string = 'BEST_SELLING',
+    reverse: boolean = false,
+    filters: any[] = []
+  ) => {
+    try {
+      console.log('[shopifyApi] Fetching products for:', collectionId, { sortKey, reverse, filters });
+
+      // If filters is empty, send null/undefined to avoid strict API checks if any
+      const queryFilters = filters && filters.length > 0 ? filters : null;
+
+      const variables = {
+        id: collectionId,
+        first,
+        after,
+        sortKey,
+        reverse,
+        filters: queryFilters,
+      };
+
+      const response = await client.post('', {
+        query: GET_PRODUCTS_BY_COLLECTION_QUERY,
+        variables,
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', JSON.stringify(response.data.errors));
+        return null;
+      }
+
+      const collection = response.data.data.collection as CollectionResponse['collection'];
+      if (!collection) {
+        console.log('[shopifyApi] No collection found or response invalid for ID:', collectionId);
+      } else {
+        console.log('[shopifyApi] Success. Found products:', collection.products?.edges.length);
+      }
+
+      return collection;
+    } catch (error) {
+      console.error('Error fetching products by collection:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get product by handle
+   */
+  getProductByHandle: async (handle: string): Promise<ShopifyProduct | null> => {
+    try {
+      const response = await client.post('', {
+        query: GET_PRODUCT_BY_HANDLE_QUERY,
+        variables: { handle },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.product;
+    } catch (error) {
+      console.error('Error fetching product by handle:', error);
+      return null;
+    }
+  },
+
+
+  /**
+   * Get product by ID
+   */
+  getProductById: async (id: string): Promise<ShopifyProduct | null> => {
+    try {
+      const response = await client.post('', {
+        query: GET_PRODUCT_BY_ID_QUERY,
+        variables: { id },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.product;
+    } catch (error) {
+      console.error('Error fetching product by ID:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get product recommendations
+   */
+  getProductRecommendations: async (productId: string): Promise<ShopifyProduct[]> => {
+    try {
+      const response = await client.post('', {
+        query: GET_PRODUCT_RECOMMENDATIONS_QUERY,
+        variables: { productId },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return [];
+      }
+
+      return response.data.data.productRecommendations || [];
+    } catch (error) {
+      console.error('Error fetching product recommendations:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get customer orders
+   */
+  getCustomerOrders: async (customerAccessToken: string, first: number = 10) => {
+    try {
+      const response = await client.post('', {
+        query: GET_CUSTOMER_ORDERS_QUERY,
+        variables: { customerAccessToken, first },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.customer?.orders;
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get order by ID (Using Node interface)
+   */
+  getOrderById: async (id: string) => {
+    try {
+      const response = await client.post('', {
+        query: GET_ORDER_BY_ID_QUERY,
+        variables: { id },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.node;
+    } catch (error) {
+      console.error('Error fetching order by ID:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Search products
+   */
+  searchProducts: async (query: string, first: number = 20) => {
+    try {
+      const response = await client.post('', {
+        query: GET_PRODUCTS_QUERY,
+        variables: { query, first },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return [];
+      }
+
+      return response.data.data.products.edges.map((edge: any) => edge.node);
+    } catch (error) {
+      console.error('Error searching products:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Apply discount codes to cart
+   */
+  applyDiscountCodes: async (cartId: string, discountCodes: string[]) => {
+    try {
+      const response = await client.post('', {
+        query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
+        variables: {
+          cartId,
+          discountCodes: discountCodes.map(code => code.toUpperCase()),
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to apply discount codes');
+      }
+
+      const result = response.data.data.cartDiscountCodesUpdate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to apply discount code');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error applying discount codes:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update cart attributes (for gifting, notes, etc.)
+   */
+  updateCartAttributes: async (cartId: string, attributes: { key: string; value: string }[]) => {
+    try {
+      const response = await client.post('', {
+        query: CART_ATTRIBUTES_UPDATE_MUTATION,
+        variables: {
+          cartId,
+          attributes,
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to update cart attributes');
+      }
+
+      const result = response.data.data.cartAttributesUpdate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to update cart attributes');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error updating cart attributes:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new Shopify cart
+   */
+  createCart: async (lines?: Array<{ merchandiseId: string; quantity: number }>, attributes?: { key: string; value: string }[]) => {
+    try {
+      const variables: any = {
+        input: {
+          lines: lines || [],
+        }
+      };
+
+      if (attributes) {
+        variables.input.attributes = attributes;
+      }
+
+      const response = await client.post('', {
+        query: CART_CREATE_MUTATION,
+        variables,
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to create cart');
+      }
+
+      const result = response.data.data.cartCreate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to create cart');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error creating cart:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Add lines to cart
+   */
+  addLinesToCart: async (cartId: string, lines: Array<{ merchandiseId: string; quantity: number }>) => {
+    try {
+      const response = await client.post('', {
+        query: CART_LINES_ADD_MUTATION,
+        variables: {
+          cartId,
+          lines,
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to add items to cart');
+      }
+
+      const result = response.data.data.cartLinesAdd;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to add items to cart');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error adding lines to cart:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get cart details
+   */
+  getCart: async (cartId: string) => {
+    try {
+      const response = await client.post('', {
+        query: GET_CART_QUERY,
+        variables: { cartId },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return null;
+      }
+
+      return response.data.data.cart;
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get multiple variants by IDs (for cart price sync)
+   * Uses Shopify's nodes query to fetch multiple variants efficiently
+   */
+  getVariantsByIds: async (variantIds: string[]) => {
+    if (!variantIds || variantIds.length === 0) return [];
+
+    try {
+      // Shopify nodes query can fetch up to 250 nodes at once
+      const GET_VARIANTS_BY_IDS_QUERY = `
+        query getVariantsByIds($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on ProductVariant {
+              id
+              title
+              price {
+                amount
+                currencyCode
+              }
+              compareAtPrice {
+                amount
+                currencyCode
+              }
+              availableForSale
+              quantityAvailable
+              image {
+                url
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await client.post('', {
+        query: GET_VARIANTS_BY_IDS_QUERY,
+        variables: { ids: variantIds },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        return [];
+      }
+
+      return response.data.data.nodes || [];
+    } catch (error) {
+      console.error('Error fetching variants by IDs:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Execute arbitrary GraphQL query/mutation
+   */
+  query: async (query: string, variables?: any) => {
+    try {
+      const response = await client.post('', {
+        query,
+        variables,
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error executing query:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create customer and get access token
+   */
+  createCustomerAndGetToken: async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone: string
+  ) => {
+    try {
+      // 1. Create Customer
+      const createMutation = `
+        mutation customerCreate($input: CustomerCreateInput!) {
+          customerCreate(input: $input) {
+            customer {
+              id
+              email
+              phone
+              firstName
+              lastName
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const createResponse = await client.post('', {
+        query: createMutation,
+        variables: {
+          input: {
+            email,
+            password,
+            firstName,
+            lastName,
+            phone,
+            acceptsMarketing: true,
+          },
+        },
+      });
+
+      if (createResponse.data.data?.customerCreate?.userErrors?.length > 0) {
+        throw new Error(createResponse.data.data.customerCreate.userErrors[0].message);
+      }
+
+      const customer = createResponse.data.data?.customerCreate?.customer;
+
+      // 2. Get Access Token
+      const tokenMutation = `
+        mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+          customerAccessTokenCreate(input: $input) {
+            customerAccessToken {
+              accessToken
+              expiresAt
+            }
+            customerUserErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const tokenResponse = await client.post('', {
+        query: tokenMutation,
+        variables: {
+          input: {
+            email,
+            password,
+          },
+        },
+      });
+
+      if (tokenResponse.data.data?.customerAccessTokenCreate?.customerUserErrors?.length > 0) {
+        throw new Error(tokenResponse.data.data.customerAccessTokenCreate.customerUserErrors[0].message);
+      }
+
+      const accessToken = tokenResponse.data.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+
+      return {
+        customer,
+        customerAccessToken: accessToken,
+      };
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get full customer details
+   */
+  getCustomerDetails: async (customerAccessToken: string) => {
+    try {
+      const query = `
+        query getCustomer($customerAccessToken: String!) {
+          customer(customerAccessToken: $customerAccessToken) {
+            id
+            firstName
+            lastName
+            email
+            phone
+            displayName
+            numberOfOrders
+            acceptsMarketing
+            createdAt
+            updatedAt
+            defaultAddress {
+              id
+              address1
+              address2
+              city
+              province
+              country
+              zip
+              phone
+              firstName
+              lastName
+            }
+          }
+        }
+      `;
+
+      const response = await client.post('', {
+        query,
+        variables: { customerAccessToken },
+      });
+
+      return response.data.data?.customer;
+    } catch (error) {
+      console.error('Error getting customer details:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create customer address
+   */
+  createCustomerAddress: async (customerAccessToken: string, address: any) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_ADDRESS_CREATE_MUTATION,
+        variables: {
+          customerAccessToken,
+          address,
+        },
+      });
+
+      if (response.data.data?.customerAddressCreate?.customerUserErrors?.length > 0) {
+        throw new Error(response.data.data.customerAddressCreate.customerUserErrors[0].message);
+      }
+
+      return response.data.data?.customerAddressCreate?.customerAddress;
+    } catch (error) {
+      console.error('Error creating customer address:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update customer address
+   */
+  updateCustomerAddress: async (customerAccessToken: string, id: string, address: any) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_ADDRESS_UPDATE_MUTATION,
+        variables: {
+          customerAccessToken,
+          id,
+          address,
+        },
+      });
+
+      if (response.data.data?.customerAddressUpdate?.customerUserErrors?.length > 0) {
+        throw new Error(response.data.data.customerAddressUpdate.customerUserErrors[0].message);
+      }
+
+      return response.data.data?.customerAddressUpdate?.customerAddress;
+    } catch (error) {
+      console.error('Error updating customer address:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete customer address
+   */
+  deleteCustomerAddress: async (customerAccessToken: string, id: string) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_ADDRESS_DELETE_MUTATION,
+        variables: {
+          customerAccessToken,
+          id,
+        },
+      });
+
+      if (response.data.data?.customerAddressDelete?.customerUserErrors?.length > 0) {
+        throw new Error(response.data.data.customerAddressDelete.customerUserErrors[0].message);
+      }
+
+      return response.data.data?.customerAddressDelete?.deletedCustomerAddressId;
+    } catch (error) {
+      console.error('Error deleting customer address:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get customer addresses
+   */
+  getCustomerAddresses: async (customerAccessToken: string, first: number = 50) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_ADDRESSES_QUERY,
+        variables: {
+          customerAccessToken,
+          first,
+        },
+      });
+
+      return {
+        addresses: response.data.data?.customer?.addresses?.edges.map((edge: any) => edge.node) || [],
+        defaultAddress: response.data.data?.customer?.defaultAddress,
+      };
+    } catch (error) {
+      console.error('Error getting customer addresses:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Set default address
+   */
+  setDefaultAddress: async (customerAccessToken: string, addressId: string) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_DEFAULT_ADDRESS_UPDATE_MUTATION,
+        variables: {
+          customerAccessToken,
+          addressId,
+        },
+      });
+
+      if (response.data.data?.customerDefaultAddressUpdate?.customerUserErrors?.length > 0) {
+        throw new Error(response.data.data.customerDefaultAddressUpdate.customerUserErrors[0].message);
+      }
+
+      return response.data.data?.customerDefaultAddressUpdate?.customer;
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      throw error;
+    }
+  },
+};
+
