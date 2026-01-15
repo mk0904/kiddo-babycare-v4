@@ -1,10 +1,10 @@
 // Payment Service - Razorpay Integration
 // Full implementation matching Kiddo app
 
-import { Alert, Platform } from 'react-native';
-import { shopifyAdminApi } from './shopifyAdminApi';
-import { orderService, OrderItem, calculateETA } from './orderService';
+import { Alert } from 'react-native';
 import { configService } from './configService';
+import { OrderItem } from './orderService';
+import { shopifyAdminApi } from './shopifyAdminApi';
 
 // Safely import Razorpay (won't work in Expo Go)
 let RazorpayCheckout: any = null;

@@ -2,6 +2,9 @@
 import { AppConfig, ScreenConfig, ContentBlock } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
 
+// Remote config URL
+const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
+
 // Default config - will be loaded from Kiddo's appConfig.json
 const defaultConfig: AppConfig = {
   version: 1,
@@ -12,64 +15,88 @@ const defaultConfig: AppConfig = {
 
 class ConfigService {
   private config: AppConfig = defaultConfig;
+  private rawConfig: any = null; // Store the full raw config object
   private tabBarConfig: TabBarConfig | null = null;
   private listeners: Set<(config: AppConfig) => void> = new Set();
+  private isLoading: boolean = false;
+  private loadPromise: Promise<AppConfig> | null = null;
 
   // Load config from remote or local
   async loadConfig(remoteUrl?: string): Promise<AppConfig> {
-    try {
-      if (remoteUrl) {
-        const response = await fetch(remoteUrl);
-        const remoteConfig = await response.json();
-        this.config = this.mergeConfig(defaultConfig, remoteConfig);
-        this.tabBarConfig = remoteConfig.tabBar || null;
-      } else {
-        // Try to load from Kiddo's config file
-        try {
-          const kiddoConfig = require('@/config/kiddoAppConfig.json');
-          
-          // Dynamically build home config from all category arrays in config
-          // Get category keys from categories.order or find all array properties
-          const categoryKeys = kiddoConfig.categories?.order || [];
-          const homeConfig: ScreenConfig = {};
-          
-          // Load all categories dynamically
-          categoryKeys.forEach((key: string) => {
-            if (Array.isArray(kiddoConfig[key])) {
-              homeConfig[key] = kiddoConfig[key];
-            }
-          });
-          
-          // Also include known categories if they exist (for backwards compatibility)
-          ['all', 'girls', 'boys', 'toys', 'babycare'].forEach((key) => {
-            if (Array.isArray(kiddoConfig[key]) && !homeConfig[key]) {
-              homeConfig[key] = kiddoConfig[key];
-            }
-          });
-          
-          // Transform Kiddo's structure to our structure
-          this.config = {
-            version: 1,
-            home: homeConfig,
-            header: kiddoConfig.header,
-            categories: kiddoConfig.categories,
-          };
-          // Store tabBar config separately
-          this.tabBarConfig = kiddoConfig.tabBar || null;
-        } catch (e) {
-          // Fallback to default
-          this.config = defaultConfig;
-          this.tabBarConfig = null;
-        }
-      }
-
-      this.notifyListeners();
-      return this.config;
-    } catch (error) {
-      console.error('[ConfigService] Error loading config:', error);
-      this.config = defaultConfig;
-      return this.config;
+    // If already loading, return the existing promise
+    if (this.isLoading && this.loadPromise) {
+      return this.loadPromise;
     }
+
+    const url = remoteUrl || REMOTE_CONFIG_URL;
+    this.isLoading = true;
+    this.loadPromise = this._loadConfig(url);
+    
+    try {
+      const result = await this.loadPromise;
+      return result;
+    } finally {
+      this.isLoading = false;
+      this.loadPromise = null;
+    }
+  }
+
+  private async _loadConfig(url: string): Promise<AppConfig> {
+    // Load from remote URL only - no fallback
+    let response: Response;
+    try {
+      response = await fetch(url);
+    } catch (fetchError: any) {
+      // Network error (no internet, timeout, etc.)
+      const error = new Error(`Network error: ${fetchError.message || 'Failed to fetch config. Please check your internet connection.'}`);
+      console.error('[ConfigService] Network error loading remote config:', error);
+      throw error;
+    }
+    
+    if (!response.ok) {
+      const error = new Error(`Failed to fetch config: ${response.status} ${response.statusText}`);
+      console.error('[ConfigService] Failed to load remote config:', error);
+      throw error;
+    }
+    
+    const remoteConfig = await response.json();
+    this.rawConfig = remoteConfig;
+    
+    // Dynamically build home config from all category arrays in config
+    const categoryKeys = remoteConfig.categories?.order || [];
+    const homeConfig: ScreenConfig = {};
+    
+    // Load all categories dynamically
+    categoryKeys.forEach((key: string) => {
+      if (Array.isArray(remoteConfig[key])) {
+        homeConfig[key] = remoteConfig[key];
+      }
+    });
+    
+    // Also include known categories if they exist (for backwards compatibility)
+    ['all', 'girls', 'boys', 'toys', 'babycare'].forEach((key) => {
+      if (Array.isArray(remoteConfig[key]) && !homeConfig[key]) {
+        homeConfig[key] = remoteConfig[key];
+      }
+    });
+    
+    // Transform Kiddo's structure to our structure
+    this.config = {
+      version: 1,
+      home: homeConfig,
+      header: remoteConfig.header,
+      categories: remoteConfig.categories,
+    };
+    // Store tabBar config separately
+    this.tabBarConfig = remoteConfig.tabBar || null;
+
+    this.notifyListeners();
+    return this.config;
+  }
+
+  // Get the raw config object (for accessing properties not in AppConfig)
+  getRawConfig(): any {
+    return this.rawConfig;
   }
 
   // Get tab bar configuration
@@ -101,17 +128,14 @@ class ConfigService {
 
   // Get category screen blocks
   getCategoryScreenBlocks(): ContentBlock[] {
-    try {
-      const kiddoConfig = require('@/config/kiddoAppConfig.json');
-      const categoryBlocks = kiddoConfig.categoryScreen?.blocks || [];
-      
-      // Filter visible blocks and sort by order
-      return categoryBlocks
-        .filter((block: ContentBlock) => block.visible !== false)
-        .sort((a: ContentBlock, b: ContentBlock) => (a.order || 0) - (b.order || 0));
-    } catch (e) {
-      return [];
-    }
+    if (!this.rawConfig) return [];
+    
+    const categoryBlocks = this.rawConfig.categoryScreen?.blocks || [];
+    
+    // Filter visible blocks and sort by order
+    return categoryBlocks
+      .filter((block: ContentBlock) => block.visible !== false)
+      .sort((a: ContentBlock, b: ContentBlock) => (a.order || 0) - (b.order || 0));
   }
 
   // Get header config for category
@@ -129,25 +153,13 @@ class ConfigService {
 
   // Get product detail configuration
   getProductDetailConfig() {
-    try {
-      const kiddoConfig = require('@/config/kiddoAppConfig.json');
-      return kiddoConfig.productDetail || null;
-    } catch (e) {
-      return null;
-    }
+    if (!this.rawConfig) return null;
+    return this.rawConfig.productDetail || null;
   }
 
   // Get product grid default configuration
   getProductGridDefaults() {
-    try {
-      const kiddoConfig = require('@/config/kiddoAppConfig.json');
-      return kiddoConfig.productGridDefaults || {
-        gap: 16,
-        rowGap: 16,
-        colGap: 16,
-        paddingHorizontal: 20,
-      };
-    } catch (e) {
+    if (!this.rawConfig) {
       return {
         gap: 16,
         rowGap: 16,
@@ -155,20 +167,18 @@ class ConfigService {
         paddingHorizontal: 20,
       };
     }
+    return this.rawConfig.productGridDefaults || {
+      gap: 16,
+      rowGap: 16,
+      colGap: 16,
+      paddingHorizontal: 20,
+    };
   }
 
   // Get category screen configuration
   getCategoryScreenConfig() {
-    try {
-      const kiddoConfig = require('@/config/kiddoAppConfig.json');
-      const categoryConfig = kiddoConfig.categoryScreen || {};
-      
-      // Return only config from kiddoAppConfig.json
-      return categoryConfig;
-    } catch (e) {
-      // Return empty config if error
-      return {};
-    }
+    if (!this.rawConfig) return {};
+    return this.rawConfig.categoryScreen || {};
   }
 
   // Get config
@@ -178,12 +188,8 @@ class ConfigService {
 
   // Get providers configuration (Razorpay, OTP, etc.)
   getProvidersConfig() {
-    try {
-      const kiddoConfig = require('@/config/kiddoAppConfig.json');
-      return kiddoConfig.providers || {};
-    } catch (e) {
-      return {};
-    }
+    if (!this.rawConfig) return {};
+    return this.rawConfig.providers || {};
   }
 
   // Get Razorpay configuration
@@ -194,6 +200,24 @@ class ConfigService {
     } catch (e) {
       return null;
     }
+  }
+
+  // Get discounts configuration
+  getDiscountsConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.discounts || null;
+  }
+
+  // Get account configuration
+  getAccountConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.account || null;
+  }
+
+  // Get delivery configuration
+  getDeliveryConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.delivery || null;
   }
 
   // Update config
