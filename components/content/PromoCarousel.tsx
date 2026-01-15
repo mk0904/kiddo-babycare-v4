@@ -4,6 +4,8 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { PromoCarouselBlock } from '@/types/content';
 import { ImageCarousel } from './ImageCarousel';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 interface PromoCarouselProps extends BaseContentBlockProps {
   block: PromoCarouselBlock;
@@ -49,7 +51,7 @@ export function PromoCarousel({ block, onPress }: PromoCarouselProps) {
     <BaseContentBlock block={block}>
       <View style={[styles.container, blockStyles?.root]}>
         {heading && (
-          <Text style={[styles.heading, blockStyles?.heading]}>
+          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Bold)]}>
             {heading}
           </Text>
         )}
@@ -72,8 +74,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   heading: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: Fonts.Bold,
     marginBottom: 8,
     paddingHorizontal: 16,
   },

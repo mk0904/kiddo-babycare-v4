@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 interface VariantOption {
     name: string;
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     optionName: {
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
         color: Colors.text,
     },
     selectedValue: {
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     valueText: {
         fontSize: 14,
         color: Colors.text,
-        fontWeight: '500',
+        fontFamily: Fonts.Medium,
     },
     valueTextSelected: {
         color: '#fff',

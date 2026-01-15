@@ -1,9 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { InfiniteProductGridBlock } from '@/types/content';
-import { InfiniteProductGrid as InfiniteProductGridComponent } from '../product/InfiniteProductGrid';
+import { Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { InfiniteProductGridBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { InfiniteProductGrid as InfiniteProductGridComponent } from '../product/InfiniteProductGrid';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface InfiniteProductGridProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: InfiniteProductGridBlock;
@@ -21,32 +23,32 @@ export function InfiniteProductGrid({ block, onPress }: InfiniteProductGridProps
   const collectionId = collectionIds[0];
 
   // Extract padding from styles (Horizontal or Left+Right)
-  const pHorizontal = blockStyles?.container?.paddingHorizontal;
+  // Priority: productGridConfig > blockStyles.container
+  const pHorizontal = productGridConfig.paddingHorizontal ?? blockStyles?.container?.paddingHorizontal;
   const pLeft = blockStyles?.container?.paddingLeft;
   const pRight = blockStyles?.container?.paddingRight;
 
   // Calculate effective horizontal padding for the grid configuration
-  // If distinct left/right are provided, we'll try to approximate or use specific logic
-  // But since the grid component assumes symmetric 'horizontalPadding', let's derive a safe value.
-  // If left/right are specific, we might default to 0 for internal calculations and let the container handle it,
-  // but we need to ensure card calculation is aware of the lost width.
-
+  // Priority: productGridConfig.paddingHorizontal > blockStyles.container.paddingHorizontal > average of left/right
   let effectivePadding = 16; // default
   if (pHorizontal !== undefined) {
     effectivePadding = pHorizontal;
   } else if (pLeft !== undefined || pRight !== undefined) {
-    // If separate paddings, take the average or sum/2? 
-    // The grid logic uses `horizontalPadding * 2`. 
-    // So if Left=0, Right=0, effective=0.
+    // If separate paddings, take the average
     const l = pLeft ?? 0;
     const r = pRight ?? 0;
     effectivePadding = (l + r) / 2;
-  } else if (productGridConfig.horizontalPadding !== undefined) {
-    effectivePadding = productGridConfig.horizontalPadding;
   }
 
+  // Build productOptions with all config values
   const productOptions = {
     ...productGridConfig,
+    paddingHorizontal: effectivePadding,
+    // Ensure gap values are passed through
+    gap: productGridConfig.gap,
+    rowGap: productGridConfig.rowGap,
+    colGap: productGridConfig.colGap,
+    // Keep backward compatibility with horizontalPadding
     horizontalPadding: effectivePadding,
   };
 
@@ -63,7 +65,7 @@ export function InfiniteProductGrid({ block, onPress }: InfiniteProductGridProps
         // BUT tell the grid component about it so it shrinks cards.
         style={{
           root: blockStyles?.container,
-          title: blockStyles?.title,
+          title: processFontStyle(blockStyles?.title, Fonts.Bold),
           list: blockStyles?.list,
         }}
         // Pass the effective available width if the component supports it, 
@@ -78,8 +80,8 @@ export function InfiniteProductGrid({ block, onPress }: InfiniteProductGridProps
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
     marginBottom: 15,
     paddingHorizontal: 20,
     letterSpacing: 0.3,
@@ -92,7 +94,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.SemiBold,
     color: '#666666',
     marginBottom: 8,
   },

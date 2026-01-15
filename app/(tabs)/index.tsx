@@ -1,24 +1,26 @@
-import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Animated,
-  ScrollView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { HomeHeader } from '@/components/home/HomeHeader';
 import { BlockRenderer } from '@/components/content/BlockRenderer';
+import { HomeHeader } from '@/components/home/HomeHeader';
+import { AddressModal } from '@/components/modals/AddressModal';
+import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
+import { geocodeAddress, getDeliveryTimeFromGoogleMaps } from '@/config/deliveryConfig';
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
 import { useAddress } from '@/context/AddressContext';
+import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
-import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
-import { AddressModal } from '@/components/modals/AddressModal';
+import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -162,7 +164,7 @@ export default function HomeScreen() {
     }
 
     // Check if this is a collection click
-    const isCollection = link?.includes('/collections/') || item?.collectionId;
+    const isCollection = (typeof link === 'string' && link.includes('/collections/')) || item?.collectionId;
     
     if (isCollection) {
       let collectionId = '';
@@ -172,7 +174,7 @@ export default function HomeScreen() {
       if (item?.collectionId) {
         collectionId = item.collectionId;
         title = item.collectionName || item.title || item.label || '';
-      } else if (link?.includes('/collections/')) {
+      } else if (typeof link === 'string' && link.includes('/collections/')) {
         const parts = link.split('/collections/');
         collectionId = parts[parts.length - 1]?.split('?')[0] || ''; // Remove query params if any
         title = item?.collectionName || item?.title || item?.label || '';
@@ -196,7 +198,7 @@ export default function HomeScreen() {
     }
 
     // Handle other navigation
-    if (link) {
+    if (link && typeof link === 'string') {
       router.push(link as any);
     }
   }, [router]);
@@ -221,13 +223,101 @@ export default function HomeScreen() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const scrollYValue = useRef(0);
 
-  const handleSearchPress = () => {
+  const handleSearchPress = useCallback(() => {
+    console.log('Search pressed, navigating to /search');
     router.push('/search' as any);
-  };
+  }, [router]);
 
   const handleLocationPress = () => {
     setShowAddressModal(true);
   };
+
+  // Fetch estimated delivery time
+  const fetchEstimatedTime = useCallback(async () => {
+    if (!defaultAddress) {
+      setEstimatedTime(null);
+      setLoadingTime(false);
+      return;
+    }
+
+    setLoadingTime(true);
+    try {
+      let lat = defaultAddress.latitude;
+      let lng = defaultAddress.longitude;
+
+      if (!lat || !lng) {
+        // Geocode address to get coordinates
+        const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
+        const coords = await geocodeAddress(addressString);
+        if (!coords) {
+          setEstimatedTime(null);
+          setLoadingTime(false);
+          return;
+        }
+        lat = coords.latitude;
+        lng = coords.longitude;
+      }
+
+      const deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
+      setEstimatedTime(deliveryTime);
+    } catch (error) {
+      console.error('Error fetching delivery time:', error);
+      setEstimatedTime(null);
+    } finally {
+      setLoadingTime(false);
+    }
+  }, [defaultAddress]);
+
+  useEffect(() => {
+    fetchEstimatedTime();
+  }, [fetchEstimatedTime]);
+
+  // Track previous tab to detect tab switches vs back navigation
+  const segments = useSegments();
+  const navigationState = useNavigationState((state) => state);
+  const previousTabRef = useRef<string | null>(null);
+  const isInitialMount = useRef(true);
+  const savedScrollPosition = useRef<number>(0);
+  const wasOnDetailScreen = useRef(false);
+
+  // Scroll to top only when switching tabs, not when navigating back
+  useFocusEffect(
+    useCallback(() => {
+      // Check if we're on a detail screen (segments length > 1 means we're in a detail screen)
+      const isOnDetailScreen = segments.length > 1;
+      
+      // If we're navigating to a detail screen, save scroll position
+      if (isOnDetailScreen) {
+        savedScrollPosition.current = scrollYValue.current;
+        wasOnDetailScreen.current = true;
+        return;
+      }
+
+      // Get current tab name
+      const activeTab = navigationState?.routes?.[navigationState?.index]?.name || 'index';
+      const previousTab = previousTabRef.current;
+
+      // Only scroll to top if:
+      // 1. It's the initial mount, OR
+      // 2. We're switching from a different tab (not coming back from detail screen)
+      const isTabSwitch = previousTab !== null && previousTab !== activeTab;
+      const shouldScrollToTop = isInitialMount.current || (isTabSwitch && !wasOnDetailScreen.current);
+
+      if (shouldScrollToTop && scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+        scrollY.setValue(0);
+      } else if (wasOnDetailScreen.current && !isTabSwitch && scrollViewRef.current) {
+        // Restore scroll position when coming back from detail screen
+        scrollViewRef.current.scrollTo({ y: savedScrollPosition.current, animated: false });
+        scrollY.setValue(savedScrollPosition.current);
+      }
+
+      // Update previous tab reference and reset detail screen flag
+      previousTabRef.current = activeTab;
+      wasOnDetailScreen.current = false;
+      isInitialMount.current = false;
+    }, [segments, navigationState, scrollY])
+  );
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],

@@ -31,13 +31,21 @@ export default function OTPScreen() {
   const [resending, setResending] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
 
-  // Navigate to home after OTP verification
+  // Navigate after OTP verification
   useEffect(() => {
     const isGuest = user?.isGuest === true;
 
     if (isAuthenticated && !loading && otpVerified && !isGuest) {
       const navigationTimer = setTimeout(() => {
-        router.replace('/(tabs)');
+        // Check if it's a new customer (default firstName is 'User' for new customers)
+        // Redirect to onboarding if it's a new customer
+        const isNewCustomer = user?.firstName === 'User' || !user?.firstName;
+        
+        if (isNewCustomer) {
+          router.replace('/(auth)/onboarding');
+        } else {
+          router.replace('/(tabs)');
+        }
       }, 600);
 
       return () => clearTimeout(navigationTimer);

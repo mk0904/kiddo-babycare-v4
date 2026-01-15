@@ -20,16 +20,18 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
   isRefetching,
   refetch,
 }) => {
-  // Simple: 8px padding on each side, 8px gap between cards
-  const PADDING = 8;
-  const GAP = 8;
+  // Get configurable values from productOptions, with defaults
+  const paddingHorizontal = productOptions?.paddingHorizontal ?? productOptions?.horizontalPadding ?? 8;
+  const gap = productOptions?.gap ?? 8;
+  const rowGap = productOptions?.rowGap ?? productOptions?.gap ?? 8;
+  const colGap = productOptions?.colGap ?? productOptions?.gap ?? 8;
   
   // Calculate available width: screen width minus padding (always use screen width for consistency)
-  const availableWidth = SCREEN_WIDTH - PADDING * 2;
+  const availableWidth = SCREEN_WIDTH - paddingHorizontal * 2;
   
-  // Card width: (availableWidth - gap) / 2
+  // Card width: (availableWidth - colGap) / 2
   // Don't floor - use exact calculation to avoid gaps
-  const productCardWidth = (availableWidth - GAP) / 2;
+  const productCardWidth = (availableWidth - colGap) / 2;
 
 
   const productCardStyle = React.useMemo(() => {
@@ -90,7 +92,7 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
       maxToRenderPerBatch={6}
       contentContainerStyle={[
         {
-          paddingHorizontal: PADDING, // 8px left + 8px right
+          paddingHorizontal: paddingHorizontal,
           paddingTop: 12,
           paddingBottom: 8,
         },
@@ -99,6 +101,7 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
       columnWrapperStyle={{
         justifyContent: 'space-between',
         width: availableWidth, // Match exactly with card calculation
+        marginBottom: rowGap, // Add row gap between rows
       }}
       onEndReached={(d) => {
         if (hasNextPage && fetchMore) {

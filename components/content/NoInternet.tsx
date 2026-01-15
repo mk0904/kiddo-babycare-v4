@@ -5,6 +5,8 @@ import { NoInternetBlock } from '@/types/content';
 import { Button } from '../ui/Button';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 interface NoInternetProps extends BaseContentBlockProps {
   block: NoInternetBlock;
@@ -55,12 +57,12 @@ export function NoInternet({ block, onPress }: NoInternetProps) {
           />
         )}
         {data.heading && (
-          <Text style={[styles.heading, blockStyles?.heading]}>
+          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Bold)]}>
             {data.heading}
           </Text>
         )}
         {data.text && (
-          <Text style={[styles.text, blockStyles?.text]}>{data.text}</Text>
+          <Text style={[styles.text, processFontStyle(blockStyles?.text)]}>{data.text}</Text>
         )}
         <Button
           onPress={handlePress}
@@ -91,8 +93,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heading: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
     color: '#000',
     marginTop: 16,
     marginBottom: 4,
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.SemiBold,
   },
 });
 

@@ -1,24 +1,30 @@
 {
   "tabBar": {
+    "visibleTabs": [
+      "index",
+      "category",
+      "wishlist",
+      "account"
+    ],
     "items": {
       "index": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_7xkzuf7xkzuf7xkz_1.png",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_9ujfkp9ujfkp9ujf_1.png",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-active-fill.svg",
         "label": "Home"
       },
-      "curated": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/curatedinactive_teddy.png?v=1767104397",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/curatedactive_teddy.png?v=1767104398",
-        "label": "Curated"
+      "category": {
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active.svg",
+        "label": "Category"
       },
       "wishlist": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/wishlistinactive.png?v=1767082828",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/wishlistactive.png?v=1767082828",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-active-fill.svg",
         "label": "Wishlist"
       },
       "account": {
-        "icon": "https://cdn-icons-png.flaticon.com/128/1077/1077114.png",
-        "activeIcon": "https://cdn-icons-png.flaticon.com/128/1077/1077114.png",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-active-fill.svg",
         "label": "Account"
       }
     },
@@ -26,89 +32,484 @@
       "backgroundColor": "#FFFFFF",
       "activeTintColor": "#E84E4B",
       "inactiveTintColor": "#999999",
-      "height": 70,
-      "shadowColor": "#000000",
-      "shadowOpacity": 0.15,
+      "shadowColor": "#363636",
+      "shadowOpacity": 0.2,
       "shadowRadius": 10,
-      "iconSize": 50,
+      "iconSize": 30,
       "marginBottom": 20,
       "marginHorizontal": 20,
-      "borderRadius": 30
+      "borderColor": "#E84E4B",
+      "borderTopWidth": 1,
+      "borderTopColor": "#E84E4B",
+      "borderBottomWidth": 1,
+      "borderBottomColor": "#E84E4B",
+      "borderLeftWidth": 1,
+      "borderLeftColor": "#E84E4B",
+      "borderRightWidth": 1,
+      "borderRightColor": "#E84E4B"
     }
+  },
+  "productGridDefaults": {
+    "gap": 16,
+    "rowGap": 16,
+    "colGap": 16,
+    "paddingHorizontal": 16
+  },
+  "categoryScreen": {
+    "header": {
+      "title": "All Categories",
+      "showSearch": true
+    },
+    "blocks": [
+      {
+        "id": "category-grid-all",
+        "type": "categoryGrid",
+        "order": 1,
+        "visible": true,
+        "title": "",
+        "gridConfig": {
+          "layout": "first-item-2-col",
+          "numColumns": 3,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "aspectRatio": 1,
+          "resizeMode": "cover",
+          "showLabels": true,
+          "borderRadius": 12,
+          "firstItemSpan": {
+            "colSpan": 2,
+            "rowSpan": 1
+          }
+        },
+        "collectionIds": [
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
+            "id": "gid://shopify/Collection/508646719777",
+            "name": "Jacket and Sweaters"
+          },
+          {
+            "id": "gid://shopify/Collection/508646785313",
+            "name": "Thermals"
+          },
+          {
+            "id": "gid://shopify/Collection/508646818081",
+            "name": "Bottom Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/508646850849",
+            "name": "Everyday"
+          },
+          {
+            "id": "gid://shopify/Collection/508646916385",
+            "name": "Occasion Wear"
+          }
+        ],
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingVertical": 16
+          },
+          "title": {
+            "marginBottom": 8,
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "backgroundColor": "#FFFFFF"
+          },
+          "image": {
+            "width": "100%",
+            "borderRadius": 20
+          },
+          "text": {
+            "display": "none",
+            "fontSize": 10,
+            "marginTop": 0,
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        }
+      },
+      {
+        "id": "all-grid-shop-by-category",
+        "type": "grid",
+        "collectionIds": [
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
+            "id": "gid://shopify/Collection/508646719777",
+            "name": "Jacket and Sweaters"
+          },
+          {
+            "id": "gid://shopify/Collection/508646785313",
+            "name": "Thermals"
+          },
+          {
+            "id": "gid://shopify/Collection/508646818081",
+            "name": "Bottom Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/508646850849",
+            "name": "Everyday"
+          },
+          {
+            "id": "gid://shopify/Collection/508646916385",
+            "name": "Occasion Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/508169322785",
+            "name": "Accessories"
+          }
+        ],
+        "title": "Shop by Category",
+        "gridConfig": {
+          "numColumns": 3,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "resizeMode": "contain"
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingVertical": 16
+          },
+          "title": {
+            "marginBottom": 8,
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "image": {
+            "width": "100%",
+            "borderRadius": 20
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "backgroundColor": "#FFFFFF",
+            "overflow": "visible"
+          },
+          "text": {
+            "marginTop": 12,
+            "display": "none",
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        },
+        "order": 4
+      },
+      {
+        "id": "grid-shop-by-age",
+        "type": "grid",
+        "collectionIds": [
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-3m_gender_neutral.png",
+            "id": "gid://shopify/Collection/508645802273",
+            "name": "0-3 M"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-6m_gender_neutral.png",
+            "id": "gid://shopify/Collection/508645998881",
+            "name": "3-6 M"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6-12m_gender_neutral.png",
+            "id": "gid://shopify/Collection/508646162721",
+            "name": "6-12 M"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1-2y_gender_neutral.png",
+            "id": "gid://shopify/Collection/508646228257",
+            "name": "1-2 Y"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2-3y_gender_neutral.png",
+            "id": "gid://shopify/Collection/508646261025",
+            "name": "2-3 Y"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-4y_gender_neutral.png",
+            "id": "gid://shopify/Collection/508646293793",
+            "name": "3-4 Y"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4-5y_gender_neutral.png",
+            "id": "gid://shopify/Collection/508646326561",
+            "name": "4-5 Y"
+          },
+          {
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5__gender_neutral.png",
+            "id": "gid://shopify/Collection/508646359329",
+            "name": "5+ Y"
+          }
+        ],
+        "title": "Shop by Age",
+        "gridConfig": {
+          "numColumns": 4,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "resizeMode": "cover"
+        },
+        "styles": {
+          "container": {
+            "paddingVertical": 16,
+            "paddingHorizontal": 16
+          },
+          "title": {
+            "marginBottom": 8,
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "borderColor": "#97612f",
+            "borderWidth": 0.2,
+            "backgroundColor": "#FFFFFF"
+          },
+          "text": {
+            "display": "none",
+            "marginTop": 12,
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        },
+        "order": 5
+      },
+      {
+        "id": "all-grid-1",
+        "type": "grid",
+        "collectionIds": [
+          {
+            "id": "gid://shopify/Collection/507748548897",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507765424417",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507741176097",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507746058529",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507764408609",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507774861601",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507775549729",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507788427553",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507762704673",
+            "name": ""
+          }
+        ],
+        "title": "Shop by Brand",
+        "gridConfig": {
+          "numColumns": 3,
+          "colGap": 16,
+          "rowGap": 16,
+          "limit": 0,
+          "resizeMode": "contain"
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingVertical": 16
+          },
+          "title": {
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "image": {
+            "width": "100%",
+            "borderRadius": 20
+          },
+          "imageContainer": {
+            "padding": 10,
+            "borderRadius": 20,
+            "backgroundColor": "#FFFFFF",
+            "overflow": "visible",
+            "shadowColor": "#97612f",
+            "shadowOffset": {
+              "width": 0,
+              "height": 1
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 2,
+            "elevation": 2
+          },
+          "text": {
+            "display": "none",
+            "marginTop": 12,
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        },
+        "order": 6
+      },
+      {
+        "id": "grid-shop-toys",
+        "type": "grid",
+        "collectionIds": [
+          {
+            "id": "gid://shopify/Collection/507746582817",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507747303713",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507746615585",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507747402017",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507747369249",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507747238177",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/507748483361",
+            "name": ""
+          },
+          {
+            "id": "gid://shopify/Collection/508372615457",
+            "name": ""
+          }
+        ],
+        "title": "Shop Toys",
+        "gridConfig": {
+          "numColumns": 4,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "resizeMode": "cover"
+        },
+        "styles": {
+          "container": {
+            "marginVertical": 15,
+            "marginHorizontal": 20
+          },
+          "title": {
+            "marginBottom": 8,
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "titleContainer": {
+            "marginBottom": 20
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "backgroundColor": "#FFFFFF"
+          },
+          "text": {
+            "fontSize": 10,
+            "marginTop": 12,
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        },
+        "order": 8
+      }
+    ]
   },
   "all": [
     {
-      "id": "cat-rail-1",
-      "type": "categoryRail",
+      "id": "home-rail-top",
+      "type": "rail",
+      "title": "",
       "data": [
         {
-          "id": "c1",
-          "label": "Boys",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys-fashion-with-a-text-on-the-image-boys-fashion.png?v=1765291936",
-          "link": "/(tabs)/curated"
+          "id": "rail-item-1",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7516e256-d8b3-4f53-a760-b84d9922f5dd.png",
+          "collectionId": "gid://shopify/Collection/507808678177"
         },
         {
-          "id": "c2",
-          "label": "Girls",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby-girl-fashion-with-a-text-on-it-girls-fashion.png?v=1765292355",
-          "link": "/(tabs)/girls"
+          "id": "rail-item-2",
+          "collectionId": "gid://shopify/Collection/507806449953"
         },
         {
-          "id": "c3",
-          "label": "Toys",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/toys.png?v=1765294070",
-          "link": "/collections/toys"
-        },
-        {
-          "id": "c4",
-          "label": "Sale",
-          "imageUrl": "https://cdn-icons-png.flaticon.com/512/3600/3600466.png",
-          "link": "/search?q=sale"
-        },
-        {
-          "id": "c5",
-          "label": "Diapers",
-          "imageUrl": "https://cdn-icons-png.flaticon.com/512/2821/2821807.png",
-          "link": "/search?q=diaper"
-        },
-        {
-          "id": "c6",
-          "label": "Feeding",
-          "imageUrl": "https://cdn-icons-png.flaticon.com/512/3082/3082060.png",
-          "link": "/search?q=feeding"
+          "id": "rail-item-3",
+          "collectionId": "gid://shopify/Collection/507808645409"
         }
       ],
       "railConfig": {
-        "size": 80,
-        "gap": 12,
-        "shape": "rounded"
+        "bgImageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-promo.png",
+        "height": 80,
+        "gap": 16,
+        "showLabel": true,
+        "shape": "rounded",
+        "itemsPerView": 2.5
       },
       "styles": {
         "container": {
-          "paddingVertical": 15
+          "paddingHorizontal": 20,
+          "paddingVertical": 16
         },
-        "imageContainer": {
-          "borderWidth": 1,
-          "borderRadius": 24,
-          "borderColor": "#E5E5E5",
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.05,
-          "shadowRadius": 4,
-          "elevation": 2
+        "text": {
+          "display": "none"
         }
-      }
+      },
+      "visible": true,
+      "order": 2
     },
     {
       "id": "all-banner-1",
       "type": "carousel",
       "data": [
-        "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_20_2025_12_18_27_AM.png?v=1766170370",
-        "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_20_2025_12_10_37_AM.png?v=1766170370"
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlsfashion1.jpg",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507808678177"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toyspage1.jpg",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507806449953"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boysfashion1.jpg",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507808645409"
+            }
+          }
+        }
       ],
       "carouselConfig": {
         "autoPlay": true,
@@ -126,49 +527,154 @@
           "borderRadius": 20
         },
         "img": {}
-      }
+      },
+      "order": 3
     },
     {
-      "id": "flash-sale-1",
-      "type": "flashSale",
-      "data": {
-        "endTime": "2025-12-31T23:59:59Z",
-        "backgroundImage": "https://img.freepik.com/free-photo/portrait-pretty-young-girl-holding-shopping-bags_171337-2751.jpg",
-        "link": "/(tabs)/curated"
-      },
-      "flashSaleConfig": {
-        "label": "",
-        "subtitle": "",
-        "layout": "cinematic",
-        "aspectRatio": 1
+      "id": "all-grid-shop-by-category",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
+          "id": "gid://shopify/Collection/508646719777",
+          "name": "Jacket and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508646818081",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508646916385",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508169322785",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "contain"
       },
       "styles": {
         "container": {
-          "marginBottom": 20,
-          "paddingHorizontal": 12
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible"
+        },
+        "text": {
+          "marginTop": 12,
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
         }
-      }
+      },
+      "order": 4
     },
     {
-      "id": "video-banner-1",
-      "type": "videoBanner",
-      "data": {
-        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/fbb140fd46e3429fa4c9e4e674e4d7d3.mp4",
-        "posterUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/poster_image.jpg"
-      },
-      "videoConfig": {
-        "autoPlay": true,
-        "muted": true,
-        "loop": true,
-        "aspectRatio": 1.77
+      "id": "grid-shop-by-age",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-3m_gender_neutral.png",
+          "id": "gid://shopify/Collection/508645802273",
+          "name": "0-3 M"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-6m_gender_neutral.png",
+          "id": "gid://shopify/Collection/508645998881",
+          "name": "3-6 M"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6-12m_gender_neutral.png",
+          "id": "gid://shopify/Collection/508646162721",
+          "name": "6-12 M"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1-2y_gender_neutral.png",
+          "id": "gid://shopify/Collection/508646228257",
+          "name": "1-2 Y"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2-3y_gender_neutral.png",
+          "id": "gid://shopify/Collection/508646261025",
+          "name": "2-3 Y"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-4y_gender_neutral.png",
+          "id": "gid://shopify/Collection/508646293793",
+          "name": "3-4 Y"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4-5y_gender_neutral.png",
+          "id": "gid://shopify/Collection/508646326561",
+          "name": "4-5 Y"
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5__gender_neutral.png",
+          "id": "gid://shopify/Collection/508646359329",
+          "name": "5+ Y"
+        }
+      ],
+      "title": "Shop by Age",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 12,
-          "borderRadius": 12,
-          "marginBottom": 20
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderColor": "#97612f",
+          "borderWidth": 0.2,
+          "backgroundColor": "#FFFFFF"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": 12,
+          "color": "#666666",
+          "textAlign": "center"
         }
-      }
+      },
+      "order": 5
     },
     {
       "id": "all-grid-1",
@@ -214,22 +720,20 @@
       "title": "Shop by Brand",
       "gridConfig": {
         "numColumns": 3,
-        "colGap": 20,
-        "rowGap": 20,
+        "colGap": 16,
+        "rowGap": 16,
         "limit": 0,
         "resizeMode": "contain"
       },
       "styles": {
         "container": {
-          "paddingTop": 20,
-          "paddingBottom": 60,
-          "paddingHorizontal": 12
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         },
         "image": {
           "width": "100%",
@@ -240,21 +744,23 @@
           "borderRadius": 20,
           "backgroundColor": "#FFFFFF",
           "overflow": "visible",
-          "shadowColor": "#000",
+          "shadowColor": "#97612f",
           "shadowOffset": {
             "width": 0,
-            "height": 2
+            "height": 1
           },
           "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
+          "shadowRadius": 2,
+          "elevation": 2
         },
         "text": {
+          "display": "none",
           "marginTop": 12,
           "color": "#666666",
           "textAlign": "center"
         }
-      }
+      },
+      "order": 6
     },
     {
       "id": "all-product-list-1",
@@ -264,313 +770,34 @@
       ],
       "title": "Featured Products",
       "productListConfig": {
-        "limit": 10,
-        "itemsPerView": 1.8,
-        "filters": {
-          "enabled": true,
-          "fastFilters": [
-            {
-              "key": "price",
-              "label": "Price",
-              "type": "single",
-              "options": [
-                {
-                  "key": "under-500",
-                  "label": "Under ₹500",
-                  "value": "0-500"
-                },
-                {
-                  "key": "500-1000",
-                  "label": "₹500 - ₹1000",
-                  "value": "500-1000"
-                },
-                {
-                  "key": "1000-2000",
-                  "label": "₹1000 - ₹2000",
-                  "value": "1000-2000"
-                },
-                {
-                  "key": "above-2000",
-                  "label": "Above ₹2000",
-                  "value": "2000-999999"
-                }
-              ]
-            },
-            {
-              "key": "inStock",
-              "label": "Availability",
-              "type": "single",
-              "options": [
-                {
-                  "key": "in-stock",
-                  "label": "In Stock",
-                  "value": true
-                },
-                {
-                  "key": "out-of-stock",
-                  "label": "Out of Stock",
-                  "value": false
-                }
-              ]
-            }
-          ],
-          "sort": {
-            "enabled": true,
-            "defaultSort": "relevance",
-            "options": [
-              {
-                "key": "relevance",
-                "label": "Relevance"
-              },
-              {
-                "key": "price_asc",
-                "label": "Price: Low to High"
-              },
-              {
-                "key": "price_desc",
-                "label": "Price: High to Low"
-              },
-              {
-                "key": "name_asc",
-                "label": "Name: A to Z"
-              },
-              {
-                "key": "newest",
-                "label": "Newest First"
-              }
-            ]
-          }
-        }
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 12,
-          "marginBottom": 15
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
         },
         "content": {}
-      }
-    },
-    {
-      "id": "all-image-banner-1",
-      "type": "imageBanner",
-      "title": "",
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby-girl-fashion-with-a-text-on-it-girls-fashion.png?v=1765292355",
-        "height": 250,
-        "borderRadius": 20,
-        "alignSelf": "flex-start",
-        "resizeMode": "cover"
       },
-      "styles": {
-        "container": {
-          "marginHorizontal": 0,
-          "paddingHorizontal": 0
-        },
-        "wrapper": {
-          "paddingHorizontal": 12,
-          "borderRadius": 20,
-          "marginHorizontal": 0
-        }
-      }
+      "order": 7
     },
     {
-      "id": "all-grid-shop-by-age-girls",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/508149334305",
-          "name": "0-3 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149367073",
-          "name": "3-6 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149399841",
-          "name": "6-12 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149465377",
-          "name": "1-2 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149498145",
-          "name": "2-3 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149530913",
-          "name": "3-4 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149596449",
-          "name": "4-5 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149629217",
-          "name": "5+ Y"
-        }
-      ],
-      "title": "",
-      "gridConfig": {
-        "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
-        "limit": 0,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
-        },
-        "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
-        },
-        "text": {
-          "marginTop": 12,
-          "color": "#666666",
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "all-image-banner-2",
-      "type": "imageBanner",
-      "title": "",
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys-fashion-with-a-text-on-the-image-boys-fashion.png?v=1765291936",
-        "height": 250,
-        "borderRadius": 20,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginTop": 25
-        },
-        "wrapper": {
-          "paddingHorizontal": 12
-        }
-      }
-    },
-    {
-      "id": "all-grid-shop-by-age-boys",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/508148973857",
-          "name": "0-3 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149006625",
-          "name": "3-6 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149072161",
-          "name": "6-12 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149137697",
-          "name": "1-2 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149170465",
-          "name": "2-3 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149793057",
-          "name": "3-4 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149301537",
-          "name": "4-5 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508155822369",
-          "name": "5+ Y"
-        }
-      ],
-      "gridConfig": {
-        "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
-        "limit": 0,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
-        },
-        "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
-        },
-        "imageContainer": {
-          "padding": 0,
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
-        },
-        "text": {
-          "marginTop": 12,
-          "color": "#666666",
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "all-image-banner-3",
-      "type": "imageBanner",
-      "title": "",
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/toys.png?v=1765294070",
-        "height": 250,
-        "borderRadius": 20,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginTop": 25
-        },
-        "wrapper": {
-          "paddingHorizontal": 12
-        }
-      }
-    },
-    {
-      "id": "all-grid-toys",
+      "id": "grid-shop-toys",
       "type": "grid",
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/507746582817",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747434785",
           "name": ""
         },
         {
@@ -579,14 +806,6 @@
         },
         {
           "id": "gid://shopify/Collection/507746615585",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747139873",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747107105",
           "name": ""
         },
         {
@@ -604,138 +823,214 @@
         {
           "id": "gid://shopify/Collection/507748483361",
           "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": ""
         }
       ],
-      "title": "",
+      "title": "Shop Toys",
       "gridConfig": {
         "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
-        "limit": 0
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
       },
       "styles": {
         "container": {
           "marginVertical": 15,
-          "paddingHorizontal": 20
+          "marginHorizontal": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
         },
         "imageContainer": {
           "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
+          "backgroundColor": "#FFFFFF"
         },
         "text": {
+          "fontSize": 10,
           "marginTop": 12,
           "color": "#666666",
           "textAlign": "center"
         }
-      }
+      },
+      "order": 8
     },
     {
-      "id": "all-product-list-2",
+      "id": "all-winter-wear-featured",
       "type": "horizontalProductList",
+      "title": "Featured Winter Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/507797111073"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        }
+      },
+      "order": 9
+    },
+    {
+      "id": "all-boys-winter-special",
+      "type": "horizontalProductList",
+      "title": "Boys Winter Special",
+      "collectionIds": [
+        "gid://shopify/Collection/508364620065"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        }
+      },
+      "order": 10
+    },
+    {
+      "id": "all-girls-winter-special",
+      "type": "horizontalProductList",
+      "title": "Girls Winter Special",
+      "collectionIds": [
+        "gid://shopify/Collection/508366258465"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        }
+      },
+      "order": 11
+    },
+    {
+      "id": "all-lowest-price-diapers",
+      "type": "horizontalProductList",
+      "title": "Lowest Price Diaper and Wipes",
+      "collectionIds": [
+        "gid://shopify/Collection/508173123873"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        }
+      },
+      "order": 12
+    },
+    {
+      "id": "all-learning-toys-3plus",
+      "type": "horizontalProductList",
+      "title": "Learning Toys for 3+ Kiddos",
       "collectionIds": [
         "gid://shopify/Collection/507806449953"
       ],
-      "title": "",
       "productListConfig": {
-        "itemsPerView": 1.8,
-        "limit": 10,
-        "filters": {
-          "enabled": true,
-          "fastFilters": [
-            {
-              "key": "price",
-              "label": "Price",
-              "type": "single",
-              "options": [
-                {
-                  "key": "under-500",
-                  "label": "Under ₹500",
-                  "value": "0-500"
-                },
-                {
-                  "key": "500-1000",
-                  "label": "₹500 - ₹1000",
-                  "value": "500-1000"
-                },
-                {
-                  "key": "1000-2000",
-                  "label": "₹1000 - ₹2000",
-                  "value": "1000-2000"
-                },
-                {
-                  "key": "above-2000",
-                  "label": "Above ₹2000",
-                  "value": "2000-999999"
-                }
-              ]
-            },
-            {
-              "key": "inStock",
-              "label": "Availability",
-              "type": "single",
-              "options": [
-                {
-                  "key": "in-stock",
-                  "label": "In Stock",
-                  "value": true
-                },
-                {
-                  "key": "out-of-stock",
-                  "label": "Out of Stock",
-                  "value": false
-                }
-              ]
-            }
-          ],
-          "sort": {
-            "enabled": true,
-            "defaultSort": "relevance",
-            "options": [
-              {
-                "key": "relevance",
-                "label": "Relevance"
-              },
-              {
-                "key": "price_asc",
-                "label": "Price: Low to High"
-              },
-              {
-                "key": "price_desc",
-                "label": "Price: High to Low"
-              },
-              {
-                "key": "name_asc",
-                "label": "Name: A to Z"
-              },
-              {
-                "key": "newest",
-                "label": "Newest First"
-              }
-            ]
-          }
-        }
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
       },
       "styles": {
-        "container": {},
-        "content": {}
-      }
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        }
+      },
+      "order": 13
     },
     {
-      "id": "girls-infinite-grid-1",
+      "id": "all-montessori-under-3",
+      "type": "horizontalProductList",
+      "title": "Montessori Toys for Under 3",
+      "collectionIds": [
+        "gid://shopify/Collection/507746582817"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        }
+      },
+      "order": 14
+    },
+    {
+      "id": "all-infinite-grid-1",
       "type": "infiniteProductGrid",
       "title": "New Arrivals",
       "collectionIds": [
@@ -743,23 +1038,25 @@
       ],
       "productGridConfig": {
         "numColumns": 2,
-        "colGap": 8,
-        "rowGap": 8,
-        "horizontalPadding": 8,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
         "pageSize": 20,
         "initialLoad": 20
       },
       "styles": {
         "container": {
-          "marginVertical": 15
+          "paddingTop": 10,
+          "paddingBottom": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         }
-      }
+      },
+      "order": 15
     }
   ],
   "girls": [
@@ -768,7 +1065,13 @@
       "type": "imageBanner",
       "title": "Featured",
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_20_2025_12_18_27_AM.png?v=1766170370",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlswinterbannerfinal.png?v=1767425909",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/508366258465"
+          }
+        },
         "height": 250,
         "borderRadius": 12,
         "resizeMode": "cover"
@@ -781,6 +1084,139 @@
       }
     },
     {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508366094625",
+          "name": "Jackets and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508366225697",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508366291233",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508366848289",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible"
+        },
+        "text": {
+          "marginTop": 12,
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-shop-by-age-girls-1",
+      "type": "grid",
+      "title": "Shop by Age",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508149334305",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149367073",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149399841",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149465377",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149498145",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149530913",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149596449",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149629217",
+          "name": ""
+        }
+      ],
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": 12,
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
       "id": "girls-product-list-1",
       "type": "horizontalProductList",
       "title": "Featured",
@@ -789,86 +1225,198 @@
       ],
       "productListConfig": {
         "limit": 20,
-        "itemsPerView": 1.5
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
       },
       "styles": {
         "container": {
-          "paddingVertical": 20
-        }
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
       }
     },
     {
-      "id": "all-grid-shop-by-age-girls-1",
-      "type": "grid",
+      "id": "girls-product-list-2",
+      "type": "horizontalProductList",
+      "title": "Jackets and Sweaters",
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/508149334305",
-          "name": "0-3 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149367073",
-          "name": "3-6 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149399841",
-          "name": "6-12 M"
-        },
-        {
-          "id": "gid://shopify/Collection/508149465377",
-          "name": "1-2 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149498145",
-          "name": "2-3 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149530913",
-          "name": "3-4 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149596449",
-          "name": "4-5 Y"
-        },
-        {
-          "id": "gid://shopify/Collection/508149629217",
-          "name": "5+ Y"
-        }
+        "gid://shopify/Collection/508366094625"
       ],
-      "title": "",
-      "gridConfig": {
-        "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
-        "limit": 0,
-        "resizeMode": "cover"
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
       },
       "styles": {
         "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
+        "titleContainer": {
+          "marginBottom": 20
         },
-        "text": {
-          "color": "#666666",
-          "textAlign": "center"
-        }
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-3",
+      "type": "horizontalProductList",
+      "title": "Thermals",
+      "collectionIds": [
+        "gid://shopify/Collection/508365209889"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-4",
+      "type": "horizontalProductList",
+      "title": "Bottomwear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366225697"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-5",
+      "type": "horizontalProductList",
+      "title": "Everyday Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366225697"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-6",
+      "type": "horizontalProductList",
+      "title": "Occassion Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366291233"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-7",
+      "type": "horizontalProductList",
+      "title": "Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/508366848289"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
       }
     },
     {
@@ -880,19 +1428,22 @@
       ],
       "productGridConfig": {
         "numColumns": 2,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
         "pageSize": 20,
-        "initialLoad": 10
+        "initialLoad": 20
       },
       "styles": {
         "container": {
-          "marginVertical": 15
+          "paddingTop": 10,
+          "paddingBottom": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "paddingHorizontal": 20,
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         }
       }
     }
@@ -902,83 +1453,162 @@
       "id": "all-banner-boy-1",
       "type": "carousel",
       "data": [
-        "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_20_2025_11_25_41_AM.png?v=1766210157"
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2025-12-27_at_12.43.26_AM.png?v=1766779972",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/508364620065"
+            }
+          }
+        }
       ],
       "styles": {
         "container": {},
         "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 12,
+          "borderRadius": 20
+        },
         "img": {}
+      },
+      "carouselConfig": {
+        "autoPlay": true,
+        "autoPlayInterval": 3000,
+        "loop": true,
+        "height": 0.6,
+        "resizeMode": "cover"
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508364947745",
+          "name": "Jacket and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508365242657",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508365701409",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508365930785",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible"
+        },
+        "text": {
+          "marginTop": 12,
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
       }
     },
     {
       "id": "all-grid-shop-by-age-boys-1",
+      "title": "Shop by Age",
       "type": "grid",
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/508148973857",
-          "name": "0-3 M"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149006625",
-          "name": "3-6 M"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149072161",
-          "name": "6-12 M"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149137697",
-          "name": "1-2 Y"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149170465",
-          "name": "2-3 Y"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149793057",
-          "name": "3-4 Y"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508149301537",
-          "name": "4-5 Y"
+          "name": ""
         },
         {
           "id": "gid://shopify/Collection/508155822369",
-          "name": "5+ Y"
+          "name": ""
         }
       ],
       "gridConfig": {
         "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
+        "colGap": 12,
+        "rowGap": 12,
         "limit": 0,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         },
         "imageContainer": {
-          "padding": 0,
           "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
+          "backgroundColor": "#FFFFFF"
         },
         "text": {
+          "display": "none",
+          "marginTop": 12,
           "color": "#666666",
           "textAlign": "center"
         }
@@ -990,88 +1620,200 @@
       "collectionIds": [
         "gid://shopify/Collection/507750875425"
       ],
-      "title": "",
+      "title": "featured",
       "productListConfig": {
-        "limit": 10,
-        "itemsPerView": 1.5,
-        "filters": {
-          "enabled": true,
-          "fastFilters": [
-            {
-              "key": "price",
-              "label": "Price",
-              "type": "single",
-              "options": [
-                {
-                  "key": "under-500",
-                  "label": "Under ₹500",
-                  "value": "0-500"
-                },
-                {
-                  "key": "500-1000",
-                  "label": "₹500 - ₹1000",
-                  "value": "500-1000"
-                },
-                {
-                  "key": "1000-2000",
-                  "label": "₹1000 - ₹2000",
-                  "value": "1000-2000"
-                },
-                {
-                  "key": "above-2000",
-                  "label": "Above ₹2000",
-                  "value": "2000-999999"
-                }
-              ]
-            },
-            {
-              "key": "inStock",
-              "label": "Availability",
-              "type": "single",
-              "options": [
-                {
-                  "key": "in-stock",
-                  "label": "In Stock",
-                  "value": true
-                },
-                {
-                  "key": "out-of-stock",
-                  "label": "Out of Stock",
-                  "value": false
-                }
-              ]
-            }
-          ],
-          "sort": {
-            "enabled": true,
-            "defaultSort": "relevance",
-            "options": [
-              {
-                "key": "relevance",
-                "label": "Relevance"
-              },
-              {
-                "key": "price_asc",
-                "label": "Price: Low to High"
-              },
-              {
-                "key": "price_desc",
-                "label": "Price: High to Low"
-              },
-              {
-                "key": "name_asc",
-                "label": "Name: A to Z"
-              },
-              {
-                "key": "newest",
-                "label": "Newest First"
-              }
-            ]
-          }
-        }
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
       },
       "styles": {
-        "container": {},
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-2",
+      "type": "horizontalProductList",
+      "title": "Jackets and Sweaters",
+      "collectionIds": [
+        "gid://shopify/Collection/508364947745"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-3",
+      "type": "horizontalProductList",
+      "title": "Thermals",
+      "collectionIds": [
+        "gid://shopify/Collection/508365209889"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-4",
+      "type": "horizontalProductList",
+      "title": "Bottomwear",
+      "collectionIds": [
+        "gid://shopify/Collection/508365242657"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-5",
+      "type": "horizontalProductList",
+      "title": "Everyday Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/507750875425"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-6",
+      "type": "horizontalProductList",
+      "title": "Occassion Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508365701409"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "all-product-list-boy-7",
+      "type": "horizontalProductList",
+      "title": "Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/508365930785"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 2.1,
+        "showSeeAll": true,
+        "seeAllText": "View All"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
         "content": {}
       }
     },
@@ -1084,19 +1826,22 @@
       ],
       "productGridConfig": {
         "numColumns": 2,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
         "pageSize": 20,
         "initialLoad": 20
       },
       "styles": {
         "container": {
-          "marginVertical": 15
+          "paddingTop": 10,
+          "paddingBottom": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "paddingHorizontal": 20,
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         }
       }
     },
@@ -1109,32 +1854,35 @@
       ],
       "productGridConfig": {
         "numColumns": 2,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
         "pageSize": 20,
         "initialLoad": 20
       },
       "styles": {
         "container": {
-          "marginVertical": 15
+          "paddingTop": 10,
+          "paddingBottom": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "paddingHorizontal": 20,
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         }
       }
     }
   ],
   "toys": [
     {
-      "id": "girls-image-banner-1",
+      "id": "toys-banner-1",
       "type": "imageBanner",
       "title": "Featured",
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_20_2025_12_10_37_AM.png?v=1766170370",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toysbannerkiddo.png?v=1767598678",
         "height": 250,
-        "borderRadius": 0,
+        "borderRadius": 12,
         "resizeMode": "cover"
       },
       "styles": {
@@ -1165,14 +1913,6 @@
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/507747139873",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747107105",
-          "name": ""
-        },
-        {
           "id": "gid://shopify/Collection/507747402017",
           "name": ""
         },
@@ -1187,40 +1927,40 @@
         {
           "id": "gid://shopify/Collection/507748483361",
           "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": ""
         }
       ],
       "title": "Shop by Category",
       "gridConfig": {
         "numColumns": 4,
-        "colGap": 20,
-        "rowGap": 20,
+        "colGap": 12,
+        "rowGap": 12,
         "limit": 0,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "letterSpacing": 0.3
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         },
         "imageContainer": {
           "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "shadowColor": "#000",
-          "shadowOffset": {
-            "width": 0,
-            "height": 2
-          },
-          "shadowOpacity": 0.1,
-          "shadowRadius": 4,
-          "elevation": 3
+          "borderColor": "#97612f",
+          "borderWidth": 0.2,
+          "backgroundColor": "#FFFFFF"
         },
         "text": {
+          "fontSize": 10,
+          "marginTop": 12,
           "color": "#666666",
           "textAlign": "center"
         }
@@ -1235,26 +1975,29 @@
       ],
       "productGridConfig": {
         "numColumns": 2,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
         "pageSize": 20,
         "initialLoad": 20
       },
       "styles": {
         "container": {
-          "marginVertical": 15
+          "paddingTop": 10,
+          "paddingBottom": 20
         },
         "title": {
-          "marginBottom": 15,
-          "fontSize": 20,
-          "fontWeight": "700",
-          "paddingHorizontal": 20,
-          "letterSpacing": 0.3
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
         }
       }
     }
   ],
   "header": {
-    "textColor": "#000000",
-    "primaryColor": "#000000"
+    "textColor": "#363636",
+    "primaryColor": "#363636"
   },
   "categories": {
     "order": [
@@ -1268,58 +2011,58 @@
       "all": {
         "label": "All",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shop-all.jpg",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-header.png",
           "labelColors": {
-            "selected": "#000000",
-            "unselected": "#000000"
+            "selected": "#363636",
+            "unselected": "#363636"
           }
         }
       },
       "girls": {
         "label": "Girl Fashion",
         "header": {
-          "textColor": "#000000",
+          "textColor": "#363636",
           "backgroundColor": "#FF69B4",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion.jpg",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-girls-header.png",
           "labelColors": {
             "selected": "#FF1493",
-            "unselected": "#000000"
+            "unselected": "#363636"
           }
         }
       },
       "boys": {
         "label": "Boy Fashion",
         "header": {
-          "textColor": "#000000",
+          "textColor": "#363636",
           "backgroundColor": "#4169E1",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_28_2025_05_36_46_AM.png?v=1766881508",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-boys-header.png",
           "labelColors": {
-            "selected": "#000000",
-            "unselected": "#000000"
+            "selected": "#363636",
+            "unselected": "#363636"
           }
         }
       },
       "babycare": {
         "label": "Baby Care",
         "header": {
-          "textColor": "#000000",
+          "textColor": "#363636",
           "backgroundColor": "#87CEEB",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare.jpg",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-babycare-header.png",
           "labelColors": {
-            "selected": "#000000",
-            "unselected": "#000000"
+            "selected": "#363636",
+            "unselected": "#363636"
           }
         }
       },
       "toys": {
         "label": "Toys & Craft",
         "header": {
-          "textColor": "#000000",
+          "textColor": "#363636",
           "backgroundColor": "#FFD700",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys.jpg",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-toys-header.png",
           "labelColors": {
-            "selected": "#000000",
-            "unselected": "#000000"
+            "selected": "#363636",
+            "unselected": "#363636"
           }
         }
       }
@@ -1350,5 +2093,486 @@
         "gap": 16
       }
     }
+  },
+  "productDetail": {
+    "styles": {
+      "title": {
+        "fontSize": 20,
+        "fontWeight": "700",
+        "color": "#363636",
+        "paddingHorizontal": 16,
+        "paddingTop": 10,
+        "lineHeight": 28
+      },
+      "vendor": {
+        "fontSize": 14,
+        "fontWeight": "500",
+        "color": "#666666",
+        "paddingHorizontal": 16,
+        "marginTop": 8,
+        "marginBottom": 4,
+        "textTransform": "uppercase"
+      },
+      "description": {
+        "fontSize": 14,
+        "fontWeight": "400",
+        "color": "#333333",
+        "lineHeight": 20
+      },
+      "material": {
+        "fontSize": 14,
+        "fontWeight": "400",
+        "color": "#333333"
+      },
+      "washCare": {
+        "fontSize": 14,
+        "fontWeight": "400",
+        "color": "#333333"
+      },
+      "accordionTitle": {
+        "fontSize": 16,
+        "fontWeight": "600",
+        "color": "#363636"
+      },
+      "variantLabel": {
+        "fontSize": 16,
+        "fontWeight": "600",
+        "color": "#333333"
+      },
+      "variantButton": {
+        "fontSize": 14,
+        "fontWeight": "500",
+        "color": "#363636"
+      }
+    },
+    "sections": {
+      "recommendations": {
+        "enabled": true,
+        "type": "horizontalProductList",
+        "title": "You May Also Like",
+        "limit": 10,
+        "showViewAll": false,
+        "config": {
+          "itemsPerView": 1.8,
+          "horizontal": true
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 0
+          },
+          "title": {
+            "fontSize": 20,
+            "fontWeight": "700",
+            "color": "#363636"
+          }
+        },
+        "gap": {
+          "height": 8,
+          "backgroundColor": "#f5f5f5",
+          "marginTop": 20
+        }
+      },
+      "recentlyViewed": {
+        "enabled": true,
+        "type": "horizontalProductList",
+        "title": "Recently Viewed",
+        "limit": 10,
+        "showViewAll": false,
+        "config": {
+          "itemsPerView": 1.8,
+          "horizontal": true
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 0
+          },
+          "title": {
+            "fontSize": 20,
+            "fontWeight": "700",
+            "color": "#363636"
+          }
+        },
+        "gap": {
+          "height": 8,
+          "backgroundColor": "#f5f5f5",
+          "marginTop": 20
+        }
+      }
+    }
+  },
+  "babycare": [
+    {
+      "id": "babycare-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
+        "height": 250,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {},
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "babycare-grid-brands",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508169584929",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508169552161",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168634657",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168765729",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172075297",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172206369",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168831265",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172271905",
+          "name": ""
+        }
+      ],
+      "title": "Shop by Brands",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 8,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderColor": "#97612f",
+          "borderWidth": 0.2,
+          "backgroundColor": "#FFFFFF"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": 12,
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "babycare-diapers-wipes",
+      "type": "horizontalProductList",
+      "title": "Diapers and Wipes",
+      "collectionIds": [
+        "gid://shopify/Collection/508173123873"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babycare-other-essentials",
+      "type": "horizontalProductList",
+      "title": "Other Essentials",
+      "collectionIds": [
+        "gid://shopify/Collection/508173156641"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babycare-skincare-bathing",
+      "type": "horizontalProductList",
+      "title": "Skincare and Bathing",
+      "collectionIds": [
+        "gid://shopify/Collection/508371206433"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babycare-feeding-essentials",
+      "type": "horizontalProductList",
+      "title": "Feeding Essentials",
+      "collectionIds": [
+        "gid://shopify/Collection/508371239201"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 20
+        },
+        "content": {}
+      }
+    }
+  ],
+  "discounts": {
+    "enabled": true,
+    "codes": [
+      {
+        "code": "KIDDO10",
+        "title": "10% Off",
+        "description": "Get 10% off on your order",
+        "value": 10,
+        "valueType": "percentage",
+        "minimumPurchaseAmount": null,
+        "startsAt": null,
+        "endsAt": null
+      },
+      {
+        "code": "KIDDO25",
+        "title": "\u20b9250 Off",
+        "description": "Get \u20b9250 off on your order",
+        "value": 250,
+        "valueType": "fixed_amount",
+        "minimumPurchaseAmount": null,
+        "startsAt": null,
+        "endsAt": null
+      }
+    ]
+  },
+  "account": {
+    "profile": {
+      "showAvatar": true,
+      "avatarSize": 80,
+      "showPhone": true,
+      "showEmail": true,
+      "defaultUserName": "User",
+      "defaultPhoneText": "Not available",
+      "defaultEmailText": "Not available"
+    },
+    "quickActions": [
+      {
+        "id": "orders",
+        "title": "My Orders",
+        "icon": "receipt",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Orders"
+        }
+      },
+      {
+        "id": "loyalty",
+        "title": "Rewards",
+        "icon": "wallet",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Rewards"
+        }
+      },
+      {
+        "id": "addresses",
+        "title": "Saved Addresses",
+        "icon": "location",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Addresses"
+        }
+      }
+    ],
+    "menuItems": [
+      {
+        "id": "help",
+        "title": "Help & Support",
+        "icon": "help-circle-outline",
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "ContactSupport"
+        }
+      },
+      {
+        "id": "about",
+        "title": "About Us",
+        "icon": "information-circle-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/about-us",
+          "title": "About Us"
+        }
+      },
+      {
+        "id": "terms",
+        "title": "Terms & Conditions",
+        "icon": "document-text-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/terms-and-conditions",
+          "title": "Terms & Conditions"
+        }
+      },
+      {
+        "id": "privacy",
+        "title": "Privacy Policy",
+        "icon": "shield-checkmark-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/privacy-policy",
+          "title": "Privacy Policy"
+        }
+      }
+    ],
+    "logout": {
+      "enabled": true,
+      "title": "Logout",
+      "message": "Are you sure you want to logout?",
+      "confirmText": "Logout",
+      "cancelText": "Cancel"
+    },
+    "version": {
+      "enabled": false,
+      "text": "Kiddo App v1.0.0"
+    },
+    "styles": {
+      "header": {
+        "paddingTop": 60,
+        "paddingBottom": 20,
+        "paddingHorizontal": 20
+      },
+      "quickActions": {
+        "paddingHorizontal": 20,
+        "paddingVertical": 20
+      },
+      "menuContainer": {
+        "marginTop": 10,
+        "paddingHorizontal": 20
+      },
+      "logoutButton": {
+        "marginHorizontal": 20,
+        "marginTop": 20,
+        "paddingVertical": 16,
+        "borderRadius": 12,
+        "borderWidth": 1
+      },
+      "version": {
+        "marginTop": 20,
+        "paddingBottom": 10
+      }
+    }
+  },
+  "delivery": {
+    "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY",
+    "darkStoreLocation": {
+      "latitude": 28.540546501290788,
+      "longitude": 77.37018854503113
+    },
+    "packingTime": 5,
+    "maxDeliveryTime": 60,
+    "travelTimePerKm": 2,
+    "maxDeliveryDistance": null
   }
 }

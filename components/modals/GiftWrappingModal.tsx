@@ -14,7 +14,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { useCart } from '@/context/CartContext';
+import { useCartStore, useCartItems, useGiftWrapping } from '@/store/cartStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -54,7 +54,10 @@ const GIFT_WRAP_OPTIONS = [
 ];
 
 export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) => {
-    const { cartItems, giftWrapping, setGiftWrappingOption } = useCart();
+    // Use Zustand store
+    const cartItems = useCartItems();
+    const giftWrapping = useGiftWrapping();
+    const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
     const [selectedWrap, setSelectedWrap] = useState(giftWrapping);
     const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
@@ -89,20 +92,20 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
 
     const handleConfirm = () => {
         if (selectedWrap && selectedProducts.length > 0) {
-            setGiftWrappingOption({
+            setGiftWrapping({
                 ...selectedWrap,
                 productIds: selectedProducts,
             });
         } else if (selectedWrap) {
             // If wrap selected but no products, warn or just clear?
             // Kiddo logic: if no products, remove wrapping.
-            setGiftWrappingOption(null);
+            setGiftWrapping(null);
         }
         onClose();
     };
 
     const handleRemove = () => {
-        setGiftWrappingOption(null);
+        setGiftWrapping(null);
         setSelectedWrap(null);
         setSelectedProducts([]);
         onClose();

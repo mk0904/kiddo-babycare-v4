@@ -1,22 +1,23 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
   ImageBackground,
-  TouchableOpacity,
   StyleSheet,
-  Dimensions,
-  ActivityIndicator,
-  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 // import { FlashList } from '@shopify/flash-list';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { ImageGridBlock } from '@/types/content';
+import { Colors, Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-import { useRouter } from 'expo-router';
 import { shopifyApi } from '@/services/shopifyApi';
-import { Colors } from '@/constants/theme';
+import { ImageGridBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import { useRouter } from 'expo-router';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -70,7 +71,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
             return {
               id: result.value.id,
               name: collectionDef.name || result.value.title,
-              imageUrl: result.value.image?.url || '',
+              imageUrl: collectionDef.imageUrl || result.value.image?.url || '',
             };
           }
           return null;
@@ -110,28 +111,20 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     // Title should use container padding if set, otherwise 0
     const titleStyle = {
       marginBottom: 15,
-      fontSize: 20,
-      fontWeight: '700',
+      fontSize: 18,
       letterSpacing: 0.3,
-      ...blockStyles?.title,
       // Apply container padding to title if not explicitly set in blockStyles.title
       paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
         ? blockStyles.title.paddingHorizontal
         : (containerStyle.paddingHorizontal || 0),
+      ...processFontStyle(blockStyles?.title, Fonts.Bold),
     };
     const imageContainerStyle = {
       padding: 0,
       borderRadius: 20,
       backgroundColor: '#FFFFFF',
-      overflow: 'visible' as const,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      overflow: 'hidden' as const, // Changed from 'visible' to 'hidden' to prevent shadow cropping
+      // Shadow styles removed - can be added via blockStyles?.imageContainer if needed
       ...blockStyles?.imageContainer,
     };
     const imageStyle = {
@@ -142,7 +135,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     const textStyle = {
       color: '#666666',
       textAlign: 'center' as const,
-      ...blockStyles?.text,
+      ...processFontStyle(blockStyles?.text),
     };
 
     // Calculate available width accounting for container margins and padding (Kiddo pattern)
@@ -316,7 +309,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
 
     const limitedCollections = limit > 0 ? collections.slice(0, limit) : collections;
 
-    const ContainerWrapper = backgroundImage ? ImageBackground : View;
+    const ContainerWrapper: React.ComponentType<any> = backgroundImage ? ImageBackground : View;
     const containerWrapperProps = backgroundImage
       ? {
         source: { uri: backgroundImage },
@@ -353,6 +346,8 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
             contentContainerStyle={[
               {
                 paddingHorizontal: containerPaddingHorizontal > 0 ? containerPaddingHorizontal : 0,
+                paddingTop: 8, // Add top padding to prevent shadow clipping
+                paddingBottom: 8, // Add bottom padding to prevent shadow clipping
                 backgroundColor: Colors.backgroundWhite,
               },
               listContentStyle,
@@ -393,7 +388,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
   return (
     <BaseContentBlock block={block}>
       {title && (
-        <Text style={[defaultStyles.title, blockStyles?.title]}>{title}</Text>
+        <Text style={[defaultStyles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
       )}
       <View
         style={[
@@ -430,7 +425,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
               resizeMode={resizeMode}
             />
             {item.title && (
-              <Text style={[defaultStyles.text, blockStyles?.text]}>
+              <Text style={[defaultStyles.text, processFontStyle(blockStyles?.text)]}>
                 {item.title}
               </Text>
             )}
@@ -453,13 +448,12 @@ const defaultStyles = StyleSheet.create({
     minHeight: 200,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: 15,
     letterSpacing: 0.3,
     color: Colors.text,
   },
   listContent: {
-    paddingBottom: 0,
   },
   itemWrapper: {
     alignItems: 'center',

@@ -1,18 +1,18 @@
-import React, { useState, useEffect, memo, useMemo, useCallback, useRef } from 'react';
-import {
-    View,
-    Text,
-    ImageBackground,
-    StyleSheet,
-    TouchableOpacity,
-    Dimensions,
-    InteractionManager,
-} from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { shopifyApi } from '@/services/shopifyApi';
 import { ProductCard } from '@/components/product/ProductCard';
-import { Colors, Fonts } from '@/constants/theme';
 import { HorizontalProductListSkeleton } from '@/components/ui/SkeletonLoader';
+import { Colors, Fonts } from '@/constants/theme';
+import { shopifyApi } from '@/services/shopifyApi';
+import { FlashList } from '@shopify/flash-list';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Dimensions,
+    ImageBackground,
+    InteractionManager,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,6 +24,8 @@ interface HorizontalProductListProps {
         itemsPerView?: number;
         itemSpacing?: number;
         sidePadding?: number;
+        seeAllText?: string; // Configurable "See All" button text
+        showSeeAll?: boolean; // Show "See All" button
     };
     styles?: any;
     title?: string;
@@ -31,7 +33,7 @@ interface HorizontalProductListProps {
     onAddToCart?: (product: any) => void;
     onSeeMore?: () => void;
     onCollectionPress?: (collection: any) => void;
-    showSeeMore?: boolean;
+    showSeeMore?: boolean; // Legacy prop for backward compatibility
 }
 
 const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
@@ -56,6 +58,8 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
         itemsPerView = 2.2, // Default to showing a bit of the next item
         itemSpacing = 12,
         sidePadding = 20,
+        seeAllText = 'See All', // Default text for "See All" button
+        showSeeAll = false, // Default to false, can be enabled via config
     } = config;
 
     const paddingLeft = sidePadding > 0 ? sidePadding : 20;
@@ -95,7 +99,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
                 try {
                     const [collectionDetails, collection] = await Promise.all([
                         shopifyApi.getCollectionById(collectionId).catch(() => null),
-                        shopifyApi.getProductsByCollection(collectionId, limit || 20),
+                        shopifyApi.getProductsByCollection(collectionId, limit > 0 ? limit : 20),
                     ]);
 
                     if (collectionDetails) {
@@ -141,6 +145,12 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
         defaultStyles.title,
         customStyles.title,
     ], [customStyles.title]);
+
+    const titleContainerStyle = useMemo(() => [
+        defaultStyles.titleContainer,
+        { paddingHorizontal: sidePadding },
+        customStyles.titleContainer, // Allow overriding titleContainer styles from config
+    ], [sidePadding, customStyles.titleContainer]);
 
     const contentStyle = useMemo(() => [
         defaultStyles.content,
@@ -257,15 +267,21 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
     return (
         <ContainerWrapper {...containerWrapperProps}>
             {title && title.trim() && (
-                <View style={[defaultStyles.titleContainer, { paddingHorizontal: sidePadding }]}>
-                    <Text style={titleStyle as any}>{title}</Text>
-                    {showSeeMore && (
+                <View style={titleContainerStyle as any}>
+                    <Text 
+                        style={titleStyle as any}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                    >
+                        {title}
+                    </Text>
+                    {(showSeeMore || showSeeAll) && (
                         <TouchableOpacity
                             onPress={handleSeeMore}
                             style={defaultStyles.seeMoreButton}
                             activeOpacity={0.7}
                         >
-                            <Text style={defaultStyles.seeMoreText}>See More</Text>
+                            <Text style={defaultStyles.seeMoreText}>{seeAllText}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -318,17 +334,21 @@ const defaultStyles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 15,
+        gap: 12,
     },
     title: {
-        fontSize: 20,
+        fontSize: 18,
         letterSpacing: 0.3,
         color: Colors.text,
         fontFamily: Fonts.Bold,
         flex: 1,
+        flexShrink: 1,
+        marginRight: 8,
     },
     seeMoreButton: {
         paddingVertical: 4,
         paddingHorizontal: 8,
+        flexShrink: 0,
     },
     seeMoreText: {
         fontSize: 14,

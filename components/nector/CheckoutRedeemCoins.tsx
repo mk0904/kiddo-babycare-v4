@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNector } from '@/context/NectorContext';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 interface CheckoutRedeemCoinsProps {
     cartAmount: number;
@@ -149,17 +149,17 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#8B7500',
     },
     subtitle: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#B8860B',
     },
     ineligible: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#999',
         fontStyle: 'italic',
     },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     },
     toggleText: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
     },
     toggleTextActive: {
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     },
     error: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#F44336',
     },
 });

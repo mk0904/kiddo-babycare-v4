@@ -16,12 +16,16 @@ import { FilterSortPills } from '@/components/ui/FilterSortPills';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import BaseModal from '@/components/ui/BaseModal';
 import { shopifyApi } from '@/services/shopifyApi';
+import { configService } from '@/services/configService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function InfinityScreen() {
     const { collectionId, title } = useLocalSearchParams<{ collectionId: string; title: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+
+    // Get product grid defaults from config
+    const gridDefaults = configService.getProductGridDefaults();
 
     const [loading, setLoading] = useState(true);
     const [collection, setCollection] = useState<any>(null);
@@ -173,9 +177,11 @@ export default function InfinityScreen() {
                         style={{ root: { flex: 1 } }}
                         productOptions={{
                             numColumns: 2,
-                            colGap: 8,
-                            rowGap: 8,
-                            horizontalPadding: 8, // Match search results and home page styling
+                            gap: gridDefaults.gap,
+                            rowGap: gridDefaults.rowGap,
+                            colGap: gridDefaults.colGap,
+                            paddingHorizontal: gridDefaults.paddingHorizontal,
+                            horizontalPadding: gridDefaults.paddingHorizontal, // Backward compatibility
                         }}
                         scrollable={true}
                     />
@@ -201,11 +207,12 @@ export default function InfinityScreen() {
                     type="bottomSheet"
                     closeButtonPosition="above"
                     containerStyle={styles.sortModalContent}
-                    contentStyle={{ flex: 1 }}
+                    contentStyle={styles.sortModalContentWrapper}
                 >
                     <ScrollView
                         style={styles.sortListContainer}
                         contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
                     >
                         {SORT_OPTIONS.map((option, index) => {
                             const isSelected = sortKey === option.key && reverse === option.reverse;
@@ -276,22 +283,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     sortModalContent: {
-        maxHeight: '60%',
-        height: '60%',
+        maxHeight: '50%',
+    },
+    sortModalContentWrapper: {
+        paddingBottom: 20,
     },
     sortListContainer: {
-        flex: 1,
+        maxHeight: 400,
     },
     sortListContent: {
-        padding: 20,
-        paddingTop: 10,
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 8,
     },
     sortListItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingHorizontal: 4,
+        paddingVertical: 14,
     },
     sortListItemText: {
         fontSize: 16,

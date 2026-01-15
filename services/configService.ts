@@ -27,16 +27,30 @@ class ConfigService {
         // Try to load from Kiddo's config file
         try {
           const kiddoConfig = require('@/config/kiddoAppConfig.json');
+          
+          // Dynamically build home config from all category arrays in config
+          // Get category keys from categories.order or find all array properties
+          const categoryKeys = kiddoConfig.categories?.order || [];
+          const homeConfig: ScreenConfig = {};
+          
+          // Load all categories dynamically
+          categoryKeys.forEach((key: string) => {
+            if (Array.isArray(kiddoConfig[key])) {
+              homeConfig[key] = kiddoConfig[key];
+            }
+          });
+          
+          // Also include known categories if they exist (for backwards compatibility)
+          ['all', 'girls', 'boys', 'toys', 'babycare'].forEach((key) => {
+            if (Array.isArray(kiddoConfig[key]) && !homeConfig[key]) {
+              homeConfig[key] = kiddoConfig[key];
+            }
+          });
+          
           // Transform Kiddo's structure to our structure
           this.config = {
             version: 1,
-            home: {
-              all: kiddoConfig.all || [],
-              girls: kiddoConfig.girls || [],
-              boys: kiddoConfig.boys || [],
-              toys: kiddoConfig.toys || [],
-              babycare: kiddoConfig.babycare || [],
-            },
+            home: homeConfig,
             header: kiddoConfig.header,
             categories: kiddoConfig.categories,
           };
@@ -85,6 +99,21 @@ class ConfigService {
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
+  // Get category screen blocks
+  getCategoryScreenBlocks(): ContentBlock[] {
+    try {
+      const kiddoConfig = require('@/config/kiddoAppConfig.json');
+      const categoryBlocks = kiddoConfig.categoryScreen?.blocks || [];
+      
+      // Filter visible blocks and sort by order
+      return categoryBlocks
+        .filter((block: ContentBlock) => block.visible !== false)
+        .sort((a: ContentBlock, b: ContentBlock) => (a.order || 0) - (b.order || 0));
+    } catch (e) {
+      return [];
+    }
+  }
+
   // Get header config for category
   getCategoryHeaderConfig(category: string = 'all') {
     const categories = this.config.categories;
@@ -96,6 +125,50 @@ class ConfigService {
   // Get all categories
   getCategories() {
     return this.config.categories;
+  }
+
+  // Get product detail configuration
+  getProductDetailConfig() {
+    try {
+      const kiddoConfig = require('@/config/kiddoAppConfig.json');
+      return kiddoConfig.productDetail || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get product grid default configuration
+  getProductGridDefaults() {
+    try {
+      const kiddoConfig = require('@/config/kiddoAppConfig.json');
+      return kiddoConfig.productGridDefaults || {
+        gap: 16,
+        rowGap: 16,
+        colGap: 16,
+        paddingHorizontal: 20,
+      };
+    } catch (e) {
+      return {
+        gap: 16,
+        rowGap: 16,
+        colGap: 16,
+        paddingHorizontal: 20,
+      };
+    }
+  }
+
+  // Get category screen configuration
+  getCategoryScreenConfig() {
+    try {
+      const kiddoConfig = require('@/config/kiddoAppConfig.json');
+      const categoryConfig = kiddoConfig.categoryScreen || {};
+      
+      // Return only config from kiddoAppConfig.json
+      return categoryConfig;
+    } catch (e) {
+      // Return empty config if error
+      return {};
+    }
   }
 
   // Get config

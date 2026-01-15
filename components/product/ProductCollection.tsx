@@ -1,9 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Product } from '@/types/product';
 import { ProductCard } from './ProductCard';
 import { shopifyApi, CollectionResponse } from '@/services/shopifyApi';
+import { Fonts, Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { processFontStyle } from '@/utils/fontUtils';
 
 export interface CollectionComponentProps {
   products: any[]; // Full product objects
@@ -33,6 +36,7 @@ export interface ProductCollectionProps {
   title?: string;
   subTitle?: string;
   showViewAll?: boolean;
+  viewAllText?: string; // Configurable "View All" button text
   showCollectionImage?: boolean;
   style?: any;
   contentWidth?: number;
@@ -72,6 +76,7 @@ export function ProductCollection({
   title,
   subTitle,
   showViewAll = false,
+  viewAllText = 'View All', // Default text
   showCollectionImage = false,
   style,
   contentWidth,
@@ -99,8 +104,9 @@ export function ProductCollection({
 
   // Fetch products using React Query's useInfiniteQuery
   // Must be called unconditionally (rules of hooks)
-  // Increase initial page size to load more products upfront (like search results)
-  const pageSize = limit || 50; // Increased from 20 to 50 to show more products initially
+  // When limit is set, fetch exactly that many (for efficiency)
+  // When no limit, fetch a reasonable page size
+  const pageSize = limit && limit > 0 ? limit : 50;
   
   const {
     data,
@@ -111,7 +117,7 @@ export function ProductCollection({
     refetch,
     isRefetching,
   } = useInfiniteQuery<Page>({
-    queryKey: ['products', collectionIdToUse, searchQuery, sortKey, reverse, JSON.stringify(filters)],
+    queryKey: ['products', collectionIdToUse, searchQuery, sortKey, reverse, JSON.stringify(filters), limit],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       if (!collectionIdToUse) {
@@ -158,7 +164,10 @@ export function ProductCollection({
   });
 
   // Automatically load more pages initially to show more products upfront (like search results)
+  // Only do this if limit is not set (for infinite grids)
   React.useEffect(() => {
+    if (limit && limit > 0) return; // Don't auto-load when limit is set
+    
     if (data?.pages && data.pages.length > 0 && hasNextPage && !isFetchingNextPage) {
       const totalProductsLoaded = data.pages.reduce((sum, page) => sum + page.products.length, 0);
       // Load up to 3-4 pages initially (approximately 150-200 products) to show "all products opened"
@@ -171,7 +180,7 @@ export function ProductCollection({
         return () => clearTimeout(timer);
       }
     }
-  }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize]);
+  }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
   // Effect to notify parent about loaded facets (from first page)
   React.useEffect(() => {
@@ -182,10 +191,11 @@ export function ProductCollection({
   }, [data?.pages]);
 
   // Flatten all pages into a single array of product objects
-  const allProducts = React.useMemo(
-    () => data?.pages.flatMap((page) => page.products) || [],
-    [data]
-  );
+  const allProducts = React.useMemo(() => {
+    const products = data?.pages.flatMap((page) => page.products) || [];
+    // Apply limit if specified
+    return limit && limit > 0 ? products.slice(0, limit) : products;
+  }, [data, limit]);
 
   // Notify parent about result count
   React.useEffect(() => {
@@ -205,15 +215,31 @@ export function ProductCollection({
 
   // If products are provided directly, use them without fetching
   if (providedProducts) {
+    // Apply limit if specified
+    const limitedProvidedProducts = limit && limit > 0 
+      ? providedProducts.slice(0, limit) 
+      : providedProducts;
+    
     return (
       <View style={[styles.container, style?.root]}>
         {showHeading && title && (
           <View style={[styles.header, style?.header]}>
-            <Text style={[styles.title, style?.title]}>{title}</Text>
+            <Text 
+              style={[styles.title, processFontStyle(style?.title, Fonts.Bold)]} 
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {title}
+            </Text>
             {showViewAll && onViewAll && (
-              <Text style={[styles.viewAll, style?.viewAll]} onPress={onViewAll}>
-                View All
-              </Text>
+              <TouchableOpacity 
+                style={[styles.viewAllButton, style?.viewAllButton]} 
+                onPress={onViewAll}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.viewAll, style?.viewAll]}>{viewAllText || 'View All'}</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -221,7 +247,7 @@ export function ProductCollection({
           <Text style={[styles.subTitle, style?.subTitle]}>{subTitle}</Text>
         )}
         <CollectionComponent
-          products={providedProducts}
+          products={limitedProvidedProducts}
           productStyle={defaultProductStyle}
           contentWidth={defaultContentWidth}
           listStyle={style?.list}
@@ -260,11 +286,22 @@ export function ProductCollection({
     <View style={[styles.container, style?.root]}>
       {showHeading && title && (
         <View style={[styles.header, style?.header]}>
-          <Text style={[styles.title, style?.title]}>{title}</Text>
+          <Text 
+            style={[styles.title, style?.title]} 
+            numberOfLines={2}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
           {showViewAll && onViewAll && (
-            <Text style={[styles.viewAll, style?.viewAll]} onPress={onViewAll}>
-              View All
-            </Text>
+            <TouchableOpacity 
+              style={[styles.viewAllButton, style?.viewAllButton]} 
+              onPress={onViewAll}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewAll, style?.viewAll]}>{viewAllText || 'View All'}</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -282,8 +319,8 @@ export function ProductCollection({
         productOptions={productOptions}
         productLayout={productLayout}
         productSource={productSource}
-        hasNextPage={hasNextPage}
-        fetchMore={handleFetchMore}
+        hasNextPage={limit && limit > 0 ? false : hasNextPage} // Disable pagination when limit is set
+        fetchMore={limit && limit > 0 ? undefined : handleFetchMore} // Disable fetchMore when limit is set
         collectionId={collectionIdToUse}
         searchQuery={searchQuery}
         isFetchingNextPage={isFetchingNextPage}
@@ -314,16 +351,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     marginBottom: 12,
+    gap: 12,
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Fonts.Bold,
     color: '#000',
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 8,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
   },
   viewAll: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
+    fontFamily: Fonts.Medium,
+    color: Colors.primary,
   },
   subTitle: {
     fontSize: 14,

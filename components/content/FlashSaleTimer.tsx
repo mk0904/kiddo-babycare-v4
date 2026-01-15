@@ -5,6 +5,8 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { FlashSaleBlock } from '@/types/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 interface FlashSaleTimerProps extends Omit<BaseContentBlockProps, 'onPress'> {
     block: FlashSaleBlock;
@@ -30,7 +32,7 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
     useEffect(() => {
         const calculateState = () => {
             const now = new Date().getTime();
-            const start = startTime ? new Date(startTime).getTime() : 0;
+            const start = new Date(startTime).getTime();
             const end = new Date(endTime).getTime();
 
             // 1. Check if Ended
@@ -39,7 +41,7 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
             }
 
             // 2. Check if Upcoming (Waiting for start)
-            if (startTime && now < start) {
+            if (now < start) {
                 return { status: 'upcoming', diff: start - now } as const;
             }
 
@@ -77,8 +79,14 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
         }
     };
 
-    // If sale ended, hide block completely
+    // Check visibility flags
+    const showBeforeSaleStart = flashSaleConfig.showBeforeSaleStart ?? true; // Default to true
+    const showBeforeSaleEnd = flashSaleConfig.showBeforeSaleEnd ?? true; // Default to true
+
+    // Hide block based on status and flags
     if (status === 'ended') return null;
+    if (status === 'upcoming' && !showBeforeSaleStart) return null;
+    if (status === 'live' && !showBeforeSaleEnd) return null;
 
     const gradientColors = status === 'upcoming'
         ? ['#4facfe', '#00f2fe'] as const // Blue/Cyan for Upcoming
@@ -86,10 +94,16 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
 
     // Dynamic Labels based on state
     const getStatusLabel = () => {
+        if (status === 'upcoming') {
+            return flashSaleConfig.startSubtitle || flashSaleConfig.subtitle;
+        }
         return flashSaleConfig.subtitle;
     };
 
     const getMainLabel = () => {
+        if (status === 'upcoming') {
+            return flashSaleConfig.startTitle || flashSaleConfig.label;
+        }
         return flashSaleConfig.label;
     };
 
@@ -138,7 +152,7 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
             <View style={styles.leftSection}>
                 <View style={styles.headerRow}>
                     <IconSymbol name={status === 'upcoming' ? "clock.fill" : "bolt.fill"} size={20} color="#FFD700" />
-                    <Text style={[styles.title, blockStyles?.title]}>
+                    <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>
                         {getMainLabel()}
                     </Text>
                 </View>
@@ -308,7 +322,7 @@ const styles = StyleSheet.create({
     separator: {
         color: 'rgba(255, 255, 255, 0.8)',
         fontSize: 16,
-        fontWeight: '700',
+        fontFamily: Fonts.Bold,
         marginBottom: 4,
         marginHorizontal: 1,
     },
@@ -325,13 +339,13 @@ const styles = StyleSheet.create({
     },
     digitText: {
         fontSize: 14,
-        fontWeight: '700',
+        fontFamily: Fonts.Bold,
         color: '#FFFFFF',
     },
     timeLabel: {
         color: 'rgba(255, 255, 255, 0.8)',
         fontSize: 9,
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
         marginTop: 4,
     },
 
@@ -349,7 +363,7 @@ const styles = StyleSheet.create({
     },
     basicTitle: {
         fontSize: 16,
-        fontWeight: '700',
+        fontFamily: Fonts.Bold,
         color: '#FFF',
         textTransform: 'uppercase'
     },
@@ -362,7 +376,7 @@ const styles = StyleSheet.create({
     },
     basicDigitText: {
         fontSize: 16,
-        fontWeight: '700',
+        fontFamily: Fonts.Bold,
     },
     basicSeparator: {
         marginBottom: 0,
@@ -391,8 +405,8 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     title: {
-        fontSize: 20,
-        fontWeight: '900',
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
         color: '#FFFFFF',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -400,7 +414,7 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 12,
         color: 'rgba(255, 255, 255, 0.9)',
-        fontWeight: '500',
+        fontFamily: Fonts.Medium,
         marginLeft: 2,
     },
     seeAllBtn: {
@@ -415,7 +429,7 @@ const styles = StyleSheet.create({
     seeAllText: {
         color: '#FFFFFF',
         fontSize: 10,
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
     },
 
     // --- Cinematic Layout Styles ---
@@ -430,7 +444,7 @@ const styles = StyleSheet.create({
     },
     cinematicTitle: {
         fontSize: 32,
-        fontWeight: '900',
+        fontFamily: Fonts.Bold,
         color: '#FFF',
         textTransform: 'uppercase',
         letterSpacing: 1,
@@ -442,7 +456,7 @@ const styles = StyleSheet.create({
     cinematicSubtitle: {
         fontSize: 16,
         color: '#FFF',
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
         textShadowColor: 'rgba(0, 0, 0, 0.5)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
@@ -454,7 +468,7 @@ const styles = StyleSheet.create({
     cinematicEndingText: {
         color: '#FFF',
         marginBottom: 10,
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
         fontSize: 14
     },
     cinematicDigitBox: {
@@ -482,7 +496,7 @@ const styles = StyleSheet.create({
     cinematicButtonText: {
         color: '#000',
         fontSize: 16,
-        fontWeight: '800',
+        fontFamily: Fonts.Bold,
         textTransform: 'uppercase'
     },
 });

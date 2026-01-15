@@ -1,57 +1,37 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Animated, Text } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Image } from 'expo-image';
-import { SvgXml } from 'react-native-svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Fonts } from '@/constants/theme';
-import { TouchableOpacity } from 'react-native';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
-import { TabBarConfig, TabBarItemConfig } from '@/types/tabBarTypes';
+import { TabBarConfig } from '@/types/tabBarTypes';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_TAB_BAR_HEIGHT = 60;
 const ICON_SIZE = 26;
-const SCREENS_WITH_TAB_BAR = ['index', 'curated', 'account', 'wishlist'];
+const SCREENS_WITH_TAB_BAR = ['index', 'category', 'wishlist', 'account'];
 
-// Fallback icons when config doesn't have URLs
-const FALLBACK_ICONS: Record<string, string> = {
-    index: 'house.fill',
-    curated: 'paperplane.fill',
-    account: 'person.fill',
-};
-
-// Simple in-memory cache for SVGs
-const SVG_CACHE: Record<string, string> = {};
-
-// Component to fetch and render remote SVG
-const RemoteSvgIcon = ({ url, color, size }: { url: string, color: string, size: number }) => {
-    const [xml, setXml] = React.useState<string | null>(SVG_CACHE[url] || null);
-
-    useEffect(() => {
-        if (!url) return;
-
-        // Check cache first
-        if (SVG_CACHE[url]) {
-            setXml(SVG_CACHE[url]);
-            return;
-        }
-
-        fetch(url)
-            .then(res => res.text())
-            .then(text => {
-                SVG_CACHE[url] = text;
-                setXml(text);
-            })
-            .catch(err => console.log('[TabBar] SVG fetch error:', err));
-    }, [url]);
-
-    if (!xml) return <View style={{ width: size, height: size }} />; // Placeholder
-
-    return <SvgXml xml={xml} width={size} height={size} color={color} pointerEvents="none" />;
+// Local icon mapping - using SVG files from assets/icons
+const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
+    index: {
+        active: require('@/assets/icons/home-active-fill.svg'),
+        inactive: require('@/assets/icons/home-inactive-fill.svg'),
+    },
+    category: {
+        active: require('@/assets/icons/category-active.svg'),
+        inactive: require('@/assets/icons/category-inactive-fill.svg'),
+    },
+    wishlist: {
+        active: require('@/assets/icons/heart-active-fill.svg'),
+        inactive: require('@/assets/icons/heart-inactive-fill.svg'),
+    },
+    account: {
+        active: require('@/assets/icons/profile-active-fill.svg'),
+        inactive: require('@/assets/icons/profile-inactive-fill.svg'),
+    },
 };
 
 export const TabBar = (props: BottomTabBarProps) => {
@@ -77,7 +57,6 @@ export const TabBar = (props: BottomTabBarProps) => {
     }, []);
 
     // Get dynamic styles from config
-    // Get dynamic styles from config
     const stylesConfig = tabBarConfig?.styles || {};
     const tabBarHeight = stylesConfig.height || DEFAULT_TAB_BAR_HEIGHT;
     const iconSize = stylesConfig.iconSize || ICON_SIZE;
@@ -97,6 +76,11 @@ export const TabBar = (props: BottomTabBarProps) => {
         }).start();
     }, [isVisible, totalHeight, translateY]);
 
+    // Get visible tabs from config, fallback to default
+    const visibleTabs = useMemo(() => {
+        return tabBarConfig?.visibleTabs || SCREENS_WITH_TAB_BAR;
+    }, [tabBarConfig]);
+
     const shouldShowTabBar = useMemo(() => {
         try {
             const { state } = props;
@@ -105,52 +89,26 @@ export const TabBar = (props: BottomTabBarProps) => {
             }
             const activeTab = state.routes[state.index];
             const activeTabName = activeTab?.name;
-            return SCREENS_WITH_TAB_BAR.includes(activeTabName);
+            return visibleTabs.includes(activeTabName);
         } catch (error) {
             return false;
         }
-    }, [props.state]);
+    }, [props.state, visibleTabs]);
 
-    // Render tab icon based on config
+    // Render tab icon - simple and consistent for all tabs
     const renderTabIcon = (routeName: string, isFocused: boolean) => {
-        const itemConfig = tabBarConfig?.items?.[routeName];
-        const iconUrl = isFocused ? itemConfig?.activeIcon : itemConfig?.icon;
+        const icons = TAB_ICONS[routeName];
+        if (!icons) return null;
 
-        // If we have a valid URL
-        if (iconUrl && iconUrl.length > 0) {
-            // Handle SVG
-            if (iconUrl.split('?')[0].toLowerCase().endsWith('.svg')) {
-                return (
-                    <RemoteSvgIcon
-                        url={iconUrl}
-                        color={isFocused ? activeColor : inactiveColor}
-                        size={iconSize}
-                    />
-                );
-            }
+        const iconSource = isFocused ? icons.active : icons.inactive;
 
-            // Handle PNG/JPG/WebP handled by expo-image
-            return (
-                <Image
-                    source={{ uri: iconUrl }}
-                    style={[
-                        styles.tabIcon,
-                        { width: iconSize, height: iconSize },
-                        // Apply tint only if it's not a multi-colored image (PNG/JPG)
-                        // distinct from SVG which is handled above
-                        // using strict check to avoid tinting actual images
-                        !iconUrl.split('?')[0].toLowerCase().endsWith('.png') &&
-                        !iconUrl.split('?')[0].toLowerCase().endsWith('.jpg') && {
-                            tintColor: isFocused ? activeColor : inactiveColor
-                        }
-                    ]}
-                    contentFit="contain"
-                />
-            );
-        }
-
-        // If no valid URL, return null (user requested to remove fallbacks)
-        return null;
+        return (
+            <Image
+                source={iconSource}
+                style={{ width: iconSize, height: iconSize }}
+                contentFit="contain"
+            />
+        );
     };
 
     // Get label from config or fallback to options.title
@@ -170,7 +128,19 @@ export const TabBar = (props: BottomTabBarProps) => {
                         { transform: [{ translateY }] }
                     ]}
                 >
-                    <View style={[styles.container, { height: totalHeight }]}>
+                    <View style={[
+                        styles.container,
+                        {
+                            height: totalHeight,
+                            // Shadow from config
+                            shadowColor: stylesConfig.shadowColor || '#000',
+                            shadowOffset: stylesConfig.shadowOffset || { width: 0, height: -2 },
+                            shadowOpacity: stylesConfig.shadowOpacity !== undefined ? stylesConfig.shadowOpacity : 0.15,
+                            shadowRadius: stylesConfig.shadowRadius !== undefined ? stylesConfig.shadowRadius : 6,
+                            // Android elevation (convert shadowRadius to elevation)
+                            elevation: stylesConfig.shadowRadius !== undefined ? Math.ceil(stylesConfig.shadowRadius * 1.5) : 10,
+                        }
+                    ]}>
                         <View style={styles.backgroundLayer} />
 
                         {Platform.OS === 'ios' && (
@@ -182,7 +152,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                         )}
 
                         <View style={[styles.borderLine, {
-                            backgroundColor: stylesConfig.backgroundColor ? 'transparent' : 'rgba(0, 0, 0, 0.08)'
+                            backgroundColor: stylesConfig.backgroundColor ? 'transparent' : Colors.border
                         }]} />
 
                         <View style={[
@@ -192,9 +162,13 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 backgroundColor: stylesConfig.backgroundColor || '#FFFFFF'
                             }
                         ]}>
-                            {props.state.routes.map((route, index) => {
+                            {visibleTabs
+                                .map((tabName) => props.state.routes.find((route) => route.name === tabName))
+                                .filter((route) => route !== undefined)
+                                .map((route) => {
                                 const { options } = props.descriptors[route.key];
-                                const isFocused = props.state.index === index;
+                                const originalIndex = props.state.routes.findIndex((r) => r.key === route.key);
+                                const isFocused = props.state.index === originalIndex;
 
                                 const onPress = () => {
                                     const event = props.navigation.emit({
@@ -264,9 +238,10 @@ const styles = StyleSheet.create({
     container: {
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        overflow: 'hidden',
+        overflow: 'visible',
         width: '100%',
         backgroundColor: '#FFFFFF',
+        // Shadow values will be applied dynamically from config
     },
     backgroundLayer: {
         ...StyleSheet.absoluteFillObject,
@@ -277,8 +252,8 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        height: StyleSheet.hairlineWidth,
-        backgroundColor: 'rgba(0, 0, 0, 0.08)',
+        height: 1,
+        backgroundColor: Colors.border,
     },
     contentWrapper: {
         flexDirection: 'row',
@@ -292,10 +267,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 6,
         gap: 2,
-    },
-    tabIcon: {
-        width: 26,
-        height: 26,
     },
     tabLabel: {
         fontSize: 10,

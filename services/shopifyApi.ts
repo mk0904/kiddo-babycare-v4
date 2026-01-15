@@ -529,6 +529,26 @@ const CUSTOMER_DEFAULT_ADDRESS_UPDATE_MUTATION = `
   }
 `;
 
+const CUSTOMER_UPDATE_MUTATION = `
+  mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) {
+    customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) {
+      customer {
+        id
+        firstName
+        lastName
+        email
+        phone
+        displayName
+      }
+      customerUserErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
 const CART_DISCOUNT_CODES_UPDATE_MUTATION = `
   mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
     cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
@@ -557,6 +577,31 @@ const CART_DISCOUNT_CODES_UPDATE_MUTATION = `
           discountedAmount {
             amount
             currencyCode
+          }
+          discountApplication {
+            __typename
+            allocationMethod
+            targetSelection
+            targetType
+            value {
+              ... on MoneyV2 {
+                amount
+                currencyCode
+              }
+              ... on PricingPercentageValue {
+                percentage
+              }
+            }
+          }
+          __typename
+          ... on CartCodeDiscountAllocation {
+            code
+          }
+          ... on CartAutomaticDiscountAllocation {
+            title
+          }
+          ... on CartCustomDiscountAllocation {
+            title
           }
         }
       }
@@ -681,6 +726,59 @@ const GET_CART_QUERY = `
         code
         applicable
       }
+      lines(first: 250) {
+        edges {
+          node {
+            id
+            quantity
+            merchandise {
+              ... on ProductVariant {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                product {
+                  id
+                  title
+                  images(first: 1) {
+                    edges {
+                      node {
+                        url
+                      }
+                    }
+                  }
+                }
+                image {
+                  url
+                }
+                availableForSale
+              }
+            }
+            cost {
+              amountPerQuantity {
+                amount
+                currencyCode
+              }
+              subtotalAmount {
+                amount
+                currencyCode
+              }
+              totalAmount {
+                amount
+                currencyCode
+              }
+            }
+            discountAllocations {
+              discountedAmount {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
       cost {
         totalAmount {
           amount
@@ -699,6 +797,31 @@ const GET_CART_QUERY = `
         discountedAmount {
           amount
           currencyCode
+        }
+        discountApplication {
+          __typename
+          allocationMethod
+          targetSelection
+          targetType
+          value {
+            ... on MoneyV2 {
+              amount
+              currencyCode
+            }
+            ... on PricingPercentageValue {
+              percentage
+            }
+          }
+        }
+        __typename
+        ... on CartCodeDiscountAllocation {
+          code
+        }
+        ... on CartAutomaticDiscountAllocation {
+          title
+        }
+        ... on CartCustomDiscountAllocation {
+          title
         }
       }
     }
@@ -1130,13 +1253,23 @@ export const shopifyApi = {
 
       if (response.data.errors) {
         console.error('Shopify API errors:', response.data.errors);
-        return null;
+        const errorMessage = response.data.errors[0]?.message || 'Failed to fetch cart';
+        throw new Error(errorMessage);
       }
 
-      return response.data.data.cart;
-    } catch (error) {
+      const cart = response.data.data.cart;
+      if (!cart) {
+        throw new Error('Cart not found. The cart may have expired or been deleted.');
+      }
+
+      return cart;
+    } catch (error: any) {
       console.error('Error fetching cart:', error);
-      return null;
+      // Re-throw the error with a more descriptive message
+      if (error.message) {
+        throw error;
+      }
+      throw new Error('Failed to fetch cart. Please try again.');
     }
   },
 
@@ -1465,6 +1598,30 @@ export const shopifyApi = {
       return response.data.data?.customerDefaultAddressUpdate?.customer;
     } catch (error) {
       console.error('Error setting default address:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update customer information
+   */
+  updateCustomer: async (customerAccessToken: string, customerData: { firstName?: string; lastName?: string }) => {
+    try {
+      const response = await client.post('', {
+        query: CUSTOMER_UPDATE_MUTATION,
+        variables: {
+          customerAccessToken,
+          customer: customerData,
+        },
+      });
+
+      if (response.data.data?.customerUpdate?.customerUserErrors?.length > 0) {
+        throw new Error(response.data.data.customerUpdate.customerUserErrors[0].message);
+      }
+
+      return response.data.data?.customerUpdate?.customer;
+    } catch (error) {
+      console.error('Error updating customer:', error);
       throw error;
     }
   },

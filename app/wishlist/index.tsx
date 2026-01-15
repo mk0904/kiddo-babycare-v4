@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -12,12 +12,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWishlist } from '@/context/WishlistContext';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
+import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { Colors, Fonts } from '@/constants/theme';
 import ProductCard from '@/components/product/ProductCard';
 import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 8; // Consistent gap between product cards
@@ -29,6 +31,7 @@ export default function WishlistScreen() {
     const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
     const router = useRouter();
     const [showLoginRequired, setShowLoginRequired] = useState(false);
+    const flatListRef = useRef<FlatList>(null);
 
     // Assuming we might have auth check here later, for now we just show list
     // If you have useAuth hook, uncomment and use it similar to Kiddo
@@ -40,6 +43,38 @@ export default function WishlistScreen() {
         resetTabBar();
         return () => resetTabBar();
     }, []);
+
+    // Track navigation to prevent scroll-to-top on back navigation
+    const segments = useSegments();
+    const navigationState = useNavigationState((state) => state);
+    const previousTabRef = useRef<string | null>(null);
+    const isInitialMount = useRef(true);
+    const wasOnDetailScreen = useRef(false);
+
+    // Scroll to top only when switching tabs, not when navigating back
+    useFocusEffect(
+        useCallback(() => {
+            const isOnDetailScreen = segments.length > 1;
+            const activeTab = navigationState?.routes?.[navigationState?.index]?.name || 'wishlist';
+            const previousTab = previousTabRef.current;
+            const isTabSwitch = previousTab !== null && previousTab !== activeTab;
+
+            if (isOnDetailScreen) {
+                wasOnDetailScreen.current = true;
+                return;
+            }
+
+            const shouldScrollToTop = isInitialMount.current || (isTabSwitch && !wasOnDetailScreen.current);
+
+            if (shouldScrollToTop && flatListRef.current) {
+                flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+            }
+
+            previousTabRef.current = activeTab;
+            wasOnDetailScreen.current = false;
+            isInitialMount.current = false;
+        }, [segments, navigationState])
+    );
 
     const handleProductPress = (product: any) => {
         router.push(`/product/${encodeURIComponent(product.id)}`);
@@ -99,10 +134,7 @@ export default function WishlistScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Wishlist</Text>
-            </View>
-
+            <ScreenHeader title="Wishlist" />
             {wishlistItems.length === 0 ? (
                 <EmptyState
                     icon="heart-outline"
@@ -114,6 +146,7 @@ export default function WishlistScreen() {
             ) : (
                 <View style={{ flex: 1, minHeight: 2 }}>
                     <FlatList
+                        ref={flatListRef}
                         data={wishlistItems}
                         renderItem={renderItem}
                         numColumns={2}
@@ -147,18 +180,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F9FAFB', // Using the light grey/white background
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        backgroundColor: '#F9FAFB',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontFamily: Fonts.Bold,
-        color: Colors.text,
     },
     loadingContainer: {
         flex: 1,

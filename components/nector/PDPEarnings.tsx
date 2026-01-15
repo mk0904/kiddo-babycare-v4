@@ -5,6 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNector } from '@/context/NectorContext';
+import { Fonts } from '@/constants/theme';
 
 interface PDPEarningsProps {
     productPrice: number;
@@ -42,11 +43,11 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#2E7D32',
     },
     coins: {
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: '#1B5E20',
     },
 });

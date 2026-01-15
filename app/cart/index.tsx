@@ -1,52 +1,74 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Platform,
-    ActivityIndicator,
-    TextInput,
-    Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
-import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/context/AuthContext';
-import { useAddress } from '@/context/AddressContext';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
-import PaymentService from '@/services/paymentService';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import { Colors, Fonts } from '@/constants/theme';
+import { useAddress } from '@/context/AddressContext';
+import { useAuth } from '@/context/AuthContext';
+import { couponService } from '@/services/couponService';
+import PaymentService from '@/services/paymentService';
+import {
+    useCartId,
+    useCartItems,
+    useCartStatus,
+    useCartStore,
+    useCartTotal,
+    useCheckoutUrl,
+    useGiftWrapping,
+    useIsTryAndBuy
+} from '@/store/cartStore';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CartScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { defaultAddress } = useAddress();
-    const {
-        cartItems,
-        updateQuantity,
-        removeFromCart,
-        clearCart,
-        getCartTotal,
-        isTryAndBuy,
-        toggleTryAndBuy,
-        giftWrapping,
-        appliedDiscountCode,
-        appliedDiscountCodes,
-        discountAmount,
-        applyDiscountCode,
-        removeDiscountCode,
-        getGiftWrappingPrice,
-        getAvailableCoupons,
-        loading,
-    } = useCart();
+    
+    // Use Zustand store
+    const cartItems = useCartItems();
+    const cartTotal = useCartTotal();
+    const isTryAndBuy = useIsTryAndBuy();
+    const giftWrapping = useGiftWrapping();
+    const status = useCartStatus();
+    const cartId = useCartId();
+    const checkoutUrl = useCheckoutUrl();
+    
+    // Store actions
+    const updateQuantity = useCartStore(state => state.updateQuantity);
+    const removeItem = useCartStore(state => state.removeItem);
+    const clearCart = useCartStore(state => state.clearCart);
+    const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
+    const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
+    const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
+    const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
+    const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
+    const discountCodes = useCartStore(state => state.discountCodes);
+    const discountAmount = useCartStore(state => state.discountAmount());
+    const ensureCart = useCartStore(state => state.ensureCart);
+    const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
+    
+    // Computed values
+    const appliedDiscountCodes = discountCodes.map(dc => dc.code);
+    const appliedDiscountCode = appliedDiscountCodes[0] || null;
+    // Only show loading if status is 'loading' and we don't have items yet
+    // If we have items, show them even if status is 'init' (store just hydrated)
+    const loading = status === 'loading' && cartItems.length === 0;
 
     const [showBillSummary, setShowBillSummary] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('razorpay');
@@ -71,7 +93,7 @@ export default function CartScreen() {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const coupons = await getAvailableCoupons();
+                const coupons = await couponService.getAvailableCouponCodes();
                 setAvailableCoupons(coupons);
             } catch (error) {
                 console.error('Error fetching coupons:', error);
@@ -80,18 +102,147 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [getAvailableCoupons]);
+    }, []);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
 
-    // Calculate totals
-    const itemTotal = getCartTotal();
-    const discount = discountAmount || 0; // From applied coupon (from Shopify)
-    const subtotal = itemTotal - discount;
+    // Calculate totals - Exactly like gauntlet's payment-details component
+    const payment = useCartStore(state => state.payment);
+    
+    // Calculate subtotal from lineItems (like gauntlet does in payment-details)
+    let itemSubtotal = 0;
+    for (const item of cartItems) {
+        itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
+    }
+    
+    // Calculate discount ourselves from discountCodes (don't trust Shopify's discount value)
+    let calculatedDiscount = 0;
+    
+    // Debug: Log discountCodes to see what we have
+    if (__DEV__) {
+        console.log('[CartScreen] discountCodes from store:', discountCodes);
+        console.log('[CartScreen] discountCodes length:', discountCodes?.length);
+    }
+    
+    if (discountCodes && discountCodes.length > 0) {
+        for (const discountCode of discountCodes) {
+            if (__DEV__) {
+                console.log('[CartScreen] Processing discount code:', discountCode);
+            }
+            
+            if (discountCode.applicable !== false) {
+                // If value is 0, try to get it from config
+                let discountValue = discountCode.value;
+                let discountType = discountCode.type;
+                
+                if (discountValue === 0 || !discountValue) {
+                    // Try to get from config
+                    try {
+                        const config = require('@/config/kiddoAppConfig.json');
+                        const discountsConfig = config.discounts;
+                        if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
+                            const configDiscount = discountsConfig.codes.find((cd: any) => 
+                                cd.code?.toUpperCase() === discountCode.code.toUpperCase()
+                            );
+                            if (configDiscount) {
+                                discountValue = configDiscount.value;
+                                discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                if (__DEV__) {
+                                    console.log('[CartScreen] Got discount value from config:', {
+                                        code: discountCode.code,
+                                        value: discountValue,
+                                        type: discountType,
+                                    });
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[CartScreen] Error reading discount config:', error);
+                    }
+                }
+                
+                if (discountValue > 0) {
+                    if (discountType === 'percentage') {
+                        // Percentage discount: value is the percentage (e.g., 10 means 10%)
+                        const percentageDiscount = (itemSubtotal * discountValue) / 100;
+                        calculatedDiscount += percentageDiscount;
+                        if (__DEV__) {
+                            console.log('[CartScreen] Applied percentage discount:', {
+                                code: discountCode.code,
+                                type: discountType,
+                                value: discountValue,
+                                itemSubtotal,
+                                percentageDiscount,
+                                calculatedDiscount,
+                            });
+                        }
+                    } else if (discountType === 'fixed') {
+                        // Fixed amount discount: value is the fixed amount
+                        calculatedDiscount += discountValue;
+                        if (__DEV__) {
+                            console.log('[CartScreen] Applied fixed discount:', {
+                                code: discountCode.code,
+                                type: discountType,
+                                value: discountValue,
+                                calculatedDiscount,
+                            });
+                        }
+                    }
+                } else {
+                    if (__DEV__) {
+                        console.warn('[CartScreen] Discount code has no value:', discountCode);
+                    }
+                }
+            } else {
+                if (__DEV__) {
+                    console.log('[CartScreen] Discount code not applicable:', discountCode.code);
+                }
+            }
+        }
+    } else {
+        if (__DEV__) {
+            console.log('[CartScreen] No discount codes found in store');
+        }
+    }
+    
+    // Use our calculated discount instead of Shopify's
+    const discount = calculatedDiscount;
+    
+    // Debug log
+    if (__DEV__) {
+        console.log('[CartScreen] Final discount calculation:', {
+            discountCodes,
+            discountCodesLength: discountCodes?.length,
+            calculatedDiscount,
+            discount,
+            itemSubtotal,
+        });
+    }
+    
+    // Subtotal after discount
+    const subtotalAfterDiscount = itemSubtotal - discount;
+    
     const deliveryFee = 0;
     const giftWrappingFee = getGiftWrappingPrice();
-    const total = subtotal + deliveryFee + giftWrappingFee;
+    
+    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
+    // Shopify's payment.total may be based on different subtotal (cart sync issue)
+    // So we always use our calculated total to ensure accuracy
+    const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
+    
+    // Debug log to verify calculation
+    if (__DEV__) {
+        console.log('[CartScreen] Total calculation:', {
+            itemSubtotal,
+            discount,
+            subtotalAfterDiscount,
+            giftWrappingFee,
+            deliveryFee,
+            total,
+            shopifyTotal: payment?.total,
+        });
+    }
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -112,21 +263,23 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+    const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        updateQuantity(itemId, newQuantity);
+        await updateQuantity(itemId, newQuantity);
     };
 
-    const handleRemoveItem = (itemId: string) => {
+    const handleRemoveItem = async (itemId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        removeFromCart(itemId);
+        await removeItem(itemId);
     };
 
     const handleApplyCoupon = async () => {
         const code = couponCode.trim().toUpperCase();
+        console.log('[CartScreen] handleApplyCoupon called with code:', code);
         if (!code) return;
 
         if (appliedDiscountCodes?.includes(code)) {
+            console.log('[CartScreen] Code already applied:', code);
             setCouponMessage(`${code} is already applied.`);
             return;
         }
@@ -134,13 +287,22 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            await applyDiscountCode(code);
-            setCouponMessage(`✓ ${code} applied successfully!`);
-            setCouponCode('');
-            // Refresh available coupons
-            const coupons = await getAvailableCoupons();
-            setAvailableCoupons(coupons);
+            console.log('[CartScreen] Calling applyDiscountCode...');
+            const result = await applyDiscountCode(code);
+            console.log('[CartScreen] applyDiscountCode result:', result);
+            if (result.success) {
+                console.log('[CartScreen] ✅ Coupon applied successfully');
+                setCouponCode('');
+                setCouponMessage(null); // Don't show success message
+                // Refresh available coupons
+                const coupons = await couponService.getAvailableCouponCodes();
+                setAvailableCoupons(coupons);
+            } else {
+                console.log('[CartScreen] ❌ Coupon application failed:', result.error);
+                setCouponMessage(result.error || 'Failed to apply coupon');
+            }
         } catch (error: any) {
+            console.error('[CartScreen] ❌ Error applying coupon:', error);
             setCouponMessage(error.message || 'Failed to apply coupon');
         } finally {
             setCouponApplying(false);
@@ -159,15 +321,29 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            await applyDiscountCode(code);
-            setCouponMessage(`✓ ${code} applied successfully!`);
-            // Refresh available coupons
-            const coupons = await getAvailableCoupons();
-            setAvailableCoupons(coupons);
+            const result = await applyDiscountCode(code);
+            if (result.success) {
+                setCouponCode(''); // Clear input
+                setCouponMessage(null); // Don't show success message
+                // Refresh available coupons
+                const coupons = await couponService.getAvailableCouponCodes();
+                setAvailableCoupons(coupons);
+            } else {
+                setCouponMessage(result.error || 'Failed to apply coupon');
+            }
         } catch (error: any) {
             setCouponMessage(error.message || 'Failed to apply coupon');
         } finally {
             setCouponApplying(false);
+        }
+    };
+
+    const handleRemoveCoupon = async (code: string) => {
+        try {
+            await removeDiscountCode(code);
+            setCouponMessage(null); // Don't show success message
+        } catch (error: any) {
+            setCouponMessage(error.message || 'Failed to remove coupon');
         }
     };
 
@@ -452,8 +628,8 @@ export default function CartScreen() {
                         {showBillSummary && (
                             <View style={styles.billSummaryContent}>
                                 <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Item Total (MRP)</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(itemTotal)}</Text>
+                                    <Text style={styles.billLabel}>Subtotal</Text>
+                                    <Text style={styles.billValue}>{formatCurrency(itemSubtotal)}</Text>
                                 </View>
                                 {discount > 0 && (
                                     <View style={styles.billRow}>
@@ -464,8 +640,8 @@ export default function CartScreen() {
                                     </View>
                                 )}
                                 <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(subtotal)}</Text>
+                                    <Text style={styles.billLabel}>Subtotal After Discount</Text>
+                                    <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
                                 </View>
                                 {giftWrappingFee > 0 && (
                                     <View style={styles.billRow}>
@@ -526,34 +702,37 @@ export default function CartScreen() {
                     {/* Coupon Code */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Coupon Code</Text>
-                        <View style={styles.couponContainer}>
-                            <View style={styles.couponInputWrapper}>
-                                <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
-                                <TextInput
-                                    style={styles.couponInput}
-                                    placeholder="Enter coupon code"
-                                    value={couponCode}
-                                    onChangeText={setCouponCode}
-                                    placeholderTextColor="#999"
-                                    autoCapitalize="characters"
-                                />
+                        {/* Only show input when no coupon is applied */}
+                        {(!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
+                            <View style={styles.couponContainer}>
+                                <View style={styles.couponInputWrapper}>
+                                    <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
+                                    <TextInput
+                                        style={styles.couponInput}
+                                        placeholder="Enter coupon code"
+                                        value={couponCode}
+                                        onChangeText={setCouponCode}
+                                        placeholderTextColor="#999"
+                                        autoCapitalize="characters"
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.applyButton,
+                                        (!couponCode.trim() || couponApplying) && styles.applyButtonDisabled
+                                    ]}
+                                    disabled={couponApplying || !couponCode.trim()}
+                                    onPress={handleApplyCoupon}
+                                    activeOpacity={0.7}
+                                >
+                                    {couponApplying ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <Text style={styles.applyButtonText}>Apply</Text>
+                                    )}
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                                style={[
-                                    styles.applyButton,
-                                    (!couponCode.trim() || couponApplying) && styles.applyButtonDisabled
-                                ]}
-                                disabled={couponApplying || !couponCode.trim()}
-                                onPress={handleApplyCoupon}
-                                activeOpacity={0.7}
-                            >
-                                {couponApplying ? (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                    <Text style={styles.applyButtonText}>Apply</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                        )}
                         {couponMessage && (
                             <View style={styles.couponMessageContainer}>
                                 <Ionicons
@@ -579,7 +758,7 @@ export default function CartScreen() {
                                         <Ionicons name="checkmark-circle" size={14} color="#fff" />
                                         <Text style={styles.couponChipText}>{code}</Text>
                                         <TouchableOpacity
-                                            onPress={() => removeDiscountCode(code)}
+                                            onPress={() => handleRemoveCoupon(code)}
                                             style={styles.couponRemove}
                                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                         >

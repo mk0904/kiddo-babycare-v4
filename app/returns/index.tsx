@@ -19,7 +19,7 @@ import {
     getReturnStatusText,
     getReturnStatusColor,
 } from '@/services/returnsService';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 export default function ReturnsListScreen() {
     const [returns, setReturns] = useState<ReturnRequest[]>([]);
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     headerRight: {
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         marginTop: 16,
     },
     emptySubtitle: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         textAlign: 'center',
         marginTop: 8,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     },
     returnId: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     statusBadge: {
@@ -198,11 +198,11 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: 11,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
     },
     returnItems: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#666',
         marginBottom: 8,
     },
@@ -213,12 +213,12 @@ const styles = StyleSheet.create({
     },
     returnDate: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#999',
     },
     refundAmount: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
     },
 });

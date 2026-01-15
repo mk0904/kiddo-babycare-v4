@@ -3,6 +3,8 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { SearchProductListBlock } from '@/types/content';
 import { ProductList } from '../product/ProductList';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 interface SearchProductListProps extends BaseContentBlockProps {
   block: SearchProductListBlock;
@@ -37,7 +39,7 @@ export function SearchProductList({
         showHeading={!!title}
         style={{
           root: blockStyles?.container,
-          title: blockStyles?.title,
+          title: processFontStyle(blockStyles?.title, Fonts.Bold),
           list: blockStyles?.list,
         }}
         contentWidth={width - (blockStyles?.container?.paddingHorizontal || 0) * 2}

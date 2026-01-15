@@ -19,6 +19,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import MapView, { Region, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import _ from 'lodash';
+import { SearchIcon } from '@/components/ui/SearchIcon';
 
 const GOOGLE_API_KEY = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -241,7 +242,7 @@ export default function MapAddressScreen() {
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color={Colors.textSecondary} style={styles.searchIcon} />
+                    <SearchIcon size={20} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search for an area"

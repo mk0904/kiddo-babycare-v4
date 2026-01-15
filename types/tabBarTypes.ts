@@ -23,4 +23,5 @@ export interface TabBarConfig {
         [routeName: string]: TabBarItemConfig;
     };
     styles?: TabBarStyles;
+    visibleTabs?: string[]; // Array of route names to show in tab bar (e.g., ["index", "wishlist", "account"])
 }

@@ -12,6 +12,9 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { ImageListBlock } from '@/types/content';
 import { ProductList } from '../product/ProductList';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { useRouter } from 'expo-router';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -23,6 +26,7 @@ interface ImageListProps extends Omit<BaseContentBlockProps, 'onPress'> {
 export function ImageList({ block, onPress }: ImageListProps) {
   const { data = [], title, collectionIds, listConfig = {}, productListConfig = {}, styles: blockStyles } = block;
   const { width } = useDeviceDimensions();
+  const router = useRouter();
 
   // Check if data items have collectionId/collectionName (CollectionList format)
   const isCollectionList = React.useMemo(() => {
@@ -87,9 +91,24 @@ export function ImageList({ block, onPress }: ImageListProps) {
           collectionId={ids.length === 1 ? ids[0] : ids}
           title={title}
           showHeading={!!title}
+          showViewAll={productListConfig.showSeeAll || false}
+          viewAllText={productListConfig.seeAllText || 'See All'}
+          onViewAll={ids.length > 0 ? () => {
+            // Navigate to collection screen when "See All" is clicked
+            const firstCollectionId = ids[0];
+            if (firstCollectionId) {
+              router.push({
+                pathname: '/infinity/[collectionId]',
+                params: { 
+                  collectionId: firstCollectionId,
+                  title: title || ''
+                }
+              } as any);
+            }
+          } : undefined}
           style={{
             root: containerStylesNoPadding, // Pass margins but no padding
-            title: blockStyles?.title,
+            title: processFontStyle(blockStyles?.title, Fonts.Bold),
             list: blockStyles?.list,
           }}
           contentWidth={width - (sidePadding * 2)}
@@ -125,7 +144,7 @@ export function ImageList({ block, onPress }: ImageListProps) {
   return (
     <BaseContentBlock block={block} style={{ paddingHorizontal: 0 }}>
       {title && (
-        <Text style={[styles.title, blockStyles?.title]}>{title}</Text>
+        <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
       )}
       <ScrollView
         horizontal
@@ -159,7 +178,7 @@ export function ImageList({ block, onPress }: ImageListProps) {
               resizeMode={resizeMode}
             />
             {item.title && (
-              <Text style={[styles.itemTitle, blockStyles?.text]} numberOfLines={2}>
+              <Text style={[styles.itemTitle, processFontStyle(blockStyles?.text)]} numberOfLines={2}>
                 {item.title}
               </Text>
             )}
@@ -177,8 +196,8 @@ export function ImageList({ block, onPress }: ImageListProps) {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
     marginBottom: 15,
     paddingHorizontal: 20,
   },
@@ -194,7 +213,7 @@ const styles = StyleSheet.create({
   itemTitle: {
     marginTop: 8,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.SemiBold,
     color: '#222222',
   },
   itemSubtitle: {

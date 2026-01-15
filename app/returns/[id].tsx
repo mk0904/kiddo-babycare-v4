@@ -24,7 +24,7 @@ import {
     getReturnStatusText,
     getReturnStatusColor,
 } from '@/services/returnsService';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 export default function ReturnDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#666',
     },
     backBtn: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     },
     backBtnText: {
         color: '#fff',
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
     },
     header: {
         flexDirection: 'row',
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     statusBadge: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
     },
     headerRight: {
         flex: 1,
@@ -362,13 +362,13 @@ const styles = StyleSheet.create({
     },
     statusTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         marginBottom: 4,
     },
     statusSubtitle: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         textAlign: 'center',
     },
@@ -381,18 +381,18 @@ const styles = StyleSheet.create({
     },
     refundLabel: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#4CAF50',
     },
     refundAmount: {
         fontSize: 28,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: '#2E7D32',
         marginVertical: 4,
     },
     refundNote: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#666',
     },
     section: {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         marginBottom: 12,
     },
@@ -428,17 +428,17 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
     },
     variantTitle: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
     },
     itemPrice: {
         fontSize: 13,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
         marginTop: 2,
     },
@@ -449,12 +449,12 @@ const styles = StyleSheet.create({
     },
     reasonText: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
     },
     reasonDetail: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         marginTop: 4,
     },
@@ -486,16 +486,16 @@ const styles = StyleSheet.create({
     },
     timelineStatus: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#666',
     },
     activeStatus: {
         color: Colors.primary,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
     },
     timelineDate: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#999',
         marginTop: 2,
     },
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     },
     cancelButtonText: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#F44336',
     },
 });

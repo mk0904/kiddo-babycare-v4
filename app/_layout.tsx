@@ -9,9 +9,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
 import { AuthProvider } from '@/context/AuthContext';
-import { CartProvider } from '@/context/CartContext';
 import { AddressProvider } from '@/context/AddressContext';
 import { WishlistProvider } from '@/context/WishlistContext';
+import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { NectorProvider } from '@/context/NectorContext';
@@ -52,28 +52,28 @@ export default function RootLayout() {
         <AuthProvider>
           <NectorProvider>
             <AddressProvider>
-              <CartProvider>
-                <WishlistProvider>
+              <WishlistProvider>
+                <RecentlyViewedProvider>
                   <TryAndBuyProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                      {isSplashVisible && (
-                        <AnimatedSplashScreen
-                          onFinish={() => setIsSplashVisible(false)}
-                        />
-                      )}
-                      <TabBarVisibilityProvider>
-                        <Stack screenOptions={{ headerShown: false }}>
-                          <Stack.Screen name="index" />
-                          <Stack.Screen name="(auth)" />
-                          <Stack.Screen name="(tabs)" />
-                          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                        </Stack>
-                      </TabBarVisibilityProvider>
-                      <StatusBar style="auto" />
+                    {isSplashVisible && (
+                      <AnimatedSplashScreen
+                        onFinish={() => setIsSplashVisible(false)}
+                      />
+                    )}
+                    <TabBarVisibilityProvider>
+                      <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                      </Stack>
+                    </TabBarVisibilityProvider>
+                    <StatusBar style="auto" />
                     </ThemeProvider>
                   </TryAndBuyProvider>
-                </WishlistProvider>
-              </CartProvider>
+                </RecentlyViewedProvider>
+              </WishlistProvider>
             </AddressProvider>
           </NectorProvider>
         </AuthProvider>

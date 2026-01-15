@@ -12,6 +12,8 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { CollectionListBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -97,7 +99,7 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
     <BaseContentBlock block={block}>
       <View style={[styles.container, blockStyles?.container]}>
         {title && (
-          <Text style={[styles.title, blockStyles?.title]}>{title}</Text>
+          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
         )}
         <FlatList
           data={data}
@@ -134,8 +136,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
     marginBottom: 16,
     paddingHorizontal: 16,
   },
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Fonts.Medium,
     color: '#333',
     textAlign: 'center',
   },

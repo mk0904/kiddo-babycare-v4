@@ -6,7 +6,7 @@ import { Carousel } from '@/components/ui/Carousel';
 
 interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: ImageCarouselBlock;
-  onPress?: (link?: string) => void;
+  onPress?: (link?: string | any) => void;
 }
 
 export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
@@ -32,8 +32,9 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
     };
   });
 
-  const handleItemPress = (link?: string) => {
+  const handleItemPress = (link?: string | any) => {
     if (link) {
+      // Pass the link as-is (can be string or object)
       onPress?.(link);
     }
   };

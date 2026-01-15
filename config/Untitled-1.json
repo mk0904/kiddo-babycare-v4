@@ -1,0 +1,2360 @@
+{
+  "all": [
+    {
+      "id": "all-banner-1",
+      "type": "carousel",
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boysfashionbannerkiddo.png?v=1767598808",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507808645409"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlsfashionbannerkiddo.png?v=1767598765",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507808678177"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toysbannerkiddo.png?v=1767598678",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/507806449953"
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": true,
+        "autoPlayInterval": 3000,
+        "loop": true,
+        "height": 0.6,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+
+        },
+        "imageContainer": {
+
+        },
+        "image": {
+          "width": "100%"
+        },
+        "img": {
+
+        }
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508646719777",
+          "name": "Jacket and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508646818081",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508646916385",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508169322785",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8,
+          "overflow": "visible"
+        },
+        "title": {
+          "color": "#363636",
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "500",
+          "letterSpacing": 0.3
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-shop-by-age",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508645802273",
+          "name": "0-3 M"
+        },
+        {
+          "id": "gid://shopify/Collection/508645998881",
+          "name": "3-6 M"
+        },
+        {
+          "id": "gid://shopify/Collection/508646162721",
+          "name": "6-12 M"
+        },
+        {
+          "id": "gid://shopify/Collection/508646228257",
+          "name": "1-2 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/508646261025",
+          "name": "2-3 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/508646293793",
+          "name": "3-4 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/508646326561",
+          "name": "4-5 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/508646359329",
+          "name": "5+ Y"
+        }
+      ],
+      "title": "Shop by Age",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/507748548897",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507740651809",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507741176097",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507746058529",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507764408609",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507774861601",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507775549729",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507788427553",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507762704673",
+          "name": ""
+        }
+      ],
+      "title": "Shop by Brand",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8,
+          "overflow": "visible"
+        },
+        "title": {
+          "color": "#363636",
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-product-list-1",
+      "type": "horizontalProductList",
+      "collectionIds": [
+        "gid://shopify/Collection/508362621217"
+      ],
+      "title": "Featured Products",
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.8,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+          "marginBottom": 15
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-image-banner-2",
+      "type": "imageBanner",
+      "title": "",
+      "imageBannerConfig": {
+        "imageUrl": "",
+        "height": 150,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 25
+        },
+        "wrapper": {
+
+        }
+      }
+    },
+    {
+      "id": "all-image-banner-3",
+      "type": "imageBanner",
+      "title": "",
+      "imageBannerConfig": {
+        "imageUrl": "",
+        "height": 150,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 25
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "all-grid-toys",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/507746582817",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747434785",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747303713",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507746615585",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747402017",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747369249",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747238177",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507748483361",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": ""
+        }
+      ],
+      "title": "",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-winter-wear-featured",
+      "type": "horizontalProductList",
+      "title": "Featured Winter Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/507797111073"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-boys-winter-special",
+      "type": "horizontalProductList",
+      "title": "Boys Winter Special",
+      "collectionIds": [
+        "gid://shopify/Collection/508364620065"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-girls-winter-special",
+      "type": "horizontalProductList",
+      "title": "Girls Winter Special",
+      "collectionIds": [
+        "gid://shopify/Collection/508366258465"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-lowest-price-diapers",
+      "type": "horizontalProductList",
+      "title": "Lowest Price Diaper and Wipes",
+      "collectionIds": [
+        "gid://shopify/Collection/508173123873"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-learning-toys-3plus",
+      "type": "horizontalProductList",
+      "title": "Learning Toys for 3+ Kiddos",
+      "collectionIds": [
+        "gid://shopify/Collection/507806449953"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-montessori-under-3",
+      "type": "horizontalProductList",
+      "title": "Montessori Toys for Kiddos Under 3",
+      "collectionIds": [
+        "gid://shopify/Collection/507746582817"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "all-product-list-2",
+      "type": "horizontalProductList",
+      "collectionIds": [
+        "gid://shopify/Collection/507806449953"
+      ],
+      "title": "",
+      "productListConfig": {
+        "itemsPerView": 1.5,
+        "limit": 10
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "girls-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "New Arrivals",
+      "collectionIds": [
+        "gid://shopify/Collection/507740487969"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    }
+  ],
+  "girls": [
+    {
+      "id": "girls-image-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlswinterbannerfinal.png?v=1767425909",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/508366258465"
+          }
+        },
+        "height": 250,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508366094625",
+          "name": "Jacket and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508366225697",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508366291233",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508366848289",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8,
+          "overflow": "visible"
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-shop-by-age-girls-1",
+      "type": "grid",
+      "title": "Shop by Age",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508149334305",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149367073",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149399841",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149465377",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149498145",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149530913",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149596449",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149629217",
+          "name": ""
+        }
+      ],
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-1",
+      "type": "horizontalProductList",
+      "title": "Featured",
+      "collectionIds": [
+        "gid://shopify/Collection/507808678177"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-2",
+      "type": "horizontalProductList",
+      "title": "Jackets and Sweaters",
+      "collectionIds": [
+        "gid://shopify/Collection/508366094625"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-3",
+      "type": "horizontalProductList",
+      "title": "Thermals",
+      "collectionIds": [
+        "gid://shopify/Collection/508365209889"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-4",
+      "type": "horizontalProductList",
+      "title": "Bottomwear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366225697"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-5",
+      "type": "horizontalProductList",
+      "title": "Everyday Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366225697"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-6",
+      "type": "horizontalProductList",
+      "title": "Occassion Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366291233"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-7",
+      "type": "horizontalProductList",
+      "title": "Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/508366848289"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "girls-all-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "All Products",
+      "collectionIds": [
+        "gid://shopify/Collection/507808678177"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 10
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    }
+  ],
+  "boys": [
+    {
+      "id": "all-banner-boy-1",
+      "type": "carousel",
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2025-12-27_at_12.43.26_AM.png?v=1766779972",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/508364620065"
+            }
+          }
+        }
+      ],
+      "styles": {
+        "container": {
+
+        },
+        "imageContainer": {
+
+        },
+        "img": {
+
+        }
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508364947745",
+          "name": "Jacket and Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/508646785313",
+          "name": "Thermals"
+        },
+        {
+          "id": "gid://shopify/Collection/508365242657",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646850849",
+          "name": "Everyday"
+        },
+        {
+          "id": "gid://shopify/Collection/508365701409",
+          "name": "Occasion Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508365930785",
+          "name": "Accessories"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8,
+          "overflow": "visible"
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-shop-by-age-boys-1",
+      "title": "Shop by Age",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508148973857",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149006625",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149072161",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149137697",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149170465",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149793057",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508149301537",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508155822369",
+          "name": ""
+        }
+      ],
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-1",
+      "type": "horizontalProductList",
+      "collectionIds": [
+        "gid://shopify/Collection/507750875425"
+      ],
+      "title": "featured",
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-2",
+      "type": "horizontalProductList",
+      "title": "Jackets and Sweaters",
+      "collectionIds": [
+        "gid://shopify/Collection/508364947745"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-3",
+      "type": "horizontalProductList",
+      "title": "Thermals",
+      "collectionIds": [
+        "gid://shopify/Collection/508365209889"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-4",
+      "type": "horizontalProductList",
+      "title": "Bottomwear",
+      "collectionIds": [
+        "gid://shopify/Collection/508365242657"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-5",
+      "type": "horizontalProductList",
+      "title": "Everyday Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/507750875425"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-6",
+      "type": "horizontalProductList",
+      "title": "Occassion Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508365701409"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "all-product-list-boy-7",
+      "type": "horizontalProductList",
+      "title": "Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/508365930785"
+      ],
+      "productListConfig": {
+        "limit": 10,
+        "itemsPerView": 1.5,
+        "filters": {
+          "enabled": true,
+          "fastFilters": [
+            {
+              "key": "price",
+              "label": "Price",
+              "type": "single",
+              "options": [
+                {
+                  "key": "under-500",
+                  "label": "Under ₹500",
+                  "value": "0-500"
+                },
+                {
+                  "key": "500-1000",
+                  "label": "₹500 - ₹1000",
+                  "value": "500-1000"
+                },
+                {
+                  "key": "1000-2000",
+                  "label": "₹1000 - ₹2000",
+                  "value": "1000-2000"
+                },
+                {
+                  "key": "above-2000",
+                  "label": "Above ₹2000",
+                  "value": "2000-999999"
+                }
+              ]
+            },
+            {
+              "key": "inStock",
+              "label": "Availability",
+              "type": "single",
+              "options": [
+                {
+                  "key": "in-stock",
+                  "label": "In Stock",
+                  "value": true
+                },
+                {
+                  "key": "out-of-stock",
+                  "label": "Out of Stock",
+                  "value": false
+                }
+              ]
+            }
+          ],
+          "sort": {
+            "enabled": true,
+            "defaultSort": "relevance",
+            "options": [
+              {
+                "key": "relevance",
+                "label": "Relevance"
+              },
+              {
+                "key": "price_asc",
+                "label": "Price: Low to High"
+              },
+              {
+                "key": "price_desc",
+                "label": "Price: High to Low"
+              },
+              {
+                "key": "name_asc",
+                "label": "Name: A to Z"
+              },
+              {
+                "key": "newest",
+                "label": "Newest First"
+              }
+            ]
+          }
+        }
+      },
+      "styles": {
+        "container": {
+
+        },
+        "content": {
+
+        }
+      }
+    },
+    {
+      "id": "boys-all-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "New Arrivals",
+      "collectionIds": [
+        "gid://shopify/Collection/507740487969"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    },
+    {
+      "id": "boys-lil-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "Fashion for Lil' Toes",
+      "collectionIds": [
+        "gid://shopify/Collection/507741208865"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    }
+  ],
+  "babycare": [
+    {
+      "id": "babycare-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
+        "height": 250,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 10,
+          "marginHorizontal": 0
+        },
+        "wrapper": {
+          "paddingHorizontal": 20,
+          "alignItems": "center"
+        }
+      }
+    },
+    {
+      "id": "babycare-grid-brands",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508169584929",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508169552161",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168634657",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168765729",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172075297",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172206369",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508168831265",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508172271905",
+          "name": ""
+        }
+      ],
+      "title": "Shop by Brands",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 8,
+        "rowGap": 8,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginLeft": 8
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "display": "none",
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "babycare-diapers-wipes",
+      "type": "horizontalProductList",
+      "title": "Diapers and Wipes",
+      "collectionIds": [
+        "gid://shopify/Collection/508173123873"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "babycare-other-essentials",
+      "type": "horizontalProductList",
+      "title": "Other Essentials",
+      "collectionIds": [
+        "gid://shopify/Collection/508173156641"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "babycare-skincare-bathing",
+      "type": "horizontalProductList",
+      "title": "Skincare and Bathing",
+      "collectionIds": [
+        "gid://shopify/Collection/508371206433"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    },
+    {
+      "id": "babycare-feeding-essentials",
+      "type": "horizontalProductList",
+      "title": "Feeding Essentials",
+      "collectionIds": [
+        "gid://shopify/Collection/508371239201"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "itemsPerView": 1.5
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 20
+        }
+      }
+    }
+  ],
+  "babygear": [
+    {
+      "id": "babygear-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
+        "height": 250,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "babygear-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "New Arrivals",
+      "collectionIds": [
+        "gid://shopify/Collection/508625223969"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    }
+  ],
+  "toys": [
+    {
+      "id": "girls-image-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toysbannerkiddo.png?v=1767598678",
+        "height": 250,
+        "borderRadius": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "toys-grid-collections",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/507746582817",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747434785",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747303713",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507746615585",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747402017",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747369249",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507747238177",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/507748483361",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": ""
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 20,
+        "rowGap": 20,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15,
+          "marginHorizontal": 20
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "letterSpacing": 0.3
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "shadowColor": "#363636",
+          "shadowOffset": {
+            "width": 0,
+            "height": 2
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 4,
+          "elevation": 3
+        },
+        "text": {
+          "color": "#666666",
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "toys-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "All Toys",
+      "collectionIds": [
+        "gid://shopify/Collection/507746582817"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "marginVertical": 15
+        },
+        "title": {
+          "marginBottom": 15,
+          "fontSize": 20,
+          "fontWeight": "700",
+          "paddingHorizontal": 20,
+          "letterSpacing": 0.3
+        }
+      }
+    }
+  ],
+  "header": {
+    "textColor": "#363636",
+    "primaryColor": "#363636"
+  },
+  "categories": {
+    "order": [
+      "all",
+      "girls",
+      "boys",
+      "babycare",
+      "toys",
+      "babygear"
+    ],
+    "items": {
+      "all": {
+        "label": "All",
+        "header": {
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shop-all.jpg",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "girls": {
+        "label": "Girl Fashion",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#FF69B4",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion.jpg",
+          "labelColors": {
+            "selected": "#FF1493",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "boys": {
+        "label": "Boy Fashion",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#4169E1",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Dec_28_2025_05_36_46_AM.png?v=1766881508",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "babycare": {
+        "label": "Baby Care",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#87CEEB",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare.jpg",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "toys": {
+        "label": "Toys & Craft",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#FFD700",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys.jpg",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "babygear": {
+        "label": "Baby Gear",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#FFD700",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babygearlogo.png?v=1767717648",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      }
+    },
+    "styles": {
+      "container": {
+        "backgroundColor": "transparent",
+        "paddingTop": 0
+      },
+      "categoryItem": {
+
+      },
+      "categoryIconContainer": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 12
+      },
+      "selectedIconContainer": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 12
+      },
+      "categoryLabel": {
+        "fontSize": 11,
+        "fontWeight": "500"
+      },
+      "selectedCategoryLabel": {
+        "fontWeight": "600",
+        "fontSize": 12
+      },
+      "categoriesWrapper": {
+        "gap": 16
+      }
+    }
+  },
+  "providers": {
+    "shopify": {
+      "storeDomain": "kiddo-quick-baby-joy-m4bpo.myshopify.com",
+      "storefrontAccessToken": "6ac11171e7698f6a3e940bb8d329d58a",
+      "adminAccessToken": "PLACEHOLDER_SHOPIFY_ADMIN_TOKEN",
+      "apiVersion": "2025-01"
+    },
+    "googleMaps": {
+      "apiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY",
+      "darkStoreLocation": {
+        "latitude": 28.5405465012908,
+        "longitude": 77.3701885450311
+      },
+      "maxServiceTimeMinutes": 45,
+      "averageDeliverySpeedKmh": 30
+    },
+    "searchanise": {
+      "apiKey": "PLACEHOLDER_SEARCHANISE_KEY"
+    },
+    "otp": {
+      "apiBaseUrl": "https://sms.shinenetcore.in/api/v2",
+      "senderId": "SNCOTP",
+      "apiKey": "3Ri5Du6T3fbCAfWs9L5gUfOSn4pbofa/DjZucAqwplo=",
+      "clientId": "b00a4a12-c1f3-420f-ae2c-e69988212928",
+      "messageTemplate": "One time OTP From Kiddo App {otp} to login or activate your profile apsops SNC",
+      "expiryMinutes": 5,
+      "useAndroidHash": false,
+      "countryCode": "91"
+    },
+    "nector": {
+      "readOnlyApiKey": "PLACEHOLDER_NECTOR_API_KEY",
+      "workspaceId": "shopify-kiddo-quick-baby-joy-m4bpo",
+      "baseUrl": "https://platform.nector.io/api/v2/merchant",
+      "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
+      "appId": "shopify-kiddo-quick-baby-joy-m4bpo",
+      "appInstallTriggerId": null,
+      "razorpaySecretId": "fa26c7d4-cba3-47d0-aa73-66ab442a9484"
+    },
+    "razorpay": {
+      "keyId": "rzp_live_RulXvHRLkzOuuj",
+      "keySecret": "cvV0JIYEUUebODaugZWDjSaj"
+    },
+    "sentry": {
+      "dsn": "",
+      "environment": "production",
+      "enabled": false
+    },
+    "remoteConfig": {
+      "url": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/appConfig.json",
+      "useLocalConfig": false,
+      "cacheDuration": 3600000
+    }
+  }
+}

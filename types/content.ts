@@ -3,8 +3,8 @@
 export interface BaseBlock {
   id: string;
   type: string;
-  order: number;
-  visible: boolean;
+  order?: number;
+  visible?: boolean; // If false, block won't render. Defaults to true if not specified.
   styles?: Record<string, any>;
 }
 
@@ -50,6 +50,7 @@ export interface ImageGridBlock extends BaseBlock {
   collectionIds?: Array<{
     id: string;
     name?: string;
+    imageUrl?: string;
   }>;
   data?: Array<{
     imageUrl: string;
@@ -67,6 +68,55 @@ export interface ImageGridBlock extends BaseBlock {
   };
 }
 
+export interface CategoryGridBlock extends BaseBlock {
+  type: 'categoryGrid';
+  title?: string;
+  categoryKeys?: string[]; // Which categories to include (empty = all)
+  collectionIds?: Array<{
+    id: string;
+    name?: string;
+    imageUrl?: string;
+  }>; // Collections to display (similar to ImageGrid)
+  gridConfig?: {
+    // Layout options
+    layout?: 'uniform' | 'first-item-2-col' | 'first-item-2-row' | 'first-item-2x2' | 'masonry' | 'featured-left' | 'featured-top';
+    
+    // Grid structure (matching ImageGrid)
+    numColumns?: number;
+    colGap?: number; // Column gap (horizontal spacing between items)
+    rowGap?: number; // Row gap (vertical spacing between items)
+    limit?: number; // Limit number of items to show (0 = show all)
+    
+    // Item sizing
+    aspectRatio?: number; // Aspect ratio for items (default: 1 for square)
+    resizeMode?: 'cover' | 'contain'; // Image resize mode (matching ImageGrid)
+    
+    // Legacy/FlexibleGrid specific options (for backwards compatibility)
+    gap?: number; // Single gap value (used if colGap/rowGap not specified)
+    padding?: number; // Container padding (overridden by styles.container.paddingHorizontal)
+    showLabels?: boolean; // Show category labels below images
+    borderRadius?: number; // Border radius for items
+    imageResizeMode?: 'cover' | 'contain' | 'stretch'; // Alternative to resizeMode
+    
+    // First item customization
+    firstItemSpan?: {
+      colSpan?: number; // How many columns the first item should span
+      rowSpan?: number; // How many rows the first item should span
+    };
+  };
+  // Styles matching ImageGrid structure
+  styles?: {
+    container?: Record<string, any>;
+    title?: Record<string, any>;
+    imageContainer?: Record<string, any>;
+    image?: Record<string, any>;
+    text?: Record<string, any>;
+    listContent?: Record<string, any>;
+    itemWrapper?: Record<string, any>;
+    placeholder?: Record<string, any>;
+  };
+}
+
 export interface InfiniteProductGridBlock extends BaseBlock {
   type: 'infiniteProductGrid';
   collectionIds?: Array<string>;
@@ -75,6 +125,10 @@ export interface InfiniteProductGridBlock extends BaseBlock {
     numColumns?: number;
     pageSize?: number;
     initialLoad?: number;
+    gap?: number; // Gap between items (used for both row and column if rowGap/colGap not specified)
+    rowGap?: number; // Gap between rows
+    colGap?: number; // Gap between columns
+    paddingHorizontal?: number; // Horizontal padding for the grid container
   };
   styles?: Record<string, any>;
 }
@@ -102,6 +156,8 @@ export interface ImageListBlock extends BaseBlock {
     itemsPerView?: number;
     filters?: any;
     sort?: any;
+    seeAllText?: string; // Configurable "See All" button text
+    showSeeAll?: boolean; // Show "See All" button
   };
 }
 
@@ -181,15 +237,22 @@ export interface CollectionListBlock extends BaseBlock {
 export interface FlashSaleBlock extends BaseBlock {
   type: 'flashSale';
   data: {
-    startTime?: string; // ISO string. If present & future -> Waiting state.
+    startTime: string; // ISO string - required for sale start
     endTime: string; // ISO string
     backgroundImage?: string;
     link?: string;
   };
   flashSaleConfig?: {
     showSeconds?: boolean;
+    // Text for when sale is live (before end)
     label?: string;
     subtitle?: string;
+    // Text for when sale is upcoming (before start)
+    startTitle?: string;
+    startSubtitle?: string;
+    // Visibility flags
+    showBeforeSaleStart?: boolean; // Show timer and text before sale starts
+    showBeforeSaleEnd?: boolean; // Show timer and text before sale ends
     layout?: 'basic' | 'modern' | 'cinematic';
     height?: number;
     aspectRatio?: number;
@@ -197,19 +260,35 @@ export interface FlashSaleBlock extends BaseBlock {
 }
 
 export interface CategoryRailBlock extends BaseBlock {
-  type: 'categoryRail';
+  type: 'rail';
+  title?: string;
   data: Array<{
     id: string;
-    imageUrl: string;
-    label: string;
+    imageUrl?: string; // Optional if collectionId is provided
+    label?: string; // Optional if collectionId is provided (will use collection title), manual label overrides collection title
     link?: string;
-    collectionId?: string;
+    collectionId?: string; // If provided, will fetch image and label from collection
   }>;
   railConfig?: {
-    size?: number; // width/height of circle
+    size?: number; // width/height of circle or width for rectangular (deprecated, use width/height)
+    width?: number; // Width of the item
+    height?: number; // Height of the item
     gap?: number;
     showLabel?: boolean;
     shape?: 'circle' | 'square' | 'rounded';
+    itemsPerView?: number; // Number of items visible at a time (default: auto)
+    aspectRatio?: number; // Aspect ratio (width/height) for rectangular shapes, e.g., 2/3 = 0.667 (used if width/height not provided)
+    bgImageUrl?: string; // Background image URL for the rail container
+    resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'; // Resize mode for background image
+  };
+  styles?: {
+    container?: any;
+    item?: any;
+    imageContainer?: any;
+    image?: any;
+    text?: any;
+    label?: any;
+    title?: any;
   };
 }
 
@@ -269,7 +348,8 @@ export type ContentBlock =
   | CategoryRailBlock
   | FeatureStripBlock
   | VideoBannerBlock
-  | NoInternetBlock;
+  | NoInternetBlock
+  | CategoryGridBlock;
 
 export interface ScreenConfig {
   [category: string]: ContentBlock[];

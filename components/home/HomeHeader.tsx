@@ -1,18 +1,16 @@
-import React, { useMemo, useRef } from 'react';
+import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
+import { LocationButton } from '@/components/ui/LocationButton';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { Fonts } from '@/constants/theme';
+import React, { useMemo } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   Animated,
   ImageBackground,
-  Platform,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SearchBar } from '@/components/ui/SearchBar';
-import { LocationButton } from '@/components/ui/LocationButton';
-import { EstimatedTimeDisplay } from '@/components/ui/EstimatedTimeDisplay';
-import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
-import { Colors } from '@/constants/theme';
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
@@ -95,11 +93,7 @@ export function HomeHeader({
     extrapolate: 'clamp',
   });
 
-  const headerWhiteBackgroundOpacity = scrollY.interpolate({
-    inputRange: [0, stickyThreshold * 0.3, stickyThreshold],
-    outputRange: [0, 0.5, 1],
-    extrapolate: 'clamp',
-  });
+  // Remove white background overlay - keep original background always visible
 
   const headerBorderBottomOpacity = scrollY.interpolate({
     inputRange: [0, stickyThreshold * 0.8, stickyThreshold],
@@ -159,22 +153,6 @@ export function HomeHeader({
         style={headerContainerStyle}
         collapsable={false}
       >
-        <Animated.View
-          style={[
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: Colors.backgroundWhite,
-              opacity: headerWhiteBackgroundOpacity,
-              zIndex: 0,
-            },
-          ]}
-          pointerEvents="none"
-          collapsable={false}
-        />
         <View style={{ position: 'relative', zIndex: 1 }} collapsable={false}>
           <Animated.View
             style={[
@@ -187,14 +165,20 @@ export function HomeHeader({
           >
             <View style={styles.leftInfoContainer}>
               <View style={styles.kiddoRow}>
-                <Text style={[styles.serviceStatusText, { color: textColor }]}>
-                  Kiddo
+                <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
+                  The best for your kiddo
                 </Text>
-                <EstimatedTimeDisplay
-                  estimatedTime={estimatedTime}
-                  loading={loadingTime}
-                  textColor={textColor}
-                />
+                {address && (estimatedTime !== null || loadingTime) && (
+                  <View style={styles.estimatedTimeWrapper}>
+                    {loadingTime ? (
+                      <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
+                    ) : estimatedTime !== null ? (
+                      <Text style={[styles.estimatedTimeText, { color: textColor }]}>
+                        in {estimatedTime} mins
+                      </Text>
+                    ) : null}
+                  </View>
+                )}
               </View>
               <LocationButton
                 address={address}
@@ -256,14 +240,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   kiddoRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 2,
+    marginBottom: 4,
+  },
+  kiddoHeaderText: {
+    fontSize: 15,
+    fontFamily: Fonts.Bold,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  estimatedTimeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginTop: 2,
   },
-  serviceStatusText: {
-    fontSize: 22,
-    color: Colors.primary,
-    fontWeight: 'bold',
+  estimatedTimeText: {
+    fontSize: 19,
+    fontFamily: Fonts.Bold,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   searchContainer: {
     paddingHorizontal: 20,

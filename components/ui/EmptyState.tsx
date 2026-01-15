@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     title: {
-        fontSize: 24,
+        fontSize: 18,
         color: Colors.text,
         fontFamily: Fonts.Bold,
         marginBottom: 12,
@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.SemiBold,
     },
 });
+
 
 
 

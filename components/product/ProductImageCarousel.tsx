@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Image, StyleSheet, Dimensions, FlatList, TouchableOpacity, Text } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
     counterText: {
         color: '#fff',
         fontSize: 12,
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
     },
 });

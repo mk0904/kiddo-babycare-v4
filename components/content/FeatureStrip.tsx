@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 import { FeatureStripBlock } from '@/types/content';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 interface FeatureStripProps extends BaseContentBlockProps {
     block: FeatureStripBlock;
@@ -24,9 +25,9 @@ export function FeatureStrip({ block }: FeatureStripProps) {
                 />
             )}
             <View style={styles.textContainer}>
-                <Text style={[styles.label, blockStyles?.text]}>{item.label}</Text>
+                <Text style={[styles.label, processFontStyle(blockStyles?.text)]}>{item.label}</Text>
                 {item.subLabel && (
-                    <Text style={[styles.subLabel, blockStyles?.subText]}>{item.subLabel}</Text>
+                    <Text style={[styles.subLabel, processFontStyle(blockStyles?.subText)]}>{item.subLabel}</Text>
                 )}
             </View>
         </View>
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 12,
-        fontWeight: '600',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     subLabel: {

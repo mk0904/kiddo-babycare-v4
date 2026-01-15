@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Fonts } from '@/constants/theme';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SearchIcon } from './SearchIcon';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -16,7 +16,6 @@ export function SearchBar({
 }: SearchBarProps) {
   const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const searchBarScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (suggestions.length === 0) return;
@@ -46,46 +45,30 @@ export function SearchBar({
     fadeAnim.setValue(1);
   }, []);
 
-  const handlePressIn = () => {
-    Animated.spring(searchBarScale, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      tension: 400,
-      friction: 8,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(searchBarScale, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 400,
-      friction: 8,
-    }).start();
-  };
-
   const displayText =
     suggestions.length > 0
       ? suggestions[currentSuggestionIndex]
       : placeholder;
 
+  const handlePress = () => {
+    console.log('SearchBar pressed, onPress:', !!onPress);
+    if (onPress) {
+      onPress();
+    } else {
+      console.warn('SearchBar onPress is not defined');
+    }
+  };
+
   return (
     <TouchableOpacity
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={1}
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={styles.searchBarTouchable}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Animated.View
-        style={[
-          styles.searchBar,
-          {
-            transform: [{ scale: searchBarScale }],
-          },
-        ]}
-      >
+      <View style={styles.searchBar}>
         <View style={styles.searchIconContainer}>
-          <Ionicons name="search" size={20} color="#666666" />
+          <SearchIcon size={20} />
         </View>
         <View style={styles.animatedPlaceholderContainer}>
           <Animated.Text
@@ -96,29 +79,27 @@ export function SearchBar({
             {displayText}
           </Animated.Text>
         </View>
-        <View style={styles.searchRightIcon}>
-          <Ionicons name="mic-outline" size={18} color="#999999" />
-        </View>
-      </Animated.View>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  searchBarTouchable: {
+    width: '100%',
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
     paddingHorizontal: 16,
-    height: 52,
-  },
-  searchIconContainer: {
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   animatedPlaceholderContainer: {
     flex: 1,
@@ -135,11 +116,10 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
     letterSpacing: 0.2,
   },
-  searchRightIcon: {
-    marginLeft: 8,
+  searchIconContainer: {
+    marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 4,
   },
 });
 

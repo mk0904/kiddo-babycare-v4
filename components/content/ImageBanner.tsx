@@ -8,7 +8,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ImageBannerProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: ImageBannerBlock;
-  onPress?: (link?: string) => void;
+  onPress?: (link?: string | any) => void;
 }
 
 export function ImageBanner({ block, onPress }: ImageBannerProps) {
@@ -58,6 +58,8 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
     return null;
   }
 
+  // React Native's Image component automatically uses cached/prefetched images
+  // The useImagePreloader hook ensures images are prefetched for instant display
   const content = (
     <Image
       source={{ uri: imageUrl }}

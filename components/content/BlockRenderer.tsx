@@ -17,6 +17,7 @@ import { VisualCategoryRail } from './VisualCategoryRail';
 import { FlashSaleTimer } from './FlashSaleTimer';
 import { FeatureStrip } from './FeatureStrip';
 import { VideoBanner } from './VideoBanner';
+import { CategoryGrid } from './CategoryGrid';
 
 interface BlockRendererProps {
   blocks: ContentBlock[];
@@ -33,6 +34,7 @@ const blockComponentMap: Record<
   imageBanner: ImageBanner,
   carousel: ImageCarousel,
   grid: ImageGrid,
+  categoryGrid: CategoryGrid,
   list: ImageList,
   horizontalProductList: ImageList,
   collectionList: CollectionList,
@@ -43,7 +45,7 @@ const blockComponentMap: Record<
   promoCarousel: PromoCarousel,
   searchProductList: SearchProductList,
   noInternet: NoInternet,
-  categoryRail: VisualCategoryRail,
+  rail: VisualCategoryRail,
   flashSale: FlashSaleTimer,
   featureStrip: FeatureStrip,
   videoBanner: VideoBanner,

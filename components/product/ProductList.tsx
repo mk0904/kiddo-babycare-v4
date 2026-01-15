@@ -22,6 +22,15 @@ const List: React.FC<CollectionComponentProps> = ({
   const itemsPerView = productOptions?.itemsPerView ?? 2;
   const sidePadding = productOptions?.sidePadding ?? 20;
 
+  // Apply limit if specified in productOptions (safeguard)
+  const limit = productOptions?.limit;
+  const limitedProducts = React.useMemo(() => {
+    if (limit && limit > 0 && Array.isArray(products)) {
+      return products.slice(0, limit);
+    }
+    return products;
+  }, [products, limit]);
+
   // Calculate item width based on itemsPerView (Kiddo pattern)
   const itemWidth = React.useMemo(() => {
     const totalPadding = sidePadding * 2;
@@ -73,7 +82,7 @@ const List: React.FC<CollectionComponentProps> = ({
 
   return (
     <FlashList
-      data={products}
+      data={limitedProducts}
       horizontal={horizontal}
       estimatedItemSize={estimatedItemSize}
       estimatedListSize={{
@@ -123,6 +132,7 @@ export function ProductList({
   title,
   subTitle,
   showViewAll = false,
+  viewAllText,
   style,
   contentWidth,
   productStyle,
@@ -130,6 +140,7 @@ export function ProductList({
   productLayout,
   productSource,
   onViewAll,
+  limit,
 }: ProductListProps) {
   return (
     <ProductCollection
@@ -142,6 +153,7 @@ export function ProductList({
       title={title}
       subTitle={subTitle}
       showViewAll={showViewAll}
+      viewAllText={viewAllText}
       style={style}
       contentWidth={contentWidth}
       productStyle={productStyle}
@@ -149,6 +161,7 @@ export function ProductList({
       productLayout={productLayout}
       productSource={productSource}
       onViewAll={onViewAll}
+      limit={limit}
     />
   );
 }

@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { getDeliveryTimeFromGoogleMaps, isWithinDeliveryRange } from '@/config/deliveryConfig';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAddress } from '@/context/AddressContext';
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useAuth } from '@/context/AuthContext';
-import { useAddress } from '@/context/AddressContext';
-import { Colors, Fonts } from '@/constants/theme';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ADDRESS_TAGS = [
     { id: 'home', label: 'Home', icon: 'home' as const },
@@ -40,14 +41,57 @@ export default function AddressFormScreen() {
     const [street, setStreet] = useState(locationData?.address1 || '');
     const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other'>('home');
     const [saving, setSaving] = useState(false);
+    const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
+    const [loadingDeliveryTime, setLoadingDeliveryTime] = useState(false);
 
     useEffect(() => {
         if (!locationData) {
             Alert.alert('Error', 'No location data found', [
                 { text: 'Go Back', onPress: () => router.back() }
             ]);
+        } else {
+            // Calculate delivery time when location data is available
+            calculateDeliveryTime();
         }
     }, [locationData]);
+
+    const calculateDeliveryTime = async () => {
+        if (!locationData?.latitude || !locationData?.longitude) {
+            setDeliveryTime(null);
+            return;
+        }
+
+        setLoadingDeliveryTime(true);
+        try {
+            // First check using distance calculation
+            const deliveryCheck = isWithinDeliveryRange(
+                locationData.latitude,
+                locationData.longitude
+            );
+
+            // Also try to get from Google Maps API
+            const googleMapsTime = await getDeliveryTimeFromGoogleMaps(
+                locationData.latitude,
+                locationData.longitude
+            );
+
+            // Use Google Maps time if available, otherwise use calculated time
+            const finalTime = googleMapsTime || deliveryCheck.estimatedTime;
+            setDeliveryTime(finalTime);
+        } catch (error) {
+            console.error('Error calculating delivery time:', error);
+            // Fallback to distance-based calculation
+            if (locationData?.latitude && locationData?.longitude) {
+                const deliveryCheck = isWithinDeliveryRange(
+                    locationData.latitude,
+                    locationData.longitude
+                );
+                setDeliveryTime(deliveryCheck.estimatedTime);
+            }
+        } finally {
+            setLoadingDeliveryTime(false);
+        }
+    };
 
     const validateForm = () => {
         if (!fullName.trim()) return alertError('Please enter your full name');
@@ -64,6 +108,16 @@ export default function AddressFormScreen() {
 
     const handleSaveAddress = async () => {
         if (!validateForm()) return;
+
+        // Check if delivery time exceeds 60 minutes
+        if (deliveryTime !== null && deliveryTime > 60) {
+            Alert.alert(
+                'Delivery Not Available',
+                'We will soon be at this place! 🚀\n\nDelivery to this location takes more than 60 minutes. Please select a location closer to our store.',
+                [{ text: 'OK' }]
+            );
+            return;
+        }
 
         setSaving(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -132,6 +186,32 @@ export default function AddressFormScreen() {
                             <Text style={styles.locationSummaryTitle}>Selected Location</Text>
                         </View>
                         <Text style={styles.locationSummaryText}>{locationData.formattedAddress}</Text>
+                        {loadingDeliveryTime ? (
+                            <View style={styles.deliveryTimeContainer}>
+                                <ActivityIndicator size="small" color={Colors.primary} />
+                                <Text style={styles.deliveryTimeText}>Calculating delivery time...</Text>
+                            </View>
+                        ) : deliveryTime !== null ? (
+                            <View style={styles.deliveryTimeContainer}>
+                                <Ionicons name="time-outline" size={16} color={deliveryTime > 60 ? Colors.secondary : Colors.primary} />
+                                <Text style={[
+                                    styles.deliveryTimeText,
+                                    deliveryTime > 60 && styles.deliveryTimeTextError
+                                ]}>
+                                    {deliveryTime > 60
+                                        ? `Delivery time: ${deliveryTime} mins (exceeds 60 mins)`
+                                        : `Delivery available in ${deliveryTime} mins`}
+                                </Text>
+                            </View>
+                        ) : null}
+                        {deliveryTime !== null && deliveryTime > 60 && (
+                            <View style={styles.warningContainer}>
+                                <Ionicons name="information-circle-outline" size={16} color={Colors.secondary} />
+                                <Text style={styles.warningText}>
+                                    We will soon be at this place! Please select a location closer to our store.
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 )}
 
@@ -226,9 +306,12 @@ export default function AddressFormScreen() {
 
                     {/* Save Button */}
                     <TouchableOpacity
-                        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                        style={[
+                            styles.saveButton,
+                            (saving || (deliveryTime !== null && deliveryTime > 60)) && styles.saveButtonDisabled
+                        ]}
                         onPress={handleSaveAddress}
-                        disabled={saving}
+                        disabled={saving || (deliveryTime !== null && deliveryTime > 60)}
                     >
                         {saving ? (
                             <ActivityIndicator size="small" color="#FFF" />
@@ -254,7 +337,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        spaceBetween: 'space-between',
+        justifyContent: 'space-between',
         paddingHorizontal: 15,
         paddingVertical: 12,
         backgroundColor: '#FFF',
@@ -303,6 +386,37 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Regular,
         color: '#555',
         lineHeight: 18,
+        marginBottom: 8,
+    },
+    deliveryTimeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+        gap: 6,
+    },
+    deliveryTimeText: {
+        fontSize: 13,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.primary,
+    },
+    deliveryTimeTextError: {
+        color: Colors.secondary,
+    },
+    warningContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginTop: 8,
+        padding: 10,
+        backgroundColor: '#FFF5F5',
+        borderRadius: 8,
+        gap: 8,
+    },
+    warningText: {
+        flex: 1,
+        fontSize: 12,
+        fontFamily: Fonts.Regular,
+        color: Colors.secondary,
+        lineHeight: 16,
     },
     formContainer: {
         padding: 20,

@@ -1,0 +1,276 @@
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { CategoryGridBlock } from '@/types/content';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
+import { FlexibleGrid, GridItem, GridLayoutType } from '@/components/ui/FlexibleGrid';
+import { configService } from '@/services/configService';
+import { shopifyApi } from '@/services/shopifyApi';
+import { useRouter } from 'expo-router';
+import { Colors, Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+
+interface CollectionItem {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
+interface CategoryGridProps extends Omit<BaseContentBlockProps, 'onPress'> {
+  block: CategoryGridBlock;
+  onPress?: (link?: string, item?: any) => void;
+}
+
+export function CategoryGrid({ block, onPress }: CategoryGridProps) {
+  const router = useRouter();
+  const { width } = useDeviceDimensions();
+  const { title, categoryKeys = [], collectionIds, gridConfig = {}, styles: blockStyles } = block;
+  const [collections, setCollections] = useState<CollectionItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load collections if collectionIds are provided (similar to ImageGrid)
+  const loadCollections = useCallback(async () => {
+    if (!collectionIds || collectionIds.length === 0) {
+      setCollections([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Use Promise.allSettled to handle individual failures
+      const collectionPromises = collectionIds.map((collection) =>
+        shopifyApi.getCollectionById(
+          typeof collection === 'object' ? collection.id : collection
+        ).catch((error) => {
+          console.error(`[CategoryGrid] Error loading collection:`, error);
+          return null;
+        })
+      );
+
+      const results = await Promise.allSettled(collectionPromises);
+
+      const validCollections = results
+        .map((result, index) => {
+          if (result.status === 'fulfilled' && result.value !== null) {
+            const collectionDef = typeof collectionIds[index] === 'object'
+              ? collectionIds[index]
+              : { id: collectionIds[index], name: '' };
+            return {
+              id: result.value.id,
+              name: collectionDef.name || result.value.title,
+              imageUrl: collectionDef.imageUrl || result.value.image?.url || '',
+            };
+          }
+          return null;
+        })
+        .filter((col): col is CollectionItem => col !== null);
+
+      setCollections(validCollections);
+    } catch (error) {
+      console.error('[CategoryGrid] Error fetching collections:', error);
+      setCollections([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [collectionIds]);
+
+  useEffect(() => {
+    loadCollections();
+  }, [loadCollections]);
+
+  // Get all categories from config
+  const categories = useMemo(() => {
+    const configCategories = configService.getCategories();
+    if (!configCategories?.order) {
+      return [];
+    }
+
+    const categoryOrder = configCategories.order;
+    const categoryItems = configCategories.items || {};
+
+    return categoryOrder.map((key) => {
+      const categoryDef = categoryItems[key];
+      const defaultLabels: Record<string, string> = {
+        all: 'See all',
+        girls: 'Girls Fashion',
+        boys: 'Boys Fashion',
+        babycare: 'Baby Care',
+        toys: 'Toys',
+      };
+      const defaultIcons: Record<string, any> = {
+        all: require('@/assets/images/shopall-selected.png'),
+        girls: require('@/assets/images/girls-fashion-selected.png'),
+        boys: require('@/assets/images/boys-fashion-selected.png'),
+        babycare: require('@/assets/images/babycare-selected.png'),
+        toys: require('@/assets/images/toys-selected.png'),
+      };
+
+      return {
+        key,
+        label: categoryDef?.label || defaultLabels[key] || key,
+        iconImage: defaultIcons[key],
+        iconUrl: categoryDef?.header?.backgroundImage,
+      };
+    });
+  }, []);
+
+  // Filter categories if categoryKeys specified
+  const filteredCategories = useMemo(() => {
+    if (categoryKeys.length === 0) {
+      return categories;
+    }
+    return categories.filter((cat) => categoryKeys.includes(cat.key));
+  }, [categories, categoryKeys]);
+
+  // Convert to GridItem format
+  // If collectionIds are provided, use collections; otherwise use categories
+  const gridItems: GridItem[] = useMemo(() => {
+    let items: GridItem[] = [];
+
+    if (collectionIds && collectionIds.length > 0) {
+      // Use collections from collectionIds
+      items = collections.map((collection) => {
+        // Extract numeric ID from GID format (gid://shopify/Collection/123456)
+        const collectionId = collection.id.includes('/')
+          ? collection.id.split('/').pop() || collection.id
+          : collection.id;
+        
+        return {
+          id: collection.id,
+          label: collection.name,
+          imageUrl: collection.imageUrl,
+          imageSource: undefined,
+          onPress: () => {
+            const collectionPath = `/collections/${collectionId}`;
+            router.push(collectionPath as any);
+            onPress?.(collectionPath, collection);
+          },
+        };
+      });
+    } else {
+      // Use categories
+      items = filteredCategories.map((category) => ({
+        id: category.key,
+        label: category.label,
+        imageUrl: category.iconUrl,
+        imageSource: category.iconImage,
+        onPress: () => {
+          if (category.key === 'all') {
+            router.push('/(tabs)' as any);
+          } else {
+            router.push({
+              pathname: '/(tabs)',
+              params: { category: category.key },
+            } as any);
+          }
+          onPress?.(undefined, category);
+        },
+      }));
+    }
+
+    // Apply limit if specified
+    const limit = gridConfig.limit ?? 0;
+    if (limit > 0) {
+      items = items.slice(0, limit);
+    }
+
+    return items;
+  }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit]);
+
+  // Get grid config with defaults (matching ImageGrid pattern)
+  const numColumns = gridConfig.numColumns ?? 3;
+  const colGap = gridConfig.colGap ?? gridConfig.gap ?? 12;
+  const rowGap = gridConfig.rowGap ?? gridConfig.gap ?? 12;
+  const aspectRatio = gridConfig.aspectRatio ?? 1;
+  const resizeMode = gridConfig.resizeMode || gridConfig.imageResizeMode || 'cover';
+  
+  // Check if text display is set to "none" (matching ImageGrid pattern)
+  const textDisplay = blockStyles?.text?.display;
+  const shouldHideLabels = textDisplay === 'none' || textDisplay === 'hidden';
+  
+  // Determine if labels should be shown
+  const showLabels = shouldHideLabels ? false : (gridConfig.showLabels !== false);
+  
+  const borderRadius = gridConfig.borderRadius ?? 12;
+  
+  // Get container styles (matching ImageGrid pattern)
+  // Extract paddingHorizontal before spreading, so we can use it for FlexibleGrid
+  const containerPaddingFromStyles = blockStyles?.container?.paddingHorizontal;
+  const containerPaddingHorizontal = containerPaddingFromStyles || gridConfig.padding || 16;
+  
+  // Create container style without paddingHorizontal (FlexibleGrid will handle it)
+  const {
+    paddingHorizontal: _,
+    ...containerStyleWithoutPadding
+  } = blockStyles?.container || {};
+  
+  // Create final container style with paddingHorizontal explicitly set to 0
+  // This will override any paddingHorizontal from blockStyles.container in BaseContentBlock
+  const containerStyle = {
+    marginVertical: 0,
+    paddingHorizontal: 0, // Explicitly set to 0 to override blockStyles padding
+    ...containerStyleWithoutPadding,
+  };
+
+  // Title style (matching ImageGrid pattern)
+  const titleStyle = {
+    marginBottom: 15,
+    fontSize: 18,
+    letterSpacing: 0.3,
+    paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
+      ? blockStyles.title.paddingHorizontal
+      : (containerStyle.paddingHorizontal || containerPaddingHorizontal),
+    ...processFontStyle(blockStyles?.title, Fonts.Bold),
+    ...blockStyles?.title,
+  };
+
+  // Text/label style (matching ImageGrid pattern)
+  // Process font style first, then apply all text styles (so custom styles override)
+  const processedTextStyle = processFontStyle(blockStyles?.text);
+  const textStyle = {
+    color: '#666666',
+    textAlign: 'center' as const,
+    ...processedTextStyle,
+    ...blockStyles?.text, // Apply all text styles last so they override defaults
+  };
+
+  // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)
+  // Note: FlexibleGrid currently uses a single 'gap' prop, so we use colGap
+  // If rowGap differs, we might need to update FlexibleGrid to support separate gaps
+  const gap = colGap;
+
+  return (
+    <BaseContentBlock block={block} style={containerStyle}>
+      {title && (
+        <Text style={titleStyle}>{title}</Text>
+      )}
+      <FlexibleGrid
+        items={gridItems}
+        layout={(gridConfig.layout || 'first-item-2-col') as GridLayoutType}
+        numColumns={numColumns}
+        gap={gap}
+        colGap={colGap}
+        rowGap={rowGap}
+        padding={containerPaddingHorizontal}
+        aspectRatio={aspectRatio}
+        imageResizeMode={resizeMode as 'cover' | 'contain' | 'stretch'}
+        showLabels={showLabels}
+        borderRadius={borderRadius}
+        labelStyle={textStyle}
+        firstItemSpan={gridConfig.firstItemSpan}
+      />
+    </BaseContentBlock>
+  );
+}
+
+const defaultStyles = StyleSheet.create({
+  title: {
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+});

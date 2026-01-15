@@ -102,18 +102,18 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     color: Colors.text,
-    marginRight: 4,
+    marginRight: 2,
     fontWeight: '700',
-    flex: 1,
   },
   addAddressText: {
     fontSize: 12,
     color: Colors.primary,
-    marginRight: 4,
+    marginRight: 2,
     fontWeight: '600',
   },
   locationChevron: {
     marginTop: 1,
+    marginLeft: 0,
   },
 });
 

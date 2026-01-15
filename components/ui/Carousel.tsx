@@ -38,7 +38,7 @@ interface CarouselProps {
     imageContainer?: any;
     img?: any;
   };
-  onItemPress?: (link: string) => void;
+  onItemPress?: (link?: string | any) => void;
   onIndexChange?: (index: number) => void;
 }
 

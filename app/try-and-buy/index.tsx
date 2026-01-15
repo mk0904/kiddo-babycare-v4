@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTryAndBuy, TryAndBuyItem } from '@/context/TryAndBuyContext';
 import { useAddress } from '@/context/AddressContext';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 const MAX_ITEMS = 5;
 
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     headerRight: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     },
     clearText: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#F44336',
     },
     infoBanner: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#1976D2',
         flex: 1,
     },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     },
     limitText: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#666',
     },
     progressBar: {
@@ -303,19 +303,19 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
         marginBottom: 2,
     },
     variantTitle: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         marginBottom: 4,
     },
     itemPrice: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
     },
     quantityContainer: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     },
     quantityText: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         minWidth: 24,
         textAlign: 'center',
@@ -349,13 +349,13 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         marginTop: 16,
     },
     emptySubtitle: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         textAlign: 'center',
         marginTop: 8,
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     },
     shopButtonText: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#fff',
     },
     footer: {
@@ -385,12 +385,12 @@ const styles = StyleSheet.create({
     totalContainer: {},
     totalLabel: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
     },
     totalAmount: {
         fontSize: 20,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: '#333',
     },
     checkoutButton: {
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     },
     checkoutText: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#fff',
     },
     disabledButton: {

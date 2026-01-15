@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNector } from '@/context/NectorContext';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 interface RewardsBadgeProps {
     onPress?: () => void;
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     },
     compactText: {
         fontSize: 13,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#B8860B',
     },
     fullContainer: {
@@ -93,12 +93,12 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#B8860B',
     },
     coins: {
         fontSize: 18,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: '#8B7500',
     },
 });

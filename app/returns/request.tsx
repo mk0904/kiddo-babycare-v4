@@ -24,7 +24,7 @@ import {
     ReturnItem,
 } from '@/services/returnsService';
 import { orderService, Order, OrderItem } from '@/services/orderService';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 export default function RequestReturnScreen() {
     const { orderId } = useLocalSearchParams<{ orderId: string }>();
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#666',
     },
     backBtn: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     },
     backBtnText: {
         color: '#fff',
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
     },
     header: {
         flexDirection: 'row',
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 18,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     headerRight: {
@@ -381,13 +381,13 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 16,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
         marginBottom: 4,
     },
     sectionSubtitle: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         marginBottom: 12,
     },
@@ -435,18 +435,18 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
     },
     variantTitle: {
         fontSize: 11,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         marginTop: 2,
     },
     itemPrice: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
         marginTop: 2,
     },
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     reasonText: {
         flex: 1,
         fontSize: 14,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
     },
     reasonTextSelected: {
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 12,
         fontSize: 14,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#333',
         marginTop: 12,
         textAlignVertical: 'top',
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     refundText: {
         flex: 1,
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#1976D2',
         lineHeight: 18,
     },
@@ -522,12 +522,12 @@ const styles = StyleSheet.create({
     },
     refundLabel: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#666',
     },
     refundAmount: {
         fontSize: 20,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: Colors.primary,
     },
     submitButton: {
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#fff',
     },
     disabledButton: {

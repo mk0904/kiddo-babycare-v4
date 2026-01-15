@@ -329,7 +329,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             >
               <Ionicons
                 name="shirt-outline"
-                size={16}
+                size={12}
                 color="#fff"
                 style={styles.hangerIcon}
               />
@@ -417,17 +417,17 @@ const styles = StyleSheet.create({
   },
   tbTag: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 6,
+    left: 6,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
-    height: 24,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    gap: 4,
+    height: 18,
     zIndex: 10,
-    minWidth: 80,
+    minWidth: 65,
   },
   hangerIcon: {
     marginRight: 0,
@@ -486,9 +486,10 @@ const styles = StyleSheet.create({
   },
   tbTagText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: Fonts.SemiBold,
     flexShrink: 0,
+    lineHeight: 12,
   },
   outOfStockOverlay: {
     position: 'absolute',

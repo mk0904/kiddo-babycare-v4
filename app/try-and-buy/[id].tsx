@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTryAndBuy, TryAndBuyOrder } from '@/context/TryAndBuyContext';
 import { orderService, OrderItem, getStatusText, getStatusColor } from '@/services/orderService';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 export default function TryAndBuyOrderDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#666',
     },
     backBtn: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     },
     backBtnText: {
         color: '#fff',
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
     },
     header: {
         flexDirection: 'row',
@@ -350,12 +350,12 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     statusText: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
     },
     headerRight: {
         flex: 1,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     },
     instructionText: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#E65100',
         flex: 1,
     },
@@ -423,12 +423,12 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Medium',
+        fontFamily: Fonts.Medium,
         color: '#333',
     },
     variantTitle: {
         fontSize: 12,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
         marginTop: 2,
     },
@@ -440,12 +440,12 @@ const styles = StyleSheet.create({
     },
     itemPrice: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
     },
     quantity: {
         fontSize: 13,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#888',
     },
     statusBadge: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     },
     statusBadgeText: {
         fontSize: 10,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: '#fff',
     },
     footer: {
@@ -477,17 +477,17 @@ const styles = StyleSheet.create({
     },
     summaryLabel: {
         fontSize: 14,
-        fontFamily: 'Metropolis-Regular',
+        fontFamily: Fonts.Regular,
         color: '#666',
     },
     summaryValue: {
         fontSize: 14,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#333',
     },
     summaryAmount: {
         fontSize: 20,
-        fontFamily: 'Metropolis-Bold',
+        fontFamily: Fonts.Bold,
         color: Colors.primary,
     },
     confirmButton: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     },
     confirmButtonText: {
         fontSize: 15,
-        fontFamily: 'Metropolis-SemiBold',
+        fontFamily: Fonts.SemiBold,
         color: '#fff',
     },
     disabledButton: {

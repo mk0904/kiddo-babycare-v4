@@ -11,7 +11,8 @@ import {
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 import { ModalBlock } from '@/types/content';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
+import { processFontStyle } from '@/utils/fontUtils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -81,7 +82,7 @@ export function BaseModal({ block, visible: controlledVisible, onClose }: BaseMo
           </TouchableOpacity>
         )}
         {data.title && (
-          <Text style={[styles.title, blockStyles?.title]}>{data.title}</Text>
+          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{data.title}</Text>
         )}
         <ScrollView
           style={styles.content}
@@ -129,8 +130,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: Fonts.Bold,
     padding: 20,
     paddingTop: 60,
   },

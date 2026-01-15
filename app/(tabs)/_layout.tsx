@@ -1,14 +1,19 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBar from '@/components/ui/TabBar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { configService } from '@/services/configService';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  
+  // Get visible tabs from config
+  const tabBarConfig = useMemo(() => configService.getTabBarConfig(), []);
+  const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'wishlist', 'account'];
 
   return (
     <Tabs
@@ -27,10 +32,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="curated"
+        name="category"
         options={{
-          title: 'Curated',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Category',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="grid.fill" color={color} />,
         }}
       />
       <Tabs.Screen

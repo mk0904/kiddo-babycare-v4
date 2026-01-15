@@ -1,32 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import HorizontalProductList from '@/components/content/HorizontalProductList';
+import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
+import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
+import FloatingCartButton from '@/components/ui/FloatingCartButton';
+import ImageViewerModal from '@/components/ui/ImageViewerModal';
+import UniversalAdd from '@/components/ui/UniversalAdd';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
+import { useWishlist } from '@/context/WishlistContext';
+import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { configService } from '@/services/configService';
+import { shopifyApi } from '@/services/shopifyApi';
+import { useCartStore } from '@/store/cartStore';
+import { processFontStyle } from '@/utils/fontUtils';
+import { Ionicons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    View,
-    Text,
+    ActivityIndicator,
+    Dimensions,
     Image,
     ScrollView,
     StyleSheet,
+    Text,
     TouchableOpacity,
-    Dimensions,
-    ActivityIndicator,
-    InteractionManager,
-    Platform,
+    View
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { shopifyApi } from '@/services/shopifyApi';
-import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/context/AuthContext';
-import { useWishlist } from '@/context/WishlistContext';
-import { useScrollTracking } from '@/hooks/useScrollTracking';
-import { Fonts, Colors } from '@/constants/theme';
-import HorizontalProductList from '@/components/content/HorizontalProductList';
-import ImageViewerModal from '@/components/ui/ImageViewerModal';
-import UniversalAdd from '@/components/ui/UniversalAdd';
-import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,14 +47,21 @@ const ProductDetailScreen = () => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
     const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
+    const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<any[]>([]);
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [tryAndBuyModalVisible, setTryAndBuyModalVisible] = useState(false);
     const imageFlatListRef = useRef<any>(null);
-    const { addToCart } = useCart();
     const { user, isAuthenticated } = useAuth();
     const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+    const { addToRecentlyViewed, getRecentlyViewed } = useRecentlyViewed();
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const imageGestureRef = useRef({ isHorizontal: false });
+    
+    // Get product detail config
+    const productDetailConfig = configService.getProductDetailConfig();
+    const recommendationsConfig = productDetailConfig?.sections?.recommendations || {};
+    const recentlyViewedConfig = productDetailConfig?.sections?.recentlyViewed || {};
+    const productStyles = productDetailConfig?.styles || {};
 
     // Initialize variant from product data
     const initializeVariant = useCallback((productData: any) => {
@@ -111,6 +120,24 @@ const ProductDetailScreen = () => {
                 setProduct(fullProduct);
                 initializeVariant(fullProduct);
                 loadProductRecommendations(fullProduct.id);
+                
+                // Add to recently viewed
+                let imageUrl = '';
+                if (fullProduct?.images?.edges) {
+                    imageUrl = fullProduct.images.edges[0]?.node?.url || '';
+                } else if (Array.isArray(fullProduct?.images)) {
+                    imageUrl = fullProduct.images[0]?.url || fullProduct.images[0] || '';
+                }
+                
+                addToRecentlyViewed({
+                    id: fullProduct.id,
+                    handle: fullProduct.handle,
+                    title: fullProduct.title,
+                    image: imageUrl,
+                });
+                
+                // Load recently viewed products (excluding current)
+                loadRecentlyViewedProducts(fullProduct.handle);
             }
         } catch (error) {
             console.error('Error loading product details:', error);
@@ -129,11 +156,79 @@ const ProductDetailScreen = () => {
         try {
             const recommendations = await shopifyApi.getProductRecommendations(id);
             if (recommendations) {
-                setRecommendedProducts(recommendations);
+                const limit = recommendationsConfig.limit || 10;
+                setRecommendedProducts(recommendations.slice(0, limit));
             }
         } catch (error) {
             console.error('Error loading recommendations:', error);
         }
+    };
+
+    const loadRecentlyViewedProducts = async (excludeHandle: string) => {
+        try {
+            const recentlyViewed = getRecentlyViewed(excludeHandle);
+            if (recentlyViewed.length === 0) {
+                setRecentlyViewedProducts([]);
+                return;
+            }
+
+            const limit = recentlyViewedConfig.limit || 10;
+            // Fetch product details for recently viewed handles
+            const productPromises = recentlyViewed.slice(0, limit).map((item) =>
+                shopifyApi.getProductByHandle(item.handle).catch(() => null)
+            );
+
+            const products = await Promise.all(productPromises);
+            const validProducts = products.filter((p) => p !== null);
+            setRecentlyViewedProducts(validProducts);
+        } catch (error) {
+            console.error('Error loading recently viewed products:', error);
+        }
+    };
+
+    // Helper function to render product sections based on config
+    const renderProductSection = (
+        products: any[],
+        config: any,
+        defaultTitle: string
+    ) => {
+        if (config.enabled === false || products.length === 0) return null;
+
+        const sectionType = config.type || 'horizontalProductList';
+        const title = config.title || defaultTitle;
+        const gapStyle = config.gap || { height: 8, backgroundColor: '#f5f5f5', marginTop: 20 };
+
+        const handleProductPress = (p: any) => {
+            router.push({ pathname: '/product/[id]', params: { id: p.id, handle: p.handle } });
+        };
+
+        return (
+            <>
+                <View style={[styles.recommendationsGap, gapStyle]} />
+                {sectionType === 'infiniteProductGrid' ? (
+                    <InfiniteProductGridComponent
+                        products={products}
+                        title={title}
+                        showHeading={!!title}
+                        style={{
+                            root: config.styles?.container,
+                            title: config.styles?.title,
+                            list: config.styles?.list,
+                        }}
+                        contentWidth={SCREEN_WIDTH}
+                        productOptions={config.config || {}}
+                        scrollable={false}
+                    />
+                ) : (
+                    <HorizontalProductList
+                        products={products}
+                        title={title}
+                        onProductPress={handleProductPress}
+                        config={config.config || {}}
+                    />
+                )}
+            </>
+        );
     };
 
     useEffect(() => {
@@ -143,7 +238,41 @@ const ProductDetailScreen = () => {
     const handleAddToCart = async () => {
         if (selectedVariant && selectedVariant.availableForSale) {
             try {
-                await addToCart(product, selectedVariant, 1);
+                const addItem = useCartStore.getState().addItem;
+                
+                // Get image URL
+                const imageUrl = selectedVariant.image?.url || 
+                                product.images?.[0]?.url || 
+                                product.featuredImage?.url || 
+                                product.images?.edges?.[0]?.node?.url || 
+                                '';
+
+                // Get price
+                const price = parseFloat(
+                    selectedVariant.price?.amount || 
+                    product.priceRange?.minVariantPrice?.amount || 
+                    product.price?.amount || 
+                    '0'
+                );
+
+                // Create cart item
+                const cartItem = {
+                    productId: productId || '',
+                    variantId: selectedVariant.id || '',
+                    title: product.title || product.name || 'Product',
+                    variantTitle: selectedVariant.title,
+                    price,
+                    compareAtPrice: selectedVariant.compareAtPrice?.amount 
+                        ? parseFloat(selectedVariant.compareAtPrice.amount) 
+                        : undefined,
+                    currencyCode: selectedVariant.price?.currencyCode || product.priceRange?.minVariantPrice?.currencyCode || 'INR',
+                    image: imageUrl,
+                    quantity: 1,
+                    availableForSale: selectedVariant.availableForSale !== false,
+                    tags: product.tags || [],
+                };
+
+                await addItem(cartItem);
             } catch (error: any) {
                 alert(error.message || 'Failed to add item to cart. Please try again.');
             }
@@ -366,14 +495,44 @@ const ProductDetailScreen = () => {
                 )}
 
                 <View style={styles.infoContainer}>
-                    <Text style={styles.title}>{product.title}</Text>
-                    {product.vendor && <Text style={styles.vendorText}>{product.vendor}</Text>}
+                    <Text style={[
+                        styles.title,
+                        productStyles.title && {
+                            fontSize: productStyles.title.fontSize,
+                            color: productStyles.title.color,
+                            paddingHorizontal: productStyles.title.paddingHorizontal,
+                            paddingTop: productStyles.title.paddingTop,
+                            lineHeight: productStyles.title.lineHeight,
+                            ...processFontStyle(productStyles.title, Fonts.Bold),
+                        }
+                    ]}>{product.title}</Text>
+                    {product.vendor && (
+                        <Text style={[
+                            styles.vendorText,
+                            productStyles.vendor && {
+                                fontSize: productStyles.vendor.fontSize,
+                                color: productStyles.vendor.color,
+                                paddingHorizontal: productStyles.vendor.paddingHorizontal,
+                                marginTop: productStyles.vendor.marginTop,
+                                marginBottom: productStyles.vendor.marginBottom,
+                                textTransform: productStyles.vendor.textTransform,
+                                ...processFontStyle(productStyles.vendor, Fonts.Medium),
+                            }
+                        ]}>{product.vendor}</Text>
+                    )}
 
                     {productOptions.length > 0 && (
                         <View style={styles.variantsContainer}>
                             {productOptions.map((option: any) => (
                                 <View key={option.name} style={styles.optionContainer}>
-                                    <Text style={styles.optionLabel}>
+                                    <Text style={[
+                                        styles.optionLabel,
+                                        productStyles.variantLabel && {
+                                            fontSize: productStyles.variantLabel.fontSize,
+                                            color: productStyles.variantLabel.color,
+                                            ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
+                                        }
+                                    ]}>
                                         {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
                                     </Text>
                                     <View style={styles.variantsList}>
@@ -401,7 +560,12 @@ const ProductDetailScreen = () => {
                                                     <Text style={[
                                                         styles.variantText,
                                                         isSelected && styles.variantTextActive,
-                                                        !isOptionAvailable && styles.variantTextDisabled
+                                                        !isOptionAvailable && styles.variantTextDisabled,
+                                                        productStyles.variantButton && !isSelected && {
+                                                            fontSize: productStyles.variantButton.fontSize,
+                                                            color: productStyles.variantButton.color,
+                                                            ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                        }
                                                     ]}>
                                                         {value}
                                                     </Text>
@@ -427,7 +591,14 @@ const ProductDetailScreen = () => {
                             >
                                 <View style={styles.accordionTitleContainer}>
                                     <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={styles.accordionTitle}>Product Details</Text>
+                                    <Text style={[
+                                        styles.accordionTitle,
+                                        productStyles.accordionTitle && {
+                                            fontSize: productStyles.accordionTitle.fontSize,
+                                            color: productStyles.accordionTitle.color,
+                                            ...processFontStyle(productStyles.accordionTitle, Fonts.SemiBold),
+                                        }
+                                    ]}>Product Details</Text>
                                 </View>
                                 <Ionicons
                                     name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
@@ -437,7 +608,15 @@ const ProductDetailScreen = () => {
                             </TouchableOpacity>
                             {expandedSections['description'] && (
                                 <View style={styles.accordionContent}>
-                                    <Text style={styles.descriptionBody}>{product.description}</Text>
+                                    <Text style={[
+                                        styles.descriptionBody,
+                                        productStyles.description && {
+                                            fontSize: productStyles.description.fontSize,
+                                            color: productStyles.description.color,
+                                            lineHeight: productStyles.description.lineHeight,
+                                            ...processFontStyle(productStyles.description, Fonts.Regular),
+                                        }
+                                    ]}>{product.description}</Text>
                                 </View>
                             )}
                         </View>
@@ -463,7 +642,14 @@ const ProductDetailScreen = () => {
                             </TouchableOpacity>
                             {expandedSections['material'] && (
                                 <View style={styles.accordionContent}>
-                                    <Text style={styles.specValue}>{fabric}</Text>
+                                    <Text style={[
+                                        styles.specValue,
+                                        productStyles.material && {
+                                            fontSize: productStyles.material.fontSize,
+                                            color: productStyles.material.color,
+                                            ...processFontStyle(productStyles.material, Fonts.Regular),
+                                        }
+                                    ]}>{fabric}</Text>
                                 </View>
                             )}
                         </View>
@@ -489,18 +675,29 @@ const ProductDetailScreen = () => {
                             </TouchableOpacity>
                             {expandedSections['wash_care'] && (
                                 <View style={styles.accordionContent}>
-                                    <Text style={styles.specValue}>{washCare}</Text>
+                                    <Text style={[
+                                        styles.specValue,
+                                        productStyles.washCare && {
+                                            fontSize: productStyles.washCare.fontSize,
+                                            color: productStyles.washCare.color,
+                                            ...processFontStyle(productStyles.washCare, Fonts.Regular),
+                                        }
+                                    ]}>{washCare}</Text>
                                 </View>
                             )}
                         </View>
                     )}
 
-                    {recommendedProducts.length > 0 && (
-                        <HorizontalProductList
-                            products={recommendedProducts}
-                            title="You May Also Like"
-                            onProductPress={(p) => router.push({ pathname: '/product/[id]', params: { id: p.id, handle: p.handle } })}
-                        />
+                    {recommendationsConfig.enabled !== false && renderProductSection(
+                        recommendedProducts,
+                        recommendationsConfig,
+                        "You May Also Like"
+                    )}
+
+                    {recentlyViewedConfig.enabled !== false && renderProductSection(
+                        recentlyViewedProducts,
+                        recentlyViewedConfig,
+                        "Recently Viewed"
                     )}
                 </View>
             </ScrollView>
@@ -508,7 +705,6 @@ const ProductDetailScreen = () => {
             <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.priceContainer}>
                     <Text style={styles.priceText}>{formattedPrice}</Text>
-                    <Text style={styles.taxLabel}>Inclusive of all taxes</Text>
                 </View>
                 {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
                     <UniversalAdd
@@ -763,11 +959,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: Fonts.Bold,
     },
-    taxLabel: {
-        fontSize: 10,
-        color: '#999',
-        marginTop: 2,
-    },
     addToCartButton: {
         backgroundColor: Colors.primary,
         paddingHorizontal: 24,
@@ -793,6 +984,11 @@ const styles = StyleSheet.create({
     retryButtonText: {
         color: '#fff',
         fontFamily: Fonts.Bold,
+    },
+    recommendationsGap: {
+        height: 0,
+        backgroundColor: '#f5f5f5',
+        marginTop: 20,
     },
 });
 

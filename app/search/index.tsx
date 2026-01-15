@@ -1,35 +1,36 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    ActivityIndicator,
-    Dimensions,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    InteractionManager,
-} from 'react-native';
-import { FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { searchaniseApi } from '@/services/searchaniseApi';
-import { shopifyApi } from '@/services/shopifyApi';
+import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { ProductCard } from '@/components/product/ProductCard';
+import BaseModal from '@/components/ui/BaseModal';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { FilterPanel } from '@/components/ui/FilterPanel';
 import { FilterSortPills } from '@/components/ui/FilterSortPills';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import BaseModal from '@/components/ui/BaseModal';
-import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { Colors, Fonts } from '@/constants/theme';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { configService } from '@/services/configService';
+import { searchaniseApi } from '@/services/searchaniseApi';
+import { shopifyApi } from '@/services/shopifyApi';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    InteractionManager,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GAP = 8;
-const HORIZONTAL_PADDING = 8;
 
 const DEFAULT_SORT_OPTIONS = [
     { value: 'relevance', label: 'Relevance', order: 'asc' },
@@ -47,6 +48,15 @@ export default function SearchScreen() {
     const { handleScroll } = useScrollTracking();
     const initialQuery = typeof params.query === 'string' ? params.query : '';
     const collectionHandle = typeof params.collectionHandle === 'string' ? params.collectionHandle : null;
+    
+    // Get product grid defaults from config
+    const gridDefaults = configService.getProductGridDefaults();
+    const GAP = gridDefaults.colGap ?? gridDefaults.gap ?? 8;
+    const ROW_GAP = gridDefaults.rowGap ?? gridDefaults.gap ?? 8;
+    const HORIZONTAL_PADDING = gridDefaults.paddingHorizontal ?? 8;
+    
+    // Create styles with config values
+    const styles = createStyles(HORIZONTAL_PADDING);
 
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [products, setProducts] = useState<any[]>([]);
@@ -62,6 +72,7 @@ export default function SearchScreen() {
     const [startIndex, setStartIndex] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     const [sortOptions, setSortOptions] = useState(DEFAULT_SORT_OPTIONS);
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
     const searchTimeoutRef = useRef<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -143,6 +154,63 @@ export default function SearchScreen() {
         }
     }, [selectedFilters, sortBy, sortOrder]);
 
+    // Load search history from AsyncStorage
+    const loadSearchHistory = useCallback(async () => {
+        try {
+            const saved = await AsyncStorage.getItem('search_history');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                setSearchHistory(Array.isArray(parsed) ? parsed.slice(0, 3) : []);
+            }
+        } catch (error) {
+            console.error('Error loading search history:', error);
+        }
+    }, []);
+
+    // Save search query to history
+    const saveToSearchHistory = useCallback(async (query: string) => {
+        if (!query.trim()) return;
+        
+        try {
+            const saved = await AsyncStorage.getItem('search_history');
+            let history: string[] = saved ? JSON.parse(saved) : [];
+            
+            // Remove if already exists
+            history = history.filter((item) => item.toLowerCase() !== query.trim().toLowerCase());
+            
+            // Add to beginning
+            history.unshift(query.trim());
+            
+            // Keep only last 3
+            history = history.slice(0, 3);
+            
+            await AsyncStorage.setItem('search_history', JSON.stringify(history));
+            setSearchHistory(history);
+        } catch (error) {
+            console.error('Error saving search history:', error);
+        }
+    }, []);
+
+    // Remove item from search history
+    const handleRemoveFromHistory = useCallback(async (item: string) => {
+        try {
+            const saved = await AsyncStorage.getItem('search_history');
+            let history: string[] = saved ? JSON.parse(saved) : [];
+            
+            history = history.filter((h) => h.toLowerCase() !== item.toLowerCase());
+            
+            await AsyncStorage.setItem('search_history', JSON.stringify(history));
+            setSearchHistory(history.slice(0, 3));
+        } catch (error) {
+            console.error('Error removing from search history:', error);
+        }
+    }, []);
+
+    // Load search history on mount
+    useEffect(() => {
+        loadSearchHistory();
+    }, [loadSearchHistory]);
+
     const performSearch = useCallback(async (loadMore = false, signal?: AbortSignal, requestId?: number) => {
         try {
             if (signal?.aborted) return;
@@ -173,6 +241,11 @@ export default function SearchScreen() {
             }
 
             if (result) {
+                // Save to search history if search was successful and not loading more
+                if (!loadMore && searchQuery.trim()) {
+                    saveToSearchHistory(searchQuery.trim());
+                }
+
                 // Filter out invalid products first
                 let newProducts = result.products.edges
                     .map((edge: any) => edge.node)
@@ -328,11 +401,11 @@ export default function SearchScreen() {
 
     // Calculate card width with proper spacing
     const cardWidth = useMemo(() => {
-        const totalPadding = HORIZONTAL_PADDING * 2; // 8px left + 8px right = 16px
-        const totalGap = GAP; // 8px gap between items
+        const totalPadding = HORIZONTAL_PADDING * 2;
+        const totalGap = GAP;
         const availableWidth = SCREEN_WIDTH - totalPadding - totalGap;
         return availableWidth / 2;
-    }, []);
+    }, [GAP, HORIZONTAL_PADDING]);
 
 
     const keyExtractor = useCallback((item: any) => {
@@ -347,7 +420,7 @@ export default function SearchScreen() {
             <View style={{
                 width: cardWidth,
                 marginRight: isLastInRow ? 0 : GAP,
-                marginBottom: GAP,
+                marginBottom: ROW_GAP,
             }}>
                 <ProductCard
                     product={item}
@@ -376,17 +449,13 @@ export default function SearchScreen() {
             >
                 {/* Header */}
             <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color="#000" />
-                </TouchableOpacity>
-
                     <View style={styles.searchInputContainer}>
-                        <View style={styles.searchIconContainer}>
-                            <Ionicons name="search" size={20} color="#666666" />
-                        </View>
+                        <TouchableOpacity
+                            style={styles.backButtonContainer}
+                            onPress={() => router.back()}
+                        >
+                            <Ionicons name="arrow-back" size={20} color="#666666" />
+                        </TouchableOpacity>
                     <TextInput
                             style={styles.searchInput}
                             placeholder="Search products..."
@@ -396,7 +465,7 @@ export default function SearchScreen() {
                             autoFocus={!initialQuery}
                             placeholderTextColor="#666666"
                         />
-                        {searchQuery.length > 0 ? (
+                        {searchQuery.length > 0 && (
                             <TouchableOpacity
                                 onPress={() => {
                                     if (abortControllerRef.current) {
@@ -415,11 +484,7 @@ export default function SearchScreen() {
                             >
                                 <Ionicons name="close-circle" size={18} color="#999" />
                         </TouchableOpacity>
-                        ) : (
-                            <View style={styles.searchRightIcon}>
-                                <Ionicons name="mic-outline" size={18} color="#999999" />
-                            </View>
-                    )}
+                        )}
                 </View>
             </View>
 
@@ -478,11 +543,85 @@ export default function SearchScreen() {
                         subtitle="Try adjusting your search or filters"
                     />
                 ) : products.length === 0 ? (
-                    <EmptyState
-                        icon="search-outline"
-                        iconSize={64}
-                        title="Start typing to search"
-                    />
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ flexGrow: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.emptyStateContainer}>
+                            <EmptyState
+                                icon="search-outline"
+                                iconSize={48}
+                                title="Start typing to search"
+                                style={styles.emptyState}
+                            />
+                        </View>
+                        
+                        {/* Search History */}
+                        {searchHistory.length > 0 && (
+                            <View style={styles.searchHistoryContainer}>
+                                <Text style={styles.searchHistoryTitle}>Recent Searches</Text>
+                                {searchHistory.map((item, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.searchHistoryItem}
+                                        onPress={() => {
+                                            setSearchQuery(item);
+                                        }}
+                                    >
+                                        <Ionicons name="time-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.searchHistoryText}>{item}</Text>
+                                        <TouchableOpacity
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveFromHistory(item);
+                                            }}
+                                            style={styles.removeHistoryButton}
+                                        >
+                                            <Ionicons name="close" size={16} color={Colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                        
+                        {/* Featured Products */}
+                        <HorizontalProductList
+                            collectionIds={[
+                                'gid://shopify/Collection/507808678177',
+                                'gid://shopify/Collection/507808645409',
+                                'gid://shopify/Collection/507806449953',
+                                'gid://shopify/Collection/508173123873',
+                            ]}
+                            config={{
+                                limit: 20,
+                                itemsPerView: 2.1,
+                                itemSpacing: 12,
+                                sidePadding: 16,
+                            }}
+                            title="Featured Products"
+                            styles={{
+                                container: {
+                                    paddingVertical: 16,
+                                },
+                                title: {
+                                    fontSize: 16,
+                                    fontWeight: '600',
+                                    color: '#363636',
+                                },
+                                titleContainer: {
+                                    marginBottom: 20,
+                                },
+                            }}
+                            onProductPress={(product) => {
+                                if (product?.id || product?.handle) {
+                                    const routeParam = product.id || product.handle;
+                                    router.push(`/product/${encodeURIComponent(routeParam)}` as any);
+                                }
+                            }}
+                        />
+                    </ScrollView>
                 ) : (
                     <FlatList
                         data={Array.isArray(products) ? products.filter((p: any) => p && p.id) : []}
@@ -606,7 +745,8 @@ export default function SearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+// Create styles function that accepts padding values
+const createStyles = (horizontalPadding: number) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colors.backgroundWhite,
@@ -614,31 +754,29 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: HORIZONTAL_PADDING,
-        paddingVertical: 12,
+        paddingHorizontal: horizontalPadding,
+        paddingVertical: 10,
         backgroundColor: Colors.backgroundWhite,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
-    },
-    backButton: {
-        marginRight: 10,
-        padding: 4,
     },
     searchInputContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8F8F8',
-        borderRadius: 28,
-        borderWidth: 1,
-        borderColor: '#E8E8E8',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 25,
         paddingHorizontal: 16,
-        height: 48,
+        paddingVertical: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
-    searchIconContainer: {
-        marginRight: 12,
+    backButtonContainer: {
+        marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 2,
     },
     searchInput: {
         flex: 1,
@@ -648,6 +786,8 @@ const styles = StyleSheet.create({
         includeFontPadding: false,
         textAlignVertical: 'center',
         letterSpacing: 0.2,
+        padding: 0,
+        margin: 0,
     },
     searchRightIcon: {
         marginLeft: 8,
@@ -661,25 +801,25 @@ const styles = StyleSheet.create({
         borderBottomColor: Colors.border,
     },
     sortModalContent: {
-        maxHeight: '60%',
-        height: '60%',
+        maxHeight: '50%',
     },
     sortModalContentWrapper: {
-        flex: 1,
+        paddingBottom: 20,
     },
     sortListContainer: {
-        flex: 1,
+        maxHeight: 400,
     },
     sortListContent: {
-        padding: 20,
-        paddingTop: 10,
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 8,
     },
     sortListItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingHorizontal: 4,
+        paddingVertical: 14,
     },
     radioOuter: {
         width: 22,
@@ -716,7 +856,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingHorizontal: horizontalPadding,
         paddingTop: 12,
         paddingBottom: 100,
     },
@@ -736,5 +876,43 @@ const styles = StyleSheet.create({
     },
     footerSpacer: {
         height: 40,
+    },
+    emptyStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        minHeight: 200,
+    },
+    emptyState: {
+        paddingHorizontal: 20,
+    },
+    searchHistoryContainer: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 10,
+    },
+    searchHistoryTitle: {
+        fontSize: 16,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    searchHistoryItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    searchHistoryText: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.text,
+        marginLeft: 12,
+    },
+    removeHistoryButton: {
+        padding: 4,
     },
 });

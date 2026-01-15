@@ -11,6 +11,7 @@ import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock
 import { AnnouncementCarouselBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { processFontStyle } from '@/utils/fontUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,7 +55,7 @@ export function AnnouncementCarousel({
               <View style={[styles.icon, blockStyles?.icon]} />
             </View>
           )}
-          <Text style={[styles.stripText, blockStyles?.text]}>
+          <Text style={[styles.stripText, processFontStyle(blockStyles?.text)]}>
             {item.text}
           </Text>
         </Pressable>

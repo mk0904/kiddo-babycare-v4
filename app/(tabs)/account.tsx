@@ -1,33 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import { accountConfig } from '@/config/accountConfig';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { nectorApi } from '@/services/nectorApi';
+import { useCartItemCount } from '@/store/cartStore';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { useRouter, useSegments } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    View,
-    Text,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Platform,
     ScrollView,
     StyleSheet,
+    Text,
     TouchableOpacity,
-    Alert,
-    Platform,
-    ActivityIndicator,
-    Linking,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
-import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { accountConfig } from '@/config/accountConfig';
-import { nectorApi } from '@/services/nectorApi';
-import { Colors, Fonts } from '@/constants/theme';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function AccountScreen() {
     const router = useRouter();
     const { user, logout, isAuthenticated } = useAuth();
-    const { getCartItemCount } = useCart();
+    const itemCount = useCartItemCount();
     const { setScrollDirection, reset } = useTabBarVisibility();
     const [pointsBalance, setPointsBalance] = useState(0);
     const [loadingPoints, setLoadingPoints] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Track navigation to prevent scroll-to-top on back navigation
+    const segments = useSegments();
+    const navigationState = useNavigationState((state) => state);
+    const previousTabRef = useRef<string | null>(null);
+    const isInitialMount = useRef(true);
+    const wasOnDetailScreen = useRef(false);
+
+    // Scroll to top only when switching tabs, not when navigating back
+    useFocusEffect(
+        useCallback(() => {
+            const isOnDetailScreen = segments.length > 1;
+            const activeTab = navigationState?.routes?.[navigationState?.index]?.name || 'account';
+            const previousTab = previousTabRef.current;
+            const isTabSwitch = previousTab !== null && previousTab !== activeTab;
+
+            if (isOnDetailScreen) {
+                wasOnDetailScreen.current = true;
+                return;
+            }
+
+            const shouldScrollToTop = isInitialMount.current || (isTabSwitch && !wasOnDetailScreen.current);
+
+            if (shouldScrollToTop && scrollViewRef.current) {
+                scrollViewRef.current.scrollTo({ y: 0, animated: false });
+            }
+
+            previousTabRef.current = activeTab;
+            wasOnDetailScreen.current = false;
+            isInitialMount.current = false;
+        }, [segments, navigationState])
+    );
 
     // Use config directly
     const config = accountConfig;
@@ -215,7 +250,7 @@ export default function AccountScreen() {
 
         switch (action.badgeSource) {
             case 'cart':
-                return getCartItemCount();
+                return itemCount;
             case 'static':
                 return action.badgeValue || 0;
             default:
@@ -253,6 +288,7 @@ export default function AccountScreen() {
     if (isGuest || !user) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                <ScreenHeader title="Account" />
                 <View style={styles.loginRequiredWrapper}>
                     <Text style={styles.loginTitle}>Login to access your account</Text>
                     <Text style={styles.loginSubtitle}>
@@ -273,7 +309,9 @@ export default function AccountScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <ScreenHeader title="Account" />
             <ScrollView
+                ref={scrollViewRef}
                 style={[styles.scrollView, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}
                 contentContainerStyle={[styles.scrollContent, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}
                 showsVerticalScrollIndicator={false}
@@ -335,35 +373,41 @@ export default function AccountScreen() {
                                     key={action.id}
                                     style={styles.quickActionCard}
                                     onPress={() => handleAction(action)}
-                                    activeOpacity={0.7}
+                                    activeOpacity={0.8}
                                 >
-                                    <View style={styles.quickActionIconContainer}>
-                                        <Ionicons
-                                            name={iconName}
-                                            size={24}
-                                            color={Colors.primary}
-                                        />
-                                        {action.showBadge && badgeCount > 0 && (
-                                            <View style={styles.badge}>
-                                                <Text style={styles.badgeText}>
-                                                    {badgeCount > 99 ? '99+' : badgeCount}
-                                                </Text>
-                                            </View>
-                                        )}
-                                        {/* Show Kiddo Cash balance inside the icon container for loyalty action */}
-                                        {isLoyaltyAction && (
-                                            <View style={styles.loyaltyBalanceBadge}>
-                                                {loadingPoints ? (
-                                                    <Text style={styles.loyaltyBalanceBadgeText}>...</Text>
-                                                ) : (
-                                                    <Text style={styles.loyaltyBalanceBadgeText}>
-                                                        ₹{Math.round(pointsBalance)}
+                                    <View style={styles.quickActionCardInner}>
+                                        <View style={styles.quickActionIconContainer}>
+                                            <Ionicons
+                                                name={iconName}
+                                                size={28}
+                                                color={Colors.primary}
+                                            />
+                                            {action.showBadge && badgeCount > 0 && (
+                                                <View style={styles.badge}>
+                                                    <Text style={styles.badgeText}>
+                                                        {badgeCount > 99 ? '99+' : badgeCount}
                                                     </Text>
-                                                )}
-                                            </View>
-                                        )}
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={styles.quickActionTitleContainer}>
+                                            <Text style={styles.quickActionTitle} numberOfLines={2}>
+                                                {action.title}
+                                            </Text>
+                                            {/* Show Kiddo Cash balance for loyalty action */}
+                                            {isLoyaltyAction && (
+                                                <View style={styles.loyaltyBalanceContainer}>
+                                                    {loadingPoints ? (
+                                                        <Text style={styles.loyaltyBalanceText}>...</Text>
+                                                    ) : (
+                                                        <Text style={styles.loyaltyBalanceText}>
+                                                            ₹{Math.round(pointsBalance)}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
-                                    <Text style={styles.quickActionTitle}>{action.title}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -374,7 +418,6 @@ export default function AccountScreen() {
                 {config.menuItems && config.menuItems.length > 0 && (
                     <View style={styles.menuContainer}>
                         {config.menuItems.map((item, index) => {
-                            const isLogout = item.id === 'logout';
                             const iconName = item.icon as any;
 
                             return (
@@ -383,7 +426,6 @@ export default function AccountScreen() {
                                     style={[
                                         styles.menuItem,
                                         index === config.menuItems.length - 1 && styles.menuItemLast,
-                                        isLogout && styles.menuItemLogout,
                                     ]}
                                     onPress={() => handleAction(item)}
                                     activeOpacity={0.7}
@@ -392,26 +434,45 @@ export default function AccountScreen() {
                                         <Ionicons
                                             name={iconName}
                                             size={22}
-                                            color={isLogout ? '#ff4444' : Colors.text}
+                                            color={Colors.text}
                                             style={styles.menuIcon}
                                         />
-                                        <Text style={[
-                                            styles.menuItemText,
-                                            isLogout && styles.menuItemTextLogout
-                                        ]}>
+                                        <Text style={styles.menuItemText}>
                                             {item.title}
                                         </Text>
                                     </View>
-                                    {!isLogout && (
-                                        <Ionicons
-                                            name="chevron-forward"
-                                            size={20}
-                                            color={Colors.textSecondary}
-                                        />
-                                    )}
+                                    <Ionicons
+                                        name="chevron-forward"
+                                        size={20}
+                                        color={Colors.textSecondary}
+                                    />
                                 </TouchableOpacity>
                             );
                         })}
+                        
+                        {/* Logout Button inside menu container */}
+                        {config.logout && config.logout.enabled && (
+                            <>
+                                <View style={styles.menuDivider} />
+                                <TouchableOpacity
+                                    style={styles.menuItemLogout}
+                                    onPress={handleLogout}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.menuItemLeft}>
+                                        <Ionicons
+                                            name="log-out-outline"
+                                            size={22}
+                                            color="#ff4444"
+                                            style={styles.menuIcon}
+                                        />
+                                        <Text style={styles.menuItemTextLogout}>
+                                            {config.logout.confirmText}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 )}
 
@@ -436,18 +497,6 @@ export default function AccountScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
-
-                {/* Logout Button - Only show if logout is not in menu items */}
-                {config.logout && config.logout.enabled && !config.menuItems?.some(item => item.id === 'logout') && (
-                    <TouchableOpacity
-                        style={[styles.logoutButton, config.styles?.logoutButton]}
-                        onPress={handleLogout}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="log-out-outline" size={22} color="#ff4444" />
-                        <Text style={styles.logoutText}>{config.logout.confirmText}</Text>
-                    </TouchableOpacity>
-                )}
 
                 {/* App Version */}
                 {config.version && config.version.enabled && (
@@ -522,79 +571,111 @@ const styles = StyleSheet.create({
     },
     quickActionsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+        gap: 12,
     },
     quickActionCard: {
-        alignItems: 'center',
         flex: 1,
+        minWidth: 0,
+        aspectRatio: 1,
+    },
+    quickActionCardInner: {
+        backgroundColor: Colors.backgroundWhite,
+        borderRadius: 16,
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: Colors.border,
+        width: '100%',
+        height: '100%',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     quickActionIconContainer: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         backgroundColor: Colors.backgroundSecondary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 12,
         position: 'relative',
     },
     badge: {
         position: 'absolute',
-        top: -4,
-        right: -4,
-        backgroundColor: Colors.secondary,
-        borderRadius: 10,
-        minWidth: 20,
-        height: 20,
+        top: -6,
+        right: -6,
+        backgroundColor: Colors.primary,
+        borderRadius: 12,
+        minWidth: 24,
+        height: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 4,
+        paddingHorizontal: 6,
         borderWidth: 2,
         borderColor: Colors.backgroundWhite,
     },
     badgeText: {
         color: Colors.backgroundWhite,
-        fontSize: 10,
+        fontSize: 11,
         fontFamily: Fonts.Bold,
+        fontWeight: '700',
+    },
+    quickActionTitleContainer: {
+        minHeight: 56,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
     },
     quickActionTitle: {
-        fontSize: 13,
+        fontSize: 14,
         color: Colors.text,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.SemiBold,
+        fontWeight: '600',
         textAlign: 'center',
+        lineHeight: 20,
     },
-    loyaltyBalanceBadge: {
-        position: 'absolute',
-        bottom: -10,
-        left: '50%',
-        marginLeft: -25,
+    loyaltyBalanceContainer: {
+        marginTop: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: Colors.primary,
-        paddingHorizontal: 2,
-        paddingVertical: 2,
-        borderRadius: 10,
-        minWidth: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderColor: Colors.backgroundWhite,
+        borderRadius: 12,
     },
-    loyaltyBalanceBadgeText: {
-        fontSize: 11,
+    loyaltyBalanceText: {
+        fontSize: 12,
         color: Colors.backgroundWhite,
         fontFamily: Fonts.Bold,
+        fontWeight: '700',
     },
     menuContainer: {
         backgroundColor: '#fafafa',
-        borderRadius: 20,
+        borderRadius: 16,
         marginHorizontal: 20,
+        marginTop: 8,
         overflow: 'hidden',
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: Colors.border,
+        backgroundColor: '#fafafa',
     },
     menuItemLast: {
         borderBottomWidth: 0,
@@ -612,26 +693,23 @@ const styles = StyleSheet.create({
         color: Colors.text,
         fontFamily: Fonts.Medium,
     },
+    menuDivider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: Colors.border,
+    },
     menuItemLogout: {
-        marginTop: 1,
-        borderTopWidth: 1,
-        borderTopColor: Colors.border,
-    },
-    menuItemTextLogout: {
-        color: '#ff4444',
-    },
-    logoutButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: Colors.grey,
-        borderColor: '#ffcccc',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: '#fafafa',
     },
-    logoutText: {
+    menuItemTextLogout: {
         fontSize: 16,
         color: '#ff4444',
         fontFamily: Fonts.SemiBold,
-        marginLeft: 8,
+        fontWeight: '600',
     },
     loginRequiredWrapper: {
         flex: 1,

@@ -56,26 +56,6 @@ export const accountConfig = {
     // Menu Items Configuration
     menuItems: [
         {
-            id: "favorites",
-            title: "Wishlist",
-            icon: "heart-outline",
-            actionType: "navigate",
-            action: {
-                type: "navigate",
-                screen: "Wishlist",
-            },
-        },
-        {
-            id: "returns",
-            title: "My Returns",
-            icon: "swap-horizontal-outline",
-            actionType: "navigate",
-            action: {
-                type: "navigate",
-                screen: "Returns",
-            },
-        },
-        {
             id: "help",
             title: "Help & Support",
             icon: "help-circle-outline",
@@ -118,15 +98,6 @@ export const accountConfig = {
                 title: "Privacy Policy",
             },
         },
-        {
-            id: "logout",
-            title: "Logout",
-            icon: "log-out-outline",
-            actionType: "logout",
-            action: {
-                type: "logout",
-            },
-        },
     ],
 
     // Logout Configuration
@@ -140,7 +111,7 @@ export const accountConfig = {
 
     // App Version Configuration
     version: {
-        enabled: true,
+        enabled: false,
         text: "Kiddo App v1.0.0",
     },
 

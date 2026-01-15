@@ -1,5 +1,8 @@
 import { Image } from 'expo-image';
 import { Platform, StyleSheet } from 'react-native';
+import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { useRef, useCallback } from 'react';
+import { useSegments } from 'expo-router';
 
 import { Collapsible } from '@/components/ui/collapsible';
 import { ExternalLink } from '@/components/external-link';
@@ -8,10 +11,43 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
+import Animated from 'react-native-reanimated';
 
 export default function TabTwoScreen() {
+  const scrollRef = useRef<Animated.ScrollView>(null);
+  const segments = useSegments();
+  const navigationState = useNavigationState((state) => state);
+  const previousTabRef = useRef<string | null>(null);
+  const isInitialMount = useRef(true);
+  const wasOnDetailScreen = useRef(false);
+
+  // Scroll to top only when switching tabs, not when navigating back
+  useFocusEffect(
+    useCallback(() => {
+      const isOnDetailScreen = segments.length > 1;
+      const activeTab = navigationState?.routes?.[navigationState?.index]?.name || 'curated';
+      const previousTab = previousTabRef.current;
+      const isTabSwitch = previousTab !== null && previousTab !== activeTab;
+
+      if (isOnDetailScreen) {
+        wasOnDetailScreen.current = true;
+        return;
+      }
+
+      const shouldScrollToTop = isInitialMount.current || (isTabSwitch && !wasOnDetailScreen.current);
+
+      if (shouldScrollToTop && scrollRef.current) {
+        scrollRef.current.scrollTo({ y: 0, animated: false });
+      }
+
+      previousTabRef.current = activeTab;
+      wasOnDetailScreen.current = false;
+      isInitialMount.current = false;
+    }, [segments, navigationState])
+  );
   return (
     <ParallaxScrollView
+      ref={scrollRef}
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
       headerImage={
         <IconSymbol

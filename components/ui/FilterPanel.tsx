@@ -5,6 +5,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import BaseModal from '@/components/ui/BaseModal';
 import { PriceSlider } from '@/components/ui/PriceSlider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SearchIcon } from './SearchIcon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -182,7 +183,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     <Text style={styles.rightPaneTitle}>{title}</Text>
                     {activeFacet.buckets.length > 8 && (
                         <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={16} color={Colors.textSecondary} />
+                            <SearchIcon size={16} />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder={`Search ${title}...`}
@@ -232,6 +233,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             onClose={onClose}
             title="Filters"
             type="bottomSheet"
+            closeButtonPosition="above"
             containerStyle={styles.modalContainer}
             contentStyle={styles.modalContent}
         >
@@ -286,8 +288,15 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 };
 
 const styles = StyleSheet.create({
-    modalContainer: { height: '85%', maxHeight: '85%' },
-    modalContent: { flex: 1 },
+    modalContainer: { 
+        height: '75%',
+        maxHeight: '85%',
+        minHeight: 500,
+    },
+    modalContent: { 
+        flex: 1,
+        paddingBottom: 20,
+    },
     main: { flex: 1, flexDirection: 'row' },
     
     // Left Pane
