@@ -183,6 +183,10 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
               amount
               currencyCode
             }
+            compareAtPrice {
+              amount
+              currencyCode
+            }
             availableForSale
             quantityAvailable
             selectedOptions {

@@ -1,20 +1,20 @@
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAddress } from '@/context/AddressContext';
+import { useAuth } from '@/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
     Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
-import { useAddress, Address } from '@/context/AddressContext';
-import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function AddressesScreen() {
     const router = useRouter();

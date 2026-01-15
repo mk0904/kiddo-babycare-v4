@@ -10,6 +10,7 @@ export default function AuthLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="otp" />
       <Stack.Screen name="onboarding" />
+      <Stack.Screen name="kiddo-details" />
     </Stack>
   );
 }

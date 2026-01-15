@@ -379,7 +379,7 @@ export default function AccountScreen() {
                                         <View style={styles.quickActionIconContainer}>
                                             <Ionicons
                                                 name={iconName}
-                                                size={28}
+                                                size={20}
                                                 color={Colors.primary}
                                             />
                                             {action.showBadge && badgeCount > 0 && (
@@ -604,9 +604,9 @@ const styles = StyleSheet.create({
         }),
     },
     quickActionIconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: Colors.backgroundSecondary,
         justifyContent: 'center',
         alignItems: 'center',

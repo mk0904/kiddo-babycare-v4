@@ -37,15 +37,8 @@ export default function OTPScreen() {
 
     if (isAuthenticated && !loading && otpVerified && !isGuest) {
       const navigationTimer = setTimeout(() => {
-        // Check if it's a new customer (default firstName is 'User' for new customers)
-        // Redirect to onboarding if it's a new customer
-        const isNewCustomer = user?.firstName === 'User' || !user?.firstName;
-        
-        if (isNewCustomer) {
-          router.replace('/(auth)/onboarding');
-        } else {
-          router.replace('/(tabs)');
-        }
+        // Always redirect to kiddo-details after OTP verification
+        router.replace('/(auth)/kiddo-details');
       }, 600);
 
       return () => clearTimeout(navigationTimer);

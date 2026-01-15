@@ -4,6 +4,7 @@
 import { Alert, Platform } from 'react-native';
 import { shopifyAdminApi } from './shopifyAdminApi';
 import { orderService, OrderItem, calculateETA } from './orderService';
+import { configService } from './configService';
 
 // Safely import Razorpay (won't work in Expo Go)
 let RazorpayCheckout: any = null;
@@ -13,9 +14,28 @@ try {
     console.log('[PaymentService] Razorpay native module not found (Expo Go mode)');
 }
 
-// Razorpay Configuration
-// TODO: Move to environment variables
-const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_RulXvHRLkzOuuj';
+// Get Razorpay Configuration from config file
+const getRazorpayKeyId = (): string => {
+    // First try environment variable
+    if (process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID) {
+        return process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+    }
+    
+    // Then try config file
+    try {
+        const razorpayConfig = configService.getRazorpayConfig();
+        if (razorpayConfig?.keyId) {
+            console.log('[PaymentService] Using Razorpay key from config:', razorpayConfig.keyId.substring(0, 10) + '...');
+            return razorpayConfig.keyId;
+        }
+    } catch (e) {
+        console.warn('[PaymentService] Could not load Razorpay config from configService');
+    }
+    
+    // Fallback to test key (should not be used in production)
+    console.warn('[PaymentService] Using fallback test key - this should not happen in production!');
+    return 'rzp_test_RulXvHRLkzOuuj';
+};
 
 // Types
 export interface PaymentOptions {
@@ -131,13 +151,23 @@ export const initiateRazorpayPayment = async (
             });
         }
 
+        // Get Razorpay key (live or test based on config)
+        const razorpayKeyId = getRazorpayKeyId();
+        
+        // Log which key is being used (for debugging)
+        if (razorpayKeyId.startsWith('rzp_test_')) {
+            console.warn('[PaymentService] ⚠️ WARNING: Using TEST Razorpay key - payments will not charge real money!');
+        } else if (razorpayKeyId.startsWith('rzp_live_')) {
+            console.log('[PaymentService] ✓ Using LIVE Razorpay key - real payments enabled');
+        }
+
         const options: PaymentOptions = {
             description: orderData.orderId
                 ? `Order payment for ${orderData.items?.length || 0} items`
                 : 'Order Payment',
             image: 'https://kiddo.app/logo.png', // Your app logo
             currency: currency,
-            key: RAZORPAY_KEY_ID,
+            key: razorpayKeyId,
             amount: Math.round(amount * 100), // Convert to paise
             name: 'Kiddo',
             prefill: {
@@ -280,7 +310,28 @@ export const createOrderWithPayment = async (
                 };
             }
 
-            // Payment successful - create order in Shopify
+            // Verify payment signature (basic client-side check)
+            // NOTE: In production, this should be done on your backend for security
+            if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
+                const isVerified = await verifyRazorpayPayment(
+                    paymentResult.orderId,
+                    paymentResult.paymentId,
+                    paymentResult.signature
+                );
+                
+                if (!isVerified) {
+                    console.error('[PaymentService] Payment verification failed');
+                    return {
+                        success: false,
+                        error: 'Payment verification failed. Please contact support.',
+                        cancelled: false,
+                    };
+                }
+            } else {
+                console.warn('[PaymentService] Missing payment verification data');
+            }
+
+            // Payment successful and verified - create order in Shopify
             const shopifyOrder = await createShopifyOrder(orderData, {
                 paymentId: paymentResult.paymentId,
                 paymentStatus: 'paid',

@@ -55,7 +55,6 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@expo/webpack-config": "^19.0.1",
     "@types/lodash": "^4.17.21",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",

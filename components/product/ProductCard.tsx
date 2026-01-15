@@ -39,6 +39,7 @@ interface ProductCardProps {
   horizontalPadding?: number;
   gap?: number;
   width?: number; // Add explicit width support
+  averageMarketPrice?: number | null; // Average market price for essentials
 }
 
 const ProductCardComponent: React.FC<ProductCardProps> = ({
@@ -48,6 +49,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   index,
   containerStyle,
   numColumns = 2,
+  averageMarketPrice = null,
   horizontalPadding = 20,
   gap = 8,
   width,
@@ -260,6 +262,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has Essentials tag
+  const hasEssentialsTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials',
+      ),
+    [tags],
+  );
+
   const handlePress = useCallback(() => {
     if (onPress) {
       onPress(product);
@@ -357,16 +368,33 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
           <View style={styles.priceContainer}>
             <View style={styles.priceColumn}>
-              <View style={styles.priceRow}>
-                <Text style={styles.mainPrice}>
-                  {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
-                </Text>
-                {discountPrice && parsePrice(discountPrice) > priceNumber && (
-                  <Text style={styles.comparePrice}>
-                    ₹{parsePrice(discountPrice).toFixed(0)}
+              {hasEssentialsTag && averageMarketPrice && averageMarketPrice > 0 ? (
+                <View style={styles.essentialsPriceContainer}>
+                  <View style={styles.essentialsPriceRow}>
+                    <Text style={styles.essentialsLabel}>Market Price:</Text>
+                    <Text style={styles.essentialsMarketPrice}>
+                      ₹{averageMarketPrice.toFixed(0)}
+                    </Text>
+                  </View>
+                  <View style={styles.essentialsPriceRow}>
+                    <Text style={styles.essentialsLabel}>Our Price:</Text>
+                    <Text style={styles.essentialsOurPrice}>
+                      ₹{priceNumber > 0 ? priceNumber.toFixed(0) : '0'}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.priceRow}>
+                  <Text style={styles.mainPrice}>
+                    {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
                   </Text>
-                )}
-              </View>
+                  {discountPrice && parsePrice(discountPrice) > priceNumber && (
+                    <Text style={styles.comparePrice}>
+                      ₹{parsePrice(discountPrice).toFixed(0)}
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -459,6 +487,34 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     fontSize: 11,
     fontFamily: Fonts.Medium,
+  },
+  essentialsPriceContainer: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  essentialsPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  essentialsLabel: {
+    color: '#666666',
+    fontSize: 10,
+    fontFamily: Fonts.Medium,
+    lineHeight: 14,
+  },
+  essentialsMarketPrice: {
+    color: '#888888',
+    textDecorationLine: 'line-through',
+    fontSize: 10,
+    fontFamily: Fonts.Medium,
+    lineHeight: 14,
+  },
+  essentialsOurPrice: {
+    color: '#2c6975',
+    fontSize: 12,
+    fontFamily: Fonts.Bold,
+    lineHeight: 16,
   },
   vendorBadge: {
     position: 'absolute',

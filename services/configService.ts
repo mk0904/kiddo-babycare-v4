@@ -176,6 +176,26 @@ class ConfigService {
     return this.config;
   }
 
+  // Get providers configuration (Razorpay, OTP, etc.)
+  getProvidersConfig() {
+    try {
+      const kiddoConfig = require('@/config/kiddoAppConfig.json');
+      return kiddoConfig.providers || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  // Get Razorpay configuration
+  getRazorpayConfig() {
+    try {
+      const providers = this.getProvidersConfig();
+      return providers.razorpay || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Update config
   updateConfig(config: AppConfig) {
     this.config = config;

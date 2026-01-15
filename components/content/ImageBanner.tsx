@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { ImageBannerBlock } from '@/types/content';
 import { Colors } from '@/constants/theme';
+import { ImageBannerBlock } from '@/types/content';
+import React from 'react';
+import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
