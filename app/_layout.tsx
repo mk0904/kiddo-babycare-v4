@@ -1,20 +1,21 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import React from 'react';
 import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-reanimated';
 
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
-import { AuthProvider } from '@/context/AuthContext';
 import { AddressProvider } from '@/context/AddressContext';
-import { WishlistProvider } from '@/context/WishlistContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { NectorProvider } from '@/context/NectorContext';
 import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
-import { NectorProvider } from '@/context/NectorContext';
+import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 // Create a QueryClient instance
@@ -31,9 +32,13 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
+// Prevent the default Expo splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isSplashVisible, setIsSplashVisible] = React.useState(true);
+  const [appIsReady, setAppIsReady] = React.useState(false);
 
   const [fontsLoaded] = useFonts({
     'Metropolis-Regular': require('../assets/fonts/Metropolis-Regular.otf'),
@@ -42,7 +47,25 @@ export default function RootLayout() {
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
   });
 
-  if (!fontsLoaded) {
+  // Hide the native splash screen as soon as component mounts
+  // This happens before the custom splash renders
+  React.useEffect(() => {
+    // Hide native splash immediately
+    const hideNativeSplash = async () => {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // Ignore errors
+      }
+    };
+    hideNativeSplash();
+    
+    if (fontsLoaded) {
+      setAppIsReady(true);
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded || !appIsReady) {
     return null;
   }
 
