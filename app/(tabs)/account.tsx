@@ -220,9 +220,15 @@ export default function AccountScreen() {
                 break;
 
             case 'webview':
-                // Open in browser for now as we don't have WebView screen setup
+                // Navigate to WebView screen
                 if (params.url) {
-                    Linking.openURL(params.url);
+                    router.push({
+                        pathname: '/webview',
+                        params: {
+                            url: params.url,
+                            title: params.title || actionConfig.title || 'Web View',
+                        },
+                    } as any);
                 }
                 break;
 

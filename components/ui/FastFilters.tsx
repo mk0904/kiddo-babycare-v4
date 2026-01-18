@@ -45,8 +45,10 @@ export const FastFilters: React.FC<FastFiltersProps> = ({
             f.type === 'range'
         );
 
-        if (priceFacet && priceFacet.buckets && priceFacet.buckets.length > 0) {
-            const firstBucket = priceFacet.buckets[0];
+        // Check both buckets and values (Shopify uses different structures)
+        const priceBuckets = priceFacet?.buckets || priceFacet?.values || [];
+        if (priceFacet && priceBuckets.length > 0) {
+            const firstBucket = priceBuckets[0];
             let maxPrice = 10000;
             
             if (firstBucket.to) {
@@ -78,15 +80,17 @@ export const FastFilters: React.FC<FastFiltersProps> = ({
             f.title?.toLowerCase().includes('brand')
         );
 
-        if (brandFacet && brandFacet.buckets) {
-            const topBrands = brandFacet.buckets
+        // Check both buckets and values (Shopify uses different structures)
+        const brandBuckets = brandFacet?.buckets || brandFacet?.values || [];
+        if (brandFacet && brandBuckets.length > 0) {
+            const topBrands = brandBuckets
                 .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
                 .slice(0, 3)
                 .map((bucket: any) => ({
                     id: `brand-${bucket.value || bucket.label}`,
                     label: bucket.label || bucket.value,
                     value: bucket.value || bucket.label,
-                    attribute: brandFacet.attribute,
+                    attribute: brandFacet.attribute || brandFacet.id,
                 }));
             filters.push(...topBrands);
         }

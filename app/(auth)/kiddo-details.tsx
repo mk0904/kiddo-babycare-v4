@@ -1,17 +1,20 @@
 import BaseModal from '@/components/ui/BaseModal';
 import { Button } from '@/components/ui/Button';
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { customerService } from '@/services/customerService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,12 +34,14 @@ interface KiddoData {
 
 export default function KiddoDetailsScreen() {
   const router = useRouter();
+  const { user, login } = useAuth();
   const [kiddos, setKiddos] = useState<KiddoData[]>([
     { name: '', month: '', year: '', gender: null }
   ]);
   const [currentKiddoIndex, setCurrentKiddoIndex] = useState(0);
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [showYearModal, setShowYearModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const currentKiddo = kiddos[currentKiddoIndex];
 
@@ -58,12 +63,64 @@ export default function KiddoDetailsScreen() {
     );
   };
 
-  const handleContinue = () => {
+  const calculateAgeInMonths = (month: string, year: string): number => {
+    if (!month || !year) return 0;
+    
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return 0;
+    
+    const birthDate = new Date(parseInt(year), monthIndex, 1);
+    const today = new Date();
+    const yearsDiff = today.getFullYear() - birthDate.getFullYear();
+    const monthsDiff = today.getMonth() - birthDate.getMonth();
+    
+    return yearsDiff * 12 + monthsDiff;
+  };
+
+  const handleContinue = async () => {
     if (!isFormValid()) {
       return; // Don't proceed if form is invalid
     }
-    // Navigate to main app
-    router.replace('/(tabs)');
+
+    if (!user?.customerAccessToken || !user?.id) {
+      Alert.alert('Error', 'Please login first');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Get the first kiddo with valid data
+      const firstKiddo = kiddos.find(k => k.month && k.year && k.gender !== null);
+      
+      if (firstKiddo) {
+        const ageMonths = calculateAgeInMonths(firstKiddo.month, firstKiddo.year);
+        
+        // Update customer metafields
+        const result = await customerService.updateCustomerWithMetafields(
+          user.customerAccessToken,
+          {}, // No name update needed here
+          {
+            baby_name: firstKiddo.name || '',
+            age: ageMonths.toString(),
+            gender: firstKiddo.gender || '',
+          },
+          user.id
+        );
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to save kiddo details');
+        }
+      }
+
+      // Navigate to main app
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error('Error saving kiddo details:', error);
+      Alert.alert('Error', error.message || 'Failed to save details. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSkip = () => {
@@ -243,7 +300,8 @@ export default function KiddoDetailsScreen() {
         <Button
           title="Continue"
           onPress={handleContinue}
-          disabled={!isFormValid()}
+          disabled={!isFormValid() || saving}
+          loading={saving}
           style={styles.continueButton}
         />
         <Text style={styles.footerHelperText}>Used only to personalize your experience.</Text>

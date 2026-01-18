@@ -10,7 +10,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kiddo.ak"
+      "bundleIdentifier": "com.kiddo.ak",
+      "config": {
+        "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show your address on the map",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show your address on the map"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +28,18 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.barereactnativeapp072"
+      "package": "com.barereactnativeapp072",
+      "permissions": [
+        "android.permission.RECEIVE_SMS",
+        "android.permission.READ_SMS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
+        }
+      }
     },
     "web": {
       "output": "static",

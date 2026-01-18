@@ -1,5 +1,6 @@
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
+import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
@@ -81,6 +82,7 @@ export default function CartScreen() {
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
+    const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -570,7 +572,10 @@ export default function CartScreen() {
                         <View style={styles.tryAndBuySection}>
                             <View style={styles.tryAndBuyHeader}>
                                 <Text style={styles.tryAndBuyTitle}>Try Before You Buy</Text>
-                                <TouchableOpacity style={styles.knowMoreButton}>
+                                <TouchableOpacity 
+                                    style={styles.knowMoreButton}
+                                    onPress={() => setShowTryAndBuyModal(true)}
+                                >
                                     <Text style={styles.knowMoreText}>Know more</Text>
                                     <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
                                 </TouchableOpacity>
@@ -938,6 +943,12 @@ export default function CartScreen() {
             <GiftWrappingModal
                 visible={showGiftModal}
                 onClose={() => setShowGiftModal(false)}
+            />
+
+            {/* Try And Buy Modal */}
+            <TryAndBuyModal
+                visible={showTryAndBuyModal}
+                onClose={() => setShowTryAndBuyModal(false)}
             />
         </SafeAreaView>
     );

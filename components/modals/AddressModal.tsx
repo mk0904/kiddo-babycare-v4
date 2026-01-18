@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAddress, Address } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { Colors, Fonts } from '@/constants/theme';
+import { EstimatedDeliveryTime } from '@/components/ui/EstimatedDeliveryTime';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -106,17 +107,17 @@ export const AddressModal: React.FC<AddressModalProps> = ({
                     ) : addresses.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <View style={styles.emptyIconContainer}>
-                                <Ionicons name="location-outline" size={80} color="#CCC" />
+                                <Ionicons name="location-outline" size={48} color="#D1D5DB" />
                             </View>
                             <Text style={styles.emptyTitle}>No Saved Addresses</Text>
                             <Text style={styles.emptySubtitle}>
-                                Add an address to make checkout faster and easier
+                                Add an address to make checkout faster
                             </Text>
                             <TouchableOpacity
                                 style={styles.addAddressButton}
                                 onPress={handleAddNewAddress}
                             >
-                                <Ionicons name="add" size={20} color="#FFF" />
+                                <Ionicons name="add" size={18} color="#FFF" />
                                 <Text style={styles.addAddressButtonText}>Add Address</Text>
                             </TouchableOpacity>
                         </View>
@@ -148,6 +149,15 @@ export const AddressModal: React.FC<AddressModalProps> = ({
                                                     </View>
                                                 )}
                                             </View>
+                                            <View style={styles.addressHeaderRight}>
+                                                {/* Estimated Delivery Time - shown on the right */}
+                                                {selectedAddressId === address.id && address.latitude && address.longitude && (
+                                                    <EstimatedDeliveryTime
+                                                        addressLatitude={address.latitude}
+                                                        addressLongitude={address.longitude}
+                                                        style={styles.deliveryTime}
+                                                    />
+                                                )}
                                             <TouchableOpacity
                                                 style={styles.editButton}
                                                 onPress={(e) => {
@@ -157,6 +167,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({
                                             >
                                                 <Ionicons name="create-outline" size={20} color={Colors.primary} />
                                             </TouchableOpacity>
+                                            </View>
                                         </View>
                                         <Text style={styles.addressText}>{address.address1}</Text>
                                         {address.address2 && (
@@ -251,38 +262,37 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyContainer: {
-        flex: 1,
-        padding: 40,
+        padding: 32,
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: 400,
+        minHeight: 280,
     },
     emptyIconContainer: {
-        marginBottom: 24,
+        marginBottom: 16,
     },
     emptyTitle: {
-        fontSize: 24,
+        fontSize: 18,
         fontFamily: Fonts.Bold,
         color: '#000',
-        marginBottom: 12,
+        marginBottom: 8,
         textAlign: 'center',
     },
     emptySubtitle: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: Fonts.Regular,
         color: '#666',
         textAlign: 'center',
-        marginBottom: 32,
-        lineHeight: 24,
+        marginBottom: 24,
+        lineHeight: 20,
     },
     addAddressButton: {
         backgroundColor: Colors.primary,
-        paddingHorizontal: 32,
-        paddingVertical: 14,
-        borderRadius: 25,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 20,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
     },
     addAddressButtonText: {
         color: '#FFF',
@@ -298,9 +308,9 @@ const styles = StyleSheet.create({
     },
     addressCard: {
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 12,
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 8,
         borderWidth: 1,
         borderColor: '#E0E0E0',
     },
@@ -318,7 +328,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     addressInfo: {
         flex: 1,
@@ -326,6 +336,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: 8,
+    },
+    addressHeaderRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    deliveryTime: {
+        marginRight: 4,
     },
     addressName: {
         fontSize: 14,
@@ -351,23 +369,23 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: Fonts.Regular,
         color: '#000',
-        marginBottom: 2,
-        lineHeight: 18,
+        marginBottom: 1,
+        lineHeight: 16,
     },
     addressPhone: {
-        fontSize: 12,
+        fontSize: 11,
         fontFamily: Fonts.Regular,
         color: '#666',
-        marginTop: 6,
+        marginTop: 4,
     },
     selectedIndicator: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 8,
-        paddingTop: 8,
+        marginTop: 6,
+        paddingTop: 6,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
-        gap: 8,
+        gap: 6,
     },
     selectedText: {
         fontSize: 12,

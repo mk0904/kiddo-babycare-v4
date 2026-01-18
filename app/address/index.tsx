@@ -123,7 +123,7 @@ export default function AddressesScreen() {
                 <EmptyState
                     icon="location-outline"
                     title="No Saved Addresses"
-                    subtitle="Add an address to make checkout faster and easier"
+                    subtitle="Add an address to make checkout faster"
                     buttonText="Add Address"
                     onButtonPress={() => {
                         if (isGuest) {
@@ -239,13 +239,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: 16,
     },
     addressCard: {
         backgroundColor: Colors.backgroundWhite,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: Colors.border,
     },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     addressInfo: {
         flex: 1,
@@ -266,10 +266,10 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     addressName: {
-        fontSize: 16,
+        fontSize: 15,
         fontFamily: Fonts.Bold,
         color: Colors.text,
-        marginRight: 12,
+        marginRight: 10,
     },
     defaultBadge: {
         backgroundColor: Colors.primary,
@@ -295,16 +295,16 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     addressText: {
-        fontSize: 14,
+        fontSize: 13,
         color: Colors.text,
         fontFamily: Fonts.Regular,
-        marginBottom: 4,
-        lineHeight: 20,
+        marginBottom: 2,
+        lineHeight: 18,
     },
     addressPhone: {
-        fontSize: 14,
+        fontSize: 12,
         color: Colors.textSecondary,
         fontFamily: Fonts.Regular,
-        marginTop: 8,
+        marginTop: 6,
     },
 });

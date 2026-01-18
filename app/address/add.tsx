@@ -1,25 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-    Platform,
-    Dimensions,
-    Alert,
-    TextInput,
-    ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts } from '@/constants/theme';
-import MapView, { Region, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
-import _ from 'lodash';
 import { SearchIcon } from '@/components/ui/SearchIcon';
+import { Colors, Fonts } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GOOGLE_API_KEY = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -91,33 +91,98 @@ export default function MapAddressScreen() {
     const [isSearching, setIsSearching] = useState(false);
 
     // Timeout for map drag debounce
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Calculate delivery time for selected location
+    const { deliveryTime } = useDeliveryStatus(
+        selectedLocation?.latitude,
+        selectedLocation?.longitude
+    );
+    
+    const isServiceable = deliveryTime !== null && deliveryTime <= 60;
 
     useEffect(() => {
         (async () => {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') return;
+            try {
+                // Check if Location is available
+                if (!Location) {
+                    setMapError('Location services are not available');
+                    return;
+                }
 
-            let location = await Location.getCurrentPositionAsync({});
-            const newRegion = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-            };
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    console.log('Location permission not granted');
+                    setMapError('Location permission is required to use this feature');
+                    return;
+                }
 
-            setInitialRegion(newRegion);
-            mapRef.current?.animateToRegion(newRegion, 1000);
-            performReverseGeocode(newRegion.latitude, newRegion.longitude);
+                // Industry best practice: Try last known position first (instant)
+                let location = await Location.getLastKnownPositionAsync();
+                
+                // If no cached location, get fresh one with timeout
+                if (!location || !location.coords) {
+                    location = await Promise.race([
+                        Location.getCurrentPositionAsync({
+                            accuracy: Location.Accuracy.Low,
+                        }),
+                        new Promise<null>((_, reject) => 
+                            setTimeout(() => reject(new Error('Location timeout')), 8000)
+                        ),
+                    ]) as any;
+                }
+                
+                if (!location?.coords) {
+                    setMapError('Could not get location coordinates');
+                    return;
+                }
+
+                const newRegion = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                };
+
+                setInitialRegion(newRegion);
+                
+                // Start geocoding immediately
+                performReverseGeocode(newRegion.latitude, newRegion.longitude);
+                
+                // Animate map after a short delay (non-blocking)
+                setTimeout(() => {
+                    try {
+                    mapRef.current?.animateToRegion(newRegion, 1000);
+                    } catch (error) {
+                        console.error('Error animating to region:', error);
+                    }
+                }, Platform.OS === 'android' ? 500 : 0);
+            } catch (error: any) {
+                console.error('Error getting location:', error);
+                setMapError(error?.message || 'Could not get your location. Please try again.');
+            }
         })();
     }, []);
 
     const performReverseGeocode = async (latitude: number, longitude: number) => {
         setLoadingAddress(true);
+        
         try {
+            // Use AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`,
+                { signal: controller.signal }
             );
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`Geocoding failed: ${response.status}`);
+            }
+            
             const data = await response.json();
 
             if (data.status === 'OK' && data.results.length > 0) {
@@ -151,22 +216,30 @@ export default function MapAddressScreen() {
                 };
 
                 setSelectedLocation(locData);
-                // We do NOT update searchQuery here to avoid clearing user's manual typing or confusing them
-                // setSearchQuery(formattedAddress); 
+                setMapError(null);
+            } else {
+                console.log('Geocoding status:', data.status);
+                setMapError('Could not find address for this location.');
             }
-        } catch (error) {
-            console.log('Reverse geocoding error:', error);
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.error('Geocoding timeout');
+                setMapError('Request timed out. Please check your internet connection.');
+            } else {
+                console.error('Reverse geocoding error:', error);
+                setMapError(error?.message || 'Failed to get address. Please try again.');
+            }
         } finally {
             setLoadingAddress(false);
         }
     };
 
     const onRegionChangeComplete = (newRegion: Region) => {
-        // Debounce reverse geocoding on drag
+        // Debounce reverse geocoding on drag (reduced delay for faster response)
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
             performReverseGeocode(newRegion.latitude, newRegion.longitude);
-        }, 800);
+        }, 500); // Reduced from 800ms to 500ms
     };
 
     const handleSearchChange = async (text: string) => {
@@ -207,18 +280,53 @@ export default function MapAddressScreen() {
             return;
         }
 
-        router.push({
-            pathname: '/address/form',
-            params: { locationData: JSON.stringify(selectedLocation) }
-        });
+        try {
+            const locationDataString = JSON.stringify(selectedLocation);
+            router.push({
+                pathname: '/address/form',
+                params: { locationData: locationDataString }
+            });
+        } catch (error) {
+            console.error('Error serializing location data:', error);
+            Alert.alert('Error', 'Failed to process location data. Please try again.');
+        }
     };
 
     const handleFindMe = async () => {
         try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') return;
+            setLoadingAddress(true);
+            setMapError(null);
 
-            const location = await Location.getCurrentPositionAsync({});
+            // Request location permission
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Required', 'Please grant location permission to use this feature.');
+                setLoadingAddress(false);
+                return;
+            }
+
+            // Industry best practice: Try to get last known position first (instant)
+            let location = await Location.getLastKnownPositionAsync();
+
+            // If no cached location or it's too old (> 30 seconds), get fresh location
+            if (!location || !location.coords) {
+                // Get fresh location with timeout
+                location = await Promise.race([
+                    Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Low,
+                    }),
+                    new Promise<null>((_, reject) => 
+                        setTimeout(() => reject(new Error('Location timeout')), 8000)
+                    ),
+                ]) as any;
+            }
+
+            if (!location?.coords) {
+                Alert.alert('Error', 'Could not get location coordinates.');
+                setLoadingAddress(false);
+                return;
+            }
+
             const newRegion = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -226,9 +334,68 @@ export default function MapAddressScreen() {
                 longitudeDelta: 0.005,
             };
 
-            mapRef.current?.animateToRegion(newRegion, 1000);
-        } catch (error) {
-            Alert.alert('Error', 'Could not fetch current location.');
+            // Update initial region
+            setInitialRegion(newRegion);
+
+            // Start geocoding immediately (don't wait for map animation)
+            performReverseGeocode(newRegion.latitude, newRegion.longitude);
+
+            // Animate map to location (non-blocking)
+            if (mapRef.current) {
+                try {
+                    mapRef.current.animateToRegion(newRegion, 1000);
+                } catch (mapError) {
+                    console.error('Error animating map:', mapError);
+                    // Continue even if animation fails
+                }
+            }
+
+            // If we used cached location, fetch fresh one in background and update
+            if (location.timestamp) {
+                const age = Date.now() - location.timestamp;
+                if (age > 5000) { // If cached location is > 5 seconds old
+                    Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Low,
+                    })
+                        .then((freshLocation) => {
+                            if (freshLocation?.coords) {
+                                const freshRegion = {
+                                    latitude: freshLocation.coords.latitude,
+                                    longitude: freshLocation.coords.longitude,
+                                    latitudeDelta: 0.005,
+                                    longitudeDelta: 0.005,
+                                };
+                                
+                                // Only update if location changed significantly (> 50 meters)
+                                const distance = Math.sqrt(
+                                    Math.pow(freshLocation.coords.latitude - newRegion.latitude, 2) +
+                                    Math.pow(freshLocation.coords.longitude - newRegion.longitude, 2)
+                                ) * 111000; // Convert to meters
+                                
+                                if (distance > 50) {
+                                    setInitialRegion(freshRegion);
+                                    performReverseGeocode(freshRegion.latitude, freshRegion.longitude);
+                                    if (mapRef.current) {
+                                        mapRef.current.animateToRegion(freshRegion, 1000);
+                                    }
+                                }
+                            }
+                        })
+                        .catch((error) => {
+                            console.log('Background location update failed:', error);
+                            // Silent fail - we already have a location
+                        });
+                }
+            }
+        } catch (error: any) {
+            console.error('Error finding location:', error);
+            setLoadingAddress(false);
+            
+            if (error?.message?.includes('timeout')) {
+                Alert.alert('Timeout', 'Location request timed out. Please try again or select location manually.');
+            } else {
+                Alert.alert('Error', error?.message || 'Could not fetch current location. Please try again.');
+            }
         }
     };
 
@@ -293,14 +460,40 @@ export default function MapAddressScreen() {
 
             {/* Map */}
             <View style={styles.mapContainer}>
+                {mapError ? (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{mapError}</Text>
+                        <TouchableOpacity 
+                            style={styles.retryButton} 
+                            onPress={() => {
+                                setMapError(null);
+                                handleFindMe();
+                            }}
+                        >
+                            <Text style={styles.retryButtonText}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
                 <MapView
                     ref={mapRef}
                     style={styles.map}
+                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                     initialRegion={initialRegion}
                     onRegionChangeComplete={onRegionChangeComplete}
                     showsUserLocation={false}
                     showsMyLocationButton={false}
+                    onMapReady={() => {
+                        // Ensure map is ready before operations
+                        if (Platform.OS === 'android' && mapRef.current) {
+                                try {
+                            mapRef.current.animateToRegion(initialRegion, 0);
+                                } catch (error) {
+                                    console.error('Error animating map:', error);
+                                }
+                        }
+                    }}
                 />
+                )}
 
                 {/* Fixed Center Pin */}
                 <View style={styles.markerFixed}>
@@ -316,33 +509,40 @@ export default function MapAddressScreen() {
             {/* Bottom Sheet */}
             <View style={styles.bottomSheet}>
                 <View style={styles.bottomSheetContent}>
-                    <Text style={styles.bottomSheetTitle}>Select your delivery location</Text>
-
                     <View style={styles.addressRow}>
                         <View style={styles.addressDetails}>
                             <Text style={styles.addressCode}>
                                 {loadingAddress ? 'Locating...' : (selectedLocation?.city || selectedLocation?.formattedAddress?.split(',')[0] || 'Select Location')}
                             </Text>
+                            <View style={styles.addressFullRow}>
                             <Text style={styles.addressFull} numberOfLines={2}>
                                 {loadingAddress ? 'Fetching address details...' : (selectedLocation?.formattedAddress || 'Drag map to place pin')}
                             </Text>
+                                {/* Find Me button on the right */}
+                                <TouchableOpacity style={styles.findMeButtonSmall} onPress={handleFindMe}>
+                                    <Ionicons name="paper-plane" size={16} color={Colors.primary} />
+                                    <Text style={styles.findMeTextSmall}>Find Me</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.findMeButton} onPress={handleFindMe}>
-                        <Ionicons name="locate" size={20} color={Colors.primary} />
-                        <Text style={styles.findMeText}>Use Current Location</Text>
-                    </TouchableOpacity>
-
                     <TouchableOpacity
-                        style={[styles.confirmButton, (!selectedLocation || loadingAddress) && styles.disabledButton]}
+                        style={[
+                            styles.confirmButton, 
+                            (!selectedLocation || loadingAddress || !isServiceable) && styles.disabledButton
+                        ]}
                         onPress={handleConfirmLocation}
-                        disabled={!selectedLocation || loadingAddress}
+                        disabled={!selectedLocation || loadingAddress || !isServiceable}
                     >
                         {loadingAddress ? (
                             <ActivityIndicator size="small" color="#FFF" />
                         ) : (
-                            <Text style={styles.confirmButtonText}>Confirm Location</Text>
+                            <Text style={styles.confirmButtonText}>
+                                {!isServiceable && deliveryTime !== null 
+                                    ? 'Not Serviceable Yet' 
+                                    : 'Confirm Location'}
+                            </Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -516,35 +716,48 @@ const styles = StyleSheet.create({
     addressDetails: {
         marginBottom: 10,
     },
+    addressHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
     addressCode: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
-        marginBottom: 4,
         color: '#000',
+        flex: 1,
+    },
+    addressFullRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
     },
     addressFull: {
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: '#666',
         lineHeight: 20,
+        flex: 3,
     },
-    findMeButton: {
+    findMeButtonSmall: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
-        borderRadius: 30, // Circular/Pill
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: Colors.primary,
-        marginBottom: 12,
         backgroundColor: '#FFF',
+        flex: 1,
+        gap: 6,
     },
-    findMeText: {
-        fontSize: 14,
-        fontFamily: Fonts.Bold,
+    findMeTextSmall: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
         color: Colors.primary,
-        marginLeft: 8,
-        textTransform: 'uppercase',
     },
     confirmButton: {
         backgroundColor: Colors.primary,
@@ -558,7 +771,32 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
     },
     disabledButton: {
-        opacity: 0.6,
-        backgroundColor: '#CCC',
+        opacity: 0.5,
+        backgroundColor: '#9CA3AF', // Greyish color
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#F5F5F5',
+    },
+    errorText: {
+        fontSize: 16,
+        fontFamily: Fonts.Regular,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
     },
 });

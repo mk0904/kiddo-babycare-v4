@@ -1,3 +1,4 @@
+import { shopifyAdminApi } from './shopifyAdminApi';
 import { shopifyApi } from './shopifyApi';
 
 export interface Customer {
@@ -82,8 +83,27 @@ export const customerService = {
   },
 
   // Create customer in Shopify
-  async createCustomer(phoneNumber: string): Promise<CustomerResponse> {
+  async createCustomer(phoneNumber: string, firstName?: string, lastName?: string): Promise<CustomerResponse> {
+    // Format phone number to E.164 format (required by Shopify)
+    // Remove any non-digit characters and ensure it's 10 digits
+    const cleanedPhone = phoneNumber.replace(/\D/g, '');
+    
+    // If it's a 10-digit number, add +91 (India country code)
+    // If it already starts with +91 or +1, keep it as is
+    let formattedPhone: string;
+    if (cleanedPhone.length === 10) {
+      formattedPhone = `+91${cleanedPhone}`;
+    } else if (cleanedPhone.startsWith('91') && cleanedPhone.length === 12) {
+      formattedPhone = `+${cleanedPhone}`;
+    } else if (phoneNumber.startsWith('+')) {
+      formattedPhone = phoneNumber;
+    } else {
+      // Default to +91 if format is unclear
+      formattedPhone = `+91${cleanedPhone.slice(-10)}`;
+    }
+
     try {
+
       // Mock mode fallback
       if (isMockMode) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -92,7 +112,7 @@ export const customerService = {
           success: true,
           customer: {
             id: `gid://shopify/Customer/${Date.now()}`,
-            phone: phoneNumber,
+            phone: formattedPhone,
             customerAccessToken: mockToken,
             isGuest: false,
             displayName: phoneNumber,
@@ -101,16 +121,15 @@ export const customerService = {
         };
       }
 
-      // Format email: phone@kiddo.app
-      const email = `${phoneNumber}@kiddo.app`;
-      const firstName = 'User';
-      const lastName = phoneNumber.slice(-4);
-      const password = `Kiddo${phoneNumber.slice(-4)}!`;
+      // Format email: phone@kiddo.app (use cleaned 10-digit number)
+      const email = `${cleanedPhone.slice(-10)}@kiddo.app`;
+      // Fixed password for all users
+      const password = 'kiddo@12345';
 
-      // 1. Check if customer already exists
+      // First, try to login with fixed password (for existing customers)
       const existing = await this.checkCustomerExists(email, password);
-
       if (existing.exists && existing.token) {
+        console.log('[Customer Service] Existing customer found, logging in...');
         if (existing.customer) {
           return {
             success: true,
@@ -126,9 +145,9 @@ export const customerService = {
             customer: {
               id: `gid://shopify/Customer/existing`,
               email,
-              phone: phoneNumber,
-              firstName,
-              lastName,
+              phone: formattedPhone,
+              firstName: firstName || 'User',
+              lastName: lastName || '',
               customerAccessToken: existing.token,
               isGuest: false,
             } as Customer,
@@ -136,62 +155,103 @@ export const customerService = {
         }
       }
 
-      // 2. Create new customer
-      const result = await shopifyApi.createCustomerAndGetToken(
-        email,
-        password,
-        firstName,
-        lastName,
-        phoneNumber
-      );
-
-      if (!result.customer || !result.customerAccessToken) {
-        throw new Error('Failed to create customer or get access token');
-      }
-
-      // 3. Get full details
-      let fullCustomerDetails = result.customer;
+      // If login failed, try to create new customer
       try {
-        const details = await shopifyApi.getCustomerDetails(result.customerAccessToken);
-        if (details) {
-          fullCustomerDetails = details;
-        }
-      } catch (e) {
-        // Ignore detail fetch error
-      }
+        const result = await shopifyApi.createCustomerAndGetToken(
+          email,
+          password,
+          firstName || 'User',
+          lastName || undefined, // Pass undefined instead of empty string
+          formattedPhone
+        );
 
-      return {
-        success: true,
-        customer: {
-          ...fullCustomerDetails,
-          customerAccessToken: result.customerAccessToken,
-          isGuest: false,
-        } as Customer,
-      };
+        if (!result.customer || !result.customerAccessToken) {
+          throw new Error('Failed to create customer or get access token');
+        }
+
+        // Get full details
+        let fullCustomerDetails = result.customer;
+        try {
+          const details = await shopifyApi.getCustomerDetails(result.customerAccessToken);
+          if (details) {
+            fullCustomerDetails = details;
+          }
+        } catch (e) {
+          // Ignore detail fetch error
+        }
+
+        return {
+          success: true,
+          customer: {
+            ...fullCustomerDetails,
+            customerAccessToken: result.customerAccessToken,
+            isGuest: false,
+          } as Customer,
+        };
+      } catch (createError: any) {
+        // If customer already exists OR rate limit exceeded, try to login instead
+        // Rate limit might mean account exists but we can't create due to limits
+        const shouldTryLogin = 
+          createError.isCustomerExistsError ||
+          createError.message?.includes('taken') || 
+          createError.message?.includes('already') ||
+          createError.message?.includes('exists') ||
+          createError.message?.includes('Limit exceeded') ||
+          createError.message?.includes('limit');
+        
+        if (shouldTryLogin) {
+          console.log('[Customer Service] Customer already exists, attempting login...');
+          
+          // Account might exist, try to login
+          try {
+          const existing = await this.checkCustomerExists(email, password);
+          
+          if (existing.exists && existing.token) {
+              console.log('[Customer Service] Login successful for existing customer');
+            if (existing.customer) {
+              return {
+                success: true,
+                customer: {
+                  ...existing.customer,
+                  customerAccessToken: existing.token,
+                  isGuest: false,
+                } as Customer,
+              };
+            } else {
+              return {
+                success: true,
+                customer: {
+                  id: `gid://shopify/Customer/existing`,
+                  email,
+                  phone: formattedPhone,
+                  firstName,
+                  lastName,
+                  customerAccessToken: existing.token,
+                  isGuest: false,
+                } as Customer,
+              };
+            }
+            } else {
+              console.log('[Customer Service] Login failed - customer may need to reset password');
+              // Customer exists but password might be wrong - this shouldn't happen with our format
+              // but handle gracefully
+              throw new Error('Account exists but could not be accessed. Please contact support.');
+            }
+          } catch (loginError: any) {
+            console.error('[Customer Service] Error during login fallback:', loginError);
+            // If login also fails, throw the original create error
+            throw createError;
+          }
+        }
+        
+        // Re-throw if login didn't work or it's a different error
+        throw createError;
+      }
 
     } catch (error: any) {
+      // Don't log expected "already exists" errors as they're handled gracefully
+      if (!error.isCustomerExistsError && !error.message?.includes('taken') && !error.message?.includes('already')) {
       console.error('[Customer Service] Error creating customer:', error);
-
-      // Handle "already taken" error specifically if checkCustomerExists missed it
-      if (error.message?.includes('taken')) {
-        // Try one more time to login
-        try {
-          const email = `${phoneNumber}@kiddo.app`;
-          const password = `Kiddo${phoneNumber.slice(-4)}!`;
-          const retry = await this.checkCustomerExists(email, password);
-          if (retry.exists && retry.token) {
-            return {
-              success: true,
-              customer: {
-                ...(retry.customer || {}),
-                customerAccessToken: retry.token,
-                isGuest: false,
-                email,
-                phone: phoneNumber,
-              } as Customer,
-            };
-          }
-        } catch (retryError) { }
       }
 
       return {
@@ -215,16 +275,29 @@ export const customerService = {
       }
 
       if (!customerAccessToken) {
-        return { success: false, error: 'No customer access token' };
+        const error = new Error('No customer access token');
+        console.error('[CustomerService] createCustomerAddress error:', error);
+        throw error;
       }
 
+      console.log('[CustomerService] Creating address with data:', addressData);
       const address = await shopifyApi.createCustomerAddress(customerAccessToken, addressData);
 
-      if (setAsDefault && address?.id) {
+      if (!address || !address.id) {
+        const error = new Error('Failed to create address - no address returned');
+        console.error('[CustomerService] createCustomerAddress error:', error);
+        throw error;
+      }
+
+      console.log('[CustomerService] Address created successfully:', address.id);
+
+      if (setAsDefault && address.id) {
         try {
           await shopifyApi.setDefaultAddress(customerAccessToken, address.id);
+          console.log('[CustomerService] Address set as default');
         } catch (e) {
-          // Ignore default setting error
+          console.warn('[CustomerService] Failed to set address as default:', e);
+          // Don't fail the whole operation if default setting fails
         }
       }
 
@@ -233,10 +306,11 @@ export const customerService = {
         address,
       };
     } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      console.error('[CustomerService] Error creating customer address:', error);
+      console.error('[CustomerService] Error message:', error.message);
+      console.error('[CustomerService] Error stack:', error.stack);
+      // Re-throw the error so it can be caught by the caller
+      throw error;
     }
   },
 
@@ -254,20 +328,32 @@ export const customerService = {
       }
 
       if (!customerAccessToken) {
-        return { success: false, error: 'No customer access token' };
+        const error = new Error('No customer access token');
+        console.error('[CustomerService] updateCustomerAddress error:', error);
+        throw error;
       }
 
+      console.log('[CustomerService] Updating address:', addressId, 'with data:', addressData);
       const address = await shopifyApi.updateCustomerAddress(customerAccessToken, addressId, addressData);
+
+      if (!address || !address.id) {
+        const error = new Error('Failed to update address - no address returned');
+        console.error('[CustomerService] updateCustomerAddress error:', error);
+        throw error;
+      }
+
+      console.log('[CustomerService] Address updated successfully:', address.id);
 
       return {
         success: true,
         address,
       };
     } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-      };
+      console.error('[CustomerService] Error updating customer address:', error);
+      console.error('[CustomerService] Error message:', error.message);
+      console.error('[CustomerService] Error stack:', error.stack);
+      // Re-throw the error so it can be caught by the caller
+      throw error;
     }
   },
 
@@ -312,12 +398,38 @@ export const customerService = {
         await shopifyApi.updateCustomer(customerAccessToken, customerData);
       }
 
-      // Note: Customer metafields require Admin API
-      // Metafields cannot be updated via Customer API
-      // If you have Admin API access, you would need to update metafields separately
-      // For now, we'll update the customer info and log the metafields
-      console.log('[CustomerService] Metafields to update (requires Admin API):', metafields);
-      console.warn('[CustomerService] Customer metafields (custom.baby_name, custom.age, custom.gender) require Admin API - not updated via Customer API');
+      // Update metafields via Admin API
+      if (customerId && (metafields.baby_name || metafields.age || metafields.gender)) {
+        const metafieldsArray = [];
+        if (metafields.baby_name) {
+          metafieldsArray.push({
+            namespace: 'custom',
+            key: 'baby_name',
+            value: metafields.baby_name,
+            type: 'single_line_text_field',
+          });
+        }
+        if (metafields.age) {
+          metafieldsArray.push({
+            namespace: 'custom',
+            key: 'age',
+            value: metafields.age.toString(), // Ensure it's a string
+            type: 'single_line_text_field',
+          });
+        }
+        if (metafields.gender) {
+          metafieldsArray.push({
+            namespace: 'custom',
+            key: 'gender',
+            value: metafields.gender,
+            type: 'single_line_text_field',
+          });
+        }
+
+        if (metafieldsArray.length > 0) {
+          await shopifyAdminApi.updateCustomerMetafields(customerId, metafieldsArray);
+        }
+      }
 
       return { success: true };
     } catch (error: any) {
