@@ -1,0 +1,21 @@
+# OSX
+#
+.DS_Store
+
+# Android/IntelliJ
+#
+build/
+.idea
+.gradle
+local.properties
+*.iml
+*.hprof
+.cxx/
+
+# Bundle artifacts
+*.jsbundle
+
+# Keystore files - NOTE: Currently tracked for private repo (consider removing if repo becomes public)
+# *.keystore
+# *.jks
+# **/keystore.properties
