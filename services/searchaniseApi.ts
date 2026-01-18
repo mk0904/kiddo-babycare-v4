@@ -39,8 +39,8 @@ export const searchProducts = async ({
 }: SearchParams, signal?: AbortSignal) => {
     const cacheKey = generateCacheKey({ q, collection, filters, sortBy, sortOrder, startIndex, maxResults, facets });
 
-    // Check cache (only for first page, 5s TTL)
-    if (startIndex === 0) {
+    // Never cache when facets are requested - always fetch fresh filter data
+    if (startIndex === 0 && facets !== true) {
         const cached = requestCache.get(cacheKey);
         if (cached && cached.expiresAt > Date.now()) {
             return cached.data;
@@ -65,6 +65,11 @@ export const searchProducts = async ({
                 startIndex,
                 maxResults: Math.min(maxResults, 250),
             };
+
+            // Add cache-busting parameter when facets are requested to ensure fresh filter data
+            if (facets === true) {
+                params._t = Date.now();
+            }
 
             if (collection) {
                 params['restrictBy[collections]'] = collection;
@@ -154,8 +159,8 @@ export const searchProducts = async ({
                 correctedQuery: responseData.correctedQuery,
             };
 
-            // Set cache
-            if (startIndex === 0) {
+            // Never cache when facets are requested - always fetch fresh filter data
+            if (startIndex === 0 && facets !== true) {
                 requestCache.set(cacheKey, { data: result, expiresAt: Date.now() + 5000 });
             }
 

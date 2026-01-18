@@ -2,6 +2,7 @@
 // Enhanced cart state management with gift items, multiple discounts, and sync
 
 import { shopifyApi } from '@/services/shopifyApi';
+import { configService } from '@/services/configService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -474,8 +475,7 @@ export const useCartStore = create<CartState>()(
                                 let discountValue = 0;
                                 
                                 try {
-                                    const config = require('@/config/kiddoAppConfig.json');
-                                    const discountsConfig = config.discounts;
+                                    const discountsConfig = configService.getDiscountsConfig();
                                     if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
                                         const configDiscount = discountsConfig.codes.find((cd: any) => 
                                             cd.code?.toUpperCase() === dc.code.toUpperCase()
@@ -1063,8 +1063,7 @@ export const useCartStore = create<CartState>()(
                             let discountValue = 0;
                             
                             try {
-                                const config = require('@/config/kiddoAppConfig.json');
-                                const discountsConfig = config.discounts;
+                                const discountsConfig = configService.getDiscountsConfig();
                                 if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
                                     const configDiscount = discountsConfig.codes.find((cd: any) => 
                                         cd.code?.toUpperCase() === dc.code.toUpperCase()

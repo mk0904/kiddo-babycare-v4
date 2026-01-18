@@ -1,11 +1,11 @@
 // Shopify Admin API Service
 // For operations that require Admin privileges (Draft Orders, Order Editing, etc.)
 
-import axios from 'axios';
 import {
-  SHOPIFY_STORE_DOMAIN,
   SHOPIFY_ADMIN_ACCESS_TOKEN,
+  SHOPIFY_STORE_DOMAIN,
 } from '@/config/shopify';
+import axios from 'axios';
 
 // Admin API GraphQL Client
 const adminClient = axios.create({
@@ -481,6 +481,73 @@ export const shopifyAdminApi = {
     } catch (error: any) {
       console.error('[AdminAPI] Error deleting draft order:', error.message);
       return false;
+    }
+  },
+
+  /**
+   * Update customer metafields (requires Admin API)
+   */
+  updateCustomerMetafields: async (
+    customerId: string,
+    metafields: Array<{ namespace: string; key: string; value: string; type: string }>
+  ): Promise<boolean> => {
+    try {
+      // Format customer ID
+      const formattedCustomerId = customerId.includes('gid://')
+        ? customerId
+        : `gid://shopify/Customer/${customerId.replace('shopify-', '').replace('gid://shopify/Customer/', '')}`;
+
+      // Update each metafield using metafieldsSet mutation
+      const METAFIELDS_SET_MUTATION = `
+        mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      // Format metafields for input
+      const metafieldsInput = metafields.map((mf) => ({
+        ownerId: formattedCustomerId,
+        namespace: mf.namespace,
+        key: mf.key,
+        value: mf.value,
+        type: mf.type || 'single_line_text_field',
+      }));
+
+      const response = await adminClient.post('', {
+        query: METAFIELDS_SET_MUTATION,
+        variables: {
+          metafields: metafieldsInput,
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('[AdminAPI] GraphQL errors updating metafields:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to update customer metafields');
+      }
+
+      const result = response.data.data.metafieldsSet;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        console.error('[AdminAPI] User errors updating metafields:', result.userErrors);
+        throw new Error(result.userErrors[0].message || 'Failed to update customer metafields');
+      }
+
+      console.log('[AdminAPI] Customer metafields updated successfully');
+      return true;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error updating customer metafields:', error.message);
+      throw error;
     }
   },
 };

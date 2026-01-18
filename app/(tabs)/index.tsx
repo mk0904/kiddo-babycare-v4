@@ -78,12 +78,12 @@ export default function HomeScreen() {
         },
         {
           key: 'girls',
-          label: 'Girls Fashion',
+          label: 'Girls',
           iconImage: require('@/assets/images/girls-fashion-selected.png'),
         },
         {
           key: 'boys',
-          label: 'Boys Fashion',
+          label: 'Boys',
           iconImage: require('@/assets/images/boys-fashion-selected.png'),
         },
         {
@@ -108,8 +108,8 @@ export default function HomeScreen() {
       const categoryDef = categoryItems[key];
       const defaultLabels: Record<string, string> = {
         all: 'See all',
-        girls: 'Girls Fashion',
-        boys: 'Boys Fashion',
+        girls: 'Girls',
+        boys: 'Boys',
         babycare: 'Baby Care',
         toys: 'Toys',
       };
@@ -141,7 +141,11 @@ export default function HomeScreen() {
       try {
         await configService.loadConfig();
         const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
-        setBlocks(screenBlocks);
+        // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
+        const filteredBlocks = screenBlocks.filter(
+          (block) => block.type !== 'rail'
+        );
+        setBlocks(filteredBlocks);
       } catch (error) {
         console.error('[HomeScreen] Error loading config:', error);
       } finally {
@@ -155,7 +159,11 @@ export default function HomeScreen() {
   // Update blocks when category changes
   useEffect(() => {
     const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
-    setBlocks(screenBlocks);
+    // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
+    const filteredBlocks = screenBlocks.filter(
+      (block) => block.type !== 'rail'
+    );
+    setBlocks(filteredBlocks);
   }, [selectedCategory]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {

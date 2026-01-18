@@ -220,9 +220,15 @@ export default function AccountScreen() {
                 break;
 
             case 'webview':
-                // Open in browser for now as we don't have WebView screen setup
+                // Navigate to WebView screen
                 if (params.url) {
-                    Linking.openURL(params.url);
+                    router.push({
+                        pathname: '/webview',
+                        params: {
+                            url: params.url,
+                            title: params.title || actionConfig.title || 'Web View',
+                        },
+                    } as any);
                 }
                 break;
 
@@ -379,7 +385,7 @@ export default function AccountScreen() {
                                         <View style={styles.quickActionIconContainer}>
                                             <Ionicons
                                                 name={iconName}
-                                                size={28}
+                                                size={20}
                                                 color={Colors.primary}
                                             />
                                             {action.showBadge && badgeCount > 0 && (
@@ -604,9 +610,9 @@ const styles = StyleSheet.create({
         }),
     },
     quickActionIconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: Colors.backgroundSecondary,
         justifyContent: 'center',
         alignItems: 'center',

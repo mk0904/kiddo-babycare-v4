@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, RefreshControl, StyleSheet, View, FlatList, Dimensions } from 'react-native';
 import { ProductCard } from './ProductCard';
 import { CollectionComponentProps, ProductCollection, ProductCollectionProps } from './ProductCollection';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -66,7 +67,15 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
 
   // Handle empty state
   if (!Array.isArray(products) || products.length === 0) {
-    return null;
+    return (
+      <View style={styles.emptyContainer}>
+        <EmptyState
+          icon="cube-outline"
+          title="No Products Available"
+          subtitle="New products coming soon!"
+        />
+      </View>
+    );
   }
 
   // Simple: 8px padding, 8px gap, that's it
@@ -124,6 +133,11 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
 const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
 });

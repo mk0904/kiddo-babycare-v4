@@ -1,10 +1,12 @@
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
+import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { couponService } from '@/services/couponService';
+import { configService } from '@/services/configService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -80,6 +82,7 @@ export default function CartScreen() {
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
+    const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -139,8 +142,7 @@ export default function CartScreen() {
                 if (discountValue === 0 || !discountValue) {
                     // Try to get from config
                     try {
-                        const config = require('@/config/kiddoAppConfig.json');
-                        const discountsConfig = config.discounts;
+                        const discountsConfig = configService.getDiscountsConfig();
                         if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
                             const configDiscount = discountsConfig.codes.find((cd: any) => 
                                 cd.code?.toUpperCase() === discountCode.code.toUpperCase()
@@ -410,15 +412,35 @@ export default function CartScreen() {
             const finalOrder = result.order;
             const orderIdForDisplay = finalOrder?.name || finalOrder?.orderNumber || finalOrder?.id || `ORD-${Date.now()}`;
 
-            // Clear cart and navigate
+            console.log('[Cart] Order placed successfully:', {
+                orderId: orderIdForDisplay,
+                orderGraphId: finalOrder?.id,
+                total: total.toString(),
+            });
+
+            // Clear cart first
             clearCart();
-            router.replace({
-                pathname: '/order-success',
-                params: {
-                    orderId: orderIdForDisplay,
-                    orderGraphId: finalOrder?.id, // Pass real ID for API lookups
-                    total: total.toString()
-                },
+            
+            // Navigate to order success screen
+            // Use a small delay to ensure state updates complete
+            requestAnimationFrame(() => {
+                try {
+                    const navParams = {
+                        pathname: '/order-success' as const,
+                        params: {
+                            orderId: orderIdForDisplay,
+                            orderGraphId: finalOrder?.id || '',
+                            total: total.toString(),
+                        },
+                    };
+                    
+                    console.log('[Cart] Navigating with params:', navParams);
+                    router.push(navParams);
+                } catch (error) {
+                    console.error('[Cart] Navigation error:', error);
+                    // Fallback: try direct path
+                    router.push('/order-success' as any);
+                }
             });
 
         } catch (error: any) {
@@ -550,7 +572,10 @@ export default function CartScreen() {
                         <View style={styles.tryAndBuySection}>
                             <View style={styles.tryAndBuyHeader}>
                                 <Text style={styles.tryAndBuyTitle}>Try Before You Buy</Text>
-                                <TouchableOpacity style={styles.knowMoreButton}>
+                                <TouchableOpacity 
+                                    style={styles.knowMoreButton}
+                                    onPress={() => setShowTryAndBuyModal(true)}
+                                >
                                     <Text style={styles.knowMoreText}>Know more</Text>
                                     <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
                                 </TouchableOpacity>
@@ -918,6 +943,12 @@ export default function CartScreen() {
             <GiftWrappingModal
                 visible={showGiftModal}
                 onClose={() => setShowGiftModal(false)}
+            />
+
+            {/* Try And Buy Modal */}
+            <TryAndBuyModal
+                visible={showTryAndBuyModal}
+                onClose={() => setShowTryAndBuyModal(false)}
             />
         </SafeAreaView>
     );

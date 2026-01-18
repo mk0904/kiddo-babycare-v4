@@ -154,7 +154,6 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         onPress={onFiltersPress}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.iconContainer}>
                             <Animated.View
                                 style={{
                                     transform: [{ scale: iconScale }],
@@ -164,7 +163,6 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             >
                                 <Ionicons name="filter-outline" size={16} color={Colors.text} />
                             </Animated.View>
-                        </View>
                         <Animated.View
                             style={{
                                 opacity: textOpacity,
@@ -172,6 +170,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 overflow: 'hidden',
                                 justifyContent: 'center',
                                 alignItems: 'center',
+                                marginLeft: textMarginLeft,
                             }}
                         >
                             <Text style={styles.actionButtonText}>Filters</Text>
@@ -198,7 +197,6 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         onPress={onSortPress}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.iconContainer}>
                             <Animated.View
                                 style={{
                                     transform: [{ scale: iconScale }],
@@ -208,7 +206,6 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             >
                                 <Ionicons name="swap-vertical-outline" size={16} color={Colors.text} />
                             </Animated.View>
-                        </View>
                         <Animated.View
                             style={{
                                 opacity: textOpacity,
@@ -216,6 +213,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 overflow: 'hidden',
                                 justifyContent: 'center',
                                 alignItems: 'center',
+                                marginLeft: textMarginLeft,
                             }}
                         >
                             <Text style={styles.actionButtonText}>Sort</Text>
@@ -279,7 +277,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
-        marginRight: 5,
     },
     actionButtonText: {
         fontSize: 13,

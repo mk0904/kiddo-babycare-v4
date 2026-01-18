@@ -1,14 +1,14 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { CategoryGridBlock } from '@/types/content';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 import { FlexibleGrid, GridItem, GridLayoutType } from '@/components/ui/FlexibleGrid';
+import { Colors, Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
-import { useRouter } from 'expo-router';
-import { Colors, Fonts } from '@/constants/theme';
+import { CategoryGridBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface CollectionItem {
   id: string;
@@ -93,8 +93,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
       const categoryDef = categoryItems[key];
       const defaultLabels: Record<string, string> = {
         all: 'See all',
-        girls: 'Girls Fashion',
-        boys: 'Boys Fashion',
+        girls: 'Girls',
+        boys: 'Boys',
         babycare: 'Baby Care',
         toys: 'Toys',
       };

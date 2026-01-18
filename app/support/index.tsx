@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts } from '@/constants/theme';
+import { Stack } from 'expo-router';
+import React from 'react';
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SupportScreen() {
     const handleCall = () => {
@@ -10,7 +10,7 @@ export default function SupportScreen() {
     };
 
     const handleEmail = () => {
-        Linking.openURL('mailto:support@kiddo.com');
+        Linking.openURL('mailto:hi@allforkiddo.com');
     };
 
     const handleWhatsApp = () => {
@@ -39,7 +39,7 @@ export default function SupportScreen() {
                 <Ionicons name="headset-outline" size={64} color={Colors.primary} />
                 <Text style={styles.title}>How can we help you?</Text>
                 <Text style={styles.subtitle}>
-                    Our team is available Mon-Sat, 10am - 7pm to assist you with any queries.
+                    Our team is available All Days, 10am - 10pm to assist you with any queries.
                 </Text>
             </View>
 
@@ -50,7 +50,7 @@ export default function SupportScreen() {
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionTitle}>Call Us</Text>
-                        <Text style={styles.optionSubtitle}>+91 99999 99999</Text>
+                        <Text style={styles.optionSubtitle}>+91 93109 93990</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -61,21 +61,11 @@ export default function SupportScreen() {
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionTitle}>Email Us</Text>
-                        <Text style={styles.optionSubtitle}>support@kiddo.com</Text>
+                        <Text style={styles.optionSubtitle}>hi@allforkiddo.com</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.optionCard} onPress={handleWhatsApp} activeOpacity={0.7}>
-                    <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
-                        <Ionicons name="logo-whatsapp" size={24} color="#43A047" />
-                    </View>
-                    <View style={styles.optionInfo}>
-                        <Text style={styles.optionTitle}>WhatsApp</Text>
-                        <Text style={styles.optionSubtitle}>Chat with us</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
             </View>
         </View>
     );

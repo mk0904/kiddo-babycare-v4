@@ -363,6 +363,12 @@ const ProductDetailScreen = () => {
         ? parsePriceSafely(selectedVariant.price?.amount)
         : parsePriceSafely(product?.priceRange?.minVariantPrice?.amount);
 
+    const mrp = selectedVariant
+        ? parsePriceSafely(selectedVariant.compareAtPrice?.amount)
+        : 0;
+
+    const savings = mrp > basePrice ? mrp - basePrice : 0;
+
     const formattedPrice = useMemo(() => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -370,6 +376,24 @@ const ProductDetailScreen = () => {
             minimumFractionDigits: 0,
         }).format(basePrice);
     }, [basePrice]);
+
+    const formattedMRP = useMemo(() => {
+        if (mrp <= 0) return null;
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+        }).format(mrp);
+    }, [mrp]);
+
+    const formattedSavings = useMemo(() => {
+        if (savings <= 0) return null;
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0,
+        }).format(savings);
+    }, [savings]);
 
     const getMetafieldValue = (product: any, key: string) => {
         if (!product?.metafields) return null;
@@ -390,6 +414,26 @@ const ProductDetailScreen = () => {
 
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
+
+    // Price comparison metafields for Essentials products
+    const amazonPrice = getMetafieldValue(product, 'amazon_price');
+    const firstcryPrice = getMetafieldValue(product, 'firstcry_price');
+    const blinkitPrice = getMetafieldValue(product, 'blinkit_price');
+    const zeptoPrice = getMetafieldValue(product, 'zepto_price');
+    const kiddoPrice = getMetafieldValue(product, 'kiddo_price');
+
+    // Check if product has Essentials tag
+    const hasEssentialsTag = product?.tags?.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
+    );
+
+    // Check if all price comparison fields are available
+    const showPriceComparison = hasEssentialsTag && 
+        amazonPrice && 
+        firstcryPrice && 
+        blinkitPrice && 
+        zeptoPrice && 
+        kiddoPrice;
 
     const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -521,6 +565,19 @@ const ProductDetailScreen = () => {
                         ]}>{product.vendor}</Text>
                     )}
 
+                    {/* Price Section */}
+                    <View style={styles.productPriceContainer}>
+                        <View style={styles.productPriceRow}>
+                            <Text style={styles.productPriceText}>{formattedPrice}</Text>
+                            {formattedMRP && (
+                                <Text style={styles.productMrpText}>{formattedMRP}</Text>
+                            )}
+                        </View>
+                        {formattedSavings && (
+                            <Text style={styles.productSavingsText}>You saved {formattedSavings}</Text>
+                        )}
+                    </View>
+
                     {productOptions.length > 0 && (
                         <View style={styles.variantsContainer}>
                             {productOptions.map((option: any) => (
@@ -617,6 +674,39 @@ const ProductDetailScreen = () => {
                                             ...processFontStyle(productStyles.description, Fonts.Regular),
                                         }
                                     ]}>{product.description}</Text>
+                                    
+                                    {/* Price Comparison Table - Only for Essentials */}
+                                    {showPriceComparison && (
+                                        <View style={styles.priceComparisonContainer}>
+                                            <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
+                                            <View style={styles.priceComparisonTable}>
+                                                <View style={styles.priceComparisonRow}>
+                                                    <Text style={styles.pricePlatformText}>Amazon</Text>
+                                                    <Text style={styles.priceValueText}>₹{parseFloat(amazonPrice).toFixed(0)}</Text>
+                                                </View>
+                                                <View style={styles.priceComparisonRow}>
+                                                    <Text style={styles.pricePlatformText}>FirstCry</Text>
+                                                    <Text style={styles.priceValueText}>₹{parseFloat(firstcryPrice).toFixed(0)}</Text>
+                                                </View>
+                                                <View style={styles.priceComparisonRow}>
+                                                    <Text style={styles.pricePlatformText}>Blinkit</Text>
+                                                    <Text style={styles.priceValueText}>₹{parseFloat(blinkitPrice).toFixed(0)}</Text>
+                                                </View>
+                                                <View style={styles.priceComparisonRow}>
+                                                    <Text style={styles.pricePlatformText}>Zepto</Text>
+                                                    <Text style={styles.priceValueText}>₹{parseFloat(zeptoPrice).toFixed(0)}</Text>
+                                                </View>
+                                                <View style={[styles.priceComparisonRow, styles.priceComparisonRowKiddo]}>
+                                                    <View style={styles.kiddoRowContent}>
+                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                                        <Text style={styles.pricePlatformTextKiddo}>Kiddo</Text>
+                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                                    </View>
+                                                    <Text style={styles.priceValueTextKiddo}>₹{parseFloat(kiddoPrice).toFixed(0)}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    )}
                                 </View>
                             )}
                         </View>
@@ -704,7 +794,15 @@ const ProductDetailScreen = () => {
 
             <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.priceContainer}>
-                    <Text style={styles.priceText}>{formattedPrice}</Text>
+                    <View style={styles.priceRow}>
+                        <Text style={styles.priceText}>{formattedPrice}</Text>
+                        {formattedMRP && (
+                            <Text style={styles.mrpText}>{formattedMRP}</Text>
+                        )}
+                    </View>
+                    {formattedSavings && (
+                        <Text style={styles.savingsText}>You saved {formattedSavings}</Text>
+                    )}
                 </View>
                 {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
                     <UniversalAdd
@@ -954,10 +1052,116 @@ const styles = StyleSheet.create({
     },
     priceContainer: {
         flex: 1,
+        flexDirection: 'column',
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     priceText: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
+        color: Colors.text,
+    },
+    mrpText: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: '#999',
+        textDecorationLine: 'line-through',
+    },
+    savingsText: {
+        fontSize: 12,
+        fontFamily: Fonts.Regular,
+        color: '#4CAF50',
+        marginTop: 4,
+    },
+    productPriceContainer: {
+        marginTop: 12,
+        marginBottom: 8,
+        paddingLeft: 16,
+    },
+    productPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    productPriceText: {
+        fontSize: 24,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+    },
+    productMrpText: {
+        fontSize: 18,
+        fontFamily: Fonts.Regular,
+        color: '#999',
+        textDecorationLine: 'line-through',
+    },
+    productSavingsText: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: '#4CAF50',
+        marginTop: 6,
+    },
+    priceComparisonContainer: {
+        marginTop: 20,
+        marginBottom: 20,
+        paddingHorizontal: 16,
+    },
+    priceComparisonTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    priceComparisonTable: {
+        backgroundColor: Colors.backgroundWhite,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        overflow: 'hidden',
+    },
+    priceComparisonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
+    },
+    priceComparisonRowKiddo: {
+        backgroundColor: '#E8F5E9',
+        borderBottomWidth: 0,
+    },
+    kiddoRowContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    starIcon: {
+        marginHorizontal: 2,
+    },
+    pricePlatformText: {
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    pricePlatformTextKiddo: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+    },
+    priceValueText: {
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    priceValueTextKiddo: {
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
     },
     addToCartButton: {
         backgroundColor: Colors.primary,

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { customerService } from '@/services/customerService';
@@ -161,19 +162,47 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
             try {
                 // Set as default if this is the first address
                 const setAsDefault = addresses.length === 0;
+                
+                // Format address data for Shopify (ensure all required fields are present)
+                const shopifyAddressData = {
+                    firstName: addressData.firstName || '',
+                    lastName: addressData.lastName || addressData.name?.split(' ')[1] || '',
+                    address1: addressData.address1 || '',
+                    address2: addressData.address2 || '',
+                    city: addressData.city || '',
+                    province: addressData.province || addressData.state || '',
+                    country: addressData.country || 'India',
+                    zip: addressData.zip || addressData.pincode || '',
+                    phone: addressData.phone || '',
+                };
+
+                console.log('[AddressContext] Creating address in Shopify:', shopifyAddressData);
+                
                 const result = await customerService.createCustomerAddress(
                     customerAccessToken,
-                    addressData,
+                    shopifyAddressData,
                     setAsDefault
                 );
 
                 if (result.success && result.address) {
                     shopifyAddressId = result.address.id;
+                    console.log('[AddressContext] Address created successfully in Shopify:', shopifyAddressId);
+                } else {
+                    console.error('[AddressContext] Failed to create address in Shopify:', result.error);
+                    // Don't throw - continue with local save
                 }
-            } catch (shopifyError) {
-                console.error('Error creating address in Shopify:', shopifyError);
-                // Continue with local save even if Shopify fails
+            } catch (shopifyError: any) {
+                console.error('[AddressContext] Error creating address in Shopify:', shopifyError);
+                console.error('[AddressContext] Error message:', shopifyError.message);
+                console.error('[AddressContext] Error stack:', shopifyError.stack);
+                // Continue with local save even if Shopify fails, but log the error
+                Alert.alert(
+                    'Warning',
+                    `Address saved locally but failed to sync with Shopify: ${shopifyError.message || 'Unknown error'}. Please check your connection and try again.`
+                );
             }
+        } else {
+            console.warn('[AddressContext] No customer access token, saving locally only');
         }
 
         const newAddress: Address = {
@@ -217,15 +246,39 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
 
         if (customerAccessToken && shopifyId && shopifyId.startsWith('gid://')) {
             try {
-                const result = await customerService.updateCustomerAddress(customerAccessToken, shopifyId, addressData);
+                // Format address data for Shopify
+                const shopifyAddressData = {
+                    firstName: addressData.firstName ?? address?.firstName ?? '',
+                    lastName: addressData.lastName ?? address?.lastName ?? '',
+                    address1: addressData.address1 ?? address?.address1 ?? '',
+                    address2: addressData.address2 ?? address?.address2 ?? '',
+                    city: addressData.city ?? address?.city ?? '',
+                    province: addressData.province ?? addressData.state ?? address?.province ?? address?.state ?? '',
+                    country: addressData.country ?? address?.country ?? 'India',
+                    zip: addressData.zip ?? addressData.pincode ?? address?.zip ?? address?.pincode ?? '',
+                    phone: addressData.phone ?? address?.phone ?? '',
+                };
+
+                console.log('[AddressContext] Updating address in Shopify:', shopifyId, shopifyAddressData);
+                
+                const result = await customerService.updateCustomerAddress(customerAccessToken, shopifyId, shopifyAddressData);
                 if (result.success && result.address) {
-                    // Successfully updated in Shopify
-                    // Maybe update addressData with new ID if it changed, though unlikely for updates
+                    console.log('[AddressContext] Address updated successfully in Shopify');
+                } else {
+                    console.error('[AddressContext] Failed to update address in Shopify:', result.error);
                 }
-            } catch (shopifyError) {
-                console.error('Error updating address in Shopify:', shopifyError);
-                // Continue with local update even if Shopify fails
+            } catch (shopifyError: any) {
+                console.error('[AddressContext] Error updating address in Shopify:', shopifyError);
+                console.error('[AddressContext] Error message:', shopifyError.message);
+                console.error('[AddressContext] Error stack:', shopifyError.stack);
+                // Continue with local update even if Shopify fails, but log the error
+                Alert.alert(
+                    'Warning',
+                    `Address updated locally but failed to sync with Shopify: ${shopifyError.message || 'Unknown error'}. Please check your connection and try again.`
+                );
             }
+        } else {
+            console.warn('[AddressContext] No customer access token or invalid shopifyId, updating locally only');
         }
 
         const updatedAddresses = addresses.map(addr =>

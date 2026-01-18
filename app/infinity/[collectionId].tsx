@@ -141,6 +141,35 @@ export default function InfinityScreen() {
         return option?.label || 'Sort';
     };
 
+    const handleFastFilterToggle = (attribute: string, value: any) => {
+        const currentFilters = { ...selectedFilters };
+        const currentValues = currentFilters[attribute] || [];
+        
+        // For price/range filters, replace instead of add (single selection)
+        const isPriceFilter = attribute === 'price' || 
+                             attribute === 'price_range' || 
+                             attribute?.toLowerCase().includes('price');
+        
+        if (Array.isArray(currentValues)) {
+            const isSelected = currentValues.includes(value);
+            
+            if (isSelected) {
+                // Remove filter
+                const { [attribute]: _, ...rest } = currentFilters;
+                handleApplyFilters(rest);
+            } else {
+                // For price filters, replace; for others, add
+                if (isPriceFilter) {
+                    handleApplyFilters({ ...currentFilters, [attribute]: [value] });
+                } else {
+                    handleApplyFilters({ ...currentFilters, [attribute]: [...currentValues, value] });
+                }
+            }
+        } else {
+            handleApplyFilters({ ...currentFilters, [attribute]: [value] });
+        }
+    };
+
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
@@ -163,6 +192,36 @@ export default function InfinityScreen() {
                     activeFiltersCount={activeFiltersCount}
                     onFiltersPress={() => setIsFilterPanelVisible(true)}
                     onSortPress={handleSortPress}
+                    facets={facets.map((f: any) => {
+                        // Handle different facet structures from Shopify
+                        const attribute = f.attribute || f.id || f.field || f.name;
+                        const title = f.title || f.label || f.name || attribute;
+                        const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
+                        let buckets = f.buckets || f.values || f.data || [];
+                        
+                        // Ensure buckets have the right structure
+                        if (Array.isArray(buckets)) {
+                            buckets = buckets.map((bucket: any) => ({
+                                value: bucket.value || bucket.id || bucket.title || bucket.label,
+                                label: bucket.label || bucket.title || bucket.value || bucket.name,
+                                count: bucket.count || 0,
+                                from: bucket.from,
+                                to: bucket.to,
+                                min: bucket.min,
+                                max: bucket.max,
+                            })).filter((b: any) => b.value || b.label);
+                        }
+                        
+                        return {
+                            ...f,
+                            attribute,
+                            title,
+                            type,
+                            buckets: Array.isArray(buckets) ? buckets : [],
+                        };
+                    }).filter((f: any) => f.buckets && f.buckets.length > 0 && f.attribute)}
+                    selectedFilters={selectedFilters}
+                    onFastFilterToggle={handleFastFilterToggle}
                     style={styles.pills}
                 />
 
@@ -190,14 +249,37 @@ export default function InfinityScreen() {
                 <FilterPanel
                     visible={isFilterPanelVisible}
                     onClose={() => setIsFilterPanelVisible(false)}
-                    facets={facets.map(f => ({
+                    facets={facets.map((f: any) => {
+                        // Handle different facet structures from Shopify
+                        const attribute = f.attribute || f.id || f.field || f.name;
+                        const title = f.title || f.label || f.name || attribute;
+                        const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
+                        let buckets = f.buckets || f.values || f.data || [];
+                        
+                        // Ensure buckets have the right structure
+                        if (Array.isArray(buckets)) {
+                            buckets = buckets.map((bucket: any) => ({
+                                value: bucket.value || bucket.id || bucket.title || bucket.label,
+                                label: bucket.label || bucket.title || bucket.value || bucket.name,
+                                count: bucket.count || 0,
+                                from: bucket.from,
+                                to: bucket.to,
+                                min: bucket.min,
+                                max: bucket.max,
+                            })).filter((b: any) => b.value || b.label);
+                        }
+                        
+                        return {
                         ...f,
-                        attribute: f.id,
-                        title: f.label,
-                        buckets: f.values
-                    }))} // Map Shopify facets to FilterPanel props
+                            attribute,
+                            title,
+                            type,
+                            buckets: Array.isArray(buckets) ? buckets : [],
+                        };
+                    }).filter((f: any) => f.buckets && f.buckets.length > 0 && f.attribute)}
                     selectedFilters={selectedFilters}
                     onApplyFilters={handleApplyFilters}
+                    totalResults={totalItems}
                 />
 
                 <BaseModal

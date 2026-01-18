@@ -1,18 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Platform,
-    Animated,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Colors, Fonts } from '@/constants/theme';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useRef } from 'react';
+import {
+    Animated,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OrderSuccessScreen() {
     const router = useRouter();
@@ -58,15 +58,25 @@ export default function OrderSuccessScreen() {
 
     const handleViewOrders = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        // Navigate to orders details if ID is available, else home
+        router.push('/orders');
+    };
+
+    const handleViewOrderDetails = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Navigate to order details if ID is available
         if (orderGraphId) {
-            // Encode ID just in case, though usually fine in Expo Router paths if standard chracters
-            // If it's a GID, it might contain slashes which is bad for path params
-            // However, Expo Router can handle it if we push as object params usually, or encodeURIComponent
-            // Let's try direct push first
-            router.replace({ pathname: '/orders/[id]', params: { id: orderGraphId } } as any);
+            // Ensure the order ID is properly encoded for URL navigation
+            // Shopify order IDs might include query parameters like ?key=...
+            const encodedId = typeof orderGraphId === 'string' ? encodeURIComponent(orderGraphId) : orderGraphId;
+            console.log('[OrderSuccess] Navigating to order details with ID:', orderGraphId);
+            router.push({ pathname: '/orders/[id]', params: { id: encodedId } } as any);
+        } else if (orderId) {
+            // Fallback: try to navigate with orderId if orderGraphId is not available
+            const encodedId = typeof orderId === 'string' ? encodeURIComponent(orderId) : orderId;
+            console.log('[OrderSuccess] Navigating to order details with fallback orderId:', orderId);
+            router.push({ pathname: '/orders/[id]', params: { id: encodedId } } as any);
         } else {
-            router.replace('/');
+            router.push('/orders');
         }
     };
 
@@ -141,21 +151,35 @@ export default function OrderSuccessScreen() {
                         },
                     ]}
                 >
+                    {orderGraphId && (
+                        <TouchableOpacity
+                            style={styles.primaryButton}
+                            onPress={handleViewOrderDetails}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.primaryButtonText}>View Order Details</Text>
+                        </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity
-                        style={styles.primaryButton}
+                        style={orderGraphId ? styles.secondaryButton : styles.primaryButton}
                         onPress={handleContinueShopping}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.primaryButtonText}>Continue Shopping</Text>
+                        <Text style={orderGraphId ? styles.secondaryButtonText : styles.primaryButtonText}>
+                            Continue Shopping
+                        </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.secondaryButton}
-                        onPress={handleViewOrders}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.secondaryButtonText}>View My Orders</Text>
-                    </TouchableOpacity>
+                    {orderGraphId && (
+                        <TouchableOpacity
+                            style={styles.tertiaryButton}
+                            onPress={handleViewOrders}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.tertiaryButtonText}>View All Orders</Text>
+                        </TouchableOpacity>
+                    )}
                 </Animated.View>
             </View>
         </SafeAreaView>
@@ -270,5 +294,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.SemiBold,
         color: '#1A1A1A',
+    },
+    tertiaryButton: {
+        backgroundColor: 'transparent',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    tertiaryButtonText: {
+        fontSize: 15,
+        fontFamily: Fonts.Medium,
+        color: Colors.primary,
     },
 });

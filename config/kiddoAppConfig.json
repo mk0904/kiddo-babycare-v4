@@ -484,37 +484,19 @@
       "type": "carousel",
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlsfashion1.jpg",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/tryandbuybanner.jpg?v=1768113449",
           "link": {
             "type": "collection",
             "collection": {
               "id": "gid://shopify/Collection/507808678177"
             }
           }
-        },
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toyspage1.jpg",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": "gid://shopify/Collection/507806449953"
-            }
-          }
-        },
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boysfashion1.jpg",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": "gid://shopify/Collection/507808645409"
-            }
-          }
         }
       ],
       "carouselConfig": {
-        "autoPlay": true,
+        "autoPlay": false,
         "autoPlayInterval": 3000,
-        "loop": true,
+        "loop": false,
         "height": 0.6,
         "resizeMode": "cover"
       },
@@ -1620,7 +1602,7 @@
       "collectionIds": [
         "gid://shopify/Collection/507750875425"
       ],
-      "title": "featured",
+      "title": "Featured",
       "productListConfig": {
         "limit": 20,
         "itemsPerView": 2.1,
@@ -2019,7 +2001,7 @@
         }
       },
       "girls": {
-        "label": "Girl Fashion",
+        "label": "Girls",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -2031,7 +2013,7 @@
         }
       },
       "boys": {
-        "label": "Boy Fashion",
+        "label": "Boys",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#4169E1",
@@ -2574,5 +2556,17 @@
     "maxDeliveryTime": 60,
     "travelTimePerKm": 2,
     "maxDeliveryDistance": null
+  },
+  "providers": {
+    "nector": {
+      "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
+      "appId": "shopify-kiddo-quick-baby-joy-m4bpo",
+      "appInstallTriggerId": null,
+      "razorpaySecretId": "fa26c7d4-cba3-47d0-aa73-66ab442a9484"
+    },
+    "razorpay": {
+      "keyId": "rzp_live_S4IH8bhsw9DjEe",
+      "keySecret": "OmdCqA5dFmc5GuL9uZk4YpDa"
+    }
   }
 }

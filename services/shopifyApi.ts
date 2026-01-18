@@ -1,6 +1,6 @@
 // Shopify API Service - Similar to Kiddo's implementation
-import axios from 'axios';
 import { SHOPIFY_API_URL, SHOPIFY_STOREFRONT_ACCESS_TOKEN } from '@/config/shopify';
+import axios from 'axios';
 
 const client = axios.create({
   baseURL: SHOPIFY_API_URL,
@@ -180,6 +180,10 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
             id
             title
             price {
+              amount
+              currencyCode
+            }
+            compareAtPrice {
               amount
               currencyCode
             }
@@ -1351,7 +1355,7 @@ export const shopifyApi = {
     email: string,
     password: string,
     firstName: string,
-    lastName: string,
+    lastName: string | undefined,
     phone: string
   ) => {
     try {
@@ -1374,27 +1378,54 @@ export const shopifyApi = {
         }
       `;
 
-      const createResponse = await client.post('', {
-        query: createMutation,
-        variables: {
-          input: {
+      // Build input object, only include lastName if it's not empty (like gauntlet)
+      const input: any = {
             email,
             password,
             firstName,
-            lastName,
             phone,
             acceptsMarketing: true,
-          },
+      };
+      
+      // Only include lastName if it's provided and not empty
+      if (lastName && lastName.trim()) {
+        input.lastName = lastName.trim();
+      }
+
+      const createResponse = await client.post('', {
+        query: createMutation,
+        variables: {
+          input,
         },
       });
 
+      // Check for GraphQL errors
+      if (createResponse.data.errors && createResponse.data.errors.length > 0) {
+        throw new Error(createResponse.data.errors[0].message || 'Failed to create customer');
+      }
+
+      // Check for user errors
       if (createResponse.data.data?.customerCreate?.userErrors?.length > 0) {
-        throw new Error(createResponse.data.data.customerCreate.userErrors[0].message);
+        const userError = createResponse.data.data.customerCreate.userErrors[0];
+        const errorMessage = userError.message || 'Failed to create customer';
+        
+        // Create a custom error that can be identified for fallback handling
+        const error: any = new Error(errorMessage);
+        error.isCustomerExistsError = 
+          errorMessage.toLowerCase().includes('taken') || 
+          errorMessage.toLowerCase().includes('already') ||
+          errorMessage.toLowerCase().includes('exists');
+        error.userError = userError;
+        throw error;
       }
 
       const customer = createResponse.data.data?.customerCreate?.customer;
 
-      // 2. Get Access Token
+      if (!customer) {
+        throw new Error('Customer was not created successfully');
+      }
+
+      // 2. Get Access Token (with retry logic - Shopify sometimes needs a moment to process)
       const tokenMutation = `
         mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
           customerAccessTokenCreate(input: $input) {
@@ -1405,26 +1436,53 @@ export const shopifyApi = {
             customerUserErrors {
               field
               message
+              code
             }
           }
         }
       `;
 
-      const tokenResponse = await client.post('', {
-        query: tokenMutation,
-        variables: {
-          input: {
-            email,
-            password,
-          },
-        },
-      });
+      // Retry logic: Shopify may need a moment to process the customer creation
+      let accessToken: string | undefined;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1 second
 
-      if (tokenResponse.data.data?.customerAccessTokenCreate?.customerUserErrors?.length > 0) {
-        throw new Error(tokenResponse.data.data.customerAccessTokenCreate.customerUserErrors[0].message);
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (attempt > 0) {
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        }
+
+        const tokenResponse = await client.post('', {
+          query: tokenMutation,
+          variables: {
+            input: {
+              email,
+              password,
+            },
+          },
+        });
+
+        const userErrors = tokenResponse.data.data?.customerAccessTokenCreate?.customerUserErrors;
+        const token = tokenResponse.data.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+
+        if (token) {
+          accessToken = token;
+          break; // Success, exit retry loop
+        }
+
+        // If it's the last attempt or error is not "unidentified customer", throw error
+        if (attempt === maxRetries - 1 || 
+            (userErrors && userErrors.length > 0 && 
+             !userErrors[0].message?.toLowerCase().includes('unidentified'))) {
+          const errorMessage = userErrors?.[0]?.message || 'Failed to create access token';
+          throw new Error(errorMessage);
+        }
       }
 
-      const accessToken = tokenResponse.data.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+      if (!accessToken) {
+        throw new Error('Failed to create access token after retries');
+      }
 
       return {
         customer,

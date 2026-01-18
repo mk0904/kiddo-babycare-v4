@@ -277,10 +277,7 @@ export function ProductCollection({
     );
   }
 
-  // Empty state
-  if (allProducts.length === 0) {
-    return null;
-  }
+  // Note: Empty state is handled by CollectionComponent (InfiniteGrid)
 
   return (
     <View style={[styles.container, style?.root]}>

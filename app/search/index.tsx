@@ -220,6 +220,8 @@ export default function SearchScreen() {
                 setLoading(true);
                 setLoadingMore(false);
                 setStartIndex(0);
+                // Clear old facets when starting new search to ensure fresh data
+                setFacets([]);
             } else {
                 setLoadingMore(true);
             }

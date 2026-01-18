@@ -1,4 +1,3 @@
-import { getDeliveryTimeFromGoogleMaps, isWithinDeliveryRange } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
@@ -6,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import {
     ActivityIndicator,
     Alert,
@@ -32,7 +32,19 @@ export default function AddressFormScreen() {
     const { addAddress } = useAddress();
 
     // Parse location data passed from params
-    const locationData = params.locationData ? JSON.parse(params.locationData as string) : null;
+    let locationData = null;
+    try {
+        if (params.locationData) {
+            locationData = typeof params.locationData === 'string' 
+                ? JSON.parse(params.locationData) 
+                : params.locationData;
+        }
+    } catch (error) {
+        console.error('Error parsing location data:', error);
+        Alert.alert('Error', 'Invalid location data', [
+            { text: 'Go Back', onPress: () => router.back() }
+        ]);
+    }
 
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState(user?.phone || '');
@@ -41,57 +53,20 @@ export default function AddressFormScreen() {
     const [street, setStreet] = useState(locationData?.address1 || '');
     const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other'>('home');
     const [saving, setSaving] = useState(false);
-    const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
-    const [loadingDeliveryTime, setLoadingDeliveryTime] = useState(false);
 
-    useEffect(() => {
+    // Use synchronous delivery time calculation
+    const { deliveryTime, loading: loadingDeliveryTime } = useDeliveryStatus(
+        locationData?.latitude,
+        locationData?.longitude
+    );
+
+    React.useEffect(() => {
         if (!locationData) {
             Alert.alert('Error', 'No location data found', [
                 { text: 'Go Back', onPress: () => router.back() }
             ]);
-        } else {
-            // Calculate delivery time when location data is available
-            calculateDeliveryTime();
         }
     }, [locationData]);
-
-    const calculateDeliveryTime = async () => {
-        if (!locationData?.latitude || !locationData?.longitude) {
-            setDeliveryTime(null);
-            return;
-        }
-
-        setLoadingDeliveryTime(true);
-        try {
-            // First check using distance calculation
-            const deliveryCheck = isWithinDeliveryRange(
-                locationData.latitude,
-                locationData.longitude
-            );
-
-            // Also try to get from Google Maps API
-            const googleMapsTime = await getDeliveryTimeFromGoogleMaps(
-                locationData.latitude,
-                locationData.longitude
-            );
-
-            // Use Google Maps time if available, otherwise use calculated time
-            const finalTime = googleMapsTime || deliveryCheck.estimatedTime;
-            setDeliveryTime(finalTime);
-        } catch (error) {
-            console.error('Error calculating delivery time:', error);
-            // Fallback to distance-based calculation
-            if (locationData?.latitude && locationData?.longitude) {
-                const deliveryCheck = isWithinDeliveryRange(
-                    locationData.latitude,
-                    locationData.longitude
-                );
-                setDeliveryTime(deliveryCheck.estimatedTime);
-            }
-        } finally {
-            setLoadingDeliveryTime(false);
-        }
-    };
 
     const validateForm = () => {
         if (!fullName.trim()) return alertError('Please enter your full name');
@@ -186,12 +161,7 @@ export default function AddressFormScreen() {
                             <Text style={styles.locationSummaryTitle}>Selected Location</Text>
                         </View>
                         <Text style={styles.locationSummaryText}>{locationData.formattedAddress}</Text>
-                        {loadingDeliveryTime ? (
-                            <View style={styles.deliveryTimeContainer}>
-                                <ActivityIndicator size="small" color={Colors.primary} />
-                                <Text style={styles.deliveryTimeText}>Calculating delivery time...</Text>
-                            </View>
-                        ) : deliveryTime !== null ? (
+                        {deliveryTime !== null ? (
                             <View style={styles.deliveryTimeContainer}>
                                 <Ionicons name="time-outline" size={16} color={deliveryTime > 60 ? Colors.secondary : Colors.primary} />
                                 <Text style={[

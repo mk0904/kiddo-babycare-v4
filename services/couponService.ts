@@ -1,6 +1,7 @@
 // Coupon Service - Uses config-based discounts and Shopify API for application
 import axios from 'axios';
 import { SHOPIFY_ADMIN_API_URL, SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_STORE_DOMAIN } from '@/config/shopify';
+import { configService } from './configService';
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -27,8 +28,7 @@ export interface CouponCode {
 // Get discounts from config
 const getConfigDiscounts = (): CouponCode[] => {
   try {
-    const config = require('@/config/kiddoAppConfig.json');
-    const discountsConfig = config.discounts;
+    const discountsConfig = configService.getDiscountsConfig();
     
     if (!discountsConfig || !discountsConfig.enabled) {
       return [];

@@ -180,6 +180,48 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
         }));
     }, [products]);
 
+    // Calculate average price for essentials collections
+    const averageMarketPrice = useMemo(() => {
+        const isEssentials = title && title.toLowerCase().includes('essentials');
+        if (!isEssentials || normalizedProducts.length === 0) return null;
+
+        const parsePrice = (priceValue: any) => {
+            if (!priceValue) return 0;
+            if (typeof priceValue === 'string') {
+                const parsed = parseFloat(priceValue);
+                return isNaN(parsed) ? 0 : parsed;
+            }
+            if (typeof priceValue === 'object' && priceValue.amount) {
+                const parsed = parseFloat(priceValue.amount);
+                return isNaN(parsed) ? 0 : parsed;
+            }
+            return 0;
+        };
+
+        const prices: number[] = [];
+        normalizedProducts.forEach((product) => {
+            const firstVariant = product.variants?.edges?.[0]?.node || 
+                                (Array.isArray(product.variants) ? product.variants[0] : null);
+            
+            let price = 0;
+            if (firstVariant?.price?.amount) {
+                price = parsePrice(firstVariant.price.amount);
+            } else if (product.priceRange?.minVariantPrice?.amount) {
+                price = parsePrice(product.priceRange.minVariantPrice.amount);
+            } else if (product.price) {
+                price = parsePrice(product.price);
+            }
+
+            if (price > 0) {
+                prices.push(price);
+            }
+        });
+
+        if (prices.length === 0) return null;
+        const sum = prices.reduce((acc, price) => acc + price, 0);
+        return sum / prices.length;
+    }, [normalizedProducts, title]);
+
     const productCardContainerStyle = useMemo(() => ({
         width: '100%',
         margin: 0,
@@ -201,10 +243,11 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
                     onPress={handlePress}
                     onAddToCart={handleAddToCart}
                     containerStyle={productCardContainerStyle}
+                    averageMarketPrice={averageMarketPrice}
                 />
             </View>
         );
-    }, [itemWrapperStyle, onProductPress, onAddToCart, productCardContainerStyle]);
+    }, [itemWrapperStyle, onProductPress, onAddToCart, productCardContainerStyle, averageMarketPrice]);
 
     const ItemSeparator = useCallback(() => {
         return <View style={{ width: itemSpacing }} />;

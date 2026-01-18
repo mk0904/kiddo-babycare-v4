@@ -1,35 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { OTPInput } from '@/components/ui/OTPInput';
 import { Button } from '@/components/ui/Button';
 import { ErrorText } from '@/components/ui/ErrorText';
 import { Colors } from '@/constants/theme';
-import { otpService } from '@/services/otpService';
-import { customerService } from '@/services/customerService';
 import { useAuth } from '@/context/AuthContext';
+import { customerService } from '@/services/customerService';
+import { otpService } from '@/services/otpService';
+import { shopifyApi } from '@/services/shopifyApi';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+// Import SMS User Consent (exactly like gauntlet)
+import { useSmsUserConsent } from '@eabdullazyanov/react-native-sms-user-consent';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OTPScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ phoneNumber: string }>();
   const { phoneNumber } = params;
   const { login, isAuthenticated, user } = useAuth();
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
+  
+  // Use array for OTP input (separate fields for each digit)
+  const otpPinCount = 6;
+  const [otpInput, setOtpInput] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  
+  // Refs for OTP inputs and preventing duplicate verifications
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const hiddenInputRef = useRef<TextInput>(null);
+  const verifyingRef = useRef(false);
+
+  // Use SMS User Consent hook (exactly like gauntlet)
+  const retrievedCode = useSmsUserConsent(otpPinCount);
+
+  // Handle auto-detected OTP from SMS User Consent (exactly like gauntlet)
+  useEffect(() => {
+    if (retrievedCode && retrievedCode.length === otpPinCount) {
+      console.log('[OTP] ✅ Auto-detected OTP from SMS:', retrievedCode);
+      const otpArray = retrievedCode.split('');
+      setOtpInput(otpArray);
+      
+      // Blur all inputs
+      inputRefs.current.forEach(ref => ref?.blur());
+      hiddenInputRef.current?.blur();
+            
+      // Auto-verify
+      handleVerifyOtp({
+        otpInput: retrievedCode,
+        otpPinCount,
+      });
+    }
+  }, [retrievedCode]);
 
   // Navigate after OTP verification
   useEffect(() => {
@@ -37,26 +74,161 @@ export default function OTPScreen() {
 
     if (isAuthenticated && !loading && otpVerified && !isGuest) {
       const navigationTimer = setTimeout(() => {
-        // Check if it's a new customer (default firstName is 'User' for new customers)
-        // Redirect to onboarding if it's a new customer
-        const isNewCustomer = user?.firstName === 'User' || !user?.firstName;
-        
-        if (isNewCustomer) {
-          router.replace('/(auth)/onboarding');
-        } else {
-          router.replace('/(tabs)');
-        }
+        router.replace('/(auth)/kiddo-details');
       }, 600);
 
       return () => clearTimeout(navigationTimer);
     }
   }, [isAuthenticated, loading, otpVerified, user, router]);
 
-  const handleVerifyOTP = async (otpValue?: string) => {
-    const otpToVerify = otpValue || otp.join('');
+  const handleVerifyOtp = useCallback(async ({
+    otpInput: otpToVerify,
+    otpPinCount,
+  }: {
+    otpInput: string;
+    otpPinCount: number;
+  }) => {
+    // Validation (exactly like gauntlet)
+    if (!otpToVerify.length) {
+      setError('Code is required.');
+      return;
+    }
+    if (otpToVerify.length < otpPinCount) {
+      setError('Invalid code.');
+      return;
+    }
+    if (verifyingRef.current) {
+      return;
+    }
 
-    if (otpToVerify.length !== 6) {
-      setError('Please enter the complete 6-digit OTP');
+    verifyingRef.current = true;
+    setLoading(true);
+    setError('');
+
+    try {
+      setOtpVerified(false);
+
+      // Verify OTP using your service
+      const verifyResult = await otpService.verifyOTP(phoneNumber, otpToVerify);
+
+      if (!verifyResult.success) {
+        setError(verifyResult.message || 'Invalid OTP');
+        setOtpInput(['', '', '', '', '', '']);
+        setOtpVerified(false);
+        setLoading(false);
+        verifyingRef.current = false;
+        return;
+      }
+
+      // OTP verified, try to login first (for existing customers)
+      // Format email: phone@kiddo.app
+      const cleanedPhone = phoneNumber.replace(/\D/g, '');
+      const email = `${cleanedPhone.slice(-10)}@kiddo.app`;
+      const password = 'kiddo@12345';
+
+      // Try to login first (for existing customers)
+      const loginResult = await customerService.checkCustomerExists(email, password);
+      
+      if (loginResult.exists && loginResult.token) {
+        // Existing customer - login directly
+        console.log('[OTP] Existing customer, logging in...');
+        setOtpVerified(true);
+
+        if (loginResult.customer) {
+          await login({
+            id: loginResult.customer.id,
+            phone: phoneNumber,
+            email: loginResult.customer.email || email,
+            firstName: loginResult.customer.firstName || '',
+            lastName: loginResult.customer.lastName || '',
+            customerId: loginResult.customer.id,
+            customerAccessToken: loginResult.token,
+            isGuest: false,
+            displayName: loginResult.customer.displayName,
+            numberOfOrders: loginResult.customer.numberOfOrders,
+            acceptsMarketing: loginResult.customer.acceptsMarketing,
+            createdAt: loginResult.customer.createdAt,
+            updatedAt: loginResult.customer.updatedAt,
+            defaultAddress: loginResult.customer.defaultAddress,
+          });
+        } else {
+          // Customer exists but details not available - get them
+          try {
+            const details = await shopifyApi.getCustomerDetails(loginResult.token);
+            if (details) {
+              await login({
+                id: details.id,
+                phone: phoneNumber,
+                email: details.email || email,
+                firstName: details.firstName || '',
+                lastName: details.lastName || '',
+                customerId: details.id,
+                customerAccessToken: loginResult.token,
+                isGuest: false,
+                displayName: details.displayName,
+                numberOfOrders: details.numberOfOrders,
+                acceptsMarketing: details.acceptsMarketing,
+                createdAt: details.createdAt,
+                updatedAt: details.updatedAt,
+                defaultAddress: details.defaultAddress,
+              });
+            } else {
+              await login({
+                id: `gid://shopify/Customer/existing`,
+                phone: phoneNumber,
+                email: email,
+                firstName: '',
+                lastName: '',
+                customerId: `gid://shopify/Customer/existing`,
+                customerAccessToken: loginResult.token,
+                isGuest: false,
+              });
+            }
+          } catch (e) {
+            await login({
+              id: `gid://shopify/Customer/existing`,
+              phone: phoneNumber,
+              email: email,
+              firstName: '',
+              lastName: '',
+              customerId: `gid://shopify/Customer/existing`,
+              customerAccessToken: loginResult.token,
+              isGuest: false,
+            });
+          }
+        }
+      } else {
+        // New customer - ask for name
+        console.log('[OTP] New customer, asking for name...');
+        setShowNameInput(true);
+        setLoading(false);
+        verifyingRef.current = false;
+      }
+    } catch (error: any) {
+      let errorMessage = 'Something went wrong. Please try again.';
+
+      if (error.message?.includes('Limit exceeded') || error.message?.includes('THROTTLED')) {
+        errorMessage = 'Too many signup attempts. Please wait a few minutes and try again.';
+      } else if (error.message?.includes('Phone is invalid')) {
+        errorMessage = 'Invalid phone number format. Please check and try again.';
+      } else if (error.message?.includes('Failed to create account')) {
+        errorMessage = 'Unable to create account. Please try again in a moment.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
+      setOtpInput(['', '', '', '', '', '']);
+      setOtpVerified(false);
+    } finally {
+      setLoading(false);
+      verifyingRef.current = false;
+    }
+  }, [phoneNumber, login]);
+
+  const handleCreateAccount = async () => {
+    if (!firstName.trim()) {
+      setError('Please enter your name');
       return;
     }
 
@@ -64,26 +236,16 @@ export default function OTPScreen() {
     setError('');
 
     try {
-      setOtpVerified(false);
-
-      // Verify OTP
-      const verifyResult = await otpService.verifyOTP(phoneNumber, otpToVerify);
-
-      if (!verifyResult.success) {
-        setError(verifyResult.message || 'Invalid OTP');
-        setOtp(['', '', '', '', '', '']);
-        setOtpVerified(false);
-        setLoading(false);
-        return;
-      }
-
-      // OTP verified, create customer
-      const customerResult = await customerService.createCustomer(phoneNumber);
+      // Create customer with name
+      const customerResult = await customerService.createCustomer(
+        phoneNumber,
+        firstName.trim(),
+        lastName.trim()
+      );
 
       if (customerResult.success && customerResult.customer) {
         if (!customerResult.customer.customerAccessToken) {
-          setError('Failed to authenticate. Please try again.');
-          setOtp(['', '', '', '', '', '']);
+          setError('Failed to create account. Please try again.');
           setLoading(false);
           return;
         }
@@ -108,31 +270,20 @@ export default function OTPScreen() {
           defaultAddress: customerResult.customer.defaultAddress,
         });
       } else {
-        setError('Failed to create account. Please try again.');
-        setOtp(['', '', '', '', '', '']);
+        setError(customerResult.message || 'Failed to create account. Please try again.');
       }
     } catch (error: any) {
-      let errorMessage = 'Something went wrong. Please try again.';
-
-      if (error.message?.includes('Limit exceeded') || error.message?.includes('THROTTLED')) {
-        errorMessage = 'Too many signup attempts. Please wait a few minutes and try again.';
-      } else if (error.message?.includes('Phone is invalid')) {
-        errorMessage = 'Invalid phone number format. Please check and try again.';
-      } else if (error.message?.includes('Failed to create account')) {
-        errorMessage = 'Unable to create account. Please try again in a moment.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      setError(errorMessage);
-      setOtp(['', '', '', '', '', '']);
-      setOtpVerified(false);
+      setError(error.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+  
+  const handleResendOtp = async () => {
+    if (resending) {
+      return;
+    }
 
-  const handleResendOTP = async () => {
     setResending(true);
     setError('');
 
@@ -141,8 +292,9 @@ export default function OTPScreen() {
 
       if (result && result.success) {
         Alert.alert('Success', 'OTP has been resent to your phone number');
-        setOtp(['', '', '', '', '', '']);
+        setOtpInput(['', '', '', '', '', '']);
         setError('');
+        verifyingRef.current = false;
       } else {
         const errorMsg = result?.message || 'Failed to resend OTP';
         setError(errorMsg);
@@ -152,7 +304,7 @@ export default function OTPScreen() {
       setError(errorMessage);
 
       if (__DEV__) {
-        setOtp(['', '', '', '', '', '']);
+        setOtpInput(['', '', '', '', '', '']);
         console.log('Dev Mode: OTP may have been generated, check console.');
       }
     } finally {
@@ -160,7 +312,79 @@ export default function OTPScreen() {
     }
   };
 
-  const otpComplete = otp.every((digit) => digit !== '');
+  // Show name input form for new users
+  if (showNameInput) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar style="auto" />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <View style={styles.content}>
+            {/* Back Button */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                setShowNameInput(false);
+                setError('');
+              }}
+              disabled={loading}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Enter Your Name</Text>
+              <Text style={styles.subtitle}>
+                We need your name to create your account
+              </Text>
+            </View>
+
+            {/* Name Input Form */}
+            <View style={styles.nameForm}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>First Name *</Text>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Enter your first name"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="words"
+                  editable={!loading}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Last Name (Optional)</Text>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Enter your last name"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="words"
+                  editable={!loading}
+                />
+              </View>
+
+              <ErrorText message={error} visible={!!error} />
+
+              <Button
+                title="Create Account"
+                onPress={handleCreateAccount}
+                disabled={!firstName.trim() || loading}
+                loading={loading}
+                style={styles.createButton}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -174,6 +398,7 @@ export default function OTPScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            disabled={loading}
           >
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
@@ -183,19 +408,107 @@ export default function OTPScreen() {
             <Text style={styles.title}>Enter OTP</Text>
             <Text style={styles.subtitle}>
               We've sent a 6-digit code to{'\n'}
-              <Text style={styles.phoneNumber}>{phoneNumber}</Text>
+              <Text style={styles.phoneNumber}>+{phoneNumber}</Text>
             </Text>
+            
+            {/* Auto-detection indicator */}
+            {retrievedCode && (
+              <View style={styles.autoDetectIndicator}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.autoDetectText}>OTP detected from SMS</Text>
+              </View>
+            )}
           </View>
 
-          {/* OTP Input */}
+          {/* OTP Input - Separate fields for each digit */}
           <View style={styles.otpContainer}>
-            <OTPInput
-              value={otp}
-              onChange={setOtp}
-              onComplete={handleVerifyOTP}
-              error={!!error}
+            {/* Hidden input for SMS autofill */}
+            <TextInput
+              ref={hiddenInputRef}
+              style={styles.hiddenInput}
+              value=""
+              onChangeText={(text) => {
+                const digits = text.replace(/\D/g, '');
+                if (digits.length >= otpPinCount) {
+                  const otpArray = digits.slice(0, otpPinCount).split('');
+                  setOtpInput(otpArray);
+                  
+                  // Blur all inputs
+                  inputRefs.current.forEach(ref => ref?.blur());
+                  hiddenInputRef.current?.blur();
+                  
+                  // Auto-verify
+                  handleVerifyOtp({
+                    otpInput: digits.slice(0, otpPinCount),
+                    otpPinCount,
+                  });
+                }
+              }}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+              autoFocus={false}
+              maxLength={otpPinCount}
               editable={!loading}
+              importantForAutofill="yes"
+              autoCorrect={false}
+              spellCheck={false}
             />
+            
+            {/* Visible OTP inputs - one for each digit */}
+            {Array.from({ length: otpPinCount }).map((_, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputRefs.current[index] = ref;
+                }}
+                style={[
+                  styles.otpDigitInput,
+                  otpInput[index] && styles.otpDigitInputFilled,
+                  error && styles.otpDigitInputError,
+                ]}
+                value={otpInput[index]}
+                onChangeText={(text) => {
+                  // Only allow single digit
+                  if (text && !/^\d$/.test(text)) {
+                    return;
+                  }
+                  
+                  const newOtp = [...otpInput];
+                  newOtp[index] = text;
+                  setOtpInput(newOtp);
+                  
+                  // Auto-focus next input
+                  if (text && index < otpPinCount - 1) {
+                    inputRefs.current[index + 1]?.focus();
+                  }
+                  
+                  // Auto-verify when all digits are entered
+                  const otpString = newOtp.join('');
+                  if (otpString.length === otpPinCount) {
+                    handleVerifyOtp({
+                      otpInput: otpString,
+                      otpPinCount,
+                    });
+                  }
+                }}
+                onKeyPress={(e) => {
+                  // Handle backspace
+                  if (e.nativeEvent.key === 'Backspace' && !otpInput[index] && index > 0) {
+                    inputRefs.current[index - 1]?.focus();
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+                editable={!loading}
+                textContentType="none"
+                autoComplete="off"
+                importantForAutofill="no"
+                autoCorrect={false}
+                spellCheck={false}
+              />
+            ))}
           </View>
 
           <ErrorText message={error} visible={!!error} />
@@ -203,24 +516,33 @@ export default function OTPScreen() {
           {/* Verify Button */}
           <Button
             title="Verify OTP"
-            onPress={() => handleVerifyOTP()}
-            disabled={!otpComplete || loading}
+            onPress={() =>
+              handleVerifyOtp({
+                otpInput: otpInput.join(''),
+                otpPinCount,
+              })
+            }
+            disabled={otpInput.join('').length < otpPinCount || loading}
             loading={loading}
+            style={styles.verifyButton}
           />
 
           {/* Resend OTP */}
           <View style={styles.resendContainer}>
             <Text style={styles.resendText}>Didn't receive the code? </Text>
             <TouchableOpacity
-              onPress={handleResendOTP}
-              disabled={resending}
+              onPress={handleResendOtp}
+              disabled={resending || loading}
               activeOpacity={0.7}
             >
-              <Text style={styles.resendLink}>
-                {resending ? 'Resending...' : 'Resend OTP'}
-              </Text>
+              {resending ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Text style={styles.resendLink}>Resend OTP</Text>
+              )}
             </TouchableOpacity>
           </View>
+
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -251,8 +573,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
+    fontFamily: 'Metropolis-Bold',
     color: Colors.text,
-    fontWeight: 'bold',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -261,30 +583,133 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+    fontFamily: 'Metropolis-Regular',
   },
   phoneNumber: {
     color: Colors.primary,
+    fontFamily: 'Metropolis-SemiBold',
     fontWeight: '600',
   },
+  autoDetectIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  autoDetectText: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontFamily: 'Metropolis-Medium',
+  },
   otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 24,
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+    left: -1000,
+    zIndex: -1,
+  },
+  otpDigitInput: {
+    width: 48,
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 24,
+    fontFamily: 'Metropolis-SemiBold',
+    color: Colors.text,
+    backgroundColor: '#F9FAFB',
+  },
+  otpDigitInputFilled: {
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+  },
+  otpDigitInputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  verifyButton: {
+    marginTop: 8,
   },
   resendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 24,
+    gap: 4,
   },
   resendText: {
     fontSize: 14,
     color: Colors.textSecondary,
+    fontFamily: 'Metropolis-Regular',
   },
   resendLink: {
     fontSize: 14,
     color: Colors.primary,
+    fontFamily: 'Metropolis-SemiBold',
     fontWeight: '600',
     textDecorationLine: 'underline',
-    marginLeft: 4,
+  },
+  devInfo: {
+    marginTop: 32,
+    padding: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  devInfoTitle: {
+    fontSize: 12,
+    fontFamily: 'Metropolis-SemiBold',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  devInfoText: {
+    fontSize: 11,
+    fontFamily: 'Monaco',
+    color: '#666',
+    marginBottom: 4,
+  },
+  devInfoNote: {
+    fontSize: 10,
+    fontFamily: 'Metropolis-Regular',
+    color: Colors.textSecondary,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  nameForm: {
+    width: '100%',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Metropolis-SemiBold',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  nameInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontFamily: 'Metropolis-Regular',
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  createButton: {
+    marginTop: 8,
   },
 });
-
