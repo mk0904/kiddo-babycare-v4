@@ -7,29 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F84D98FB16953D42E2C9847 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1D62E01001F52AD7E3E38C30 /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		9D06C680630AE3EC60AB6790 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66515CB74EC4AF448C63052 /* ExpoModulesProvider.swift */; };
+		5EC64769A1A94A7CB8D744C9 /* libPods-Kiddo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AC295C12C96EAE1A0412CC1 /* libPods-Kiddo.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CB74D14C14A1F86D0F402CE2 /* libPods-Kiddo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B9957DD3D65A9B7EB5AF7D96 /* libPods-Kiddo.a */; };
-		DA74A4E89EE4B42EF1555660 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0FA22D19F61FC1A1897B85E1 /* PrivacyInfo.xcprivacy */; };
+		C8384201265325BDCD9DF041 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AE7301EE3738F5BAF85AAD /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0FA22D19F61FC1A1897B85E1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Kiddo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		0AC295C12C96EAE1A0412CC1 /* libPods-Kiddo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Kiddo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* Kiddo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kiddo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Kiddo/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Kiddo/Info.plist; sourceTree = "<group>"; };
-		78A5BF5B68CE96D34BE225EB /* Pods-Kiddo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kiddo.release.xcconfig"; path = "Target Support Files/Pods-Kiddo/Pods-Kiddo.release.xcconfig"; sourceTree = "<group>"; };
+		1D62E01001F52AD7E3E38C30 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Kiddo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		9CBDC433718B43557A734945 /* Pods-Kiddo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kiddo.debug.xcconfig"; path = "Target Support Files/Pods-Kiddo/Pods-Kiddo.debug.xcconfig"; sourceTree = "<group>"; };
+		A7AE7301EE3738F5BAF85AAD /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Kiddo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Kiddo/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B9957DD3D65A9B7EB5AF7D96 /* libPods-Kiddo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Kiddo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B19E4CF96146DD1D7435F485 /* Pods-Kiddo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kiddo.release.xcconfig"; path = "Target Support Files/Pods-Kiddo/Pods-Kiddo.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		DFF511EB509E9203E21508DB /* Pods-Kiddo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kiddo.debug.xcconfig"; path = "Target Support Files/Pods-Kiddo/Pods-Kiddo.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Kiddo/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Kiddo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Kiddo-Bridging-Header.h"; path = "Kiddo/Kiddo-Bridging-Header.h"; sourceTree = "<group>"; };
-		F66515CB74EC4AF448C63052 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Kiddo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,13 +37,30 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CB74D14C14A1F86D0F402CE2 /* libPods-Kiddo.a in Frameworks */,
+				5EC64769A1A94A7CB8D744C9 /* libPods-Kiddo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		067AA51D737F4056A59C25BB /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				95904AF205CC15C7616150B6 /* Kiddo */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
+		0F1EC205EC12001E4C99EF6C /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				9CBDC433718B43557A734945 /* Pods-Kiddo.debug.xcconfig */,
+				B19E4CF96146DD1D7435F485 /* Pods-Kiddo.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* Kiddo */ = {
 			isa = PBXGroup;
 			children = (
@@ -53,34 +70,18 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				0FA22D19F61FC1A1897B85E1 /* PrivacyInfo.xcprivacy */,
+				1D62E01001F52AD7E3E38C30 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Kiddo;
-			sourceTree = "<group>";
-		};
-		198275A98D4649B2F811D37F /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				6CF2F41998134C473BC2CD46 /* Kiddo */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				B9957DD3D65A9B7EB5AF7D96 /* libPods-Kiddo.a */,
+				0AC295C12C96EAE1A0412CC1 /* libPods-Kiddo.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		6CF2F41998134C473BC2CD46 /* Kiddo */ = {
-			isa = PBXGroup;
-			children = (
-				F66515CB74EC4AF448C63052 /* ExpoModulesProvider.swift */,
-			);
-			name = Kiddo;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,8 +98,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				B75ABB9102BD879B23EDEE23 /* Pods */,
-				198275A98D4649B2F811D37F /* ExpoModulesProviders */,
+				0F1EC205EC12001E4C99EF6C /* Pods */,
+				067AA51D737F4056A59C25BB /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,14 +114,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B75ABB9102BD879B23EDEE23 /* Pods */ = {
+		95904AF205CC15C7616150B6 /* Kiddo */ = {
 			isa = PBXGroup;
 			children = (
-				DFF511EB509E9203E21508DB /* Pods-Kiddo.debug.xcconfig */,
-				78A5BF5B68CE96D34BE225EB /* Pods-Kiddo.release.xcconfig */,
+				A7AE7301EE3738F5BAF85AAD /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
+			name = Kiddo;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -140,13 +139,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Kiddo" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				24F99F5BA119ACE0809394E8 /* [Expo] Configure project */,
+				6503B163FED0940354439472 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				E4EC66CB272A58CF151E1FBF /* [CP] Embed Pods Frameworks */,
+				A72276657407E37C4D338471 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +195,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				DA74A4E89EE4B42EF1555660 /* PrivacyInfo.xcprivacy in Resources */,
+				0F84D98FB16953D42E2C9847 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,7 +241,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		24F99F5BA119ACE0809394E8 /* [Expo] Configure project */ = {
+		6503B163FED0940354439472 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -306,7 +305,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Kiddo/Pods-Kiddo-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E4EC66CB272A58CF151E1FBF /* [CP] Embed Pods Frameworks */ = {
+		A72276657407E37C4D338471 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -342,7 +341,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				9D06C680630AE3EC60AB6790 /* ExpoModulesProvider.swift in Sources */,
+				C8384201265325BDCD9DF041 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -351,12 +350,13 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DFF511EB509E9203E21508DB /* Pods-Kiddo.debug.xcconfig */;
+			baseConfigurationReference = 9CBDC433718B43557A734945 /* Pods-Kiddo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Kiddo/Kiddo.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = ANK22C64TH;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -368,7 +368,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.9;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -377,6 +377,10 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiddo.ak;
 				PRODUCT_NAME = Kiddo;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Kiddo/Kiddo-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -387,19 +391,20 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 78A5BF5B68CE96D34BE225EB /* Pods-Kiddo.release.xcconfig */;
+			baseConfigurationReference = B19E4CF96146DD1D7435F485 /* Pods-Kiddo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Kiddo/Kiddo.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = ANK22C64TH;
 				INFOPLIST_FILE = Kiddo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.9;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -408,6 +413,10 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiddo.ak;
 				PRODUCT_NAME = Kiddo;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Kiddo/Kiddo-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;

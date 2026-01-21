@@ -37,9 +37,7 @@ export default function OTPScreen() {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
-  const [showNameInput, setShowNameInput] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  // Removed name input screen - accounts are created with default name
   
   // Refs for OTP inputs and preventing duplicate verifications
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -198,11 +196,54 @@ export default function OTPScreen() {
           }
         }
       } else {
-        // New customer - ask for name
-        console.log('[OTP] New customer, asking for name...');
-        setShowNameInput(true);
-        setLoading(false);
-        verifyingRef.current = false;
+        // New customer - create account with default name (skip name input screen)
+        console.log('[OTP] New customer, creating account without name input...');
+        setLoading(true);
+        
+        try {
+          // Create customer with default/empty name
+          const customerResult = await customerService.createCustomer(
+            phoneNumber,
+            'User', // Default first name
+            '' // Empty last name - user can update later
+          );
+
+          if (customerResult.success && customerResult.customer) {
+            if (!customerResult.customer.customerAccessToken) {
+              throw new Error('Failed to create account. Please try again.');
+            }
+
+            // Login user with default name
+            await login({
+              id: customerResult.customer.id,
+              phone: phoneNumber,
+              email: customerResult.customer.email,
+              firstName: customerResult.customer.firstName || 'User',
+              lastName: customerResult.customer.lastName || '',
+              customerId: customerResult.customer.id,
+              customerAccessToken: customerResult.customer.customerAccessToken,
+              isGuest: false,
+              displayName: customerResult.customer.displayName || 'User',
+              numberOfOrders: customerResult.customer.numberOfOrders,
+              acceptsMarketing: customerResult.customer.acceptsMarketing,
+              createdAt: customerResult.customer.createdAt,
+              updatedAt: customerResult.customer.updatedAt,
+              defaultAddress: customerResult.customer.defaultAddress,
+            });
+
+            setOtpVerified(true);
+          } else {
+            throw new Error(customerResult.message || 'Failed to create account. Please try again.');
+          }
+        } catch (error: any) {
+          console.error('[OTP] Error creating customer:', error);
+          setError(error.message || 'Failed to create account. Please try again.');
+          setOtpInput(['', '', '', '', '', '']);
+          setOtpVerified(false);
+        } finally {
+          setLoading(false);
+          verifyingRef.current = false;
+        }
       }
     } catch (error: any) {
       let errorMessage = 'Something went wrong. Please try again.';
@@ -226,58 +267,7 @@ export default function OTPScreen() {
     }
   }, [phoneNumber, login]);
 
-  const handleCreateAccount = async () => {
-    if (!firstName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      // Create customer with name
-      const customerResult = await customerService.createCustomer(
-        phoneNumber,
-        firstName.trim(),
-        lastName.trim()
-      );
-
-      if (customerResult.success && customerResult.customer) {
-        if (!customerResult.customer.customerAccessToken) {
-          setError('Failed to create account. Please try again.');
-          setLoading(false);
-          return;
-        }
-
-        setOtpVerified(true);
-
-        // Login user
-        await login({
-          id: customerResult.customer.id,
-          phone: phoneNumber,
-          email: customerResult.customer.email,
-          firstName: customerResult.customer.firstName,
-          lastName: customerResult.customer.lastName,
-          customerId: customerResult.customer.id,
-          customerAccessToken: customerResult.customer.customerAccessToken,
-          isGuest: false,
-          displayName: customerResult.customer.displayName,
-          numberOfOrders: customerResult.customer.numberOfOrders,
-          acceptsMarketing: customerResult.customer.acceptsMarketing,
-          createdAt: customerResult.customer.createdAt,
-          updatedAt: customerResult.customer.updatedAt,
-          defaultAddress: customerResult.customer.defaultAddress,
-        });
-      } else {
-        setError(customerResult.message || 'Failed to create account. Please try again.');
-      }
-    } catch (error: any) {
-      setError(error.message || 'Failed to create account. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed handleCreateAccount - account creation now happens automatically after OTP verification
   
   const handleResendOtp = async () => {
     if (resending) {
@@ -312,79 +302,7 @@ export default function OTPScreen() {
     }
   };
 
-  // Show name input form for new users
-  if (showNameInput) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <StatusBar style="auto" />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-        >
-          <View style={styles.content}>
-            {/* Back Button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                setShowNameInput(false);
-                setError('');
-              }}
-              disabled={loading}
-            >
-              <Ionicons name="arrow-back" size={24} color={Colors.text} />
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Enter Your Name</Text>
-              <Text style={styles.subtitle}>
-                We need your name to create your account
-              </Text>
-            </View>
-
-            {/* Name Input Form */}
-            <View style={styles.nameForm}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>First Name *</Text>
-                <TextInput
-                  style={styles.nameInput}
-                  placeholder="Enter your first name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  autoCapitalize="words"
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Last Name (Optional)</Text>
-                <TextInput
-                  style={styles.nameInput}
-                  placeholder="Enter your last name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={lastName}
-                  onChangeText={setLastName}
-                  autoCapitalize="words"
-                  editable={!loading}
-                />
-              </View>
-
-              <ErrorText message={error} visible={!!error} />
-
-              <Button
-                title="Create Account"
-                onPress={handleCreateAccount}
-                disabled={!firstName.trim() || loading}
-                loading={loading}
-                style={styles.createButton}
-              />
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    );
-  }
+  // Name input screen removed - accounts are created automatically with default name
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -408,7 +326,7 @@ export default function OTPScreen() {
             <Text style={styles.title}>Enter OTP</Text>
             <Text style={styles.subtitle}>
               We've sent a 6-digit code to{'\n'}
-              <Text style={styles.phoneNumber}>+{phoneNumber}</Text>
+              <Text style={styles.phoneNumber}>{phoneNumber.replace(/^\+/, '')}</Text>
             </Text>
             
             {/* Auto-detection indicator */}
@@ -686,30 +604,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
   },
-  nameForm: {
-    width: '100%',
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontFamily: 'Metropolis-SemiBold',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  nameInput: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: 'Metropolis-Regular',
-    color: Colors.text,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  createButton: {
-    marginTop: 8,
-  },
+  // Removed unused styles for name input screen
 });

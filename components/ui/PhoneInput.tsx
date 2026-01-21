@@ -34,7 +34,7 @@ export function PhoneInput({
         onChangeText={onChangeText}
         keyboardType="phone-pad"
         maxLength={10}
-        autoFocus={true}
+        autoFocus={false}
         editable={editable}
       />
       {value.length > 0 && (

@@ -74,8 +74,15 @@ const ProductDetailScreen = () => {
             variants = productData.variants;
         }
 
-        // Find first available variant, fallback to first variant if none available
-        const firstVariant = variants.find((v: any) => v.availableForSale !== false) || variants[0];
+        // Find first available variant (check both availableForSale and quantityAvailable)
+        // Fallback to first variant if none available
+        const firstVariant = variants.find((v: any) => {
+            if (v.availableForSale === false) return false;
+            if (v.quantityAvailable !== undefined && v.quantityAvailable !== null) {
+                return v.quantityAvailable > 0;
+            }
+            return v.availableForSale !== false;
+        }) || variants[0];
 
         if (firstVariant) {
             setSelectedVariant(firstVariant);

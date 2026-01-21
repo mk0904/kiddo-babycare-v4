@@ -5,6 +5,7 @@ import { CheckoutRedeemCoins } from '@/components/nector';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { couponService } from '@/services/couponService';
 import { configService } from '@/services/configService';
 import PaymentService from '@/services/paymentService';
@@ -41,6 +42,7 @@ export default function CartScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { defaultAddress } = useAddress();
+    const { addItem: addTryAndBuyItem, createOrder: createTryAndBuyOrder, clearCart: clearTryAndBuyCart } = useTryAndBuy();
     
     // Use Zustand store
     const cartItems = useCartItems();
@@ -83,6 +85,7 @@ export default function CartScreen() {
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
+    const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -90,6 +93,24 @@ export default function CartScreen() {
             router.back();
         }
     }, [loading, cartItems.length, router]);
+    
+    // Watch for discount code removals (when conditions no longer met)
+    useEffect(() => {
+        const currentCodes = discountCodes.map(dc => dc.code);
+        const removedCodes = previousDiscountCodes.filter(code => !currentCodes.includes(code));
+        
+        if (removedCodes.length > 0 && previousDiscountCodes.length > 0) {
+            // A discount code was automatically removed
+            const removedCode = removedCodes[0];
+            setCouponMessage(`${removedCode} was removed as it no longer meets the requirements.`);
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                setCouponMessage(null);
+            }, 5000);
+        }
+        
+        setPreviousDiscountCodes(currentCodes);
+    }, [discountCodes.map(dc => dc.code).join(',')]);
 
     // Fetch available coupons on mount
     useEffect(() => {
@@ -134,71 +155,96 @@ export default function CartScreen() {
                 console.log('[CartScreen] Processing discount code:', discountCode);
             }
             
-            if (discountCode.applicable !== false) {
-                // If value is 0, try to get it from config
-                let discountValue = discountCode.value;
-                let discountType = discountCode.type;
-                
-                if (discountValue === 0 || !discountValue) {
-                    // Try to get from config
-                    try {
-                        const discountsConfig = configService.getDiscountsConfig();
-                        if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                            const configDiscount = discountsConfig.codes.find((cd: any) => 
-                                cd.code?.toUpperCase() === discountCode.code.toUpperCase()
-                            );
-                            if (configDiscount) {
-                                discountValue = configDiscount.value;
-                                discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                                if (__DEV__) {
-                                    console.log('[CartScreen] Got discount value from config:', {
-                                        code: discountCode.code,
-                                        value: discountValue,
-                                        type: discountType,
-                                    });
-                                }
-                            }
+            // Check if code exists in config - if it does, use it regardless of Shopify's applicable flag
+            let shouldProcess = discountCode.applicable !== false;
+            let discountValue = discountCode.value;
+            let discountType = discountCode.type;
+            
+            // Check config first - if code exists in config, process it even if Shopify says not applicable
+            try {
+                const discountsConfig = configService.getDiscountsConfig();
+                if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
+                    const configDiscount = discountsConfig.codes.find((cd: any) => 
+                        cd.code?.toUpperCase() === discountCode.code.toUpperCase()
+                    );
+                    if (configDiscount) {
+                        // Code exists in config - use config values and force processing
+                        discountValue = configDiscount.value;
+                        discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                        shouldProcess = true; // Force processing if code is in config
+                        if (__DEV__) {
+                            console.log('[CartScreen] Code found in config, forcing processing:', {
+                                code: discountCode.code,
+                                value: discountValue,
+                                type: discountType,
+                                shopifyApplicable: discountCode.applicable,
+                            });
                         }
-                    } catch (error) {
-                        console.error('[CartScreen] Error reading discount config:', error);
                     }
                 }
-                
-                if (discountValue > 0) {
-                    if (discountType === 'percentage') {
-                        // Percentage discount: value is the percentage (e.g., 10 means 10%)
-                        const percentageDiscount = (itemSubtotal * discountValue) / 100;
-                        calculatedDiscount += percentageDiscount;
-                        if (__DEV__) {
-                            console.log('[CartScreen] Applied percentage discount:', {
-                                code: discountCode.code,
-                                type: discountType,
-                                value: discountValue,
-                                itemSubtotal,
-                                percentageDiscount,
-                                calculatedDiscount,
-                            });
-                        }
-                    } else if (discountType === 'fixed') {
-                        // Fixed amount discount: value is the fixed amount
-                        calculatedDiscount += discountValue;
-                        if (__DEV__) {
-                            console.log('[CartScreen] Applied fixed discount:', {
-                                code: discountCode.code,
-                                type: discountType,
-                                value: discountValue,
-                                calculatedDiscount,
-                            });
+            } catch (error) {
+                console.error('[CartScreen] Error reading discount config:', error);
+            }
+            
+            // If value is still 0 or missing, try to get from config (fallback)
+            if ((discountValue === 0 || !discountValue) && shouldProcess) {
+                try {
+                    const discountsConfig = configService.getDiscountsConfig();
+                    if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
+                        const configDiscount = discountsConfig.codes.find((cd: any) => 
+                            cd.code?.toUpperCase() === discountCode.code.toUpperCase()
+                        );
+                        if (configDiscount) {
+                            discountValue = configDiscount.value;
+                            discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                            if (__DEV__) {
+                                console.log('[CartScreen] Got discount value from config (fallback):', {
+                                    code: discountCode.code,
+                                    value: discountValue,
+                                    type: discountType,
+                                });
+                            }
                         }
                     }
-                } else {
+                } catch (error) {
+                    console.error('[CartScreen] Error reading discount config:', error);
+                }
+            }
+            
+            if (shouldProcess && discountValue > 0) {
+                if (discountType === 'percentage') {
+                    // Percentage discount: value is the percentage (e.g., 10 means 10%)
+                    const percentageDiscount = (itemSubtotal * discountValue) / 100;
+                    calculatedDiscount += percentageDiscount;
                     if (__DEV__) {
-                        console.warn('[CartScreen] Discount code has no value:', discountCode);
+                        console.log('[CartScreen] Applied percentage discount:', {
+                            code: discountCode.code,
+                            type: discountType,
+                            value: discountValue,
+                            itemSubtotal,
+                            percentageDiscount,
+                            calculatedDiscount,
+                        });
+                    }
+                } else if (discountType === 'fixed') {
+                    // Fixed amount discount: value is the fixed amount
+                    calculatedDiscount += discountValue;
+                    if (__DEV__) {
+                        console.log('[CartScreen] Applied fixed discount:', {
+                            code: discountCode.code,
+                            type: discountType,
+                            value: discountValue,
+                            calculatedDiscount,
+                        });
                     }
                 }
             } else {
                 if (__DEV__) {
-                    console.log('[CartScreen] Discount code not applicable:', discountCode.code);
+                    if (!shouldProcess) {
+                        console.log('[CartScreen] Discount code not applicable:', discountCode.code);
+                    } else {
+                        console.warn('[CartScreen] Discount code has no value:', discountCode);
+                    }
                 }
             }
         }
@@ -209,7 +255,8 @@ export default function CartScreen() {
     }
     
     // Use our calculated discount instead of Shopify's
-    const discount = calculatedDiscount;
+    // Cap the discount to not exceed the subtotal (for fixed discounts)
+    const discount = Math.min(calculatedDiscount, itemSubtotal);
     
     // Debug log
     if (__DEV__) {
@@ -223,7 +270,7 @@ export default function CartScreen() {
     }
     
     // Subtotal after discount
-    const subtotalAfterDiscount = itemSubtotal - discount;
+    const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
     
     const deliveryFee = 0;
     const giftWrappingFee = getGiftWrappingPrice();
@@ -359,6 +406,395 @@ export default function CartScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
+            // If Try & Buy is enabled, handle it separately
+            if (isTryAndBuy) {
+                // Add eligible items to try and buy cart
+                // Eligible items are those that are returnable (not diapers, formula, food, etc.)
+                const NON_RETURNABLE_TAGS = [
+                    'diaper',
+                    'diapers',
+                    'formula',
+                    'food',
+                    'feeding',
+                    'non-returnable',
+                ];
+
+                const isProductReturnable = (tags?: string[]): boolean => {
+                    if (!tags || tags.length === 0) return true;
+                    const lowerTags = tags.map((t) => String(t).toLowerCase());
+                    return !NON_RETURNABLE_TAGS.some((nonRet) =>
+                        lowerTags.some((tag) => tag.includes(nonRet))
+                    );
+                };
+
+                const eligibleItems = cartItems.filter(item => {
+                    const isReturnable = isProductReturnable(item.tags);
+                    console.log('[Cart] Checking item for Try & Buy:', {
+                        title: item.title,
+                        tags: item.tags,
+                        isReturnable,
+                    });
+                    return isReturnable;
+                });
+
+                console.log('[Cart] Try & Buy eligible items:', {
+                    totalCartItems: cartItems.length,
+                    eligibleItems: eligibleItems.length,
+                    eligibleTitles: eligibleItems.map(i => i.title),
+                });
+
+                if (eligibleItems.length === 0) {
+                    // Automatically disable Try & Buy and continue with regular order
+                    // This prevents the error when user has only non-returnable items
+                    console.log('[Cart] No returnable items found, disabling Try & Buy and continuing as regular order');
+                    toggleTryAndBuy();
+                    // Fall through to regular order flow below (don't return, let it continue)
+                } else {
+                    // Has eligible items, proceed with Try & Buy flow
+                    // Prepare Try & Buy items directly (avoid state sync issues)
+                    // We'll pass items directly to createOrder instead of relying on state
+                    const tryAndBuyItems = eligibleItems.map(item => ({
+                        id: `tab_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+                        productId: item.productId,
+                        variantId: item.variantId,
+                        title: item.title,
+                        variantTitle: item.variantTitle || 'Default Title',
+                        price: item.price,
+                        currencyCode: item.currencyCode,
+                        image: item.image,
+                        quantity: item.quantity,
+                        tags: item.tags,
+                    }));
+
+                    // Also update the Try & Buy cart state (for UI consistency)
+                    clearTryAndBuyCart();
+                    for (const item of tryAndBuyItems) {
+                        await addTryAndBuyItem({
+                            productId: item.productId,
+                            variantId: item.variantId,
+                            title: item.title,
+                            variantTitle: item.variantTitle,
+                            price: item.price,
+                            currencyCode: item.currencyCode,
+                            image: item.image,
+                            quantity: item.quantity,
+                            tags: item.tags,
+                        });
+                    }
+
+                    // Handle payment based on selected payment method
+                    let paymentId: string | undefined = undefined;
+                    
+                    if (paymentMethod === 'razorpay') {
+                        // For Razorpay, process payment first
+                        const paymentResult = await PaymentService.initiateRazorpayPayment(
+                            total,
+                            'INR',
+                            {
+                                email: user?.email || 'guest@example.com',
+                                phone: user?.phone || selectedAddress.phone || '',
+                                name: user?.displayName || `${selectedAddress.firstName} ${selectedAddress.lastName}`,
+                                customerId: user?.id,
+                                items: eligibleItems.map(item => ({
+                                    id: item.id,
+                                    productId: item.productId,
+                                    variantId: item.variantId,
+                                    quantity: item.quantity,
+                                    price: item.price,
+                                    title: item.title,
+                                    tags: item.tags,
+                                })),
+                            }
+                        );
+
+                        if (!paymentResult.success) {
+                            if (paymentResult.cancelled) {
+                                console.log('Payment cancelled');
+                                setOrderLoading(false);
+                                return;
+                            }
+                            throw new Error(paymentResult.error || 'Payment failed');
+                        }
+
+                        // Verify payment signature
+                        if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
+                            const isVerified = await PaymentService.verifyRazorpayPayment(
+                                paymentResult.orderId,
+                                paymentResult.paymentId,
+                                paymentResult.signature
+                            );
+                            
+                            if (!isVerified) {
+                                throw new Error('Payment verification failed. Please contact support.');
+                            }
+                        }
+
+                        paymentId = paymentResult.paymentId;
+                    }
+
+                    // Create try and buy order with selected payment method and payment ID
+                    // Pass items directly to avoid state sync issues
+                    let tryAndBuyOrder;
+                    try {
+                        tryAndBuyOrder = await createTryAndBuyOrder(
+                            {
+                                name: `${selectedAddress.firstName} ${selectedAddress.lastName}`,
+                                address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
+                                city: selectedAddress.city,
+                                state: selectedAddress.province,
+                                pincode: selectedAddress.zip,
+                                phone: selectedAddress.phone,
+                            },
+                            user?.id,
+                            paymentMethod,
+                            paymentId,
+                            tryAndBuyItems // Pass items directly to avoid state sync issues
+                        );
+
+                        if (!tryAndBuyOrder) {
+                            throw new Error('Failed to create Try & Buy order');
+                        }
+                    } catch (orderError: any) {
+                        console.error('[Cart] Try & Buy order creation error:', orderError);
+                        console.error('[Cart] Error details:', {
+                            message: orderError.message,
+                            stack: orderError.stack,
+                            originalError: orderError.originalError,
+                            response: orderError.response?.data,
+                        });
+                        
+                        // Extract user-friendly error message
+                        let errorMessage = orderError.message || 'Failed to create Try & Buy order. Please try again.';
+                        
+                        // Check for Shopify user errors
+                        if (orderError.userErrors && orderError.userErrors.length > 0) {
+                            errorMessage = orderError.userErrors[0].message || errorMessage;
+                        }
+                        
+                        // Check response data for errors
+                        if (orderError.response?.data?.errors) {
+                            errorMessage = orderError.response.data.errors[0]?.message || errorMessage;
+                        }
+                        
+                        if (orderError.response?.data?.data?.draftOrderCreate?.userErrors) {
+                            const userError = orderError.response.data.data.draftOrderCreate.userErrors[0];
+                            errorMessage = userError.message || errorMessage;
+                        }
+                        
+                        // Re-throw with user-friendly message
+                        throw new Error(errorMessage);
+                    }
+
+                    // Increment coupon usage for applied discount codes (if any)
+                    if (appliedDiscountCode) {
+                        try {
+                            const { couponService } = await import('@/services/couponService');
+                            const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
+                            if (userId) {
+                                await couponService.incrementCouponUsage(appliedDiscountCode, userId);
+                                console.log('[Cart] Incremented coupon usage for Try & Buy:', appliedDiscountCode);
+                            }
+                        } catch (error) {
+                            console.error('[Cart] Error incrementing coupon usage:', error);
+                            // Don't fail the order if usage tracking fails
+                        }
+                    }
+
+                    // Clear regular cart
+                    clearCart();
+
+                    // Navigate to order success
+                    requestAnimationFrame(() => {
+                        router.push({
+                            pathname: '/order-success' as const,
+                            params: {
+                                orderId: tryAndBuyOrder.id,
+                                orderGraphId: tryAndBuyOrder.shopifyDraftOrderId || '',
+                                total: total.toString(),
+                            },
+                        });
+                    });
+
+                    setOrderLoading(false);
+                    return;
+                }
+            }
+
+            // Normal order flow (not try and buy)
+            // Validate product availability before placing order
+            try {
+                const { shopifyApi } = await import('@/services/shopifyApi');
+                const variantIds = cartItems.map(item => item.variantId);
+                const variants = await shopifyApi.getVariantsByIds(variantIds);
+                
+                // Create a map of variant ID to variant data for easier lookup
+                const variantMap = new Map();
+                variants.forEach((variant: any) => {
+                    if (variant && variant.id) {
+                        variantMap.set(variant.id, variant);
+                    }
+                });
+                
+                // Check if any products are unavailable
+                const unavailableItems: Array<{ title: string; id: string; productId?: string }> = [];
+                const itemsToFix: Array<{ item: any; realVariant: any }> = [];
+                
+                // First pass: identify items with wrong variant IDs and collect fixes
+                for (const item of cartItems) {
+                    let variant = variantMap.get(item.variantId);
+                    
+                    // If variant not found, it might be a search result with wrong variant ID
+                    // Try to fetch the product and get the real variant ID
+                    if (!variant && item.productId) {
+                        try {
+                            const { shopifyApi } = await import('@/services/shopifyApi');
+                            const fullProduct = await shopifyApi.getProductById(item.productId);
+                            
+                            if (fullProduct && fullProduct.variants?.edges && fullProduct.variants.edges.length > 0) {
+                                // Find matching variant by title or use first available
+                                const matchingVariant = fullProduct.variants.edges.find((e: any) => {
+                                    const v = e.node;
+                                    // Try to match by title if available
+                                    if (item.variantTitle && v.title === item.variantTitle) {
+                                        return true;
+                                    }
+                                    // Otherwise use first available variant
+                                    if (v.availableForSale !== false) {
+                                        if (v.quantityAvailable !== undefined && v.quantityAvailable !== null) {
+                                            return v.quantityAvailable > 0;
+                                        }
+                                        return true;
+                                    }
+                                    return false;
+                                })?.node || fullProduct.variants.edges[0]?.node;
+                                
+                                if (matchingVariant) {
+                                    itemsToFix.push({ item, realVariant: matchingVariant });
+                                    // Update variant map with the correct variant for validation
+                                    variantMap.set(matchingVariant.id, matchingVariant);
+                                    variant = matchingVariant;
+                                    console.log('[Cart] Will fix variant ID for search result product:', item.title);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[Cart] Error fixing variant ID for product:', item.productId, error);
+                        }
+                    }
+                    
+                    // Check multiple conditions for unavailability:
+                    // 1. Variant not found in Shopify (after trying to fix)
+                    // 2. availableForSale is false
+                    // 3. quantityAvailable is 0 or less than requested quantity
+                    const isUnavailable = !variant || 
+                        variant.availableForSale === false ||
+                        (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
+                        (variant.quantityAvailable === 0);
+                    
+                    if (isUnavailable) {
+                        unavailableItems.push({
+                            title: item.title || `Product ${item.variantId}`,
+                            id: item.id,
+                            productId: item.productId
+                        });
+                    }
+                }
+                
+                // Second pass: Apply fixes if any
+                if (itemsToFix.length > 0) {
+                    const { useCartStore } = await import('@/store/cartStore');
+                    const cartStore = useCartStore.getState();
+                    
+                    for (const { item, realVariant } of itemsToFix) {
+                        try {
+                            // Remove old item and add with correct variant ID
+                            await cartStore.removeItem(item.id);
+                            await cartStore.addItem({
+                                productId: item.productId,
+                                variantId: realVariant.id,
+                                title: item.title,
+                                variantTitle: realVariant.title,
+                                price: parseFloat(realVariant.price?.amount || '0'),
+                                compareAtPrice: realVariant.compareAtPrice?.amount 
+                                    ? parseFloat(realVariant.compareAtPrice.amount) 
+                                    : undefined,
+                                currencyCode: realVariant.price?.currencyCode || 'INR',
+                                image: item.image,
+                                quantity: item.quantity,
+                                availableForSale: realVariant.availableForSale !== false,
+                                tags: item.tags || [],
+                            });
+                            console.log('[Cart] Fixed variant ID for:', item.title);
+                        } catch (error) {
+                            console.error('[Cart] Error applying variant fix:', error);
+                            // Add to unavailable if fix fails
+                            unavailableItems.push({
+                                title: item.title || `Product ${item.variantId}`,
+                                id: item.id,
+                                productId: item.productId
+                            });
+                        }
+                    }
+                    
+                    // If we fixed items, refresh cart items and retry validation
+                    if (itemsToFix.length > 0 && unavailableItems.length === 0) {
+                        // Get updated cart items
+                        const updatedCartItems = useCartStore.getState().lineItems;
+                        // Re-validate with updated items
+                        const updatedVariantIds = updatedCartItems.map(item => item.variantId);
+                        const updatedVariants = await shopifyApi.getVariantsByIds(updatedVariantIds);
+                        const updatedVariantMap = new Map();
+                        updatedVariants.forEach((v: any) => {
+                            if (v && v.id) updatedVariantMap.set(v.id, v);
+                        });
+                        
+                        // Check updated items
+                        for (const item of updatedCartItems) {
+                            const variant = updatedVariantMap.get(item.variantId);
+                            const isUnavailable = !variant || 
+                                variant.availableForSale === false ||
+                                (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
+                                (variant.quantityAvailable === 0);
+                            
+                            if (isUnavailable) {
+                                unavailableItems.push({
+                                    title: item.title || `Product ${item.variantId}`,
+                                    id: item.id,
+                                    productId: item.productId
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                if (unavailableItems.length > 0) {
+                    const itemNames = unavailableItems.map(item => item.title).join(', ');
+                    Alert.alert(
+                        'Product Unavailable',
+                        `The following item(s) are no longer available: ${itemNames}. Please remove them from your cart and try again.`,
+                        [
+                            { text: 'OK' },
+                            {
+                                text: 'Remove All',
+                                style: 'destructive',
+                                onPress: async () => {
+                                    const { useCartStore } = await import('@/store/cartStore');
+                                    const cartStore = useCartStore.getState();
+                                    unavailableItems.forEach(item => {
+                                        cartStore.removeItem(item.id);
+                                    });
+                                }
+                            }
+                        ]
+                    );
+                    setOrderLoading(false);
+                    return;
+                }
+            } catch (validationError: any) {
+                console.error('[Cart] Error validating product availability:', validationError);
+                // Continue with order placement if validation fails (don't block user)
+                // Shopify will catch it anyway, but this gives better UX
+            }
+
             // Prepare order data
             const orderData = {
                 items: cartItems.map(item => ({
@@ -418,6 +854,21 @@ export default function CartScreen() {
                 total: total.toString(),
             });
 
+            // Increment coupon usage for applied discount codes
+            if (appliedDiscountCode) {
+                try {
+                    const { couponService } = await import('@/services/couponService');
+                    const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
+                    if (userId) {
+                        await couponService.incrementCouponUsage(appliedDiscountCode, userId);
+                        console.log('[Cart] Incremented coupon usage for:', appliedDiscountCode);
+                    }
+                } catch (error) {
+                    console.error('[Cart] Error incrementing coupon usage:', error);
+                    // Don't fail the order if usage tracking fails
+                }
+            }
+
             // Clear cart first
             clearCart();
             
@@ -449,7 +900,48 @@ export default function CartScreen() {
                 // Payment cancelled by user
                 return;
             }
-            Alert.alert('Order Failed', error.description || error.message || 'Something went wrong while placing your order.');
+            
+            // Parse Shopify errors for better user experience
+            let errorMessage = error.description || error.message || 'Something went wrong while placing your order.';
+            
+            // Check if error is about product availability
+            if (errorMessage.includes('no longer available') || errorMessage.includes('is no longer available')) {
+                // Extract product ID from error message
+                const productIdMatch = errorMessage.match(/ID\s+(\d+)/);
+                if (productIdMatch) {
+                    const unavailableProductId = productIdMatch[1];
+                    // Find the product in cart
+                    const unavailableItem = cartItems.find(item => 
+                        item.variantId.includes(unavailableProductId) || 
+                        item.productId.includes(unavailableProductId)
+                    );
+                    
+                    if (unavailableItem) {
+                        errorMessage = `${unavailableItem.title || 'One or more items'} is no longer available. Please remove it from your cart and try again.`;
+                        
+                        // Offer to remove the item
+                        Alert.alert(
+                            'Product Unavailable',
+                            errorMessage,
+                            [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                    text: 'Remove Item',
+                                    onPress: async () => {
+                                        const { removeItem } = await import('@/store/cartStore');
+                                        const cartStore = await import('@/store/cartStore');
+                                        await cartStore.useCartStore.getState().removeItem(unavailableItem.id);
+                                    }
+                                }
+                            ]
+                        );
+                        setOrderLoading(false);
+                        return;
+                    }
+                }
+            }
+            
+            Alert.alert('Order Failed', errorMessage);
         } finally {
             setOrderLoading(false);
         }
@@ -567,6 +1059,14 @@ export default function CartScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
+                    {/* Cart Items */}
+                    <View style={styles.itemsSection}>
+                        <View style={styles.itemsHeader}>
+                            <Text style={styles.itemsHeaderText}>{cartItems.length} Items</Text>
+                        </View>
+                        {cartItems.map(item => renderItem(item))}
+                    </View>
+
                     {/* Try Before You Buy Section */}
                     {tryAndBuyEligibility.hasFashionTag && (
                         <View style={styles.tryAndBuySection}>
@@ -593,14 +1093,6 @@ export default function CartScreen() {
                             </TouchableOpacity>
                         </View>
                     )}
-
-                    {/* Cart Items */}
-                    <View style={styles.itemsSection}>
-                        <View style={styles.itemsHeader}>
-                            <Text style={styles.itemsHeaderText}>{cartItems.length} Items</Text>
-                        </View>
-                        {cartItems.map(item => renderItem(item))}
-                    </View>
 
                     {/* Gift Wrapping */}
                     <View style={styles.giftWrappingSection}>
@@ -684,8 +1176,8 @@ export default function CartScreen() {
                         )}
                     </View>
 
-                    {/* Payment Method - Only for normal orders */}
-                    {!isTryAndBuy && (
+                    {/* Payment Method - Always show when cart has items */}
+                    {cartItems.length > 0 && (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Payment Method</Text>
                             <TouchableOpacity
@@ -813,6 +1305,7 @@ export default function CartScreen() {
                                         contentContainerStyle={styles.couponsList}
                                     >
                                         {availableCoupons.map((coupon) => {
+                                            const conditions = couponService.getCouponConditionsText(coupon);
                                             return (
                                                 <TouchableOpacity
                                                     key={coupon.code}
@@ -841,6 +1334,16 @@ export default function CartScreen() {
                                                             <Text style={styles.couponCardTitle} numberOfLines={1}>
                                                                 {coupon.title}
                                                             </Text>
+                                                        )}
+                                                        {conditions.length > 0 && (
+                                                            <View style={styles.couponConditionsContainer}>
+                                                                {conditions.map((condition, index) => (
+                                                                    <View key={index} style={styles.couponConditionTag}>
+                                                                        <Ionicons name="information-circle" size={10} color="#666" />
+                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
+                                                                    </View>
+                                                                ))}
+                                                            </View>
                                                         )}
                                                     </View>
                                                 </TouchableOpacity>
@@ -907,7 +1410,6 @@ export default function CartScreen() {
                                 <TouchableOpacity
                                     style={[
                                         styles.checkoutButton,
-                                        isTryAndBuy && styles.tryAndBuyButton,
                                         orderLoading && styles.checkoutButtonDisabled,
                                     ]}
                                     onPress={handlePlaceOrder}
@@ -1477,6 +1979,22 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Regular,
         lineHeight: 14,
         marginTop: 2,
+    },
+    couponConditionsContainer: {
+        marginTop: 6,
+        gap: 4,
+    },
+    couponConditionTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 2,
+    },
+    couponConditionText: {
+        fontSize: 9,
+        color: '#666',
+        fontFamily: Fonts.Regular,
+        lineHeight: 12,
     },
     appliedBadge: {
         position: 'absolute',

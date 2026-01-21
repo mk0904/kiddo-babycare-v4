@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
+import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -46,11 +47,19 @@ export default function OrderDetailScreen() {
                     console.log('[OrderDetails] Query parameter detected:', queryPart);
                 }
                 
+                // Check if it's a DraftOrder ID (Try & Buy orders)
+                const isDraftOrder = baseId.startsWith('gid://shopify/DraftOrder/');
+                
                 // Check if it's already in GraphQL format
                 if (baseId.startsWith('gid://shopify/Order/')) {
                     console.log('[OrderDetails] ID is already in GraphQL Order format');
                     // Use the ID as-is, preserving query params
                     orderId = id.trim();
+                } else if (isDraftOrder) {
+                    // It's a DraftOrder ID - Try & Buy orders use draft orders
+                    console.log('[OrderDetails] ID is a DraftOrder (Try & Buy)');
+                    // Keep the draft order ID as-is
+                    orderId = baseId;
                 } else if (baseId.startsWith('gid://shopify/')) {
                     // It's a GraphQL ID but might be for a different type
                     console.log('[OrderDetails] ID is GraphQL format but might be wrong type:', baseId);
@@ -135,15 +144,68 @@ export default function OrderDetailScreen() {
                     }
                 }
                 
-                // Fetch full order details via node query (has all price breakdown)
-                console.log('[OrderDetails] Calling shopifyApi.getOrderById with:', orderIdToFetch);
-                fetchedOrder = await shopifyApi.getOrderById(orderIdToFetch);
-                
-                // If that fails and we have query params, try with just the base ID
-                if (!fetchedOrder && hasQueryParam) {
-                    const baseOrderId = orderIdToFetch.split('?')[0];
-                    console.log('[OrderDetails] Retrying with base ID (without query params):', baseOrderId);
-                    fetchedOrder = await shopifyApi.getOrderById(baseOrderId);
+                // Check if we're dealing with a DraftOrder (Try & Buy)
+                if (isDraftOrder || orderIdToFetch.startsWith('gid://shopify/DraftOrder/')) {
+                    console.log('[OrderDetails] Fetching draft order (Try & Buy)...');
+                    const draftOrder = await shopifyAdminApi.getDraftOrder(orderIdToFetch);
+                    if (draftOrder) {
+                        // Transform draft order to match order format
+                        fetchedOrder = {
+                            id: draftOrder.id,
+                            orderNumber: draftOrder.name,
+                            processedAt: draftOrder.createdAt,
+                            financialStatus: 'PENDING',
+                            fulfillmentStatus: 'UNFULFILLED',
+                            lineItems: {
+                                edges: draftOrder.lineItems.edges.map((edge: any) => ({
+                                    node: {
+                                        title: edge.node.title,
+                                        quantity: edge.node.quantity,
+                                        originalTotalPrice: {
+                                            amount: (parseFloat(edge.node.originalUnitPrice) * edge.node.quantity).toString()
+                                        },
+                                        price: {
+                                            amount: edge.node.originalUnitPrice
+                                        },
+                                        variant: {
+                                            title: edge.node.variant?.title || 'Default Title',
+                                            image: edge.node.variant?.image
+                                        }
+                                    }
+                                }))
+                            },
+                            currentTotalPrice: {
+                                amount: draftOrder.totalPrice,
+                                currencyCode: draftOrder.currencyCode
+                            },
+                            subtotalPrice: {
+                                amount: draftOrder.subtotalPrice,
+                                currencyCode: draftOrder.currencyCode
+                            },
+                            totalShippingPrice: {
+                                amount: '0',
+                                currencyCode: draftOrder.currencyCode
+                            },
+                            totalTax: {
+                                amount: '0',
+                                currencyCode: draftOrder.currencyCode
+                            },
+                            shippingAddress: draftOrder.shippingAddress,
+                            tags: draftOrder.tags || []
+                        };
+                        console.log('[OrderDetails] ✅ Draft order fetched and transformed');
+                    }
+                } else {
+                    // Fetch full order details via node query (has all price breakdown)
+                    console.log('[OrderDetails] Calling shopifyApi.getOrderById with:', orderIdToFetch);
+                    fetchedOrder = await shopifyApi.getOrderById(orderIdToFetch);
+                    
+                    // If that fails and we have query params, try with just the base ID
+                    if (!fetchedOrder && hasQueryParam) {
+                        const baseOrderId = orderIdToFetch.split('?')[0];
+                        console.log('[OrderDetails] Retrying with base ID (without query params):', baseOrderId);
+                        fetchedOrder = await shopifyApi.getOrderById(baseOrderId);
+                    }
                 }
                 
                 if (fetchedOrder) {
@@ -164,26 +226,26 @@ export default function OrderDetailScreen() {
                     setError(null);
                     setLoading(false);
                 } else {
-                    // Order might still be processing, retry a few times with shorter delays
-                    // Reduced delays since we're checking customer orders first
-                    if (retryCount < 3) {
-                        const delaySeconds = [2, 3, 5][retryCount]; // Shorter delays: 2s, 3s, 5s
-                        console.log(`[OrderDetails] Order not found, retrying in ${delaySeconds}s... (attempt ${retryCount + 1}/3)`);
+                    // Order might still be processing, retry with longer delays
+                    // Shopify can take 10-30 seconds to process and associate orders
+                    if (retryCount < 5) {
+                        const delaySeconds = [3, 5, 8, 10, 15][retryCount]; // Longer delays: 3s, 5s, 8s, 10s, 15s
+                        console.log(`[OrderDetails] Order not found, retrying in ${delaySeconds}s... (attempt ${retryCount + 1}/5)`);
                         setTimeout(() => {
                             fetchOrder(retryCount + 1);
                         }, delaySeconds * 1000);
                         return; // Don't set loading to false yet
                     } else {
-                        console.error('[OrderDetails] Order not found after 3 retries');
+                        console.error('[OrderDetails] Order not found after 5 retries');
                         console.error('[OrderDetails] Original ID:', id);
                         console.error('[OrderDetails] Converted ID:', orderId);
                         console.error('[OrderDetails] Base ID:', baseId);
                         console.error('[OrderDetails] This might mean:');
-                        console.error('  1. Order is still processing (can take up to 10 seconds)');
+                        console.error('  1. Order is still processing (can take up to 30 seconds)');
                         console.error('  2. Order ID format is incorrect');
                         console.error('  3. Order does not exist or was not created');
                         console.error('  4. Customer access token might be missing');
-                        setError('Order not found. The order may still be processing. Please wait a moment and try again, or check your orders list.');
+                        setError('Order not found. The order may still be processing. Please wait a few moments and check your orders list, or try again later.');
                         setLoading(false);
                     }
                 }

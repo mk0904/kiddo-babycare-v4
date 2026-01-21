@@ -218,7 +218,6 @@ const GET_DRAFT_ORDER_QUERY = `
       subtotalPrice
       currencyCode
       tags
-      note
       customer {
         id
         displayName
@@ -316,7 +315,24 @@ export const shopifyAdminApi = {
 
       if (result.userErrors && result.userErrors.length > 0) {
         console.error('[AdminAPI] User errors:', result.userErrors);
-        throw new Error(result.userErrors[0].message || 'Failed to create draft order');
+        const errorMessage = result.userErrors[0].message || 'Failed to create draft order';
+        
+        // Provide more helpful error messages
+        if (errorMessage.includes('no longer available') || errorMessage.includes('is no longer available')) {
+          // Extract product ID if present
+          const productIdMatch = errorMessage.match(/ID\s+(\d+)/);
+          if (productIdMatch) {
+            throw new Error(`Product with ID ${productIdMatch[1]} is no longer available. Please remove it from your cart.`);
+          }
+          throw new Error('One or more products in your cart are no longer available. Please remove them and try again.');
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (!result.draftOrder) {
+        console.error('[AdminAPI] No draft order in response:', result);
+        throw new Error('Failed to create draft order: No draft order returned');
       }
 
       console.log('[AdminAPI] Draft order created:', result.draftOrder.id);

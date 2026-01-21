@@ -501,7 +501,9 @@
         "resizeMode": "cover"
       },
       "styles": {
-        "container": {},
+        "container": {
+          "marginTop": -30
+        },
         "imageContainer": {},
         "image": {
           "width": "100%",
@@ -1059,7 +1061,9 @@
         "resizeMode": "cover"
       },
       "styles": {
-        "container": {},
+        "container": {
+          "marginTop": -30
+        },
         "wrapper": {
           "marginHorizontal": 0
         }
@@ -1446,7 +1450,9 @@
         }
       ],
       "styles": {
-        "container": {},
+        "container": {
+          "marginTop": -30
+        },
         "imageContainer": {},
         "image": {
           "width": "100%",
@@ -1868,7 +1874,9 @@
         "resizeMode": "cover"
       },
       "styles": {
-        "container": {},
+        "container": {
+          "marginTop": -30
+        },
         "wrapper": {
           "marginHorizontal": 0
         }
@@ -2194,7 +2202,9 @@
         "resizeMode": "cover"
       },
       "styles": {
-        "container": {},
+        "container": {
+          "marginTop": -30
+        },
         "wrapper": {
           "marginHorizontal": 0
         }
@@ -2397,8 +2407,10 @@
         "value": 10,
         "valueType": "percentage",
         "minimumPurchaseAmount": null,
+        "minimumItemCount": 2,
         "startsAt": null,
-        "endsAt": null
+        "endsAt": null,
+        "usageLimitPerUser": 1
       },
       {
         "code": "KIDDO25",
@@ -2406,9 +2418,12 @@
         "description": "Get \u20b9250 off on your order",
         "value": 250,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
+        "minimumPurchaseAmount": 250,
+        "minimumItemCount": null,
         "startsAt": null,
-        "endsAt": null
+        "endsAt": null,
+        "usageLimitPerUser": null,
+        "firstOrderOnly": true
       }
     ]
   },

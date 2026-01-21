@@ -294,6 +294,71 @@ export const createOrderWithPayment = async (
     paymentMethod: 'razorpay' | 'cod' | 'try_and_buy' = 'cod'
 ): Promise<CreateOrderResult> => {
     try {
+        // If this is a Try & Buy order, always create a draft order
+        if (orderData.isTryAndBuy) {
+            if (paymentMethod === 'razorpay') {
+                // For Try & Buy with Razorpay, process payment first
+                const paymentResult = await initiateRazorpayPayment(
+                    orderData.totalAmount,
+                    orderData.currencyCode || 'INR',
+                    orderData
+                );
+
+                if (!paymentResult.success) {
+                    return {
+                        success: false,
+                        error: paymentResult.error || 'Payment failed',
+                        cancelled: paymentResult.cancelled || false,
+                    };
+                }
+
+                // Verify payment signature (basic client-side check)
+                if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
+                    const isVerified = await verifyRazorpayPayment(
+                        paymentResult.orderId,
+                        paymentResult.paymentId,
+                        paymentResult.signature
+                    );
+                    
+                    if (!isVerified) {
+                        console.error('[PaymentService] Payment verification failed');
+                        return {
+                            success: false,
+                            error: 'Payment verification failed. Please contact support.',
+                            cancelled: false,
+                        };
+                    }
+                } else {
+                    console.warn('[PaymentService] Missing payment verification data');
+                }
+
+                // Payment successful - create draft order for Try & Buy with paid status
+                const draftOrder = await createDraftOrder(orderData, {
+                    paymentId: paymentResult.paymentId,
+                    paymentStatus: 'paid',
+                    paymentMethod: 'razorpay',
+                });
+
+                return {
+                    success: true,
+                    order: draftOrder,
+                    payment: paymentResult,
+                };
+            } else if (paymentMethod === 'cod') {
+                // For Try & Buy with COD, create draft order with pending payment
+                const draftOrder = await createDraftOrder(orderData, {
+                    paymentStatus: 'pending',
+                    paymentMethod: 'cod',
+                });
+
+                return {
+                    success: true,
+                    order: draftOrder,
+                };
+            }
+        }
+
+        // Normal order flow (not Try & Buy)
         if (paymentMethod === 'razorpay') {
             // Initiate Razorpay payment
             const paymentResult = await initiateRazorpayPayment(

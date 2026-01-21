@@ -168,19 +168,35 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     return variants[0]?.node || variants[0] || {};
   }, [variants]);
 
-  // Normalize isAvailable logic
+  // Normalize isAvailable logic - check both availableForSale and quantityAvailable
   const isAvailable = useMemo(() => {
-    if (product.availableForSale !== undefined) return product.availableForSale;
-    // If we have variants, check for available variants
+    // If product-level availability is explicitly set, use it
+    if (product.availableForSale !== undefined) {
+      // Also check quantity if available
+      if (product.availableForSale === false) return false;
+      if (product.quantityAvailable !== undefined && product.quantityAvailable !== null) {
+        return product.quantityAvailable > 0;
+      }
+      return product.availableForSale;
+    }
+    
+    // If we have variants, check for available variants with quantity
     if (variants.length > 0) {
       const availableVariant = variants.find((v: any) => {
         const node = v.node || v;
-        return node.availableForSale;
+        // Check both availableForSale and quantityAvailable
+        if (node.availableForSale === false) return false;
+        if (node.quantityAvailable !== undefined && node.quantityAvailable !== null) {
+          return node.quantityAvailable > 0;
+        }
+        return node.availableForSale === true;
       });
       return !!availableVariant;
     }
-    return true; // Default true if unknown
-  }, [product.availableForSale, variants]);
+    
+    // Default to false if unknown (safer than true)
+    return false;
+  }, [product.availableForSale, product.quantityAvailable, variants]);
 
   // Parse price to number - handle multiple formats
   const parsePrice = useCallback((priceValue: any) => {

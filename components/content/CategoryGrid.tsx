@@ -131,10 +131,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     if (collectionIds && collectionIds.length > 0) {
       // Use collections from collectionIds
       items = collections.map((collection) => {
-        // Extract numeric ID from GID format (gid://shopify/Collection/123456)
-        const collectionId = collection.id.includes('/')
-          ? collection.id.split('/').pop() || collection.id
-          : collection.id;
+        // Use the full collection ID (keep gid:// format if present)
+        const collectionId = collection.id;
         
         return {
           id: collection.id,
@@ -142,9 +140,14 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
           imageUrl: collection.imageUrl,
           imageSource: undefined,
           onPress: () => {
-            const collectionPath = `/collections/${collectionId}`;
-            router.push(collectionPath as any);
-            onPress?.(collectionPath, collection);
+            // Pass collection info to onPress handler (let parent handleBlockPress handle navigation)
+            // This ensures consistent navigation behavior across home and category pages
+            onPress?.(`/collections/${collectionId}`, {
+              ...collection,
+              collectionId: collectionId,
+              collectionName: collection.name,
+              name: collection.name,
+            });
           },
         };
       });

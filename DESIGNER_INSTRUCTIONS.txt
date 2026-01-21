@@ -1,0 +1,44 @@
+===============================================
+KIDDO ANDROID ICON FIX - DESIGNER INSTRUCTIONS
+===============================================
+
+ISSUE: The "Kiddo" text is getting cropped on Android devices because 
+it extends too close to the edges.
+
+SOLUTION: Scale down the logo and center it within the safe zone.
+
+-----------------------------------------------
+FILE TO FIX: android-icon-foreground.png
+-----------------------------------------------
+Canvas Size: 1024 x 1024 pixels
+Format: PNG with transparent background
+
+SAFE ZONE (where logo must fit):
+- Size: 432 x 432 pixels (center)
+- Position: 296 pixels from all edges
+
+YOUR LOGO REQUIREMENTS:
+1. Scale down the "Kiddo" text so it fits within the 432x432 safe zone
+2. Maximum text width: ~350 pixels (with 40px padding inside safe zone)
+3. Center the text both horizontally and vertically
+4. The "K" should be at least 336px from left edge (296px safe zone + 40px padding)
+5. The "o" should be at least 336px from right edge
+6. The heart above 'i' should be at least 336px from top edge
+
+BACKGROUND BANDS (beige, blue, yellow):
+- Keep these extending to canvas edges (that's fine for background layer)
+
+VISUAL CHECK:
+Draw a 432x432 pixel guide box, centered on canvas.
+ALL of your "Kiddo" text and heart must fit INSIDE this box.
+
+-----------------------------------------------
+FILE TO FIX: android-icon-background.png  
+-----------------------------------------------
+Canvas Size: 1024 x 1024 pixels (currently 512x512 - WRONG!)
+Format: PNG
+Content: Solid color #E6F4FE (light blue) or your background bands
+
+Just resize to 1024x1024 and fill with background color/pattern.
+
+===============================================

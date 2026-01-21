@@ -4,17 +4,18 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { customerService } from '@/services/customerService';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -140,12 +141,11 @@ export default function KiddoDetailsScreen() {
         {/* App Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.appIcon}>
-            <Text style={styles.appIconText}>Kiddo</Text>
-            <View style={styles.appIconStripes}>
-              <View style={[styles.stripe, styles.stripeRed]} />
-              <View style={[styles.stripe, styles.stripeYellow]} />
-              <View style={[styles.stripe, styles.stripeBlue]} />
-            </View>
+            <Image
+              source={require('@/assets/images/android-icon-monochrome.png')}
+              style={styles.appIconImage}
+              contentFit="cover"
+            />
           </View>
         </View>
 
@@ -418,31 +418,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
   },
-  appIconText: {
-    fontSize: 20,
-    fontFamily: Fonts.Bold,
-    color: '#FF6B35',
-    marginBottom: 4,
-  },
-  appIconStripes: {
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: 2,
-  },
-  stripe: {
-    width: 8,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  stripeRed: {
-    backgroundColor: '#FF4444',
-  },
-  stripeYellow: {
-    backgroundColor: '#FFD700',
-  },
-  stripeBlue: {
-    backgroundColor: '#4A90E2',
+  appIconImage: {
+    width: '100%',
+    height: '100%',
   },
   header: {
     paddingHorizontal: 20,

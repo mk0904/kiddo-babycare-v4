@@ -352,7 +352,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom', 'top']}>
       <StatusBar style="light" />
       <HomeHeader
         scrollY={scrollY}
