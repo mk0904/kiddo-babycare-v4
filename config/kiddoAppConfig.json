@@ -36,7 +36,7 @@
       "shadowOpacity": 0.2,
       "shadowRadius": 10,
       "iconSize": 30,
-      "marginBottom": 20,
+      "marginBottom": 0,
       "marginHorizontal": 20,
       "borderColor": "#E84E4B",
       "borderTopWidth": 1,
@@ -111,7 +111,7 @@
             "paddingVertical": 16
           },
           "title": {
-            "marginBottom": 8,
+            "marginBottom": 0,
             "fontSize": 16,
             "fontWeight": "600",
             "color": "#363636"
@@ -177,7 +177,7 @@
             "paddingVertical": 16
           },
           "title": {
-            "marginBottom": 8,
+            "marginBottom": 0,
             "fontSize": 16,
             "fontWeight": "600",
             "color": "#363636"
@@ -259,7 +259,7 @@
             "paddingHorizontal": 16
           },
           "title": {
-            "marginBottom": 8,
+            "marginBottom": 0,
             "fontSize": 16,
             "fontWeight": "600",
             "color": "#363636"
@@ -363,80 +363,8 @@
             "textAlign": "center"
           }
         },
-        "order": 6
-      },
-      {
-        "id": "grid-shop-toys",
-        "type": "grid",
-        "collectionIds": [
-          {
-            "id": "gid://shopify/Collection/507746582817",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507747303713",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507746615585",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507747402017",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507747369249",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507747238177",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507748483361",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/508372615457",
-            "name": ""
-          }
-        ],
-        "title": "Shop Toys",
-        "gridConfig": {
-          "numColumns": 4,
-          "colGap": 12,
-          "rowGap": 12,
-          "limit": 0,
-          "resizeMode": "cover"
-        },
-        "styles": {
-          "container": {
-            "marginVertical": 15,
-            "marginHorizontal": 20
-          },
-          "title": {
-            "marginBottom": 8,
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
-          },
-          "titleContainer": {
-            "marginBottom": 20
-          },
-          "imageContainer": {
-            "borderRadius": 20,
-            "backgroundColor": "#FFFFFF"
-          },
-          "text": {
-            "fontSize": 10,
-            "marginTop": 12,
-            "color": "#666666",
-            "textAlign": "center"
-          }
-        },
-        "order": 8
-      }
+        "order": 12
+    }
     ]
   },
   "all": [
@@ -515,71 +443,429 @@
       "order": 3
     },
     {
-      "id": "all-grid-shop-by-category",
-      "type": "grid",
+      "id": "category-grid-trending",
+      "type": "categoryGrid",
+      "order": 4,
+      "visible": true,
+      "title": "Trending",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
       "collectionIds": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
-          "id": "gid://shopify/Collection/508646719777",
-          "name": "Jacket and Sweaters"
+          "id": "gid://shopify/Collection/509538205985",
+          "name": "Fashion - End of Season Sale (50% off)"
         },
         {
-          "id": "gid://shopify/Collection/508646785313",
-          "name": "Thermals"
+          "id": "gid://shopify/Collection/508371206433",
+          "name": "Skincare & Bathing"
         },
         {
-          "id": "gid://shopify/Collection/508646818081",
+          "id": "gid://shopify/Collection/508173123873",
+          "name": "Diapers & Wipes"
+        },
+        {
+          "id": "gid://shopify/Collection/509514449185",
+          "name": "Footwear"
+        },
+        {
+          "id": "gid://shopify/Collection/509514514721",
+          "name": "Gifting"
+        },
+        {
+          "id": "gid://shopify/Collection/509530407201",
+          "name": "Learning Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/509534372129",
+          "name": "Learning Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/507797111073",
+          "name": "Everyday Winter Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/508372877601",
+          "name": "Infant Toys"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 0
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-fashion",
+      "type": "categoryGrid",
+      "order": 5,
+      "visible": true,
+      "title": "Fashion",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/509515104545",
+          "name": "Winter Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/509538173217",
+          "name": "Winter Collection"
+        },
+        {
+          "id": "gid://shopify/Collection/509515792673",
+          "name": "Top Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/509516120353",
           "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/508646850849",
-          "name": "Everyday"
+          "id": "gid://shopify/Collection/509515432225",
+          "name": "Coord Sets"
         },
         {
-          "id": "gid://shopify/Collection/508646916385",
-          "name": "Occasion Wear"
+          "id": "gid://shopify/Collection/509519233313",
+          "name": "Ethnic Wear"
         },
         {
-          "id": "gid://shopify/Collection/508169322785",
+          "id": "gid://shopify/Collection/509514449185",
+          "name": "Footwear"
+        },
+        {
+          "id": "gid://shopify/Collection/509519298849",
+          "name": "Western Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/509519495457",
           "name": "Accessories"
+        },
+        {
+          "id": "gid://shopify/Collection/509515497761",
+          "name": "Bodysuits"
+        },
+        {
+          "id": "gid://shopify/Collection/509519397153",
+          "name": "Innerwear"
+        },
+        {
+          "id": "gid://shopify/Collection/508646719777",
+          "name": "Jackets & Sweaters"
+        },
+        {
+          "id": "gid://shopify/Collection/509519200545",
+          "name": "Nightwear"
         }
       ],
-      "title": "Shop by Category",
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 0
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-toys",
+      "type": "categoryGrid",
+      "order": 6,
+      "visible": true,
+      "title": "Toys",
       "gridConfig": {
-        "numColumns": 3,
+        "layout": "uniform",
+        "numColumns": 4,
         "colGap": 12,
         "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "contain"
+        "limit": 12,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
       },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": "STEM Learning"
+        },
+        {
+          "id": "gid://shopify/Collection/507747369249",
+          "name": "Dolls & Play Sets"
+        },
+        {
+          "id": "gid://shopify/Collection/507747303713",
+          "name": "Cars & RC Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/507747238177",
+          "name": "Soft Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/507748483361",
+          "name": "Puzzles"
+        },
+        {
+          "id": "gid://shopify/Collection/507747402017",
+          "name": "Building Blocks"
+        },
+        {
+          "id": "gid://shopify/Collection/507747172641",
+          "name": "Art and Crafts"
+        },
+        {
+          "id": "gid://shopify/Collection/509519757601",
+          "name": "Pretend Play"
+        },
+        {
+          "id": "gid://shopify/Collection/508372877601",
+          "name": "Infant Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/509548265761",
+          "name": "Infant Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/509519921441",
+          "name": "Ride Ons & Outdoor Games"
+        },
+        {
+          "id": "gid://shopify/Collection/509520085281",
+          "name": "Books"
+        },
+        {
+          "id": "gid://shopify/Collection/509520675105",
+          "name": "Board & Card Games"
+        }
+      ],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
           "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 8,
-          "fontSize": 16,
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-baby-care",
+      "type": "categoryGrid",
+      "order": 7,
+      "visible": true,
+      "title": "Baby Care",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 4,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/508173123873",
+          "name": "Diapers & Wipes"
+        },
+        {
+          "id": "gid://shopify/Collection/509055992097",
+          "name": "Formula"
+        },
+        {
+          "id": "gid://shopify/Collection/508371206433",
+          "name": "Skincare & Bathing"
+        },
+        {
+          "id": "gid://shopify/Collection/508371239201",
+          "name": "Feeding & Nursing"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-gear-furniture",
+      "type": "categoryGrid",
+      "order": 7.5,
+      "visible": true,
+      "title": "Gear And Furniture",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 4,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/509533749537",
+          "name": "Strollers, Prams and Accessories"
+        },
+        {
+          "id": "gid://shopify/Collection/509559472417",
+          "name": "Baby Bed & Nursery"
+        },
+        {
+          "id": "gid://shopify/Collection/509560324385",
+          "name": "Car Seats & Carriers"
+        },
+        {
+          "id": "gid://shopify/Collection/509560389921",
+          "name": "Baby Proofing & Furniture"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-school",
+      "type": "categoryGrid",
+      "order": 7,
+      "visible": false,
+      "title": "School",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 4,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
-        },
-        "image": {
-          "width": "100%",
-          "borderRadius": 20
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "overflow": "visible"
-        },
-        "text": {
-          "marginTop": 12,
-          "display": "none",
-          "color": "#666666",
-          "textAlign": "center"
         }
+      }
+    },
+    {
+      "id": "category-grid-food",
+      "type": "categoryGrid",
+      "order": 8,
+      "visible": false,
+      "title": "Food",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 3,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
       },
-      "order": 4
+      "collectionIds": [],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "600",
+          "color": "#363636"
+        }
+      }
+    },
+    {
+      "id": "category-grid-gear-furniture",
+      "type": "categoryGrid",
+      "order": 9,
+      "visible": false,
+      "title": "Gear and Furniture",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 18,
+          "fontWeight": "600",
+          "color": "#363636"
+        }
+      }
     },
     {
       "id": "grid-shop-by-age",
@@ -640,7 +926,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -658,7 +944,7 @@
           "textAlign": "center"
         }
       },
-      "order": 5
+      "order": 11
     },
     {
       "id": "all-grid-1",
@@ -744,7 +1030,7 @@
           "textAlign": "center"
         }
       },
-      "order": 6
+      "order": 12
     },
     {
       "id": "all-product-list-1",
@@ -766,85 +1052,13 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
-      },
-      "order": 7
-    },
-    {
-      "id": "grid-shop-toys",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/507746582817",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747303713",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507746615585",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747402017",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747369249",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507747238177",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/507748483361",
-          "name": ""
-        },
-        {
-          "id": "gid://shopify/Collection/508372615457",
-          "name": ""
-        }
-      ],
-      "title": "Shop Toys",
-      "gridConfig": {
-        "numColumns": 4,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginVertical": 15,
-          "marginHorizontal": 20
-        },
-        "title": {
-          "marginBottom": 8,
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636"
-        },
-        "titleContainer": {
-          "marginBottom": 20
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF"
-        },
-        "text": {
-          "fontSize": 10,
-          "marginTop": 12,
-          "color": "#666666",
-          "textAlign": "center"
-        }
       },
       "order": 8
     },
@@ -852,6 +1066,7 @@
       "id": "all-winter-wear-featured",
       "type": "horizontalProductList",
       "title": "Featured Winter Wear",
+      "visible": false,
       "collectionIds": [
         "gid://shopify/Collection/507797111073"
       ],
@@ -871,10 +1086,10 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         }
       },
-      "order": 9
+      "order": 15
     },
     {
       "id": "all-boys-winter-special",
@@ -895,11 +1110,11 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         }
       },
-      "order": 10
+      "order": 16
     },
     {
       "id": "all-girls-winter-special",
@@ -920,14 +1135,14 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         }
       },
-      "order": 11
+      "order": 17
     },
     {
       "id": "all-lowest-price-diapers",
@@ -948,14 +1163,14 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         }
       },
-      "order": 12
+      "order": 18
     },
     {
       "id": "all-learning-toys-3plus",
@@ -976,14 +1191,14 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         }
       },
-      "order": 13
+      "order": 19
     },
     {
       "id": "all-montessori-under-3",
@@ -1004,14 +1219,14 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         }
       },
-      "order": 14
+      "order": 20
     },
     {
       "id": "all-infinite-grid-1",
@@ -1036,11 +1251,11 @@
         },
         "title": {
           "fontSize": 16,
-          "fontWeight": "600",
+          "fontWeight": "700",
           "color": "#363636"
         }
       },
-      "order": 15
+      "order": 21
     }
   ],
   "girls": [
@@ -1112,7 +1327,7 @@
           "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -1185,7 +1400,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -1226,7 +1441,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1255,7 +1470,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1284,7 +1499,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1313,7 +1528,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1342,7 +1557,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1371,7 +1586,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1400,7 +1615,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1512,7 +1727,7 @@
           "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -1585,7 +1800,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -1626,7 +1841,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1655,7 +1870,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1684,7 +1899,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1713,7 +1928,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1742,7 +1957,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1771,7 +1986,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1800,7 +2015,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -1921,6 +2136,10 @@
         {
           "id": "gid://shopify/Collection/508372615457",
           "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/509548265761",
+          "name": "Infant Toys"
         }
       ],
       "title": "Shop by Category",
@@ -1937,7 +2156,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -1995,7 +2214,8 @@
       "girls",
       "boys",
       "babycare",
-      "toys"
+      "toys",
+      "babygear"
     ],
     "items": {
       "all": {
@@ -2055,6 +2275,18 @@
             "unselected": "#363636"
           }
         }
+      },
+      "babygear": {
+        "label": "Baby Gear",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#90EE90",
+          "backgroundImage": "",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
       }
     },
     "styles": {
@@ -2100,7 +2332,7 @@
         "color": "#666666",
         "paddingHorizontal": 16,
         "marginTop": 8,
-        "marginBottom": 4,
+        "marginBottom": 0,
         "textTransform": "uppercase"
       },
       "description": {
@@ -2195,6 +2427,7 @@
       "id": "babycare-banner-1",
       "type": "imageBanner",
       "title": "Featured",
+      "visible": false,
       "imageBannerConfig": {
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
         "height": 250,
@@ -2261,7 +2494,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 8,
+          "marginBottom": 0,
           "fontSize": 16,
           "fontWeight": "600",
           "color": "#363636"
@@ -2304,7 +2537,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -2333,7 +2566,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -2362,7 +2595,7 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -2391,7 +2624,202 @@
           "color": "#363636"
         },
         "titleContainer": {
-          "marginBottom": 20
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    }
+  ],
+  "babygear": [
+    {
+      "id": "babygear-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "visible": true,
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/RFR_Baby_Products_Banner.jpg?v=1770056652",
+        "height": 250,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": -30,
+          "marginBottom": 0
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "babygear-grid-collections",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/509533749537",
+          "name": "Strollers, Prams and Accessories"
+        },
+        {
+          "id": "gid://shopify/Collection/509559472417",
+          "name": "Baby Bed & Nursery"
+        },
+        {
+          "id": "gid://shopify/Collection/509560324385",
+          "name": "Car Seats & Carriers"
+        },
+        {
+          "id": "gid://shopify/Collection/509560389921",
+          "name": "Baby Proofing & Furniture"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 2,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderColor": "#97612f",
+          "borderWidth": 0.2,
+          "backgroundColor": "#FFFFFF"
+        },
+        "text": {
+          "display": "block",
+          "marginTop": 12,
+          "color": "#666666",
+          "textAlign": "center",
+          "fontSize": 14,
+          "fontWeight": "500"
+        }
+      }
+    },
+    {
+      "id": "babygear-strollers-prams",
+      "type": "horizontalProductList",
+      "title": "Strollers, Prams and Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/509533749537"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babygear-baby-bed-nursery",
+      "type": "horizontalProductList",
+      "title": "Baby Bed & Nursery",
+      "collectionIds": [
+        "gid://shopify/Collection/509559472417"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babygear-car-seats-carriers",
+      "type": "horizontalProductList",
+      "title": "Car Seats & Carriers",
+      "collectionIds": [
+        "gid://shopify/Collection/509560324385"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babygear-baby-proofing-furniture",
+      "type": "horizontalProductList",
+      "title": "Baby Proofing & Furniture",
+      "collectionIds": [
+        "gid://shopify/Collection/509560389921"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 0
         },
         "content": {}
       }
@@ -2401,28 +2829,16 @@
     "enabled": true,
     "codes": [
       {
-        "code": "KIDDO10",
-        "title": "10% Off",
-        "description": "Get 10% off on your order",
-        "value": 10,
-        "valueType": "percentage",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": 2,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1
-      },
-      {
-        "code": "KIDDO25",
-        "title": "\u20b9250 Off",
-        "description": "Get \u20b9250 off on your order",
+        "code": "NEWKIDDO",
+        "title": "₹250 Off on First Order",
+        "description": "Get ₹250 off on your first order",
         "value": 250,
         "valueType": "fixed_amount",
         "minimumPurchaseAmount": 250,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
-        "usageLimitPerUser": null,
+        "usageLimitPerUser": 1,
         "firstOrderOnly": true
       }
     ]

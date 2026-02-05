@@ -112,12 +112,13 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     const titleStyle = {
       marginBottom: 15,
       fontSize: 18,
-      letterSpacing: 0.3,
+      letterSpacing: 0,
+      fontWeight: '900',
       // Apply container padding to title if not explicitly set in blockStyles.title
       paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
         ? blockStyles.title.paddingHorizontal
         : (containerStyle.paddingHorizontal || 0),
-      ...processFontStyle(blockStyles?.title, Fonts.Bold),
+      ...processFontStyle(blockStyles?.title, Fonts.Black),
     };
     const imageContainerStyle = {
       padding: 0,
@@ -388,7 +389,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
   return (
     <BaseContentBlock block={block}>
       {title && (
-        <Text style={[defaultStyles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
+        <Text style={[defaultStyles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{title}</Text>
       )}
       <View
         style={[
@@ -449,8 +450,10 @@ const defaultStyles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 15,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     color: Colors.text,
   },
   listContent: {

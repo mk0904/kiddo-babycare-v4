@@ -431,7 +431,32 @@ export const shopifyAdminApi = {
         throw new Error(result.userErrors[0].message || 'Failed to complete draft order');
       }
 
-      console.log('[AdminAPI] Draft order completed successfully. Order ID:', result.draftOrder?.order?.id);
+      // Validate that order was actually created
+      if (!result.draftOrder) {
+        console.error('[AdminAPI] Draft order completion returned no draftOrder:', result);
+        throw new Error('Failed to complete draft order: No draft order in response');
+      }
+
+      if (!result.draftOrder.order) {
+        console.error('[AdminAPI] Draft order completion returned no order:', {
+          draftOrderId: id,
+          draftOrderStatus: result.draftOrder.status,
+          result,
+        });
+        throw new Error('Failed to complete draft order: Draft order was not converted to order');
+      }
+
+      if (!result.draftOrder.order.id) {
+        console.error('[AdminAPI] Completed order missing ID:', result.draftOrder.order);
+        throw new Error('Failed to complete draft order: Order missing ID');
+      }
+
+      console.log('[AdminAPI] Draft order completed successfully:', {
+        draftOrderId: id,
+        orderId: result.draftOrder.order.id,
+        orderName: result.draftOrder.order.name,
+        orderCreatedAt: result.draftOrder.order.createdAt,
+      });
 
       return {
         draftOrder: result.draftOrder,

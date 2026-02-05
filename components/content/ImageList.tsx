@@ -1,20 +1,19 @@
+import { Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { ImageListBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity
 } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { ImageListBlock } from '@/types/content';
 import { ProductList } from '../product/ProductList';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-import { useRouter } from 'expo-router';
-import { Fonts } from '@/constants/theme';
-import { processFontStyle } from '@/utils/fontUtils';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -108,7 +107,7 @@ export function ImageList({ block, onPress }: ImageListProps) {
           } : undefined}
           style={{
             root: containerStylesNoPadding, // Pass margins but no padding
-            title: processFontStyle(blockStyles?.title, Fonts.Bold),
+            title: processFontStyle(blockStyles?.title, Fonts.Black),
             list: blockStyles?.list,
           }}
           contentWidth={width - (sidePadding * 2)}
@@ -144,7 +143,7 @@ export function ImageList({ block, onPress }: ImageListProps) {
   return (
     <BaseContentBlock block={block} style={{ paddingHorizontal: 0 }}>
       {title && (
-        <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
+        <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{title}</Text>
       )}
       <ScrollView
         horizontal
@@ -197,7 +196,8 @@ export function ImageList({ block, onPress }: ImageListProps) {
 const styles = StyleSheet.create({
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 15,
     paddingHorizontal: 20,
   },
@@ -214,12 +214,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     fontFamily: Fonts.SemiBold,
-    color: '#222222',
+    color: '#363636', // Colors.text
   },
   itemSubtitle: {
     marginTop: 4,
     fontSize: 12,
-    color: '#666666',
+    color: '#9197a6', // Colors.textSecondary
   },
 });
 

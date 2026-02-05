@@ -182,7 +182,7 @@ export default function AddressesScreen() {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            <Text style={styles.addressText}>{address.address1 || address.address}</Text>
+                            <Text style={styles.addressText}>{address.address1}</Text>
                                 {address.address2 && (
                                     <Text style={styles.addressText}>{address.address2}</Text>
                                 )}

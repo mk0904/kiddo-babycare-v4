@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { ImageCarouselBlock } from '@/types/content';
 import { Carousel } from '@/components/ui/Carousel';
+import { ImageCarouselBlock } from '@/types/content';
+import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: ImageCarouselBlock;
@@ -11,6 +11,23 @@ interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
 
 export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
   const { data, carouselConfig = {}, styles: blockStyles } = block;
+  const insets = useSafeAreaInsets();
+
+  // Prevent overlap: adjust negative marginTop based on safe area to ensure minimum 2px gap
+  const originalMarginTop = blockStyles?.container?.marginTop ?? 0;
+  let adjustedMarginTop = originalMarginTop;
+  
+  if (originalMarginTop < 0) {
+    // Base safe area is ~20px, larger devices (notch) have ~44px+
+    // Adjust negative margin to prevent overlap while maintaining 2px gap
+    const baseSafeArea = 20;
+    const safeAreaDiff = Math.max(0, insets.top - baseSafeArea);
+    // Reduce negative margin for larger safe areas to prevent overlap
+    adjustedMarginTop = originalMarginTop + (safeAreaDiff * 0.3);
+    // Ensure we maintain at least 2px gap (don't make it too negative)
+    const maxNegativeMargin = -(insets.top + 60) + 2; // Header height + 2px gap
+    adjustedMarginTop = Math.max(adjustedMarginTop, maxNegativeMargin);
+  }
 
   // Handle both string array and object array formats
   const carouselData = data.map((item, index) => {
@@ -40,7 +57,10 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
   };
 
   return (
-    <BaseContentBlock block={block}>
+    <BaseContentBlock 
+      block={block}
+      style={adjustedMarginTop !== originalMarginTop ? { marginTop: adjustedMarginTop } : undefined}
+    >
       <Carousel
         data={carouselData}
         config={{

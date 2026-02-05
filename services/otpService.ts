@@ -57,7 +57,7 @@ export const otpService = {
 
       // Test mode: Use fixed OTP for test phone number
       if (normalizedPhone === TEST_PHONE_NUMBER) {
-        console.log('[OTP Service] Test mode activated');
+        // Test mode activated (OTP not logged for security/privacy compliance)
         otpStore.set(normalizedPhone, {
           otp: TEST_OTP,
           expiresAt: Date.now() + OTP_CONFIG.expiryMinutes * 60 * 1000,
@@ -103,7 +103,7 @@ export const otpService = {
       // Commented out to force real SMS verification as requested
       /* 
       if (isDev) {
-        console.log(`[OTP Service] Dev mode - Generated OTP for ${normalizedPhone}: ${otp}`);
+        // Dev mode OTP generation (OTP not logged for security/privacy compliance)
         return {
           success: true,
           message: 'OTP generated (dev mode)',
@@ -160,7 +160,7 @@ export const otpService = {
       });
 
       if (isDev) {
-        console.log(`[OTP Service] Fallback OTP for ${normalizedPhone}: ${otp}`);
+        // Fallback OTP generation (OTP not logged for security/privacy compliance)
         return {
           success: true,
           message: 'OTP generated (fallback mode)',
@@ -184,7 +184,7 @@ export const otpService = {
 
       // Test mode: Allow test phone number with test OTP
       if (normalizedPhone === TEST_PHONE_NUMBER && enteredOTP === TEST_OTP) {
-        console.log('[OTP Service] Test mode verification passed');
+        // Test mode verification passed (not logged for security/privacy compliance)
         otpStore.delete(normalizedPhone);
         return {
           success: true,
@@ -221,7 +221,7 @@ export const otpService = {
       // OTP verified successfully, remove it
       otpStore.delete(normalizedPhone);
 
-      console.log('[OTP Service] OTP verified successfully');
+      // OTP verification successful (not logged for security/privacy compliance)
       return {
         success: true,
         message: 'OTP verified successfully',

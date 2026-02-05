@@ -97,6 +97,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         boys: 'Boys',
         babycare: 'Baby Care',
         toys: 'Toys',
+        babygear: 'Baby Gear',
       };
       const defaultIcons: Record<string, any> = {
         all: require('@/assets/images/shopall-selected.png'),
@@ -104,6 +105,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         boys: require('@/assets/images/boys-fashion-selected.png'),
         babycare: require('@/assets/images/babycare-selected.png'),
         toys: require('@/assets/images/toys-selected.png'),
+        babygear: require('@/assets/images/BabyGearLogo.png'),
       };
 
       return {
@@ -220,11 +222,11 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   const titleStyle = {
     marginBottom: 15,
     fontSize: 18,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
       ? blockStyles.title.paddingHorizontal
       : (containerStyle.paddingHorizontal || containerPaddingHorizontal),
-    ...processFontStyle(blockStyles?.title, Fonts.Bold),
+    ...processFontStyle(blockStyles?.title, Fonts.Black),
     ...blockStyles?.title,
   };
 
@@ -270,8 +272,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 const defaultStyles = StyleSheet.create({
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
-    fontWeight: '700',
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     color: Colors.text,
     marginBottom: 16,
     paddingHorizontal: 16,

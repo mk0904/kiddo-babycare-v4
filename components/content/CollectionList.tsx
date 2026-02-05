@@ -99,7 +99,7 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
     <BaseContentBlock block={block}>
       <View style={[styles.container, blockStyles?.container]}>
         {title && (
-          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
+          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{title}</Text>
         )}
         <FlatList
           data={data}
@@ -137,7 +137,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 16,
     paddingHorizontal: 16,
   },

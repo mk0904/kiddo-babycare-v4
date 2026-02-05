@@ -199,6 +199,25 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
           }
         }
       }
+      options {
+        id
+        name
+        values
+      }
+      metafields(identifiers: [
+        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "wash_care"},
+        {namespace: "custom", key: "price_on_kiddo"},
+        {namespace: "custom", key: "price_on_amazon"},
+        {namespace: "custom", key: "price_on_firstcry"},
+        {namespace: "custom", key: "price_on_blinkit"},
+        {namespace: "custom", key: "price_on_zepto"}
+      ]) {
+        id
+        key
+        value
+        namespace
+      }
     }
   }
 
@@ -257,7 +276,15 @@ const GET_PRODUCT_BY_ID_QUERY = `
         name
         values
       }
-      metafields(identifiers: [{namespace: "custom", key: "fabric"}, {namespace: "custom", key: "wash_care"}]) {
+      metafields(identifiers: [
+        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "wash_care"},
+        {namespace: "custom", key: "price_on_kiddo"},
+        {namespace: "custom", key: "price_on_amazon"},
+        {namespace: "custom", key: "price_on_firstcry"},
+        {namespace: "custom", key: "price_on_blinkit"},
+        {namespace: "custom", key: "price_on_zepto"}
+      ]) {
         id
         key
         value

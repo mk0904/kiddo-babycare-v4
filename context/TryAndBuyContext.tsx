@@ -223,7 +223,13 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
         customerId?: string,
         paymentMethod: 'cod' | 'razorpay' = 'cod',
         paymentId?: string,
-        items?: TryAndBuyItem[] // Optional: use provided items or fallback to cartItems
+        items?: TryAndBuyItem[], // Optional: use provided items or fallback to cartItems
+        deliverySchedule?: {
+            date: string;
+            time: string;
+            day: string;
+            dateFormat: string;
+        }
     ): Promise<TryAndBuyOrder | null> => {
         // Use provided items if available, otherwise use cartItems from state
         const orderItems = items && items.length > 0 ? items : cartItems;
@@ -250,6 +256,14 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 { key: 'max_items', value: orderItems.length.toString() },
                 { key: 'payment_method', value: paymentMethod },
                 ...(paymentId ? [{ key: 'payment_id', value: paymentId }] : []),
+                ...(deliverySchedule
+                    ? [
+                        { key: 'delivery_date', value: deliverySchedule.date },
+                        { key: 'delivery_time', value: deliverySchedule.time },
+                        { key: 'delivery_day', value: deliverySchedule.day },
+                        { key: 'date_format', value: deliverySchedule.dateFormat },
+                    ]
+                    : []),
             ];
 
             // Format customer ID if provided

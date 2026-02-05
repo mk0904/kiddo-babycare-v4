@@ -14,11 +14,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+    Animated,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -96,6 +96,11 @@ export default function HomeScreen() {
           label: 'Toys',
           iconImage: require('@/assets/images/toys-selected.png'),
         },
+        {
+          key: 'babygear',
+          label: 'Baby Gear',
+          iconImage: require('@/assets/images/BabyGearLogo.png'),
+        },
       ];
     }
 
@@ -112,6 +117,7 @@ export default function HomeScreen() {
         boys: 'Boys',
         babycare: 'Baby Care',
         toys: 'Toys',
+        babygear: 'Baby Gear',
       };
       const defaultIcons: Record<string, any> = {
         all: require('@/assets/images/shopall-selected.png'),
@@ -119,6 +125,7 @@ export default function HomeScreen() {
         boys: require('@/assets/images/boys-fashion-selected.png'),
         babycare: require('@/assets/images/babycare-selected.png'),
         toys: require('@/assets/images/toys-selected.png'),
+        babygear: require('@/assets/images/BabyGearLogo.png'),
       };
 
       return {
@@ -214,8 +221,14 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   // Use a safe initial estimate to prevent jump
+  // Account for: safe area top + top info bar + search bar + category nav bar
+  // Breakdown:
+  // - Top info bar: ~60px (paddingTop: 8 + text content + marginBottom: 4)
+  // - Search bar: ~70px (paddingVertical: 10 + search bar height ~50px)
+  // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
+  // Total content: ~220px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 125 : 135;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 230;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 
@@ -225,7 +238,9 @@ export default function HomeScreen() {
   const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
 
   // Use the measured height if available, otherwise fallback to estimate
-  const effectiveHeaderHeight = dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight;
+  // Add consistent gap (16px) between header and content for all categories
+  const CONSISTENT_GAP = 16;
+  const effectiveHeaderHeight = (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + CONSISTENT_GAP;
 
   // Scroll-to-top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -353,7 +368,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom', 'top']}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <HomeHeader
         scrollY={scrollY}
         address={address}
@@ -377,7 +392,11 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: effectiveHeaderHeight },
+          { 
+            paddingTop: effectiveHeaderHeight,
+            // Ensure minimum padding to prevent overlap
+            minHeight: '100%',
+          },
           Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
         ]}
         showsVerticalScrollIndicator={false}

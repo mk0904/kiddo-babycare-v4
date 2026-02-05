@@ -2,13 +2,14 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.0.0",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "icon": "./assets/images/icon.png",
       "supportsTablet": false,
       "bundleIdentifier": "com.kiddo.ak",
       "config": {
@@ -17,22 +18,31 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show your address on the map",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to upload images for your profile and orders"
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to upload images for your profile and orders",
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "gpay",
+          "phonepe",
+          "paytmmp",
+          "paytm",
+          "bhim",
+          "tez",
+          "whatsapp",
+          "razorpay"
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFF4E8",
+        "foregroundImage": "./assets/images/gpt1.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/icon.png"
+        "monochromeImage": "./assets/images/gpt1.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.barereactnativeapp072",
       "permissions": [
-        "android.permission.RECEIVE_SMS",
-        "android.permission.READ_SMS",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],

@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ActivityIndicator,
-    TouchableOpacity,
-    ScrollView,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Fonts } from '@/constants/theme';
 import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
+import BaseModal from '@/components/ui/BaseModal';
 import { FilterPanel } from '@/components/ui/FilterPanel';
 import { FilterSortPills } from '@/components/ui/FilterSortPills';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import BaseModal from '@/components/ui/BaseModal';
-import { shopifyApi } from '@/services/shopifyApi';
+import { Colors, Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
+import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function InfinityScreen() {
-    const { collectionId, title } = useLocalSearchParams<{ collectionId: string; title: string }>();
+    const { collectionId, title, hideFilters } = useLocalSearchParams<{ collectionId: string; title: string; hideFilters?: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const shouldHideFilters = hideFilters === 'true';
 
     // Get product grid defaults from config
     const gridDefaults = configService.getProductGridDefaults();
@@ -37,11 +37,69 @@ export default function InfinityScreen() {
     const [selectedFilters, setSelectedFilters] = useState<any>({});
     const [sortKey, setSortKey] = useState('BEST_SELLING');
     const [reverse, setReverse] = useState(false);
+    
+    // Gender & Age Filter State
+    const [showGenderModal, setShowGenderModal] = useState(false);
+    const [showAgeModal, setShowAgeModal] = useState(false);
+    const [selectedGender, setSelectedGender] = useState<string | null>(null);
+    const [selectedAge, setSelectedAge] = useState<string | null>(null);
 
     const [totalItems, setTotalItems] = useState(0);
 
     // Transform local filters to Shopify API format
     const [apiFilters, setApiFilters] = useState<any[]>([]);
+
+    // Helper function to determine if gender filter should be shown
+    // Gender filter should only be available in clothing category (girls/boys)
+    // and NOT when viewing a gender-specific collection
+    const shouldShowGenderFilter = () => {
+        if (!collection) return false; // Default to false if collection not loaded yet
+        
+        const collectionTitle = (collection.title || '').toLowerCase();
+        const collectionHandle = (collection.handle || '').toLowerCase();
+        const titleParam = (title || '').toLowerCase();
+        
+        // Combine all text sources for checking
+        const allText = `${collectionTitle} ${collectionHandle} ${titleParam}`.toLowerCase();
+        
+        // Check if collection is already gender-specific (girls/boys specific carousel)
+        // This includes collections with "girls", "boys", "girl's", "boy's" in the title
+        const isGenderSpecific = 
+            allText.includes('girls') || 
+            allText.includes('boys') ||
+            allText.includes("girl's") ||
+            allText.includes("boy's") ||
+            allText.includes("girl ") ||
+            allText.includes("boy ");
+        
+        // If it's already gender-specific, don't show gender filter
+        if (isGenderSpecific) {
+            return false;
+        }
+        
+        // Check if it's a non-clothing category (babycare, toys, babygear)
+        // Gender filter should only be available in clothing category
+        const isNonClothingCategory = 
+            allText.includes('babycare') ||
+            allText.includes('baby care') ||
+            allText.includes('toys') ||
+            allText.includes('toy') ||
+            allText.includes('babygear') ||
+            allText.includes('baby gear') ||
+            allText.includes('diaper') ||
+            allText.includes('feeding') ||
+            allText.includes('stroller') ||
+            allText.includes('car seat');
+        
+        // If it's a non-clothing category, don't show gender filter
+        if (isNonClothingCategory) {
+            return false;
+        }
+        
+        // Show gender filter only for clothing categories (not non-clothing, not gender-specific)
+        // Default to true for clothing items (assumes clothing unless proven otherwise)
+        return true;
+    };
 
     useEffect(() => {
         async function fetchCollectionInfo() {
@@ -65,6 +123,20 @@ export default function InfinityScreen() {
         fetchCollectionInfo();
     }, [collectionId]);
 
+    // Sync gender and age from selectedFilters
+    useEffect(() => {
+        if (selectedFilters.gender && Array.isArray(selectedFilters.gender) && selectedFilters.gender.length > 0) {
+            setSelectedGender(selectedFilters.gender[0]);
+        } else {
+            setSelectedGender(null);
+        }
+        if (selectedFilters.age && Array.isArray(selectedFilters.age) && selectedFilters.age.length > 0) {
+            setSelectedAge(selectedFilters.age[0]);
+        } else {
+            setSelectedAge(null);
+        }
+    }, [selectedFilters]);
+
     // Handle facets loaded from the product query
     const handleFacetsLoaded = (loadedFacets: any[]) => {
         if (loadedFacets && loadedFacets.length > 0) {
@@ -76,14 +148,21 @@ export default function InfinityScreen() {
         setSelectedFilters(filters);
         setIsFilterPanelVisible(false);
 
-        // Count active filters
+        // Count active filters (including gender and age)
         let count = 0;
         const newApiFilters: any[] = [];
+
+        // Count gender and age filters separately
+        if (selectedGender) count += 1;
+        if (selectedAge) count += 1;
 
         Object.keys(filters).forEach(key => {
             const value = filters[key];
             if (Array.isArray(value) && value.length > 0) {
-                count += value.length;
+                // Don't double count gender and age
+                if (key !== 'gender' && key !== 'age') {
+                    count += value.length;
+                }
                 // Construct API filter object
                 // Check if it's a price range or simple list
                 value.forEach(val => {
@@ -106,6 +185,8 @@ export default function InfinityScreen() {
                                 }
                             }
                         }
+                        // Note: Gender and age filters are handled separately via tag filtering
+                        // They are not added to ProductFilter array as productTag is not a valid field
                     }
                 });
             }
@@ -170,6 +251,66 @@ export default function InfinityScreen() {
         }
     };
 
+    // Gender filter options - matching actual tag formats
+    const GENDER_OPTIONS = [
+        { label: 'Boys', value: 'boys' },
+        { label: 'Girls', value: 'girls' },
+        { label: 'Unisex', value: 'unisex' },
+    ];
+
+    // Age filter options - matching actual tag formats
+    const AGE_OPTIONS = [
+        { label: '3-6 months', value: '3-6m' },
+        { label: '6-12 months', value: '6-12m' },
+        { label: '1-2 years', value: '1-2y' },
+        { label: '2-3 years', value: '2-3y' },
+        { label: '3-4 years', value: '3-4y' },
+        { label: '4-5 years', value: '4-5y' },
+        { label: '5+ years', value: '5+y' },
+    ];
+
+    const handleGenderSelect = (gender: string) => {
+        if (selectedGender === gender) {
+            // Deselect if already selected (toggle off)
+            setSelectedGender(null);
+            // Remove gender filter from selectedFilters
+            const { gender: _, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            // Recalculate filter count and API filters
+            handleApplyFilters(rest);
+        } else {
+            // Select new gender (toggle on)
+            setSelectedGender(gender);
+            // Add gender filter to selectedFilters
+            const newFilters = { ...selectedFilters, gender: [gender] };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        }
+        // Close modal after selection/deselection
+        setShowGenderModal(false);
+    };
+
+    const handleAgeSelect = (age: string) => {
+        if (selectedAge === age) {
+            // Deselect if already selected (toggle off)
+            setSelectedAge(null);
+            // Remove age filter from selectedFilters
+            const { age: _, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            // Recalculate filter count and API filters
+            handleApplyFilters(rest);
+        } else {
+            // Select new age (toggle on)
+            setSelectedAge(age);
+            // Add age filter to selectedFilters
+            const newFilters = { ...selectedFilters, age: [age] };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        }
+        // Close modal after selection/deselection
+        setShowAgeModal(false);
+    };
+
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
@@ -187,43 +328,22 @@ export default function InfinityScreen() {
                     <View style={styles.headerRightPlaceholder} />
                 </View>
 
-                <FilterSortPills
-                    totalItems={totalItems}
-                    activeFiltersCount={activeFiltersCount}
-                    onFiltersPress={() => setIsFilterPanelVisible(true)}
-                    onSortPress={handleSortPress}
-                    facets={facets.map((f: any) => {
-                        // Handle different facet structures from Shopify
-                        const attribute = f.attribute || f.id || f.field || f.name;
-                        const title = f.title || f.label || f.name || attribute;
-                        const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
-                        let buckets = f.buckets || f.values || f.data || [];
-                        
-                        // Ensure buckets have the right structure
-                        if (Array.isArray(buckets)) {
-                            buckets = buckets.map((bucket: any) => ({
-                                value: bucket.value || bucket.id || bucket.title || bucket.label,
-                                label: bucket.label || bucket.title || bucket.value || bucket.name,
-                                count: bucket.count || 0,
-                                from: bucket.from,
-                                to: bucket.to,
-                                min: bucket.min,
-                                max: bucket.max,
-                            })).filter((b: any) => b.value || b.label);
-                        }
-                        
-                        return {
-                            ...f,
-                            attribute,
-                            title,
-                            type,
-                            buckets: Array.isArray(buckets) ? buckets : [],
-                        };
-                    }).filter((f: any) => f.buckets && f.buckets.length > 0 && f.attribute)}
-                    selectedFilters={selectedFilters}
-                    onFastFilterToggle={handleFastFilterToggle}
-                    style={styles.pills}
-                />
+                {!shouldHideFilters && (
+                    <FilterSortPills
+                        totalItems={totalItems}
+                        activeFiltersCount={activeFiltersCount}
+                        onFiltersPress={() => setIsFilterPanelVisible(true)}
+                        onSortPress={handleSortPress}
+                        onGenderPress={() => setShowGenderModal(true)}
+                        onAgePress={() => setShowAgeModal(true)}
+                        selectedGender={selectedGender}
+                        selectedAge={selectedAge}
+                        facets={[]}
+                        selectedFilters={selectedFilters}
+                        style={styles.pills}
+                        showGenderFilter={shouldShowGenderFilter()}
+                    />
+                )}
 
                 <View style={styles.gridContainer}>
                     <InfiniteProductGrid
@@ -243,12 +363,16 @@ export default function InfinityScreen() {
                             horizontalPadding: gridDefaults.paddingHorizontal, // Backward compatibility
                         }}
                         scrollable={true}
+                        // Pass gender and age for client-side filtering
+                        genderFilter={selectedGender}
+                        ageFilter={selectedAge}
                     />
                 </View>
 
-                <FilterPanel
-                    visible={isFilterPanelVisible}
-                    onClose={() => setIsFilterPanelVisible(false)}
+                {!shouldHideFilters && (
+                    <FilterPanel
+                        visible={isFilterPanelVisible}
+                        onClose={() => setIsFilterPanelVisible(false)}
                     facets={facets.map((f: any) => {
                         // Handle different facet structures from Shopify
                         const attribute = f.attribute || f.id || f.field || f.name;
@@ -280,7 +404,8 @@ export default function InfinityScreen() {
                     selectedFilters={selectedFilters}
                     onApplyFilters={handleApplyFilters}
                     totalResults={totalItems}
-                />
+                    />
+                )}
 
                 <BaseModal
                     visible={showSortModal}
@@ -303,6 +428,88 @@ export default function InfinityScreen() {
                                     key={index}
                                     style={styles.sortListItem}
                                     onPress={() => handleSortSelect(option)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+
+                {/* Gender Filter Modal */}
+                <BaseModal
+                    visible={showGenderModal}
+                    onClose={() => setShowGenderModal(false)}
+                    title="Select Gender"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {GENDER_OPTIONS.map((option, index) => {
+                            const isSelected = selectedGender === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleGenderSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+
+                {/* Age Filter Modal */}
+                <BaseModal
+                    visible={showAgeModal}
+                    onClose={() => setShowAgeModal(false)}
+                    title="Select Age"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {AGE_OPTIONS.map((option, index) => {
+                            const isSelected = selectedAge === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleAgeSelect(option.value)}
                                 >
                                     <Text style={[
                                         styles.sortListItemText,

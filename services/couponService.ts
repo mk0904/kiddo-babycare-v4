@@ -27,6 +27,7 @@ export interface CouponCode {
   usageLimit?: number; // Total usage limit (optional, for future use)
   usageCount?: number;
   firstOrderOnly?: boolean; // Only valid for first order
+  ticketingOnly?: boolean; // Only valid for ticketing products (Events, Playhouses, Petting Farms)
 }
 
 // Get discounts from config
@@ -50,6 +51,7 @@ const getConfigDiscounts = (): CouponCode[] => {
       endsAt: dc.endsAt,
       usageLimitPerUser: dc.usageLimitPerUser || null,
       firstOrderOnly: dc.firstOrderOnly || false,
+      ticketingOnly: dc.ticketingOnly || false,
     }));
   } catch (error) {
     console.error('[CouponService] Error reading config discounts:', error);
@@ -73,10 +75,20 @@ export interface PriceRule {
 
 /**
  * Fetch all available discount codes from config
+ * @param forTicketing - If true, only return ticketing-only coupons. If false, only return non-ticketing coupons. If undefined, return all.
  */
-export const getAvailableCouponCodes = async (): Promise<CouponCode[]> => {
+export const getAvailableCouponCodes = async (forTicketing?: boolean): Promise<CouponCode[]> => {
   // Use config-based discounts
-  return getConfigDiscounts();
+  const allCoupons = getConfigDiscounts();
+  
+  // Filter based on ticketing requirement
+  if (forTicketing === true) {
+    return allCoupons.filter(coupon => coupon.ticketingOnly === true);
+  } else if (forTicketing === false) {
+    return allCoupons.filter(coupon => !coupon.ticketingOnly);
+  }
+  
+  return allCoupons;
 };
 
 /**
@@ -281,21 +293,19 @@ export const validateCouponConditions = async (
 export const getCouponConditionsText = (coupon: CouponCode): string[] => {
   const conditions: string[] = [];
   
+  // For ticketing coupons, show only essential condition
+  if (coupon.ticketingOnly) {
+    conditions.push('Valid for Events, Playhouses & Petting Farms');
+    return conditions; // Return early for ticketing coupons
+  }
+  
+  // For regular coupons, show essential conditions
   if (coupon.minimumPurchaseAmount) {
     const minAmount = typeof coupon.minimumPurchaseAmount === 'string' 
       ? parseFloat(coupon.minimumPurchaseAmount)
       : coupon.minimumPurchaseAmount;
     if (!isNaN(minAmount) && minAmount > 0) {
       conditions.push(`Min. purchase: ₹${minAmount.toFixed(0)}`);
-    }
-  }
-  
-  if (coupon.minimumItemCount) {
-    const minItems = typeof coupon.minimumItemCount === 'number' 
-      ? coupon.minimumItemCount 
-      : parseInt(String(coupon.minimumItemCount));
-    if (!isNaN(minItems) && minItems > 0) {
-      conditions.push(`Min. ${minItems} item${minItems > 1 ? 's' : ''} required`);
     }
   }
   
@@ -311,18 +321,9 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
     conditions.push('Valid for first order only');
   }
   
-  if (coupon.startsAt || coupon.endsAt) {
-    const now = new Date();
-    if (coupon.startsAt) {
-      const startDate = new Date(coupon.startsAt);
-      if (now < startDate) {
-        conditions.push(`Starts ${startDate.toLocaleDateString()}`);
-      }
-    }
-    if (coupon.endsAt) {
-      const endDate = new Date(coupon.endsAt);
-      conditions.push(`Valid until ${endDate.toLocaleDateString()}`);
-    }
+  if (coupon.endsAt) {
+    const endDate = new Date(coupon.endsAt);
+    conditions.push(`Valid until ${endDate.toLocaleDateString()}`);
   }
   
   return conditions;

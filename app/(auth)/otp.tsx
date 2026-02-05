@@ -43,14 +43,19 @@ export default function OTPScreen() {
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const hiddenInputRef = useRef<TextInput>(null);
   const verifyingRef = useRef(false);
+  const iosAutofillDetected = useRef(false);
+  const lastOtpUpdateTime = useRef<number>(0);
 
-  // Use SMS User Consent hook (exactly like gauntlet)
+  // Use SMS User Consent hook for Android (hook must be called unconditionally)
+  // The hook should handle platform checks internally, but we'll only use it on Android
   const retrievedCode = useSmsUserConsent(otpPinCount);
 
-  // Handle auto-detected OTP from SMS User Consent (exactly like gauntlet)
+  // Handle auto-detected OTP from SMS User Consent (Android only)
+  // Note: handleVerifyOtp is defined below but included in dependencies
   useEffect(() => {
-    if (retrievedCode && retrievedCode.length === otpPinCount) {
-      console.log('[OTP] ✅ Auto-detected OTP from SMS:', retrievedCode);
+    // Only process on Android - iOS will use the hidden input autofill
+    if (Platform.OS === 'android' && retrievedCode && retrievedCode.length === otpPinCount) {
+      // OTP auto-detected from SMS (not logged for security/privacy compliance)
       const otpArray = retrievedCode.split('');
       setOtpInput(otpArray);
       
@@ -64,7 +69,46 @@ export default function OTPScreen() {
         otpPinCount,
       });
     }
-  }, [retrievedCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retrievedCode, otpPinCount]);
+
+  // iOS autofill detection - removed auto-focus to prevent keyboard from opening automatically
+  // iOS autofill will still work via textContentType="oneTimeCode" without needing focus
+
+  // iOS: Detect when all OTP fields are filled rapidly (autofill detection)
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      const otpString = otpInput.join('');
+      const now = Date.now();
+      
+      // If all 6 digits are filled and it happened very quickly (within 500ms), it's likely autofill
+      if (otpString.length === otpPinCount && !iosAutofillDetected.current) {
+        const timeSinceLastUpdate = now - lastOtpUpdateTime.current;
+        
+        // If all fields filled within 500ms, treat as autofill
+        if (timeSinceLastUpdate < 500 || lastOtpUpdateTime.current === 0) {
+          iosAutofillDetected.current = true;
+          
+          // Blur all inputs
+          inputRefs.current.forEach(ref => ref?.blur());
+          
+          // Auto-verify
+          handleVerifyOtp({
+            otpInput: otpString,
+            otpPinCount,
+          });
+          
+          // Reset flag after a delay
+          setTimeout(() => {
+            iosAutofillDetected.current = false;
+          }, 1000);
+        }
+      }
+      
+      lastOtpUpdateTime.current = now;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpInput, otpPinCount]);
 
   // Navigate after OTP verification
   useEffect(() => {
@@ -295,7 +339,7 @@ export default function OTPScreen() {
 
       if (__DEV__) {
         setOtpInput(['', '', '', '', '', '']);
-        console.log('Dev Mode: OTP may have been generated, check console.');
+        // Dev Mode: OTP may have been generated but not logged for security/privacy compliance
       }
     } finally {
       setResending(false);
@@ -306,7 +350,7 @@ export default function OTPScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -329,8 +373,8 @@ export default function OTPScreen() {
               <Text style={styles.phoneNumber}>{phoneNumber.replace(/^\+/, '')}</Text>
             </Text>
             
-            {/* Auto-detection indicator */}
-            {retrievedCode && (
+            {/* Auto-detection indicator - Android only */}
+            {Platform.OS === 'android' && retrievedCode && (
               <View style={styles.autoDetectIndicator}>
                 <ActivityIndicator size="small" color={Colors.primary} />
                 <Text style={styles.autoDetectText}>OTP detected from SMS</Text>
@@ -340,38 +384,41 @@ export default function OTPScreen() {
 
           {/* OTP Input - Separate fields for each digit */}
           <View style={styles.otpContainer}>
-            {/* Hidden input for SMS autofill */}
-            <TextInput
-              ref={hiddenInputRef}
-              style={styles.hiddenInput}
-              value=""
-              onChangeText={(text) => {
-                const digits = text.replace(/\D/g, '');
-                if (digits.length >= otpPinCount) {
-                  const otpArray = digits.slice(0, otpPinCount).split('');
-                  setOtpInput(otpArray);
-                  
-                  // Blur all inputs
-                  inputRefs.current.forEach(ref => ref?.blur());
-                  hiddenInputRef.current?.blur();
-                  
-                  // Auto-verify
-                  handleVerifyOtp({
-                    otpInput: digits.slice(0, otpPinCount),
-                    otpPinCount,
-                  });
-                }
-              }}
-              keyboardType="number-pad"
-              textContentType="oneTimeCode"
-              autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
-              autoFocus={false}
-              maxLength={otpPinCount}
-              editable={!loading}
-              importantForAutofill="yes"
-              autoCorrect={false}
-              spellCheck={false}
-            />
+            {/* Hidden input for SMS autofill - Android uses this */}
+            {Platform.OS === 'android' && (
+              <TextInput
+                ref={hiddenInputRef}
+                style={styles.hiddenInput}
+                value=""
+                onChangeText={(text) => {
+                  const digits = text.replace(/\D/g, '');
+                  if (digits.length >= otpPinCount) {
+                    const otpArray = digits.slice(0, otpPinCount).split('');
+                    setOtpInput(otpArray);
+                    
+                    // Blur all inputs
+                    inputRefs.current.forEach(ref => ref?.blur());
+                    hiddenInputRef.current?.blur();
+                    
+                    // Auto-verify
+                    handleVerifyOtp({
+                      otpInput: digits.slice(0, otpPinCount),
+                      otpPinCount,
+                    });
+                  }
+                }}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                autoFocus={false}
+                maxLength={otpPinCount}
+                editable={!loading}
+                importantForAutofill="yes"
+                autoCorrect={false}
+                spellCheck={false}
+                secureTextEntry={false}
+              />
+            )}
             
             {/* Visible OTP inputs - one for each digit */}
             {Array.from({ length: otpPinCount }).map((_, index) => (
@@ -387,7 +434,37 @@ export default function OTPScreen() {
                 ]}
                 value={otpInput[index]}
                 onChangeText={(text) => {
-                  // Only allow single digit
+                  // For iOS: Handle autofill/paste of full OTP in the first input
+                  if (Platform.OS === 'ios' && index === 0 && text.length > 1) {
+                    const digits = text.replace(/\D/g, '').slice(0, otpPinCount);
+                    if (digits.length === otpPinCount) {
+                      // Prevent duplicate processing
+                      if (iosAutofillDetected.current) {
+                        return;
+                      }
+                      iosAutofillDetected.current = true;
+                      
+                      const otpArray = digits.split('');
+                      setOtpInput(otpArray);
+                      
+                      // Blur all inputs
+                      inputRefs.current.forEach(ref => ref?.blur());
+                      
+                      // Auto-verify
+                      handleVerifyOtp({
+                        otpInput: digits,
+                        otpPinCount,
+                      });
+                      
+                      // Reset flag after a delay
+                      setTimeout(() => {
+                        iosAutofillDetected.current = false;
+                      }, 1000);
+                      return;
+                    }
+                  }
+                  
+                  // Only allow single digit for normal input
                   if (text && !/^\d$/.test(text)) {
                     return;
                   }
@@ -417,12 +494,12 @@ export default function OTPScreen() {
                   }
                 }}
                 keyboardType="number-pad"
-                maxLength={1}
+                maxLength={Platform.OS === 'ios' && index === 0 ? otpPinCount : 1}
                 selectTextOnFocus
                 editable={!loading}
-                textContentType="none"
-                autoComplete="off"
-                importantForAutofill="no"
+                textContentType={Platform.OS === 'ios' && index === 0 ? 'oneTimeCode' : 'none'}
+                autoComplete={Platform.OS === 'ios' && index === 0 ? 'one-time-code' : 'off'}
+                importantForAutofill={Platform.OS === 'ios' && index === 0 ? 'yes' : 'no'}
                 autoCorrect={false}
                 spellCheck={false}
               />

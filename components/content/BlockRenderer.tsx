@@ -65,7 +65,7 @@ export function BlockRenderer({ blocks, onBlockPress, searchQuery }: BlockRender
 
   return (
     <View style={styles.container}>
-      {visibleBlocks.map((block) => {
+      {visibleBlocks.map((block, index) => {
         const Component = blockComponentMap[block.type];
 
         if (!Component) {
@@ -83,8 +83,16 @@ export function BlockRenderer({ blocks, onBlockPress, searchQuery }: BlockRender
           props.searchQuery = searchQuery;
         }
 
+        // Add consistent spacing between blocks (except for the last one)
+        const isLastBlock = index === visibleBlocks.length - 1;
+        const blockWrapperStyle = !isLastBlock ? styles.blockSpacing : undefined;
+
         // Key must be passed directly, not through spread
-        return <Component key={block.id} {...props} />;
+        return (
+          <View key={block.id} style={blockWrapperStyle}>
+            <Component {...props} />
+          </View>
+        );
       })}
     </View>
   );
@@ -93,6 +101,9 @@ export function BlockRenderer({ blocks, onBlockPress, searchQuery }: BlockRender
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+  },
+  blockSpacing: {
+    marginBottom: 4, // Consistent reduced gap between all sections
   },
 });
 

@@ -9,13 +9,15 @@ interface UniversalAddProps {
     selectedVariant?: any;
     variant?: 'default' | 'prominent' | 'pdp';
     addText?: string;
+    bookingDate?: Date | null; // For ticketing products
 }
 
 const UniversalAdd: React.FC<UniversalAddProps> = ({
     item,
     selectedVariant,
     variant = 'default',
-    addText = 'ADD'
+    addText = 'ADD',
+    bookingDate
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -140,6 +142,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             quantity: 1,
             availableForSale: finalVariant.availableForSale !== false,
             tags: finalProduct.tags || [],
+            bookingDate: bookingDate ? bookingDate.toISOString() : undefined,
         };
 
         await addItem(cartItem);

@@ -152,7 +152,7 @@ export function FlashSaleTimer({ block, onPress }: FlashSaleTimerProps) {
             <View style={styles.leftSection}>
                 <View style={styles.headerRow}>
                     <IconSymbol name={status === 'upcoming' ? "clock.fill" : "bolt.fill"} size={20} color="#FFD700" />
-                    <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>
+                    <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>
                         {getMainLabel()}
                     </Text>
                 </View>
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     },
     basicTitle: {
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Black,
         color: '#FFF',
         textTransform: 'uppercase'
     },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Black,
         color: '#FFFFFF',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     },
     cinematicTitle: {
         fontSize: 32,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Black,
         color: '#FFF',
         textTransform: 'uppercase',
         letterSpacing: 1,

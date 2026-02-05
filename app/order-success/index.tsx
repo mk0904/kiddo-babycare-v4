@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     },
     orderCard: {
         width: '100%',
-        backgroundColor: '#F8F8F8',
+        backgroundColor: '#FFFFFF',
         borderRadius: 16,
         padding: 20,
         marginBottom: 32,

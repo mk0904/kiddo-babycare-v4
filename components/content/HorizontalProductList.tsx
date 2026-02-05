@@ -331,30 +331,28 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
             )}
             <View style={contentStyle as any}>
                 <FlashList
-                    {...({
-                        ref: flatListRef,
-                        data: normalizedProducts,
-                        renderItem: renderItem,
-                        keyExtractor: keyExtractor,
-                        horizontal: true,
-                        showsHorizontalScrollIndicator: false,
-                        contentContainerStyle: contentContainerStyle as any,
-                        estimatedItemSize: itemWidth + itemSpacing,
-                        drawDistance: (itemWidth + itemSpacing) * 2,
-                        decelerationRate: "normal",
-                        nestedScrollEnabled: true,
-                        scrollEnabled: true,
-                        bounces: false,
-                        scrollEventThrottle: 32,
-                        directionalLockEnabled: true,
-                        windowSize: 3,
-                        removeClippedSubviews: true,
-                        ItemSeparatorComponent: ItemSeparator,
-                        onScrollToIndexFailed: handleScrollToIndexFailed,
-                        overrideItemLayout: (layout: any) => {
-                            layout.size = itemWidth + itemSpacing;
-                        },
-                    } as any)}
+                    ref={flatListRef}
+                    data={normalizedProducts}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={contentContainerStyle as any}
+                    estimatedItemSize={itemWidth + itemSpacing}
+                    drawDistance={(itemWidth + itemSpacing) * 2}
+                    decelerationRate="normal"
+                    nestedScrollEnabled={true}
+                    scrollEnabled={true}
+                    bounces={false}
+                    scrollEventThrottle={32}
+                    directionalLockEnabled={true}
+                    windowSize={3}
+                    removeClippedSubviews={true}
+                    ItemSeparatorComponent={ItemSeparator}
+                    onScrollToIndexFailed={handleScrollToIndexFailed}
+                    overrideItemLayout={(layout: any) => {
+                        layout.size = itemWidth + itemSpacing;
+                    }}
                 />
             </View>
         </ContainerWrapper>
@@ -381,9 +379,9 @@ const defaultStyles = StyleSheet.create({
     },
     title: {
         fontSize: 18,
-        letterSpacing: 0.3,
+        letterSpacing: 0,
         color: Colors.text,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Black,
         flex: 1,
         flexShrink: 1,
         marginRight: 8,

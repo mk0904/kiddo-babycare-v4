@@ -1,3 +1,4 @@
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { accountConfig } from '@/config/accountConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -11,16 +12,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Linking,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function AccountScreen() {
     const router = useRouter();
@@ -294,7 +293,7 @@ export default function AccountScreen() {
     if (isGuest || !user) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <ScreenHeader title="Account" />
+                <ScreenHeader title="Account" showBack={true} showSearch={false} />
                 <View style={styles.loginRequiredWrapper}>
                     <Text style={styles.loginTitle}>Login to access your account</Text>
                     <Text style={styles.loginSubtitle}>
@@ -315,7 +314,7 @@ export default function AccountScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScreenHeader title="Account" />
+            <ScreenHeader title="Account" showBack={true} showSearch={false} />
             <ScrollView
                 ref={scrollViewRef}
                 style={[styles.scrollView, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}

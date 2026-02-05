@@ -8,11 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -40,6 +40,7 @@ interface ProductCardProps {
   gap?: number;
   width?: number; // Add explicit width support
   averageMarketPrice?: number | null; // Average market price for essentials
+  collectionId?: string | string[] | null; // Collection ID for navigation context
 }
 
 const ProductCardComponent: React.FC<ProductCardProps> = ({
@@ -53,6 +54,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   horizontalPadding = 20,
   gap = 8,
   width,
+  collectionId,
 }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const { isAuthenticated, user } = useAuth();
@@ -245,6 +247,17 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     return null;
   }, [product, firstVariant]);
 
+  // Calculate discount percentage
+  const discountPercentage = useMemo(() => {
+    if (!discountPrice) return null;
+    const originalPrice = parsePrice(discountPrice);
+    if (originalPrice > priceNumber && originalPrice > 0) {
+      const percentage = Math.round(((originalPrice - priceNumber) / originalPrice) * 100);
+      return percentage > 0 ? percentage : null;
+    }
+    return null;
+  }, [discountPrice, priceNumber, parsePrice]);
+
   // Handle wishlist press
   const handleWishlistPress = useCallback(
     async (e: any) => {
@@ -287,6 +300,47 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product is a ticketing product (Events, Playhouses, Petting Farms)
+  const isTicketingProduct = useMemo(() => {
+    // Collection IDs that are ticketing products
+    const TICKETING_COLLECTION_IDS = [
+      'gid://shopify/Collection/509771120929', // Events
+      'gid://shopify/Collection/509726458145', // Playhouses
+      'gid://shopify/Collection/509771153697', // Petting Farms
+    ];
+
+    // Check if product came from a ticketing collection
+    const collectionIdParam = Array.isArray(collectionId) ? collectionId[0] : collectionId;
+    if (collectionIdParam) {
+      const isFromTicketingCollection = TICKETING_COLLECTION_IDS.some(id => 
+        collectionIdParam === id || collectionIdParam.includes(id.split('/').pop() || '')
+      );
+      if (isFromTicketingCollection) return true;
+    }
+
+    // Check if product has relevant tags
+    const hasTicketingTag = tags.some((tag: any) => {
+      const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+      return tagLower.includes('event') || 
+             tagLower.includes('playhouse') || 
+             tagLower.includes('petting') ||
+             tagLower.includes('farm');
+    });
+    if (hasTicketingTag) return true;
+
+    // Check if product belongs to any ticketing collection
+    const productCollections = product.collections?.edges || product.collections || [];
+    const belongsToTicketing = productCollections.some((col: any) => {
+      const colId = col?.node?.id || col?.id || '';
+      return TICKETING_COLLECTION_IDS.some(ticketingId => 
+        colId === ticketingId || colId.includes(ticketingId.split('/').pop() || '')
+      );
+    });
+    if (belongsToTicketing) return true;
+
+    return false;
+  }, [collectionId, tags, product.collections]);
+
   const handlePress = useCallback(() => {
     if (onPress) {
       onPress(product);
@@ -295,10 +349,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       // Prefer ID if available (gid or clean ID), else handle
       const routeParam = product.id || productHandle;
       if (routeParam) {
-        router.push(`/product/${encodeURIComponent(routeParam)}` as any);
+        const collectionIdParam = Array.isArray(collectionId) ? collectionId[0] : collectionId;
+        router.push({
+          pathname: `/product/${encodeURIComponent(routeParam)}`,
+          params: collectionIdParam ? { collectionId: collectionIdParam } : {}
+        } as any);
       }
     }
-  }, [onPress, product, router, productHandle]);
+  }, [onPress, product, router, productHandle, collectionId]);
 
   return (
     <View style={[styles.container, { width: cardWidth }, containerStyle]}>
@@ -365,8 +423,8 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               </Text>
             </TouchableOpacity>
           )}
-          {/* Add to Cart Button - CTA on image */}
-          {isAvailable && (
+          {/* Add to Cart Button - CTA on image - Hide for ticketing products */}
+          {isAvailable && !isTicketingProduct && (
             <View
               style={styles.addButtonContainer}
               pointerEvents="auto"
@@ -401,12 +459,19 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 </View>
               ) : (
                 <View style={styles.priceRow}>
-                  <Text style={styles.mainPrice}>
-                    {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
-                  </Text>
-                  {discountPrice && parsePrice(discountPrice) > priceNumber && (
-                    <Text style={styles.comparePrice}>
-                      ₹{parsePrice(discountPrice).toFixed(0)}
+                  <View style={styles.priceInfo}>
+                    <Text style={styles.mainPrice}>
+                      {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
+                    </Text>
+                    {discountPrice && parsePrice(discountPrice) > priceNumber && (
+                      <Text style={styles.comparePrice}>
+                        ₹{parsePrice(discountPrice).toFixed(0)}
+                      </Text>
+                    )}
+                  </View>
+                  {discountPercentage !== null && (
+                    <Text style={styles.discountPercentage}>
+                      {discountPercentage}% off
                     </Text>
                   )}
                 </View>
@@ -490,19 +555,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+  },
+  priceInfo: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    flexWrap: 'nowrap',
   },
   mainPrice: {
     color: '#2c6975',
     fontSize: 12,
     fontFamily: Fonts.Bold,
     lineHeight: 16,
+    flexShrink: 0,
   },
   comparePrice: {
     color: '#888888',
     textDecorationLine: 'line-through',
     fontSize: 11,
     fontFamily: Fonts.Medium,
+    flexShrink: 0,
+  },
+  discountPercentage: {
+    color: '#2c6975',
+    fontSize: 11,
+    fontFamily: Fonts.SemiBold,
+    lineHeight: 16,
+    flexShrink: 0,
   },
   essentialsPriceContainer: {
     flexDirection: 'column',

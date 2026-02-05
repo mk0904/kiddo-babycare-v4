@@ -1,21 +1,21 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { AnnouncementCarouselBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  Dimensions,
   FlatList,
   Pressable,
   StyleSheet,
-  Dimensions,
+  Text,
+  View,
 } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { AnnouncementCarouselBlock } from '@/types/content';
-import { useRouter } from 'expo-router';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-import { processFontStyle } from '@/utils/fontUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-interface AnnouncementCarouselProps extends BaseContentBlockProps {
+interface AnnouncementCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: AnnouncementCarouselBlock;
   onPress?: (link?: string, item?: any) => void;
 }

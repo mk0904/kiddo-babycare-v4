@@ -82,7 +82,7 @@ export default function CategoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="Category" />
+      <ScreenHeader title="Category" showWishlist={true} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

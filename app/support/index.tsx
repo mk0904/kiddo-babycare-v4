@@ -1,12 +1,16 @@
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SupportScreen() {
+    const router = useRouter();
+
     const handleCall = () => {
-        Linking.openURL('tel:+919999999999');
+        Linking.openURL('tel:+919310993990');
     };
 
     const handleEmail = () => {
@@ -15,24 +19,23 @@ export default function SupportScreen() {
 
     const handleWhatsApp = () => {
         const text = "Hi, I need help with my order.";
-        const url = `whatsapp://send?phone=+919999999999&text=${encodeURIComponent(text)}`;
+        const url = `whatsapp://send?phone=+919310993990&text=${encodeURIComponent(text)}`;
         Linking.canOpenURL(url).then(supported => {
             if (supported) {
                 Linking.openURL(url);
             } else {
-                Linking.openURL(`https://wa.me/919999999999?text=${encodeURIComponent(text)}`);
+                Linking.openURL(`https://wa.me/919310993990?text=${encodeURIComponent(text)}`);
             }
         });
     };
 
     return (
-        <View style={styles.container}>
-            <Stack.Screen
-                options={{
-                    headerTitle: 'Help & Support',
-                    headerBackTitle: '',
-                    headerTintColor: Colors.text,
-                }}
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <ScreenHeader 
+                title="Help & Support" 
+                showBack={true}
+                showSearch={false}
+                onBackPress={() => router.back()}
             />
 
             <View style={styles.headerSection}>
@@ -67,7 +70,7 @@ export default function SupportScreen() {
                 </TouchableOpacity>
 
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 

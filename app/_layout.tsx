@@ -17,6 +17,8 @@ import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { mixpanel } from '@/mixpanel';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -37,8 +39,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [isSplashVisible, setIsSplashVisible] = React.useState(true);
+  const [isSplashVisible, setIsSplashVisible] = React.useState(false);
   const [appIsReady, setAppIsReady] = React.useState(false);
+  
+  // Track screen views
+  useScreenTracking();
 
   const [fontsLoaded] = useFonts({
     'Metropolis-Regular': require('../assets/fonts/Metropolis-Regular.otf'),
@@ -62,6 +67,17 @@ export default function RootLayout() {
     
     if (fontsLoaded) {
       setAppIsReady(true);
+      // Track app opened event
+      if (mixpanel) {
+        try {
+          mixpanel.track('App Opened');
+          console.log('✅ Mixpanel: App Opened event tracked');
+        } catch (e) {
+          console.warn('Mixpanel tracking error:', e);
+        }
+      } else {
+        console.warn('⚠️ Mixpanel not initialized');
+      }
     }
   }, [fontsLoaded]);
 
@@ -92,7 +108,7 @@ export default function RootLayout() {
                         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                       </Stack>
                     </TabBarVisibilityProvider>
-                    <StatusBar style="auto" />
+                    <StatusBar style="dark" />
                     </ThemeProvider>
                   </TryAndBuyProvider>
                 </RecentlyViewedProvider>

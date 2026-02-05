@@ -22,6 +22,7 @@ export interface CartItem {
     availableForSale: boolean;
     tags?: string[];
     customAttributes?: Record<string, string>;
+    bookingDate?: string; // ISO date string for ticketing products
 }
 
 export interface GiftItem {
@@ -350,8 +351,43 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
 
+                    // Track Add to Cart event
+                    try {
+                        const { mixpanel } = require('@/mixpanel');
+                        if (mixpanel) {
+                            mixpanel.track('Add to Cart', {
+                                productId: item.productId,
+                                productName: item.title,
+                                variantId: item.variantId,
+                                price: item.price,
+                                quantity: item.quantity,
+                                currency: item.currencyCode || 'INR',
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Mixpanel tracking error:', e);
+                    }
+
                     // Check for eligible gifts after adding item
                     get().applyEligibleGifts();
+                    
+                    // Check if cart now has ticketing products - remove coupons if so
+                    const hasTicketingProducts = newLineItems.some(item => {
+                        if (item.bookingDate) return true;
+                        const hasTicketingTag = item.tags?.some((tag: any) => {
+                            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                            return tagLower.includes('event') || 
+                                   tagLower.includes('playhouse') || 
+                                   tagLower.includes('petting') ||
+                                   tagLower.includes('farm');
+                        });
+                        return hasTicketingTag;
+                    });
+
+                    if (hasTicketingProducts && get().discountCodes.length > 0) {
+                        console.log('[CartStore] Removing coupons - cart contains ticketing products');
+                        await get().removeAllDiscountCodes();
+                    }
                     
                     // Validate applied discount codes (they might no longer meet conditions)
                     await get().validateAppliedDiscountCodes();
@@ -489,6 +525,71 @@ export const useCartStore = create<CartState>()(
                     currentDiscountCodes: state.discountCodes,
                     currentPayment: state.payment,
                 });
+
+                // Check if coupon is ticketing-only
+                let isTicketingCoupon = false;
+                try {
+                    const { couponService } = await import('@/services/couponService');
+                    const configDiscount = await couponService.validateCouponCode(normalizedCode);
+                    if (configDiscount && configDiscount.ticketingOnly) {
+                        isTicketingCoupon = true;
+                    }
+                } catch (error) {
+                    console.error('[CartStore] Error checking if coupon is ticketing-only:', error);
+                }
+
+                // Check if cart has ticketing products
+                const hasTicketingProducts = state.lineItems.some(item => {
+                    // Check if item has booking date (indicates ticketing product)
+                    if (item.bookingDate) return true;
+                    
+                    // Check tags
+                    const hasTicketingTag = item.tags?.some((tag: any) => {
+                        const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                        return tagLower.includes('event') || 
+                               tagLower.includes('playhouse') || 
+                               tagLower.includes('petting') ||
+                               tagLower.includes('farm');
+                    });
+                    
+                    return hasTicketingTag;
+                });
+
+                // If coupon is ticketing-only but cart doesn't have ticketing products
+                if (isTicketingCoupon && !hasTicketingProducts) {
+                    console.log('[CartStore] ❌ Ticketing coupon applied to non-ticketing cart');
+                    return { 
+                        success: false, 
+                        error: 'This coupon code is only valid for Events, Playhouses, or Petting Farms bookings.' 
+                    };
+                }
+
+                // If coupon is NOT ticketing-only but cart has ticketing products
+                if (!isTicketingCoupon && hasTicketingProducts) {
+                    console.log('[CartStore] ❌ Regular coupon applied to ticketing cart');
+                    return { 
+                        success: false, 
+                        error: 'Regular coupon codes are not available for Events, Playhouses, or Petting Farms bookings. Please use ticketing-specific coupons.' 
+                    };
+                }
+
+                // CHECK: User must be logged in to apply coupons
+                try {
+                    const { useUserStore } = await import('@/store/userStore');
+                    const userStore = useUserStore.getState();
+                    const isAuthenticated = userStore.status === 'authenticated' && userStore.user !== null;
+                    
+                    if (!isAuthenticated) {
+                        console.log('[CartStore] ❌ User not logged in - cannot apply coupon');
+                        return { 
+                            success: false, 
+                            error: 'Please login or create an account to use discount coupons.' 
+                        };
+                    }
+                } catch (error) {
+                    console.error('[CartStore] Error checking authentication:', error);
+                    return { success: false, error: 'Failed to verify authentication.' };
+                }
 
                 // FIRST: Validate code exists in config (source of truth)
                 let configDiscount: any = null;

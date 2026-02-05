@@ -4,6 +4,7 @@ import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal'
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
+import BaseModal from '@/components/ui/BaseModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
@@ -17,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import {
     ActivityIndicator,
     Dimensions,
@@ -31,6 +33,165 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Event Date Picker Component - Shows next 7 days
+const EventDatePicker: React.FC<{
+    selectedDate: Date | null;
+    onDateSelect: (date: Date) => void;
+}> = ({ selectedDate, onDateSelect }) => {
+    // Generate next 7 days
+    const getNext7Days = useMemo(() => {
+        const days = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            days.push(date);
+        }
+        return days;
+    }, []);
+
+    const formatDateLabel = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        
+        const dateToCheck = new Date(date);
+        dateToCheck.setHours(0, 0, 0, 0);
+        
+        if (dateToCheck.getTime() === today.getTime()) {
+            return 'Today';
+        } else if (dateToCheck.getTime() === tomorrow.getTime()) {
+            return 'Tomorrow';
+        } else {
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+    };
+
+    const isDateSelected = (date: Date) => {
+        if (!selectedDate) return false;
+        return date.toDateString() === selectedDate.toDateString();
+    };
+
+    const next7Days = getNext7Days;
+
+    return (
+        <View style={datePickerStyles.container}>
+            <ScrollView 
+                style={datePickerStyles.daysList} 
+                contentContainerStyle={datePickerStyles.daysListContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {next7Days.length > 0 ? next7Days.map((date, index) => {
+                    const isSelected = isDateSelected(date);
+                    return (
+                        <TouchableOpacity
+                            key={`date-${index}-${date.getTime()}`}
+                            style={[
+                                datePickerStyles.dateOption,
+                                isSelected && datePickerStyles.dateOptionSelected
+                            ]}
+                            onPress={() => onDateSelect(date)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={datePickerStyles.dateOptionContent}>
+                                <Text style={[
+                                    datePickerStyles.dateLabel,
+                                    isSelected && datePickerStyles.dateLabelSelected
+                                ]}>
+                                    {formatDateLabel(date)}
+                                </Text>
+                                <Text style={[
+                                    datePickerStyles.dateSubLabel,
+                                    isSelected && datePickerStyles.dateSubLabelSelected
+                                ]}>
+                                    {date.toLocaleDateString('en-US', { 
+                                        month: 'long', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </Text>
+                            </View>
+                            {isSelected && (
+                                <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                            )}
+                        </TouchableOpacity>
+                    );
+                }) : (
+                    <View style={datePickerStyles.emptyState}>
+                        <Text style={datePickerStyles.emptyStateText}>No dates available</Text>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
+    );
+};
+
+const datePickerStyles = StyleSheet.create({
+    container: {
+        padding: 20,
+        minHeight: 300,
+        maxHeight: 500,
+    },
+    daysList: {
+        flex: 1,
+    },
+    daysListContent: {
+        paddingBottom: 10,
+    },
+    dateOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    dateOptionSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: '#FFF5F5',
+    },
+    dateOptionContent: {
+        flex: 1,
+    },
+    dateLabel: {
+        fontSize: 16,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+        marginBottom: 4,
+    },
+    dateLabelSelected: {
+        color: Colors.primary,
+    },
+    dateSubLabel: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.textSecondary,
+    },
+    dateSubLabelSelected: {
+        color: Colors.text,
+    },
+    emptyState: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyStateText: {
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.textSecondary,
+    },
+});
 
 const ProductDetailScreen = () => {
     const params = useLocalSearchParams();
@@ -56,6 +217,57 @@ const ProductDetailScreen = () => {
     const { addToRecentlyViewed, getRecentlyViewed } = useRecentlyViewed();
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const imageGestureRef = useRef({ isHorizontal: false });
+    
+    // Event date selection state
+    const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    
+    // Collection IDs that require date selection
+    const TICKETING_COLLECTION_IDS = [
+        'gid://shopify/Collection/509771120929', // Events
+        'gid://shopify/Collection/509726458145', // Playhouses
+        'gid://shopify/Collection/509771153697', // Petting Farms
+    ];
+    
+    // Check if product is from ticketing collections (Events, Playhouses, Petting Farms)
+    const isTicketingProduct = useMemo(() => {
+        // Check if we came from a ticketing collection (check route params)
+        const collectionId = params.collectionId as string;
+        const fromTicketing = collectionId && TICKETING_COLLECTION_IDS.some(id => 
+            collectionId === id || collectionId.includes(id.split('/').pop() || '')
+        );
+        
+        // Or check if product has relevant tags
+        const hasTicketingTag = product?.tags?.some((tag: any) => {
+            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return tagLower.includes('event') || 
+                   tagLower.includes('playhouse') || 
+                   tagLower.includes('petting') ||
+                   tagLower.includes('farm');
+        });
+        
+        // Or check if product belongs to any ticketing collection
+        const belongsToTicketing = product?.collections?.some((col: any) => {
+            const colId = col?.id || col?.node?.id || '';
+            return TICKETING_COLLECTION_IDS.some(ticketingId => 
+                colId === ticketingId || colId.includes(ticketingId.split('/').pop() || '')
+            );
+        });
+        
+        const result = fromTicketing || hasTicketingTag || belongsToTicketing;
+        // Debug logging
+        if (__DEV__) {
+            console.log('[DatePicker] isTicketingProduct check:', {
+                fromTicketing,
+                hasTicketingTag,
+                belongsToTicketing,
+                result,
+                collectionId: params.collectionId,
+                productTags: product?.tags,
+            });
+        }
+        return result;
+    }, [params, product]);
     
     // Get product detail config
     const productDetailConfig = configService.getProductDetailConfig();
@@ -142,6 +354,27 @@ const ProductDetailScreen = () => {
                     title: fullProduct.title,
                     image: imageUrl,
                 });
+                
+                // Track Product Viewed event
+                try {
+                    const { mixpanel } = require('@/mixpanel');
+                    if (mixpanel) {
+                        const price = parseFloat(
+                            fullProduct.priceRange?.minVariantPrice?.amount || 
+                            fullProduct.variants?.edges?.[0]?.node?.price?.amount || 
+                            '0'
+                        );
+                        mixpanel.track('Product Viewed', {
+                            productId: fullProduct.id,
+                            productName: fullProduct.title,
+                            productHandle: fullProduct.handle,
+                            price,
+                            currency: fullProduct.priceRange?.minVariantPrice?.currencyCode || 'INR',
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
                 
                 // Load recently viewed products (excluding current)
                 loadRecentlyViewedProducts(fullProduct.handle);
@@ -376,6 +609,15 @@ const ProductDetailScreen = () => {
 
     const savings = mrp > basePrice ? mrp - basePrice : 0;
 
+    // Calculate discount percentage
+    const discountPercentage = useMemo(() => {
+        if (mrp > basePrice && mrp > 0) {
+            const percentage = Math.round(((mrp - basePrice) / mrp) * 100);
+            return percentage > 0 ? percentage : null;
+        }
+        return null;
+    }, [mrp, basePrice]);
+
     const formattedPrice = useMemo(() => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -422,25 +664,41 @@ const ProductDetailScreen = () => {
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
 
-    // Price comparison metafields for Essentials products
-    const amazonPrice = getMetafieldValue(product, 'amazon_price');
-    const firstcryPrice = getMetafieldValue(product, 'firstcry_price');
-    const blinkitPrice = getMetafieldValue(product, 'blinkit_price');
-    const zeptoPrice = getMetafieldValue(product, 'zepto_price');
-    const kiddoPrice = getMetafieldValue(product, 'kiddo_price');
+    // Price comparison metafields - using exact metafield keys from Shopify
+    const priceOnKiddo = getMetafieldValue(product, 'price_on_kiddo');
+    const priceOnAmazon = getMetafieldValue(product, 'price_on_amazon');
+    const priceOnFirstcry = getMetafieldValue(product, 'price_on_firstcry');
+    const priceOnBlinkit = getMetafieldValue(product, 'price_on_blinkit');
+    const priceOnZepto = getMetafieldValue(product, 'price_on_zepto');
+
+    // Helper function to format price with rupee symbol
+    const formatPriceWithRupee = (price: any) => {
+        if (!price || price === '0' || price === 0) return '₹0';
+        const priceStr = String(price).trim();
+        // If it already starts with ₹, return as is
+        if (priceStr.startsWith('₹')) return priceStr;
+        // Otherwise, add ₹ prefix
+        return `₹${priceStr}`;
+    };
 
     // Check if product has Essentials tag
     const hasEssentialsTag = product?.tags?.some(
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
-    // Check if all price comparison fields are available
-    const showPriceComparison = hasEssentialsTag && 
-        amazonPrice && 
-        firstcryPrice && 
-        blinkitPrice && 
-        zeptoPrice && 
-        kiddoPrice;
+    // Show price comparison for all essential products
+    // Display "0" for missing values
+    const showPriceComparison = hasEssentialsTag;
+
+    // Check if product is a diaper
+    const isDiaper = useMemo(() => {
+        if (!product) return false;
+        const title = (product.title || '').toLowerCase();
+        const tags = (product.tags || []).map((tag: any) => 
+            typeof tag === 'string' ? tag.toLowerCase() : ''
+        );
+        return title.includes('diaper') || tags.some((tag: string) => tag.includes('diaper'));
+    }, [product]);
 
     const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -580,8 +838,8 @@ const ProductDetailScreen = () => {
                                 <Text style={styles.productMrpText}>{formattedMRP}</Text>
                             )}
                         </View>
-                        {formattedSavings && (
-                            <Text style={styles.productSavingsText}>You saved {formattedSavings}</Text>
+                        {discountPercentage !== null && (
+                            <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
                         )}
                     </View>
 
@@ -642,80 +900,87 @@ const ProductDetailScreen = () => {
                         </View>
                     )}
 
+                    {/* Date Selection - Only show for ticketing products (Events, Playhouses, Petting Farms) */}
+                    {isTicketingProduct && (
+                        <View style={styles.dateSelectionContainer}>
+                            <Text style={styles.dateSelectionLabel}>Select Date</Text>
+                            <TouchableOpacity
+                                style={styles.dateSelectionButton}
+                                onPress={() => setShowDatePicker(true)}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="calendar-outline" size={20} color={Colors.text} style={styles.dateIcon} />
+                                <Text style={[styles.dateSelectionText, !selectedEventDate && styles.dateSelectionPlaceholder]}>
+                                    {selectedEventDate 
+                                        ? selectedEventDate.toLocaleDateString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })
+                                        : 'Select a date'
+                                    }
+                                </Text>
+                                <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     {/* Separator */}
                     <View style={styles.separator} />
 
-                    {/* Description Accordion */}
+                    {/* Product Description - Display directly */}
                     {product.description && (
-                        <View style={styles.accordionContainer}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('description')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.SemiBold),
-                                        }
-                                    ]}>Product Details</Text>
+                        <View style={styles.descriptionContainer}>
+                            <Text style={[
+                                styles.descriptionBody,
+                                productStyles.description && {
+                                    fontSize: productStyles.description.fontSize,
+                                    color: productStyles.description.color,
+                                    lineHeight: productStyles.description.lineHeight,
+                                    ...processFontStyle(productStyles.description, Fonts.Regular),
+                                }
+                            ]}>{product.description}</Text>
+                        </View>
+                    )}
+
+                    {/* Price Comparison Chart - Display right after description */}
+                    {showPriceComparison && (
+                        <View style={styles.priceComparisonContainer}>
+                            <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
+                            <View style={styles.priceComparisonTable}>
+                                {/* Header Row */}
+                                <View style={[styles.priceComparisonRow, styles.priceComparisonHeaderRow]}>
+                                    <Text style={styles.pricePlatformTextHeader}>Platform</Text>
+                                    <Text style={styles.priceValueTextHeader}>
+                                        {isDiaper ? 'Price per diaper' : 'Price'}
+                                    </Text>
                                 </View>
-                                <Ionicons
-                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['description'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.descriptionBody,
-                                        productStyles.description && {
-                                            fontSize: productStyles.description.fontSize,
-                                            color: productStyles.description.color,
-                                            lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.Regular),
-                                        }
-                                    ]}>{product.description}</Text>
-                                    
-                                    {/* Price Comparison Table - Only for Essentials */}
-                                    {showPriceComparison && (
-                                        <View style={styles.priceComparisonContainer}>
-                                            <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
-                                            <View style={styles.priceComparisonTable}>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Amazon</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(amazonPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>FirstCry</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(firstcryPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Blinkit</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(blinkitPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Zepto</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(zeptoPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={[styles.priceComparisonRow, styles.priceComparisonRowKiddo]}>
-                                                    <View style={styles.kiddoRowContent}>
-                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
-                                                        <Text style={styles.pricePlatformTextKiddo}>Kiddo</Text>
-                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
-                                                    </View>
-                                                    <Text style={styles.priceValueTextKiddo}>₹{parseFloat(kiddoPrice).toFixed(0)}</Text>
-                                                </View>
-                                            </View>
-                                        </View>
-                                    )}
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Amazon</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnAmazon)}</Text>
                                 </View>
-                            )}
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>FirstCry</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnFirstcry)}</Text>
+                                </View>
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Blinkit</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnBlinkit)}</Text>
+                                </View>
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Zepto</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnZepto)}</Text>
+                                </View>
+                                <View style={[styles.priceComparisonRow, styles.priceComparisonRowKiddo]}>
+                                    <View style={styles.kiddoRowContent}>
+                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                        <Text style={styles.pricePlatformTextKiddo}>Kiddo</Text>
+                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                    </View>
+                                    <Text style={styles.priceValueTextKiddo}>{formatPriceWithRupee(priceOnKiddo)}</Text>
+                                </View>
+                            </View>
                         </View>
                     )}
 
@@ -807,8 +1072,8 @@ const ProductDetailScreen = () => {
                             <Text style={styles.mrpText}>{formattedMRP}</Text>
                         )}
                     </View>
-                    {formattedSavings && (
-                        <Text style={styles.savingsText}>You saved {formattedSavings}</Text>
+                    {discountPercentage !== null && (
+                        <Text style={styles.savingsText}>{discountPercentage}% off</Text>
                     )}
                 </View>
                 {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
@@ -817,6 +1082,7 @@ const ProductDetailScreen = () => {
                         selectedVariant={selectedVariant}
                         variant="pdp"
                         addText="Add to Cart"
+                        bookingDate={isTicketingProduct ? selectedEventDate : undefined}
                     />
                 ) : (
                     <TouchableOpacity
@@ -835,6 +1101,25 @@ const ProductDetailScreen = () => {
                 initialIndex={selectedImageIndex}
                 onClose={() => setImageViewerVisible(false)}
             />
+            
+            {/* Date Picker Modal */}
+            {isTicketingProduct && (
+                <BaseModal
+                    visible={showDatePicker}
+                    onClose={() => setShowDatePicker(false)}
+                    title="Select Date"
+                    type="bottomSheet"
+                >
+                    <EventDatePicker
+                        selectedDate={selectedEventDate}
+                        onDateSelect={(date) => {
+                            setSelectedEventDate(date);
+                            setShowDatePicker(false);
+                        }}
+                    />
+                </BaseModal>
+            )}
+            
             <FloatingCartButton showTabBar={false} />
         </View>
     );
@@ -995,6 +1280,39 @@ const styles = StyleSheet.create({
     variantTextDisabled: {
         color: '#9CA3AF',
     },
+    dateSelectionContainer: {
+        paddingHorizontal: 16,
+        marginTop: 20,
+        marginBottom: 4,
+    },
+    dateSelectionLabel: {
+        fontSize: 16,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    dateSelectionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    dateIcon: {
+        marginRight: 10,
+    },
+    dateSelectionText: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    dateSelectionPlaceholder: {
+        color: Colors.textSecondary,
+    },
     separator: {
         height: 8,
         backgroundColor: '#F9F9F9', // Light gray gap
@@ -1031,6 +1349,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         paddingBottom: 24,
         paddingLeft: 0, // Align text with icon (start flush left)
+    },
+    descriptionContainer: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 8,
     },
     descriptionBody: {
         fontSize: 14,
@@ -1114,6 +1437,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 20,
         paddingHorizontal: 16,
+        paddingTop: 0,
     },
     priceComparisonTitle: {
         fontSize: 18,
@@ -1138,6 +1462,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
     },
+    priceComparisonHeaderRow: {
+        backgroundColor: '#F5F5F5',
+        borderBottomWidth: 2,
+        borderBottomColor: Colors.border,
+        paddingVertical: 12,
+    },
     priceComparisonRowKiddo: {
         backgroundColor: '#E8F5E9',
         borderBottomWidth: 0,
@@ -1155,6 +1485,11 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Medium,
         color: Colors.text,
     },
+    pricePlatformTextHeader: {
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+    },
     pricePlatformTextKiddo: {
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
@@ -1163,6 +1498,11 @@ const styles = StyleSheet.create({
     priceValueText: {
         fontSize: 14,
         fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    priceValueTextHeader: {
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
         color: Colors.text,
     },
     priceValueTextKiddo: {

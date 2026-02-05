@@ -23,6 +23,7 @@ interface CartItemProps {
         image: string;
         quantity: number;
         tags?: string[];
+        bookingDate?: string; // ISO date string for ticketing products
     };
     onUpdateQuantity: (itemId: string, quantity: number) => void;
     onRemove: (itemId: string) => void;
@@ -94,6 +95,19 @@ export const CartItem: React.FC<CartItemProps> = ({
                             <View style={styles.variantPill}>
                                 <Text style={styles.variantText} numberOfLines={1}>
                                     {item.variantTitle}
+                                </Text>
+                            </View>
+                        )}
+                        {item.bookingDate && (
+                            <View style={styles.bookingDateContainer}>
+                                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                <Text style={styles.bookingDateText}>
+                                    {new Date(item.bookingDate).toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
                                 </Text>
                             </View>
                         )}
@@ -223,6 +237,22 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontFamily: Fonts.Regular,
         color: '#666',
+    },
+    bookingDateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 6,
+        backgroundColor: '#FFF5F5',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    bookingDateText: {
+        fontSize: 11,
+        fontFamily: Fonts.Medium,
+        color: Colors.primary,
+        marginLeft: 4,
     },
     removeButton: {
         padding: 4,

@@ -107,8 +107,24 @@ export function HomeHeader({
 
   const headerWrapperProps = useMemo(() => {
     if (!shouldUseImage || !backgroundImage) return {};
+    
+    // Helper function to resolve local asset paths
+    const getImageSource = () => {
+      // Check if it's a local asset path (starts with "assets/")
+      if (typeof backgroundImage === 'string' && backgroundImage.startsWith('assets/')) {
+        // Map asset paths to require statements
+        const assetMap: Record<string, any> = {
+          'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
+          'assets/images/BabyGearLogo.png': require('@/assets/images/BabyGearLogo.png'),
+        };
+        return assetMap[backgroundImage] || { uri: backgroundImage };
+      }
+      // Remote URL
+      return { uri: backgroundImage };
+    };
+    
     return {
-      source: { uri: backgroundImage },
+      source: getImageSource(),
       imageStyle: {
         resizeMode: 'cover' as const,
         width: '100%',
@@ -145,7 +161,11 @@ export function HomeHeader({
       renderToHardwareTextureAndroid={true}
       onLayout={(event) => {
         const { height } = event.nativeEvent.layout;
-        onHeaderHeightChange?.(height);
+        // Only update if height is valid and greater than 0
+        // This ensures we always have a valid measurement
+        if (height > 0) {
+          onHeaderHeightChange?.(height);
+        }
       }}
     >
       <HeaderWrapper
@@ -247,9 +267,9 @@ const styles = StyleSheet.create({
   },
   kiddoHeaderText: {
     fontSize: 15,
-    fontFamily: Fonts.Bold,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
+    letterSpacing: 0,
   },
   estimatedTimeWrapper: {
     flexDirection: 'row',
