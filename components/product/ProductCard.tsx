@@ -8,11 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -172,15 +172,16 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
   // Normalize isAvailable logic - check both availableForSale and quantityAvailable
   const isAvailable = useMemo(() => {
-    // If product-level availability is explicitly set, use it
+    // Check total inventory first if available
+    if (product.totalInventory !== undefined && product.totalInventory !== null) {
+      return product.totalInventory > 0;
+    }
+
+    // If product-level availability is explicitly set
     if (product.availableForSale !== undefined) {
-      // Also check quantity if available
-      if (product.availableForSale === false) return false;
+      // If quantity is available, trust it
       if (product.quantityAvailable !== undefined && product.quantityAvailable !== null) {
         return product.quantityAvailable > 0;
-      }
-      if (product.totalInventory !== undefined && product.totalInventory !== null) {
-        return product.totalInventory > 0;
       }
       return product.availableForSale;
     }
@@ -189,11 +190,18 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     if (variants.length > 0) {
       const availableVariant = variants.find((v: any) => {
         const node = v.node || v;
+        
+        // Check quantity first if available
+        if (node.quantityAvailable !== undefined && node.quantityAvailable !== null) {
+           return node.quantityAvailable > 0;
+        }
+        if (node.inventoryQuantity !== undefined && node.inventoryQuantity !== null) {
+           return node.inventoryQuantity > 0;
+        }
+
         // Check both availableForSale and quantityAvailable
         if (node.availableForSale === false) return false;
-        if (node.quantityAvailable !== undefined && node.quantityAvailable !== null) {
-          return node.quantityAvailable > 0;
-        }
+        
         return node.availableForSale === true;
       });
       return !!availableVariant;
@@ -201,7 +209,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     
     // Default to false if unknown (safer than true)
     return false;
-  }, [product.availableForSale, product.quantityAvailable, variants]);
+  }, [product.availableForSale, product.quantityAvailable, product.totalInventory, variants]);
 
   // Parse price to number - handle multiple formats
   const parsePrice = useCallback((priceValue: any) => {

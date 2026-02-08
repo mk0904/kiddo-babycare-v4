@@ -298,8 +298,13 @@ export const verifyRazorpayPayment = async (
  */
 export const createOrderWithPayment = async (
     orderData: OrderData,
-    paymentMethod: 'razorpay' | 'cod' | 'try_and_buy' = 'cod'
+    paymentMethod: 'razorpay' | 'cod' | 'try_and_buy' | 'free' = 'cod'
 ): Promise<CreateOrderResult> => {
+    // Override payment method if total is 0 (safeguard)
+    if (orderData.totalAmount === 0 && paymentMethod !== 'try_and_buy') {
+        paymentMethod = 'free';
+    }
+
     try {
         // If this is a Try & Buy order, always create a draft order
         if (orderData.isTryAndBuy) {
@@ -496,6 +501,17 @@ export const createOrderWithPayment = async (
             return {
                 success: true,
                 order: draftOrder,
+            };
+        } else if (paymentMethod === 'free') {
+            // Free order - Create order directly
+            const shopifyOrder = await createShopifyOrder(orderData, {
+                paymentStatus: 'paid',
+                paymentMethod: 'free',
+            });
+
+            return {
+                success: true,
+                order: shopifyOrder,
             };
         }
 

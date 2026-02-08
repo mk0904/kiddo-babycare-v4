@@ -70,7 +70,13 @@ interface TryAndBuyContextType {
         customerId?: string,
         paymentMethod?: 'cod' | 'razorpay',
         paymentId?: string,
-        items?: TryAndBuyItem[] // Optional: pass items directly to avoid state sync issues
+        items?: TryAndBuyItem[], // Optional: pass items directly to avoid state sync issues
+        deliverySchedule?: {
+            date: string;
+            time: string;
+            day: string;
+            dateFormat: string;
+        }
     ) => Promise<TryAndBuyOrder | null>;
 
     // Active order

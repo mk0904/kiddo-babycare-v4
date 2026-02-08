@@ -1,10 +1,10 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
 import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
+import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
-import BaseModal from '@/components/ui/BaseModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
@@ -18,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import {
     ActivityIndicator,
     Dimensions,
@@ -34,13 +33,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Event Date Picker Component - Shows next 7 days
+// Event Date Picker Component - Shows next 7 days or available dates
 const EventDatePicker: React.FC<{
     selectedDate: Date | null;
     onDateSelect: (date: Date) => void;
-}> = ({ selectedDate, onDateSelect }) => {
-    // Generate next 7 days
-    const getNext7Days = useMemo(() => {
+    availableDates?: Date[];
+}> = ({ selectedDate, onDateSelect, availableDates }) => {
+    // Generate dates to show
+    const datesToShow = useMemo(() => {
+        if (availableDates && availableDates.length > 0) {
+            return availableDates;
+        }
+
+        // Fallback: Generate next 7 days
         const days = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset time to start of day
@@ -51,7 +56,7 @@ const EventDatePicker: React.FC<{
             days.push(date);
         }
         return days;
-    }, []);
+    }, [availableDates]);
 
     const formatDateLabel = (date: Date) => {
         const today = new Date();
@@ -77,10 +82,15 @@ const EventDatePicker: React.FC<{
 
     const isDateSelected = (date: Date) => {
         if (!selectedDate) return false;
-        return date.toDateString() === selectedDate.toDateString();
+        // Compare dates (ignoring time)
+        const d1 = new Date(date);
+        d1.setHours(0,0,0,0);
+        const d2 = new Date(selectedDate);
+        d2.setHours(0,0,0,0);
+        return d1.getTime() === d2.getTime();
     };
 
-    const next7Days = getNext7Days;
+    const next7Days = datesToShow;
 
     return (
         <View style={datePickerStyles.container}>
@@ -268,6 +278,33 @@ const ProductDetailScreen = () => {
         }
         return result;
     }, [params, product]);
+
+    // Extract available dates from product options (if any)
+    const availableDates = useMemo(() => {
+        if (!product || !isTicketingProduct) return undefined;
+        
+        // Check for "Date" option
+        const dateOption = product.options?.find((opt: any) => 
+            opt.name.toLowerCase() === 'date' || 
+            opt.name.toLowerCase().includes('date')
+        );
+        
+        if (dateOption && dateOption.values) {
+            const dates: Date[] = [];
+            dateOption.values.forEach((val: string) => {
+                const parsed = new Date(val);
+                if (!isNaN(parsed.getTime())) {
+                    dates.push(parsed);
+                }
+            });
+            if (dates.length > 0) {
+                // Sort dates
+                return dates.sort((a, b) => a.getTime() - b.getTime());
+            }
+        }
+        
+        return undefined;
+    }, [product, isTicketingProduct]);
     
     // Get product detail config
     const productDetailConfig = configService.getProductDetailConfig();
@@ -903,7 +940,10 @@ const ProductDetailScreen = () => {
                     {/* Date Selection - Only show for ticketing products (Events, Playhouses, Petting Farms) */}
                     {isTicketingProduct && (
                         <View style={styles.dateSelectionContainer}>
-                            <Text style={styles.dateSelectionLabel}>Select Date</Text>
+                            <View style={styles.dateLabelContainer}>
+                                <Text style={styles.dateSelectionLabel}>Select Date</Text>
+                                <Text style={styles.requiredAsterisk}>*</Text>
+                            </View>
                             <TouchableOpacity
                                 style={styles.dateSelectionButton}
                                 onPress={() => setShowDatePicker(true)}
@@ -1077,13 +1117,22 @@ const ProductDetailScreen = () => {
                     )}
                 </View>
                 {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
-                    <UniversalAdd
-                        item={product}
-                        selectedVariant={selectedVariant}
-                        variant="pdp"
-                        addText="Add to Cart"
-                        bookingDate={isTicketingProduct ? selectedEventDate : undefined}
-                    />
+                    isTicketingProduct && !selectedEventDate ? (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton, styles.disabledButton]}
+                            onPress={() => setShowDatePicker(true)}
+                        >
+                            <Text style={styles.addToCartText}>Select Date</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <UniversalAdd
+                            item={product}
+                            selectedVariant={selectedVariant}
+                            variant="pdp"
+                            addText="Add to Cart"
+                            bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                        />
+                    )
                 ) : (
                     <TouchableOpacity
                         style={[styles.addToCartButton, styles.disabledButton]}
@@ -1116,6 +1165,7 @@ const ProductDetailScreen = () => {
                             setSelectedEventDate(date);
                             setShowDatePicker(false);
                         }}
+                        availableDates={availableDates}
                     />
                 </BaseModal>
             )}
@@ -1285,11 +1335,21 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 4,
     },
+    dateLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
     dateSelectionLabel: {
         fontSize: 16,
         fontFamily: Fonts.SemiBold,
         color: Colors.text,
-        marginBottom: 12,
+        marginRight: 4,
+    },
+    requiredAsterisk: {
+        fontSize: 16,
+        fontFamily: Fonts.Bold,
+        color: '#FF4444',
     },
     dateSelectionButton: {
         flexDirection: 'row',
