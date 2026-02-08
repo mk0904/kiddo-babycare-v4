@@ -1127,7 +1127,10 @@ const ProductDetailScreen = () => {
                     isTicketingProduct && !selectedEventDate ? (
                         <TouchableOpacity
                             style={[styles.addToCartButton, styles.disabledButton]}
-                            onPress={() => setShowDatePicker(true)}
+                            onPress={() => {
+                                setShowDatePicker(true);
+                                setShowDateError(false); // Clear error when user opens date picker
+                            }}
                         >
                             <Text style={styles.addToCartText}>Select Date</Text>
                         </TouchableOpacity>
@@ -1138,6 +1141,11 @@ const ProductDetailScreen = () => {
                             variant="pdp"
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                            onValidationError={() => {
+                                if (isTicketingProduct && !selectedEventDate) {
+                                    setShowDateError(true);
+                                }
+                            }}
                         />
                     )
                 ) : (

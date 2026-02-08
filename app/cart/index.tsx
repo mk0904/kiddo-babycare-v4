@@ -1,6 +1,6 @@
 import { AddressModal } from '@/components/modals/AddressModal';
-import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { FreeShoesOffer } from '@/components/modals/FreeShoesOffer';
+import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
@@ -22,12 +22,12 @@ import {
     useIsTryAndBuy
 } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useMemo, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
