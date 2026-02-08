@@ -3,7 +3,7 @@
     "visibleTabs": [
       "index",
       "category",
-      "wishlist",
+      "ticketing",
       "account"
     ],
     "items": {
@@ -17,10 +17,10 @@
         "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active.svg",
         "label": "Category"
       },
-      "wishlist": {
+      "ticketing": {
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-inactive-fill.svg",
         "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-active-fill.svg",
-        "label": "Wishlist"
+        "label": "Ticketing"
       },
       "account": {
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-inactive-fill.svg",
