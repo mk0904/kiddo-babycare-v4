@@ -183,6 +183,9 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       if (product.quantityAvailable !== undefined && product.quantityAvailable !== null) {
         return product.quantityAvailable > 0;
       }
+      if (product.totalInventory !== undefined && product.totalInventory !== null) {
+        return product.totalInventory > 0;
+      }
       return product.availableForSale;
     }
     
