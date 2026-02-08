@@ -33,7 +33,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>6</string>
+	<string>10</string>
 	<key>GMSApiKey</key>
 	<string>PLACEHOLDER_GOOGLE_MAPS_KEY</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -73,8 +73,14 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
 	</array>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We need permission to send you push notifications about your orders and updates</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
