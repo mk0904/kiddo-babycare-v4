@@ -15,13 +15,15 @@ const GET_PRODUCTS_QUERY = `
   query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
     products(first: $first, query: $query, sortKey: $sortKey, reverse: $reverse) {
       edges {
-        node {
-          id
-          title
-          description
-          handle
-          tags
-          vendor
+          node {
+            id
+            title
+            description
+            handle
+            availableForSale
+            totalInventory
+            tags
+            vendor
           priceRange {
             minVariantPrice {
               amount
@@ -86,6 +88,8 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
             title
             description
             handle
+            availableForSale
+            totalInventory
             tags
             vendor
             priceRange {
@@ -158,6 +162,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
       title
       description
       handle
+      availableForSale
+      totalInventory
       tags
       vendor
       priceRange {
@@ -230,6 +236,8 @@ const GET_PRODUCT_BY_ID_QUERY = `
       title
       description
       handle
+      availableForSale
+      totalInventory
       tags
       vendor
       priceRange {
