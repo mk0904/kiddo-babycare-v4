@@ -133,10 +133,13 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
       borderRadius: 20,
       ...blockStyles?.image,
     };
+    const processedTextStyle = processFontStyle(blockStyles?.text);
     const textStyle = {
       color: '#666666',
       textAlign: 'center' as const,
-      ...processFontStyle(blockStyles?.text),
+      ...processedTextStyle,
+      ...blockStyles?.text, // Apply all text styles
+      fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
     };
 
     // Calculate available width accounting for container margins and padding (Kiddo pattern)
@@ -426,7 +429,11 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
               resizeMode={resizeMode}
             />
             {item.title && (
-              <Text style={[defaultStyles.text, processFontStyle(blockStyles?.text)]}>
+              <Text 
+                style={[defaultStyles.text, processFontStyle(blockStyles?.text), { fontWeight: '700' }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
                 {item.title}
               </Text>
             )}
@@ -482,6 +489,7 @@ const defaultStyles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.textSecondary,
     paddingHorizontal: 0,
+    fontWeight: '700', // Make subcategory names bold
   },
 });
 

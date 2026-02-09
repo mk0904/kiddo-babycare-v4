@@ -28,6 +28,7 @@ export interface CouponCode {
   usageCount?: number;
   firstOrderOnly?: boolean; // Only valid for first order
   ticketingOnly?: boolean; // Only valid for ticketing products (Events, Playhouses, Petting Farms)
+  nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
 }
 
 // Get discounts from config
@@ -52,6 +53,7 @@ const getConfigDiscounts = (): CouponCode[] => {
       usageLimitPerUser: dc.usageLimitPerUser || null,
       firstOrderOnly: dc.firstOrderOnly || false,
       ticketingOnly: dc.ticketingOnly || false,
+      nonCombinable: dc.nonCombinable || false,
     }));
   } catch (error) {
     console.error('[CouponService] Error reading config discounts:', error);
@@ -83,6 +85,7 @@ export const getAvailableCouponCodes = async (forTicketing?: boolean): Promise<C
   
   // Filter based on ticketing requirement
   if (forTicketing === true) {
+    // For ticketing products, ONLY return ticketing-only coupons
     return allCoupons.filter(coupon => coupon.ticketingOnly === true);
   } else if (forTicketing === false) {
     return allCoupons.filter(coupon => !coupon.ticketingOnly);

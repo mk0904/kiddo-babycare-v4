@@ -134,7 +134,7 @@ export default function WishlistScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <ScreenHeader title="Wishlist" />
+            <ScreenHeader title="Wishlist" showWishlist={false} />
             {wishlistItems.length === 0 ? (
                 <EmptyState
                     icon="heart-outline"

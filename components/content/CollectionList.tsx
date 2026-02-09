@@ -83,7 +83,8 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
           <View style={[styles.nameContainer, blockStyles?.item?.nameContainer]}>
             <Text
               style={[styles.nameText, blockStyles?.item?.nameText]}
-              numberOfLines={1}
+              numberOfLines={2}
+              ellipsizeMode="tail"
             >
               {item.collectionName}
             </Text>

@@ -140,6 +140,26 @@ export default function InfinityScreen() {
     // Handle facets loaded from the product query
     const handleFacetsLoaded = (loadedFacets: any[]) => {
         if (loadedFacets && loadedFacets.length > 0) {
+            if (__DEV__) {
+                console.log('[Facets] Loaded facets:', loadedFacets.length);
+                const brandFacet = loadedFacets.find((f: any) => 
+                    (f.attribute || f.id || f.title || f.label || '').toLowerCase().includes('brand') ||
+                    (f.attribute || f.id || f.title || f.label || '').toLowerCase().includes('vendor')
+                );
+                if (brandFacet) {
+                    console.log('[Facets] Brand/Vendor facet found:', {
+                        attribute: brandFacet.attribute || brandFacet.id,
+                        title: brandFacet.title || brandFacet.label,
+                        buckets: brandFacet.buckets?.length || brandFacet.values?.length,
+                        firstBucket: brandFacet.buckets?.[0] || brandFacet.values?.[0]
+                    });
+                } else {
+                    console.log('[Facets] No brand/vendor facet found. Available facets:', loadedFacets.map((f: any) => ({
+                        attribute: f.attribute || f.id,
+                        title: f.title || f.label
+                    })));
+                }
+            }
             setFacets(loadedFacets);
         }
     };
@@ -163,27 +183,90 @@ export default function InfinityScreen() {
                 if (key !== 'gender' && key !== 'age') {
                     count += value.length;
                 }
+                
+                // Map brand to vendor for Searchanise/Shopify compatibility
+                const filterKey = (key?.toLowerCase().includes('brand') || key === 'brand') ? 'vendor' : key;
+                
                 // Construct API filter object
                 // Check if it's a price range or simple list
                 value.forEach(val => {
+                    let filterAdded = false;
+                    
                     try {
                         // Try to parse if it's a JSON string value (from some implementations)
                         // checking if val matches price range structure
                         newApiFilters.push(JSON.parse(val));
+                        filterAdded = true;
                     } catch (e) {
                         // It's likely a simple value, find the input in facets
-                        // We need to map the selected value label back to the input JSON required by Shopify
-                        // This is a simplification; robust implementation needs more complex mapping
-                        const facet = facets.find(f => f.attribute === key || f.id === key);
+                        // CRITICAL: Shopify provides the exact filter format in bucket.input - we MUST use it
+                        const facet = facets.find(f => {
+                            const facetAttr = f.attribute || f.id || f.field || f.name;
+                            const facetTitle = f.title || f.label || f.name || '';
+                            // Check both original key and mapped filterKey (for brand->vendor mapping)
+                            const isBrandKey = key?.toLowerCase().includes('brand') || key === 'brand';
+                            const isVendorKey = filterKey === 'vendor' || facetAttr?.toLowerCase().includes('vendor');
+                            const isBrandFacet = facetTitle?.toLowerCase().includes('brand') || facetTitle?.toLowerCase().includes('vendor');
+                            
+                            return facetAttr === key || 
+                                   facetAttr === filterKey || 
+                                   f.id === key ||
+                                   (isBrandKey && (isVendorKey || isBrandFacet)) ||
+                                   (isBrandFacet && isBrandKey);
+                        });
+                        
                         if (facet) {
-                            const bucket = facet.buckets?.find((b: any) => b.label === val || b.value === val);
-                            if (bucket && bucket.input) {
-                                try {
-                                    newApiFilters.push(JSON.parse(bucket.input));
-                                } catch (err) {
-                                    console.warn("Could not parse filter input", bucket.input);
+                            // Find the matching bucket by label, value, or id
+                            const bucket = facet.buckets?.find((b: any) => 
+                                b.label === val || 
+                                b.value === val ||
+                                (b.id && b.id === val) ||
+                                (typeof val === 'string' && (b.label?.toLowerCase() === val.toLowerCase() || b.value?.toLowerCase() === val.toLowerCase()))
+                            );
+                            
+                            if (bucket) {
+                                // PRIORITY 1: Use bucket.input if available (Shopify's exact filter format)
+                                if (bucket.input && !filterAdded) {
+                                    try {
+                                        // Try parsing as JSON first
+                                        const parsed = typeof bucket.input === 'string' ? JSON.parse(bucket.input) : bucket.input;
+                                        if (parsed && typeof parsed === 'object') {
+                                            newApiFilters.push(parsed);
+                                            if (__DEV__) console.log('[Filter] Using bucket.input:', parsed);
+                                            filterAdded = true;
+                                        }
+                                    } catch (err) {
+                                        // If not JSON, use the input directly if it's an object
+                                        if (typeof bucket.input === 'object' && bucket.input !== null) {
+                                            newApiFilters.push(bucket.input);
+                                            if (__DEV__) console.log('[Filter] Using bucket.input (object):', bucket.input);
+                                            filterAdded = true;
+                                        }
+                                    }
+                                }
+                                
+                                // PRIORITY 2: For brand/vendor filters, create productVendor filter using bucket value
+                                if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand') || facet.title?.toLowerCase().includes('brand'))) {
+                                    // Use bucket.value first (most accurate), then bucket.label, then val
+                                    const vendorValue = bucket.value || bucket.label || val;
+                                    const vendorFilter = { productVendor: vendorValue };
+                                    newApiFilters.push(vendorFilter);
+                                    if (__DEV__) console.log('[Filter] Created productVendor filter:', vendorFilter);
+                                    filterAdded = true;
                                 }
                             }
+                        }
+                        
+                        // FALLBACK: For brand/vendor filters without facet match, create filter directly
+                        if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand'))) {
+                            const vendorFilter = { productVendor: val };
+                            newApiFilters.push(vendorFilter);
+                            if (__DEV__) console.log('[Filter] Fallback productVendor filter:', vendorFilter);
+                            filterAdded = true;
+                        }
+                        
+                        if (!filterAdded) {
+                            if (__DEV__) console.warn('[Filter] Could not create filter for:', key, val, 'Facets:', facets.length);
                         }
                         // Note: Gender and age filters are handled separately via tag filtering
                         // They are not added to ProductFilter array as productTag is not a valid field
@@ -191,6 +274,12 @@ export default function InfinityScreen() {
                 });
             }
         });
+        
+        if (__DEV__) {
+            console.log('[Filter] Applied filters:', filters);
+            console.log('[Filter] API filters:', newApiFilters);
+        }
+        
         setActiveFiltersCount(count);
         setApiFilters(newApiFilters);
     };
@@ -375,10 +464,20 @@ export default function InfinityScreen() {
                         onClose={() => setIsFilterPanelVisible(false)}
                     facets={facets.map((f: any) => {
                         // Handle different facet structures from Shopify
-                        const attribute = f.attribute || f.id || f.field || f.name;
+                        let attribute = f.attribute || f.id || f.field || f.name;
                         const title = f.title || f.label || f.name || attribute;
                         const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
                         let buckets = f.buckets || f.values || f.data || [];
+                        
+                        // Map brand/vendor attributes correctly
+                        // Shopify uses 'vendor' for brand filtering in ProductFilter
+                        const isBrandFacet = attribute?.toLowerCase().includes('brand') || 
+                                           title?.toLowerCase().includes('brand') ||
+                                           title?.toLowerCase().includes('vendor') ||
+                                           attribute?.toLowerCase().includes('vendor');
+                        if (isBrandFacet) {
+                            attribute = 'vendor';
+                        }
                         
                         // Ensure buckets have the right structure
                         if (Array.isArray(buckets)) {
@@ -390,6 +489,8 @@ export default function InfinityScreen() {
                                 to: bucket.to,
                                 min: bucket.min,
                                 max: bucket.max,
+                                input: bucket.input, // CRITICAL: Preserve the input field - this contains the exact filter format
+                                id: bucket.id, // Preserve id for matching
                             })).filter((b: any) => b.value || b.label);
                         }
                         
@@ -582,21 +683,22 @@ const styles = StyleSheet.create({
     },
     sortListContent: {
         paddingHorizontal: 20,
-        paddingTop: 8,
-        paddingBottom: 8,
+        paddingTop: 16,
+        paddingBottom: 16,
     },
     sortListItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 4,
-        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
     },
     sortListItemText: {
         fontSize: 16,
         color: Colors.text,
         fontFamily: Fonts.Regular,
         flex: 1,
+        marginRight: 12,
     },
     sortListItemTextSelected: {
         color: Colors.primary,

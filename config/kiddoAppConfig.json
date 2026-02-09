@@ -507,6 +507,10 @@
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
+        },
+        "text": {
+          "fontWeight": "700",
+          "color": "#000000"
         }
       }
     },
@@ -591,6 +595,10 @@
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
+        },
+        "text": {
+          "fontWeight": "700",
+          "color": "#000000"
         }
       }
     },
@@ -645,10 +653,6 @@
           "name": "Pretend Play"
         },
         {
-          "id": "gid://shopify/Collection/508372877601",
-          "name": "Infant Toys"
-        },
-        {
           "id": "gid://shopify/Collection/509548265761",
           "name": "Infant Toys"
         },
@@ -675,6 +679,10 @@
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
+        },
+        "text": {
+          "fontWeight": "700",
+          "color": "#000000"
         }
       }
     },
@@ -723,6 +731,10 @@
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
+        },
+        "text": {
+          "fontWeight": "500",
+          "color": "#000000"
         }
       }
     },
@@ -771,6 +783,10 @@
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
+        },
+        "text": {
+          "fontWeight": "700",
+          "color": "#000000"
         }
       }
     },
@@ -2281,7 +2297,7 @@
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#90EE90",
-          "backgroundImage": "",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_6_2026_10_43_55_AM.png?v=1770355421",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2427,7 +2443,7 @@
       "id": "babycare-banner-1",
       "type": "imageBanner",
       "title": "Featured",
-      "visible": false,
+      "visible": true,
       "imageBannerConfig": {
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
         "height": 250,
@@ -2543,35 +2559,6 @@
       }
     },
     {
-      "id": "babycare-other-essentials",
-      "type": "horizontalProductList",
-      "title": "Other Essentials",
-      "collectionIds": [
-        "gid://shopify/Collection/508173156641"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingVertical": 16,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
       "id": "babycare-skincare-bathing",
       "type": "horizontalProductList",
       "title": "Skincare and Bathing",
@@ -2606,6 +2593,35 @@
       "title": "Feeding Essentials",
       "collectionIds": [
         "gid://shopify/Collection/508371239201"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "fontSize": 16,
+          "fontWeight": "600",
+          "color": "#363636"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "babycare-other-essentials",
+      "type": "horizontalProductList",
+      "title": "Other Essentials",
+      "collectionIds": [
+        "gid://shopify/Collection/508173156641"
       ],
       "productListConfig": {
         "limit": 20,
@@ -2834,12 +2850,57 @@
         "description": "Get ₹250 off on your first order",
         "value": 250,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 250,
+        "minimumPurchaseAmount": 750,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
         "usageLimitPerUser": 1,
-        "firstOrderOnly": true
+        "firstOrderOnly": true,
+        "ticketingOnly": false,
+        "nonCombinable": true
+      },
+      {
+        "code": "KIDDOSPECIAL",
+        "title": "₹874 Off",
+        "description": "Get ₹874 off on orders above ₹10,000",
+        "value": 874,
+        "valueType": "fixed_amount",
+        "minimumPurchaseAmount": 10000,
+        "minimumItemCount": null,
+        "startsAt": null,
+        "endsAt": null,
+        "usageLimitPerUser": 1,
+        "firstOrderOnly": false,
+        "ticketingOnly": false,
+        "nonCombinable": true
+      },
+      {
+        "code": "KIDDOTICKET",
+        "title": "Ticketing Discount",
+        "description": "Special discount for Events, Playhouses & Petting Farms",
+        "value": 10,
+        "valueType": "percentage",
+        "minimumPurchaseAmount": null,
+        "minimumItemCount": null,
+        "startsAt": null,
+        "endsAt": null,
+        "usageLimitPerUser": null,
+        "firstOrderOnly": false,
+        "ticketingOnly": true
+      },
+      {
+        "code": "FIRSTKIDDOTICKET",
+        "title": "First Ticketing Order Discount",
+        "description": "Special discount for your first ticketing order",
+        "value": 15,
+        "valueType": "percentage",
+        "minimumPurchaseAmount": null,
+        "minimumItemCount": null,
+        "startsAt": null,
+        "endsAt": null,
+        "usageLimitPerUser": 1,
+        "firstOrderOnly": true,
+        "ticketingOnly": true
       }
     ]
   },
@@ -2988,6 +3049,31 @@
     "travelTimePerKm": 2,
     "maxDeliveryDistance": null
   },
+  "freeShoesOffer": {
+    "enabled": true,
+    "shoes": [
+      {
+        "id": "shoe-1",
+        "name": "Shoe 1",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+      },
+      {
+        "id": "shoe-2",
+        "name": "Shoe 2",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+      },
+      {
+        "id": "shoe-3",
+        "name": "Shoe 3",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+      },
+      {
+        "id": "shoe-4",
+        "name": "Shoe 4",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+      }
+    ]
+  },
   "providers": {
     "nector": {
       "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
@@ -2998,6 +3084,16 @@
     "razorpay": {
       "keyId": "rzp_live_S4IH8bhsw9DjEe",
       "keySecret": "OmdCqA5dFmc5GuL9uZk4YpDa"
+    },
+    "otp": {
+      "apiBaseUrl": "https://sms.shinenetcore.in/api/v2",
+      "senderId": "SNCOTP",
+      "apiKey": "3Ri5Du6T3fbCAfWs9L5gUfOSn4pbofa/DjZucAqwplo=",
+      "clientId": "b00a4a12-c1f3-420f-ae2c-e69988212928",
+      "messageTemplate": "One time OTP From Kiddo App {#var#} to login or activate your profile apsops SNC",
+      "expiryMinutes": 5,
+      "useAndroidHash": false,
+      "countryCode": "91"
     }
   }
 }

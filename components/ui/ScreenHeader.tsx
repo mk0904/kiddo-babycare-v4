@@ -51,15 +51,6 @@ export function ScreenHeader({ title, showSearch = true, showBack = false, showW
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.rightSection}>
-        {showWishlist && (
-          <TouchableOpacity
-            onPress={handleWishlistPress}
-            style={styles.wishlistButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="heart-outline" size={24} color={Colors.text} />
-          </TouchableOpacity>
-        )}
         {showSearch && (
           <TouchableOpacity
             onPress={handleSearchPress}
@@ -67,6 +58,15 @@ export function ScreenHeader({ title, showSearch = true, showBack = false, showW
             activeOpacity={0.7}
           >
             <Ionicons name="search-outline" size={20} color={Colors.text} />
+          </TouchableOpacity>
+        )}
+        {showWishlist && (
+          <TouchableOpacity
+            onPress={handleWishlistPress}
+            style={styles.wishlistButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="heart-outline" size={24} color={Colors.text} />
           </TouchableOpacity>
         )}
       </View>

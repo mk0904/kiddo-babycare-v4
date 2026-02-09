@@ -81,6 +81,7 @@ interface CartState {
     // Additional features
     isTryAndBuy: boolean;
     giftWrapping: GiftWrapping | null;
+    selectedShoe: string | null;
 
     // Computed getters
     itemCount: () => number;
@@ -125,6 +126,9 @@ interface CartState {
     setGiftWrapping: (wrapping: GiftWrapping | null) => void;
     getGiftWrappingPrice: () => number;
 
+    // Free Shoes Offer
+    setSelectedShoe: (shoeId: string | null) => void;
+
     // Cart management
     ensureCart: () => Promise<string | null>;
     getCheckoutUrl: () => Promise<string | null>;
@@ -163,6 +167,7 @@ export const useCartStore = create<CartState>()(
             lastSyncedAt: null,
             isTryAndBuy: false,
             giftWrapping: null,
+            selectedShoe: null,
 
             // Computed getters
             itemCount: () => {
@@ -465,6 +470,7 @@ export const useCartStore = create<CartState>()(
                     payment: null,
                     status: 'idle',
                     error: null,
+                    selectedShoe: null,
                 });
             },
 
@@ -641,6 +647,43 @@ export const useCartStore = create<CartState>()(
                 if (isAlreadyApplied) {
                     console.log('[CartStore] ❌ Code already applied');
                     return { success: false, error: 'Discount code already applied' };
+                }
+
+                // Check if this coupon is non-combinable and there are existing coupons
+                if (configDiscount.nonCombinable) {
+                    const existingApplicableCodes = state.discountCodes.filter(
+                        (dc) => dc.applicable !== false && dc.code.toUpperCase() !== normalizedCode
+                    );
+                    if (existingApplicableCodes.length > 0) {
+                        console.log('[CartStore] ❌ Non-combinable coupon cannot be used with existing coupons');
+                        return { 
+                            success: false, 
+                            error: 'This coupon cannot be combined with other discount codes. Please remove existing coupons first.' 
+                        };
+                    }
+                }
+
+                // Check if there are existing non-combinable coupons when applying a new one
+                const existingNonCombinableCodes = state.discountCodes.filter(
+                    (dc) => dc.applicable !== false && dc.code.toUpperCase() !== normalizedCode
+                );
+                if (existingNonCombinableCodes.length > 0) {
+                    // Check if any existing coupon is non-combinable
+                    try {
+                        const { couponService } = await import('@/services/couponService');
+                        for (const existingCode of existingNonCombinableCodes) {
+                            const existingConfigDiscount = await couponService.validateCouponCode(existingCode.code);
+                            if (existingConfigDiscount && existingConfigDiscount.nonCombinable) {
+                                console.log('[CartStore] ❌ Cannot apply coupon - existing non-combinable coupon found');
+                                return { 
+                                    success: false, 
+                                    error: 'A non-combinable coupon is already applied. Please remove it first before applying another coupon.' 
+                                };
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[CartStore] Error checking existing coupons for non-combinable:', error);
+                    }
                 }
 
                 // Ensure cart exists
@@ -910,8 +953,15 @@ export const useCartStore = create<CartState>()(
                         return { success: false, error: 'Discount code already applied' };
                     }
 
-                    // Combine new code with existing applicable codes
-                    const codesToApply = [normalizedCode, ...alreadyAppliedCodes];
+                    // If this coupon is non-combinable, remove all existing coupons
+                    let codesToApply: string[];
+                    if (configDiscount.nonCombinable) {
+                        console.log('[CartStore] Non-combinable coupon - removing existing coupons');
+                        codesToApply = [normalizedCode];
+                    } else {
+                        // Combine new code with existing applicable codes
+                        codesToApply = [normalizedCode, ...alreadyAppliedCodes];
+                    }
                     console.log('[CartStore] Codes to apply to Shopify:', codesToApply);
 
                     // Apply discount codes via Shopify API
@@ -1529,6 +1579,11 @@ export const useCartStore = create<CartState>()(
             getGiftWrappingPrice: () => {
                 const state = get();
                 return state.giftWrapping?.price || 0;
+            },
+
+            // Free Shoes Offer
+            setSelectedShoe: (shoeId) => {
+                set({ selectedShoe: shoeId });
             },
 
             // Ensure cart exists (create if needed)

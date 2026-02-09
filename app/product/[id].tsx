@@ -231,6 +231,7 @@ const ProductDetailScreen = () => {
     // Event date selection state
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showDateError, setShowDateError] = useState(false);
     
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
@@ -874,10 +875,10 @@ const ProductDetailScreen = () => {
                             {formattedMRP && (
                                 <Text style={styles.productMrpText}>{formattedMRP}</Text>
                             )}
+                            {discountPercentage !== null && (
+                                <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
+                            )}
                         </View>
-                        {discountPercentage !== null && (
-                            <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
-                        )}
                     </View>
 
                     {productOptions.length > 0 && (
@@ -945,8 +946,14 @@ const ProductDetailScreen = () => {
                                 <Text style={styles.requiredAsterisk}>*</Text>
                             </View>
                             <TouchableOpacity
-                                style={styles.dateSelectionButton}
-                                onPress={() => setShowDatePicker(true)}
+                                style={[
+                                    styles.dateSelectionButton,
+                                    !selectedEventDate && showDateError && styles.dateSelectionButtonError
+                                ]}
+                                onPress={() => {
+                                    setShowDatePicker(true);
+                                    setShowDateError(false); // Clear error when user opens date picker
+                                }}
                                 activeOpacity={0.7}
                             >
                                 <Ionicons name="calendar-outline" size={20} color={Colors.text} style={styles.dateIcon} />
@@ -1111,10 +1118,10 @@ const ProductDetailScreen = () => {
                         {formattedMRP && (
                             <Text style={styles.mrpText}>{formattedMRP}</Text>
                         )}
+                        {discountPercentage !== null && (
+                            <Text style={styles.savingsText}>{discountPercentage}% off</Text>
+                        )}
                     </View>
-                    {discountPercentage !== null && (
-                        <Text style={styles.savingsText}>{discountPercentage}% off</Text>
-                    )}
                 </View>
                 {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
                     isTicketingProduct && !selectedEventDate ? (
@@ -1164,6 +1171,7 @@ const ProductDetailScreen = () => {
                         onDateSelect={(date) => {
                             setSelectedEventDate(date);
                             setShowDatePicker(false);
+                            setShowDateError(false); // Clear error when date is selected
                         }}
                         availableDates={availableDates}
                     />
@@ -1373,6 +1381,14 @@ const styles = StyleSheet.create({
     dateSelectionPlaceholder: {
         color: Colors.textSecondary,
     },
+    dateSelectionButtonError: {
+        borderColor: '#EF4444', // Red color for error state
+        borderWidth: 1.5,
+    },
+    requiredAsterisk: {
+        color: Colors.primary,
+        fontSize: 16,
+    },
     separator: {
         height: 8,
         backgroundColor: '#F9F9F9', // Light gray gap
@@ -1464,7 +1480,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: Fonts.Regular,
         color: '#4CAF50',
-        marginTop: 4,
     },
     productPriceContainer: {
         marginTop: 12,
@@ -1491,7 +1506,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: '#4CAF50',
-        marginTop: 6,
     },
     priceComparisonContainer: {
         marginTop: 20,

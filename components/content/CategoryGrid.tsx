@@ -238,6 +238,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     textAlign: 'center' as const,
     ...processedTextStyle,
     ...blockStyles?.text, // Apply all text styles last so they override defaults
+    fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)

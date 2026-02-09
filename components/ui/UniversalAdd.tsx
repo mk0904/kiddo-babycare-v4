@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
 import { useCartStore, useCartItems } from '@/store/cartStore';
@@ -10,6 +10,7 @@ interface UniversalAddProps {
     variant?: 'default' | 'prominent' | 'pdp';
     addText?: string;
     bookingDate?: Date | null; // For ticketing products
+    onValidationError?: () => void; // Callback when validation fails
 }
 
 const UniversalAdd: React.FC<UniversalAddProps> = ({
@@ -17,7 +18,8 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     selectedVariant,
     variant = 'default',
     addText = 'ADD',
-    bookingDate
+    bookingDate,
+    onValidationError
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -55,6 +57,21 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
     const handleAdd = async () => {
         if (!activeVariant) return;
+        
+        // Validate date selection for ticketing products
+        // If bookingDate prop is passed (even if null), it means date selection is required
+        if (bookingDate !== undefined && !bookingDate) {
+            // Call validation error callback if provided
+            if (onValidationError) {
+                onValidationError();
+            }
+            Alert.alert(
+                'Date Selection Required',
+                'Please select a date before adding this item to cart.',
+                [{ text: 'OK' }]
+            );
+            return;
+        }
         
         // Check if variant ID looks like it's from search results (constructed from product_id)
         // Search results use: gid://shopify/ProductVariant/{product_id}

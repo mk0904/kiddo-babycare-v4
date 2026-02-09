@@ -1,6 +1,6 @@
-import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
+import { FreeShoesOffer } from '@/components/modals/FreeShoesOffer';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
@@ -27,6 +27,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ActivityIndicator,
     Alert,
@@ -62,6 +63,8 @@ export default function CartScreen() {
     const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
     const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
+    const selectedShoe = useCartStore(state => state.selectedShoe);
+    const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
     const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
     const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
@@ -118,6 +121,15 @@ export default function CartScreen() {
         });
     }, [cartItems]);
 
+    // Check if cart has fashion items
+    const hasFashionItems = useMemo(() => {
+        return cartItems.some(item => {
+            return item.tags?.some(
+                (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
+            );
+        });
+    }, [cartItems]);
+
     // Computed values
     const appliedDiscountCodes = discountCodes.map(dc => dc.code);
     const appliedDiscountCode = appliedDiscountCodes[0] || null;
@@ -135,10 +147,12 @@ export default function CartScreen() {
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
+    const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
+    const [hasUsedFreeShoes, setHasUsedFreeShoes] = useState(false);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -171,6 +185,30 @@ export default function CartScreen() {
             setPaymentMethod('razorpay');
         }
     }, [hasTicketingProducts, paymentMethod]);
+
+    // Check if user has already used free shoes offer
+    useEffect(() => {
+        const checkFreeShoesUsage = async () => {
+            if (!isAuthenticated || !user) {
+                setHasUsedFreeShoes(false);
+                return;
+            }
+            try {
+                const userId = user.id || user.customerId || user.email || user.phone;
+                if (!userId) {
+                    setHasUsedFreeShoes(false);
+                    return;
+                }
+                const storageKey = `free_shoes_used_${userId}`;
+                const hasUsed = await AsyncStorage.getItem(storageKey);
+                setHasUsedFreeShoes(hasUsed === 'true');
+            } catch (error) {
+                console.error('[Cart] Error checking free shoes usage:', error);
+                setHasUsedFreeShoes(false);
+            }
+        };
+        checkFreeShoesUsage();
+    }, [isAuthenticated, user]);
 
     // Fetch available coupons on mount and when ticketing status changes
     useEffect(() => {
@@ -668,7 +706,8 @@ export default function CartScreen() {
                             paymentMethod,
                             paymentId,
                             tryAndBuyItems, // Pass items directly to avoid state sync issues
-                            deliverySchedule || undefined
+                            deliverySchedule || undefined,
+                            selectedShoe || undefined
                         );
 
                         if (!tryAndBuyOrder) {
@@ -946,6 +985,7 @@ export default function CartScreen() {
                 } : undefined,
                 couponCode: appliedDiscountCode || undefined,
                 deliverySchedule: deliverySchedule || undefined,
+                selectedShoe: selectedShoe || undefined,
             };
 
             // Call Payment Service
@@ -1094,6 +1134,21 @@ export default function CartScreen() {
                     }
                 } catch (error) {
                     console.error('[Cart] Error incrementing coupon usage:', error);
+                    // Don't fail the order if usage tracking fails
+                }
+            }
+
+            // Mark user as having used free shoes offer if they selected one
+            if (selectedShoe && isAuthenticated && user) {
+                try {
+                    const userId = user.id || user.customerId || user.email || user.phone;
+                    if (userId) {
+                        const storageKey = `free_shoes_used_${userId}`;
+                        await AsyncStorage.setItem(storageKey, 'true');
+                        console.log('[Cart] Marked user as having used free shoes offer');
+                    }
+                } catch (error) {
+                    console.error('[Cart] Error marking free shoes usage:', error);
                     // Don't fail the order if usage tracking fails
                 }
             }
@@ -1368,9 +1423,33 @@ export default function CartScreen() {
                         </View>
                     )}
 
-                    {/* Free Shoes Offer - Visible if at least one non-ticketing product is available */}
-                    {!isTicketingOnly && (
-                        <FreeShoesOffer visible={true} />
+                    {/* Free Shoes Offer - Only show if has fashion items and user hasn't used it */}
+                    {!hasTicketingProducts && hasFashionItems && !hasUsedFreeShoes && (
+                        <View style={styles.giftWrappingSection}>
+                            <TouchableOpacity
+                                style={styles.giftWrappingButton}
+                                onPress={() => setShowShoesModal(true)}
+                            >
+                                <View style={styles.giftWrappingLeft}>
+                                    <Ionicons name="footsteps-outline" size={20} color={Colors.primary} />
+                                    <View style={styles.giftWrappingInfo}>
+                                        <Text style={styles.giftWrappingTitle}>
+                                            {selectedShoe ? `Selected: ${selectedShoe}` : 'Get Free Pair of Shoes'}
+                                        </Text>
+                                        <Text style={styles.giftWrappingDescription}>
+                                            Choose your free pair of shoes
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.giftWrappingRight}>
+                                    {selectedShoe ? (
+                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                                    ) : (
+                                        <Ionicons name="chevron-forward" size={20} color="#666" />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     )}
 
                     {/* Schedule Delivery - Hide for ticketing products */}
@@ -1753,6 +1832,16 @@ export default function CartScreen() {
             <GiftWrappingModal
                 visible={showGiftModal}
                 onClose={() => setShowGiftModal(false)}
+            />
+
+            {/* Free Shoes Offer Modal */}
+            <FreeShoesOffer
+                visible={showShoesModal}
+                onClose={() => setShowShoesModal(false)}
+                onSelect={(shoeId) => {
+                    setSelectedShoe(shoeId || null);
+                }}
+                selectedShoe={selectedShoe}
             />
 
             {/* Try And Buy Modal */}

@@ -41,7 +41,7 @@ export default function SupportScreen() {
             <View style={styles.headerSection}>
                 <Ionicons name="headset-outline" size={64} color={Colors.primary} />
                 <Text style={styles.title}>How can we help you?</Text>
-                <Text style={styles.subtitle}>
+                <Text style={styles.subtitle} numberOfLines={2}>
                     Our team is available All Days, 10am - 10pm to assist you with any queries.
                 </Text>
             </View>

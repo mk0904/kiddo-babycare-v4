@@ -131,7 +131,7 @@ export default function TicketingScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <ScreenHeader title="Ticketing" />
+            <ScreenHeader title="Ticketing" showSearch={false} showWishlist={false} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -148,6 +148,7 @@ export default function TicketingScreen() {
 
                 {/* 2x2 Grid */}
                 <View style={styles.gridContainer}>
+                    <Text style={styles.headline}>Buy tickets to your favourite spots</Text>
                     {loading ? (
                         <View style={styles.loadingContainer}>
                             <ActivityIndicator size="large" color={Colors.primary} />
@@ -195,6 +196,15 @@ const styles = StyleSheet.create({
     },
     gridContainer: {
         width: '100%',
+    },
+    headline: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+        paddingHorizontal: 20,
+        marginTop: 16,
+        marginBottom: 0,
+        textAlign: 'left',
     },
     loadingContainer: {
         padding: 40,

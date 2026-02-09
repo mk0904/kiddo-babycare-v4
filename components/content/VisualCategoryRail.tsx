@@ -242,7 +242,8 @@ export function VisualCategoryRail({ block, onPress }: VisualCategoryRailProps) 
                                         styles.label,
                                         { width: itemsPerView ? itemWidth : configWidth + 10 },
                                         processFontStyle(blockStyles?.text, Fonts.Medium),
-                                        processFontStyle(blockStyles?.label, Fonts.Medium)
+                                        processFontStyle(blockStyles?.label, Fonts.Medium),
+                                        { fontWeight: '700' } // Ensure subcategory names are bold
                                     ]}
                                 numberOfLines={2}
                             >
@@ -316,6 +317,7 @@ const styles = StyleSheet.create({
         color: '#333',
         textAlign: 'center',
         fontFamily: Fonts.Medium,
+        fontWeight: '700',
         lineHeight: 16,
     },
     loadingPlaceholder: {

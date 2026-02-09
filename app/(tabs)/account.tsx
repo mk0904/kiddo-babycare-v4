@@ -4,11 +4,12 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { nectorApi } from '@/services/nectorApi';
+import { oneSignalService } from '@/services/oneSignalService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -139,6 +140,91 @@ export default function AccountScreen() {
             ],
             { cancelable: true }
         );
+    };
+
+    const handleRequestNotificationPermission = async () => {
+        try {
+            // Request permission
+            const success = await oneSignalService.requestPermission(true);
+            
+            // Wait a bit for subscription to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Get comprehensive debug info
+            const debugInfo = await oneSignalService.getDebugInfo();
+            
+            // Build detailed message
+            let message = `Platform: ${debugInfo.platform.toUpperCase()}\n\n`;
+            message += `OneSignal Available: ${debugInfo.isAvailable ? '✅ Yes' : '❌ No'}\n`;
+            message += `OneSignal Initialized: ${debugInfo.isInitialized ? '✅ Yes' : '❌ No'}\n\n`;
+            
+            if (debugInfo.permissionStatus !== null) {
+                message += `Permission Status: ${debugInfo.permissionStatus ? '✅ Granted' : '❌ Denied'}\n`;
+            } else {
+                message += `Permission Status: ⚠️ Unknown\n`;
+            }
+            
+            message += `\nSubscription Status:\n`;
+            message += `  Subscribed: ${debugInfo.subscriptionStatus.isSubscribed ? '✅ Yes' : '❌ No'}\n`;
+            if (debugInfo.subscriptionStatus.id) {
+                message += `  Subscription ID: ${debugInfo.subscriptionStatus.id.substring(0, 20)}...\n`;
+            } else {
+                message += `  Subscription ID: ❌ None\n`;
+            }
+            
+            if (debugInfo.error) {
+                message += `\n⚠️ Error: ${debugInfo.error}\n`;
+            }
+            
+            message += `\nPermission Request: ${success ? '✅ Sent' : '❌ Failed'}`;
+            
+            // Show detailed alert
+            Alert.alert(
+                'OneSignal Debug Info',
+                message,
+                [
+                    {
+                        text: 'Check Again',
+                        onPress: async () => {
+                            // Re-check after a delay
+                            setTimeout(async () => {
+                                const newDebugInfo = await oneSignalService.getDebugInfo();
+                                let newMessage = `Platform: ${newDebugInfo.platform.toUpperCase()}\n\n`;
+                                newMessage += `OneSignal Available: ${newDebugInfo.isAvailable ? '✅ Yes' : '❌ No'}\n`;
+                                newMessage += `OneSignal Initialized: ${newDebugInfo.isInitialized ? '✅ Yes' : '❌ No'}\n\n`;
+                                
+                                if (newDebugInfo.permissionStatus !== null) {
+                                    newMessage += `Permission Status: ${newDebugInfo.permissionStatus ? '✅ Granted' : '❌ Denied'}\n`;
+                                } else {
+                                    newMessage += `Permission Status: ⚠️ Unknown\n`;
+                                }
+                                
+                                newMessage += `\nSubscription Status:\n`;
+                                newMessage += `  Subscribed: ${newDebugInfo.subscriptionStatus.isSubscribed ? '✅ Yes' : '❌ No'}\n`;
+                                if (newDebugInfo.subscriptionStatus.id) {
+                                    newMessage += `  Subscription ID: ${newDebugInfo.subscriptionStatus.id.substring(0, 20)}...\n`;
+                                } else {
+                                    newMessage += `  Subscription ID: ❌ None\n`;
+                                }
+                                
+                                if (newDebugInfo.error) {
+                                    newMessage += `\n⚠️ Error: ${newDebugInfo.error}\n`;
+                                }
+                                
+                                Alert.alert('OneSignal Debug Info (Updated)', newMessage, [{ text: 'OK' }]);
+                            }, 2000);
+                        }
+                    },
+                    { text: 'OK' }
+                ]
+            );
+        } catch (error: any) {
+            Alert.alert(
+                'Error',
+                `Failed to get debug info: ${error.message || 'Unknown error'}`,
+                [{ text: 'OK' }]
+            );
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -481,6 +567,34 @@ export default function AccountScreen() {
                     </View>
                 )}
 
+                {/* Notification Permission Button */}
+                {oneSignalService.isAvailable() && (
+                    <View style={styles.settingsSection}>
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleRequestNotificationPermission}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.settingsButtonLeft}>
+                                <Ionicons
+                                    name="notifications-outline"
+                                    size={22}
+                                    color={Colors.primary}
+                                    style={styles.menuIcon}
+                                />
+                                <Text style={styles.settingsButtonText}>
+                                    Enable Notifications
+                                </Text>
+                            </View>
+                            <Ionicons
+                                name="chevron-forward"
+                                size={20}
+                                color={Colors.textSecondary}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Delete Account Button */}
                 <View style={styles.dangerZone}>
                     <TouchableOpacity
@@ -784,5 +898,30 @@ const styles = StyleSheet.create({
     },
     deleteAccountButtonDisabled: {
         opacity: 0.6,
+    },
+    settingsSection: {
+        backgroundColor: '#fafafa',
+        borderRadius: 16,
+        marginHorizontal: 20,
+        marginTop: 8,
+        overflow: 'hidden',
+    },
+    settingsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: '#fafafa',
+    },
+    settingsButtonLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    settingsButtonText: {
+        fontSize: 16,
+        color: Colors.text,
+        fontFamily: Fonts.Medium,
     },
 });

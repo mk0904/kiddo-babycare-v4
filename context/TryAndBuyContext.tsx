@@ -1,17 +1,16 @@
 // Try & Buy Context
 // Manages the Try & Buy cart and order lifecycle
 
-import React, {
+import { Order, OrderItem, calculateETA, orderService } from '@/services/orderService';
+import { shopifyAdminApi } from '@/services/shopifyAdminApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+    ReactNode,
     createContext,
     useContext,
-    useState,
     useEffect,
-    useCallback,
-    ReactNode,
+    useState
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { shopifyAdminApi, DraftOrder } from '@/services/shopifyAdminApi';
-import { orderService, Order, OrderItem, calculateETA } from '@/services/orderService';
 
 // Constants
 const TRY_AND_BUY_CART_KEY = 'kiddo_try_and_buy_cart';
@@ -76,7 +75,8 @@ interface TryAndBuyContextType {
             time: string;
             day: string;
             dateFormat: string;
-        }
+        },
+        selectedShoe?: string
     ) => Promise<TryAndBuyOrder | null>;
 
     // Active order
@@ -235,7 +235,8 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
             time: string;
             day: string;
             dateFormat: string;
-        }
+        },
+        selectedShoe?: string
     ): Promise<TryAndBuyOrder | null> => {
         // Use provided items if available, otherwise use cartItems from state
         const orderItems = items && items.length > 0 ? items : cartItems;
@@ -254,6 +255,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 paymentMethod,
                 hasCustomerId: !!customerId,
                 shippingAddress,
+                selectedShoe: selectedShoe || 'none',
             });
 
             // Build custom attributes with payment method and payment ID
@@ -270,6 +272,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                         { key: 'date_format', value: deliverySchedule.dateFormat },
                     ]
                     : []),
+                ...(selectedShoe ? [{ key: 'selected_shoe', value: selectedShoe }] : []),
             ];
 
             // Format customer ID if provided

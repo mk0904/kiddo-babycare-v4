@@ -55,7 +55,7 @@ export type UserStore = UserState & UserActions;
 
 const initialState: UserState = {
     user: null,
-    status: 'idle',
+    status: 'unauthenticated', // Start as unauthenticated, not idle - prevents loading loop
     isGuest: false,
     hasSkippedLogin: false,
     accessToken: null,
@@ -219,8 +219,13 @@ export const useUserStore = create<UserStore>()(
                     if (state.status === 'idle' || state.status === 'loading') {
                         state.status = 'unauthenticated';
                     }
+                } else {
+                    // If rehydration fails or returns null, ensure we're unauthenticated
+                    console.warn('⚠️ AsyncStorage rehydration returned null - using default state');
                 }
             },
+            // Skip rehydration if it takes too long (non-blocking)
+            skipHydration: false,
         }
     )
 );

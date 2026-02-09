@@ -25,8 +25,8 @@ const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
         inactive: require('@/assets/icons/category-inactive-fill.svg'),
     },
     ticketing: {
-        active: require('@/assets/images/ticket.png'),
-        inactive: require('@/assets/images/ticket.png'),
+        active: require('@/assets/icons/ticket-active.png'),
+        inactive: require('@/assets/icons/ticketicon.png'),
     },
     account: {
         active: require('@/assets/icons/profile-active-fill.svg'),

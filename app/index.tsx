@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/theme';
 
 export default function Index() {
+  // Get auth context - will throw if AuthProvider is not in tree
+  // This is expected behavior - ensures proper setup
   const { isAuthenticated, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();

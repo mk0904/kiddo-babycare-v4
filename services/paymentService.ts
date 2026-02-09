@@ -88,6 +88,7 @@ export interface OrderData {
     isTryAndBuy?: boolean;
     giftWrapping?: { name: string; price: number };
     couponCode?: string;
+    selectedShoe?: string;
     deliverySchedule?: {
         date: string; // Format: DD/MM/YYYY
         time: string; // Format: HH:MM AM/PM
@@ -621,6 +622,9 @@ export const createDraftOrder = async (
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
                 : []),
+            ...(orderData.selectedShoe
+                ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]
+                : []),
         ];
 
         // Create draft order via Admin API
@@ -697,6 +701,9 @@ export const createRegularOrder = async (
                 : []),
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
+                : []),
+            ...(orderData.selectedShoe
+                ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]
                 : []),
             ...(orderData.deliverySchedule
                 ? [

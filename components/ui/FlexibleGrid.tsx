@@ -268,7 +268,7 @@ export function FlexibleGrid({
               { width: size.width },
               labelStyle, // Apply custom label styles from config (overrides defaults)
             ]} 
-            numberOfLines={1}
+            numberOfLines={2}
             ellipsizeMode="tail"
           >
             {item.label}
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontFamily: Fonts.Medium,
-    fontWeight: '500',
+    fontWeight: '700',
     color: Colors.text,
     textAlign: 'center',
     lineHeight: 14,

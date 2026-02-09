@@ -221,13 +221,15 @@ export function ProductCollection({
     }
   }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
-  // Effect to notify parent about loaded facets (from first page)
+  // Effect to notify parent about loaded facets (always use latest page with filters)
   React.useEffect(() => {
-    if (data?.pages[0]?.filters) {
+    // Use the most recent page that has filters, as Shopify updates facet counts when filters are applied
+    const latestPageWithFilters = data?.pages?.slice().reverse().find((page: any) => page.filters);
+    if (latestPageWithFilters?.filters) {
       // @ts-ignore
-      onFacetsLoaded?.(data.pages[0].filters);
+      onFacetsLoaded?.(latestPageWithFilters.filters);
     }
-  }, [data?.pages]);
+  }, [data?.pages, filters]);
 
   // Flatten all pages into a single array of product objects
   const allProducts = React.useMemo(() => {

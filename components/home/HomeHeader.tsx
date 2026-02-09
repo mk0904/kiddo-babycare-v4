@@ -1,13 +1,16 @@
 import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { Fonts } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
   Animated,
   ImageBackground,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +56,7 @@ export function HomeHeader({
   onHeaderHeightChange,
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const {
     backgroundColor = 'transparent',
@@ -206,6 +210,13 @@ export function HomeHeader({
                 onPress={onLocationPress}
               />
             </View>
+            <TouchableOpacity
+              onPress={() => router.push('/wishlist')}
+              style={styles.wishlistButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="heart-outline" size={24} color={textColor} />
+            </TouchableOpacity>
           </Animated.View>
 
           <View style={styles.searchContainer}>
@@ -286,6 +297,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: 'transparent',
+  },
+  wishlistButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 });
 

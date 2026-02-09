@@ -1,5 +1,5 @@
 // Config Service - Loads and manages remote config
-import { AppConfig, ScreenConfig, ContentBlock } from '@/types/content';
+import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
 
 // Remote config URL
@@ -267,6 +267,12 @@ class ConfigService {
   getDeliveryConfig() {
     if (!this.rawConfig) return null;
     return this.rawConfig.delivery || null;
+  }
+
+  // Get free shoes offer configuration
+  getFreeShoesOfferConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.freeShoesOffer || null;
   }
 
   // Update config
