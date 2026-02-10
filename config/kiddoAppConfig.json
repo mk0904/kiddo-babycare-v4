@@ -2860,21 +2860,6 @@
         "nonCombinable": true
       },
       {
-        "code": "KIDDOSPECIAL",
-        "title": "₹874 Off",
-        "description": "Get ₹874 off on orders above ₹10,000",
-        "value": 874,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 10000,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "nonCombinable": true
-      },
-      {
         "code": "KIDDOTICKET",
         "title": "Ticketing Discount",
         "description": "Special discount for Events, Playhouses & Petting Farms",
