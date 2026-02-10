@@ -1,5 +1,5 @@
+import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { FreeShoesOffer } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
@@ -1424,32 +1424,8 @@ export default function CartScreen() {
                     )}
 
                     {/* Free Shoes Offer - Only show if has fashion items and user hasn't used it */}
-                    {!hasTicketingProducts && hasFashionItems && !hasUsedFreeShoes && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity
-                                style={styles.giftWrappingButton}
-                                onPress={() => setShowShoesModal(true)}
-                            >
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="footsteps-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>
-                                            {selectedShoe ? `Selected: ${selectedShoe}` : 'Get Free Pair of Shoes'}
-                                        </Text>
-                                        <Text style={styles.giftWrappingDescription}>
-                                            Choose your free pair of shoes
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View style={styles.giftWrappingRight}>
-                                    {selectedShoe ? (
-                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                                    ) : (
-                                        <Ionicons name="chevron-forward" size={20} color="#666" />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
+                    {cartItems.length > 0 && !isTicketingOnly && hasFashionItems && !hasUsedFreeShoes && (
+                        <FreeShoesOffer visible={true} />
                     )}
 
                     {/* Schedule Delivery - Hide for ticketing products */}
@@ -1834,15 +1810,6 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
-            {/* Free Shoes Offer Modal */}
-            <FreeShoesOffer
-                visible={showShoesModal}
-                onClose={() => setShowShoesModal(false)}
-                onSelect={(shoeId) => {
-                    setSelectedShoe(shoeId || null);
-                }}
-                selectedShoe={selectedShoe}
-            />
 
             {/* Try And Buy Modal */}
             <TryAndBuyModal

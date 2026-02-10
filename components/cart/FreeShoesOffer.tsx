@@ -1,7 +1,15 @@
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+const SHOE_OPTIONS = [
+  { id: 'shoe-1', name: 'Shoe 1', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
+  { id: 'shoe-2', name: 'Shoe 2', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
+  { id: 'shoe-3', name: 'Shoe 3', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
+  { id: 'shoe-4', name: 'Shoe 4', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
+];
 
 interface FreeShoesOfferProps {
   visible?: boolean;
@@ -27,8 +35,16 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
         style={styles.carousel} 
         contentContainerStyle={styles.carouselContent}
       >
-        {[1, 2, 3, 4].map((_, index) => (
-          <View key={index} style={styles.imageBox} />
+        {SHOE_OPTIONS.map((shoe) => (
+          <View key={shoe.id} style={styles.imageBox}>
+            <Image
+              source={{ uri: shoe.imageUrl }}
+              style={styles.shoeImage}
+              contentFit="cover"
+              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              transition={200}
+            />
+          </View>
         ))}
       </ScrollView>
 
@@ -56,8 +72,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#000',
   },
   badgeContainer: {
     backgroundColor: '#E57373',
@@ -98,6 +112,11 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     backgroundColor: '#fff',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  shoeImage: {
+    width: '100%',
+    height: '100%',
   },
   bulletsContainer: {
     gap: 4,

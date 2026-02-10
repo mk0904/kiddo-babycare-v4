@@ -172,14 +172,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
   // Normalize isAvailable logic - check both availableForSale and quantityAvailable
   const isAvailable = useMemo(() => {
-    // Check total inventory first if available
-    if (product.totalInventory !== undefined && product.totalInventory !== null) {
-      return product.totalInventory > 0;
-    }
-
-    // If product-level availability is explicitly set
+    // If product-level availability is explicitly set, use it
     if (product.availableForSale !== undefined) {
-      // If quantity is available, trust it
+      // Also check quantity if available
+      if (product.availableForSale === false) return false;
       if (product.quantityAvailable !== undefined && product.quantityAvailable !== null) {
         return product.quantityAvailable > 0;
       }
