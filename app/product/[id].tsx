@@ -13,6 +13,7 @@ import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -41,9 +42,9 @@ const EventDatePicker: React.FC<{
 }> = ({ selectedDate, onDateSelect, availableDates }) => {
     // Generate dates to show
     const datesToShow = useMemo(() => {
-        if (availableDates && availableDates.length > 0) {
-            return availableDates;
-        }
+        // If availableDates is provided (even if empty), use it as the source of truth.
+        // This prevents "fallback next 7 days" for Events where variants define valid dates.
+        if (availableDates !== undefined) return availableDates;
 
         // Fallback: Generate next 7 days
         const days = [];
@@ -239,6 +240,7 @@ const ProductDetailScreen = () => {
         'gid://shopify/Collection/509726458145', // Playhouses
         'gid://shopify/Collection/509771153697', // Petting Farms
     ];
+    const EVENTS_COLLECTION_ID = 'gid://shopify/Collection/509771120929';
     
     // Check if product is from ticketing collections (Events, Playhouses, Petting Farms)
     const isTicketingProduct = useMemo(() => {
@@ -280,32 +282,208 @@ const ProductDetailScreen = () => {
         return result;
     }, [params, product]);
 
-    // Extract available dates from product options (if any)
-    const availableDates = useMemo(() => {
-        if (!product || !isTicketingProduct) return undefined;
-        
-        // Check for "Date" option
-        const dateOption = product.options?.find((opt: any) => 
-            opt.name.toLowerCase() === 'date' || 
-            opt.name.toLowerCase().includes('date')
-        );
-        
-        if (dateOption && dateOption.values) {
-            const dates: Date[] = [];
-            dateOption.values.forEach((val: string) => {
-                const parsed = new Date(val);
-                if (!isNaN(parsed.getTime())) {
-                    dates.push(parsed);
+    // Only Events uses predefined dates from variants (variants represent event dates).
+    // Playhouses & Petting Farms keep the "next 7 days" picker behavior.
+    const isEventsProduct = useMemo(() => {
+        const collectionId = params.collectionId as string | undefined;
+        const fromEventsCollection =
+            !!collectionId &&
+            (collectionId === EVENTS_COLLECTION_ID ||
+                collectionId.includes(EVENTS_COLLECTION_ID.split('/').pop() || ''));
+
+        const hasEventsTag = product?.tags?.some((tag: any) => {
+            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return tagLower.includes('event');
+        });
+
+        const belongsToEvents = product?.collections?.some((col: any) => {
+            const colId = col?.id || col?.node?.id || '';
+            return (
+                colId === EVENTS_COLLECTION_ID ||
+                colId.includes(EVENTS_COLLECTION_ID.split('/').pop() || '')
+            );
+        });
+
+        // Some Events products don't have an "event" tag. If the product has a "Date" option in Shopify,
+        // it's very likely an Event where variants represent dates.
+        const hasDateOption = product?.options?.some((opt: any) => {
+            const name = String(opt?.name || '').toLowerCase();
+            return name.includes('date') && Array.isArray(opt?.values) && opt.values.length > 0;
+        });
+
+        return isTicketingProduct && (fromEventsCollection || hasEventsTag || belongsToEvents || hasDateOption);
+    }, [params.collectionId, product, isTicketingProduct]);
+
+    // Extract available dates from Events variants (if any)
+    const ticketingVariants = useMemo(() => {
+        if (!product || !isEventsProduct) return [];
+        if (product?.variants?.edges) {
+            return product.variants.edges.map((edge: any) => edge?.node).filter(Boolean);
+        }
+        if (Array.isArray(product?.variants)) {
+            return product.variants.filter(Boolean);
+        }
+        return [];
+    }, [product, isEventsProduct]);
+
+    const parseTicketingDate = useCallback((raw: any): Date | null => {
+        if (!raw || typeof raw !== 'string') return null;
+        const s = raw.trim();
+        if (!s) return null;
+
+        // 1) Try native parse (works for ISO and many Shopify formats)
+        const d1 = new Date(s);
+        if (!isNaN(d1.getTime())) return d1;
+
+        // 1.5) Try to extract an ISO date (YYYY-MM-DD) from within a longer string
+        const iso = s.match(/(\d{4}-\d{2}-\d{2})/);
+        if (iso) {
+            const dIso = new Date(iso[1]);
+            if (!isNaN(dIso.getTime())) return dIso;
+        }
+
+        // 2) Try common dd/mm/yyyy or dd-mm-yyyy
+        const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (m) {
+            const dd = parseInt(m[1], 10);
+            const mm = parseInt(m[2], 10);
+            const yyyy = parseInt(m[3], 10);
+            const d2 = new Date(yyyy, mm - 1, dd);
+            if (!isNaN(d2.getTime())) return d2;
+        }
+
+        // 3) Handle formats like "15th Feb", "15 Feb", "Feb 15", optionally with year
+        const monthIndex = (name: string) => {
+            const key = name.toLowerCase().slice(0, 3);
+            const map: Record<string, number> = {
+                jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+                jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+            };
+            return map[key] ?? -1;
+        };
+        const stripOrdinal = (v: string) => v.replace(/(\d)(st|nd|rd|th)\b/gi, '$1');
+
+        const s2 = stripOrdinal(s).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+
+        // "15 Feb 2026" or "15 Feb"
+        const dmY = s2.match(/^(\d{1,2})\s+([A-Za-z]{3,9})(?:\s+(\d{4}))?$/);
+        if (dmY) {
+            const dd = parseInt(dmY[1], 10);
+            const mm = monthIndex(dmY[2]);
+            if (mm >= 0 && dd >= 1 && dd <= 31) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yyyy = dmY[3] ? parseInt(dmY[3], 10) : today.getFullYear();
+                let d = new Date(yyyy, mm, dd);
+                d.setHours(0, 0, 0, 0);
+                // If year was missing and date already passed this year, roll to next year
+                if (!dmY[3] && d.getTime() < today.getTime()) {
+                    d = new Date(yyyy + 1, mm, dd);
+                    d.setHours(0, 0, 0, 0);
                 }
-            });
-            if (dates.length > 0) {
-                // Sort dates
-                return dates.sort((a, b) => a.getTime() - b.getTime());
+                if (!isNaN(d.getTime())) return d;
             }
         }
-        
-        return undefined;
-    }, [product, isTicketingProduct]);
+
+        // "Feb 15 2026" or "Feb 15"
+        const mdY = s2.match(/^([A-Za-z]{3,9})\s+(\d{1,2})(?:\s+(\d{4}))?$/);
+        if (mdY) {
+            const mm = monthIndex(mdY[1]);
+            const dd = parseInt(mdY[2], 10);
+            if (mm >= 0 && dd >= 1 && dd <= 31) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yyyy = mdY[3] ? parseInt(mdY[3], 10) : today.getFullYear();
+                let d = new Date(yyyy, mm, dd);
+                d.setHours(0, 0, 0, 0);
+                if (!mdY[3] && d.getTime() < today.getTime()) {
+                    d = new Date(yyyy + 1, mm, dd);
+                    d.setHours(0, 0, 0, 0);
+                }
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+
+        return null;
+    }, []);
+
+    const normalizeDateKey = useCallback((date: Date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        // YYYY-MM-DD
+        return d.toISOString().slice(0, 10);
+    }, []);
+
+    const ticketingDateEntries = useMemo(() => {
+        if (!isEventsProduct) return [];
+
+        // Build a unique list of dates from variants. Prefer variants that are actually available.
+        const byKey = new Map<string, { date: Date; variant: any }>();
+
+        ticketingVariants.forEach((variant: any) => {
+            if (!variant) return;
+
+            // Prefer explicit "Date" selected option, else fall back to variant title.
+            const dateOpt = Array.isArray(variant.selectedOptions)
+                ? variant.selectedOptions.find((opt: any) =>
+                      typeof opt?.name === 'string' && opt.name.toLowerCase().includes('date')
+                  )
+                : null;
+
+            const candidateRaw = dateOpt?.value || variant.title;
+            const parsed = parseTicketingDate(candidateRaw);
+            if (!parsed) return;
+
+            const key = normalizeDateKey(parsed);
+            const existing = byKey.get(key);
+            if (!existing) {
+                byKey.set(key, { date: parsed, variant });
+                return;
+            }
+
+            // Prefer an in-stock/available variant if there are duplicates for the same day.
+            const existingAvailable = existing.variant?.availableForSale !== false;
+            const nextAvailable = variant?.availableForSale !== false;
+            if (!existingAvailable && nextAvailable) {
+                byKey.set(key, { date: parsed, variant });
+            }
+        });
+
+        return Array.from(byKey.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+    }, [isEventsProduct, ticketingVariants, normalizeDateKey, parseTicketingDate]);
+
+    const availableDates = useMemo(() => {
+        if (!isEventsProduct) return undefined;
+        return ticketingDateEntries.map((e) => e.date);
+    }, [isEventsProduct, ticketingDateEntries]);
+
+    const variantForDate = useCallback((date: Date) => {
+        const key = normalizeDateKey(date);
+        const entry = ticketingDateEntries.find((e) => normalizeDateKey(e.date) === key);
+        return entry?.variant || null;
+    }, [normalizeDateKey, ticketingDateEntries]);
+
+    const syncSelectedOptionsFromVariant = useCallback((variant: any) => {
+        if (!variant?.selectedOptions) return;
+        const next: Record<string, string> = {};
+        variant.selectedOptions.forEach((opt: any) => {
+            if (opt?.name && opt?.value) next[String(opt.name)] = String(opt.value);
+        });
+        setSelectedOptions(next);
+    }, []);
+
+    // If there is only one available ticketing date, auto-select it (still shown as selected in UI)
+    useEffect(() => {
+        if (!isEventsProduct) return;
+        if (ticketingDateEntries.length !== 1) return;
+        if (selectedEventDate) return;
+
+        const only = ticketingDateEntries[0];
+        setSelectedEventDate(only.date);
+        setSelectedVariant(only.variant);
+        syncSelectedOptionsFromVariant(only.variant);
+        setShowDateError(false);
+    }, [isEventsProduct, ticketingDateEntries, selectedEventDate, syncSelectedOptionsFromVariant]);
     
     // Get product detail config
     const productDetailConfig = configService.getProductDetailConfig();
@@ -583,8 +761,16 @@ const ProductDetailScreen = () => {
         if (!product?.options) return [];
         const options = Array.isArray(product.options) ? product.options : [];
         if (variants.length <= 1) return [];
-        return options.filter((option: any) => (option.values || []).length > 1);
-    }, [product, variants.length]);
+        // For ticketing products, hide only the "Date" option pills (date is selected via the date picker).
+        // Keep other option pills (e.g., time slot, ticket type) if present.
+        const filtered = isTicketingProduct
+            ? options.filter((option: any) => {
+                  const name = String(option?.name || '').toLowerCase();
+                  return !name.includes('date');
+              })
+            : options;
+        return filtered.filter((option: any) => (option.values || []).length > 1);
+    }, [product, variants.length, isTicketingProduct]);
 
     const findVariantByOptions = useCallback((options: Record<string, string>, variantsList: any[]) => {
         if (!variantsList || variantsList.length === 0) return null;
@@ -1123,7 +1309,7 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
                 </View>
-                {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
+                {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                     isTicketingProduct && !selectedEventDate ? (
                         <TouchableOpacity
                             style={[styles.addToCartButton, styles.disabledButton]}
@@ -1178,10 +1364,19 @@ const ProductDetailScreen = () => {
                         selectedDate={selectedEventDate}
                         onDateSelect={(date) => {
                             setSelectedEventDate(date);
+                            // Only Events variants represent predefined dates.
+                            if (isEventsProduct) {
+                                const v = variantForDate(date);
+                                if (v) {
+                                    setSelectedVariant(v);
+                                    syncSelectedOptionsFromVariant(v);
+                                }
+                            }
                             setShowDatePicker(false);
                             setShowDateError(false); // Clear error when date is selected
                         }}
-                        availableDates={availableDates}
+                        // Events: pass predefined variant dates. Others: undefined → falls back to next 7 days.
+                        availableDates={isEventsProduct ? (availableDates ?? []) : undefined}
                     />
                 </BaseModal>
             )}
@@ -1392,10 +1587,6 @@ const styles = StyleSheet.create({
     dateSelectionButtonError: {
         borderColor: '#EF4444', // Red color for error state
         borderWidth: 1.5,
-    },
-    requiredAsterisk: {
-        color: Colors.primary,
-        fontSize: 16,
     },
     separator: {
         height: 8,

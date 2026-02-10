@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    ActivityIndicator,
-    TouchableOpacity,
-    Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { shopifyApi } from '@/services/shopifyApi';
 import { orderService } from '@/services/orderService';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { shopifyApi } from '@/services/shopifyApi';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const formatOrderId = (orderIdOrName: string | number) => {
     if (typeof orderIdOrName === 'number') {
@@ -56,6 +56,38 @@ const getStatusColor = (status: string) => {
         default:
             return Colors.textSecondary;
     }
+};
+
+const looksLikeTicketingDate = (value: string) => {
+    const s = String(value || '').trim();
+    if (!s) return false;
+    const lower = s.toLowerCase();
+    if (lower === 'default' || lower === 'default title') return false;
+
+    // ISO-like date embedded in text
+    if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
+
+    // Month names commonly used for event variants ("15th Feb", "Feb 15", etc.)
+    const month =
+        '(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)';
+    const ordinal = '(?:st|nd|rd|th)?';
+    const day = '(?:[0-3]?\\d)';
+    if (new RegExp(`\\b${day}${ordinal}\\s+${month}\\b`, 'i').test(s)) return true;
+    if (new RegExp(`\\b${month}\\s+${day}${ordinal}\\b`, 'i').test(s)) return true;
+
+    return false;
+};
+
+const isTicketingOrder = (order: any) => {
+    const edges = order?.lineItems?.edges || [];
+    return edges.some((edge: any) => {
+        const itemTitle = edge?.node?.title || '';
+        const variantTitle = edge?.node?.variant?.title || '';
+        // Heuristics: variant title looks like a date, or item title contains ticketing keywords.
+        if (looksLikeTicketingDate(variantTitle)) return true;
+        if (/(event|workshop|playhouse|petting|farm|ticket)/i.test(String(itemTitle))) return true;
+        return false;
+    });
 };
 
 export default function OrdersScreen() {
@@ -279,7 +311,11 @@ export default function OrdersScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {orders.map((order) => {
-                        const statusText = getStatusText(order.fulfillmentStatus || order.financialStatus);
+                        const ticketing = isTicketingOrder(order);
+                        const statusKey = order.fulfillmentStatus || order.financialStatus;
+                        const showBooked = ticketing && (order.financialStatus === 'PAID' || statusKey === 'FULFILLED');
+                        const statusText = showBooked ? 'Booked' : getStatusText(statusKey);
+                        const statusColor = showBooked ? Colors.success : getStatusColor(statusKey);
                         
                         return (
                             <TouchableOpacity
@@ -315,7 +351,7 @@ export default function OrdersScreen() {
                                         </Text>
                                     </View>
                                     <View style={styles.orderStatusContainer}>
-                                        <Text style={[styles.orderStatus, { color: getStatusColor(order.fulfillmentStatus || order.financialStatus) }]}>
+                                        <Text style={[styles.orderStatus, { color: statusColor }]}>
                                             {statusText}
                                         </Text>
                                     </View>

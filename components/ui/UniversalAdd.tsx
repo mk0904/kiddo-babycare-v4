@@ -1,8 +1,9 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { useCartStore, useCartItems } from '@/store/cartStore';
+import { useCartItems, useCartStore } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UniversalAddProps {
     item: any;
@@ -105,11 +106,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     // Use the first available variant, or first variant if none available
                     const realVariant = fullProduct.variants.edges.find((e: any) => {
                         const v = e.node;
-                        if (v.availableForSale === false) return false;
-                        if (v.quantityAvailable !== undefined && v.quantityAvailable !== null) {
-                            return v.quantityAvailable > 0;
-                        }
-                        return v.availableForSale !== false;
+                        return isVariantAvailable(v) === true;
                     })?.node || fullProduct.variants.edges[0]?.node;
                     
                     if (realVariant) {
@@ -157,7 +154,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             currencyCode: finalVariant.price?.currencyCode || finalProduct.priceRange?.minVariantPrice?.currencyCode || 'INR',
             image: imageUrl,
             quantity: 1,
-            availableForSale: finalVariant.availableForSale !== false,
+            availableForSale: isVariantAvailable(finalVariant) !== false,
             tags: finalProduct.tags || [],
             bookingDate: bookingDate ? bookingDate.toISOString() : undefined,
         };

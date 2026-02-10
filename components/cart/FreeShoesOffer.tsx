@@ -1,14 +1,16 @@
-import { Fonts } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
 const SHOE_OPTIONS = [
-  { id: 'shoe-1', name: 'Shoe 1', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-  { id: 'shoe-2', name: 'Shoe 2', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-  { id: 'shoe-3', name: 'Shoe 3', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-  { id: 'shoe-4', name: 'Shoe 4', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
+  { id: 'shoe-1', name: 'Shoe 1', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854' },
+  { id: 'shoe-2', name: 'Shoe 2', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.54_PM.png?v=1770746844' },
+  { id: 'shoe-3', name: 'Shoe 3', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.17_PM.png?v=1770746855' },
+  { id: 'shoe-4', name: 'Shoe 4', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.14_PM.png?v=1770746855' },
 ];
 
 interface FreeShoesOfferProps {
@@ -18,6 +20,20 @@ interface FreeShoesOfferProps {
 const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
   if (!visible) return null;
 
+  const [isChecked, setIsChecked] = React.useState(false);
+  const [failedIds, setFailedIds] = React.useState<Set<string>>(new Set());
+
+  const handleImageError = React.useCallback((id: string) => {
+    setFailedIds((prev) => new Set(prev).add(id));
+  }, []);
+
+  // Prefetch shoe images so they appear faster when the offer is visible.
+  React.useEffect(() => {
+    SHOE_OPTIONS.forEach((s) => {
+      Image.prefetch(s.imageUrl).catch(() => {});
+    });
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.badgeContainer}>
@@ -25,8 +41,21 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
       </View>
       
       <View style={styles.titleRow}>
-        <Ionicons name="checkbox" size={24} color="#000" />
-        <Text style={styles.title}>Get free pair of shoes from Kiddo</Text>
+        <TouchableOpacity
+          onPress={() => setIsChecked((v) => !v)}
+          activeOpacity={0.7}
+          style={styles.checkboxRow}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isChecked }}
+        >
+          <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+            {isChecked && <Ionicons name="checkmark" size={16} color="#fff" />}
+          </View>
+        </TouchableOpacity>
+        <View style={styles.titleTextBlock}>
+          <Text style={styles.title}>Get free shoes on first apparel order</Text>
+          <Text style={styles.subtitle}>For Limited Customers Only</Text>
+        </View>
       </View>
 
       <ScrollView 
@@ -37,13 +66,24 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
       >
         {SHOE_OPTIONS.map((shoe) => (
           <View key={shoe.id} style={styles.imageBox}>
-            <Image
-              source={{ uri: shoe.imageUrl }}
-              style={styles.shoeImage}
-              contentFit="cover"
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-              transition={200}
-            />
+            {failedIds.has(shoe.id) ? (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="image-outline" size={32} color="#ccc" />
+              </View>
+            ) : (
+              <Image
+                source={{ uri: shoe.imageUrl }}
+                style={styles.shoeImage}
+                contentFit="cover"
+                placeholder={BLURHASH}
+                placeholderContentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
+                transition={150}
+                recyclingKey={shoe.id}
+                onError={() => handleImageError(shoe.id)}
+              />
+            )}
           </View>
         ))}
       </ScrollView>
@@ -51,7 +91,9 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
       <View style={styles.bulletsContainer}>
         <View style={styles.bulletRow}>
           <Text style={styles.bullet}>•</Text>
-          <Text style={styles.bulletText}>Offer only eligible if you have a fashion item in your cart.</Text>
+          <Text style={styles.bulletText}>
+            Offer eligible if order has apparel, minimum purchase of Rs. 500
+          </Text>
         </View>
         <View style={styles.bulletRow}>
           <Text style={styles.bullet}>•</Text>
@@ -74,7 +116,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   badgeContainer: {
-    backgroundColor: '#E57373',
+    backgroundColor: Colors.primary,
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -92,11 +134,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 10,
   },
+  checkboxRow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+  },
+  // Match Cart "Try & Buy" checkbox styling, using theme red
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.primary,
+  },
   title: {
     fontSize: 18,
     fontFamily: Fonts.Bold,
     color: '#000',
     flex: 1,
+  },
+  titleTextBlock: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 2,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontFamily: Fonts.SemiBold,
+    color: '#000',
   },
   carousel: {
     marginBottom: 16,
@@ -117,6 +187,13 @@ const styles = StyleSheet.create({
   shoeImage: {
     width: '100%',
     height: '100%',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
   },
   bulletsContainer: {
     gap: 4,

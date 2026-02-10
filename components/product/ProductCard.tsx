@@ -1,9 +1,11 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import OutOfStockOverlay from '@/components/ui/OutOfStockOverlay';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { isProductOutOfStock } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -170,45 +172,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     return variants[0]?.node || variants[0] || {};
   }, [variants]);
 
-  // Normalize isAvailable logic - check both availableForSale and quantityAvailable
-  const isAvailable = useMemo(() => {
-    // If product-level availability is explicitly set, use it
-    if (product.availableForSale !== undefined) {
-      // Also check quantity if available
-      if (product.availableForSale === false) return false;
-      if (product.quantityAvailable !== undefined && product.quantityAvailable !== null) {
-        return product.quantityAvailable > 0;
-      }
-      if (product.totalInventory !== undefined && product.totalInventory !== null) {
-        return product.totalInventory > 0;
-      }
-      return product.availableForSale;
-    }
-    
-    // If we have variants, check for available variants with quantity
-    if (variants.length > 0) {
-      const availableVariant = variants.find((v: any) => {
-        const node = v.node || v;
-        
-        // Check quantity first if available
-        if (node.quantityAvailable !== undefined && node.quantityAvailable !== null) {
-           return node.quantityAvailable > 0;
-        }
-        if (node.inventoryQuantity !== undefined && node.inventoryQuantity !== null) {
-           return node.inventoryQuantity > 0;
-        }
-
-        // Check both availableForSale and quantityAvailable
-        if (node.availableForSale === false) return false;
-        
-        return node.availableForSale === true;
-      });
-      return !!availableVariant;
-    }
-    
-    // Default to false if unknown (safer than true)
-    return false;
-  }, [product.availableForSale, product.quantityAvailable, product.totalInventory, variants]);
+  const outOfStock = useMemo(() => isProductOutOfStock(product), [product]);
 
   // Parse price to number - handle multiple formats
   const parsePrice = useCallback((priceValue: any) => {
@@ -385,13 +349,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             onError={handleImageError}
             key={`img-${productId}-${imageErrorCount}`}
           />
-          {!isAvailable && (
-            <View style={styles.outOfStockOverlay} pointerEvents="none">
-              <View style={styles.outOfStockBadge}>
-                <Text style={styles.outOfStockText}>Out of Stock</Text>
-              </View>
-            </View>
-          )}
+          {outOfStock ? <OutOfStockOverlay style={{ borderRadius: 12 }} /> : null}
           <TouchableOpacity
             style={styles.wishlistButton}
             onPress={handleWishlistPress}
@@ -434,7 +392,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             </TouchableOpacity>
           )}
           {/* Add to Cart Button - CTA on image - Hide for ticketing products */}
-          {isAvailable && !isTicketingProduct && (
+          {!outOfStock && !isTicketingProduct && (
             <View
               style={styles.addButtonContainer}
               pointerEvents="auto"

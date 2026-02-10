@@ -49,6 +49,9 @@ const GET_PRODUCTS_QUERY = `
                    amount
                    currencyCode
                 }
+                availableForSale
+                quantityAvailable
+                currentlyNotInStock
               }
             }
           }
@@ -117,6 +120,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
                   }
                   availableForSale
                   quantityAvailable
+                  currentlyNotInStock
                   selectedOptions {
                     name
                     value
@@ -195,6 +199,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value
@@ -265,6 +270,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value
@@ -339,6 +345,7 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value

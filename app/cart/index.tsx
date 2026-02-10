@@ -1390,6 +1390,11 @@ export default function CartScreen() {
                         </View>
                     )}
 
+                    {/* Free Shoes Offer - Only show if has fashion items and user hasn't used it */}
+                    {cartItems.length > 0 && !isTicketingOnly && hasFashionItems && !hasUsedFreeShoes && (
+                        <FreeShoesOffer visible={true} />
+                    )}
+
                     {/* Gift Wrapping - Hide for ticketing products */}
                     {!hasTicketingProducts && (
                         <View style={styles.giftWrappingSection}>
@@ -1423,10 +1428,7 @@ export default function CartScreen() {
                         </View>
                     )}
 
-                    {/* Free Shoes Offer - Only show if has fashion items and user hasn't used it */}
-                    {cartItems.length > 0 && !isTicketingOnly && hasFashionItems && !hasUsedFreeShoes && (
-                        <FreeShoesOffer visible={true} />
-                    )}
+                    
 
                     {/* Schedule Delivery - Hide for ticketing products */}
                     {!hasTicketingProducts && (
@@ -1441,13 +1443,9 @@ export default function CartScreen() {
                                         <Text style={styles.giftWrappingTitle}>
                                             {deliverySchedule ? 'Schedule Delivery' : 'Schedule Delivery'}
                                         </Text>
-                                        {deliverySchedule ? (
+                                        {deliverySchedule && deliverySchedule.date && deliverySchedule.time && (
                                             <Text style={styles.giftWrappingDescription}>
                                                 {deliverySchedule.date} at {deliverySchedule.time}
-                                            </Text>
-                                        ) : (
-                                            <Text style={styles.giftWrappingDescription}>
-                                                Choose your preferred delivery date & time
                                             </Text>
                                         )}
                                     </View>

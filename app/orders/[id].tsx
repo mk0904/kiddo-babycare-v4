@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors, Fonts } from '@/constants/theme';
-import { shopifyApi } from '@/services/shopifyApi';
+import { useAuth } from '@/context/AuthContext';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
+import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/context/AuthContext';
 
 export default function OrderDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -286,6 +286,36 @@ export default function OrderDetailScreen() {
         });
     };
 
+    const looksLikeTicketingDate = (value: string) => {
+        const s = String(value || '').trim();
+        if (!s) return false;
+        const lower = s.toLowerCase();
+        if (lower === 'default' || lower === 'default title') return false;
+        if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
+
+        const month =
+            '(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)';
+        const ordinal = '(?:st|nd|rd|th)?';
+        const day = '(?:[0-3]?\\d)';
+        if (new RegExp(`\\b${day}${ordinal}\\s+${month}\\b`, 'i').test(s)) return true;
+        if (new RegExp(`\\b${month}\\s+${day}${ordinal}\\b`, 'i').test(s)) return true;
+        return false;
+    };
+
+    const isTicketingOrder = (o: any) => {
+        const edges = o?.lineItems?.edges || [];
+        return edges.some((edge: any) => {
+            const itemTitle = edge?.node?.title || '';
+            const variantTitle = edge?.node?.variant?.title || '';
+            if (looksLikeTicketingDate(variantTitle)) return true;
+            if (/(event|workshop|playhouse|petting|farm|ticket)/i.test(String(itemTitle))) return true;
+            return false;
+        });
+    };
+
+    const ticketing = isTicketingOrder(order);
+    const showBooked = ticketing && (order?.financialStatus === 'PAID' || order?.fulfillmentStatus === 'FULFILLED');
+
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -338,7 +368,11 @@ export default function OrderDetailScreen() {
                     <Text style={styles.label}>Fulfillment Status</Text>
                     <View style={[styles.badge, { backgroundColor: '#FFF5F4' }]}>
                         <Text style={[styles.badgeText, { color: Colors.primary }]}>
-                            {order.fulfillmentStatus === 'FULFILLED' ? 'Shipped' : order.fulfillmentStatus || 'Pending'}
+                            {showBooked
+                                ? 'Booked'
+                                : order.fulfillmentStatus === 'FULFILLED'
+                                  ? 'Shipped'
+                                  : order.fulfillmentStatus || 'Pending'}
                         </Text>
                     </View>
                 </View>
