@@ -8,6 +8,8 @@ import {
     ScrollView,
     Alert,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -176,12 +178,19 @@ export default function EditAddressScreen() {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                    nestedScrollEnabled={true}
+                >
                 {/* Full Name */}
                 <View style={styles.inputContainer}>
                     <Text style={styles.label}>Full Name *</Text>
@@ -316,7 +325,8 @@ export default function EditAddressScreen() {
                         </>
                     )}
                 </TouchableOpacity>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -352,12 +362,15 @@ const styles = StyleSheet.create({
     deleteButton: {
         padding: 4,
     },
+    keyboardView: {
+        flex: 1,
+    },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         padding: 20,
-        paddingBottom: 40,
+        paddingBottom: 100, // Increased padding to ensure all fields are accessible when keyboard is open
     },
     inputContainer: {
         marginBottom: 20,

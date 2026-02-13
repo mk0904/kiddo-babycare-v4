@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Carousel } from '@/components/ui/Carousel';
+import { ErrorText } from '@/components/ui/ErrorText';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { otpService } from '@/services/otpService';
+import { trackSignupStarted } from '@/utils/mixpanelHelpers';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Animated,
-  LayoutAnimation,
-  UIManager,
-  Dimensions,
+    ActivityIndicator,
+    Alert,
+    Keyboard,
+    KeyboardAvoidingView,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { PhoneInput } from '@/components/ui/PhoneInput';
-import { Button } from '@/components/ui/Button';
-import { ErrorText } from '@/components/ui/ErrorText';
-import { Carousel } from '@/components/ui/Carousel';
-import { Colors, Fonts } from '@/constants/theme';
-import { otpService } from '@/services/otpService';
-import { useAuth } from '@/context/AuthContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -99,6 +98,9 @@ export default function LoginScreen() {
   };
 
   const handleSendOTP = async () => {
+    // Track signup started
+    trackSignupStarted('phone');
+    
     const cleanedPhone = phoneNumber.replace(/\D/g, '');
 
     if (cleanedPhone.length !== 10) {
@@ -115,10 +117,7 @@ export default function LoginScreen() {
       const result = await otpService.sendOTP(cleanedPhone);
 
       if (result.success) {
-        // In dev mode, show OTP if provided
-        if (__DEV__ && result.devOtp) {
-          console.log('Dev Mode OTP:', result.devOtp);
-        }
+        // In dev mode, OTP is available in result.devOtp but not logged for security/privacy compliance
 
         // Navigate to OTP verification screen
         router.push({
@@ -169,7 +168,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}

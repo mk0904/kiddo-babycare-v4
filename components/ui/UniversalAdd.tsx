@@ -1,21 +1,26 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { useCartStore, useCartItems } from '@/store/cartStore';
+import { useCartItems, useCartStore } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UniversalAddProps {
     item: any;
     selectedVariant?: any;
     variant?: 'default' | 'prominent' | 'pdp';
     addText?: string;
+    bookingDate?: Date | null; // For ticketing products
+    onValidationError?: () => void; // Callback when validation fails
 }
 
 const UniversalAdd: React.FC<UniversalAddProps> = ({
     item,
     selectedVariant,
     variant = 'default',
-    addText = 'ADD'
+    addText = 'ADD',
+    bookingDate,
+    onValidationError
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -30,11 +35,22 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const productId = item.id || item._id;
     const variantId = activeVariant.id || activeVariant._id;
 
-    // Get count for this specific item by matching variantId
+    // Get count for this specific item by matching variantId or productId
+    // This handles cases where search results have different variant IDs than what's in the cart
     const getItemCount = () => {
-        const cartItem = cartItems.find(
+        // First, try to match by variantId
+        let cartItem = cartItems.find(
             (ci) => ci.variantId === variantId
         );
+        
+        // If not found and we have a productId, try matching by productId
+        // This handles search results where variant IDs might not match exactly
+        if (!cartItem && productId) {
+            cartItem = cartItems.find(
+                (ci) => ci.productId === productId
+            );
+        }
+        
         return cartItem ? cartItem.quantity : 0;
     };
 
@@ -43,43 +59,122 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const handleAdd = async () => {
         if (!activeVariant) return;
         
+        // Validate date selection for ticketing products
+        // If bookingDate prop is passed (even if null), it means date selection is required
+        if (bookingDate !== undefined && !bookingDate) {
+            // Call validation error callback if provided
+            if (onValidationError) {
+                onValidationError();
+            }
+            Alert.alert(
+                'Date Selection Required',
+                'Please select a date before adding this item to cart.',
+                [{ text: 'OK' }]
+            );
+            return;
+        }
+        
+        // Check if variant ID looks like it's from search results (constructed from product_id)
+        // Search results use: gid://shopify/ProductVariant/{product_id}
+        // Real variant IDs are different. Extract numeric IDs to compare
+        const variantIdStr = String(variantId || '');
+        const productIdStr = String(productId || '');
+        
+        // Extract numeric IDs from GID format
+        const productIdMatch = productIdStr.match(/Product\/(\d+)/);
+        const variantIdMatch = variantIdStr.match(/ProductVariant\/(\d+)/);
+        
+        // If variant ID numeric part matches product ID numeric part, it's likely from search
+        // Also check if product doesn't have proper variant structure (search results have simplified variants)
+        const isSearchResultVariant = (productIdMatch && variantIdMatch && 
+                                      productIdMatch[1] === variantIdMatch[1] &&
+                                      variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
+                                     (!item.variants?.edges || item.variants.edges.length === 0) ||
+                                     (item.variants.edges.length === 1 && item.variants.edges[0]?.node?.title === 'Default');
+        
+        let finalVariant = activeVariant;
+        let finalProduct = item;
+        
+        // If this looks like a search result, ALWAYS fetch the real product data from Shopify
+        if (isSearchResultVariant && productId) {
+            try {
+                console.log('[UniversalAdd] Detected search result product, fetching real data for:', productId);
+                const { shopifyApi } = await import('@/services/shopifyApi');
+                const fullProduct = await shopifyApi.getProductById(productId);
+                
+                if (fullProduct && fullProduct.variants?.edges && fullProduct.variants.edges.length > 0) {
+                    // Use the first available variant, or first variant if none available
+                    const realVariant = fullProduct.variants.edges.find((e: any) => {
+                        const v = e.node;
+                        return isVariantAvailable(v) === true;
+                    })?.node || fullProduct.variants.edges[0]?.node;
+                    
+                    if (realVariant) {
+                        console.log('[UniversalAdd] Using real variant ID:', realVariant.id, 'instead of search variant:', variantId);
+                        finalVariant = realVariant;
+                        finalProduct = fullProduct;
+                    } else {
+                        console.warn('[UniversalAdd] No valid variant found in fetched product');
+                    }
+                } else {
+                    console.warn('[UniversalAdd] Fetched product has no variants');
+                }
+            } catch (error) {
+                console.error('[UniversalAdd] Error fetching real product data:', error);
+                // Don't add to cart if we can't get real variant ID - this prevents checkout errors
+                throw new Error('Unable to verify product availability. Please try again.');
+            }
+        }
+        
         // Get image URL
-        const imageUrl = activeVariant.image?.url || 
-                        item.images?.[0]?.url || 
-                        item.featuredImage?.url || 
-                        item.images?.edges?.[0]?.node?.url || 
+        const imageUrl = finalVariant.image?.url || 
+                        finalProduct.images?.[0]?.url || 
+                        finalProduct.featuredImage?.url || 
+                        finalProduct.images?.edges?.[0]?.node?.url || 
                         '';
 
         // Get price
         const price = parseFloat(
-            activeVariant.price?.amount || 
-            item.priceRange?.minVariantPrice?.amount || 
-            item.price?.amount || 
+            finalVariant.price?.amount || 
+            finalProduct.priceRange?.minVariantPrice?.amount || 
+            finalProduct.price?.amount || 
             '0'
         );
 
-        // Create cart item
+        // Create cart item with real variant ID
         const cartItem = {
             productId: productId || '',
-            variantId: variantId || '',
-            title: item.title || item.name || 'Product',
-            variantTitle: activeVariant.title,
+            variantId: finalVariant.id || variantId || '',
+            title: finalProduct.title || finalProduct.name || 'Product',
+            variantTitle: finalVariant.title,
             price,
-            compareAtPrice: activeVariant.compareAtPrice?.amount 
-                ? parseFloat(activeVariant.compareAtPrice.amount) 
+            compareAtPrice: finalVariant.compareAtPrice?.amount 
+                ? parseFloat(finalVariant.compareAtPrice.amount) 
                 : undefined,
-            currencyCode: activeVariant.price?.currencyCode || item.priceRange?.minVariantPrice?.currencyCode || 'INR',
+            currencyCode: finalVariant.price?.currencyCode || finalProduct.priceRange?.minVariantPrice?.currencyCode || 'INR',
             image: imageUrl,
             quantity: 1,
-            availableForSale: activeVariant.availableForSale !== false,
-            tags: item.tags || [],
+            availableForSale: isVariantAvailable(finalVariant) !== false,
+            tags: finalProduct.tags || [],
+            bookingDate: bookingDate ? bookingDate.toISOString() : undefined,
         };
 
         await addItem(cartItem);
     };
 
+    const getCartItem = () => {
+        // First try by variantId
+        let cartItem = cartItems.find(ci => ci.variantId === variantId);
+        // If not found and we have productId, try by productId
+        // This handles search results where variant IDs might not match exactly
+        if (!cartItem && productId) {
+            cartItem = cartItems.find(ci => ci.productId === productId);
+        }
+        return cartItem;
+    };
+
     const handleRemove = async () => {
-        const cartItem = cartItems.find(ci => ci.variantId === variantId);
+        const cartItem = getCartItem();
         if (cartItem) {
             await removeItem(cartItem.id);
         }
@@ -89,7 +184,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         if (count === 0) {
             await handleAdd();
         } else {
-            const cartItem = cartItems.find(ci => ci.variantId === variantId);
+            const cartItem = getCartItem();
             if (cartItem) {
                 await updateQuantity(cartItem.id, count + 1);
             }
@@ -98,7 +193,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
     const handleDecrement = async () => {
         if (count > 1) {
-            const cartItem = cartItems.find(ci => ci.variantId === variantId);
+            const cartItem = getCartItem();
             if (cartItem) {
                 await updateQuantity(cartItem.id, count - 1);
             }

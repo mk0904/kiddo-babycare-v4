@@ -55,7 +55,7 @@ export type UserStore = UserState & UserActions;
 
 const initialState: UserState = {
     user: null,
-    status: 'idle',
+    status: 'unauthenticated', // Start as unauthenticated, not idle - prevents loading loop
     isGuest: false,
     hasSkippedLogin: false,
     accessToken: null,
@@ -82,6 +82,28 @@ export const useUserStore = create<UserStore>()(
                     loginProvider: 'phone', // Default to phone for OTP
                 });
                 console.log('[UserStore] User logged in:', user.email || user.phone);
+                
+                // Track login success in Mixpanel
+                try {
+                    const { mixpanel } = require('@/mixpanel');
+                    if (mixpanel) {
+                        const userId = user.id || user.customerId || user.email || user.phone;
+                        mixpanel.identify(userId);
+                        mixpanel.track('Login Success', {
+                            userId,
+                            loginProvider: 'phone',
+                            email: user.email,
+                            phone: user.phone,
+                        });
+                        mixpanel.people.set({
+                            email: user.email,
+                            phone: user.phone,
+                            name: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
             },
 
             // Logout user
@@ -92,6 +114,16 @@ export const useUserStore = create<UserStore>()(
                     hasSkippedLogin: false,
                 });
                 console.log('[UserStore] User logged out');
+                
+                // Reset Mixpanel on logout
+                try {
+                    const { mixpanel } = require('@/mixpanel');
+                    if (mixpanel) {
+                        mixpanel.reset();
+                    }
+                } catch (e) {
+                    console.warn('Mixpanel reset error:', e);
+                }
             },
 
             // Skip login (guest mode)
@@ -187,8 +219,13 @@ export const useUserStore = create<UserStore>()(
                     if (state.status === 'idle' || state.status === 'loading') {
                         state.status = 'unauthenticated';
                     }
+                } else {
+                    // If rehydration fails or returns null, ensure we're unauthenticated
+                    console.warn('⚠️ AsyncStorage rehydration returned null - using default state');
                 }
             },
+            // Skip rehydration if it takes too long (non-blocking)
+            skipHydration: false,
         }
     )
 );

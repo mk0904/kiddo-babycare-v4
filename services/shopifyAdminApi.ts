@@ -218,7 +218,6 @@ const GET_DRAFT_ORDER_QUERY = `
       subtotalPrice
       currencyCode
       tags
-      note
       customer {
         id
         displayName
@@ -316,7 +315,24 @@ export const shopifyAdminApi = {
 
       if (result.userErrors && result.userErrors.length > 0) {
         console.error('[AdminAPI] User errors:', result.userErrors);
-        throw new Error(result.userErrors[0].message || 'Failed to create draft order');
+        const errorMessage = result.userErrors[0].message || 'Failed to create draft order';
+        
+        // Provide more helpful error messages
+        if (errorMessage.includes('no longer available') || errorMessage.includes('is no longer available')) {
+          // Extract product ID if present
+          const productIdMatch = errorMessage.match(/ID\s+(\d+)/);
+          if (productIdMatch) {
+            throw new Error(`Product with ID ${productIdMatch[1]} is no longer available. Please remove it from your cart.`);
+          }
+          throw new Error('One or more products in your cart are no longer available. Please remove them and try again.');
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (!result.draftOrder) {
+        console.error('[AdminAPI] No draft order in response:', result);
+        throw new Error('Failed to create draft order: No draft order returned');
       }
 
       console.log('[AdminAPI] Draft order created:', result.draftOrder.id);
@@ -415,7 +431,32 @@ export const shopifyAdminApi = {
         throw new Error(result.userErrors[0].message || 'Failed to complete draft order');
       }
 
-      console.log('[AdminAPI] Draft order completed successfully. Order ID:', result.draftOrder?.order?.id);
+      // Validate that order was actually created
+      if (!result.draftOrder) {
+        console.error('[AdminAPI] Draft order completion returned no draftOrder:', result);
+        throw new Error('Failed to complete draft order: No draft order in response');
+      }
+
+      if (!result.draftOrder.order) {
+        console.error('[AdminAPI] Draft order completion returned no order:', {
+          draftOrderId: id,
+          draftOrderStatus: result.draftOrder.status,
+          result,
+        });
+        throw new Error('Failed to complete draft order: Draft order was not converted to order');
+      }
+
+      if (!result.draftOrder.order.id) {
+        console.error('[AdminAPI] Completed order missing ID:', result.draftOrder.order);
+        throw new Error('Failed to complete draft order: Order missing ID');
+      }
+
+      console.log('[AdminAPI] Draft order completed successfully:', {
+        draftOrderId: id,
+        orderId: result.draftOrder.order.id,
+        orderName: result.draftOrder.order.name,
+        orderCreatedAt: result.draftOrder.order.createdAt,
+      });
 
       return {
         draftOrder: result.draftOrder,

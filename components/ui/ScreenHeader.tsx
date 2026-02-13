@@ -1,17 +1,19 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts } from '@/constants/theme';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ScreenHeaderProps {
   title: string;
   showSearch?: boolean;
   showBack?: boolean;
+  showWishlist?: boolean;
   onBackPress?: () => void;
+  onWishlistPress?: () => void;
 }
 
-export function ScreenHeader({ title, showSearch = true, showBack = false, onBackPress }: ScreenHeaderProps) {
+export function ScreenHeader({ title, showSearch = true, showBack = false, showWishlist = false, onBackPress, onWishlistPress }: ScreenHeaderProps) {
   const router = useRouter();
 
   const handleSearchPress = () => {
@@ -26,6 +28,14 @@ export function ScreenHeader({ title, showSearch = true, showBack = false, onBac
     }
   };
 
+  const handleWishlistPress = () => {
+    if (onWishlistPress) {
+      onWishlistPress();
+    } else {
+      router.push('/wishlist');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.leftSection}>
@@ -35,20 +45,31 @@ export function ScreenHeader({ title, showSearch = true, showBack = false, onBac
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
         )}
         <Text style={styles.title}>{title}</Text>
       </View>
-      {showSearch && (
-        <TouchableOpacity
-          onPress={handleSearchPress}
-          style={styles.searchButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="search-outline" size={20} color={Colors.textPrimary} />
-        </TouchableOpacity>
-      )}
+      <View style={styles.rightSection}>
+        {showSearch && (
+          <TouchableOpacity
+            onPress={handleSearchPress}
+            style={styles.searchButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={20} color={Colors.text} />
+          </TouchableOpacity>
+        )}
+        {showWishlist && (
+          <TouchableOpacity
+            onPress={handleWishlistPress}
+            style={styles.wishlistButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="heart-outline" size={24} color={Colors.text} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -76,11 +97,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.textPrimary,
+    color: Colors.text,
     fontFamily: Fonts.Medium,
     flex: 1,
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   searchButton: {
+    padding: 4,
+  },
+  wishlistButton: {
     padding: 4,
   },
 });

@@ -16,6 +16,8 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -147,12 +149,19 @@ export default function AddressFormScreen() {
                 <View style={styles.placeholder} />
             </View>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                    nestedScrollEnabled={true}
+                >
                 {/* Location Summary */}
                 {locationData && (
                     <View style={styles.locationSummary}>
@@ -294,7 +303,8 @@ export default function AddressFormScreen() {
                     </TouchableOpacity>
 
                 </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -327,11 +337,14 @@ const styles = StyleSheet.create({
     placeholder: {
         width: 32,
     },
+    keyboardView: {
+        flex: 1,
+    },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 40,
+        paddingBottom: 100, // Increased padding to ensure all fields are accessible when keyboard is open
     },
     locationSummary: {
         backgroundColor: '#F5F5F5',

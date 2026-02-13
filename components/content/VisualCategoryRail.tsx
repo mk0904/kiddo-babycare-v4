@@ -148,12 +148,12 @@ export function VisualCategoryRail({ block, onPress }: VisualCategoryRailProps) 
     const titleStyle = {
         marginBottom: 15,
         fontSize: 18,
-        letterSpacing: 0.3,
+        letterSpacing: 0,
         // Apply container padding to title if not explicitly set in blockStyles.title
         paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
             ? blockStyles.title.paddingHorizontal
             : containerPaddingHorizontal,
-        ...processFontStyle(blockStyles?.title, Fonts.Bold),
+        ...processFontStyle(blockStyles?.title, Fonts.Black),
     };
 
     // Extract horizontal and vertical padding from container styles to avoid double padding
@@ -242,7 +242,8 @@ export function VisualCategoryRail({ block, onPress }: VisualCategoryRailProps) 
                                         styles.label,
                                         { width: itemsPerView ? itemWidth : configWidth + 10 },
                                         processFontStyle(blockStyles?.text, Fonts.Medium),
-                                        processFontStyle(blockStyles?.label, Fonts.Medium)
+                                        processFontStyle(blockStyles?.label, Fonts.Medium),
+                                        { fontWeight: '700' } // Ensure subcategory names are bold
                                     ]}
                                 numberOfLines={2}
                             >
@@ -289,8 +290,8 @@ export function VisualCategoryRail({ block, onPress }: VisualCategoryRailProps) 
 const styles = StyleSheet.create({
     title: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
-        letterSpacing: 0.3,
+        fontFamily: Fonts.Black,
+        letterSpacing: 0,
         marginBottom: 15,
     },
     container: {
@@ -316,6 +317,7 @@ const styles = StyleSheet.create({
         color: '#333',
         textAlign: 'center',
         fontFamily: Fonts.Medium,
+        fontWeight: '700',
         lineHeight: 16,
     },
     loadingPlaceholder: {

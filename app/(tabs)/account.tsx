@@ -1,26 +1,26 @@
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { accountConfig } from '@/config/accountConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { nectorApi } from '@/services/nectorApi';
+import { oneSignalService } from '@/services/oneSignalService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Linking,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function AccountScreen() {
     const router = useRouter();
@@ -140,6 +140,16 @@ export default function AccountScreen() {
             ],
             { cancelable: true }
         );
+    };
+
+    const handleRequestNotificationPermission = async () => {
+        try {
+            // Request permission
+            await oneSignalService.requestPermission(true);
+            console.log('📱 [OneSignal] Permission requested');
+        } catch (error: any) {
+            console.error('❌ [OneSignal] Permission request error:', error);
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -294,7 +304,7 @@ export default function AccountScreen() {
     if (isGuest || !user) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <ScreenHeader title="Account" />
+                <ScreenHeader title="Account" showBack={true} showSearch={false} />
                 <View style={styles.loginRequiredWrapper}>
                     <Text style={styles.loginTitle}>Login to access your account</Text>
                     <Text style={styles.loginSubtitle}>
@@ -315,7 +325,7 @@ export default function AccountScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScreenHeader title="Account" />
+            <ScreenHeader title="Account" showBack={true} showSearch={false} />
             <ScrollView
                 ref={scrollViewRef}
                 style={[styles.scrollView, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}
@@ -479,6 +489,34 @@ export default function AccountScreen() {
                                 </TouchableOpacity>
                             </>
                         )}
+                    </View>
+                )}
+
+                {/* Notification Permission Button */}
+                {oneSignalService.isAvailable() && (
+                    <View style={styles.settingsSection}>
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleRequestNotificationPermission}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.settingsButtonLeft}>
+                                <Ionicons
+                                    name="notifications-outline"
+                                    size={22}
+                                    color={Colors.primary}
+                                    style={styles.menuIcon}
+                                />
+                                <Text style={styles.settingsButtonText}>
+                                    Enable Notifications
+                                </Text>
+                            </View>
+                            <Ionicons
+                                name="chevron-forward"
+                                size={20}
+                                color={Colors.textSecondary}
+                            />
+                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -785,5 +823,30 @@ const styles = StyleSheet.create({
     },
     deleteAccountButtonDisabled: {
         opacity: 0.6,
+    },
+    settingsSection: {
+        backgroundColor: '#fafafa',
+        borderRadius: 16,
+        marginHorizontal: 20,
+        marginTop: 8,
+        overflow: 'hidden',
+    },
+    settingsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: '#fafafa',
+    },
+    settingsButtonLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    settingsButtonText: {
+        fontSize: 16,
+        color: Colors.text,
+        fontFamily: Fonts.Medium,
     },
 });

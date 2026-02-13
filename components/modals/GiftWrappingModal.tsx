@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    Modal,
-    TouchableOpacity,
-    ScrollView,
-    Pressable,
-    FlatList,
-    Platform,
-    Dimensions,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { useCartStore, useCartItems, useGiftWrapping } from '@/store/cartStore';
+import { useCartItems, useCartStore, useGiftWrapping } from '@/store/cartStore';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import React, { useEffect, useState } from 'react';
+import {
+    Dimensions,
+    FlatList,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -29,27 +29,27 @@ interface GiftWrappingModalProps {
 const GIFT_WRAP_OPTIONS = [
     {
         id: 'standard',
-        name: 'Standard',
+        name: 'Wrap-1',
         description: 'Beautiful paper wrapping with a ribbon.',
         price: 30,
-        image: 'https://cdn.shopify.com/s/files/1/0661/2765/9253/files/gift-wrap-standard.jpg?v=1704354321', // Placeholder or real URL
+        image: require('@/assets/images/giftwrap1.jpeg'),
         color: '#FF6B6B',
     },
     {
         id: 'premium',
-        name: 'Premium',
+        name: 'Wrap-2',
         description: 'Hardcase premium box with satin ribbon.',
-        price: 99,
-        image: 'https://cdn.shopify.com/s/files/1/0661/2765/9253/files/gift-wrap-premium.jpg?v=1704354321', // Placeholder or real URL
+        price: 30,
+        image: require('@/assets/images/giftwrap2.jpeg'),
         color: '#FFD700',
     },
     {
         id: 'deluxe',
-        name: 'Deluxe',
-        price: 150,
+        name: 'Wrap-3',
+        price: 30,
         description: 'Luxury velvet box with personalized note.',
-        image: 'https://cdn.shopify.com/s/files/1/0661/2765/9253/files/gift-wrap-deluxe.jpg?v=1704354321',
-        color: '#9C27B0'
+        image: require('@/assets/images/giftwrap3.jpeg'),
+        color: '#9C27B0',
     },
 ];
 
@@ -112,7 +112,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
     };
 
     const renderWrapOption = ({ item }: { item: any }) => {
-        const isSelected = selectedWrap?.id === item.id;
+        const isSelected = selectedWrap?.name === item.name;
         return (
             <TouchableOpacity
                 style={[

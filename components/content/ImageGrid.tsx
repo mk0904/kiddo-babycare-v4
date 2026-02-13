@@ -112,12 +112,13 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     const titleStyle = {
       marginBottom: 15,
       fontSize: 18,
-      letterSpacing: 0.3,
+      letterSpacing: 0,
+      fontWeight: '900',
       // Apply container padding to title if not explicitly set in blockStyles.title
       paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
         ? blockStyles.title.paddingHorizontal
         : (containerStyle.paddingHorizontal || 0),
-      ...processFontStyle(blockStyles?.title, Fonts.Bold),
+      ...processFontStyle(blockStyles?.title, Fonts.Black),
     };
     const imageContainerStyle = {
       padding: 0,
@@ -132,10 +133,13 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
       borderRadius: 20,
       ...blockStyles?.image,
     };
+    const processedTextStyle = processFontStyle(blockStyles?.text);
     const textStyle = {
       color: '#666666',
       textAlign: 'center' as const,
-      ...processFontStyle(blockStyles?.text),
+      ...processedTextStyle,
+      ...blockStyles?.text, // Apply all text styles
+      fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
     };
 
     // Calculate available width accounting for container margins and padding (Kiddo pattern)
@@ -388,7 +392,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
   return (
     <BaseContentBlock block={block}>
       {title && (
-        <Text style={[defaultStyles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
+        <Text style={[defaultStyles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{title}</Text>
       )}
       <View
         style={[
@@ -425,7 +429,11 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
               resizeMode={resizeMode}
             />
             {item.title && (
-              <Text style={[defaultStyles.text, processFontStyle(blockStyles?.text)]}>
+              <Text 
+                style={[defaultStyles.text, processFontStyle(blockStyles?.text), { fontWeight: '700' }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
                 {item.title}
               </Text>
             )}
@@ -449,8 +457,10 @@ const defaultStyles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 15,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     color: Colors.text,
   },
   listContent: {
@@ -479,6 +489,7 @@ const defaultStyles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.textSecondary,
     paddingHorizontal: 0,
+    fontWeight: '700', // Make subcategory names bold
   },
 });
 

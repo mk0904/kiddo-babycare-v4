@@ -269,6 +269,7 @@ export function FlexibleGrid({
               labelStyle, // Apply custom label styles from config (overrides defaults)
             ]} 
             numberOfLines={2}
+            ellipsizeMode="tail"
           >
             {item.label}
           </Text>
@@ -357,13 +358,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Regular,
   },
   label: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: Fonts.Medium,
-    fontWeight: '500',
+    fontWeight: '700',
     color: Colors.text,
     textAlign: 'center',
-    lineHeight: 18,
-    paddingHorizontal: 4,
+    lineHeight: 14,
+    paddingHorizontal: 0,
     marginTop: 4,
   },
 });

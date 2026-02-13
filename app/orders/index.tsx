@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    ActivityIndicator,
-    TouchableOpacity,
-    Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const formatOrderId = (orderIdOrName: string | number) => {
     if (typeof orderIdOrName === 'number') {
@@ -57,6 +58,38 @@ const getStatusColor = (status: string) => {
     }
 };
 
+const looksLikeTicketingDate = (value: string) => {
+    const s = String(value || '').trim();
+    if (!s) return false;
+    const lower = s.toLowerCase();
+    if (lower === 'default' || lower === 'default title') return false;
+
+    // ISO-like date embedded in text
+    if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
+
+    // Month names commonly used for event variants ("15th Feb", "Feb 15", etc.)
+    const month =
+        '(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)';
+    const ordinal = '(?:st|nd|rd|th)?';
+    const day = '(?:[0-3]?\\d)';
+    if (new RegExp(`\\b${day}${ordinal}\\s+${month}\\b`, 'i').test(s)) return true;
+    if (new RegExp(`\\b${month}\\s+${day}${ordinal}\\b`, 'i').test(s)) return true;
+
+    return false;
+};
+
+const isTicketingOrder = (order: any) => {
+    const edges = order?.lineItems?.edges || [];
+    return edges.some((edge: any) => {
+        const itemTitle = edge?.node?.title || '';
+        const variantTitle = edge?.node?.variant?.title || '';
+        // Heuristics: variant title looks like a date, or item title contains ticketing keywords.
+        if (looksLikeTicketingDate(variantTitle)) return true;
+        if (/(event|workshop|playhouse|petting|farm|ticket)/i.test(String(itemTitle))) return true;
+        return false;
+    });
+};
+
 export default function OrdersScreen() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuth();
@@ -66,21 +99,127 @@ export default function OrdersScreen() {
     const loadOrders = async () => {
         try {
             setLoading(true);
-            if (!user?.customerAccessToken) {
-                setOrders([]);
-                return;
-            }
-            const fetchedOrders = await shopifyApi.getCustomerOrders(user.customerAccessToken, 50);
-            if (fetchedOrders?.edges) {
-                const allOrders = fetchedOrders.edges.map((edge: any) => edge.node);
-                // Sort by creation date (newest first)
-                allOrders.sort((a: any, b: any) => 
-                    new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
-                );
-                setOrders(allOrders);
-            } else {
-                setOrders([]);
-            }
+            
+            // Fetch orders from both Shopify (regular orders) and local storage (Try & Buy)
+            const [shopifyOrdersResult, localOrders] = await Promise.all([
+                user?.customerAccessToken 
+                    ? shopifyApi.getCustomerOrders(user.customerAccessToken, 50).catch(() => null)
+                    : Promise.resolve(null),
+                orderService.getAllOrders().catch(() => []),
+            ]);
+
+            // Format Shopify orders
+            const shopifyOrders = shopifyOrdersResult?.edges?.map((edge: any) => edge.node) || [];
+            
+            // Create sets of Shopify order IDs and order numbers to detect duplicates
+            const shopifyOrderIds = new Set(shopifyOrders.map((o: any) => o.id));
+            const shopifyOrderNumbers = new Set(
+                shopifyOrders.map((o: any) => {
+                    // Extract order number from orderNumber field (e.g., "#1224" or "1224")
+                    const orderNum = o.orderNumber || '';
+                    return typeof orderNum === 'string' ? orderNum.replace('#', '') : String(orderNum);
+                }).filter((num: string) => num) // Filter out empty strings
+            );
+            
+            // Transform local Try & Buy orders to match the expected format
+            // Only include local orders that aren't already in Shopify orders
+            const tryAndBuyOrders = localOrders
+                .filter((o) => {
+                    // Only include if it's a Try & Buy order
+                    if (o.type !== 'try_and_buy') return false;
+                    
+                    // Check if this order already exists in Shopify orders
+                    // Match by: 1) shopifyOrderId, 2) order number from shopifyOrderName, 3) local order ID
+                    if (o.shopifyOrderId && shopifyOrderIds.has(o.shopifyOrderId)) {
+                        return false; // Already in Shopify orders
+                    }
+                    
+                    // Extract order number from shopifyOrderName (e.g., "#1224" or "1224")
+                    if (o.shopifyOrderName) {
+                        const orderNum = String(o.shopifyOrderName).replace('#', '').trim();
+                        if (orderNum && shopifyOrderNumbers.has(orderNum)) {
+                            return false; // Already in Shopify orders (matched by order number)
+                        }
+                    }
+                    
+                    // Check if local order ID matches any Shopify order
+                    // Extract numeric part from order ID for comparison
+                    const localOrderNum = String(o.id).match(/\d+/)?.[0];
+                    if (localOrderNum && shopifyOrderNumbers.has(localOrderNum)) {
+                        return false; // Already in Shopify orders (matched by numeric ID)
+                    }
+                    
+                    // Include this local order only if it's not already in Shopify orders
+                    return true;
+                })
+                .map((localOrder) => {
+                    // Prefer completed Order ID over Draft Order ID
+                    const orderId = localOrder.shopifyOrderId || localOrder.shopifyDraftOrderId || localOrder.id;
+                    
+                    return {
+                        id: orderId,
+                        orderNumber: localOrder.shopifyOrderName || localOrder.id,
+                        processedAt: localOrder.createdAt,
+                        fulfillmentStatus: localOrder.status === 'delivered' ? 'FULFILLED' : 'UNFULFILLED',
+                        financialStatus: localOrder.paymentStatus === 'paid' ? 'PAID' : 'PENDING',
+                        currentTotalPrice: {
+                            amount: localOrder.totalAmount.toString(),
+                            currencyCode: localOrder.currencyCode || 'INR',
+                        },
+                        lineItems: {
+                            edges: localOrder.items.map((item: any) => ({
+                                node: {
+                                    title: item.title,
+                                    variant: {
+                                        title: item.variantTitle || '',
+                                        image: item.image ? { url: item.image } : null,
+                                    },
+                                },
+                            })),
+                        },
+                        isTryAndBuy: true, // Flag to identify Try & Buy orders
+                        isCompletedOrder: !!localOrder.shopifyOrderId, // Flag to indicate if it's a completed order
+                        localOrderData: localOrder, // Keep reference to local order
+                    };
+                });
+
+            // Combine both types of orders
+            const allOrders = [...shopifyOrders, ...tryAndBuyOrders];
+            
+            // Remove any remaining duplicates by order number and ID
+            const seenOrderNumbers = new Set<string>();
+            const seenOrderIds = new Set<string>();
+            const deduplicatedOrders = allOrders.filter((order: any) => {
+                // Extract order number
+                const orderNum = order.orderNumber || '';
+                const orderNumStr = typeof orderNum === 'string' 
+                    ? orderNum.replace('#', '').trim() 
+                    : String(orderNum);
+                
+                // Create a unique key from order ID and order number
+                const orderId = order.id || '';
+                const uniqueKey = `${orderId}_${orderNumStr}`;
+                
+                // Check if we've seen this combination before
+                if (seenOrderIds.has(orderId) || (orderNumStr && seenOrderNumbers.has(orderNumStr))) {
+                    return false; // Duplicate, skip it
+                }
+                
+                // Mark as seen
+                if (orderId) seenOrderIds.add(orderId);
+                if (orderNumStr) seenOrderNumbers.add(orderNumStr);
+                
+                return true;
+            });
+            
+            // Sort by creation date (newest first)
+            deduplicatedOrders.sort((a: any, b: any) => {
+                const dateA = new Date(a.processedAt || a.localOrderData?.createdAt || 0).getTime();
+                const dateB = new Date(b.processedAt || b.localOrderData?.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
+            
+            setOrders(deduplicatedOrders);
         } catch (error) {
             console.error('Error fetching orders:', error);
             setOrders([]);
@@ -89,13 +228,16 @@ export default function OrdersScreen() {
         }
     };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadOrders();
-        } else {
-            setLoading(false);
-        }
-    }, [isAuthenticated, user]);
+    // Refresh orders when screen comes into focus (e.g., when navigating back from order details)
+    useFocusEffect(
+        React.useCallback(() => {
+            if (isAuthenticated) {
+                loadOrders();
+            } else {
+                setLoading(false);
+            }
+        }, [isAuthenticated, user])
+    );
 
     if (loading) {
         return (
@@ -169,14 +311,24 @@ export default function OrdersScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {orders.map((order) => {
-                        const statusText = getStatusText(order.fulfillmentStatus || order.financialStatus);
+                        const ticketing = isTicketingOrder(order);
+                        const statusKey = order.fulfillmentStatus || order.financialStatus;
+                        const showBooked = ticketing && (order.financialStatus === 'PAID' || statusKey === 'FULFILLED');
+                        const statusText = showBooked ? 'Booked' : getStatusText(statusKey);
+                        const statusColor = showBooked ? Colors.success : getStatusColor(statusKey);
                         
                         return (
                             <TouchableOpacity
                                 key={order.id}
                                 style={styles.orderCard}
                                 activeOpacity={0.7}
-                                onPress={() => router.push(`/orders/${encodeURIComponent(order.id)}` as any)}
+                                onPress={() => {
+                                    // For Try & Buy orders, use the draft order ID or local order ID
+                                    const orderId = order.isTryAndBuy 
+                                        ? (order.id || order.localOrderData?.shopifyDraftOrderId || order.localOrderData?.id)
+                                        : order.id;
+                                    router.push(`/orders/${encodeURIComponent(orderId)}` as any);
+                                }}
                             >
                                 <View style={styles.orderHeader}>
                                     <View>
@@ -184,9 +336,14 @@ export default function OrdersScreen() {
                                             <Text style={styles.orderId}>
                                                 Order {formatOrderId(order.orderNumber || order.id)}
                                             </Text>
+                                            {order.isTryAndBuy && (
+                                                <View style={styles.tryAndBuyBadge}>
+                                                    <Text style={styles.tryAndBuyBadgeText}>Try & Buy</Text>
+                                                </View>
+                                            )}
                                         </View>
                                         <Text style={styles.orderDate}>
-                                            {new Date(order.processedAt).toLocaleDateString('en-IN', {
+                                            {new Date(order.processedAt || order.localOrderData?.createdAt).toLocaleDateString('en-IN', {
                                                 year: 'numeric',
                                                 month: 'short',
                                                 day: 'numeric',
@@ -194,7 +351,7 @@ export default function OrdersScreen() {
                                         </Text>
                                     </View>
                                     <View style={styles.orderStatusContainer}>
-                                        <Text style={[styles.orderStatus, { color: getStatusColor(order.fulfillmentStatus || order.financialStatus) }]}>
+                                        <Text style={[styles.orderStatus, { color: statusColor }]}>
                                             {statusText}
                                         </Text>
                                     </View>
@@ -287,6 +444,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 4,
+        gap: 8,
+    },
+    tryAndBuyBadge: {
+        backgroundColor: Colors.primary + '20',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    tryAndBuyBadgeText: {
+        fontSize: 10,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.primary,
     },
     orderId: {
         fontSize: 16,

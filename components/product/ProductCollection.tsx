@@ -52,6 +52,8 @@ export interface ProductCollectionProps {
   onFacetsLoaded?: (facets: any[]) => void;
   onResultsCount?: (count: number) => void;
   contentContainerStyle?: any;
+  genderFilter?: string | null;
+  ageFilter?: string | null;
 }
 
 interface Page {
@@ -93,6 +95,8 @@ export function ProductCollection({
   onFacetsLoaded,
   onResultsCount,
   contentContainerStyle,
+  genderFilter,
+  ageFilter,
 }: ProductCollectionProps) {
   // Determine which collection ID to use (must be before hooks)
   const collectionIdToUse = React.useMemo(() => {
@@ -101,6 +105,41 @@ export function ProductCollection({
       ? collectionId[0]
       : collectionId || collectionHandle;
   }, [providedProducts, collectionId, collectionHandle]);
+
+  // Helper function to check if tags match gender
+  const matchesGender = React.useCallback((tags: string[], gender: string) => {
+    const genderLower = gender.toLowerCase();
+    const tagStrings = tags.map(t => t.toLowerCase());
+    
+    if (genderLower === 'boys') {
+      return tagStrings.some(tag => tag === 'boy' || tag === 'boys' || tag.startsWith('boy '));
+    } else if (genderLower === 'girls') {
+      return tagStrings.some(tag => tag === 'girl' || tag === 'girls' || tag.startsWith('girl '));
+    } else if (genderLower === 'unisex') {
+      return tagStrings.some(tag => tag === 'unisex');
+    }
+    return false;
+  }, []);
+
+  // Helper function to check if tags match age
+  const matchesAge = React.useCallback((tags: string[], age: string) => {
+    const ageLower = age.toLowerCase();
+    const tagStrings = tags.map(t => t.toLowerCase());
+    
+    // Map age filter values to various tag formats found in Shopify
+    const agePatterns: { [key: string]: string[] } = {
+      '3-6m': ['3-6m', '3-6 m', '3-6 months', 'girls 3-6m', 'boys 3-6m', 'girl 3-6m', 'boy 3-6m'],
+      '6-12m': ['6-12m', '6-12 m', '6-12 months', 'girls 6-12m', 'boys 6-12m', 'girl 6-12m', 'boy 6-12m'],
+      '1-2y': ['1-2y', '1-2 y', '1-2 years', 'girls 1-2y', 'boys 1-2y', 'girl 1-2y', 'boy 1-2y', 'girls 1-2 y', 'boys 1-2 y'],
+      '2-3y': ['2-3y', '2-3 y', '2-3 years', 'girls 2-3y', 'boys 2-3y', 'girl 2-3y', 'boy 2-3y', 'girls 2-3 y', 'boys 2-3 y'],
+      '3-4y': ['3-4y', '3-4 y', '3-4 years', 'girls 3-4y', 'boys 3-4y', 'girl 3-4y', 'boy 3-4y', 'girls 3-4 y', 'boys 3-4 y'],
+      '4-5y': ['4-5y', '4-5 y', '4-5 years', 'girls 4-5y', 'boys 4-5y', 'girl 4-5y', 'boy 4-5y', 'girls 4-5 y', 'boys 4-5 y'],
+      '5+y': ['5+y', '5+ y', '5+ years', '5y+', '5 y+', 'girls 5y+', 'boys 5y+', 'girl 5+ y', 'boy 5+ y', 'girls 5+ y', 'boys 5+ y'],
+    };
+    
+    const patterns = agePatterns[ageLower] || [];
+    return patterns.some(pattern => tagStrings.some(tag => tag === pattern || tag.includes(pattern)));
+  }, []);
 
   // Fetch products using React Query's useInfiniteQuery
   // Must be called unconditionally (rules of hooks)
@@ -182,25 +221,44 @@ export function ProductCollection({
     }
   }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
-  // Effect to notify parent about loaded facets (from first page)
+  // Effect to notify parent about loaded facets (always use latest page with filters)
   React.useEffect(() => {
-    if (data?.pages[0]?.filters) {
+    // Use the most recent page that has filters, as Shopify updates facet counts when filters are applied
+    const latestPageWithFilters = data?.pages?.slice().reverse().find((page: any) => page.filters);
+    if (latestPageWithFilters?.filters) {
       // @ts-ignore
-      onFacetsLoaded?.(data.pages[0].filters);
+      onFacetsLoaded?.(latestPageWithFilters.filters);
     }
-  }, [data?.pages]);
+  }, [data?.pages, filters]);
 
   // Flatten all pages into a single array of product objects
   const allProducts = React.useMemo(() => {
-    const products = data?.pages.flatMap((page) => page.products) || [];
+    let products = data?.pages.flatMap((page) => page.products) || [];
+    
+    // Apply gender filter (client-side tag filtering)
+    if (genderFilter) {
+      products = products.filter((product: any) => {
+        const tags = product.tags || [];
+        return matchesGender(tags, genderFilter);
+      });
+    }
+    
+    // Apply age filter (client-side tag filtering)
+    if (ageFilter) {
+      products = products.filter((product: any) => {
+        const tags = product.tags || [];
+        return matchesAge(tags, ageFilter);
+      });
+    }
+    
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
-  }, [data, limit]);
+  }, [data, limit, genderFilter, ageFilter, matchesGender, matchesAge]);
 
   // Notify parent about result count
   React.useEffect(() => {
     onResultsCount?.(allProducts.length);
-  }, [allProducts.length]);
+  }, [allProducts.length, onResultsCount]);
 
   // Handle fetch more callback (must be before conditional returns)
   const handleFetchMore = React.useCallback(() => {
@@ -215,10 +273,27 @@ export function ProductCollection({
 
   // If products are provided directly, use them without fetching
   if (providedProducts) {
+    // Apply gender and age filters
+    let filteredProducts = providedProducts;
+    
+    if (genderFilter) {
+      filteredProducts = filteredProducts.filter((product: any) => {
+        const tags = product.tags || [];
+        return matchesGender(tags, genderFilter);
+      });
+    }
+    
+    if (ageFilter) {
+      filteredProducts = filteredProducts.filter((product: any) => {
+        const tags = product.tags || [];
+        return matchesAge(tags, ageFilter);
+      });
+    }
+    
     // Apply limit if specified
     const limitedProvidedProducts = limit && limit > 0 
-      ? providedProducts.slice(0, limit) 
-      : providedProducts;
+      ? filteredProducts.slice(0, limit) 
+      : filteredProducts;
     
     return (
       <View style={[styles.container, style?.root]}>

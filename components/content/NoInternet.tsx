@@ -57,7 +57,7 @@ export function NoInternet({ block, onPress }: NoInternetProps) {
           />
         )}
         {data.heading && (
-          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Bold)]}>
+          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Black)]}>
             {data.heading}
           </Text>
         )}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
     color: '#000',
     marginTop: 16,
     marginBottom: 4,

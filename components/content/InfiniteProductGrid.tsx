@@ -65,7 +65,7 @@ export function InfiniteProductGrid({ block, onPress }: InfiniteProductGridProps
         // BUT tell the grid component about it so it shrinks cards.
         style={{
           root: blockStyles?.container,
-          title: processFontStyle(blockStyles?.title, Fonts.Bold),
+          title: processFontStyle(blockStyles?.title, Fonts.Black),
           list: blockStyles?.list,
         }}
         // Pass the effective available width if the component supports it, 
@@ -81,10 +81,11 @@ export function InfiniteProductGrid({ block, onPress }: InfiniteProductGridProps
 const styles = StyleSheet.create({
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 15,
     paddingHorizontal: 20,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   placeholder: {
     minHeight: 200,

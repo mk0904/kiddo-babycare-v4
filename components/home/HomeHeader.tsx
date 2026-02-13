@@ -2,12 +2,15 @@ import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
   Animated,
   ImageBackground,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +56,7 @@ export function HomeHeader({
   onHeaderHeightChange,
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const {
     backgroundColor = 'transparent',
@@ -107,8 +111,24 @@ export function HomeHeader({
 
   const headerWrapperProps = useMemo(() => {
     if (!shouldUseImage || !backgroundImage) return {};
+    
+    // Helper function to resolve local asset paths
+    const getImageSource = () => {
+      // Check if it's a local asset path (starts with "assets/")
+      if (typeof backgroundImage === 'string' && backgroundImage.startsWith('assets/')) {
+        // Map asset paths to require statements
+        const assetMap: Record<string, any> = {
+          'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
+          'assets/images/Baby-Gear.png': require('@/assets/images/Baby-Gear.png'),
+        };
+        return assetMap[backgroundImage] || { uri: backgroundImage };
+      }
+      // Remote URL
+      return { uri: backgroundImage };
+    };
+    
     return {
-      source: { uri: backgroundImage },
+      source: getImageSource(),
       imageStyle: {
         resizeMode: 'cover' as const,
         width: '100%',
@@ -145,7 +165,11 @@ export function HomeHeader({
       renderToHardwareTextureAndroid={true}
       onLayout={(event) => {
         const { height } = event.nativeEvent.layout;
-        onHeaderHeightChange?.(height);
+        // Only update if height is valid and greater than 0
+        // This ensures we always have a valid measurement
+        if (height > 0) {
+          onHeaderHeightChange?.(height);
+        }
       }}
     >
       <HeaderWrapper
@@ -186,6 +210,13 @@ export function HomeHeader({
                 onPress={onLocationPress}
               />
             </View>
+            <TouchableOpacity
+              onPress={() => router.push('/wishlist')}
+              style={styles.wishlistButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="heart-outline" size={24} color={textColor} />
+            </TouchableOpacity>
           </Animated.View>
 
           <View style={styles.searchContainer}>
@@ -247,9 +278,9 @@ const styles = StyleSheet.create({
   },
   kiddoHeaderText: {
     fontSize: 15,
-    fontFamily: Fonts.Bold,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
+    letterSpacing: 0,
   },
   estimatedTimeWrapper: {
     flexDirection: 'row',
@@ -266,6 +297,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: 'transparent',
+  },
+  wishlistButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 });
 

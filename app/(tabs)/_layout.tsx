@@ -13,7 +13,7 @@ export default function TabLayout() {
   
   // Get visible tabs from config
   const tabBarConfig = useMemo(() => configService.getTabBarConfig(), []);
-  const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'wishlist', 'account'];
+  const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'ticketing', 'account'];
 
   return (
     <Tabs
@@ -39,9 +39,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="wishlist"
+        name="ticketing"
         options={{
-          title: 'Wishlist',
+          title: 'Ticketing',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
         }}
       />

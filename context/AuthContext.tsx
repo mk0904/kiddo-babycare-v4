@@ -29,8 +29,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const storeLogout = useUserStore(state => state.logout);
   const storeSkipLogin = useUserStore(state => state.skipLogin);
 
-  // Determine loading state
-  const loading = status === 'idle' || status === 'loading';
+  // Fix stuck 'idle'/'loading' status - if AsyncStorage rehydration hangs, force unauthenticated
+  React.useEffect(() => {
+    if (status === 'idle' || status === 'loading') {
+      // Shorter timeout for faster recovery (1.5 seconds)
+      const timeout = setTimeout(() => {
+        const currentStatus = useUserStore.getState().status;
+        if (currentStatus === 'idle' || currentStatus === 'loading') {
+          console.warn('⚠️ Auth status stuck in idle/loading - forcing unauthenticated');
+          useUserStore.setState({ status: 'unauthenticated' });
+        }
+      }, 1500); // 1.5 second timeout (faster recovery)
+
+      return () => clearTimeout(timeout);
+    }
+  }, [status]);
+
+  // Determine loading state - only show loading if actively loading, not if stuck in idle
+  // If status is 'idle' for more than 1.5s, it's likely stuck, so don't show loading
+  const loading = status === 'loading'; // Only show loading for active loading, not idle
 
   // Bridge login function
   const login = async (userData: Customer, accessToken?: string) => {

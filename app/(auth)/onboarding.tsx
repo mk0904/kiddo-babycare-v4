@@ -7,21 +7,21 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  LayoutChangeEvent,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    LayoutChangeEvent,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -156,6 +156,19 @@ export default function OnboardingScreen() {
       );
 
       if (result.success) {
+        // Track profile created
+        try {
+          const { trackProfileCreated } = require('@/utils/mixpanelHelpers');
+          trackProfileCreated({
+            babyAge: ageMonths,
+            babyGender: gender,
+            babyName: babyName.trim(),
+            hasParentInfo: true,
+          });
+        } catch (e) {
+          console.warn('Mixpanel tracking error:', e);
+        }
+
         // Update local user state
         const updatedUser = {
           ...user,
@@ -180,7 +193,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

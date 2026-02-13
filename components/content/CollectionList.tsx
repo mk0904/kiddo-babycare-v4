@@ -83,7 +83,8 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
           <View style={[styles.nameContainer, blockStyles?.item?.nameContainer]}>
             <Text
               style={[styles.nameText, blockStyles?.item?.nameText]}
-              numberOfLines={1}
+              numberOfLines={2}
+              ellipsizeMode="tail"
             >
               {item.collectionName}
             </Text>
@@ -99,7 +100,7 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
     <BaseContentBlock block={block}>
       <View style={[styles.container, blockStyles?.container]}>
         {title && (
-          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{title}</Text>
+          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{title}</Text>
         )}
         <FlatList
           data={data}
@@ -137,7 +138,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 16,
     paddingHorizontal: 16,
   },

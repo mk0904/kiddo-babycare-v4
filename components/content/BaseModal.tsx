@@ -82,7 +82,7 @@ export function BaseModal({ block, visible: controlledVisible, onClose }: BaseMo
           </TouchableOpacity>
         )}
         {data.title && (
-          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Bold)]}>{data.title}</Text>
+          <Text style={[styles.title, processFontStyle(blockStyles?.title, Fonts.Black)]}>{data.title}</Text>
         )}
         <ScrollView
           style={styles.content}
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
     padding: 20,
     paddingTop: 60,
   },

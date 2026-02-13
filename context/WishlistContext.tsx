@@ -106,6 +106,15 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
             if (existingItem) {
                 return prevItems; // Already in wishlist
             }
+            
+            // Track wishlist added
+            try {
+                const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
+                trackWishlistAdded(productId, product.title || product.name);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+            
             return [...prevItems, product];
         });
     }, [isGuest, router]);

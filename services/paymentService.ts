@@ -88,6 +88,14 @@ export interface OrderData {
     isTryAndBuy?: boolean;
     giftWrapping?: { name: string; price: number };
     couponCode?: string;
+    discountAmount?: number;
+    selectedShoe?: string;
+    deliverySchedule?: {
+        date: string; // Format: DD/MM/YYYY
+        time: string; // Format: HH:MM AM/PM
+        day: string; // Day name (e.g., "Saturday")
+        dateFormat: string; // Format: "dd/mm/yy"
+    };
 }
 
 export interface CreateOrderResult {
@@ -96,6 +104,7 @@ export interface CreateOrderResult {
     payment?: PaymentResult;
     error?: string;
     cancelled?: boolean;
+    orderCreationFailed?: boolean; // True when payment succeeded but order creation failed
 }
 
 /**
@@ -291,9 +300,79 @@ export const verifyRazorpayPayment = async (
  */
 export const createOrderWithPayment = async (
     orderData: OrderData,
-    paymentMethod: 'razorpay' | 'cod' | 'try_and_buy' = 'cod'
+    paymentMethod: 'razorpay' | 'cod' | 'try_and_buy' | 'free' = 'cod'
 ): Promise<CreateOrderResult> => {
+    // Override payment method if total is 0 (safeguard)
+    if (orderData.totalAmount === 0 && paymentMethod !== 'try_and_buy') {
+        paymentMethod = 'free';
+    }
+
     try {
+        // If this is a Try & Buy order, always create a draft order
+        if (orderData.isTryAndBuy) {
+            if (paymentMethod === 'razorpay') {
+                // For Try & Buy with Razorpay, process payment first
+                const paymentResult = await initiateRazorpayPayment(
+                    orderData.totalAmount,
+                    orderData.currencyCode || 'INR',
+                    orderData
+                );
+
+                if (!paymentResult.success) {
+                    return {
+                        success: false,
+                        error: paymentResult.error || 'Payment failed',
+                        cancelled: paymentResult.cancelled || false,
+                    };
+                }
+
+                // Verify payment signature (basic client-side check)
+                if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
+                    const isVerified = await verifyRazorpayPayment(
+                        paymentResult.orderId,
+                        paymentResult.paymentId,
+                        paymentResult.signature
+                    );
+                    
+                    if (!isVerified) {
+                        console.error('[PaymentService] Payment verification failed');
+                        return {
+                            success: false,
+                            error: 'Payment verification failed. Please contact support.',
+                            cancelled: false,
+                        };
+                    }
+                } else {
+                    console.warn('[PaymentService] Missing payment verification data');
+                }
+
+                // Payment successful - create draft order for Try & Buy with paid status
+                const draftOrder = await createDraftOrder(orderData, {
+                    paymentId: paymentResult.paymentId,
+                    paymentStatus: 'paid',
+                    paymentMethod: 'razorpay',
+                });
+
+                return {
+                    success: true,
+                    order: draftOrder,
+                    payment: paymentResult,
+                };
+            } else if (paymentMethod === 'cod') {
+                // For Try & Buy with COD, create draft order with pending payment
+                const draftOrder = await createDraftOrder(orderData, {
+                    paymentStatus: 'pending',
+                    paymentMethod: 'cod',
+                });
+
+                return {
+                    success: true,
+                    order: draftOrder,
+                };
+            }
+        }
+
+        // Normal order flow (not Try & Buy)
         if (paymentMethod === 'razorpay') {
             // Initiate Razorpay payment
             const paymentResult = await initiateRazorpayPayment(
@@ -332,11 +411,71 @@ export const createOrderWithPayment = async (
             }
 
             // Payment successful and verified - create order in Shopify
-            const shopifyOrder = await createShopifyOrder(orderData, {
-                paymentId: paymentResult.paymentId,
-                paymentStatus: 'paid',
-                paymentMethod: 'razorpay',
-            });
+            // CRITICAL: If order creation fails here, payment has already been processed
+            let shopifyOrder;
+            let orderCreationAttempts = 0;
+            const maxRetries = 2;
+            
+            while (orderCreationAttempts <= maxRetries) {
+                try {
+                    shopifyOrder = await createShopifyOrder(orderData, {
+                        paymentId: paymentResult.paymentId,
+                        paymentStatus: 'paid',
+                        paymentMethod: 'razorpay',
+                    });
+                    
+                    // Validate that order was actually created
+                    if (!shopifyOrder || !shopifyOrder.id) {
+                        throw new Error('Order creation returned invalid response: missing order ID');
+                    }
+                    
+                    // Validate order has required fields
+                    if (!shopifyOrder.name && !shopifyOrder.orderNumber) {
+                        console.warn('[PaymentService] Order created but missing name/orderNumber:', shopifyOrder);
+                    }
+                    
+                    console.log('[PaymentService] ✅ Order successfully created in Shopify:', {
+                        orderId: shopifyOrder.id,
+                        orderName: shopifyOrder.name || shopifyOrder.orderNumber,
+                        paymentId: paymentResult.paymentId,
+                    });
+                    
+                    // Success - break out of retry loop
+                    break;
+                } catch (orderError: any) {
+                    orderCreationAttempts++;
+                    console.error(`[PaymentService] ⚠️ Order creation attempt ${orderCreationAttempts} failed:`, {
+                        error: orderError.message,
+                        paymentId: paymentResult.paymentId,
+                        paymentStatus: 'SUCCESS (payment already processed)',
+                        stack: orderError.stack,
+                    });
+                    
+                    if (orderCreationAttempts > maxRetries) {
+                        // All retries exhausted - this is a critical error
+                        // Payment was successful but order creation failed
+                        console.error('[PaymentService] 🚨 CRITICAL: Payment successful but order creation failed after all retries', {
+                            paymentId: paymentResult.paymentId,
+                            orderId: paymentResult.orderId,
+                            customerId: orderData.customerId,
+                            totalAmount: orderData.totalAmount,
+                            items: orderData.items?.length || 0,
+                            error: orderError.message,
+                        });
+                        
+                        // Return error but include payment info for manual recovery
+                        return {
+                            success: false,
+                            error: `Payment was successful (ID: ${paymentResult.paymentId}), but order creation failed. Please contact support with payment ID: ${paymentResult.paymentId}`,
+                            payment: paymentResult, // Include payment info for recovery
+                            orderCreationFailed: true,
+                        };
+                    }
+                    
+                    // Wait before retry (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * orderCreationAttempts));
+                }
+            }
 
             return {
                 success: true,
@@ -365,6 +504,17 @@ export const createOrderWithPayment = async (
                 success: true,
                 order: draftOrder,
             };
+        } else if (paymentMethod === 'free') {
+            // Free order - Create order directly
+            const shopifyOrder = await createShopifyOrder(orderData, {
+                paymentStatus: 'paid',
+                paymentMethod: 'free',
+            });
+
+            return {
+                success: true,
+                order: shopifyOrder,
+            };
         }
 
         return {
@@ -372,7 +522,28 @@ export const createOrderWithPayment = async (
             error: 'Invalid payment method',
         };
     } catch (error: any) {
-        console.error('[PaymentService] createOrderWithPayment error:', error);
+        console.error('[PaymentService] createOrderWithPayment error:', {
+            error: error.message,
+            stack: error.stack,
+            paymentMethod,
+            orderData: {
+                customerId: orderData.customerId,
+                totalAmount: orderData.totalAmount,
+                itemsCount: orderData.items?.length || 0,
+            },
+        });
+        
+        // Check if this error occurred after payment was processed
+        // (This would be indicated by error containing payment info or orderCreationFailed flag)
+        if (error.orderCreationFailed && error.payment) {
+            return {
+                success: false,
+                error: error.message || 'Payment successful but order creation failed',
+                payment: error.payment,
+                orderCreationFailed: true,
+            };
+        }
+        
         return {
             success: false,
             error: error.message || 'Failed to create order',
@@ -452,6 +623,12 @@ export const createDraftOrder = async (
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
                 : []),
+            ...(orderData.discountAmount !== undefined && orderData.discountAmount > 0
+                ? [{ key: 'discount_amount', value: orderData.discountAmount.toString() }]
+                : []),
+            ...(orderData.selectedShoe
+                ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]
+                : []),
         ];
 
         // Create draft order via Admin API
@@ -529,6 +706,20 @@ export const createRegularOrder = async (
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
                 : []),
+            ...(orderData.discountAmount !== undefined && orderData.discountAmount > 0
+                ? [{ key: 'discount_amount', value: orderData.discountAmount.toString() }]
+                : []),
+            ...(orderData.selectedShoe
+                ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]
+                : []),
+            ...(orderData.deliverySchedule
+                ? [
+                    { key: 'delivery_date', value: orderData.deliverySchedule.date },
+                    { key: 'delivery_time', value: orderData.deliverySchedule.time },
+                    { key: 'delivery_day', value: orderData.deliverySchedule.day },
+                    { key: 'date_format', value: orderData.deliverySchedule.dateFormat },
+                ]
+                : []),
         ];
 
         // Create draft order first
@@ -555,10 +746,34 @@ export const createRegularOrder = async (
         });
 
         // Complete the draft order to create a regular order
-        const { order } = await shopifyAdminApi.completeDraftOrder(
+        const completionResult = await shopifyAdminApi.completeDraftOrder(
             draftOrder.id,
             paymentData.paymentStatus === 'pending'
         );
+
+        // Validate that order was actually created
+        if (!completionResult || !completionResult.order) {
+            console.error('[PaymentService] Draft order completion returned no order:', {
+                draftOrderId: draftOrder.id,
+                completionResult,
+            });
+            throw new Error('Draft order completion failed: No order returned from Shopify');
+        }
+
+        const order = completionResult.order;
+
+        // Validate order has required ID
+        if (!order.id) {
+            console.error('[PaymentService] Completed order missing ID:', order);
+            throw new Error('Order creation failed: Completed order missing ID');
+        }
+
+        console.log('[PaymentService] Draft order completed successfully:', {
+            draftOrderId: draftOrder.id,
+            orderId: order.id,
+            orderName: order.name,
+            paymentId: paymentData.paymentId,
+        });
 
         return order;
     } catch (error) {

@@ -1,6 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
 import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
+import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
@@ -12,6 +13,7 @@ import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -31,6 +33,176 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Event Date Picker Component - Shows next 7 days or available dates
+const EventDatePicker: React.FC<{
+    selectedDate: Date | null;
+    onDateSelect: (date: Date) => void;
+    availableDates?: Date[];
+}> = ({ selectedDate, onDateSelect, availableDates }) => {
+    // Generate dates to show
+    const datesToShow = useMemo(() => {
+        // If availableDates is provided (even if empty), use it as the source of truth.
+        // This prevents "fallback next 7 days" for Events where variants define valid dates.
+        if (availableDates !== undefined) return availableDates;
+
+        // Fallback: Generate next 7 days
+        const days = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            days.push(date);
+        }
+        return days;
+    }, [availableDates]);
+
+    const formatDateLabel = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        
+        const dateToCheck = new Date(date);
+        dateToCheck.setHours(0, 0, 0, 0);
+        
+        if (dateToCheck.getTime() === today.getTime()) {
+            return 'Today';
+        } else if (dateToCheck.getTime() === tomorrow.getTime()) {
+            return 'Tomorrow';
+        } else {
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+    };
+
+    const isDateSelected = (date: Date) => {
+        if (!selectedDate) return false;
+        // Compare dates (ignoring time)
+        const d1 = new Date(date);
+        d1.setHours(0,0,0,0);
+        const d2 = new Date(selectedDate);
+        d2.setHours(0,0,0,0);
+        return d1.getTime() === d2.getTime();
+    };
+
+    const next7Days = datesToShow;
+
+    return (
+        <View style={datePickerStyles.container}>
+            <ScrollView 
+                style={datePickerStyles.daysList} 
+                contentContainerStyle={datePickerStyles.daysListContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {next7Days.length > 0 ? next7Days.map((date, index) => {
+                    const isSelected = isDateSelected(date);
+                    return (
+                        <TouchableOpacity
+                            key={`date-${index}-${date.getTime()}`}
+                            style={[
+                                datePickerStyles.dateOption,
+                                isSelected && datePickerStyles.dateOptionSelected
+                            ]}
+                            onPress={() => onDateSelect(date)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={datePickerStyles.dateOptionContent}>
+                                <Text style={[
+                                    datePickerStyles.dateLabel,
+                                    isSelected && datePickerStyles.dateLabelSelected
+                                ]}>
+                                    {formatDateLabel(date)}
+                                </Text>
+                                <Text style={[
+                                    datePickerStyles.dateSubLabel,
+                                    isSelected && datePickerStyles.dateSubLabelSelected
+                                ]}>
+                                    {date.toLocaleDateString('en-US', { 
+                                        month: 'long', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </Text>
+                            </View>
+                            {isSelected && (
+                                <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                            )}
+                        </TouchableOpacity>
+                    );
+                }) : (
+                    <View style={datePickerStyles.emptyState}>
+                        <Text style={datePickerStyles.emptyStateText}>No dates available</Text>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
+    );
+};
+
+const datePickerStyles = StyleSheet.create({
+    container: {
+        padding: 20,
+        minHeight: 300,
+        maxHeight: 500,
+    },
+    daysList: {
+        flex: 1,
+    },
+    daysListContent: {
+        paddingBottom: 10,
+    },
+    dateOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    dateOptionSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: '#FFF5F5',
+    },
+    dateOptionContent: {
+        flex: 1,
+    },
+    dateLabel: {
+        fontSize: 16,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+        marginBottom: 4,
+    },
+    dateLabelSelected: {
+        color: Colors.primary,
+    },
+    dateSubLabel: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.textSecondary,
+    },
+    dateSubLabelSelected: {
+        color: Colors.text,
+    },
+    emptyState: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyStateText: {
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.textSecondary,
+    },
+});
 
 const ProductDetailScreen = () => {
     const params = useLocalSearchParams();
@@ -57,6 +229,262 @@ const ProductDetailScreen = () => {
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const imageGestureRef = useRef({ isHorizontal: false });
     
+    // Event date selection state
+    const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showDateError, setShowDateError] = useState(false);
+    
+    // Collection IDs that require date selection
+    const TICKETING_COLLECTION_IDS = [
+        'gid://shopify/Collection/509771120929', // Events
+        'gid://shopify/Collection/509726458145', // Playhouses
+        'gid://shopify/Collection/509771153697', // Petting Farms
+    ];
+    const EVENTS_COLLECTION_ID = 'gid://shopify/Collection/509771120929';
+    
+    // Check if product is from ticketing collections (Events, Playhouses, Petting Farms)
+    const isTicketingProduct = useMemo(() => {
+        // Check if we came from a ticketing collection (check route params)
+        const collectionId = params.collectionId as string;
+        const fromTicketing = collectionId && TICKETING_COLLECTION_IDS.some(id => 
+            collectionId === id || collectionId.includes(id.split('/').pop() || '')
+        );
+        
+        // Or check if product has relevant tags
+        const hasTicketingTag = product?.tags?.some((tag: any) => {
+            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return tagLower.includes('event') || 
+                   tagLower.includes('playhouse') || 
+                   tagLower.includes('petting') ||
+                   tagLower.includes('farm');
+        });
+        
+        // Or check if product belongs to any ticketing collection
+        const belongsToTicketing = product?.collections?.some((col: any) => {
+            const colId = col?.id || col?.node?.id || '';
+            return TICKETING_COLLECTION_IDS.some(ticketingId => 
+                colId === ticketingId || colId.includes(ticketingId.split('/').pop() || '')
+            );
+        });
+        
+        const result = fromTicketing || hasTicketingTag || belongsToTicketing;
+        // Debug logging
+        if (__DEV__) {
+            console.log('[DatePicker] isTicketingProduct check:', {
+                fromTicketing,
+                hasTicketingTag,
+                belongsToTicketing,
+                result,
+                collectionId: params.collectionId,
+                productTags: product?.tags,
+            });
+        }
+        return result;
+    }, [params, product]);
+
+    // Only Events uses predefined dates from variants (variants represent event dates).
+    // Playhouses & Petting Farms keep the "next 7 days" picker behavior.
+    const isEventsProduct = useMemo(() => {
+        const collectionId = params.collectionId as string | undefined;
+        const fromEventsCollection =
+            !!collectionId &&
+            (collectionId === EVENTS_COLLECTION_ID ||
+                collectionId.includes(EVENTS_COLLECTION_ID.split('/').pop() || ''));
+
+        const hasEventsTag = product?.tags?.some((tag: any) => {
+            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return tagLower.includes('event');
+        });
+
+        const belongsToEvents = product?.collections?.some((col: any) => {
+            const colId = col?.id || col?.node?.id || '';
+            return (
+                colId === EVENTS_COLLECTION_ID ||
+                colId.includes(EVENTS_COLLECTION_ID.split('/').pop() || '')
+            );
+        });
+
+        // Some Events products don't have an "event" tag. If the product has a "Date" option in Shopify,
+        // it's very likely an Event where variants represent dates.
+        const hasDateOption = product?.options?.some((opt: any) => {
+            const name = String(opt?.name || '').toLowerCase();
+            return name.includes('date') && Array.isArray(opt?.values) && opt.values.length > 0;
+        });
+
+        return isTicketingProduct && (fromEventsCollection || hasEventsTag || belongsToEvents || hasDateOption);
+    }, [params.collectionId, product, isTicketingProduct]);
+
+    // Extract available dates from Events variants (if any)
+    const ticketingVariants = useMemo(() => {
+        if (!product || !isEventsProduct) return [];
+        if (product?.variants?.edges) {
+            return product.variants.edges.map((edge: any) => edge?.node).filter(Boolean);
+        }
+        if (Array.isArray(product?.variants)) {
+            return product.variants.filter(Boolean);
+        }
+        return [];
+    }, [product, isEventsProduct]);
+
+    const parseTicketingDate = useCallback((raw: any): Date | null => {
+        if (!raw || typeof raw !== 'string') return null;
+        const s = raw.trim();
+        if (!s) return null;
+
+        // 1) Try native parse (works for ISO and many Shopify formats)
+        const d1 = new Date(s);
+        if (!isNaN(d1.getTime())) return d1;
+
+        // 1.5) Try to extract an ISO date (YYYY-MM-DD) from within a longer string
+        const iso = s.match(/(\d{4}-\d{2}-\d{2})/);
+        if (iso) {
+            const dIso = new Date(iso[1]);
+            if (!isNaN(dIso.getTime())) return dIso;
+        }
+
+        // 2) Try common dd/mm/yyyy or dd-mm-yyyy
+        const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (m) {
+            const dd = parseInt(m[1], 10);
+            const mm = parseInt(m[2], 10);
+            const yyyy = parseInt(m[3], 10);
+            const d2 = new Date(yyyy, mm - 1, dd);
+            if (!isNaN(d2.getTime())) return d2;
+        }
+
+        // 3) Handle formats like "15th Feb", "15 Feb", "Feb 15", optionally with year
+        const monthIndex = (name: string) => {
+            const key = name.toLowerCase().slice(0, 3);
+            const map: Record<string, number> = {
+                jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+                jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+            };
+            return map[key] ?? -1;
+        };
+        const stripOrdinal = (v: string) => v.replace(/(\d)(st|nd|rd|th)\b/gi, '$1');
+
+        const s2 = stripOrdinal(s).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+
+        // "15 Feb 2026" or "15 Feb"
+        const dmY = s2.match(/^(\d{1,2})\s+([A-Za-z]{3,9})(?:\s+(\d{4}))?$/);
+        if (dmY) {
+            const dd = parseInt(dmY[1], 10);
+            const mm = monthIndex(dmY[2]);
+            if (mm >= 0 && dd >= 1 && dd <= 31) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yyyy = dmY[3] ? parseInt(dmY[3], 10) : today.getFullYear();
+                let d = new Date(yyyy, mm, dd);
+                d.setHours(0, 0, 0, 0);
+                // If year was missing and date already passed this year, roll to next year
+                if (!dmY[3] && d.getTime() < today.getTime()) {
+                    d = new Date(yyyy + 1, mm, dd);
+                    d.setHours(0, 0, 0, 0);
+                }
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+
+        // "Feb 15 2026" or "Feb 15"
+        const mdY = s2.match(/^([A-Za-z]{3,9})\s+(\d{1,2})(?:\s+(\d{4}))?$/);
+        if (mdY) {
+            const mm = monthIndex(mdY[1]);
+            const dd = parseInt(mdY[2], 10);
+            if (mm >= 0 && dd >= 1 && dd <= 31) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yyyy = mdY[3] ? parseInt(mdY[3], 10) : today.getFullYear();
+                let d = new Date(yyyy, mm, dd);
+                d.setHours(0, 0, 0, 0);
+                if (!mdY[3] && d.getTime() < today.getTime()) {
+                    d = new Date(yyyy + 1, mm, dd);
+                    d.setHours(0, 0, 0, 0);
+                }
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+
+        return null;
+    }, []);
+
+    const normalizeDateKey = useCallback((date: Date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        // YYYY-MM-DD
+        return d.toISOString().slice(0, 10);
+    }, []);
+
+    const ticketingDateEntries = useMemo(() => {
+        if (!isEventsProduct) return [];
+
+        // Build a unique list of dates from variants. Prefer variants that are actually available.
+        const byKey = new Map<string, { date: Date; variant: any }>();
+
+        ticketingVariants.forEach((variant: any) => {
+            if (!variant) return;
+
+            // Prefer explicit "Date" selected option, else fall back to variant title.
+            const dateOpt = Array.isArray(variant.selectedOptions)
+                ? variant.selectedOptions.find((opt: any) =>
+                      typeof opt?.name === 'string' && opt.name.toLowerCase().includes('date')
+                  )
+                : null;
+
+            const candidateRaw = dateOpt?.value || variant.title;
+            const parsed = parseTicketingDate(candidateRaw);
+            if (!parsed) return;
+
+            const key = normalizeDateKey(parsed);
+            const existing = byKey.get(key);
+            if (!existing) {
+                byKey.set(key, { date: parsed, variant });
+                return;
+            }
+
+            // Prefer an in-stock/available variant if there are duplicates for the same day.
+            const existingAvailable = existing.variant?.availableForSale !== false;
+            const nextAvailable = variant?.availableForSale !== false;
+            if (!existingAvailable && nextAvailable) {
+                byKey.set(key, { date: parsed, variant });
+            }
+        });
+
+        return Array.from(byKey.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+    }, [isEventsProduct, ticketingVariants, normalizeDateKey, parseTicketingDate]);
+
+    const availableDates = useMemo(() => {
+        if (!isEventsProduct) return undefined;
+        return ticketingDateEntries.map((e) => e.date);
+    }, [isEventsProduct, ticketingDateEntries]);
+
+    const variantForDate = useCallback((date: Date) => {
+        const key = normalizeDateKey(date);
+        const entry = ticketingDateEntries.find((e) => normalizeDateKey(e.date) === key);
+        return entry?.variant || null;
+    }, [normalizeDateKey, ticketingDateEntries]);
+
+    const syncSelectedOptionsFromVariant = useCallback((variant: any) => {
+        if (!variant?.selectedOptions) return;
+        const next: Record<string, string> = {};
+        variant.selectedOptions.forEach((opt: any) => {
+            if (opt?.name && opt?.value) next[String(opt.name)] = String(opt.value);
+        });
+        setSelectedOptions(next);
+    }, []);
+
+    // If there is only one available ticketing date, auto-select it (still shown as selected in UI)
+    useEffect(() => {
+        if (!isEventsProduct) return;
+        if (ticketingDateEntries.length !== 1) return;
+        if (selectedEventDate) return;
+
+        const only = ticketingDateEntries[0];
+        setSelectedEventDate(only.date);
+        setSelectedVariant(only.variant);
+        syncSelectedOptionsFromVariant(only.variant);
+        setShowDateError(false);
+    }, [isEventsProduct, ticketingDateEntries, selectedEventDate, syncSelectedOptionsFromVariant]);
+    
     // Get product detail config
     const productDetailConfig = configService.getProductDetailConfig();
     const recommendationsConfig = productDetailConfig?.sections?.recommendations || {};
@@ -74,8 +502,15 @@ const ProductDetailScreen = () => {
             variants = productData.variants;
         }
 
-        // Find first available variant, fallback to first variant if none available
-        const firstVariant = variants.find((v: any) => v.availableForSale !== false) || variants[0];
+        // Find first available variant (check both availableForSale and quantityAvailable)
+        // Fallback to first variant if none available
+        const firstVariant = variants.find((v: any) => {
+            if (v.availableForSale === false) return false;
+            if (v.quantityAvailable !== undefined && v.quantityAvailable !== null) {
+                return v.quantityAvailable > 0;
+            }
+            return v.availableForSale !== false;
+        }) || variants[0];
 
         if (firstVariant) {
             setSelectedVariant(firstVariant);
@@ -135,6 +570,32 @@ const ProductDetailScreen = () => {
                     title: fullProduct.title,
                     image: imageUrl,
                 });
+                
+                // Track Product Viewed event
+                try {
+                    const { mixpanel } = require('@/mixpanel');
+                    const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    
+                    if (mixpanel) {
+                        const price = parseFloat(
+                            fullProduct.priceRange?.minVariantPrice?.amount || 
+                            fullProduct.variants?.edges?.[0]?.node?.price?.amount || 
+                            '0'
+                        );
+                        
+                        // Check if this is first product viewed
+                        const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
+                        if (!hasViewedProduct) {
+                            trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                            await AsyncStorage.setItem('has_viewed_product', 'true');
+                        }
+                        
+                        trackProductViewed(fullProduct.id, fullProduct.title, price);
+                    }
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
                 
                 // Load recently viewed products (excluding current)
                 loadRecentlyViewedProducts(fullProduct.handle);
@@ -199,6 +660,16 @@ const ProductDetailScreen = () => {
         const gapStyle = config.gap || { height: 8, backgroundColor: '#f5f5f5', marginTop: 20 };
 
         const handleProductPress = (p: any) => {
+            // Track recommendation clicked
+            try {
+                const { trackRecommendationClicked } = require('@/utils/mixpanelHelpers');
+                const recommendationType = title === 'You May Also Like' ? 'product_recommendation' : 
+                                          title === 'Recently Viewed' ? 'recently_viewed' : 'related';
+                trackRecommendationClicked(recommendationType, p.id, p.title);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+            
             router.push({ pathname: '/product/[id]', params: { id: p.id, handle: p.handle } });
         };
 
@@ -305,8 +776,16 @@ const ProductDetailScreen = () => {
         if (!product?.options) return [];
         const options = Array.isArray(product.options) ? product.options : [];
         if (variants.length <= 1) return [];
-        return options.filter((option: any) => (option.values || []).length > 1);
-    }, [product, variants.length]);
+        // For ticketing products, hide only the "Date" option pills (date is selected via the date picker).
+        // Keep other option pills (e.g., time slot, ticket type) if present.
+        const filtered = isTicketingProduct
+            ? options.filter((option: any) => {
+                  const name = String(option?.name || '').toLowerCase();
+                  return !name.includes('date');
+              })
+            : options;
+        return filtered.filter((option: any) => (option.values || []).length > 1);
+    }, [product, variants.length, isTicketingProduct]);
 
     const findVariantByOptions = useCallback((options: Record<string, string>, variantsList: any[]) => {
         if (!variantsList || variantsList.length === 0) return null;
@@ -369,6 +848,15 @@ const ProductDetailScreen = () => {
 
     const savings = mrp > basePrice ? mrp - basePrice : 0;
 
+    // Calculate discount percentage
+    const discountPercentage = useMemo(() => {
+        if (mrp > basePrice && mrp > 0) {
+            const percentage = Math.round(((mrp - basePrice) / mrp) * 100);
+            return percentage > 0 ? percentage : null;
+        }
+        return null;
+    }, [mrp, basePrice]);
+
     const formattedPrice = useMemo(() => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -415,25 +903,41 @@ const ProductDetailScreen = () => {
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
 
-    // Price comparison metafields for Essentials products
-    const amazonPrice = getMetafieldValue(product, 'amazon_price');
-    const firstcryPrice = getMetafieldValue(product, 'firstcry_price');
-    const blinkitPrice = getMetafieldValue(product, 'blinkit_price');
-    const zeptoPrice = getMetafieldValue(product, 'zepto_price');
-    const kiddoPrice = getMetafieldValue(product, 'kiddo_price');
+    // Price comparison metafields - using exact metafield keys from Shopify
+    const priceOnKiddo = getMetafieldValue(product, 'price_on_kiddo');
+    const priceOnAmazon = getMetafieldValue(product, 'price_on_amazon');
+    const priceOnFirstcry = getMetafieldValue(product, 'price_on_firstcry');
+    const priceOnBlinkit = getMetafieldValue(product, 'price_on_blinkit');
+    const priceOnZepto = getMetafieldValue(product, 'price_on_zepto');
+
+    // Helper function to format price with rupee symbol
+    const formatPriceWithRupee = (price: any) => {
+        if (!price || price === '0' || price === 0) return '₹0';
+        const priceStr = String(price).trim();
+        // If it already starts with ₹, return as is
+        if (priceStr.startsWith('₹')) return priceStr;
+        // Otherwise, add ₹ prefix
+        return `₹${priceStr}`;
+    };
 
     // Check if product has Essentials tag
     const hasEssentialsTag = product?.tags?.some(
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
-    // Check if all price comparison fields are available
-    const showPriceComparison = hasEssentialsTag && 
-        amazonPrice && 
-        firstcryPrice && 
-        blinkitPrice && 
-        zeptoPrice && 
-        kiddoPrice;
+    // Show price comparison for all essential products
+    // Display "0" for missing values
+    const showPriceComparison = hasEssentialsTag;
+
+    // Check if product is a diaper
+    const isDiaper = useMemo(() => {
+        if (!product) return false;
+        const title = (product.title || '').toLowerCase();
+        const tags = (product.tags || []).map((tag: any) => 
+            typeof tag === 'string' ? tag.toLowerCase() : ''
+        );
+        return title.includes('diaper') || tags.some((tag: string) => tag.includes('diaper'));
+    }, [product]);
 
     const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -572,10 +1076,10 @@ const ProductDetailScreen = () => {
                             {formattedMRP && (
                                 <Text style={styles.productMrpText}>{formattedMRP}</Text>
                             )}
+                            {discountPercentage !== null && (
+                                <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
+                            )}
                         </View>
-                        {formattedSavings && (
-                            <Text style={styles.productSavingsText}>You saved {formattedSavings}</Text>
-                        )}
                     </View>
 
                     {productOptions.length > 0 && (
@@ -635,80 +1139,96 @@ const ProductDetailScreen = () => {
                         </View>
                     )}
 
+                    {/* Date Selection - Only show for ticketing products (Events, Playhouses, Petting Farms) */}
+                    {isTicketingProduct && (
+                        <View style={styles.dateSelectionContainer}>
+                            <View style={styles.dateLabelContainer}>
+                                <Text style={styles.dateSelectionLabel}>Select Date</Text>
+                                <Text style={styles.requiredAsterisk}>*</Text>
+                            </View>
+                            <TouchableOpacity
+                                style={[
+                                    styles.dateSelectionButton,
+                                    !selectedEventDate && showDateError && styles.dateSelectionButtonError
+                                ]}
+                                onPress={() => {
+                                    setShowDatePicker(true);
+                                    setShowDateError(false); // Clear error when user opens date picker
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="calendar-outline" size={20} color={Colors.text} style={styles.dateIcon} />
+                                <Text style={[styles.dateSelectionText, !selectedEventDate && styles.dateSelectionPlaceholder]}>
+                                    {selectedEventDate 
+                                        ? selectedEventDate.toLocaleDateString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })
+                                        : 'Select a date'
+                                    }
+                                </Text>
+                                <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     {/* Separator */}
                     <View style={styles.separator} />
 
-                    {/* Description Accordion */}
+                    {/* Product Description - Display directly */}
                     {product.description && (
-                        <View style={styles.accordionContainer}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('description')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.SemiBold),
-                                        }
-                                    ]}>Product Details</Text>
+                        <View style={styles.descriptionContainer}>
+                            <Text style={[
+                                styles.descriptionBody,
+                                productStyles.description && {
+                                    fontSize: productStyles.description.fontSize,
+                                    color: productStyles.description.color,
+                                    lineHeight: productStyles.description.lineHeight,
+                                    ...processFontStyle(productStyles.description, Fonts.Regular),
+                                }
+                            ]}>{product.description}</Text>
+                        </View>
+                    )}
+
+                    {/* Price Comparison Chart - Display right after description */}
+                    {showPriceComparison && (
+                        <View style={styles.priceComparisonContainer}>
+                            <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
+                            <View style={styles.priceComparisonTable}>
+                                {/* Header Row */}
+                                <View style={[styles.priceComparisonRow, styles.priceComparisonHeaderRow]}>
+                                    <Text style={styles.pricePlatformTextHeader}>Platform</Text>
+                                    <Text style={styles.priceValueTextHeader}>
+                                        {isDiaper ? 'Price per diaper' : 'Price'}
+                                    </Text>
                                 </View>
-                                <Ionicons
-                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['description'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.descriptionBody,
-                                        productStyles.description && {
-                                            fontSize: productStyles.description.fontSize,
-                                            color: productStyles.description.color,
-                                            lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.Regular),
-                                        }
-                                    ]}>{product.description}</Text>
-                                    
-                                    {/* Price Comparison Table - Only for Essentials */}
-                                    {showPriceComparison && (
-                                        <View style={styles.priceComparisonContainer}>
-                                            <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
-                                            <View style={styles.priceComparisonTable}>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Amazon</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(amazonPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>FirstCry</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(firstcryPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Blinkit</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(blinkitPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={styles.priceComparisonRow}>
-                                                    <Text style={styles.pricePlatformText}>Zepto</Text>
-                                                    <Text style={styles.priceValueText}>₹{parseFloat(zeptoPrice).toFixed(0)}</Text>
-                                                </View>
-                                                <View style={[styles.priceComparisonRow, styles.priceComparisonRowKiddo]}>
-                                                    <View style={styles.kiddoRowContent}>
-                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
-                                                        <Text style={styles.pricePlatformTextKiddo}>Kiddo</Text>
-                                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
-                                                    </View>
-                                                    <Text style={styles.priceValueTextKiddo}>₹{parseFloat(kiddoPrice).toFixed(0)}</Text>
-                                                </View>
-                                            </View>
-                                        </View>
-                                    )}
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Amazon</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnAmazon)}</Text>
                                 </View>
-                            )}
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>FirstCry</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnFirstcry)}</Text>
+                                </View>
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Blinkit</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnBlinkit)}</Text>
+                                </View>
+                                <View style={styles.priceComparisonRow}>
+                                    <Text style={styles.pricePlatformText}>Zepto</Text>
+                                    <Text style={styles.priceValueText}>{formatPriceWithRupee(priceOnZepto)}</Text>
+                                </View>
+                                <View style={[styles.priceComparisonRow, styles.priceComparisonRowKiddo]}>
+                                    <View style={styles.kiddoRowContent}>
+                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                        <Text style={styles.pricePlatformTextKiddo}>Kiddo</Text>
+                                        <Ionicons name="star" size={12} color="#FFD700" style={styles.starIcon} />
+                                    </View>
+                                    <Text style={styles.priceValueTextKiddo}>{formatPriceWithRupee(priceOnKiddo)}</Text>
+                                </View>
+                            </View>
                         </View>
                     )}
 
@@ -799,18 +1319,36 @@ const ProductDetailScreen = () => {
                         {formattedMRP && (
                             <Text style={styles.mrpText}>{formattedMRP}</Text>
                         )}
+                        {discountPercentage !== null && (
+                            <Text style={styles.savingsText}>{discountPercentage}% off</Text>
+                        )}
                     </View>
-                    {formattedSavings && (
-                        <Text style={styles.savingsText}>You saved {formattedSavings}</Text>
-                    )}
                 </View>
-                {selectedVariant && selectedVariant.availableForSale && (selectedVariant.quantityAvailable === null || selectedVariant.quantityAvailable > 0) ? (
-                    <UniversalAdd
-                        item={product}
-                        selectedVariant={selectedVariant}
-                        variant="pdp"
-                        addText="Add to Cart"
-                    />
+                {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
+                    isTicketingProduct && !selectedEventDate ? (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton, styles.disabledButton]}
+                            onPress={() => {
+                                setShowDatePicker(true);
+                                setShowDateError(false); // Clear error when user opens date picker
+                            }}
+                        >
+                            <Text style={styles.addToCartText}>Select Date</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <UniversalAdd
+                            item={product}
+                            selectedVariant={selectedVariant}
+                            variant="pdp"
+                            addText="Add to Cart"
+                            bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                            onValidationError={() => {
+                                if (isTicketingProduct && !selectedEventDate) {
+                                    setShowDateError(true);
+                                }
+                            }}
+                        />
+                    )
                 ) : (
                     <TouchableOpacity
                         style={[styles.addToCartButton, styles.disabledButton]}
@@ -828,6 +1366,36 @@ const ProductDetailScreen = () => {
                 initialIndex={selectedImageIndex}
                 onClose={() => setImageViewerVisible(false)}
             />
+            
+            {/* Date Picker Modal */}
+            {isTicketingProduct && (
+                <BaseModal
+                    visible={showDatePicker}
+                    onClose={() => setShowDatePicker(false)}
+                    title="Select Date"
+                    type="bottomSheet"
+                >
+                    <EventDatePicker
+                        selectedDate={selectedEventDate}
+                        onDateSelect={(date) => {
+                            setSelectedEventDate(date);
+                            // Only Events variants represent predefined dates.
+                            if (isEventsProduct) {
+                                const v = variantForDate(date);
+                                if (v) {
+                                    setSelectedVariant(v);
+                                    syncSelectedOptionsFromVariant(v);
+                                }
+                            }
+                            setShowDatePicker(false);
+                            setShowDateError(false); // Clear error when date is selected
+                        }}
+                        // Events: pass predefined variant dates. Others: undefined → falls back to next 7 days.
+                        availableDates={isEventsProduct ? (availableDates ?? []) : undefined}
+                    />
+                </BaseModal>
+            )}
+            
             <FloatingCartButton showTabBar={false} />
         </View>
     );
@@ -988,6 +1556,53 @@ const styles = StyleSheet.create({
     variantTextDisabled: {
         color: '#9CA3AF',
     },
+    dateSelectionContainer: {
+        paddingHorizontal: 16,
+        marginTop: 20,
+        marginBottom: 4,
+    },
+    dateLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    dateSelectionLabel: {
+        fontSize: 16,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+        marginRight: 4,
+    },
+    requiredAsterisk: {
+        fontSize: 16,
+        fontFamily: Fonts.Bold,
+        color: '#FF4444',
+    },
+    dateSelectionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    dateIcon: {
+        marginRight: 10,
+    },
+    dateSelectionText: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    dateSelectionPlaceholder: {
+        color: Colors.textSecondary,
+    },
+    dateSelectionButtonError: {
+        borderColor: '#EF4444', // Red color for error state
+        borderWidth: 1.5,
+    },
     separator: {
         height: 8,
         backgroundColor: '#F9F9F9', // Light gray gap
@@ -1024,6 +1639,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         paddingBottom: 24,
         paddingLeft: 0, // Align text with icon (start flush left)
+    },
+    descriptionContainer: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 8,
     },
     descriptionBody: {
         fontSize: 14,
@@ -1074,7 +1694,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: Fonts.Regular,
         color: '#4CAF50',
-        marginTop: 4,
     },
     productPriceContainer: {
         marginTop: 12,
@@ -1101,12 +1720,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: '#4CAF50',
-        marginTop: 6,
     },
     priceComparisonContainer: {
         marginTop: 20,
         marginBottom: 20,
         paddingHorizontal: 16,
+        paddingTop: 0,
     },
     priceComparisonTitle: {
         fontSize: 18,
@@ -1131,6 +1750,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
     },
+    priceComparisonHeaderRow: {
+        backgroundColor: '#F5F5F5',
+        borderBottomWidth: 2,
+        borderBottomColor: Colors.border,
+        paddingVertical: 12,
+    },
     priceComparisonRowKiddo: {
         backgroundColor: '#E8F5E9',
         borderBottomWidth: 0,
@@ -1148,6 +1773,11 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Medium,
         color: Colors.text,
     },
+    pricePlatformTextHeader: {
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+    },
     pricePlatformTextKiddo: {
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
@@ -1156,6 +1786,11 @@ const styles = StyleSheet.create({
     priceValueText: {
         fontSize: 14,
         fontFamily: Fonts.Medium,
+        color: Colors.text,
+    },
+    priceValueTextHeader: {
+        fontSize: 14,
+        fontFamily: Fonts.Bold,
         color: Colors.text,
     },
     priceValueTextKiddo: {

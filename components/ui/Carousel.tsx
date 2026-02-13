@@ -18,7 +18,7 @@ interface CarouselItem {
   imageUrl: string | number;
   title?: string;
   subtitle?: string;
-  link?: string;
+  link?: string | any; // Can be string or object (e.g., { type: "collection", collection: { id: "..." } })
   id?: string;
 }
 

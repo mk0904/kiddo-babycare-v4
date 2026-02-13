@@ -246,6 +246,14 @@ export default function SearchScreen() {
                 // Save to search history if search was successful and not loading more
                 if (!loadMore && searchQuery.trim()) {
                     saveToSearchHistory(searchQuery.trim());
+                    
+                    // Track search performed
+                    try {
+                        const { trackSearchPerformed } = require('@/utils/mixpanelHelpers');
+                        trackSearchPerformed(searchQuery.trim(), result.products?.length || 0);
+                    } catch (e) {
+                        console.warn('Mixpanel tracking error:', e);
+                    }
                 }
 
                 // Filter out invalid products first
@@ -350,6 +358,26 @@ export default function SearchScreen() {
 
     const handleFilterChange = (newFilters: any) => {
         setSelectedFilters(newFilters);
+        
+        // Track filters applied
+        try {
+            const { trackFiltersApplied } = require('@/utils/mixpanelHelpers');
+            const filterProps: any = {};
+            if (newFilters.ageGroup) filterProps.ageGroup = newFilters.ageGroup;
+            if (newFilters.brand) filterProps.brand = newFilters.brand;
+            if (newFilters.priceRange) filterProps.priceRange = newFilters.priceRange;
+            // Add any other filter properties
+            Object.keys(newFilters).forEach(key => {
+                if (newFilters[key] && !['ageGroup', 'brand', 'priceRange'].includes(key)) {
+                    filterProps[key] = newFilters[key];
+                }
+            });
+            if (Object.keys(filterProps).length > 0) {
+                trackFiltersApplied(filterProps);
+            }
+        } catch (e) {
+            console.warn('Mixpanel tracking error:', e);
+        }
     };
 
     const handleFastFilterToggle = (attribute: string, value: any) => {
@@ -708,10 +736,16 @@ export default function SearchScreen() {
                     facets={facets.map((f: any) => {
                         // Handle different facet structures from Searchanise
                         // Searchanise facets can have: id, attribute, title, label, buckets, values, data
-                        const attribute = f.attribute || f.id || f.field || f.name;
+                        let attribute = f.attribute || f.id || f.field || f.name;
                         const title = f.title || f.label || f.name || attribute;
                         const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
                         let buckets = f.buckets || f.values || f.data || [];
+                        
+                        // Map brand/vendor attributes correctly for Searchanise
+                        // Searchanise uses 'vendor' for brand filtering
+                        if (attribute?.toLowerCase().includes('brand') || title?.toLowerCase().includes('brand')) {
+                            attribute = 'vendor';
+                        }
                         
                         // Ensure buckets have the right structure
                         if (Array.isArray(buckets)) {

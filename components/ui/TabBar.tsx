@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_TAB_BAR_HEIGHT = 60;
 const ICON_SIZE = 26;
-const SCREENS_WITH_TAB_BAR = ['index', 'category', 'wishlist', 'account'];
+const SCREENS_WITH_TAB_BAR = ['index', 'category', 'ticketing', 'account'];
 
 // Local icon mapping - using SVG files from assets/icons
 const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
@@ -24,9 +24,9 @@ const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
         active: require('@/assets/icons/category-active.svg'),
         inactive: require('@/assets/icons/category-inactive-fill.svg'),
     },
-    wishlist: {
-        active: require('@/assets/icons/heart-active-fill.svg'),
-        inactive: require('@/assets/icons/heart-inactive-fill.svg'),
+    ticketing: {
+        active: require('@/assets/icons/ticket-active.png'),
+        inactive: require('@/assets/icons/ticketicon.png'),
     },
     account: {
         active: require('@/assets/icons/profile-active-fill.svg'),

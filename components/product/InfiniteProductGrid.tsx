@@ -54,10 +54,11 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
           containerStyle={productCardStyle?.root}
           numColumns={productOptions?.numColumns}
           width={productCardWidth}
+          collectionId={collectionId}
         />
       );
     },
-    [productCardStyle, productOptions, productCardWidth]
+    [productCardStyle, productOptions, productCardWidth, collectionId]
   );
 
   // Match gauntlet: simple keyExtractor
@@ -156,6 +157,8 @@ export interface InfiniteProductGridProps
   onFacetsLoaded?: (facets: any[]) => void;
   onResultsCount?: (count: number) => void;
   contentContainerStyle?: any;
+  genderFilter?: string | null;
+  ageFilter?: string | null;
 }
 
 export function InfiniteProductGrid({
@@ -182,6 +185,8 @@ export function InfiniteProductGrid({
   onFacetsLoaded,
   onResultsCount,
   contentContainerStyle,
+  genderFilter,
+  ageFilter,
 }: InfiniteProductGridProps) {
   return (
     <ProductCollection
@@ -207,6 +212,8 @@ export function InfiniteProductGrid({
       onFacetsLoaded={onFacetsLoaded}
       onResultsCount={onResultsCount}
       contentContainerStyle={contentContainerStyle}
+      genderFilter={genderFilter}
+      ageFilter={ageFilter}
     />
   );
 }

@@ -97,6 +97,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         boys: 'Boys',
         babycare: 'Baby Care',
         toys: 'Toys',
+        babygear: 'Baby Gear',
       };
       const defaultIcons: Record<string, any> = {
         all: require('@/assets/images/shopall-selected.png'),
@@ -104,6 +105,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         boys: require('@/assets/images/boys-fashion-selected.png'),
         babycare: require('@/assets/images/babycare-selected.png'),
         toys: require('@/assets/images/toys-selected.png'),
+        babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
       return {
@@ -131,10 +133,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     if (collectionIds && collectionIds.length > 0) {
       // Use collections from collectionIds
       items = collections.map((collection) => {
-        // Extract numeric ID from GID format (gid://shopify/Collection/123456)
-        const collectionId = collection.id.includes('/')
-          ? collection.id.split('/').pop() || collection.id
-          : collection.id;
+        // Use the full collection ID (keep gid:// format if present)
+        const collectionId = collection.id;
         
         return {
           id: collection.id,
@@ -142,9 +142,14 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
           imageUrl: collection.imageUrl,
           imageSource: undefined,
           onPress: () => {
-            const collectionPath = `/collections/${collectionId}`;
-            router.push(collectionPath as any);
-            onPress?.(collectionPath, collection);
+            // Pass collection info to onPress handler (let parent handleBlockPress handle navigation)
+            // This ensures consistent navigation behavior across home and category pages
+            onPress?.(`/collections/${collectionId}`, {
+              ...collection,
+              collectionId: collectionId,
+              collectionName: collection.name,
+              name: collection.name,
+            });
           },
         };
       });
@@ -217,11 +222,11 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   const titleStyle = {
     marginBottom: 15,
     fontSize: 18,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
       ? blockStyles.title.paddingHorizontal
       : (containerStyle.paddingHorizontal || containerPaddingHorizontal),
-    ...processFontStyle(blockStyles?.title, Fonts.Bold),
+    ...processFontStyle(blockStyles?.title, Fonts.Black),
     ...blockStyles?.title,
   };
 
@@ -233,6 +238,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     textAlign: 'center' as const,
     ...processedTextStyle,
     ...blockStyles?.text, // Apply all text styles last so they override defaults
+    fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)
@@ -267,8 +273,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 const defaultStyles = StyleSheet.create({
   title: {
     fontSize: 18,
-    fontFamily: Fonts.Bold,
-    fontWeight: '700',
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     color: Colors.text,
     marginBottom: 16,
     paddingHorizontal: 16,

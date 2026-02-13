@@ -16,6 +16,11 @@ expo-env.d.ts
 *.p12
 *.mobileprovision
 
+# Android Keystore files (sensitive - do not commit)
+*.keystore
+keystore.properties
+release_certificate.pem
+
 # Metro
 .metro-health-check*
 
@@ -27,4 +32,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-app-example
+app-exampleapp-release.apk
+*.apk
+*.aab

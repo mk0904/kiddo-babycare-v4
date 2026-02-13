@@ -130,14 +130,14 @@ export default function OrderSuccessScreen() {
                                 </Text>
                             </View>
                         )}
-                        <View style={styles.orderRow}>
+                        <View style={[styles.orderRow, styles.lastOrderRow]}>
                             <Text style={styles.orderLabel}>Estimated Delivery</Text>
-                            <Text style={styles.orderValue}>3-5 Business Days</Text>
+                            <Text style={styles.orderValue}>30 mins</Text>
                         </View>
                     </View>
 
                     <Text style={styles.infoText}>
-                        You will receive an order confirmation email with tracking details shortly.
+                        
                     </Text>
                 </Animated.View>
 
@@ -232,20 +232,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.Regular,
         color: '#666',
-        marginBottom: 24,
+        marginBottom: 28,
     },
     orderCard: {
         width: '100%',
-        backgroundColor: '#F8F8F8',
+        backgroundColor: '#FFFFFF',
         borderRadius: 16,
         padding: 20,
-        marginBottom: 24,
+        marginBottom: 32,
     },
     orderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
+    },
+    lastOrderRow: {
+        marginBottom: 0,
     },
     orderLabel: {
         fontSize: 14,
@@ -263,12 +266,14 @@ const styles = StyleSheet.create({
         color: '#999',
         textAlign: 'center',
         lineHeight: 18,
+        marginBottom: 48,
     },
     actions: {
         position: 'absolute',
         bottom: 40,
         left: 32,
         right: 32,
+        paddingTop: 16,
     },
     primaryButton: {
         backgroundColor: Colors.primary,

@@ -44,6 +44,8 @@ export const Fonts = {
   Medium: 'Metropolis-Medium',
   SemiBold: 'Metropolis-SemiBold',
   Bold: 'Metropolis-Bold',
+  ExtraBold: 'Metropolis-ExtraBold',
+  Black: 'Metropolis-Black',
   // Keep original platform select for backward compatibility if needed, but the above are what Kiddo uses
   ...Platform.select({
     ios: {

@@ -17,10 +17,15 @@ interface FilterSortPillsProps {
     activeFiltersCount: number;
     onFiltersPress: () => void;
     onSortPress: () => void;
+    onGenderPress?: () => void;
+    onAgePress?: () => void;
+    selectedGender?: string | null;
+    selectedAge?: string | null;
     facets?: any[];
     selectedFilters?: any;
     onFastFilterToggle?: (attribute: string, value: any) => void;
     style?: StyleProp<ViewStyle>;
+    showGenderFilter?: boolean; // Control whether gender filter is shown
 }
 
 export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
@@ -28,10 +33,15 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     activeFiltersCount,
     onFiltersPress,
     onSortPress,
+    onGenderPress,
+    onAgePress,
+    selectedGender,
+    selectedAge,
     facets = [],
     selectedFilters = {},
     onFastFilterToggle,
     style,
+    showGenderFilter = true, // Default to true for backward compatibility
 }) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,7 +141,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     const textMarginLeft = useMemo(() => {
         return animatedValue.interpolate({
             inputRange: [0, 0.5, 1],
-            outputRange: [5, 2.5, 0],
+            outputRange: [0, 0, 0], // No gap between icon and text
             extrapolate: 'clamp',
         });
     }, []);
@@ -197,15 +207,15 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         onPress={onSortPress}
                         activeOpacity={0.7}
                     >
-                            <Animated.View
-                                style={{
-                                    transform: [{ scale: iconScale }],
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                <Ionicons name="swap-vertical-outline" size={16} color={Colors.text} />
-                            </Animated.View>
+                        <Animated.View
+                            style={{
+                                transform: [{ scale: iconScale }],
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Ionicons name="swap-vertical-outline" size={16} color={Colors.text} />
+                        </Animated.View>
                         <Animated.View
                             style={{
                                 opacity: textOpacity,
@@ -220,6 +230,106 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         </Animated.View>
                     </TouchableOpacity>
                 </Animated.View>
+
+                {onGenderPress && showGenderFilter && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedGender && styles.actionButtonActive,
+                            {
+                                width: buttonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onGenderPress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="people-outline" 
+                                    size={16} 
+                                    color={selectedGender ? Colors.primary : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: textWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedGender && styles.actionButtonTextActive
+                            ]}>
+                                Gender
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {onAgePress && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedAge && styles.actionButtonActive,
+                            {
+                                width: buttonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onAgePress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="calendar-outline" 
+                                    size={16} 
+                                    color={selectedAge ? Colors.primary : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: textWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedAge && styles.actionButtonTextActive
+                            ]}>
+                                Age
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
             </View>
 
             {/* Fast Filters - Right side (scrollable) */}
@@ -262,6 +372,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
+    },
+    actionButtonActive: {
+        backgroundColor: '#E8F4FD',
+        borderWidth: 1,
+        borderColor: Colors.primary,
+    },
+    actionButtonTextActive: {
+        color: Colors.primary,
+        fontFamily: Fonts.SemiBold,
     },
     actionButtonInner: {
         flexDirection: 'row',

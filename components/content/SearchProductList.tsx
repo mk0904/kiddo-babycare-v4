@@ -39,7 +39,7 @@ export function SearchProductList({
         showHeading={!!title}
         style={{
           root: blockStyles?.container,
-          title: processFontStyle(blockStyles?.title, Fonts.Bold),
+          title: processFontStyle(blockStyles?.title, Fonts.Black),
           list: blockStyles?.list,
         }}
         contentWidth={width - (blockStyles?.container?.paddingHorizontal || 0) * 2}

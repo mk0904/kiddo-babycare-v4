@@ -15,13 +15,15 @@ const GET_PRODUCTS_QUERY = `
   query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
     products(first: $first, query: $query, sortKey: $sortKey, reverse: $reverse) {
       edges {
-        node {
-          id
-          title
-          description
-          handle
-          tags
-          vendor
+          node {
+            id
+            title
+            description
+            handle
+            availableForSale
+            totalInventory
+            tags
+            vendor
           priceRange {
             minVariantPrice {
               amount
@@ -47,6 +49,9 @@ const GET_PRODUCTS_QUERY = `
                    amount
                    currencyCode
                 }
+                availableForSale
+                quantityAvailable
+                currentlyNotInStock
               }
             }
           }
@@ -86,6 +91,8 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
             title
             description
             handle
+            availableForSale
+            totalInventory
             tags
             vendor
             priceRange {
@@ -113,6 +120,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
                   }
                   availableForSale
                   quantityAvailable
+                  currentlyNotInStock
                   selectedOptions {
                     name
                     value
@@ -158,6 +166,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
       title
       description
       handle
+      availableForSale
+      totalInventory
       tags
       vendor
       priceRange {
@@ -189,6 +199,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value
@@ -198,6 +209,25 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
             }
           }
         }
+      }
+      options {
+        id
+        name
+        values
+      }
+      metafields(identifiers: [
+        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "wash_care"},
+        {namespace: "custom", key: "price_on_kiddo"},
+        {namespace: "custom", key: "price_on_amazon"},
+        {namespace: "custom", key: "price_on_firstcry"},
+        {namespace: "custom", key: "price_on_blinkit"},
+        {namespace: "custom", key: "price_on_zepto"}
+      ]) {
+        id
+        key
+        value
+        namespace
       }
     }
   }
@@ -211,6 +241,8 @@ const GET_PRODUCT_BY_ID_QUERY = `
       title
       description
       handle
+      availableForSale
+      totalInventory
       tags
       vendor
       priceRange {
@@ -238,6 +270,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value
@@ -257,7 +290,15 @@ const GET_PRODUCT_BY_ID_QUERY = `
         name
         values
       }
-      metafields(identifiers: [{namespace: "custom", key: "fabric"}, {namespace: "custom", key: "wash_care"}]) {
+      metafields(identifiers: [
+        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "wash_care"},
+        {namespace: "custom", key: "price_on_kiddo"},
+        {namespace: "custom", key: "price_on_amazon"},
+        {namespace: "custom", key: "price_on_firstcry"},
+        {namespace: "custom", key: "price_on_blinkit"},
+        {namespace: "custom", key: "price_on_zepto"}
+      ]) {
         id
         key
         value
@@ -304,6 +345,7 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
             }
             availableForSale
             quantityAvailable
+            currentlyNotInStock
             selectedOptions {
               name
               value

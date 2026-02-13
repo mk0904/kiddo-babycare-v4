@@ -1,9 +1,12 @@
 // Config Service - Loads and manages remote config
-import { AppConfig, ScreenConfig, ContentBlock } from '@/types/content';
+import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
 
 // Remote config URL
 const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
+
+// Set to true to use local config file in development (useful for testing config changes)
+const USE_LOCAL_CONFIG_IN_DEV = __DEV__ && true; // Change to false to use remote config
 
 // Default config - will be loaded from Kiddo's appConfig.json
 const defaultConfig: AppConfig = {
@@ -22,10 +25,16 @@ class ConfigService {
   private loadPromise: Promise<AppConfig> | null = null;
 
   // Load config from remote or local
-  async loadConfig(remoteUrl?: string): Promise<AppConfig> {
-    // If already loading, return the existing promise
-    if (this.isLoading && this.loadPromise) {
+  async loadConfig(remoteUrl?: string, forceReload: boolean = false): Promise<AppConfig> {
+    // If already loading and not forcing reload, return the existing promise
+    if (!forceReload && this.isLoading && this.loadPromise) {
       return this.loadPromise;
+    }
+
+    // If forcing reload, clear existing config
+    if (forceReload) {
+      this.rawConfig = null;
+      this.config = defaultConfig;
     }
 
     const url = remoteUrl || REMOTE_CONFIG_URL;
@@ -40,26 +49,64 @@ class ConfigService {
       this.loadPromise = null;
     }
   }
+  
+  // Force reload config (useful after updating local config file)
+  async reloadConfig(): Promise<AppConfig> {
+    return this.loadConfig(undefined, true);
+  }
 
   private async _loadConfig(url: string): Promise<AppConfig> {
-    // Load from remote URL only - no fallback
-    let response: Response;
+    let remoteConfig: any = null;
+    
+    // Always try local config first (bundled with app) - works in both dev and production
     try {
-      response = await fetch(url);
-    } catch (fetchError: any) {
-      // Network error (no internet, timeout, etc.)
-      const error = new Error(`Network error: ${fetchError.message || 'Failed to fetch config. Please check your internet connection.'}`);
-      console.error('[ConfigService] Network error loading remote config:', error);
-      throw error;
+      const localConfig = require('@/config/kiddoAppConfig.json');
+      remoteConfig = localConfig;
+      console.log('[ConfigService] ✅ Loaded config from LOCAL file (bundled with app)');
+    } catch (localError) {
+      console.warn('[ConfigService] Failed to load local config, falling back to remote:', localError);
+      // Fall through to try remote
     }
     
-    if (!response.ok) {
-      const error = new Error(`Failed to fetch config: ${response.status} ${response.statusText}`);
-      console.error('[ConfigService] Failed to load remote config:', error);
-      throw error;
+    // If local config wasn't loaded, try remote
+    if (!remoteConfig) {
+      let response: Response;
+      try {
+        response = await fetch(url);
+        if (response.ok) {
+          remoteConfig = await response.json();
+          console.log('[ConfigService] ✅ Loaded config from remote URL');
+        } else {
+          console.warn(`[ConfigService] Remote config returned ${response.status}`);
+          if (!USE_LOCAL_CONFIG_IN_DEV) {
+            throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`);
+          }
+        }
+      } catch (fetchError: any) {
+        // Network error
+        if (USE_LOCAL_CONFIG_IN_DEV) {
+          // Try local as fallback
+          try {
+            const localConfig = require('@/config/kiddoAppConfig.json');
+            remoteConfig = localConfig;
+            console.log('[ConfigService] ✅ Loaded config from local file (network error fallback)');
+          } catch (localError) {
+            const error = new Error(`Failed to load config: Network error and local fallback failed. ${fetchError.message}`);
+            console.error('[ConfigService] Failed to load config:', error);
+            throw error;
+          }
+        } else {
+          const error = new Error(`Network error: ${fetchError.message || 'Failed to fetch config. Please check your internet connection.'}`);
+          console.error('[ConfigService] Network error loading remote config:', error);
+          throw error;
+        }
+      }
     }
     
-    const remoteConfig = await response.json();
+    if (!remoteConfig) {
+      throw new Error('Failed to load config from both remote and local sources');
+    }
+    
     this.rawConfig = remoteConfig;
     
     // Dynamically build home config from all category arrays in config
@@ -218,6 +265,12 @@ class ConfigService {
   getDeliveryConfig() {
     if (!this.rawConfig) return null;
     return this.rawConfig.delivery || null;
+  }
+
+  // Get free shoes offer configuration
+  getFreeShoesOfferConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.freeShoesOffer || null;
   }
 
   // Update config

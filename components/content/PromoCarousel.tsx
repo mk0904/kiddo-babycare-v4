@@ -51,7 +51,7 @@ export function PromoCarousel({ block, onPress }: PromoCarouselProps) {
     <BaseContentBlock block={block}>
       <View style={[styles.container, blockStyles?.root]}>
         {heading && (
-          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Bold)]}>
+          <Text style={[styles.heading, processFontStyle(blockStyles?.heading, Fonts.Black)]}>
             {heading}
           </Text>
         )}
@@ -75,7 +75,8 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 20,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.Black,
+    fontWeight: '900',
     marginBottom: 8,
     paddingHorizontal: 16,
   },

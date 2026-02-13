@@ -9,11 +9,12 @@ import {
     RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
 import { useNector } from '@/context/NectorContext';
 import { useAuth } from '@/context/AuthContext';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function RewardsScreen() {
     const router = useRouter();
@@ -50,7 +51,7 @@ export default function RewardsScreen() {
     if (!isAuthenticated) {
         return (
             <SafeAreaView style={styles.container}>
-                <Stack.Screen options={{ headerTitle: 'Rewards' }} />
+                <ScreenHeader title="Rewards" showBack={true} showSearch={false} />
                 <View style={styles.notAuthContainer}>
                     <Ionicons name="gift-outline" size={64} color={Colors.textSecondary} />
                     <Text style={styles.notAuthTitle}>Login to View Rewards</Text>
@@ -71,7 +72,7 @@ export default function RewardsScreen() {
     if (nector.isLoading) {
         return (
             <SafeAreaView style={styles.container}>
-                <Stack.Screen options={{ headerTitle: 'Rewards' }} />
+                <ScreenHeader title="Rewards" showBack={true} showSearch={false} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -88,7 +89,7 @@ export default function RewardsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <Stack.Screen options={{ headerTitle: 'Rewards' }} />
+            <ScreenHeader title="Rewards" showBack={true} showSearch={false} />
 
             <ScrollView
                 style={styles.scrollView}
