@@ -105,7 +105,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         boys: require('@/assets/images/boys-fashion-selected.png'),
         babycare: require('@/assets/images/babycare-selected.png'),
         toys: require('@/assets/images/toys-selected.png'),
-        babygear: require('@/assets/images/BabyGearLogo.png'),
+        babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
       return {

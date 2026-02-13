@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
     },
     gridContainer: {
         width: '100%',
+        paddingBottom: 140,
     },
     headline: {
         fontSize: 18,

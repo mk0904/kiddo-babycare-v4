@@ -33,7 +33,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>17</string>
+	<string>20</string>
 	<key>GMSApiKey</key>
 	<string>PLACEHOLDER_GOOGLE_MAPS_KEY</string>
 	<key>LSApplicationQueriesSchemes</key>

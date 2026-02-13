@@ -58,19 +58,17 @@ class ConfigService {
   private async _loadConfig(url: string): Promise<AppConfig> {
     let remoteConfig: any = null;
     
-    // In development, prioritize local config if USE_LOCAL_CONFIG_IN_DEV is true
-    if (USE_LOCAL_CONFIG_IN_DEV) {
-      try {
-        const localConfig = require('@/config/kiddoAppConfig.json');
-        remoteConfig = localConfig;
-        console.log('[ConfigService] ✅ Loaded config from LOCAL file (dev mode - USE_LOCAL_CONFIG_IN_DEV=true)');
-      } catch (localError) {
-        console.warn('[ConfigService] Failed to load local config, falling back to remote:', localError);
-        // Fall through to try remote
-      }
+    // Always try local config first (bundled with app) - works in both dev and production
+    try {
+      const localConfig = require('@/config/kiddoAppConfig.json');
+      remoteConfig = localConfig;
+      console.log('[ConfigService] ✅ Loaded config from LOCAL file (bundled with app)');
+    } catch (localError) {
+      console.warn('[ConfigService] Failed to load local config, falling back to remote:', localError);
+      // Fall through to try remote
     }
     
-    // If local config wasn't loaded (or not in dev mode), try remote
+    // If local config wasn't loaded, try remote
     if (!remoteConfig) {
       let response: Response;
       try {

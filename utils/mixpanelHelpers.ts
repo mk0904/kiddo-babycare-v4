@@ -115,3 +115,162 @@ export const trackPaymentFailed = (orderId: string, amount: number, reason?: str
   });
 };
 
+// ============================================
+// ONBOARDING / ACTIVATION EVENTS
+// ============================================
+
+export const trackSignupStarted = (method?: string) => {
+  trackEvent('Signup Started', { method: method || 'phone' });
+};
+
+export const trackSignupCompleted = (userId: string, method?: string) => {
+  trackEvent('Signup Completed', { 
+    userId,
+    method: method || 'phone' 
+  });
+};
+
+export const trackMobileOTPVerified = (phoneNumber: string) => {
+  trackEvent('Mobile OTP Verified', { phoneNumber });
+};
+
+export const trackProfileCreated = (properties: {
+  babyAge?: number;
+  babyGender?: string;
+  babyName?: string;
+  hasParentInfo?: boolean;
+}) => {
+  trackEvent('Profile Created', properties);
+};
+
+export const trackFirstProductViewed = (productId: string, productName?: string) => {
+  trackEvent('First Product Viewed', {
+    productId,
+    productName,
+  });
+};
+
+export const trackFirstAddToCart = (productId: string, productName?: string, price?: number) => {
+  trackEvent('First Add to Cart', {
+    productId,
+    productName,
+    price,
+  });
+};
+
+export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
+  trackEvent('First Order Placed', {
+    orderId,
+    amount,
+  });
+};
+
+// ============================================
+// BROWSING & ENGAGEMENT EVENTS
+// ============================================
+
+export const trackCategoryViewed = (categoryName: string, categoryId?: string) => {
+  trackEvent('Category Viewed', {
+    categoryName,
+    categoryId,
+  });
+};
+
+export const trackSearchPerformed = (query: string, resultsCount?: number) => {
+  trackEvent('Search Performed', {
+    query,
+    resultsCount,
+  });
+};
+
+export const trackFiltersApplied = (filters: {
+  ageGroup?: string;
+  brand?: string;
+  priceRange?: string;
+  [key: string]: any;
+}) => {
+  trackEvent('Filters Applied', filters);
+};
+
+export const trackRecommendationClicked = (recommendationType: string, itemId: string, itemName?: string) => {
+  trackEvent('Recommendation Clicked', {
+    recommendationType,
+    itemId,
+    itemName,
+  });
+};
+
+export const trackWishlistAdded = (productId: string, productName?: string) => {
+  trackEvent('Wishlist Added', {
+    productId,
+    productName,
+  });
+};
+
+export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
+  trackEvent('Product Share Clicked', {
+    productId,
+    productName,
+    shareMethod,
+  });
+};
+
+// ============================================
+// CART EVENTS
+// ============================================
+
+export const trackRemoveFromCart = (productId: string, productName?: string, price?: number) => {
+  trackEvent('Remove from Cart', {
+    productId,
+    productName,
+    price,
+  });
+};
+
+export const trackCartViewed = (itemCount: number, cartValue: number) => {
+  trackEvent('Cart Viewed', {
+    itemCount,
+    cartValue,
+  });
+};
+
+export const trackCouponApplied = (couponCode: string, discountAmount?: number) => {
+  trackEvent('Coupon Applied', {
+    couponCode,
+    discountAmount,
+  });
+};
+
+export const trackDeliveryETAChecked = (address?: string, estimatedTime?: number) => {
+  trackEvent('Delivery ETA Checked', {
+    address,
+    estimatedTime,
+  });
+};
+
+// ============================================
+// CHECKOUT EVENTS
+// ============================================
+
+export const trackPaymentMethodSelected = (paymentMethod: string) => {
+  trackEvent('Payment Method Selected', {
+    paymentMethod,
+  });
+};
+
+export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string) => {
+  trackEvent('Order Placed', {
+    orderId,
+    amount,
+    itemCount,
+    paymentMethod,
+  });
+};
+
+export const trackOrderConfirmed = (orderId: string, amount: number) => {
+  trackEvent('Order Confirmed', {
+    orderId,
+    amount,
+  });
+};
+

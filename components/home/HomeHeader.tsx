@@ -1,7 +1,7 @@
 import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
@@ -119,7 +119,7 @@ export function HomeHeader({
         // Map asset paths to require statements
         const assetMap: Record<string, any> = {
           'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
-          'assets/images/BabyGearLogo.png': require('@/assets/images/BabyGearLogo.png'),
+          'assets/images/Baby-Gear.png': require('@/assets/images/Baby-Gear.png'),
         };
         return assetMap[backgroundImage] || { uri: backgroundImage };
       }

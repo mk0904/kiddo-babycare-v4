@@ -8,7 +8,7 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -162,6 +162,14 @@ export default function OTPScreen() {
         return;
       }
 
+      // Track OTP verified
+      try {
+        const { trackMobileOTPVerified } = require('@/utils/mixpanelHelpers');
+        trackMobileOTPVerified(phoneNumber);
+      } catch (e) {
+        console.warn('Mixpanel tracking error:', e);
+      }
+
       // OTP verified, try to login first (for existing customers)
       // Format email: phone@kiddo.app
       const cleanedPhone = phoneNumber.replace(/\D/g, '');
@@ -255,6 +263,15 @@ export default function OTPScreen() {
           if (customerResult.success && customerResult.customer) {
             if (!customerResult.customer.customerAccessToken) {
               throw new Error('Failed to create account. Please try again.');
+            }
+
+            // Track signup completed
+            try {
+              const { trackSignupCompleted } = require('@/utils/mixpanelHelpers');
+              const userId = customerResult.customer.id || customerResult.customer.customerId;
+              trackSignupCompleted(userId, 'phone');
+            } catch (e) {
+              console.warn('Mixpanel tracking error:', e);
             }
 
             // Login user with default name

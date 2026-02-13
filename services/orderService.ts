@@ -303,6 +303,16 @@ export const orderService = {
                 message: message || getStatusText(status),
             });
 
+            // Track order confirmed when status changes to confirmed
+            if (status === 'confirmed') {
+                try {
+                    const { trackOrderConfirmed } = require('@/utils/mixpanelHelpers');
+                    trackOrderConfirmed(order.id, order.totalAmount);
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
+            }
+
             if (status === 'delivered') {
                 order.deliveredAt = now;
             }

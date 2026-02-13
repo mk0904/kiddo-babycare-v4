@@ -12,13 +12,13 @@ import { ContentBlock } from '@/types/content';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -99,7 +99,7 @@ export default function HomeScreen() {
         {
           key: 'babygear',
           label: 'Baby Gear',
-          iconImage: require('@/assets/images/BabyGearLogo.png'),
+          iconImage: require('@/assets/images/Baby-Gear.png'),
         },
       ];
     }
@@ -125,7 +125,7 @@ export default function HomeScreen() {
         boys: require('@/assets/images/boys-fashion-selected.png'),
         babycare: require('@/assets/images/babycare-selected.png'),
         toys: require('@/assets/images/toys-selected.png'),
-        babygear: require('@/assets/images/BabyGearLogo.png'),
+        babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
       return {
@@ -137,6 +137,14 @@ export default function HomeScreen() {
   }, [configLoading]);
 
   const handleCategorySelect = useCallback((categoryKey: string) => {
+    // Track category viewed
+    try {
+      const { trackCategoryViewed } = require('@/utils/mixpanelHelpers');
+      const categoryName = categories.find(c => c.key === categoryKey)?.label || categoryKey;
+      trackCategoryViewed(categoryName, categoryKey);
+    } catch (e) {
+      console.warn('Mixpanel tracking error:', e);
+    }
     if (categoryKey === selectedCategory) return;
     setSelectedCategory(categoryKey);
   }, [selectedCategory]);
@@ -283,6 +291,14 @@ export default function HomeScreen() {
 
       const deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
       setEstimatedTime(deliveryTime);
+      
+      // Track delivery ETA checked
+      try {
+        const { trackDeliveryETAChecked } = require('@/utils/mixpanelHelpers');
+        trackDeliveryETAChecked(address || 'Unknown', deliveryTime);
+      } catch (e) {
+        console.warn('Mixpanel tracking error:', e);
+      }
     } catch (error) {
       console.error('Error fetching delivery time:', error);
       setEstimatedTime(null);

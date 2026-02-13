@@ -5,9 +5,10 @@ import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { otpService } from '@/services/otpService';
+import { trackSignupStarted } from '@/utils/mixpanelHelpers';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -97,6 +98,9 @@ export default function LoginScreen() {
   };
 
   const handleSendOTP = async () => {
+    // Track signup started
+    trackSignupStarted('phone');
+    
     const cleanedPhone = phoneNumber.replace(/\D/g, '');
 
     if (cleanedPhone.length !== 10) {

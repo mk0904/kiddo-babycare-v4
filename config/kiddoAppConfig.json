@@ -416,7 +416,7 @@
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/507808678177"
+              "id": "gid://shopify/Collection/509538205985"
             }
           }
         }
@@ -2845,19 +2845,34 @@
     "enabled": true,
     "codes": [
       {
-        "code": "NEWKIDDO",
-        "title": "₹250 Off on First Order",
-        "description": "Get ₹250 off on your first order",
-        "value": 250,
+        "code": "HEYKIDDO",
+        "title": "freeshoes",
+        "description": "Special discount on shoes",
+        "value": 0,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 750,
+        "minimumPurchaseAmount": 500,
+        "minimumItemCount": null,
+        "startsAt": null,
+        "endsAt": null,
+        "usageLimitPerUser": 1,
+        "firstOrderOnly": false,
+        "ticketingOnly": false,
+        "clothingOnly": true,
+        "nonCombinable": false
+      },
+      {
+        "code": "FIRSTKIDDOTICKET",
+        "title": "First Ticketing Order Discount",
+        "description": "Special discount for your first ticketing order",
+        "value": 300,
+        "valueType": "fixed_amount",
+        "minimumPurchaseAmount": null,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
         "usageLimitPerUser": 1,
         "firstOrderOnly": true,
-        "ticketingOnly": false,
-        "nonCombinable": true
+        "ticketingOnly": true
       },
       {
         "code": "KIDDOTICKET",
@@ -2871,20 +2886,6 @@
         "endsAt": null,
         "usageLimitPerUser": null,
         "firstOrderOnly": false,
-        "ticketingOnly": true
-      },
-      {
-        "code": "FIRSTKIDDOTICKET",
-        "title": "First Ticketing Order Discount",
-        "description": "Special discount for your first ticketing order",
-        "value": 15,
-        "valueType": "percentage",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": true,
         "ticketingOnly": true
       }
     ]
@@ -3040,22 +3041,22 @@
       {
         "id": "shoe-1",
         "name": "Shoe 1",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
       },
       {
         "id": "shoe-2",
         "name": "Shoe 2",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.54_PM.png?v=1770746844"
       },
       {
         "id": "shoe-3",
         "name": "Shoe 3",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.17_PM.png?v=1770746855"
       },
       {
         "id": "shoe-4",
         "name": "Shoe 4",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452"
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.14_PM.png?v=1770746855"
       }
     ]
   },

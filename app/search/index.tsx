@@ -246,6 +246,14 @@ export default function SearchScreen() {
                 // Save to search history if search was successful and not loading more
                 if (!loadMore && searchQuery.trim()) {
                     saveToSearchHistory(searchQuery.trim());
+                    
+                    // Track search performed
+                    try {
+                        const { trackSearchPerformed } = require('@/utils/mixpanelHelpers');
+                        trackSearchPerformed(searchQuery.trim(), result.products?.length || 0);
+                    } catch (e) {
+                        console.warn('Mixpanel tracking error:', e);
+                    }
                 }
 
                 // Filter out invalid products first
@@ -350,6 +358,26 @@ export default function SearchScreen() {
 
     const handleFilterChange = (newFilters: any) => {
         setSelectedFilters(newFilters);
+        
+        // Track filters applied
+        try {
+            const { trackFiltersApplied } = require('@/utils/mixpanelHelpers');
+            const filterProps: any = {};
+            if (newFilters.ageGroup) filterProps.ageGroup = newFilters.ageGroup;
+            if (newFilters.brand) filterProps.brand = newFilters.brand;
+            if (newFilters.priceRange) filterProps.priceRange = newFilters.priceRange;
+            // Add any other filter properties
+            Object.keys(newFilters).forEach(key => {
+                if (newFilters[key] && !['ageGroup', 'brand', 'priceRange'].includes(key)) {
+                    filterProps[key] = newFilters[key];
+                }
+            });
+            if (Object.keys(filterProps).length > 0) {
+                trackFiltersApplied(filterProps);
+            }
+        } catch (e) {
+            console.warn('Mixpanel tracking error:', e);
+        }
     };
 
     const handleFastFilterToggle = (attribute: string, value: any) => {

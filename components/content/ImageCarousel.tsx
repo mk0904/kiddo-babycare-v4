@@ -1,12 +1,11 @@
 import { Carousel } from '@/components/ui/Carousel';
 import { ImageCarouselBlock } from '@/types/content';
-import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: ImageCarouselBlock;
-  onPress?: (link?: string | any) => void;
+  onPress?: (link?: string, item?: any) => void;
 }
 
 export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
@@ -51,8 +50,23 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
 
   const handleItemPress = (link?: string | any) => {
     if (link) {
-      // Pass the link as-is (can be string or object)
-      onPress?.(link);
+      // Handle object format links (e.g., { type: "collection", collection: { id: "..." } })
+      if (typeof link === 'object' && link !== null && link.type === 'collection' && link.collection?.id) {
+        // Convert object format to string format for collection navigation
+        const collectionId = link.collection.id;
+        const collectionLink = `/collections/${collectionId}`;
+        onPress?.(collectionLink, {
+          collectionId: collectionId,
+          collectionName: link.collection.name,
+          name: link.collection.name,
+        });
+      } else if (typeof link === 'string') {
+        // Handle string format links
+        onPress?.(link);
+      } else {
+        // Fallback: pass link as-is
+        onPress?.(link as any);
+      }
     }
   };
 

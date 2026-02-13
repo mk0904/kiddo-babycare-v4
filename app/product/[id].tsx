@@ -574,19 +574,24 @@ const ProductDetailScreen = () => {
                 // Track Product Viewed event
                 try {
                     const { mixpanel } = require('@/mixpanel');
+                    const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    
                     if (mixpanel) {
                         const price = parseFloat(
                             fullProduct.priceRange?.minVariantPrice?.amount || 
                             fullProduct.variants?.edges?.[0]?.node?.price?.amount || 
                             '0'
                         );
-                        mixpanel.track('Product Viewed', {
-                            productId: fullProduct.id,
-                            productName: fullProduct.title,
-                            productHandle: fullProduct.handle,
-                            price,
-                            currency: fullProduct.priceRange?.minVariantPrice?.currencyCode || 'INR',
-                        });
+                        
+                        // Check if this is first product viewed
+                        const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
+                        if (!hasViewedProduct) {
+                            trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                            await AsyncStorage.setItem('has_viewed_product', 'true');
+                        }
+                        
+                        trackProductViewed(fullProduct.id, fullProduct.title, price);
                     }
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
@@ -655,6 +660,16 @@ const ProductDetailScreen = () => {
         const gapStyle = config.gap || { height: 8, backgroundColor: '#f5f5f5', marginTop: 20 };
 
         const handleProductPress = (p: any) => {
+            // Track recommendation clicked
+            try {
+                const { trackRecommendationClicked } = require('@/utils/mixpanelHelpers');
+                const recommendationType = title === 'You May Also Like' ? 'product_recommendation' : 
+                                          title === 'Recently Viewed' ? 'recently_viewed' : 'related';
+                trackRecommendationClicked(recommendationType, p.id, p.title);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+            
             router.push({ pathname: '/product/[id]', params: { id: p.id, handle: p.handle } });
         };
 

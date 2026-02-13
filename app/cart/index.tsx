@@ -22,7 +22,6 @@ import {
     useIsTryAndBuy
 } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -43,6 +42,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CartScreen() {
     const router = useRouter();
+    
+    // Track cart viewed on mount
+    useEffect(() => {
+        const trackCartView = async () => {
+            try {
+                const { trackCartViewed } = require('@/utils/mixpanelHelpers');
+                const itemCount = cartItems.length;
+                const cartValue = itemSubtotal;
+                trackCartViewed(itemCount, cartValue);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+        };
+        if (cartItems.length > 0) {
+            trackCartView();
+        }
+    }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
     const { defaultAddress } = useAddress();
     const { addItem: addTryAndBuyItem, createOrder: createTryAndBuyOrder, clearCart: clearTryAndBuyCart } = useTryAndBuy();
@@ -152,8 +168,6 @@ export default function CartScreen() {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
-    const [hasUsedFreeShoes, setHasUsedFreeShoes] = useState(false);
-
     // Redirect back if cart is empty
     useEffect(() => {
         if (!loading && cartItems.length === 0) {
@@ -186,38 +200,15 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Check if user has already used free shoes offer
-    useEffect(() => {
-        const checkFreeShoesUsage = async () => {
-            if (!isAuthenticated || !user) {
-                setHasUsedFreeShoes(false);
-                return;
-            }
-            try {
-                const userId = user.id || user.customerId || user.email || user.phone;
-                if (!userId) {
-                    setHasUsedFreeShoes(false);
-                    return;
-                }
-                const storageKey = `free_shoes_used_${userId}`;
-                const hasUsed = await AsyncStorage.getItem(storageKey);
-                setHasUsedFreeShoes(hasUsed === 'true');
-            } catch (error) {
-                console.error('[Cart] Error checking free shoes usage:', error);
-                setHasUsedFreeShoes(false);
-            }
-        };
-        checkFreeShoesUsage();
-    }, [isAuthenticated, user]);
-
-    // Fetch available coupons on mount and when ticketing status changes
+    // Fetch available coupons on mount and when ticketing status or clothing status changes
     useEffect(() => {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
                 // If cart has ticketing products, only show ticketing coupons
                 // Otherwise, show regular coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts);
+                // Pass hasFashionItems to filter clothing-only coupons
+                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
                 setAvailableCoupons(coupons);
             } catch (error) {
                 console.error('Error fetching coupons:', error);
@@ -226,7 +217,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [hasTicketingProducts]);
+    }, [hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -444,8 +435,17 @@ export default function CartScreen() {
                 console.log('[CartScreen] ✅ Coupon applied successfully');
                 setCouponCode('');
                 setCouponMessage(null); // Don't show success message
+                
+                // Track coupon applied
+                try {
+                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
+                    trackCouponApplied(code, discount);
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
+                
                 // Refresh available coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts);
+                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
                 setAvailableCoupons(coupons);
             } else {
                 console.log('[CartScreen] ❌ Coupon application failed:', result.error);
@@ -476,7 +476,7 @@ export default function CartScreen() {
                 setCouponCode(''); // Clear input
                 setCouponMessage(null); // Don't show success message
                 // Refresh available coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts);
+                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
                 setAvailableCoupons(coupons);
             } else {
                 setCouponMessage(result.error || 'Failed to apply coupon');
@@ -707,7 +707,9 @@ export default function CartScreen() {
                             paymentId,
                             tryAndBuyItems, // Pass items directly to avoid state sync issues
                             deliverySchedule || undefined,
-                            selectedShoe || undefined
+                            selectedShoe || undefined,
+                            appliedDiscountCode || undefined,
+                            discountAmount || undefined
                         );
 
                         if (!tryAndBuyOrder) {
@@ -984,6 +986,7 @@ export default function CartScreen() {
                     price: giftWrapping.price
                 } : undefined,
                 couponCode: appliedDiscountCode || undefined,
+                discountAmount: discountAmount || undefined,
                 deliverySchedule: deliverySchedule || undefined,
                 selectedShoe: selectedShoe || undefined,
             };
@@ -1067,14 +1070,28 @@ export default function CartScreen() {
                 total: total.toString(),
             });
 
-            // Track Payment Success
+            // Track Payment Success and Order Placed
             try {
                 const { mixpanel } = require('@/mixpanel');
+                const { trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                
                 if (mixpanel) {
+                    const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
+                    
+                    // Check if this is first order
+                    const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
+                    if (!hasPlacedOrder) {
+                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
+                        await AsyncStorage.setItem('has_placed_order', 'true');
+                    }
+                    
+                    trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
+                    
                     mixpanel.track('Payment Success', {
                         orderId: orderIdForDisplay,
                         amount: cartTotal,
-                        paymentMethod: paymentMethod || 'cod',
+                        paymentMethod: effectivePaymentMethod,
                         itemCount: cartItems.length,
                         hasCoupon: discountCodes.length > 0,
                     });
@@ -1134,21 +1151,6 @@ export default function CartScreen() {
                     }
                 } catch (error) {
                     console.error('[Cart] Error incrementing coupon usage:', error);
-                    // Don't fail the order if usage tracking fails
-                }
-            }
-
-            // Mark user as having used free shoes offer if they selected one
-            if (selectedShoe && isAuthenticated && user) {
-                try {
-                    const userId = user.id || user.customerId || user.email || user.phone;
-                    if (userId) {
-                        const storageKey = `free_shoes_used_${userId}`;
-                        await AsyncStorage.setItem(storageKey, 'true');
-                        console.log('[Cart] Marked user as having used free shoes offer');
-                    }
-                } catch (error) {
-                    console.error('[Cart] Error marking free shoes usage:', error);
                     // Don't fail the order if usage tracking fails
                 }
             }
@@ -1363,6 +1365,11 @@ export default function CartScreen() {
                         {cartItems.map(item => renderItem(item))}
                     </View>
 
+                    {/* Free Shoes Offer - Show only when cart has fashion items */}
+                    {hasFashionItems && (
+                        <FreeShoesOffer visible={true} />
+                    )}
+
                     {/* Try Before You Buy Section */}
                     {tryAndBuyEligibility.hasFashionTag && (
                         <View style={styles.tryAndBuySection}>
@@ -1388,11 +1395,6 @@ export default function CartScreen() {
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                    )}
-
-                    {/* Free Shoes Offer - Only show if has fashion items and user hasn't used it */}
-                    {cartItems.length > 0 && !isTicketingOnly && hasFashionItems && !hasUsedFreeShoes && (
-                        <FreeShoesOffer visible={true} />
                     )}
 
                     {/* Gift Wrapping - Hide for ticketing products */}
@@ -1456,100 +1458,6 @@ export default function CartScreen() {
                                     ) : (
                                         <Ionicons name="chevron-forward" size={20} color="#666" />
                                     )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Bill Summary */}
-                    <View style={styles.billSummarySection}>
-                        <TouchableOpacity
-                            style={styles.billSummaryHeader}
-                            onPress={() => setShowBillSummary(!showBillSummary)}
-                        >
-                            <View style={styles.billSummaryTitleRow}>
-                                <Ionicons name="receipt-outline" size={20} color="#000" />
-                                <Text style={styles.billSummaryTitle}>Bill Summary</Text>
-                            </View>
-                            <Ionicons
-                                name={showBillSummary ? 'chevron-up' : 'chevron-down'}
-                                size={20}
-                                color="#666"
-                            />
-                        </TouchableOpacity>
-
-                        {showBillSummary && (
-                            <View style={styles.billSummaryContent}>
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(itemSubtotal)}</Text>
-                                </View>
-                                {discount > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Total Discount</Text>
-                                        <Text style={[styles.billValue, styles.discountValue]}>
-                                            -{formatCurrency(discount)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal After Discount</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
-                                </View>
-                                {!hasTicketingProducts && giftWrappingFee > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Gift Wrapping</Text>
-                                        <Text style={styles.billValue}>
-                                            {formatCurrency(giftWrappingFee)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Delivery Fee</Text>
-                                    <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Payment Method - Always show when cart has items and total > 0 */}
-                    {cartItems.length > 0 && total > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Payment Method</Text>
-                            {/* Hide COD option for ticketing products */}
-                            {!hasTicketingProducts && (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.paymentOption,
-                                        paymentMethod === 'cod' && styles.paymentOptionSelected,
-                                    ]}
-                                    onPress={() => setPaymentMethod('cod')}
-                                >
-                                    <Ionicons
-                                        name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
-                                        size={24}
-                                        color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
-                                    />
-                                    <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                                style={[
-                                    styles.paymentOption,
-                                    paymentMethod === 'razorpay' && styles.paymentOptionSelected,
-                                ]}
-                                onPress={() => setPaymentMethod('razorpay')}
-                            >
-                                <Ionicons
-                                    name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
-                                    size={24}
-                                    color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
-                                />
-                                <View style={styles.paymentOptionContent}>
-                                    <Text style={styles.paymentOptionText}>Pay Online</Text>
-                                    <Text style={styles.paymentOptionSubtext}>
-                                        Card, UPI, Net Banking via Razorpay
-                                    </Text>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -1677,7 +1585,7 @@ export default function CartScreen() {
                                                     <View style={styles.couponCardContent}>
                                                         <View style={styles.couponCodeRow}>
                                                             <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                            {coupon.value && (
+                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
                                                                 <View style={styles.discountBadge}>
                                                                     <Text style={styles.discountBadgeText}>
                                                                         {coupon.valueType === 'percentage'
@@ -1711,6 +1619,118 @@ export default function CartScreen() {
                             </View>
                         )}
                     </View>
+
+                    {/* Bill Summary */}
+                    <View style={styles.billSummarySection}>
+                        <TouchableOpacity
+                            style={styles.billSummaryHeader}
+                            onPress={() => setShowBillSummary(!showBillSummary)}
+                        >
+                            <View style={styles.billSummaryTitleRow}>
+                                <Ionicons name="receipt-outline" size={20} color="#000" />
+                                <Text style={styles.billSummaryTitle}>Bill Summary</Text>
+                            </View>
+                            <Ionicons
+                                name={showBillSummary ? 'chevron-up' : 'chevron-down'}
+                                size={20}
+                                color="#666"
+                            />
+                        </TouchableOpacity>
+
+                        {showBillSummary && (
+                            <View style={styles.billSummaryContent}>
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Subtotal</Text>
+                                    <Text style={styles.billValue}>{formatCurrency(itemSubtotal)}</Text>
+                                </View>
+                                {discount > 0 && (
+                                    <View style={styles.billRow}>
+                                        <Text style={styles.billLabel}>Total Discount</Text>
+                                        <Text style={[styles.billValue, styles.discountValue]}>
+                                            -{formatCurrency(discount)}
+                                        </Text>
+                                    </View>
+                                )}
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Subtotal After Discount</Text>
+                                    <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
+                                </View>
+                                {!hasTicketingProducts && giftWrappingFee > 0 && (
+                                    <View style={styles.billRow}>
+                                        <Text style={styles.billLabel}>Gift Wrapping</Text>
+                                        <Text style={styles.billValue}>
+                                            {formatCurrency(giftWrappingFee)}
+                                        </Text>
+                                    </View>
+                                )}
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Delivery Fee</Text>
+                                    <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Payment Method - Always show when cart has items and total > 0 */}
+                    {cartItems.length > 0 && total > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Payment Method</Text>
+                            {/* Hide COD option for ticketing products */}
+                            {!hasTicketingProducts && (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.paymentOption,
+                                        paymentMethod === 'cod' && styles.paymentOptionSelected,
+                                    ]}
+                                    onPress={() => {
+                                        setPaymentMethod('cod');
+                                        // Track payment method selected
+                                        try {
+                                            const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
+                                            trackPaymentMethodSelected('cod');
+                                        } catch (e) {
+                                            console.warn('Mixpanel tracking error:', e);
+                                        }
+                                    }}
+                                >
+                                    <Ionicons
+                                        name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
+                                        size={24}
+                                        color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
+                                    />
+                                    <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                style={[
+                                    styles.paymentOption,
+                                    paymentMethod === 'razorpay' && styles.paymentOptionSelected,
+                                ]}
+                                onPress={() => {
+                                    setPaymentMethod('razorpay');
+                                    // Track payment method selected
+                                    try {
+                                        const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
+                                        trackPaymentMethodSelected('razorpay');
+                                    } catch (e) {
+                                        console.warn('Mixpanel tracking error:', e);
+                                    }
+                                }}
+                            >
+                                <Ionicons
+                                    name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
+                                    size={24}
+                                    color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
+                                />
+                                <View style={styles.paymentOptionContent}>
+                                    <Text style={styles.paymentOptionText}>Pay Online</Text>
+                                    <Text style={styles.paymentOptionSubtext}>
+                                        Card, UPI, Net Banking via Razorpay
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Nector Loyalty Coins Redemption */}
                     <View style={styles.section}>

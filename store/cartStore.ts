@@ -1,8 +1,8 @@
 // Zustand Store - Cart Slice
 // Enhanced cart state management with gift items, multiple discounts, and sync
 
-import { shopifyApi } from '@/services/shopifyApi';
 import { configService } from '@/services/configService';
+import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -249,6 +249,27 @@ export const useCartStore = create<CartState>()(
                     const userStore = useUserStore.getState();
                     const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
                     
+                    // Check cart contents
+                    const hasTicketingProducts = state.lineItems.some(item => {
+                        if (item.bookingDate) return true;
+                        const hasTicketingTag = item.tags?.some((tag: any) => {
+                            const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                            return tagLower.includes('event') || 
+                                   tagLower.includes('playhouse') || 
+                                   tagLower.includes('petting') ||
+                                   tagLower.includes('farm') ||
+                                   tagLower.includes('ticket') ||
+                                   tagLower.includes('pass');
+                        });
+                        return hasTicketingTag;
+                    });
+                    
+                    const hasClothingItems = state.lineItems.some(item => {
+                        return item.tags?.some(
+                            (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
+                        );
+                    });
+                    
                     const validCodes: DiscountCode[] = [];
                     const removedCodes: string[] = [];
                     
@@ -257,6 +278,30 @@ export const useCartStore = create<CartState>()(
                         const configDiscount = await couponService.validateCouponCode(discountCode.code);
                         
                         if (configDiscount) {
+                            // Check coupon type validity based on cart contents
+                            const isTicketingCoupon = configDiscount.ticketingOnly === true;
+                            const isClothingCoupon = configDiscount.clothingOnly === true;
+                            
+                            // Validate coupon type against cart contents
+                            if (isTicketingCoupon && !hasTicketingProducts) {
+                                console.log(`[CartStore] Removing ${discountCode.code}: Ticketing-only coupon but cart has no ticketing items`);
+                                removedCodes.push(discountCode.code);
+                                continue;
+                            }
+                            
+                            if (isClothingCoupon && !hasClothingItems) {
+                                console.log(`[CartStore] Removing ${discountCode.code}: Clothing-only coupon but cart has no clothing items`);
+                                removedCodes.push(discountCode.code);
+                                continue;
+                            }
+                            
+                            // If regular coupon (not ticketing-only, not clothing-only) and cart has ONLY ticketing items
+                            if (!isTicketingCoupon && !isClothingCoupon && hasTicketingProducts && !hasClothingItems) {
+                                console.log(`[CartStore] Removing ${discountCode.code}: Regular coupon not valid for ticketing-only cart`);
+                                removedCodes.push(discountCode.code);
+                                continue;
+                            }
+                            
                             // Get user order count for first order validation
                             const userStore = useUserStore.getState();
                             const userOrderCount = userStore.user?.numberOfOrders || 0;
@@ -407,7 +452,22 @@ export const useCartStore = create<CartState>()(
 
                 try {
                     const state = get();
+                    const itemToRemove = state.lineItems.find((li) => li.id === itemId);
                     const newLineItems = state.lineItems.filter((li) => li.id !== itemId);
+                    
+                    // Track remove from cart
+                    if (itemToRemove) {
+                        try {
+                            const { trackRemoveFromCart } = require('@/utils/mixpanelHelpers');
+                            trackRemoveFromCart(
+                                itemToRemove.productId,
+                                itemToRemove.title,
+                                itemToRemove.price
+                            );
+                        } catch (e) {
+                            console.warn('Mixpanel tracking error:', e);
+                        }
+                    }
 
                     set({
                         lineItems: newLineItems,
@@ -532,16 +592,18 @@ export const useCartStore = create<CartState>()(
                     currentPayment: state.payment,
                 });
 
-                // Check if coupon is ticketing-only
+                // Check coupon type and cart contents
                 let isTicketingCoupon = false;
+                let isClothingCoupon = false;
                 try {
                     const { couponService } = await import('@/services/couponService');
                     const configDiscount = await couponService.validateCouponCode(normalizedCode);
-                    if (configDiscount && configDiscount.ticketingOnly) {
-                        isTicketingCoupon = true;
+                    if (configDiscount) {
+                        isTicketingCoupon = configDiscount.ticketingOnly === true;
+                        isClothingCoupon = configDiscount.clothingOnly === true;
                     }
                 } catch (error) {
-                    console.error('[CartStore] Error checking if coupon is ticketing-only:', error);
+                    console.error('[CartStore] Error checking coupon type:', error);
                 }
 
                 // Check if cart has ticketing products
@@ -561,6 +623,13 @@ export const useCartStore = create<CartState>()(
                     return hasTicketingTag;
                 });
 
+                // Check if cart has clothing/fashion items
+                const hasClothingItems = state.lineItems.some(item => {
+                    return item.tags?.some(
+                        (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
+                    );
+                });
+
                 // If coupon is ticketing-only but cart doesn't have ticketing products
                 if (isTicketingCoupon && !hasTicketingProducts) {
                     console.log('[CartStore] ❌ Ticketing coupon applied to non-ticketing cart');
@@ -570,9 +639,19 @@ export const useCartStore = create<CartState>()(
                     };
                 }
 
-                // If coupon is NOT ticketing-only but cart has ticketing products
-                if (!isTicketingCoupon && hasTicketingProducts) {
-                    console.log('[CartStore] ❌ Regular coupon applied to ticketing cart');
+                // If coupon is clothing-only but cart doesn't have clothing items
+                if (isClothingCoupon && !hasClothingItems) {
+                    console.log('[CartStore] ❌ Clothing coupon applied to cart without clothing items');
+                    return { 
+                        success: false, 
+                        error: 'This coupon code is only valid for apparel items.' 
+                    };
+                }
+
+                // If coupon is regular (not ticketing-only, not clothing-only) but cart has ONLY ticketing products
+                // Allow regular coupons if cart has both ticketing and clothing, or only clothing
+                if (!isTicketingCoupon && !isClothingCoupon && hasTicketingProducts && !hasClothingItems) {
+                    console.log('[CartStore] ❌ Regular coupon applied to ticketing-only cart');
                     return { 
                         success: false, 
                         error: 'Regular coupon codes are not available for Events, Playhouses, or Petting Farms bookings. Please use ticketing-specific coupons.' 

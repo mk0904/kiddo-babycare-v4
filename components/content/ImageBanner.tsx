@@ -1,6 +1,5 @@
 import { Colors } from '@/constants/theme';
 import { ImageBannerBlock } from '@/types/content';
-import React from 'react';
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
@@ -8,7 +7,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ImageBannerProps extends Omit<BaseContentBlockProps, 'onPress'> {
   block: ImageBannerBlock;
-  onPress?: (link?: string | any) => void;
+  onPress?: (link?: string, item?: any) => void;
 }
 
 export function ImageBanner({ block, onPress }: ImageBannerProps) {
@@ -73,7 +72,7 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
       // Map asset paths to require statements
       const assetMap: Record<string, any> = {
         'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
-        'assets/images/BabyGearLogo.png': require('@/assets/images/BabyGearLogo.png'),
+        'assets/images/Baby-Gear.png': require('@/assets/images/Baby-Gear.png'),
       };
       return assetMap[imageUrl] || { uri: imageUrl };
     }
@@ -94,7 +93,23 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
   // Priority: onPress > link > nothing (Kiddo pattern)
   const handlePress = () => {
     if (onPress) {
-      onPress(link);
+      // Handle object format links (e.g., { type: "collection", collection: { id: "..." } })
+      if (link && typeof link === 'object' && link.type === 'collection' && link.collection?.id) {
+        // Convert object format to string format for collection navigation
+        const collectionId = link.collection.id;
+        const collectionLink = `/collections/${collectionId}`;
+        onPress(collectionLink, {
+          collectionId: collectionId,
+          collectionName: link.collection.name,
+          name: link.collection.name,
+        });
+      } else if (typeof link === 'string') {
+        // Handle string format links
+        onPress(link);
+      } else {
+        // Fallback: pass link as-is
+        onPress(link as any);
+      }
     }
   };
 

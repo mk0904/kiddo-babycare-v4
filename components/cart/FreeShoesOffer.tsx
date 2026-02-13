@@ -1,17 +1,11 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
-
-const SHOE_OPTIONS = [
-  { id: 'shoe-1', name: 'Shoe 1', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854' },
-  { id: 'shoe-2', name: 'Shoe 2', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.54_PM.png?v=1770746844' },
-  { id: 'shoe-3', name: 'Shoe 3', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.17_PM.png?v=1770746855' },
-  { id: 'shoe-4', name: 'Shoe 4', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.14_PM.png?v=1770746855' },
-];
 
 interface FreeShoesOfferProps {
   visible?: boolean;
@@ -20,8 +14,50 @@ interface FreeShoesOfferProps {
 const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
   if (!visible) return null;
 
-  const [isChecked, setIsChecked] = React.useState(false);
   const [failedIds, setFailedIds] = React.useState<Set<string>>(new Set());
+  const [shoeOptions, setShoeOptions] = React.useState<Array<{ id: string; name: string; imageUrl: string }>>([]);
+  const [couponCode, setCouponCode] = React.useState<string>('');
+  const [minimumPurchase, setMinimumPurchase] = React.useState<number | null>(null);
+
+  // Load shoe options and coupon info from config
+  React.useEffect(() => {
+    const loadConfig = () => {
+      try {
+        // Load shoe options
+        const freeShoesConfig = configService.getFreeShoesOfferConfig();
+        if (freeShoesConfig && freeShoesConfig.enabled && freeShoesConfig.shoes && freeShoesConfig.shoes.length > 0) {
+          setShoeOptions(freeShoesConfig.shoes);
+        } else {
+          setShoeOptions([]);
+        }
+
+        // Load coupon code from discounts config
+        const discountsConfig = configService.getDiscountsConfig();
+        if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
+          // Find HEYKIDDO coupon (clothing-only coupon)
+          const heykiddoCoupon = discountsConfig.codes.find((dc: any) => 
+            dc.code?.toUpperCase() === 'HEYKIDDO' || (dc.clothingOnly === true && dc.code)
+          );
+          
+          if (heykiddoCoupon) {
+            setCouponCode(heykiddoCoupon.code || '');
+            setMinimumPurchase(
+              heykiddoCoupon.minimumPurchaseAmount 
+                ? (typeof heykiddoCoupon.minimumPurchaseAmount === 'string' 
+                    ? parseFloat(heykiddoCoupon.minimumPurchaseAmount) 
+                    : heykiddoCoupon.minimumPurchaseAmount)
+                : null
+            );
+          }
+        }
+      } catch (error) {
+        console.error('[FreeShoesOffer] Error loading config:', error);
+        setShoeOptions([]);
+      }
+    };
+
+    loadConfig();
+  }, []);
 
   const handleImageError = React.useCallback((id: string) => {
     setFailedIds((prev) => new Set(prev).add(id));
@@ -29,10 +65,10 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
 
   // Prefetch shoe images so they appear faster when the offer is visible.
   React.useEffect(() => {
-    SHOE_OPTIONS.forEach((s) => {
+    shoeOptions.forEach((s) => {
       Image.prefetch(s.imageUrl).catch(() => {});
     });
-  }, []);
+  }, [shoeOptions]);
 
   return (
     <View style={styles.container}>
@@ -41,30 +77,28 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
       </View>
       
       <View style={styles.titleRow}>
-        <TouchableOpacity
-          onPress={() => setIsChecked((v) => !v)}
-          activeOpacity={0.7}
-          style={styles.checkboxRow}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: isChecked }}
-        >
-          <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-            {isChecked && <Ionicons name="checkmark" size={16} color="#fff" />}
-          </View>
-        </TouchableOpacity>
         <View style={styles.titleTextBlock}>
           <Text style={styles.title}>Get free shoes on first apparel order</Text>
           <Text style={styles.subtitle}>For Limited Customers Only</Text>
         </View>
       </View>
 
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.carousel} 
-        contentContainerStyle={styles.carouselContent}
-      >
-        {SHOE_OPTIONS.map((shoe) => (
+      {/* Coupon Code Line */}
+      {couponCode && (
+        <View style={styles.couponCodeRow}>
+          <Text style={styles.couponCodeText}>Use coupon code </Text>
+          <Text style={styles.couponCode}>{couponCode}</Text>
+        </View>
+      )}
+
+      {shoeOptions.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.carousel} 
+          contentContainerStyle={styles.carouselContent}
+        >
+          {shoeOptions.map((shoe) => (
           <View key={shoe.id} style={styles.imageBox}>
             {failedIds.has(shoe.id) ? (
               <View style={styles.imagePlaceholder}>
@@ -86,22 +120,22 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
             )}
           </View>
         ))}
-      </ScrollView>
+        </ScrollView>
+      )}
 
-      <View style={styles.bulletsContainer}>
-        <View style={styles.bulletRow}>
+      {/* Additional Points */}
+      <View style={styles.pointsContainer}>
+        <View style={styles.pointRow}>
           <Text style={styles.bullet}>•</Text>
-          <Text style={styles.bulletText}>
-            Offer eligible if order has apparel, minimum purchase of Rs. 500
-          </Text>
+          <Text style={styles.pointText}>Kiddo team will call to coordinate size and design availability</Text>
         </View>
-        <View style={styles.bulletRow}>
+        <View style={styles.pointRow}>
           <Text style={styles.bullet}>•</Text>
-          <Text style={styles.bulletText}>Kiddo team will call you to coordinate sizes once you order</Text>
+          <Text style={styles.pointText}>Order must have apparel</Text>
         </View>
-        <View style={styles.bulletRow}>
+        <View style={styles.pointRow}>
           <Text style={styles.bullet}>•</Text>
-          <Text style={styles.bulletText}>Only applicable once per user</Text>
+          <Text style={styles.pointText}>Minimum cart value of Rs 500</Text>
         </View>
       </View>
     </View>
@@ -131,26 +165,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
-  },
-  checkboxRow: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 2,
-  },
-  // Match Cart "Try & Buy" checkbox styling, using theme red
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.primary,
+    marginBottom: 12,
   },
   title: {
     fontSize: 18,
@@ -195,13 +210,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
-  bulletsContainer: {
-    gap: 4,
-  },
-  bulletRow: {
+  couponCodeRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingRight: 10,
+    marginBottom: 16,
+  },
+  couponCodeText: {
+    fontSize: 12,
+    color: '#000',
+    fontFamily: Fonts.Medium,
+    lineHeight: 18,
+  },
+  couponCode: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontFamily: Fonts.Bold,
+    lineHeight: 18,
   },
   bullet: {
     fontSize: 14,
@@ -209,12 +234,21 @@ const styles = StyleSheet.create({
     color: '#000',
     lineHeight: 18,
   },
-  bulletText: {
+  pointsContainer: {
+    marginTop: 8,
+  },
+  pointRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingRight: 10,
+    marginBottom: 4,
+  },
+  pointText: {
     fontSize: 12,
     color: '#000',
     fontFamily: Fonts.Medium,
-    flex: 1,
     lineHeight: 18,
+    flex: 1,
   },
 });
 

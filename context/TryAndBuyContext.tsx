@@ -76,7 +76,9 @@ interface TryAndBuyContextType {
             day: string;
             dateFormat: string;
         },
-        selectedShoe?: string
+        selectedShoe?: string,
+        couponCode?: string,
+        discountAmount?: number
     ) => Promise<TryAndBuyOrder | null>;
 
     // Active order
@@ -236,7 +238,9 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
             day: string;
             dateFormat: string;
         },
-        selectedShoe?: string
+        selectedShoe?: string,
+        couponCode?: string,
+        discountAmount?: number
     ): Promise<TryAndBuyOrder | null> => {
         // Use provided items if available, otherwise use cartItems from state
         const orderItems = items && items.length > 0 ? items : cartItems;
@@ -273,6 +277,8 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                     ]
                     : []),
                 ...(selectedShoe ? [{ key: 'selected_shoe', value: selectedShoe }] : []),
+                ...(couponCode ? [{ key: 'coupon_code', value: couponCode }] : []),
+                ...(discountAmount !== undefined && discountAmount > 0 ? [{ key: 'discount_amount', value: discountAmount.toString() }] : []),
             ];
 
             // Format customer ID if provided

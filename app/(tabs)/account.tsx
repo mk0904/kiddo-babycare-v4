@@ -145,85 +145,10 @@ export default function AccountScreen() {
     const handleRequestNotificationPermission = async () => {
         try {
             // Request permission
-            const success = await oneSignalService.requestPermission(true);
-            
-            // Wait a bit for subscription to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Get comprehensive debug info
-            const debugInfo = await oneSignalService.getDebugInfo();
-            
-            // Build detailed message
-            let message = `Platform: ${debugInfo.platform.toUpperCase()}\n\n`;
-            message += `OneSignal Available: ${debugInfo.isAvailable ? '✅ Yes' : '❌ No'}\n`;
-            message += `OneSignal Initialized: ${debugInfo.isInitialized ? '✅ Yes' : '❌ No'}\n\n`;
-            
-            if (debugInfo.permissionStatus !== null) {
-                message += `Permission Status: ${debugInfo.permissionStatus ? '✅ Granted' : '❌ Denied'}\n`;
-            } else {
-                message += `Permission Status: ⚠️ Unknown\n`;
-            }
-            
-            message += `\nSubscription Status:\n`;
-            message += `  Subscribed: ${debugInfo.subscriptionStatus.isSubscribed ? '✅ Yes' : '❌ No'}\n`;
-            if (debugInfo.subscriptionStatus.id) {
-                message += `  Subscription ID: ${debugInfo.subscriptionStatus.id.substring(0, 20)}...\n`;
-            } else {
-                message += `  Subscription ID: ❌ None\n`;
-            }
-            
-            if (debugInfo.error) {
-                message += `\n⚠️ Error: ${debugInfo.error}\n`;
-            }
-            
-            message += `\nPermission Request: ${success ? '✅ Sent' : '❌ Failed'}`;
-            
-            // Show detailed alert
-            Alert.alert(
-                'OneSignal Debug Info',
-                message,
-                [
-                    {
-                        text: 'Check Again',
-                        onPress: async () => {
-                            // Re-check after a delay
-                            setTimeout(async () => {
-                                const newDebugInfo = await oneSignalService.getDebugInfo();
-                                let newMessage = `Platform: ${newDebugInfo.platform.toUpperCase()}\n\n`;
-                                newMessage += `OneSignal Available: ${newDebugInfo.isAvailable ? '✅ Yes' : '❌ No'}\n`;
-                                newMessage += `OneSignal Initialized: ${newDebugInfo.isInitialized ? '✅ Yes' : '❌ No'}\n\n`;
-                                
-                                if (newDebugInfo.permissionStatus !== null) {
-                                    newMessage += `Permission Status: ${newDebugInfo.permissionStatus ? '✅ Granted' : '❌ Denied'}\n`;
-                                } else {
-                                    newMessage += `Permission Status: ⚠️ Unknown\n`;
-                                }
-                                
-                                newMessage += `\nSubscription Status:\n`;
-                                newMessage += `  Subscribed: ${newDebugInfo.subscriptionStatus.isSubscribed ? '✅ Yes' : '❌ No'}\n`;
-                                if (newDebugInfo.subscriptionStatus.id) {
-                                    newMessage += `  Subscription ID: ${newDebugInfo.subscriptionStatus.id.substring(0, 20)}...\n`;
-                                } else {
-                                    newMessage += `  Subscription ID: ❌ None\n`;
-                                }
-                                
-                                if (newDebugInfo.error) {
-                                    newMessage += `\n⚠️ Error: ${newDebugInfo.error}\n`;
-                                }
-                                
-                                Alert.alert('OneSignal Debug Info (Updated)', newMessage, [{ text: 'OK' }]);
-                            }, 2000);
-                        }
-                    },
-                    { text: 'OK' }
-                ]
-            );
+            await oneSignalService.requestPermission(true);
+            console.log('📱 [OneSignal] Permission requested');
         } catch (error: any) {
-            Alert.alert(
-                'Error',
-                `Failed to get debug info: ${error.message || 'Unknown error'}`,
-                [{ text: 'OK' }]
-            );
+            console.error('❌ [OneSignal] Permission request error:', error);
         }
     };
 

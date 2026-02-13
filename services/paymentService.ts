@@ -88,6 +88,7 @@ export interface OrderData {
     isTryAndBuy?: boolean;
     giftWrapping?: { name: string; price: number };
     couponCode?: string;
+    discountAmount?: number;
     selectedShoe?: string;
     deliverySchedule?: {
         date: string; // Format: DD/MM/YYYY
@@ -622,6 +623,9 @@ export const createDraftOrder = async (
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
                 : []),
+            ...(orderData.discountAmount !== undefined && orderData.discountAmount > 0
+                ? [{ key: 'discount_amount', value: orderData.discountAmount.toString() }]
+                : []),
             ...(orderData.selectedShoe
                 ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]
                 : []),
@@ -701,6 +705,9 @@ export const createRegularOrder = async (
                 : []),
             ...(orderData.couponCode
                 ? [{ key: 'coupon_code', value: orderData.couponCode }]
+                : []),
+            ...(orderData.discountAmount !== undefined && orderData.discountAmount > 0
+                ? [{ key: 'discount_amount', value: orderData.discountAmount.toString() }]
                 : []),
             ...(orderData.selectedShoe
                 ? [{ key: 'selected_shoe', value: orderData.selectedShoe }]

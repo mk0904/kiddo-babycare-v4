@@ -137,7 +137,7 @@ export default function OrderSuccessScreen() {
                     </View>
 
                     <Text style={styles.infoText}>
-                        You will receive an order confirmation email with tracking details shortly.
+                        
                     </Text>
                 </Animated.View>
 

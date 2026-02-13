@@ -2,7 +2,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Dimensions,
     Modal,
@@ -24,19 +24,12 @@ interface FreeShoesOfferProps {
     selectedShoe?: string | null;
 }
 
-// Default shoe options (fallback if config not loaded)
-const DEFAULT_SHOE_OPTIONS = [
-    { id: 'shoe-1', name: 'Shoe 1', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-    { id: 'shoe-2', name: 'Shoe 2', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-    { id: 'shoe-3', name: 'Shoe 3', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-    { id: 'shoe-4', name: 'Shoe 4', imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_8_2026_02_19_53_AM.png?v=1770497452' },
-];
 
 export const FreeShoesOffer = ({ visible, onClose, onSelect, selectedShoe }: FreeShoesOfferProps) => {
     const [localSelected, setLocalSelected] = useState<string | null>(selectedShoe || null);
-    const [shoeOptions, setShoeOptions] = useState(DEFAULT_SHOE_OPTIONS);
+    const [shoeOptions, setShoeOptions] = useState<Array<{ id: string; name: string; imageUrl: string }>>([]);
 
-    // Load shoe options from config
+    // Load shoe options from config (only from config, no hardcoded fallbacks)
     useEffect(() => {
         const loadShoeOptions = () => {
             try {
@@ -44,12 +37,11 @@ export const FreeShoesOffer = ({ visible, onClose, onSelect, selectedShoe }: Fre
                 if (config && config.enabled && config.shoes && config.shoes.length > 0) {
                     setShoeOptions(config.shoes);
                 } else {
-                    // Use default if config not available or disabled
-                    setShoeOptions(DEFAULT_SHOE_OPTIONS);
+                    setShoeOptions([]);
                 }
             } catch (error) {
                 console.error('[FreeShoesOffer] Error loading shoe options from config:', error);
-                setShoeOptions(DEFAULT_SHOE_OPTIONS);
+                setShoeOptions([]);
             }
         };
 
@@ -116,8 +108,9 @@ export const FreeShoesOffer = ({ visible, onClose, onSelect, selectedShoe }: Fre
                             </View>
 
                             {/* Shoe Selection Boxes */}
-                            <View style={styles.shoeSelectionContainer}>
-                                {shoeOptions.map((shoe) => {
+                            {shoeOptions.length > 0 && (
+                                <View style={styles.shoeSelectionContainer}>
+                                    {shoeOptions.map((shoe) => {
                                     const isSelected = localSelected === shoe.id;
                                     return (
                                         <TouchableOpacity
@@ -142,8 +135,9 @@ export const FreeShoesOffer = ({ visible, onClose, onSelect, selectedShoe }: Fre
                                             )}
                                         </TouchableOpacity>
                                     );
-                                })}
-                            </View>
+                                    })}
+                                </View>
+                            )}
 
                             {/* Terms and Conditions */}
                             <View style={styles.termsContainer}>
