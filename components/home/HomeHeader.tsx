@@ -190,7 +190,7 @@ export function HomeHeader({
             <View style={styles.leftInfoContainer}>
               <View style={styles.kiddoRow}>
                 <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
-                  The best for your kiddo
+                  The best for your kiddo 
                 </Text>
                 {address && (estimatedTime !== null || loadingTime) && (
                   <View style={styles.estimatedTimeWrapper}>
@@ -198,7 +198,7 @@ export function HomeHeader({
                       <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
                     ) : estimatedTime !== null ? (
                       <Text style={[styles.estimatedTimeText, { color: textColor }]}>
-                        in {estimatedTime} mins
+                        in ⚡️{estimatedTime} mins
                       </Text>
                     ) : null}
                   </View>

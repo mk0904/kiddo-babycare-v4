@@ -2,11 +2,8 @@
 import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
 
-// Remote config URL
+// Remote config URL - all config is fetched from remote only
 const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
-
-// Set to true to use local config file in development (useful for testing config changes)
-const USE_LOCAL_CONFIG_IN_DEV = __DEV__ && true; // Change to false to use remote config
 
 // Default config - will be loaded from Kiddo's appConfig.json
 const defaultConfig: AppConfig = {
@@ -58,53 +55,40 @@ class ConfigService {
   private async _loadConfig(url: string): Promise<AppConfig> {
     let remoteConfig: any = null;
     
-    // Always try local config first (bundled with app) - works in both dev and production
+    // DEVELOPMENT: Try loading from local file first (for testing config changes)
+    // In production, this will fall back to remote URL
     try {
       const localConfig = require('@/config/kiddoAppConfig.json');
-      remoteConfig = localConfig;
-      console.log('[ConfigService] ✅ Loaded config from LOCAL file (bundled with app)');
+      if (localConfig && Object.keys(localConfig).length > 0) {
+        remoteConfig = localConfig;
+        console.log('[ConfigService] ✅ Loaded config from LOCAL file (development mode)');
+      }
     } catch (localError) {
-      console.warn('[ConfigService] Failed to load local config, falling back to remote:', localError);
-      // Fall through to try remote
+      console.log('[ConfigService] Local config not available, loading from remote...');
     }
     
-    // If local config wasn't loaded, try remote
+    // If local config failed, fetch from remote
     if (!remoteConfig) {
       let response: Response;
       try {
         response = await fetch(url);
         if (response.ok) {
           remoteConfig = await response.json();
-          console.log('[ConfigService] ✅ Loaded config from remote URL');
+          console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
         } else {
-          console.warn(`[ConfigService] Remote config returned ${response.status}`);
-          if (!USE_LOCAL_CONFIG_IN_DEV) {
-            throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`);
-          }
-        }
-      } catch (fetchError: any) {
-        // Network error
-        if (USE_LOCAL_CONFIG_IN_DEV) {
-          // Try local as fallback
-          try {
-            const localConfig = require('@/config/kiddoAppConfig.json');
-            remoteConfig = localConfig;
-            console.log('[ConfigService] ✅ Loaded config from local file (network error fallback)');
-          } catch (localError) {
-            const error = new Error(`Failed to load config: Network error and local fallback failed. ${fetchError.message}`);
-            console.error('[ConfigService] Failed to load config:', error);
-            throw error;
-          }
-        } else {
-          const error = new Error(`Network error: ${fetchError.message || 'Failed to fetch config. Please check your internet connection.'}`);
-          console.error('[ConfigService] Network error loading remote config:', error);
+          const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
+          console.error('[ConfigService] ❌ Remote config fetch failed:', error);
           throw error;
         }
+      } catch (fetchError: any) {
+        const error = new Error(`Failed to fetch remote config: ${fetchError.message}`);
+        console.error('[ConfigService] ❌ Remote config fetch failed:', error);
+        throw error;
       }
     }
     
     if (!remoteConfig) {
-      throw new Error('Failed to load config from both remote and local sources');
+      throw new Error('Failed to load config from remote source');
     }
     
     this.rawConfig = remoteConfig;
