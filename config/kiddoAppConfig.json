@@ -466,7 +466,7 @@
         },
         {
           "id": "gid://shopify/Collection/508371206433",
-          "name": "Skincare & Bathing"
+          "name": "Skincare & Bathings"
         },
         {
           "id": "gid://shopify/Collection/508173123873",
@@ -494,7 +494,7 @@
         },
         {
           "id": "gid://shopify/Collection/508372877601",
-          "name": "Infant Toys"
+          "name": "Annual Day Essentials"
         }
       ],
       "styles": {
@@ -654,7 +654,7 @@
         },
         {
           "id": "gid://shopify/Collection/509548265761",
-          "name": "Infant Toys"
+          "name": "Annual Day Essentials"
         },
         {
           "id": "gid://shopify/Collection/509519921441",
@@ -2155,7 +2155,7 @@
         },
         {
           "id": "gid://shopify/Collection/509548265761",
-          "name": "Infant Toys"
+          "name": "Annual Day Essentials"
         }
       ],
       "title": "Shop by Category",
@@ -2846,7 +2846,7 @@
     "codes": [
       {
         "code": "HEYKIDDO",
-        "title": "freeshoes",
+        "title": "free shoes",
         "description": "Special discount on shoes",
         "value": 0,
         "valueType": "fixed_amount",

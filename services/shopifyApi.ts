@@ -95,6 +95,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
             totalInventory
             tags
             vendor
+            productType
             priceRange {
               minVariantPrice {
                 amount
@@ -109,7 +110,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
                 }
               }
             }
-            variants(first: 10) {
+            variants(first: 250) {
               edges {
                 node {
                   id
@@ -976,7 +977,7 @@ export const shopifyApi = {
     collectionId: string,
     first: number = 20,
     after: string | null = null,
-    sortKey: string = 'BEST_SELLING',
+    sortKey?: string | null,
     reverse: boolean = false,
     filters: any[] = []
   ) => {
@@ -986,14 +987,18 @@ export const shopifyApi = {
       // If filters is empty, send null/undefined to avoid strict API checks if any
       const queryFilters = filters && filters.length > 0 ? filters : null;
 
-      const variables = {
+      const variables: any = {
         id: collectionId,
         first,
         after,
-        sortKey,
         reverse,
         filters: queryFilters,
       };
+      
+      // Only include sortKey if provided (allows Shopify to use collection's default sort)
+      if (sortKey) {
+        variables.sortKey = sortKey;
+      }
 
       const response = await client.post('', {
         query: GET_PRODUCTS_BY_COLLECTION_QUERY,

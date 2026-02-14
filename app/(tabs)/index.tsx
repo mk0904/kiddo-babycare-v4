@@ -18,6 +18,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -246,9 +247,11 @@ export default function HomeScreen() {
   const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
 
   // Use the measured height if available, otherwise fallback to estimate
-  // Add consistent gap (16px) between header and content for all categories
-  const CONSISTENT_GAP = 16;
-  const effectiveHeaderHeight = (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + CONSISTENT_GAP;
+  // Add label height (approximately 40px) and gap (8px) to account for the delivery label only on homepage (all category)
+  // Gap between label and content below remains 0px
+  const LABEL_HEIGHT = selectedCategory === 'all' ? 40 : 0;
+  const LABEL_GAP = selectedCategory === 'all' ? 8 : 0; // Gap between header and label
+  const effectiveHeaderHeight = (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + LABEL_HEIGHT + LABEL_GAP;
 
   // Scroll-to-top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -382,6 +385,21 @@ export default function HomeScreen() {
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   };
 
+  // Calculate label translateY to match header scroll behavior
+  const headerTopHeight = useMemo(() => {
+    return insets.top + 60;
+  }, [insets.top]);
+  
+  const stickyThreshold = useMemo(() => {
+    return headerTopHeight;
+  }, [headerTopHeight]);
+  
+  const labelTranslateY = scrollY.interpolate({
+    inputRange: [0, stickyThreshold],
+    outputRange: [0, -stickyThreshold],
+    extrapolate: 'clamp',
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom', 'top']}>
       <StatusBar style="dark" />
@@ -399,6 +417,23 @@ export default function HomeScreen() {
         onCategorySelect={handleCategorySelect}
         onHeaderHeightChange={setDynamicHeaderHeight}
       />
+
+      {/* Delivery Time Label - Only visible on homepage (all category) */}
+      {selectedCategory === 'all' && (
+        <Animated.View
+          style={[
+            styles.deliveryLabel,
+            {
+              transform: [{ translateY: labelTranslateY }],
+              top: (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + 8, // Add 8px gap between header and label
+              zIndex: 999,
+              elevation: 999, // For Android
+            },
+          ]}
+        >
+          <Text style={styles.deliveryLabelText}>Everything for kids in 30 mins ⚡️</Text>
+        </Animated.View>
+      )}
 
       <Animated.ScrollView
         ref={scrollViewRef}
@@ -481,5 +516,24 @@ const styles = StyleSheet.create({
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deliveryLabel: {
+    backgroundColor: '#E84E4B',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  deliveryLabelText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

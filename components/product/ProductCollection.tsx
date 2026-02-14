@@ -89,7 +89,7 @@ export function ProductCollection({
 
   onViewAll,
   limit,
-  sortKey = 'BEST_SELLING',
+  sortKey,
   reverse = false,
   filters = [],
   onFacetsLoaded,
@@ -121,12 +121,77 @@ export function ProductCollection({
     return false;
   }, []);
 
-  // Helper function to check if tags match age
-  const matchesAge = React.useCallback((tags: string[], age: string) => {
+  // Helper function to check if product has variants with age/size options
+  const hasAgeSizeVariants = React.useCallback((variants: any[]) => {
+    if (!variants || variants.length === 0) return false;
+    
+    return variants.some((variant: any) => {
+      const selectedOptions = variant.selectedOptions || [];
+      return selectedOptions.some((option: any) => {
+        const optionName = (option.name || '').toLowerCase();
+        return optionName.includes('age') || 
+               optionName.includes('size') ||
+               optionName === 'size' ||
+               optionName === 'age';
+      });
+    });
+  }, []);
+
+  // Helper function to check if variants match age (variant-based filtering)
+  const matchesAgeByVariant = React.useCallback((variants: any[], age: string) => {
+    if (!variants || variants.length === 0) return false;
+    
+    const ageLower = age.toLowerCase();
+    const normalizeAgeValue = (value: string): string => {
+      return value.replace(/\s+/g, '').toLowerCase();
+    };
+    
+    const ageMappings: { [key: string]: string[] } = {
+      '3-6m': ['3-6m', '3-6 m', '3-6 months', '3-6M', '3-6 M', '3 - 6 M', '3-6M'],
+      '6-12m': ['6-12m', '6-12 m', '6-12 months', '6-12M', '6-12 M', '6 - 12 M', '6-12M'],
+      '1-2y': ['1-2y', '1-2 y', '1-2 years', '1-2Y', '1-2 Y', '1 - 2 Y', '12-24m', '12-24 m', '18-24m', '18-24 m'],
+      '2-3y': ['2-3y', '2-3 y', '2-3 years', '2-3Y', '2-3 Y', '2 - 3 Y', '24-36m', '24-36 m'],
+      '3-4y': ['3-4y', '3-4 y', '3-4 years', '3-4Y', '3-4 Y', '3 - 4 Y', '36-48m', '36-48 m'],
+      '4-5y': ['4-5y', '4-5 y', '4-5 years', '4-5Y', '4-5 Y', '4 - 5 Y', '48-60m', '48-60 m'],
+      '5+y': ['5+y', '5+ y', '5+ years', '5y+', '5 y+', '5Y+', '5 Y+', '5 - 6 Y', '60m+', '60 m+', '5-6y', '5-6 y'],
+    };
+    
+    const targetPatterns = ageMappings[ageLower] || [];
+    
+    return variants.some((variant: any) => {
+      if (!variant.availableForSale || variant.quantityAvailable === 0) {
+        return false;
+      }
+      
+      const selectedOptions = variant.selectedOptions || [];
+      return selectedOptions.some((option: any) => {
+        const optionName = (option.name || '').toLowerCase();
+        const optionValue = (option.value || '').toLowerCase().trim();
+        
+        const isAgeRelatedOption = 
+          optionName.includes('age') || 
+          optionName.includes('size') ||
+          optionName === 'size' ||
+          optionName === 'age';
+        
+        if (isAgeRelatedOption) {
+          const normalizedOptionValue = normalizeAgeValue(optionValue);
+          return targetPatterns.some(pattern => {
+            const normalizedPattern = normalizeAgeValue(pattern);
+            return normalizedOptionValue === normalizedPattern;
+          });
+        }
+        
+        return false;
+      });
+    });
+  }, []);
+
+  // Helper function to check if tags match age (fallback for tag-based filtering)
+  const matchesAgeByTags = React.useCallback((tags: string[], age: string) => {
     const ageLower = age.toLowerCase();
     const tagStrings = tags.map(t => t.toLowerCase());
     
-    // Map age filter values to various tag formats found in Shopify
     const agePatterns: { [key: string]: string[] } = {
       '3-6m': ['3-6m', '3-6 m', '3-6 months', 'girls 3-6m', 'boys 3-6m', 'girl 3-6m', 'boy 3-6m'],
       '6-12m': ['6-12m', '6-12 m', '6-12 months', 'girls 6-12m', 'boys 6-12m', 'girl 6-12m', 'boy 6-12m'],
@@ -139,6 +204,179 @@ export function ProductCollection({
     
     const patterns = agePatterns[ageLower] || [];
     return patterns.some(pattern => tagStrings.some(tag => tag === pattern || tag.includes(pattern)));
+  }, []);
+
+  // Client-side filter functions for API filters (Price, Brand, Product Type, Tags, etc.)
+  const applyClientSideFilters = React.useCallback((products: any[], filters: any[]) => {
+    console.log('🔍 [ClientFilter] Called with filters:', filters);
+    console.log('🔍 [ClientFilter] Filters length:', filters?.length || 0);
+    console.log('🔍 [ClientFilter] Products count:', products.length);
+    
+    if (!filters || filters.length === 0) {
+      console.log('🔍 [ClientFilter] No filters, returning all products');
+      return products;
+    }
+    
+    console.log('🔍 [ClientFilter] Applying filters:', JSON.stringify(filters, null, 2));
+    console.log('🔍 [ClientFilter] Products count before:', products.length);
+    
+    // Group filters by type for OR logic within same type, AND logic across types
+    const groupedFilters: { [key: string]: any[] } = {};
+    filters.forEach((filter: any) => {
+      if (filter.price) {
+        if (!groupedFilters.price) groupedFilters.price = [];
+        groupedFilters.price.push(filter);
+      } else if (filter.productVendor) {
+        if (!groupedFilters.productVendor) groupedFilters.productVendor = [];
+        groupedFilters.productVendor.push(filter);
+      } else if (filter.productType) {
+        if (!groupedFilters.productType) groupedFilters.productType = [];
+        groupedFilters.productType.push(filter);
+      } else if (filter.productTag) {
+        if (!groupedFilters.productTag) groupedFilters.productTag = [];
+        groupedFilters.productTag.push(filter);
+      } else if (filter.variantOption) {
+        if (!groupedFilters.variantOption) groupedFilters.variantOption = [];
+        groupedFilters.variantOption.push(filter);
+      } else if (filter.productCollection) {
+        if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
+        groupedFilters.productCollection.push(filter);
+      }
+    });
+    
+    console.log('🔍 [ClientFilter] Grouped filters:', groupedFilters);
+    
+    return products.filter((product: any) => {
+      // For each filter type group, check if product matches ANY filter in that group (OR logic)
+      // Across different filter types, product must match ALL groups (AND logic)
+      
+      // Price filter group - only one price filter should exist, but handle multiple
+      if (groupedFilters.price) {
+        // Get product price from various possible locations
+        const productPrice = parseFloat(
+          product.priceRange?.minVariantPrice?.amount || 
+          product.priceRange?.minVariantPrice || 
+          product.variants?.edges?.[0]?.node?.price?.amount ||
+          product.variants?.[0]?.price?.amount ||
+          product.price?.amount ||
+          product.price ||
+          '0'
+        );
+        
+        const priceMatch = groupedFilters.price.some((filter: any) => {
+          // Handle different price filter structures
+          const priceFilter = filter.price || filter;
+          const min = priceFilter.min !== undefined ? parseFloat(priceFilter.min) : undefined;
+          const max = priceFilter.max !== undefined ? parseFloat(priceFilter.max) : undefined;
+          
+          // Debug first product
+          if (products.indexOf(product) === 0) {
+            console.log('[ClientFilter] 💰 Price filter check:', {
+              productTitle: product.title || product.node?.title,
+              productPrice: productPrice,
+              priceFilter: priceFilter,
+              min: min,
+              max: max,
+              minMatch: min === undefined || productPrice >= min,
+              maxMatch: max === undefined || productPrice <= max
+            });
+          }
+          
+          const minMatch = min === undefined || productPrice >= min;
+          const maxMatch = max === undefined || productPrice <= max;
+          return minMatch && maxMatch;
+        });
+        
+        if (!priceMatch) {
+          // Debug first mismatch
+          if (products.indexOf(product) === 0) {
+            console.log('[ClientFilter] 💰 Price filter mismatch:', {
+              productTitle: product.title || product.node?.title,
+              productPrice: productPrice,
+              filters: groupedFilters.price
+            });
+          }
+          return false;
+        }
+      }
+      
+      // Vendor/Brand filter group - match ANY selected vendor (OR logic)
+      if (groupedFilters.productVendor) {
+        const productVendor = (product.vendor || '').toLowerCase().trim();
+        const vendorMatch = groupedFilters.productVendor.some((filter: any) => {
+          const filterVendor = String(filter.productVendor || '').toLowerCase().trim();
+          return productVendor === filterVendor;
+        });
+        if (!vendorMatch) return false;
+      }
+      
+      // Product type filter group - match ANY selected product type (OR logic)
+      if (groupedFilters.productType) {
+        const productType = (product.productType || product.node?.productType || '').toLowerCase().trim();
+        const typeMatch = groupedFilters.productType.some((filter: any) => {
+          const filterType = String(filter.productType || '').toLowerCase().trim();
+          return productType === filterType;
+        });
+        
+        if (!typeMatch) {
+          // Debug first mismatch
+          if (products.indexOf(product) === 0) {
+            console.log('[ClientFilter] Product type mismatch:', {
+              productTitle: product.title || product.node?.title,
+              productType: product.productType || product.node?.productType,
+              normalizedProductType: productType,
+              filterTypes: groupedFilters.productType.map((f: any) => f.productType)
+            });
+          }
+          return false;
+        }
+      }
+      
+      // Tag filter group - match ANY selected tag (OR logic)
+      if (groupedFilters.productTag) {
+        const tags = (product.tags || []).map((t: string) => String(t).toLowerCase().trim());
+        const tagMatch = groupedFilters.productTag.some((filter: any) => {
+          const filterTag = String(filter.productTag || '').toLowerCase().trim();
+          return tags.includes(filterTag);
+        });
+        if (!tagMatch) return false;
+      }
+      
+      // Variant option filter group - match ANY selected variant option (OR logic)
+      if (groupedFilters.variantOption) {
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+        const variantMatch = groupedFilters.variantOption.some((filter: any) => {
+          return variantList.some((variant: any) => {
+            const selectedOptions = variant.selectedOptions || [];
+            return selectedOptions.some((option: any) => {
+              const optionName = String(option.name || '').toLowerCase().trim();
+              const optionValue = String(option.value || '').toLowerCase().trim();
+              const filterName = String(filter.variantOption.name || '').toLowerCase().trim();
+              const filterValue = String(filter.variantOption.value || '').toLowerCase().trim();
+              return optionName === filterName && optionValue === filterValue;
+            });
+          });
+        });
+        if (!variantMatch) return false;
+      }
+      
+      // Collection filter group - match ANY selected collection (OR logic)
+      if (groupedFilters.productCollection) {
+        const collections = product.collections?.edges || product.collections || [];
+        const collectionIds = collections.map((c: any) => {
+          const col = c.node || c;
+          return col.id || col;
+        });
+        const collectionMatch = groupedFilters.productCollection.some((filter: any) => {
+          const filterCollection = String(filter.productCollection || '');
+          return collectionIds.includes(filterCollection);
+        });
+        if (!collectionMatch) return false;
+      }
+      
+      return true;
+    });
   }, []);
 
   // Fetch products using React Query's useInfiniteQuery
@@ -156,7 +394,8 @@ export function ProductCollection({
     refetch,
     isRefetching,
   } = useInfiniteQuery<Page>({
-    queryKey: ['products', collectionIdToUse, searchQuery, sortKey, reverse, JSON.stringify(filters), limit],
+    // Remove filters from queryKey - fetch all products without filters
+    queryKey: ['products', collectionIdToUse, searchQuery, sortKey, reverse, limit],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       if (!collectionIdToUse) {
@@ -167,13 +406,14 @@ export function ProductCollection({
         };
       }
 
+      // Fetch WITHOUT filters - we'll apply filters client-side
       const result = await shopifyApi.getProductsByCollection(
         collectionIdToUse!,
         pageSize,
         pageParam as string | null,
         sortKey,
         reverse,
-        filters
+        [] // No filters - fetch all products
       );
 
       if (!result?.products) {
@@ -221,19 +461,34 @@ export function ProductCollection({
     }
   }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
-  // Effect to notify parent about loaded facets (always use latest page with filters)
+  // Effect to notify parent about loaded facets (fetch once without filters to get all facets)
   React.useEffect(() => {
-    // Use the most recent page that has filters, as Shopify updates facet counts when filters are applied
-    const latestPageWithFilters = data?.pages?.slice().reverse().find((page: any) => page.filters);
-    if (latestPageWithFilters?.filters) {
+    // Get facets from first page (we fetch without filters, so facets show all available options)
+    const firstPage = data?.pages?.[0];
+    if (firstPage?.filters) {
       // @ts-ignore
-      onFacetsLoaded?.(latestPageWithFilters.filters);
+      onFacetsLoaded?.(firstPage.filters);
     }
-  }, [data?.pages, filters]);
+  }, [data?.pages]);
 
   // Flatten all pages into a single array of product objects
   const allProducts = React.useMemo(() => {
     let products = data?.pages.flatMap((page) => page.products) || [];
+    
+    console.log('📦 [ProductCollection] allProducts useMemo - Filters prop:', filters);
+    console.log('📦 [ProductCollection] Filters type:', typeof filters);
+    console.log('📦 [ProductCollection] Filters is array?', Array.isArray(filters));
+    console.log('📦 [ProductCollection] Filters length:', filters?.length || 0);
+    console.log('📦 [ProductCollection] Products before filter:', products.length);
+    
+    // Apply API filters client-side (Price, Brand, Product Type, Tags, etc.)
+    if (filters && filters.length > 0) {
+      console.log('📦 [ProductCollection] ✅ Applying client-side filters, count:', filters.length);
+      products = applyClientSideFilters(products, filters);
+      console.log('📦 [ProductCollection] ✅ Products after filter:', products.length);
+    } else {
+      console.log('📦 [ProductCollection] ❌ No filters to apply');
+    }
     
     // Apply gender filter (client-side tag filtering)
     if (genderFilter) {
@@ -243,17 +498,26 @@ export function ProductCollection({
       });
     }
     
-    // Apply age filter (client-side tag filtering)
+    // Apply age filter (variant-based with tag fallback)
     if (ageFilter) {
       products = products.filter((product: any) => {
-        const tags = product.tags || [];
-        return matchesAge(tags, ageFilter);
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+        
+        const hasAgeSizeData = hasAgeSizeVariants(variantList);
+        
+        if (hasAgeSizeData) {
+          return matchesAgeByVariant(variantList, ageFilter);
+        } else {
+          const tags = product.tags || [];
+          return matchesAgeByTags(tags, ageFilter);
+        }
       });
     }
     
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
-  }, [data, limit, genderFilter, ageFilter, matchesGender, matchesAge]);
+  }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, matchesAgeByTags, hasAgeSizeVariants, applyClientSideFilters]);
 
   // Notify parent about result count
   React.useEffect(() => {
@@ -273,9 +537,15 @@ export function ProductCollection({
 
   // If products are provided directly, use them without fetching
   if (providedProducts) {
-    // Apply gender and age filters
+    // Apply all filters client-side
     let filteredProducts = providedProducts;
     
+    // Apply API filters client-side (Price, Brand, Product Type, Tags, etc.)
+    if (filters && filters.length > 0) {
+      filteredProducts = applyClientSideFilters(filteredProducts, filters);
+    }
+    
+    // Apply gender filter
     if (genderFilter) {
       filteredProducts = filteredProducts.filter((product: any) => {
         const tags = product.tags || [];
@@ -283,10 +553,20 @@ export function ProductCollection({
       });
     }
     
+    // Apply age filter (variant-based with tag fallback)
     if (ageFilter) {
       filteredProducts = filteredProducts.filter((product: any) => {
-        const tags = product.tags || [];
-        return matchesAge(tags, ageFilter);
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+        
+        const hasAgeSizeData = hasAgeSizeVariants(variantList);
+        
+        if (hasAgeSizeData) {
+          return matchesAgeByVariant(variantList, ageFilter);
+        } else {
+          const tags = product.tags || [];
+          return matchesAgeByTags(tags, ageFilter);
+        }
       });
     }
     
