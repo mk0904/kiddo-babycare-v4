@@ -3061,6 +3061,9 @@
     ]
   },
   "providers": {
+    "backend": {
+      "baseUrl": "https://kiddo-service-874125225773.asia-south1.run.app/api/v1"
+    },
     "nector": {
       "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
       "appId": "shopify-kiddo-quick-baby-joy-m4bpo",
