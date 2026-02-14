@@ -55,22 +55,36 @@ class ConfigService {
   private async _loadConfig(url: string): Promise<AppConfig> {
     let remoteConfig: any = null;
     
-    // Fetch config from remote only (allows updates without app release)
-    let response: Response;
+    // DEVELOPMENT: Try loading from local file first (for testing config changes)
+    // In production, this will fall back to remote URL
     try {
-      response = await fetch(url);
-      if (response.ok) {
-        remoteConfig = await response.json();
-        console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
-      } else {
-        const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
+      const localConfig = require('@/config/kiddoAppConfig.json');
+      if (localConfig && Object.keys(localConfig).length > 0) {
+        remoteConfig = localConfig;
+        console.log('[ConfigService] ✅ Loaded config from LOCAL file (development mode)');
+      }
+    } catch (localError) {
+      console.log('[ConfigService] Local config not available, loading from remote...');
+    }
+    
+    // If local config failed, fetch from remote
+    if (!remoteConfig) {
+      let response: Response;
+      try {
+        response = await fetch(url);
+        if (response.ok) {
+          remoteConfig = await response.json();
+          console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
+        } else {
+          const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
+          console.error('[ConfigService] ❌ Remote config fetch failed:', error);
+          throw error;
+        }
+      } catch (fetchError: any) {
+        const error = new Error(`Failed to fetch remote config: ${fetchError.message}`);
         console.error('[ConfigService] ❌ Remote config fetch failed:', error);
         throw error;
       }
-    } catch (fetchError: any) {
-      const error = new Error(`Failed to fetch remote config: ${fetchError.message}`);
-      console.error('[ConfigService] ❌ Remote config fetch failed:', error);
-      throw error;
     }
     
     if (!remoteConfig) {

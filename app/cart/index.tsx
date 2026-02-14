@@ -1016,21 +1016,108 @@ export default function CartScreen() {
                             error: result.error,
                         });
                         
-                        // Show special alert for this critical case
-                        Alert.alert(
-                            'Payment Successful - Order Issue',
-                            `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
-                            [
-                                {
-                                    text: 'Contact Support',
-                                    onPress: () => {
-                                        // You can navigate to support or copy payment ID
-                                        console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
-                                    },
+                        // Try to create a local order record as fallback for recovery
+                        try {
+                            const { orderService } = await import('@/services/orderService');
+                            const { Clipboard } = require('@react-native-clipboard/clipboard');
+                            
+                            // Calculate order values for local record
+                            const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                            const calculatedDiscount = discountAmount || 0;
+                            const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
+                            const calculatedSubtotal = itemSubtotal;
+                            
+                            // Create local order record with payment info for manual recovery
+                            const localOrder = await orderService.createOrder({
+                                items: cartItems.map(item => ({
+                                    id: item.id,
+                                    variantId: item.variantId,
+                                    productId: item.productId,
+                                    title: item.title,
+                                    variantTitle: item.variantTitle,
+                                    price: item.price,
+                                    quantity: item.quantity,
+                                    image: item.image,
+                                })),
+                                shippingAddress: selectedAddress || {
+                                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                                    city: billingAddress.city,
+                                    state: billingAddress.province,
+                                    pincode: billingAddress.zip,
+                                    phone: billingAddress.phone,
                                 },
-                                { text: 'OK' },
-                            ]
-                        );
+                                paymentMethod: paymentMethod || 'razorpay',
+                                paymentStatus: 'paid',
+                                paymentId: result.payment?.paymentId,
+                                totalAmount: cartTotal,
+                                subtotal: calculatedSubtotal,
+                                deliveryFee: calculatedDeliveryFee,
+                                discount: calculatedDiscount,
+                                currencyCode: 'INR',
+                                note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
+                            });
+                            
+                            console.log('[Cart] Created local recovery order:', localOrder.id);
+                            
+                            // Show alert with copy payment ID option
+                            Alert.alert(
+                                'Payment Successful - Order Issue',
+                                `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
+                                [
+                                    {
+                                        text: 'Copy Payment ID',
+                                        onPress: async () => {
+                                            try {
+                                                const paymentId = result.payment?.paymentId || '';
+                                                if (paymentId) {
+                                                    await Clipboard.setString(paymentId);
+                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                }
+                                            } catch (e) {
+                                                console.error('Failed to copy payment ID:', e);
+                                            }
+                                        },
+                                    },
+                                    {
+                                        text: 'Contact Support',
+                                        onPress: () => {
+                                            // You can navigate to support or open support URL
+                                            console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
+                                            // TODO: Navigate to support screen or open support URL
+                                        },
+                                    },
+                                    { text: 'OK' },
+                                ]
+                            );
+                        } catch (recoveryError) {
+                            console.error('[Cart] Failed to create local recovery order:', recoveryError);
+                            
+                            // Fallback: Show alert without local order creation
+                            const paymentId = result.payment?.paymentId || 'unknown';
+                            Alert.alert(
+                                'Payment Successful - Order Issue',
+                                `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
+                                [
+                                    {
+                                        text: 'Copy Payment ID',
+                                        onPress: async () => {
+                                            try {
+                                                const { Clipboard } = require('@react-native-clipboard/clipboard');
+                                                const paymentId = result.payment?.paymentId || '';
+                                                if (paymentId) {
+                                                    await Clipboard.setString(paymentId);
+                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                }
+                                            } catch (e) {
+                                                console.error('Failed to copy payment ID:', e);
+                                            }
+                                        },
+                                    },
+                                    { text: 'OK' },
+                                ]
+                            );
+                        }
                         
                         setOrderLoading(false);
                         return;

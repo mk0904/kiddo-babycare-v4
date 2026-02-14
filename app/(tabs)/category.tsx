@@ -23,6 +23,7 @@ export default function CategoryScreen() {
       try {
         await configService.loadConfig();
         const categoryBlocks = configService.getCategoryScreenBlocks();
+        console.log('[CategoryScreen] Loaded blocks:', categoryBlocks.map(b => ({ id: b.id, type: b.type, visible: b.visible, order: b.order })));
         setBlocks(categoryBlocks);
       } catch (error) {
         console.error('[CategoryScreen] Error loading config:', error);

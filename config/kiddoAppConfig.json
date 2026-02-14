@@ -62,78 +62,6 @@
     },
     "blocks": [
       {
-        "id": "category-grid-all",
-        "type": "categoryGrid",
-        "order": 1,
-        "visible": true,
-        "title": "",
-        "gridConfig": {
-          "layout": "first-item-2-col",
-          "numColumns": 3,
-          "colGap": 12,
-          "rowGap": 12,
-          "limit": 0,
-          "aspectRatio": 1,
-          "resizeMode": "cover",
-          "showLabels": true,
-          "borderRadius": 12,
-          "firstItemSpan": {
-            "colSpan": 2,
-            "rowSpan": 1
-          }
-        },
-        "collectionIds": [
-          {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
-            "id": "gid://shopify/Collection/508646719777",
-            "name": "Jacket and Sweaters"
-          },
-          {
-            "id": "gid://shopify/Collection/508646785313",
-            "name": "Thermals"
-          },
-          {
-            "id": "gid://shopify/Collection/508646818081",
-            "name": "Bottom Wear"
-          },
-          {
-            "id": "gid://shopify/Collection/508646850849",
-            "name": "Everyday"
-          },
-          {
-            "id": "gid://shopify/Collection/508646916385",
-            "name": "Occasion Wear"
-          }
-        ],
-        "styles": {
-          "container": {
-            "paddingHorizontal": 16,
-            "paddingVertical": 16
-          },
-          "title": {
-            "marginBottom": 0,
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
-          },
-          "imageContainer": {
-            "borderRadius": 20,
-            "backgroundColor": "#FFFFFF"
-          },
-          "image": {
-            "width": "100%",
-            "borderRadius": 20
-          },
-          "text": {
-            "display": "none",
-            "fontSize": 10,
-            "marginTop": 0,
-            "color": "#666666",
-            "textAlign": "center"
-          }
-        }
-      },
-      {
         "id": "all-grid-shop-by-category",
         "type": "grid",
         "collectionIds": [
@@ -331,7 +259,8 @@
         "styles": {
           "container": {
             "paddingHorizontal": 16,
-            "paddingVertical": 16
+            "paddingVertical": 16,
+            "paddingBottom": 128
           },
           "title": {
             "fontSize": 16,
