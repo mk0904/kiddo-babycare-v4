@@ -145,7 +145,9 @@ export const AddressModal: React.FC<AddressModalProps> = ({
                                         <View style={styles.addressHeader}>
                                             <View style={styles.addressInfo}>
                                                 <Text style={styles.addressName}>
-                                                    {address.name || address.firstName || 'Address'}
+                                                    {(address.name || `${address.firstName || ''} ${address.lastName || ''}`.trim())
+                                                        .replace(/\s*_\s*$/g, '')
+                                                        .trim() || 'Address'}
                                                 </Text>
                                                 {address.isDefault && (
                                                     <View style={styles.defaultBadge}>

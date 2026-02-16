@@ -97,8 +97,8 @@ export default function AddressesScreen() {
 
     const formatAddressName = (name: string) => {
         if (!name) return 'Address';
-        // Remove underscores and capitalize words
-        return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        // Remove trailing " _" and standalone underscores, then capitalize
+        return name.replace(/\s*_\s*$/g, '').replace(/\s+_+\s/g, ' ').trim().replace(/\b\w/g, (c) => c.toUpperCase()) || 'Address';
     };
 
     return (
