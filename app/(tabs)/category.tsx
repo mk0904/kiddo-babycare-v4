@@ -6,8 +6,8 @@ import { ContentBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet
+  ScrollView,
+  StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,10 +21,10 @@ export default function CategoryScreen() {
     const loadConfig = async () => {
       setConfigLoading(true);
       try {
-        await configService.loadConfig();
+        // Force reload config to get latest from remote
+        await configService.reloadConfig();
         const categoryBlocks = configService.getCategoryScreenBlocks();
-        console.log('[CategoryScreen] Loaded blocks:', categoryBlocks.map(b => ({ id: b.id, type: b.type, visible: b.visible, order: b.order })));
-        setBlocks(categoryBlocks);
+        console.log('[CategoryScreen] Loaded blocks:', categoryBlocks.map(b => ({ id: b.id, type: b.type, title: b.title, visible: b.visible, order: b.order })));        setBlocks(categoryBlocks);
       } catch (error) {
         console.error('[CategoryScreen] Error loading config:', error);
       } finally {

@@ -53,45 +53,41 @@ class ConfigService {
   }
 
   private async _loadConfig(url: string): Promise<AppConfig> {
-    let remoteConfig: any = null;
+    // Fetch config from remote only (allows updates without app release)
+    // Add cache-busting timestamp to ensure fresh config is loaded
+    const cacheBuster = `&_t=${Date.now()}`;
+    const urlWithCacheBust = url.includes('?') ? `${url}${cacheBuster}` : `${url}?${cacheBuster.substring(1)}`;
     
-    // DEVELOPMENT: Try loading from local file first (for testing config changes)
-    // In production, this will fall back to remote URL
+    let response: Response;
     try {
-      const localConfig = require('@/config/kiddoAppConfig.json');
-      if (localConfig && Object.keys(localConfig).length > 0) {
-        remoteConfig = localConfig;
-        console.log('[ConfigService] ✅ Loaded config from LOCAL file (development mode)');
-      }
-    } catch (localError) {
-      console.log('[ConfigService] Local config not available, loading from remote...');
-    }
-    
-    // If local config failed, fetch from remote
-    if (!remoteConfig) {
-      let response: Response;
-      try {
-        response = await fetch(url);
-        if (response.ok) {
-          remoteConfig = await response.json();
-          console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
-        } else {
-          const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
-          console.error('[ConfigService] ❌ Remote config fetch failed:', error);
-          throw error;
-        }
-      } catch (fetchError: any) {
-        const error = new Error(`Failed to fetch remote config: ${fetchError.message}`);
+      response = await fetch(urlWithCacheBust, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      if (response.ok) {
+        const remoteConfig = await response.json();
+        console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
+        console.log('[ConfigService] Config loaded at:', new Date().toISOString());
+        this.rawConfig = remoteConfig;
+      } else {
+        const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
         console.error('[ConfigService] ❌ Remote config fetch failed:', error);
         throw error;
       }
+    } catch (fetchError: any) {
+      const error = new Error(`Failed to fetch remote config: ${fetchError.message}`);
+      console.error('[ConfigService] ❌ Remote config fetch failed:', error);
+      throw error;
     }
     
-    if (!remoteConfig) {
+    if (!this.rawConfig) {
       throw new Error('Failed to load config from remote source');
     }
     
-    this.rawConfig = remoteConfig;
+    const remoteConfig = this.rawConfig;
     
     // Dynamically build home config from all category arrays in config
     const categoryKeys = remoteConfig.categories?.order || [];
@@ -289,4 +285,3 @@ class ConfigService {
 }
 
 export const configService = new ConfigService();
-
