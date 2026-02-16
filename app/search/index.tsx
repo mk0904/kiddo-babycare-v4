@@ -10,6 +10,7 @@ import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { configService } from '@/services/configService';
 import { searchaniseApi } from '@/services/searchaniseApi';
 import { shopifyApi } from '@/services/shopifyApi';
+import { sortInStockFirst } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -262,10 +263,11 @@ export default function SearchScreen() {
                     .filter((p: any) => p && p.id);
 
                 // Update products immediately (without tags) to prevent UI freeze
+                // Sort in-stock first, out-of-stock at end
                 if (loadMore) {
-                    setProducts((prev) => [...prev.filter((p: any) => p && p.id), ...newProducts]);
+                    setProducts((prev) => sortInStockFirst([...prev.filter((p: any) => p && p.id), ...newProducts]));
                 } else {
-                    setProducts(newProducts);
+                    setProducts(sortInStockFirst(newProducts));
                     const facetsData = result.facets || [];
                     // Debug: Log facets structure
                     if (__DEV__ && facetsData.length > 0) {

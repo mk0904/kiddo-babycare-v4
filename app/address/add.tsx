@@ -1,11 +1,11 @@
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import { SearchIcon } from '@/components/ui/SearchIcon';
 import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
-import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import {
     ActivityIndicator,
     Alert,
@@ -72,6 +72,7 @@ const getPlaceDetails = async (placeId: string) => {
 
 export default function MapAddressScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ returnToCart?: string }>();
     const mapRef = useRef<MapView>(null);
 
     // Map State
@@ -284,7 +285,10 @@ export default function MapAddressScreen() {
             const locationDataString = JSON.stringify(selectedLocation);
             router.push({
                 pathname: '/address/form',
-                params: { locationData: locationDataString }
+                params: {
+                    locationData: locationDataString,
+                    ...(params.returnToCart === '1' && { returnToCart: '1' }),
+                },
             });
         } catch (error) {
             console.error('Error serializing location data:', error);

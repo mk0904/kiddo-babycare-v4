@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    Modal,
-    Dimensions,
-    Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
-import { useAddress, Address } from '@/context/AddressContext';
-import { useAuth } from '@/context/AuthContext';
-import { Colors, Fonts } from '@/constants/theme';
 import { EstimatedDeliveryTime } from '@/components/ui/EstimatedDeliveryTime';
+import { Colors, Fonts } from '@/constants/theme';
+import { Address, useAddress } from '@/context/AddressContext';
+import { useAuth } from '@/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,6 +24,7 @@ interface AddressModalProps {
     onClose: () => void;
     onSelectAddress?: (address: Address) => void;
     fromHome?: boolean;
+    returnToCart?: boolean;
 }
 
 export const AddressModal: React.FC<AddressModalProps> = ({
@@ -32,6 +32,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({
     onClose,
     onSelectAddress,
     fromHome = false,
+    returnToCart = false,
 }) => {
     const router = useRouter();
     const { addresses, defaultAddress, setDefaultAddressById, loading } = useAddress();
@@ -64,7 +65,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({
 
     const handleAddNewAddress = () => {
         onClose();
-        router.push('/address/add');
+        router.push({
+            pathname: '/address/add',
+            params: returnToCart ? { returnToCart: '1' } : {},
+        });
     };
 
     const handleEditAddress = (address: Address) => {

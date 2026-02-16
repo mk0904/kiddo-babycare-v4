@@ -1907,6 +1907,7 @@ export default function CartScreen() {
                 visible={showAddressModal}
                 onClose={() => setShowAddressModal(false)}
                 fromHome={false}
+                returnToCart
             />
 
             {/* Gift Wrapping Modal */}
