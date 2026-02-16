@@ -176,6 +176,76 @@ export const getAvailableCouponCodes = async (hasTicketing?: boolean, hasClothin
 };
 
 /**
+ * Fetch ALL coupon codes (no cart-based filtering).
+ * Use this when you want to show all offers including inapplicable ones.
+ */
+export const getAllCouponCodes = async (): Promise<CouponCode[]> => {
+  return getConfigDiscounts();
+};
+
+export interface CouponApplicability {
+  applicable: boolean;
+  reason?: string;
+}
+
+/**
+ * Check if a coupon is applicable for display purposes.
+ * Accepts optional userOrderCount and couponUsageCount for firstOrderOnly and usageLimitPerUser checks.
+ */
+export const getCouponApplicabilityForDisplay = (
+  coupon: CouponCode,
+  options: {
+    hasTicketingProducts: boolean;
+    hasFashionItems: boolean;
+    cartSubtotal: number;
+    cartItemCount?: number;
+    userOrderCount?: number;
+    couponUsageCount?: number;
+  }
+): CouponApplicability => {
+  const {
+    hasTicketingProducts,
+    hasFashionItems,
+    cartSubtotal,
+    cartItemCount = 0,
+    userOrderCount = 0,
+    couponUsageCount = 0,
+  } = options;
+
+  if (coupon.clothingOnly && !hasFashionItems) {
+    return { applicable: false, reason: 'Add a fashion item to use this offer' };
+  }
+  if (coupon.ticketingOnly && !hasTicketingProducts) {
+    return { applicable: false, reason: 'Valid for Events, Playhouses & Petting Farms' };
+  }
+  if (!coupon.ticketingOnly && !coupon.clothingOnly && hasTicketingProducts && !hasFashionItems) {
+    return { applicable: false, reason: 'Valid for apparel only' };
+  }
+  if (coupon.minimumPurchaseAmount) {
+    const minAmount = typeof coupon.minimumPurchaseAmount === 'string'
+      ? parseFloat(coupon.minimumPurchaseAmount)
+      : coupon.minimumPurchaseAmount;
+    if (!isNaN(minAmount) && minAmount > 0 && cartSubtotal < minAmount) {
+      const remaining = minAmount - cartSubtotal;
+      return { applicable: false, reason: `Add ₹${Math.ceil(remaining)} more` };
+    }
+  }
+  if (coupon.minimumItemCount && cartItemCount < coupon.minimumItemCount) {
+    const remaining = coupon.minimumItemCount - cartItemCount;
+    return { applicable: false, reason: `Add ${remaining} more item${remaining > 1 ? 's' : ''}` };
+  }
+  // First order only - user has already placed orders
+  if (coupon.firstOrderOnly && userOrderCount > 0) {
+    return { applicable: false, reason: 'Valid for first order only' };
+  }
+  // Usage limit per user - already used
+  if (coupon.usageLimitPerUser && couponUsageCount >= coupon.usageLimitPerUser) {
+    return { applicable: false, reason: `Already used (max ${coupon.usageLimitPerUser} per user)` };
+  }
+  return { applicable: true };
+};
+
+/**
  * Validate a coupon code from config
  */
 export const validateCouponCode = async (code: string): Promise<CouponCode | null> => {
@@ -283,6 +353,22 @@ const getCouponUsageForUser = async (
     }
     return 0;
   }
+};
+
+/**
+ * Get coupon usage counts for multiple codes (efficient - fetches orders once).
+ * Use for display applicability when showing all coupons.
+ */
+export const getCouponUsagesForUser = async (
+  couponCodes: string[],
+  userId: string | null
+): Promise<Record<string, number>> => {
+  const result: Record<string, number> = {};
+  if (!userId || couponCodes.length === 0) return result;
+  for (const code of couponCodes) {
+    result[code.toUpperCase()] = await getCouponUsageForUser(code, userId);
+  }
+  return result;
 };
 
 /**
@@ -506,6 +592,9 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
 
 export const couponService = {
   getAvailableCouponCodes,
+  getAllCouponCodes,
+  getCouponApplicabilityForDisplay,
+  getCouponUsagesForUser,
   validateCouponCode,
   validateCouponConditions,
   incrementCouponUsage,

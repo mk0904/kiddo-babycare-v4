@@ -30,18 +30,18 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Platform,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CartScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     
     // Track cart viewed on mount
     useEffect(() => {
@@ -161,6 +161,7 @@ export default function CartScreen() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+    const [couponUsageMap, setCouponUsageMap] = useState<Record<string, number>>({});
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showShoesModal, setShowShoesModal] = useState(false);
@@ -200,16 +201,28 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch available coupons on mount and when ticketing status or clothing status changes
+    // Fetch ALL coupons (including inapplicable) and usage counts for firstOrderOnly/usageLimitPerUser
     useEffect(() => {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                // If cart has ticketing products, only show ticketing coupons
-                // Otherwise, show regular coupons
-                // Pass hasFashionItems to filter clothing-only coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
+                const coupons = await couponService.getAllCouponCodes();
                 setAvailableCoupons(coupons);
+                // Fetch usage for coupons with usageLimitPerUser (needed for applicability display)
+                const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
+                if (userId) {
+                    const codesToCheck = coupons
+                        .filter(c => c.usageLimitPerUser || c.firstOrderOnly)
+                        .map(c => c.code);
+                    if (codesToCheck.length > 0) {
+                        const usageMap = await couponService.getCouponUsagesForUser(codesToCheck, userId);
+                        setCouponUsageMap(usageMap);
+                    } else {
+                        setCouponUsageMap({});
+                    }
+                } else {
+                    setCouponUsageMap({});
+                }
             } catch (error) {
                 console.error('Error fetching coupons:', error);
             } finally {
@@ -217,7 +230,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [hasTicketingProducts, hasFashionItems]);
+    }, [user?.id, user?.customerId, user?.email, user?.phone]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -404,6 +417,21 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
+    // Filter to only applicable coupons (don't show inapplicable in UI)
+    const applicableCoupons = useMemo(() => {
+        return availableCoupons.filter((coupon) => {
+            const applicability = couponService.getCouponApplicabilityForDisplay(coupon, {
+                hasTicketingProducts,
+                hasFashionItems,
+                cartSubtotal: itemSubtotal,
+                cartItemCount: cartItems.length,
+                userOrderCount: user?.numberOfOrders ?? 0,
+                couponUsageCount: couponUsageMap[coupon.code?.toUpperCase() || ''] ?? 0,
+            });
+            return applicability.applicable;
+        });
+    }, [availableCoupons, hasTicketingProducts, hasFashionItems, itemSubtotal, cartItems.length, user?.numberOfOrders, couponUsageMap]);
+
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         await updateQuantity(itemId, newQuantity);
@@ -443,10 +471,6 @@ export default function CartScreen() {
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
                 }
-                
-                // Refresh available coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
-                setAvailableCoupons(coupons);
             } else {
                 console.log('[CartScreen] ❌ Coupon application failed:', result.error);
                 setCouponMessage(result.error || 'Failed to apply coupon');
@@ -475,9 +499,6 @@ export default function CartScreen() {
             if (result.success) {
                 setCouponCode(''); // Clear input
                 setCouponMessage(null); // Don't show success message
-                // Refresh available coupons
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
-                setAvailableCoupons(coupons);
             } else {
                 setCouponMessage(result.error || 'Failed to apply coupon');
             }
@@ -1638,12 +1659,12 @@ export default function CartScreen() {
                             </View>
                         )}
 
-                        {/* Available Coupons List - Only show when no coupon is applied and user is logged in */}
-                        {isAuthenticated && availableCoupons.length > 0 && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
+                        {/* Available Coupons List - Only show applicable coupons, when no coupon applied and user logged in */}
+                        {isAuthenticated && applicableCoupons.length > 0 && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
                             <View style={styles.availableCouponsContainer}>
                                 <View style={styles.availableCouponsHeader}>
                                     <Ionicons name="pricetag" size={16} color={Colors.primary} />
-                                    <Text style={styles.availableCouponsTitle}>Available Offers</Text>
+                                    <Text style={styles.availableCouponsTitle}>Offers</Text>
                                 </View>
                                 {loadingCoupons ? (
                                     <View style={styles.couponsLoadingContainer}>
@@ -1656,51 +1677,51 @@ export default function CartScreen() {
                                         showsHorizontalScrollIndicator={false}
                                         contentContainerStyle={styles.couponsList}
                                     >
-                                        {availableCoupons.map((coupon) => {
-                                            const conditions = couponService.getCouponConditionsText(coupon);
-                                            return (
-                                                <TouchableOpacity
-                                                    key={coupon.code}
-                                                    style={[
-                                                        styles.couponCard,
-                                                        couponApplying && styles.couponCardDisabled
-                                                    ]}
-                                                    onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
-                                                    disabled={couponApplying}
-                                                    activeOpacity={0.7}
-                                                >
-                                                    <View style={styles.couponCardContent}>
-                                                        <View style={styles.couponCodeRow}>
-                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
-                                                                <View style={styles.discountBadge}>
-                                                                    <Text style={styles.discountBadgeText}>
-                                                                        {coupon.valueType === 'percentage'
-                                                                            ? `${coupon.value}%`
-                                                                            : `₹${coupon.value}`}
-                                                                    </Text>
+                                        {applicableCoupons.map((coupon) => {
+                                                const conditions = couponService.getCouponConditionsText(coupon);
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={coupon.code}
+                                                        style={[
+                                                            styles.couponCard,
+                                                            couponApplying && styles.couponCardDisabled,
+                                                        ]}
+                                                        onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
+                                                        disabled={couponApplying}
+                                                        activeOpacity={0.7}
+                                                    >
+                                                        <View style={styles.couponCardContent}>
+                                                            <View style={styles.couponCodeRow}>
+                                                                <Text style={styles.couponCardCode}>{coupon.code}</Text>
+                                                                {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
+                                                                    <View style={styles.discountBadge}>
+                                                                        <Text style={styles.discountBadgeText}>
+                                                                            {coupon.valueType === 'percentage'
+                                                                                ? `${coupon.value}%`
+                                                                                : `₹${coupon.value}`}
+                                                                        </Text>
+                                                                    </View>
+                                                                )}
+                                                            </View>
+                                                            {coupon.title && (
+                                                                <Text style={styles.couponCardTitle} numberOfLines={1}>
+                                                                    {coupon.title}
+                                                                </Text>
+                                                            )}
+                                                            {conditions.length > 0 && (
+                                                                <View style={styles.couponConditionsContainer}>
+                                                                    {conditions.map((condition, index) => (
+                                                                        <View key={index} style={styles.couponConditionTag}>
+                                                                            <Ionicons name="information-circle" size={10} color="#666" />
+                                                                            <Text style={styles.couponConditionText}>{condition}</Text>
+                                                                        </View>
+                                                                    ))}
                                                                 </View>
                                                             )}
                                                         </View>
-                                                        {coupon.title && (
-                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                {coupon.title}
-                                                            </Text>
-                                                        )}
-                                                        {conditions.length > 0 && (
-                                                            <View style={styles.couponConditionsContainer}>
-                                                                {conditions.map((condition, index) => (
-                                                                    <View key={index} style={styles.couponConditionTag}>
-                                                                        <Ionicons name="information-circle" size={10} color="#666" />
-                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
-                                                                    </View>
-                                                                ))}
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
                                     </ScrollView>
                                 )}
                             </View>
@@ -1839,7 +1860,7 @@ export default function CartScreen() {
 
             {/* Footer - Only show when cart has items */}
             {cartItems.length > 0 && (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <View style={styles.footerContent}>
                         {/* Address Section */}
                         {!isTicketingOnly && (
@@ -2567,7 +2588,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e0e0e0',
-        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
     },
     footerContent: {
         padding: 15,
