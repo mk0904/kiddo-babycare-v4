@@ -1,9 +1,9 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
-import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from './AuthContext';
 import { customerService } from '@/services/customerService';
 import { shopifyApi } from '@/services/shopifyApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
+import { useAuth } from './AuthContext';
 
 export interface Address {
     id: string;
@@ -75,7 +75,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                             shopifyId: addr.id,
                             firstName: addr.firstName || '',
                             lastName: addr.lastName || '',
-                            name: `${addr.firstName || ''} ${addr.lastName || ''}`.trim() || 'Address',
+                            name: [addr.firstName, addr.lastName].filter((p) => p && p.trim() !== '_').join(' ').trim() || 'Address',
                             address1: addr.address1 || '',
                             address2: addr.address2 || '',
                             city: addr.city || '',
@@ -208,9 +208,9 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
         const newAddress: Address = {
             id: shopifyAddressId || `addr_${Date.now()}`,
             shopifyId: shopifyAddressId,
-            name: addressData.name || 'Home',
+            name: addressData.name || [addressData.firstName, addressData.lastName].filter((p) => p && p.trim() !== '_').join(' ').trim() || 'Home',
             firstName: addressData.firstName || '',
-            lastName: addressData.lastName || '_',
+            lastName: addressData.lastName && addressData.lastName.trim() !== '_' ? addressData.lastName : '',
             phone: addressData.phone || '',
             address1: addressData.address1 || '',
             address2: addressData.address2 || '',

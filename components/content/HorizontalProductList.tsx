@@ -2,6 +2,7 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { HorizontalProductListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
+import { sortInStockFirst } from '@/utils/availability';
 import { FlashList } from '@shopify/flash-list';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -78,7 +79,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
 
     useEffect(() => {
         if (directProducts && directProducts.length > 0) {
-            setProducts(directProducts);
+            setProducts(sortInStockFirst(directProducts));
             setLoading(false);
             return;
         }
@@ -122,7 +123,8 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
             });
 
             setCollections(loadedCollections);
-            const limitedProducts = limit > 0 ? allProducts.slice(0, limit) : allProducts;
+            const sortedProducts = sortInStockFirst(allProducts);
+            const limitedProducts = limit > 0 ? sortedProducts.slice(0, limit) : sortedProducts;
             setProducts(limitedProducts);
         } catch (error) {
             console.error('Error loading products:', error);

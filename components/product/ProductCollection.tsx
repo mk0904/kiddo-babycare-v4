@@ -1,12 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { Product } from '@/types/product';
-import { ProductCard } from './ProductCard';
-import { shopifyApi, CollectionResponse } from '@/services/shopifyApi';
-import { Fonts, Colors } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts } from '@/constants/theme';
+import { shopifyApi } from '@/services/shopifyApi';
+import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
+import { Ionicons } from '@expo/vector-icons';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface CollectionComponentProps {
   products: any[]; // Full product objects
@@ -515,6 +514,9 @@ export function ProductCollection({
       });
     }
     
+    // Sort in-stock first, out-of-stock at end
+    products = sortInStockFirst(products);
+
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
   }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, matchesAgeByTags, hasAgeSizeVariants, applyClientSideFilters]);

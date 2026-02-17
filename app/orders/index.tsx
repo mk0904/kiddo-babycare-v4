@@ -245,7 +245,7 @@ export default function OrdersScreen() {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.back()}
+                        onPress={() => router.replace('/(tabs)')}
                     >
                         <Ionicons name="arrow-back" size={24} color={Colors.text} />
                     </TouchableOpacity>
@@ -265,7 +265,7 @@ export default function OrdersScreen() {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.back()}
+                        onPress={() => router.replace('/(tabs)')}
                     >
                         <Ionicons name="arrow-back" size={24} color={Colors.text} />
                     </TouchableOpacity>
@@ -288,7 +288,7 @@ export default function OrdersScreen() {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.back()}
+                    onPress={() => router.replace('/(tabs)')}
                 >
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>

@@ -391,7 +391,7 @@
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/509538205985",
-          "name": "Fashion - End of Season Sale (50% off)"
+          "name": "Last Chance Sale"
         },
         {
           "id": "gid://shopify/Collection/508371206433",
@@ -1425,7 +1425,7 @@
       "type": "horizontalProductList",
       "title": "Thermals",
       "collectionIds": [
-        "gid://shopify/Collection/508365209889"
+        "gid://shopify/Collection/508646785313"
       ],
       "productListConfig": {
         "limit": 20,
@@ -1825,7 +1825,7 @@
       "type": "horizontalProductList",
       "title": "Thermals",
       "collectionIds": [
-        "gid://shopify/Collection/508365209889"
+        "gid://shopify/Collection/508646785313"
       ],
       "productListConfig": {
         "limit": 20,

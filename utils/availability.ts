@@ -96,3 +96,17 @@ export function isProductOutOfStock(product: any): boolean {
   return !isProductAvailable(product);
 }
 
+/**
+ * Sort products so in-stock items appear first, out-of-stock at the end.
+ * Preserves relative order within each group.
+ */
+export function sortInStockFirst<T extends Record<string, any>>(products: T[]): T[] {
+  return [...products].sort((a, b) => {
+    const aInStock = isProductAvailable(a);
+    const bInStock = isProductAvailable(b);
+    if (aInStock && !bInStock) return -1;
+    if (!aInStock && bInStock) return 1;
+    return 0;
+  });
+}
+

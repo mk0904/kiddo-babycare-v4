@@ -1,10 +1,10 @@
 // User Store - Zustand slice for authentication and user state
 // Handles login, logout, skip/guest mode, and user profile
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Customer } from '@/services/customerService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 // Types
 export interface UserProfile extends Customer {
@@ -15,6 +15,9 @@ export interface UserProfile extends Customer {
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'guest' | 'unauthenticated';
 
 interface UserState {
+    // Rehydration flag - true once AsyncStorage has been read (prevents false logout on cold start)
+    _hasRehydrated: boolean;
+
     // User data
     user: UserProfile | null;
     status: AuthStatus;
@@ -54,6 +57,7 @@ interface UserActions {
 export type UserStore = UserState & UserActions;
 
 const initialState: UserState = {
+    _hasRehydrated: false,
     user: null,
     status: 'unauthenticated', // Start as unauthenticated, not idle - prevents loading loop
     isGuest: false,
@@ -110,6 +114,7 @@ export const useUserStore = create<UserStore>()(
             logout: async () => {
                 set({
                     ...initialState,
+                    _hasRehydrated: true, // Keep true - intentional logout, don't trigger loading state
                     status: 'unauthenticated',
                     hasSkippedLogin: false,
                 });
@@ -213,7 +218,7 @@ export const useUserStore = create<UserStore>()(
                 lastLoginAt: state.lastLoginAt,
                 loginProvider: state.loginProvider,
             }),
-            onRehydrateStorage: () => (state) => {
+            onRehydrateStorage: () => (state, err) => {
                 // When hydration finishes, ensure we don't get stuck in idle/loading
                 if (state) {
                     if (state.status === 'idle' || state.status === 'loading') {
@@ -223,6 +228,11 @@ export const useUserStore = create<UserStore>()(
                     // If rehydration fails or returns null, ensure we're unauthenticated
                     console.warn('⚠️ AsyncStorage rehydration returned null - using default state');
                 }
+                // Mark rehydration complete so routing can safely use auth state
+                // Use setTimeout to avoid updating during persist merge
+                setTimeout(() => {
+                    useUserStore.setState({ _hasRehydrated: true });
+                }, 0);
             },
             // Skip rehydration if it takes too long (non-blocking)
             skipHydration: false,
@@ -237,5 +247,6 @@ export const selectIsGuest = (state: UserStore) => state.isGuest;
 export const selectHasSkippedLogin = (state: UserStore) => state.hasSkippedLogin;
 export const selectAuthStatus = (state: UserStore) => state.status;
 export const selectAccessToken = (state: UserStore) => state.accessToken;
+export const selectHasRehydrated = (state: UserStore) => state._hasRehydrated;
 
 export default useUserStore;

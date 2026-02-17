@@ -38,6 +38,7 @@ export interface AddressInput {
 
 export interface DraftOrderInput {
   customerId?: string;
+  email?: string;
   lineItems: LineItemInput[];
   shippingAddress?: AddressInput;
   billingAddress?: AddressInput;
@@ -289,6 +290,7 @@ export const shopifyAdminApi = {
         input: {
           lineItems,
           ...(customerId && { customerId }),
+          ...(input.email && { email: input.email }),
           ...(input.shippingAddress && { shippingAddress: input.shippingAddress }),
           ...(input.billingAddress && { billingAddress: input.billingAddress }),
           ...(input.tags && input.tags.length > 0 && { tags: input.tags }),

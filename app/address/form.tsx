@@ -1,3 +1,4 @@
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
@@ -5,19 +6,18 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useMemo, useState } from 'react';
-import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
-    KeyboardAvoidingView,
-    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,7 +29,7 @@ const ADDRESS_TAGS = [
 
 export default function AddressFormScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
+    const params = useLocalSearchParams<{ locationData?: string; returnToCart?: string }>();
     const { user } = useAuth();
     const { addAddress } = useAddress();
 
@@ -119,12 +119,12 @@ export default function AddressFormScreen() {
             await addAddress(addressData);
 
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            const goToCart = params.returnToCart === '1';
             Alert.alert('Success', 'Address saved successfully!', [
                 {
                     text: 'OK',
                     onPress: () => {
-                        // Navigate back to address list (or 2 steps back depending on stack)
-                        router.dismissTo('/address');
+                        router.dismissTo(goToCart ? '/cart' : '/address');
                     }
                 },
             ]);

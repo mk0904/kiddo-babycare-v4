@@ -95,6 +95,12 @@ export default function AddressesScreen() {
         );
     }
 
+    const formatAddressName = (name: string) => {
+        if (!name) return 'Address';
+        // Remove trailing " _" and standalone underscores, then capitalize
+        return name.replace(/\s*_\s*$/g, '').replace(/\s+_+\s/g, ' ').trim().replace(/\b\w/g, (c) => c.toUpperCase()) || 'Address';
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
@@ -151,7 +157,7 @@ export default function AddressesScreen() {
                             >
                                 <View style={styles.addressHeader}>
                                     <View style={styles.addressInfo}>
-                                    <Text style={styles.addressName}>{address.name || address.firstName || 'Address'}</Text>
+                                        <Text style={styles.addressName}>{formatAddressName(address.name || address.firstName) || 'Address'}</Text>
                                         {address.isDefault && (
                                             <View style={styles.defaultBadge}>
                                                 <Text style={styles.defaultBadgeText}>Default</Text>

@@ -5,7 +5,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { Alert, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -131,10 +130,6 @@ export default function RootLayout() {
             return;
           }
           
-          // Request permission when app opens (non-blocking)
-          oneSignalService.requestPermission(true).catch((error) => {
-            console.warn('⚠️ OneSignal permission request error:', error);
-          });
           
           // Check status in background (non-blocking) - increased delay for better reliability
           setTimeout(async () => {
