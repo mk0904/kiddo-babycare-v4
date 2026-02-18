@@ -1,7 +1,7 @@
 // Zustand Store - Cart Slice
 // Enhanced cart state management with gift items, multiple discounts, and sync
+// Coupon values come from backend API only (not config)
 
-import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -269,63 +269,26 @@ export const useCartStore = create<CartState>()(
                             (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
                         );
                     });
+
+                    const couponParams = {
+                        userId,
+                        cartSubTotal: cartSubtotal,
+                        cartItemCount,
+                        hasTicketing: hasTicketingProducts,
+                        hasClothing: hasClothingItems,
+                    };
                     
                     const validCodes: DiscountCode[] = [];
                     const removedCodes: string[] = [];
                     
                     for (const discountCode of state.discountCodes) {
-                        // Get config for this code
-                        const configDiscount = await couponService.validateCouponCode(discountCode.code);
-                        
-                        if (configDiscount) {
-                            // Check coupon type validity based on cart contents
-                            const isTicketingCoupon = configDiscount.ticketingOnly === true;
-                            const isClothingCoupon = configDiscount.clothingOnly === true;
-                            
-                            // Validate coupon type against cart contents
-                            if (isTicketingCoupon && !hasTicketingProducts) {
-                                console.log(`[CartStore] Removing ${discountCode.code}: Ticketing-only coupon but cart has no ticketing items`);
-                                removedCodes.push(discountCode.code);
-                                continue;
-                            }
-                            
-                            if (isClothingCoupon && !hasClothingItems) {
-                                console.log(`[CartStore] Removing ${discountCode.code}: Clothing-only coupon but cart has no clothing items`);
-                                removedCodes.push(discountCode.code);
-                                continue;
-                            }
-                            
-                            // If regular coupon (not ticketing-only, not clothing-only) and cart has ONLY ticketing items
-                            if (!isTicketingCoupon && !isClothingCoupon && hasTicketingProducts && !hasClothingItems) {
-                                console.log(`[CartStore] Removing ${discountCode.code}: Regular coupon not valid for ticketing-only cart`);
-                                removedCodes.push(discountCode.code);
-                                continue;
-                            }
-                            
-                            // Get user order count for first order validation
-                            const userStore = useUserStore.getState();
-                            const userOrderCount = userStore.user?.numberOfOrders || 0;
-                            
-                            // Validate conditions
-                            const conditionCheck = await couponService.validateCouponConditions(
-                                configDiscount,
-                                cartSubtotal,
-                                userId,
-                                cartItemCount,
-                                userOrderCount
-                            );
-                            
-                            if (conditionCheck.isValid) {
-                                // Code still valid, keep it
-                                validCodes.push(discountCode);
-                            } else {
-                                // Code no longer meets conditions, remove it
-                                console.log(`[CartStore] Removing ${discountCode.code}: ${conditionCheck.error}`);
-                                removedCodes.push(discountCode.code);
-                            }
-                        } else {
-                            // Code not found in config, keep it (might be from Shopify)
+                        // Validate via backend (eligibility decided by backend)
+                        const eligibleCoupon = await couponService.validateCouponCode(discountCode.code, couponParams);
+                        if (eligibleCoupon) {
                             validCodes.push(discountCode);
+                        } else {
+                            console.log(`[CartStore] Removing ${discountCode.code}: No longer eligible (backend)`);
+                            removedCodes.push(discountCode.code);
                         }
                     }
                     
@@ -592,71 +555,23 @@ export const useCartStore = create<CartState>()(
                     currentPayment: state.payment,
                 });
 
-                // Check coupon type and cart contents
-                let isTicketingCoupon = false;
-                let isClothingCoupon = false;
-                try {
-                    const { couponService } = await import('@/services/couponService');
-                    const configDiscount = await couponService.validateCouponCode(normalizedCode);
-                    if (configDiscount) {
-                        isTicketingCoupon = configDiscount.ticketingOnly === true;
-                        isClothingCoupon = configDiscount.clothingOnly === true;
-                    }
-                } catch (error) {
-                    console.error('[CartStore] Error checking coupon type:', error);
-                }
-
-                // Check if cart has ticketing products
+                // Build params for backend validation
+                const cartSubtotal = state.subtotal();
+                const cartItemCount = state.itemCount();
                 const hasTicketingProducts = state.lineItems.some(item => {
-                    // Check if item has booking date (indicates ticketing product)
                     if (item.bookingDate) return true;
-                    
-                    // Check tags
                     const hasTicketingTag = item.tags?.some((tag: any) => {
                         const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-                        return tagLower.includes('event') || 
-                               tagLower.includes('playhouse') || 
-                               tagLower.includes('petting') ||
-                               tagLower.includes('farm');
+                        return tagLower.includes('event') || tagLower.includes('playhouse') ||
+                               tagLower.includes('petting') || tagLower.includes('farm');
                     });
-                    
-                    return hasTicketingTag;
+                    return !!hasTicketingTag;
                 });
-
-                // Check if cart has clothing/fashion items
                 const hasClothingItems = state.lineItems.some(item => {
                     return item.tags?.some(
                         (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
                     );
                 });
-
-                // If coupon is ticketing-only but cart doesn't have ticketing products
-                if (isTicketingCoupon && !hasTicketingProducts) {
-                    console.log('[CartStore] ❌ Ticketing coupon applied to non-ticketing cart');
-                    return { 
-                        success: false, 
-                        error: 'This coupon code is only valid for Events, Playhouses, or Petting Farms bookings.' 
-                    };
-                }
-
-                // If coupon is clothing-only but cart doesn't have clothing items
-                if (isClothingCoupon && !hasClothingItems) {
-                    console.log('[CartStore] ❌ Clothing coupon applied to cart without clothing items');
-                    return { 
-                        success: false, 
-                        error: 'This coupon code is only valid for apparel items.' 
-                    };
-                }
-
-                // If coupon is regular (not ticketing-only, not clothing-only) but cart has ONLY ticketing products
-                // Allow regular coupons if cart has both ticketing and clothing, or only clothing
-                if (!isTicketingCoupon && !isClothingCoupon && hasTicketingProducts && !hasClothingItems) {
-                    console.log('[CartStore] ❌ Regular coupon applied to ticketing-only cart');
-                    return { 
-                        success: false, 
-                        error: 'Regular coupon codes are not available for Events, Playhouses, or Petting Farms bookings. Please use ticketing-specific coupons.' 
-                    };
-                }
 
                 // CHECK: User must be logged in to apply coupons
                 try {
@@ -676,47 +591,31 @@ export const useCartStore = create<CartState>()(
                     return { success: false, error: 'Failed to verify authentication.' };
                 }
 
-                // FIRST: Validate code exists in config (source of truth)
+                // Validate code via backend (eligibility decided by backend)
                 let configDiscount: any = null;
                 try {
                     const { couponService } = await import('@/services/couponService');
-                    configDiscount = await couponService.validateCouponCode(normalizedCode);
+                    const { useUserStore } = await import('@/store/userStore');
+                    const userStore = useUserStore.getState();
+                    const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+
+                    const couponParams = {
+                        userId,
+                        cartSubTotal: cartSubtotal,
+                        cartItemCount,
+                        hasTicketing: hasTicketingProducts,
+                        hasClothing: hasClothingItems,
+                    };
+                    configDiscount = await couponService.validateCouponCode(normalizedCode, couponParams);
                     if (configDiscount) {
-                        console.log('[CartStore] ✅ Code found in config:', configDiscount);
+                        console.log('[CartStore] ✅ Code eligible (backend):', configDiscount);
                     } else {
-                        console.log('[CartStore] ❌ Code not found in config');
+                        console.log('[CartStore] ❌ Code not eligible');
                         return { success: false, error: 'This discount code is not valid.' };
                     }
                 } catch (error) {
-                    console.error('[CartStore] Error validating code from config:', error);
+                    console.error('[CartStore] Error validating code:', error);
                     return { success: false, error: 'Failed to validate discount code.' };
-                }
-
-                // SECOND: Validate coupon conditions (minimum purchase, dates, usage limits, etc.)
-                try {
-                    const { couponService } = await import('@/services/couponService');
-                    const { useUserStore } = await import('@/store/userStore');
-                    
-                    // Get user ID for usage limit checking
-                    const userStore = useUserStore.getState();
-                    const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
-                    
-                    const cartSubtotal = state.subtotal();
-                    const cartItemCount = state.itemCount();
-                    const userOrderCount = userStore.user?.numberOfOrders || 0;
-                    const conditionCheck = await couponService.validateCouponConditions(configDiscount, cartSubtotal, userId, cartItemCount, userOrderCount);
-                    
-                    if (!conditionCheck.isValid) {
-                        console.log('[CartStore] ❌ Coupon conditions not met:', conditionCheck.error);
-                        return { 
-                            success: false, 
-                            error: conditionCheck.error || 'This discount code cannot be applied to your cart.' 
-                        };
-                    }
-                    console.log('[CartStore] ✅ Coupon conditions validated');
-                } catch (error) {
-                    console.error('[CartStore] Error validating coupon conditions:', error);
-                    return { success: false, error: 'Failed to validate coupon conditions.' };
                 }
 
                 // Check if code is already applied
@@ -750,8 +649,18 @@ export const useCartStore = create<CartState>()(
                     // Check if any existing coupon is non-combinable
                     try {
                         const { couponService } = await import('@/services/couponService');
+                        const { useUserStore } = await import('@/store/userStore');
+                        const userStore = useUserStore.getState();
+                        const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                        const couponParams = {
+                            userId,
+                            cartSubTotal: cartSubtotal,
+                            cartItemCount,
+                            hasTicketing: hasTicketingProducts,
+                            hasClothing: hasClothingItems,
+                        };
                         for (const existingCode of existingNonCombinableCodes) {
-                            const existingConfigDiscount = await couponService.validateCouponCode(existingCode.code);
+                            const existingConfigDiscount = await couponService.validateCouponCode(existingCode.code, couponParams);
                             if (existingConfigDiscount && existingConfigDiscount.nonCombinable) {
                                 console.log('[CartStore] ❌ Cannot apply coupon - existing non-combinable coupon found');
                                 return { 
@@ -825,41 +734,43 @@ export const useCartStore = create<CartState>()(
                                 totalDiscountAmount,
                             });
                             
+                            // Fetch eligible coupons from backend (source of truth for values)
+                            const { couponService } = await import('@/services/couponService');
+                            const { useUserStore } = await import('@/store/userStore');
+                            const userStore = useUserStore.getState();
+                            const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                            const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
+                                userId,
+                                cartSubTotal: cartSubtotal,
+                                cartItemCount,
+                                hasTicketing: hasTicketingProducts,
+                                hasClothing: hasClothingItems,
+                            });
+                            const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
+                            
                             const discountCodesFromCart = (updatedCart.discountCodes || []).map((dc: any) => {
                                 console.log(`[CartStore] Processing discount code: ${dc.code}, Shopify applicable: ${dc.applicable}`);
                                 
-                                // Fix: code is on the allocation itself for CartCodeDiscountAllocation, not in discountApplication
                                 const matchingAllocation = (updatedCart.discountAllocations || []).find((alloc: any) => {
                                     return alloc.code?.toUpperCase() === dc.code.toUpperCase();
                                 });
                                 console.log(`[CartStore] Matching allocation for ${dc.code}:`, matchingAllocation);
 
-                                // Get discount value from config file (source of truth)
                                 let discountType: 'percentage' | 'fixed' | 'shipping' | 'bogo' = 'percentage';
                                 let discountValue = 0;
-                                let isApplicable = dc.applicable !== false; // Default to Shopify's value
+                                let isApplicable = dc.applicable !== false;
+                                let foundInBackend = false;
                                 
-                                try {
-                                    const discountsConfig = configService.getDiscountsConfig();
-                                    if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                                        const configDiscount = discountsConfig.codes.find((cd: any) => 
-                                            cd.code?.toUpperCase() === dc.code.toUpperCase()
-                                        );
-                                        if (configDiscount) {
-                                            // Code exists in config - use config as source of truth
-                                            discountValue = configDiscount.value;
-                                            discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                                            // If code is in config, mark as applicable regardless of Shopify's response
-                                            isApplicable = true;
-                                            console.log(`[CartStore] ${dc.code}: Using config discount - type: ${discountType}, value: ${discountValue}, forcing applicable=true`);
-                                        }
-                                    }
-                                } catch (error) {
-                                    console.error(`[CartStore] Error reading discount config for ${dc.code}:`, error);
+                                const backendCoupon = backendCouponMap.get(dc.code?.toUpperCase());
+                                if (backendCoupon) {
+                                    foundInBackend = true;
+                                    discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
+                                    discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                    isApplicable = true;
+                                    console.log(`[CartStore] ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                                 }
                                 
-                                // Fallback to Shopify's response if config not found
-                                if (discountValue === 0 && matchingAllocation) {
+                                if (!foundInBackend && discountValue === 0 && matchingAllocation) {
                                     const discountApp = matchingAllocation.discountApplication;
                                     console.log(`[CartStore] Discount application for ${dc.code}:`, discountApp);
                                     if (discountApp?.value?.percentage !== undefined) {
@@ -914,25 +825,24 @@ export const useCartStore = create<CartState>()(
                             console.log('[CartStore] Updated payment object:', updatedPayment);
                             console.log('[CartStore] Discount codes to save:', discountCodesFromCart);
 
-                            // If code is in config but not in Shopify's response (Shopify rejected it),
-                            // add it manually with config values
+                            // If code not in Shopify response (Shopify rejected it), add from backend
                             const codeInResponse = discountCodesFromCart.find(
                                 (dc: DiscountCode) => dc.code === normalizedCode
                             );
                             
                             if (!codeInResponse && configDiscount) {
-                                console.log('[CartStore] Code not in Shopify response, adding from config:', normalizedCode);
-                                const discountValue = configDiscount.value || 0;
+                                console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
+                                const discountValue = configDiscount.value != null ? configDiscount.value : 0;
                                 const discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
                                 
                                 discountCodesFromCart.push({
                                     code: normalizedCode,
                                     type: discountType as 'percentage' | 'fixed',
                                     value: discountValue,
-                                    applicable: true, // Force applicable since it's in config
+                                    applicable: true,
                                     appliedAt: Date.now(),
                                 });
-                                console.log('[CartStore] Added code from config:', {
+                                console.log('[CartStore] Added code from backend:', {
                                     code: normalizedCode,
                                     type: discountType,
                                     value: discountValue,
@@ -1072,44 +982,45 @@ export const useCartStore = create<CartState>()(
                         totalDiscountAmount,
                     });
 
+                    // Fetch eligible coupons from backend (source of truth for values)
+                    const { couponService } = await import('@/services/couponService');
+                    const { useUserStore } = await import('@/store/userStore');
+                    const userStore = useUserStore.getState();
+                    const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                    const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
+                        userId,
+                        cartSubTotal: cartSubtotal,
+                        cartItemCount,
+                        hasTicketing: hasTicketingProducts,
+                        hasClothing: hasClothingItems,
+                    });
+                    const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
+
                     // Extract discount codes from response
                     console.log('[CartStore] Processing discount codes from cart response...');
                     const discountCodesFromCart = (updatedCart.discountCodes || []).map((dc: any) => {
                         console.log(`[CartStore] Processing code: ${dc.code}, Shopify applicable: ${dc.applicable}`);
                         
-                        // Try to determine discount type and value from discountAllocations
-                        // Fix: code is on the allocation itself for CartCodeDiscountAllocation, not in discountApplication
                         const matchingAllocation = (updatedCart.discountAllocations || []).find((alloc: any) => {
                             return alloc.code?.toUpperCase() === dc.code.toUpperCase();
                         });
                         console.log(`[CartStore] Matching allocation for ${dc.code}:`, matchingAllocation);
 
-                        // Get discount value from config file (source of truth)
                         let discountType: 'percentage' | 'fixed' | 'shipping' | 'bogo' = 'percentage';
                         let discountValue = 0;
-                        let isApplicable = dc.applicable !== false; // Default to Shopify's value
+                        let isApplicable = dc.applicable !== false;
+                        let foundInBackend = false;
                         
-                        try {
-                            const discountsConfig = configService.getDiscountsConfig();
-                            if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                                const configDiscount = discountsConfig.codes.find((cd: any) => 
-                                    cd.code?.toUpperCase() === dc.code.toUpperCase()
-                                );
-                                if (configDiscount) {
-                                    // Code exists in config - use config as source of truth
-                                    discountValue = configDiscount.value;
-                                    discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                                    // If code is in config, mark as applicable regardless of Shopify's response
-                                    isApplicable = true;
-                                    console.log(`[CartStore] ${dc.code}: Using config discount - type: ${discountType}, value: ${discountValue}, forcing applicable=true`);
-                                }
-                            }
-                        } catch (error) {
-                            console.error(`[CartStore] Error reading discount config for ${dc.code}:`, error);
+                        const backendCoupon = backendCouponMap.get(dc.code?.toUpperCase());
+                        if (backendCoupon) {
+                            foundInBackend = true;
+                            discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
+                            discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                            isApplicable = true;
+                            console.log(`[CartStore] ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                         }
                         
-                        // Fallback to Shopify's response if config not found
-                        if (discountValue === 0 && matchingAllocation) {
+                        if (!foundInBackend && discountValue === 0 && matchingAllocation) {
                             const discountApp = matchingAllocation.discountApplication;
                             console.log(`[CartStore] Discount application for ${dc.code}:`, discountApp);
                             if (discountApp?.value?.percentage !== undefined) {
@@ -1153,15 +1064,14 @@ export const useCartStore = create<CartState>()(
                         };
                     });
                     
-                    // If code is in config but not in Shopify's response (Shopify rejected it),
-                    // add it manually with config values
+                    // If code not in Shopify response (Shopify rejected it), add from backend
                     const codeInResponse = discountCodesFromCart.find(
                         (dc: DiscountCode) => dc.code === normalizedCode
                     );
                     
                     if (!codeInResponse && configDiscount) {
-                        console.log('[CartStore] Code not in Shopify response, adding from config:', normalizedCode);
-                        const discountValue = configDiscount.value || 0;
+                        console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
+                        const discountValue = configDiscount.value != null ? configDiscount.value : 0;
                         const discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
                         
                         discountCodesFromCart.push({
@@ -1290,37 +1200,44 @@ export const useCartStore = create<CartState>()(
                         const subtotalBeforeDiscount = parseFloat(updatedCart.cost?.subtotalAmount?.amount || '0');
                         const subtotalAfterDiscount = subtotalBeforeDiscount - totalDiscountAmount;
 
+                        // Fetch eligible coupons from backend (source of truth for values)
+                        const { couponService } = await import('@/services/couponService');
+                        const { useUserStore } = await import('@/store/userStore');
+                        const userStore = useUserStore.getState();
+                        const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                        const removeCartSubtotal = state.subtotal();
+                        const removeCartItemCount = state.itemCount();
+                        const removeHasTicketing = state.lineItems.some((item: any) => item.bookingDate || item.tags?.some((t: string) => /event|playhouse|petting|farm|ticket|pass/i.test(String(t))));
+                        const removeHasClothing = state.lineItems.some((item: any) => item.tags?.some((t: string) => String(t).toLowerCase() === 'fashion'));
+                        const eligibleForRemove = await couponService.getEligibleCouponsFromBackend({
+                            userId,
+                            cartSubTotal: removeCartSubtotal,
+                            cartItemCount: removeCartItemCount,
+                            hasTicketing: removeHasTicketing,
+                            hasClothing: removeHasClothing,
+                        });
+                        const backendCouponMapRemove = new Map(eligibleForRemove.map((c: any) => [c.code?.toUpperCase(), c]));
+
                         // Update discount codes from response
                         const discountCodesFromCart = (updatedCart.discountCodes || []).map((dc: any) => {
                             const isApplicable = dc.applicable !== false;
-                            
-                            // Fix: code is on the allocation itself for CartCodeDiscountAllocation, not in discountApplication
                             const matchingAllocation = (updatedCart.discountAllocations || []).find((alloc: any) => {
                                 return alloc.code?.toUpperCase() === dc.code.toUpperCase();
                             });
 
-                            // Get discount value from config file (source of truth)
                             let discountType: 'percentage' | 'fixed' | 'shipping' | 'bogo' = 'percentage';
                             let discountValue = 0;
+                            let foundInBackend = false;
                             
-                            try {
-                                const discountsConfig = configService.getDiscountsConfig();
-                                if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                                    const configDiscount = discountsConfig.codes.find((cd: any) => 
-                                        cd.code?.toUpperCase() === dc.code.toUpperCase()
-                                    );
-                                    if (configDiscount) {
-                                        discountValue = configDiscount.value;
-                                        discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                                        console.log(`[CartStore] removeDiscountCode ${dc.code}: Using config discount - type: ${discountType}, value: ${discountValue}`);
-                                    }
-                                }
-                            } catch (error) {
-                                console.error(`[CartStore] Error reading discount config for ${dc.code}:`, error);
+                            const backendCoupon = backendCouponMapRemove.get(dc.code?.toUpperCase());
+                            if (backendCoupon) {
+                                foundInBackend = true;
+                                discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
+                                discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                console.log(`[CartStore] removeDiscountCode ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                             }
                             
-                            // Fallback to Shopify's response if config not found
-                            if (discountValue === 0 && matchingAllocation) {
+                            if (!foundInBackend && discountValue === 0 && matchingAllocation) {
                                 const discountApp = matchingAllocation.discountApplication;
                                 if (discountApp?.value?.percentage !== undefined) {
                                     discountValue = discountApp.value.percentage;
@@ -1529,6 +1446,8 @@ export const useCartStore = create<CartState>()(
                                 image: node.merchandise?.image?.url || '',
                                 quantity: node.quantity,
                                 availableForSale: node.merchandise?.availableForSale ?? true,
+                                tags: node.merchandise?.product?.tags || [],
+                                bookingDate: node.merchandise?.customAttributes?.find((a: any) => a.key === 'booking_date')?.value,
                             };
                         }) || [];
 
@@ -1537,37 +1456,44 @@ export const useCartStore = create<CartState>()(
                             return sum + parseFloat(allocation.discountedAmount?.amount || '0');
                         }, 0);
 
+                        // Fetch eligible coupons from backend (source of truth for values)
+                        const { couponService } = await import('@/services/couponService');
+                        const { useUserStore } = await import('@/store/userStore');
+                        const userStore = useUserStore.getState();
+                        const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                        const fetchCartSubtotal = lineItems.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (i.quantity || 0), 0);
+                        const fetchCartItemCount = lineItems.reduce((s: number, i: any) => s + (i.quantity || 0), 0);
+                        const fetchHasTicketing = lineItems.some((item: any) => item.bookingDate || (item.tags || []).some((t: string) => /event|playhouse|petting|farm|ticket|pass/i.test(String(t))));
+                        const fetchHasClothing = lineItems.some((item: any) => (item.tags || []).some((t: string) => String(t).toLowerCase() === 'fashion'));
+                        const eligibleForFetch = await couponService.getEligibleCouponsFromBackend({
+                            userId,
+                            cartSubTotal: fetchCartSubtotal,
+                            cartItemCount: fetchCartItemCount,
+                            hasTicketing: fetchHasTicketing,
+                            hasClothing: fetchHasClothing,
+                        });
+                        const backendCouponMapFetch = new Map(eligibleForFetch.map((c: any) => [c.code?.toUpperCase(), c]));
+
                         // Update discount codes from cart
                         const discountCodesFromCart = (cart.discountCodes || []).map((dc: any) => {
                             const isApplicable = dc.applicable !== false;
-                            
-                            // Fix: code is on the allocation itself for CartCodeDiscountAllocation, not in discountApplication
                             const matchingAllocation = (cart.discountAllocations || []).find((alloc: any) => {
                                 return alloc.code?.toUpperCase() === dc.code.toUpperCase();
                             });
 
-                            // Get discount value from config file (source of truth)
                             let discountType: 'percentage' | 'fixed' | 'shipping' | 'bogo' = 'percentage';
                             let discountValue = 0;
+                            let foundInBackend = false;
                             
-                            try {
-                                const discountsConfig = configService.getDiscountsConfig();
-                                if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                                    const configDiscount = discountsConfig.codes.find((cd: any) => 
-                                        cd.code?.toUpperCase() === dc.code.toUpperCase()
-                                    );
-                                    if (configDiscount) {
-                                        discountValue = configDiscount.value;
-                                        discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                                        console.log(`[CartStore] fetchCart ${dc.code}: Using config discount - type: ${discountType}, value: ${discountValue}`);
-                                    }
-                                }
-                            } catch (error) {
-                                console.error(`[CartStore] Error reading discount config for ${dc.code}:`, error);
+                            const backendCoupon = backendCouponMapFetch.get(dc.code?.toUpperCase());
+                            if (backendCoupon) {
+                                foundInBackend = true;
+                                discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
+                                discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                console.log(`[CartStore] fetchCart ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                             }
                             
-                            // Fallback to Shopify's response if config not found
-                            if (discountValue === 0 && matchingAllocation) {
+                            if (!foundInBackend && discountValue === 0 && matchingAllocation) {
                                 const discountApp = matchingAllocation.discountApplication;
                                 if (discountApp?.value?.percentage !== undefined) {
                                     discountValue = discountApp.value.percentage;

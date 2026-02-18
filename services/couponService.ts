@@ -1,11 +1,11 @@
-// Coupon Service - Uses config-based discounts and Shopify API for application
+// Coupon Service - Fetches eligible coupons from backend API (eligibility logic in backend)
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { configService } from './configService';
 
-// Remote config URL for fetching discounts at runtime
-const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
+// Backend API base URL (same as otpService)
+const DEFAULT_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+const COUPONS_API_BASE_URL = DEFAULT_BACKEND_URL;
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -35,79 +35,76 @@ export interface CouponCode {
   nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
 }
 
-// Cache for remote discounts to avoid fetching on every call
-let cachedRemoteDiscounts: CouponCode[] | null = null;
-let lastFetchTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+// Extract numeric Shopify customer ID for backend API
+const getNumericCustomerId = (userId: string | null | undefined): string | null => {
+  if (!userId) return null;
+  const str = String(userId);
+  const match = str.match(/\d+/);
+  if (match) return match[0];
+  if (str.startsWith('shopify-')) return str.replace('shopify-', '');
+  return str;
+};
 
-// Get discounts from remote config (for live updates) with fallback to local
-const getConfigDiscounts = async (): Promise<CouponCode[]> => {
+export interface GetEligibleCouponsParams {
+  userId: string | null;
+  cartSubTotal: number;
+  cartItemCount: number;
+  hasTicketing: boolean;
+  hasClothing: boolean;
+}
+
+/**
+ * Fetch eligible coupons from backend API.
+ * Backend validates based on user order history (first order, usage limits, etc.).
+ * Returns [] when coupons is null or on error.
+ */
+export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  const { userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
+  const customerId = getNumericCustomerId(userId);
+
+  if (!customerId) {
+    console.log('[CouponService] No customer ID - skipping backend coupons (guest user)');
+    return [];
+  }
+
   try {
-    // Try to fetch from remote first (for live updates)
-    const now = Date.now();
-    if (!cachedRemoteDiscounts || (now - lastFetchTime) > CACHE_DURATION) {
-      try {
-        const response = await fetch(REMOTE_CONFIG_URL);
-        if (response.ok) {
-          const remoteConfig = await response.json();
-          const discountsConfig = remoteConfig.discounts;
-          
-          if (discountsConfig && discountsConfig.enabled) {
-            const remoteDiscounts = (discountsConfig.codes || []).map((dc: any) => ({
-              code: dc.code,
-              title: dc.title,
-              description: dc.description,
-              value: dc.value,
-              valueType: dc.valueType || 'percentage',
-              minimumPurchaseAmount: dc.minimumPurchaseAmount,
-              minimumItemCount: dc.minimumItemCount || null,
-              startsAt: dc.startsAt,
-              endsAt: dc.endsAt,
-              usageLimitPerUser: dc.usageLimitPerUser || null,
-              firstOrderOnly: dc.firstOrderOnly || false,
-              ticketingOnly: dc.ticketingOnly || false,
-              clothingOnly: dc.clothingOnly || false,
-              nonCombinable: dc.nonCombinable || false,
-            }));
-            cachedRemoteDiscounts = remoteDiscounts;
-            lastFetchTime = now;
-            console.log('[CouponService] ✅ Loaded discounts from remote config');
-            return remoteDiscounts;
-          }
-        }
-      } catch (remoteError) {
-        console.warn('[CouponService] Failed to fetch remote discounts, falling back to local:', remoteError);
-      }
-    } else if (cachedRemoteDiscounts) {
-      // Return cached remote discounts
-      return cachedRemoteDiscounts;
-    }
-    
-    // Fallback to local config if remote fetch fails
-    const discountsConfig = configService.getDiscountsConfig();
-    
-    if (!discountsConfig || !discountsConfig.enabled) {
+    const url = `${COUPONS_API_BASE_URL.replace(/\/$/, '')}/coupons/${customerId}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cartSubTotal,
+        cartItemCount,
+        hasTicketing,
+        hasClothing,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText);
       return [];
     }
-    
-    return (discountsConfig.codes || []).map((dc: any) => ({
-      code: dc.code,
-      title: dc.title,
-      description: dc.description,
-      value: dc.value,
-      valueType: dc.valueType || 'percentage',
-      minimumPurchaseAmount: dc.minimumPurchaseAmount,
-      minimumItemCount: dc.minimumItemCount || null,
-      startsAt: dc.startsAt,
-      endsAt: dc.endsAt,
-      usageLimitPerUser: dc.usageLimitPerUser || null,
-      firstOrderOnly: dc.firstOrderOnly || false,
-      ticketingOnly: dc.ticketingOnly || false,
-      clothingOnly: dc.clothingOnly || false,
-      nonCombinable: dc.nonCombinable || false,
-    }));
-  } catch (error) {
-    console.error('[CouponService] Error reading config discounts:', error);
+
+    const data = await response.json();
+    const coupons = data?.coupons;
+
+    if (coupons === null || coupons === undefined) {
+      return [];
+    }
+
+    if (!Array.isArray(coupons)) {
+      console.warn('[CouponService] Backend returned invalid coupons format');
+      return [];
+    }
+
+    console.log('[CouponService] ✅ Loaded', coupons.length, 'eligible coupons from backend');
+    return coupons as CouponCode[];
+  } catch (error: any) {
+    console.error('[CouponService] Failed to fetch coupons from backend:', error?.message || error);
     return [];
   }
 };
@@ -127,60 +124,22 @@ export interface PriceRule {
 }
 
 /**
- * Fetch all available discount codes from config
- * @param hasTicketing - If true, cart has ticketing items. If false, cart has no ticketing items. If undefined, unknown.
- * @param hasClothing - If true, cart has clothing items. If false, cart has no clothing items. If undefined, unknown.
+ * Fetch eligible coupon codes from backend API.
+ * Backend handles all eligibility logic (order history, usage limits, first order, etc.).
+ * @param params - userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing
  */
-export const getAvailableCouponCodes = async (hasTicketing?: boolean, hasClothing?: boolean): Promise<CouponCode[]> => {
-  // Use config-based discounts (now fetches from remote first)
-  const allCoupons = await getConfigDiscounts();
-  
-  let filteredCoupons = allCoupons;
-  
-  // If cart has BOTH ticketing and clothing items, show both types of coupons
-  if (hasTicketing === true && hasClothing === true) {
-    // Show: ticketing-only coupons, clothing-only coupons, and regular coupons (non-restricted)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.ticketingOnly === true || 
-      coupon.clothingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has ONLY ticketing items (no clothing)
-  else if (hasTicketing === true && hasClothing === false) {
-    // Show: ticketing-only coupons and regular coupons (exclude clothing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.ticketingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has ONLY clothing items (no ticketing)
-  else if (hasTicketing === false && hasClothing === true) {
-    // Show: clothing-only coupons and regular coupons (exclude ticketing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.clothingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has NEITHER ticketing nor clothing
-  else if (hasTicketing === false && hasClothing === false) {
-    // Show: only regular coupons (exclude both ticketing-only and clothing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      !coupon.ticketingOnly && !coupon.clothingOnly
-    );
-  }
-  // If we don't know the cart contents (undefined), show all coupons
-  // This handles edge cases where cart state is unclear
-  
-  return filteredCoupons;
+export const getAvailableCouponCodes = async (params?: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  if (!params) return [];
+  return getEligibleCouponsFromBackend(params);
 };
 
 /**
- * Fetch ALL coupon codes (no cart-based filtering).
- * Use this when you want to show all offers including inapplicable ones.
+ * Fetch eligible coupon codes from backend API.
+ * Same as getAvailableCouponCodes - backend returns only eligible coupons.
  */
-export const getAllCouponCodes = async (): Promise<CouponCode[]> => {
-  return getConfigDiscounts();
+export const getAllCouponCodes = async (params?: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  if (!params) return [];
+  return getEligibleCouponsFromBackend(params);
 };
 
 export interface CouponApplicability {
@@ -246,23 +205,26 @@ export const getCouponApplicabilityForDisplay = (
 };
 
 /**
- * Validate a coupon code from config
+ * Validate a coupon code - checks if it exists in backend's eligible coupons.
+ * @param code - The coupon code to validate
+ * @param params - Optional cart context for backend validation (userId, cartSubTotal, etc.)
  */
-export const validateCouponCode = async (code: string): Promise<CouponCode | null> => {
+export const validateCouponCode = async (
+  code: string,
+  params?: GetEligibleCouponsParams
+): Promise<CouponCode | null> => {
   try {
     const upperCode = code.toUpperCase();
-    
-    // Get all available coupons (fetches from remote first)
-    const allCoupons = await getAvailableCouponCodes();
-    
-    // Find the coupon with matching code
-    const matchingCoupon = allCoupons.find(coupon => coupon.code?.toUpperCase() === upperCode);
-    
-    if (matchingCoupon) {
-      return matchingCoupon;
+
+    if (!params) {
+      console.warn('[CouponService] validateCouponCode called without params - cannot validate via backend');
+      return null;
     }
 
-    return null;
+    const eligibleCoupons = await getEligibleCouponsFromBackend(params);
+    const matchingCoupon = eligibleCoupons.find((coupon) => coupon.code?.toUpperCase() === upperCode);
+
+    return matchingCoupon || null;
   } catch (error: any) {
     console.error('[CouponService] Error validating coupon code:', error);
     return null;
@@ -591,6 +553,7 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
 };
 
 export const couponService = {
+  getEligibleCouponsFromBackend,
   getAvailableCouponCodes,
   getAllCouponCodes,
   getCouponApplicabilityForDisplay,

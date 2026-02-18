@@ -1,5 +1,6 @@
 import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
 import { AddressModal } from '@/components/modals/AddressModal';
+import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
@@ -8,7 +9,6 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
-import { configService } from '@/services/configService';
 import { couponService } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import {
@@ -161,7 +161,6 @@ export default function CartScreen() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
-    const [couponUsageMap, setCouponUsageMap] = useState<Record<string, number>>({});
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showShoesModal, setShowShoesModal] = useState(false);
@@ -201,36 +200,34 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch ALL coupons (including inapplicable) and usage counts for firstOrderOnly/usageLimitPerUser
+    // Fetch eligible coupons from backend (eligibility logic in backend)
     useEffect(() => {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const coupons = await couponService.getAllCouponCodes();
-                setAvailableCoupons(coupons);
-                // Fetch usage for coupons with usageLimitPerUser (needed for applicability display)
                 const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
-                if (userId) {
-                    const codesToCheck = coupons
-                        .filter(c => c.usageLimitPerUser || c.firstOrderOnly)
-                        .map(c => c.code);
-                    if (codesToCheck.length > 0) {
-                        const usageMap = await couponService.getCouponUsagesForUser(codesToCheck, userId);
-                        setCouponUsageMap(usageMap);
-                    } else {
-                        setCouponUsageMap({});
-                    }
-                } else {
-                    setCouponUsageMap({});
-                }
+                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
+                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                const hasTicketing = hasTicketingProducts;
+                const hasClothing = hasFashionItems;
+
+                const coupons = await couponService.getEligibleCouponsFromBackend({
+                    userId,
+                    cartSubTotal,
+                    cartItemCount,
+                    hasTicketing,
+                    hasClothing,
+                });
+                setAvailableCoupons(coupons ?? []);
             } catch (error) {
                 console.error('Error fetching coupons:', error);
+                setAvailableCoupons([]);
             } finally {
                 setLoadingCoupons(false);
             }
         };
         fetchCoupons();
-    }, [user?.id, user?.customerId, user?.email, user?.phone]);
+    }, [user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -253,67 +250,16 @@ export default function CartScreen() {
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
     
+    // Use discount values from cart store (source: backend API only, not config)
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
                 console.log('[CartScreen] Processing discount code:', discountCode);
             }
             
-            // Check if code exists in config - if it does, use it regardless of Shopify's applicable flag
-            let shouldProcess = discountCode.applicable !== false;
-            let discountValue = discountCode.value;
-            let discountType = discountCode.type;
-            
-            // Check config first - if code exists in config, process it even if Shopify says not applicable
-            try {
-                const discountsConfig = configService.getDiscountsConfig();
-                if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                    const configDiscount = discountsConfig.codes.find((cd: any) => 
-                        cd.code?.toUpperCase() === discountCode.code.toUpperCase()
-                    );
-                    if (configDiscount) {
-                        // Code exists in config - use config values and force processing
-                        discountValue = configDiscount.value;
-                        discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                        shouldProcess = true; // Force processing if code is in config
-                        if (__DEV__) {
-                            console.log('[CartScreen] Code found in config, forcing processing:', {
-                                code: discountCode.code,
-                                value: discountValue,
-                                type: discountType,
-                                shopifyApplicable: discountCode.applicable,
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('[CartScreen] Error reading discount config:', error);
-            }
-            
-            // If value is still 0 or missing, try to get from config (fallback)
-            if ((discountValue === 0 || !discountValue) && shouldProcess) {
-                try {
-                    const discountsConfig = configService.getDiscountsConfig();
-                    if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                        const configDiscount = discountsConfig.codes.find((cd: any) => 
-                            cd.code?.toUpperCase() === discountCode.code.toUpperCase()
-                        );
-                        if (configDiscount) {
-                            discountValue = configDiscount.value;
-                            discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                            if (__DEV__) {
-                                console.log('[CartScreen] Got discount value from config (fallback):', {
-                                    code: discountCode.code,
-                                    value: discountValue,
-                                    type: discountType,
-                                });
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('[CartScreen] Error reading discount config:', error);
-                }
-            }
+            const shouldProcess = discountCode.applicable !== false;
+            const discountValue = discountCode.value;
+            const discountType = discountCode.type;
             
             if (shouldProcess && discountValue > 0) {
                 if (discountType === 'percentage') {
@@ -417,20 +363,8 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    // Filter to only applicable coupons (don't show inapplicable in UI)
-    const applicableCoupons = useMemo(() => {
-        return availableCoupons.filter((coupon) => {
-            const applicability = couponService.getCouponApplicabilityForDisplay(coupon, {
-                hasTicketingProducts,
-                hasFashionItems,
-                cartSubtotal: itemSubtotal,
-                cartItemCount: cartItems.length,
-                userOrderCount: user?.numberOfOrders ?? 0,
-                couponUsageCount: couponUsageMap[coupon.code?.toUpperCase() || ''] ?? 0,
-            });
-            return applicability.applicable;
-        });
-    }, [availableCoupons, hasTicketingProducts, hasFashionItems, itemSubtotal, cartItems.length, user?.numberOfOrders, couponUsageMap]);
+    // Backend returns only eligible coupons - use directly
+    const applicableCoupons = useMemo(() => availableCoupons, [availableCoupons]);
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -730,7 +664,7 @@ export default function CartScreen() {
                             deliverySchedule || undefined,
                             selectedShoe || undefined,
                             appliedDiscountCode || undefined,
-                            discountAmount || undefined
+                            (discount > 0 ? discount : undefined)
                         );
 
                         if (!tryAndBuyOrder) {
@@ -1008,7 +942,7 @@ export default function CartScreen() {
                     price: giftWrapping.price
                 } : undefined,
                 couponCode: appliedDiscountCode || undefined,
-                discountAmount: discountAmount || undefined,
+                discountAmount: discount > 0 ? discount : undefined,
                 deliverySchedule: deliverySchedule || undefined,
                 selectedShoe: selectedShoe || undefined,
             };
@@ -1045,7 +979,7 @@ export default function CartScreen() {
                             
                             // Calculate order values for local record
                             const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                            const calculatedDiscount = discountAmount || 0;
+                            const calculatedDiscount = discount || 0;
                             const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
                             const calculatedSubtotal = itemSubtotal;
                             
@@ -1474,9 +1408,17 @@ export default function CartScreen() {
                         {cartItems.map(item => renderItem(item))}
                     </View>
 
-                    {/* Free Shoes Offer - Show only when cart has fashion items */}
-                    {hasFashionItems && (
-                        <FreeShoesOffer visible={true} />
+                    {/* Free Shoes Offer - Show when cart has fashion items OR HEYKIDDO coupon is available */}
+                    {(hasFashionItems || applicableCoupons.some(c => c.code?.toUpperCase() === 'HEYKIDDO')) && (
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => setShowShoesModal(true)}
+                        >
+                            <FreeShoesOffer
+                                visible={true}
+                                heykiddoCoupon={applicableCoupons.find(c => c.code?.toUpperCase() === 'HEYKIDDO') || undefined}
+                            />
+                        </TouchableOpacity>
                     )}
 
                     {/* Try Before You Buy Section */}
@@ -1660,8 +1602,8 @@ export default function CartScreen() {
                             </View>
                         )}
 
-                        {/* Available Coupons List - Only show applicable coupons, when no coupon applied and user logged in */}
-                        {isAuthenticated && applicableCoupons.length > 0 && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
+                        {/* Available Coupons / Offers - Show when no coupon applied and user logged in */}
+                        {isAuthenticated && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
                             <View style={styles.availableCouponsContainer}>
                                 <View style={styles.availableCouponsHeader}>
                                     <Ionicons name="pricetag" size={16} color={Colors.primary} />
@@ -1672,58 +1614,60 @@ export default function CartScreen() {
                                         <ActivityIndicator size="small" color={Colors.primary} />
                                         <Text style={styles.couponsLoadingText}>Loading offers...</Text>
                                     </View>
-                                ) : (
+                                ) : applicableCoupons.length > 0 ? (
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
                                         contentContainerStyle={styles.couponsList}
                                     >
                                         {applicableCoupons.map((coupon) => {
-                                                const conditions = couponService.getCouponConditionsText(coupon);
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={coupon.code}
-                                                        style={[
-                                                            styles.couponCard,
-                                                            couponApplying && styles.couponCardDisabled,
-                                                        ]}
-                                                        onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
-                                                        disabled={couponApplying}
-                                                        activeOpacity={0.7}
-                                                    >
-                                                        <View style={styles.couponCardContent}>
-                                                            <View style={styles.couponCodeRow}>
-                                                                <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                                {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
-                                                                    <View style={styles.discountBadge}>
-                                                                        <Text style={styles.discountBadgeText}>
-                                                                            {coupon.valueType === 'percentage'
-                                                                                ? `${coupon.value}%`
-                                                                                : `₹${coupon.value}`}
-                                                                        </Text>
-                                                                    </View>
-                                                                )}
-                                                            </View>
-                                                            {coupon.title && (
-                                                                <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                    {coupon.title}
-                                                                </Text>
-                                                            )}
-                                                            {conditions.length > 0 && (
-                                                                <View style={styles.couponConditionsContainer}>
-                                                                    {conditions.map((condition, index) => (
-                                                                        <View key={index} style={styles.couponConditionTag}>
-                                                                            <Ionicons name="information-circle" size={10} color="#666" />
-                                                                            <Text style={styles.couponConditionText}>{condition}</Text>
-                                                                        </View>
-                                                                    ))}
+                                            const conditions = couponService.getCouponConditionsText(coupon);
+                                            return (
+                                                <TouchableOpacity
+                                                    key={coupon.code}
+                                                    style={[
+                                                        styles.couponCard,
+                                                        couponApplying && styles.couponCardDisabled,
+                                                    ]}
+                                                    onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
+                                                    disabled={couponApplying}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <View style={styles.couponCardContent}>
+                                                        <View style={styles.couponCodeRow}>
+                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
+                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
+                                                                <View style={styles.discountBadge}>
+                                                                    <Text style={styles.discountBadgeText}>
+                                                                        {coupon.valueType === 'percentage'
+                                                                            ? `${coupon.value}%`
+                                                                            : `₹${coupon.value}`}
+                                                                    </Text>
                                                                 </View>
                                                             )}
                                                         </View>
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
+                                                        {coupon.title && (
+                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
+                                                                {coupon.title}
+                                                            </Text>
+                                                        )}
+                                                        {conditions.length > 0 && (
+                                                            <View style={styles.couponConditionsContainer}>
+                                                                {conditions.map((condition, index) => (
+                                                                    <View key={index} style={styles.couponConditionTag}>
+                                                                        <Ionicons name="information-circle" size={10} color="#666" />
+                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
+                                                                    </View>
+                                                                ))}
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
                                     </ScrollView>
+                                ) : (
+                                    <Text style={styles.noCouponsText}>No coupons available</Text>
                                 )}
                             </View>
                         )}
@@ -1938,6 +1882,13 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
+            {/* Free Shoes Selection Modal */}
+            <FreeShoesOfferModal
+                visible={showShoesModal}
+                onClose={() => setShowShoesModal(false)}
+                onSelect={(shoeId) => setSelectedShoe(shoeId || null)}
+                selectedShoe={selectedShoe}
+            />
 
             {/* Try And Buy Modal */}
             <TryAndBuyModal
@@ -2440,6 +2391,12 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#999',
         fontFamily: Fonts.Regular,
+    },
+    noCouponsText: {
+        fontSize: 13,
+        color: '#999',
+        fontFamily: Fonts.Regular,
+        paddingVertical: 12,
     },
     couponLoginPrompt: {
         backgroundColor: '#f8f9fa',

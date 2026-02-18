@@ -297,10 +297,22 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
 
-            // 1. Create Shopify Draft Order
+            // 1. Create Shopify Draft Order (use appliedDiscount for exact amount when available)
+            const tryAndBuyDiscountAmount = discountAmount ?? 0;
             console.log('[TryAndBuy] Creating draft order with formatted customerId:', formattedCustomerId);
             const draftOrder = await shopifyAdminApi.createDraftOrder({
                 customerId: formattedCustomerId,
+                ...(tryAndBuyDiscountAmount > 0
+                    ? {
+                        appliedDiscount: {
+                            valueType: 'FIXED_AMOUNT' as const,
+                            value: tryAndBuyDiscountAmount,
+                            title: couponCode ? `Discount (${couponCode})` : 'Discount',
+                        },
+                    }
+                    : couponCode
+                        ? { discountCodes: [couponCode] }
+                        : {}),
                 lineItems: orderItems.map((item) => ({
                     variantId: item.variantId,
                     quantity: item.quantity,

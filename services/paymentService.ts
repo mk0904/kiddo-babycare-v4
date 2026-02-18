@@ -550,11 +550,23 @@ export const createDraftOrder = async (
                 : []),
         ];
 
-        // Create draft order via Admin API
+        // Use appliedDiscount for exact amount when we have it; otherwise discountCodes
+        const discountAmount = orderData.discountAmount ?? 0;
         const draftOrder = await shopifyAdminApi.createDraftOrder({
             customerId: orderData.customerId,
             email: orderData.email,
             lineItems,
+            ...(discountAmount > 0
+                ? {
+                    appliedDiscount: {
+                        valueType: 'FIXED_AMOUNT' as const,
+                        value: discountAmount,
+                        title: orderData.couponCode ? `Discount (${orderData.couponCode})` : 'Discount',
+                    },
+                }
+                : orderData.couponCode
+                    ? { discountCodes: [orderData.couponCode] }
+                    : {}),
             shippingAddress: orderData.address
                 ? {
                     address1: orderData.address.address,
@@ -649,10 +661,22 @@ export const createRegularOrder = async (
                 : []),
         ];
 
-        // Create draft order first
+        // Create draft order - use appliedDiscount for exact amount when available
+        const regularDiscountAmount = orderData.discountAmount ?? 0;
         const draftOrder = await shopifyAdminApi.createDraftOrder({
             customerId: orderData.customerId,
             lineItems,
+            ...(regularDiscountAmount > 0
+                ? {
+                    appliedDiscount: {
+                        valueType: 'FIXED_AMOUNT' as const,
+                        value: regularDiscountAmount,
+                        title: orderData.couponCode ? `Discount (${orderData.couponCode})` : 'Discount',
+                    },
+                }
+                : orderData.couponCode
+                    ? { discountCodes: [orderData.couponCode] }
+                    : {}),
             shippingAddress: orderData.address
                 ? {
                     address1: orderData.address.address,
