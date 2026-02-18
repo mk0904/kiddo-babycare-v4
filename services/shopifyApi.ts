@@ -384,7 +384,12 @@ const GET_CUSTOMER_ORDERS_QUERY = `
                 node {
                   title
                   quantity
+                  customAttributes {
+                    key
+                    value
+                  }
                   variant {
+                    title
                     image {
                       url
                     }
@@ -439,6 +444,10 @@ const GET_ORDER_BY_ID_QUERY = `
               originalTotalPrice {
                 amount
                 currencyCode
+              }
+              customAttributes {
+                key
+                value
               }
               variant {
                 title

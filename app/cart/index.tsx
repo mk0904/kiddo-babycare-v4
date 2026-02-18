@@ -987,6 +987,7 @@ export default function CartScreen() {
                     price: item.price,
                     title: item.title,
                     tags: item.tags,
+                    bookingDate: item.bookingDate, // For Events, Playhouses, Petting Farms - sent to Shopify
                 })),
                 totalAmount: total,
                 currencyCode: 'INR',

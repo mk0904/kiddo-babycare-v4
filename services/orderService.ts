@@ -37,6 +37,8 @@ export interface OrderItem {
     price: number;
     quantity: number;
     image?: string;
+    // For Events, Playhouses, Petting Farms - when user booked
+    bookingDate?: string;
     // For Try & Buy
     isKept?: boolean;
     isReturned?: boolean;

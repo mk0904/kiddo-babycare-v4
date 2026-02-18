@@ -486,14 +486,21 @@ export const createDraftOrder = async (
                 item.tags?.some((tag: string) => tag.toLowerCase() === 'fashion')
             ) || false;
 
-        // Prepare line items
+        // Prepare line items (include booking date for Events, Playhouses, Petting Farms)
         const lineItems = orderData.items.map((item) => {
             const variantId = item.variantId.replace('gid://shopify/ProductVariant/', '');
-            return {
+            const lineItem: { variantId: string; quantity: number; originalUnitPrice: string; customAttributes?: Array<{ key: string; value: string }> } = {
                 variantId: variantId,
                 quantity: item.quantity,
                 originalUnitPrice: item.price.toString(),
             };
+            if (item.bookingDate) {
+                lineItem.customAttributes = [
+                    { key: 'booking_date', value: item.bookingDate },
+                    { key: 'booking_date_display', value: new Date(item.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) },
+                ];
+            }
+            return lineItem;
         });
 
         // Build tags
@@ -590,14 +597,21 @@ export const createRegularOrder = async (
                 item.tags?.some((tag: string) => tag.toLowerCase() === 'fashion')
             ) || false;
 
-        // Prepare line items
+        // Prepare line items (include booking date for Events, Playhouses, Petting Farms)
         const lineItems = orderData.items.map((item) => {
             const variantId = item.variantId.replace('gid://shopify/ProductVariant/', '');
-            return {
+            const lineItem: { variantId: string; quantity: number; originalUnitPrice: string; customAttributes?: Array<{ key: string; value: string }> } = {
                 variantId: variantId,
                 quantity: item.quantity,
                 originalUnitPrice: item.price.toString(),
             };
+            if (item.bookingDate) {
+                lineItem.customAttributes = [
+                    { key: 'booking_date', value: item.bookingDate },
+                    { key: 'booking_date_display', value: new Date(item.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) },
+                ];
+            }
+            return lineItem;
         });
 
         // Build tags

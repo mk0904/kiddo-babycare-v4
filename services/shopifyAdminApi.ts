@@ -22,6 +22,7 @@ export interface LineItemInput {
   quantity: number;
   title?: string;
   originalUnitPrice?: string;
+  customAttributes?: Array<{ key: string; value: string }>;
 }
 
 export interface AddressInput {
@@ -231,6 +232,10 @@ const GET_DRAFT_ORDER_QUERY = `
             title
             quantity
             originalUnitPrice
+            customAttributes {
+              key
+              value
+            }
             variant {
               id
               title
@@ -267,7 +272,7 @@ export const shopifyAdminApi = {
    */
   createDraftOrder: async (input: DraftOrderInput): Promise<DraftOrder> => {
     try {
-      // Format line items for GraphQL
+      // Format line items for GraphQL (include customAttributes for booking_date etc.)
       const lineItems = input.lineItems.map((item) => {
         const variantId = item.variantId.includes('gid://')
           ? item.variantId
@@ -276,6 +281,7 @@ export const shopifyAdminApi = {
           variantId,
           quantity: item.quantity,
           ...(item.originalUnitPrice && { originalUnitPrice: item.originalUnitPrice }),
+          ...(item.customAttributes && item.customAttributes.length > 0 && { customAttributes: item.customAttributes }),
         };
       });
 

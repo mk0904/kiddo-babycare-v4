@@ -83,11 +83,26 @@ const isTicketingOrder = (order: any) => {
     return edges.some((edge: any) => {
         const itemTitle = edge?.node?.title || '';
         const variantTitle = edge?.node?.variant?.title || '';
-        // Heuristics: variant title looks like a date, or item title contains ticketing keywords.
+        // Has booking_date in customAttributes = definitely Events/Playhouses/Petting Farms
+        const attrs = edge?.node?.customAttributes || [];
+        if (attrs.some((a: any) => a.key === 'booking_date' || a.key === 'booking_date_display')) return true;
+        // Heuristics: variant title looks like a date, or item title contains ticketing keywords
         if (looksLikeTicketingDate(variantTitle)) return true;
-        if (/(event|workshop|playhouse|petting|farm|ticket)/i.test(String(itemTitle))) return true;
+        if (/(event|workshop|playhouse|petting|farm|ticket|zoo)/i.test(String(itemTitle))) return true;
         return false;
     });
+};
+
+const getFirstBookingDate = (order: any): string | null => {
+    const edges = order?.lineItems?.edges || [];
+    for (const edge of edges) {
+        const attrs = edge?.node?.customAttributes || [];
+        const display = attrs.find((a: any) => a.key === 'booking_date_display')?.value;
+        const raw = attrs.find((a: any) => a.key === 'booking_date')?.value;
+        if (display) return display;
+        if (raw) return new Date(raw).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    return null;
 };
 
 export default function OrdersScreen() {
@@ -312,8 +327,10 @@ export default function OrdersScreen() {
                 >
                     {orders.map((order) => {
                         const ticketing = isTicketingOrder(order);
+                        const bookingDate = getFirstBookingDate(order);
                         const statusKey = order.fulfillmentStatus || order.financialStatus;
-                        const showBooked = ticketing && (order.financialStatus === 'PAID' || statusKey === 'FULFILLED');
+                        // For Events, Playhouses, Petting Farms - always show "Booked"
+                        const showBooked = ticketing;
                         const statusText = showBooked ? 'Booked' : getStatusText(statusKey);
                         const statusColor = showBooked ? Colors.success : getStatusColor(statusKey);
                         
@@ -349,6 +366,9 @@ export default function OrdersScreen() {
                                                 day: 'numeric',
                                             })}
                                         </Text>
+                                        {bookingDate && (
+                                            <Text style={styles.bookingDateLabel}>Booked for: {bookingDate}</Text>
+                                        )}
                                     </View>
                                     <View style={styles.orderStatusContainer}>
                                         <Text style={[styles.orderStatus, { color: statusColor }]}>
@@ -466,6 +486,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: Colors.textSecondary,
+    },
+    bookingDateLabel: {
+        fontSize: 13,
+        fontFamily: Fonts.Medium,
+        color: Colors.primary,
+        marginTop: 4,
     },
     orderStatusContainer: {
         paddingHorizontal: 8,
