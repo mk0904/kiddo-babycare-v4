@@ -1,14 +1,19 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { ForceReloginCheck } from '@/components/ForceReloginCheck';
+import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
+import { isAppUpdateRequired } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { NectorProvider } from '@/context/NectorContext';
@@ -43,7 +48,10 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isSplashVisible, setIsSplashVisible] = React.useState(false);
   const [appIsReady, setAppIsReady] = React.useState(false);
-  
+
+  const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
+  const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+
   // Track screen views
   useScreenTracking();
 
@@ -195,10 +203,15 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           {(!fontsLoaded || !appIsReady) ? (
-            // Show nothing while loading, but providers are still in tree
             null
+          ) : updateRequired ? (
+            <View style={{ flex: 1 }}>
+              <UpdateRequiredScreen />
+            </View>
           ) : (
-          <NectorProvider>
+          <>
+            <ForceReloginCheck />
+            <NectorProvider>
             <AddressProvider>
               <WishlistProvider>
                 <RecentlyViewedProvider>
@@ -224,6 +237,7 @@ export default function RootLayout() {
               </WishlistProvider>
             </AddressProvider>
           </NectorProvider>
+          </>
           )}
         </AuthProvider>
       </QueryClientProvider>

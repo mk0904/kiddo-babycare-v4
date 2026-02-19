@@ -39,20 +39,12 @@ if (Platform.OS === 'android') {
     console.log('🔵 [OneSignal] Final OneSignal keys:', OneSignal ? Object.keys(OneSignal) : 'null');
   } catch (error: any) {
     importError = error;
-    console.error('❌ [OneSignal] iOS import failed:', error);
-    console.error('❌ [OneSignal] Error message:', error?.message);
-    console.error('❌ [OneSignal] Error code:', error?.code);
-    console.error('❌ [OneSignal] Error stack:', error?.stack);
-    
-    // In iOS simulator, NativeEventEmitter requires non-null argument error is common
+    // Use warn so dev overlay doesn't block the app when OneSignal isn't available (e.g. simulator)
+    console.warn('❌ [OneSignal] iOS import failed:', error?.message ?? error);
     if (error?.message?.includes('NativeEventEmitter') || error?.message?.includes('requires a non-null argument')) {
-      console.log('📱 [OneSignal] Disabled (iOS simulator detected)');
+      console.log('📱 [OneSignal] Disabled (iOS simulator / native module not available)');
     } else {
-      console.error('⚠️ [OneSignal] Module not available on iOS - this is a CRITICAL error in production!');
-      console.error('⚠️ [OneSignal] This usually means:');
-      console.error('   1. Native module not linked');
-      console.error('   2. Pods not installed');
-      console.error('   3. Framework not included in build');
+      console.warn('⚠️ [OneSignal] Module not available on iOS. In production ensure: 1) Native module linked 2) Pods installed 3) Framework in build');
     }
   }
 }
@@ -75,11 +67,7 @@ export const oneSignalService = {
       
       // Check if OneSignal module exists
       if (!OneSignal) {
-        console.error('❌ [OneSignal] Module not found - OneSignal is null/undefined');
-        console.error('❌ [OneSignal] This usually means:');
-        console.error('   1. Native module not linked (run: cd ios && pod install)');
-        console.error('   2. Module not included in build');
-        console.error('   3. Import failed silently');
+        console.warn('❌ [OneSignal] Module not found. Run: cd ios && pod install; ensure framework is in build.');
         return false;
       }
 
