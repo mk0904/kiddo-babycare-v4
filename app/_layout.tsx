@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -137,8 +138,22 @@ export default function RootLayout() {
             console.error('❌ [OneSignal] This is a critical error - OneSignal will not work');
             return;
           }
-          
-          
+
+          // Request permission only once (persist flag so we don't ask every app open)
+          const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
+          try {
+            const hasPermission = await oneSignalService.getPermissionStatus();
+            if (!hasPermission) {
+              const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
+              if (alreadyAsked !== 'true') {
+                await oneSignalService.requestPermission(true);
+                await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ OneSignal permission request error:', error);
+          }
+
           // Check status in background (non-blocking) - increased delay for better reliability
           setTimeout(async () => {
             try {

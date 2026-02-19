@@ -10,9 +10,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ActivityIndicator,
     Alert,
+    Linking,
     Platform,
     ScrollView,
     StyleSheet,
@@ -143,9 +145,16 @@ export default function AccountScreen() {
     };
 
     const handleRequestNotificationPermission = async () => {
+        const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
         try {
-            // Request permission
+            const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
+            if (alreadyAsked === 'true') {
+                // We already asked once on first launch; send user to Settings to enable
+                await Linking.openSettings();
+                return;
+            }
             await oneSignalService.requestPermission(true);
+            await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
             console.log('📱 [OneSignal] Permission requested');
         } catch (error: any) {
             console.error('❌ [OneSignal] Permission request error:', error);
