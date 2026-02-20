@@ -31,6 +31,7 @@ import {
     ActivityIndicator,
     Alert,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TextInput,
@@ -594,10 +595,10 @@ export default function CartScreen() {
 
                     // Handle payment based on selected payment method
                     let paymentId: string | undefined = undefined;
-                    
+                    let paymentResult: { paymentId?: string; orderId?: string; signature?: string } | undefined;
                     if (paymentMethod === 'razorpay') {
                         // For Razorpay, process payment first
-                        const paymentResult = await PaymentService.initiateRazorpayPayment(
+                        paymentResult = await PaymentService.initiateRazorpayPayment(
                             total,
                             'INR',
                             {
@@ -626,24 +627,11 @@ export default function CartScreen() {
                             throw new Error(paymentResult.error || 'Payment failed');
                         }
 
-                        // Verify payment signature
-                        if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
-                            const isVerified = await PaymentService.verifyRazorpayPayment(
-                                paymentResult.orderId,
-                                paymentResult.paymentId,
-                                paymentResult.signature
-                            );
-                            
-                            if (!isVerified) {
-                                throw new Error('Payment verification failed. Please contact support.');
-                            }
-                        }
-
                         paymentId = paymentResult.paymentId;
                     }
 
                     // Create try and buy order with selected payment method and payment ID
-                    // Pass items directly to avoid state sync issues
+                    // Pass items directly to avoid state sync issues; for Razorpay pass orderId + signature for backend verification
                     let tryAndBuyOrder;
                     try {
                         tryAndBuyOrder = await createTryAndBuyOrder(
@@ -662,7 +650,9 @@ export default function CartScreen() {
                             deliverySchedule || undefined,
                             selectedShoe || undefined,
                             appliedDiscountCode || undefined,
-                            (discount > 0 ? discount : undefined)
+                            discount > 0 ? discount : undefined,
+                            paymentResult?.orderId,
+                            paymentResult?.signature
                         );
 
                         if (!tryAndBuyOrder) {
@@ -973,8 +963,7 @@ export default function CartScreen() {
                         // Try to create a local order record as fallback for recovery
                         try {
                             const { orderService } = await import('@/services/orderService');
-                            const { Clipboard } = require('@react-native-clipboard/clipboard');
-                            
+
                             // Calculate order values for local record
                             const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                             const calculatedDiscount = discount || 0;
@@ -1014,22 +1003,24 @@ export default function CartScreen() {
                             
                             console.log('[Cart] Created local recovery order:', localOrder.id);
                             
-                            // Show alert with copy payment ID option
+                            // Show alert with share payment ID option
                             Alert.alert(
                                 'Payment Successful - Order Issue',
                                 `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
                                 [
                                     {
-                                        text: 'Copy Payment ID',
+                                        text: 'Share Payment ID',
                                         onPress: async () => {
                                             try {
                                                 const paymentId = result.payment?.paymentId || '';
                                                 if (paymentId) {
-                                                    await Clipboard.setString(paymentId);
-                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                    await Share.share({
+                                                        message: `Payment ID for support: ${paymentId}`,
+                                                        title: 'Payment ID',
+                                                    });
                                                 }
                                             } catch (e) {
-                                                console.error('Failed to copy payment ID:', e);
+                                                console.error('Failed to share payment ID:', e);
                                             }
                                         },
                                     },
@@ -1054,17 +1045,18 @@ export default function CartScreen() {
                                 `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
                                 [
                                     {
-                                        text: 'Copy Payment ID',
+                                        text: 'Share Payment ID',
                                         onPress: async () => {
                                             try {
-                                                const { Clipboard } = require('@react-native-clipboard/clipboard');
-                                                const paymentId = result.payment?.paymentId || '';
-                                                if (paymentId) {
-                                                    await Clipboard.setString(paymentId);
-                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                const pid = result.payment?.paymentId || '';
+                                                if (pid) {
+                                                    await Share.share({
+                                                        message: `Payment ID for support: ${pid}`,
+                                                        title: 'Payment ID',
+                                                    });
                                                 }
                                             } catch (e) {
-                                                console.error('Failed to copy payment ID:', e);
+                                                console.error('Failed to share payment ID:', e);
                                             }
                                         },
                                     },
@@ -1132,43 +1124,29 @@ export default function CartScreen() {
                 console.warn('Analytics tracking error:', e);
             }
 
-            // CRITICAL: Verify order actually exists in Shopify before showing success
-            // This prevents showing success screen when order creation silently failed
+            // Optional: verify order visible in Shopify. Storefront API often returns null for Order
+            // when using only the storefront token (no customer access token), so empty result is expected.
             if (finalOrder?.id) {
                 try {
-                    console.log('[Cart] Verifying order exists in Shopify...');
                     const { shopifyApi } = await import('@/services/shopifyApi');
-                    
-                    // Format ID as GID if it's numeric
                     let orderIdToVerify = finalOrder.id;
                     if (typeof orderIdToVerify === 'number' || (typeof orderIdToVerify === 'string' && !orderIdToVerify.startsWith('gid://'))) {
                         orderIdToVerify = `gid://shopify/Order/${orderIdToVerify}`;
                     }
-                    
-                    // Try to fetch the order from Shopify to verify it exists
-                    // Use a short timeout to avoid blocking too long
                     const verificationPromise = shopifyApi.getOrderById(orderIdToVerify);
-                    const timeoutPromise = new Promise((_, reject) => 
+                    const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('Verification timeout')), 5000)
                     );
-                    
                     const verifiedOrder = await Promise.race([verificationPromise, timeoutPromise]) as any;
-                    
-                    if (!verifiedOrder || !verifiedOrder.id) {
-                        console.warn('[Cart] ⚠️ Order verification returned empty, but order was created successfully in backend. Proceeding.', {
-                            orderId: finalOrder.id,
-                            orderName: orderIdForDisplay,
-                        });
-                        // Don't throw error here, assume eventual consistency lag
-                    } else {
-                         console.log('[Cart] ✅ Order verified in Shopify:', {
+                    if (verifiedOrder?.id) {
+                        console.log('[Cart] ✅ Order verified in Shopify:', {
                             orderId: verifiedOrder.id,
                             orderNumber: verifiedOrder.orderNumber,
                         });
                     }
-                } catch (verifyError: any) {
-                     // Log verification error but don't fail the checkout flow since payment succeeded and ID exists
-                    console.warn('[Cart] ⚠️ Order verification failed (continuing anyway):', verifyError.message);
+                    // If empty: expected when Storefront API is called without customer token; order was still created by backend.
+                } catch (_verifyError) {
+                    // Verification is best-effort; do not fail or warn—backend already confirmed creation.
                 }
             }
 
