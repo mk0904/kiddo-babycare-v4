@@ -266,16 +266,17 @@ const getCouponUsageForUser = async (
     
     // Filter orders that:
     // 1. Have the matching coupon code
-    // 2. Are NOT cancelled
-    // 3. Are completed/delivered (or at least placed and not cancelled)
-    const completedOrdersWithCoupon = allOrders.filter(order => {
+    // 2. Belong to this user (order.userId === userId; legacy orders without userId are not counted)
+    // 3. Are NOT cancelled
+    // 4. Are completed/delivered (or at least placed and not cancelled)
+    const completedOrdersWithCoupon = allOrders.filter((order: any) => {
       const hasCoupon = order.couponCode?.toUpperCase() === couponCode.toUpperCase();
+      const belongsToUser = order.userId != null && String(order.userId).trim() === String(userId).trim();
       const isNotCancelled = order.status !== 'cancelled';
-      // Count orders that are placed or beyond (not cancelled)
       const isCompleted = ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered'].includes(order.status);
-      return hasCoupon && isNotCancelled && isCompleted;
+      return hasCoupon && belongsToUser && isNotCancelled && isCompleted;
     });
-    
+
     const usageCount = completedOrdersWithCoupon.length;
     
     // Always prioritize actual orders over AsyncStorage
@@ -292,27 +293,10 @@ const getCouponUsageForUser = async (
       return usageCount;
     }
     
-    // If no actual orders found, check AsyncStorage but also verify it's not stale
-    // If AsyncStorage has a count but no orders exist, it might be from a cancelled order
-    // So we should reset it to 0
+    // No local orders for this user+coupon: use AsyncStorage (orders may exist only in Shopify)
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     const data = await AsyncStorage.getItem(storageKey);
     const storageCount = data ? (JSON.parse(data).count || 0) : 0;
-    
-    // If AsyncStorage has a count but no actual orders, reset it
-    // This handles the case where an order was cancelled/deleted
-    if (storageCount > 0 && usageCount === 0) {
-      // Reset AsyncStorage to match actual orders (0)
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          count: 0,
-          lastUsedAt: null,
-        })
-      );
-      return 0;
-    }
-    
     return storageCount;
   } catch (error) {
     console.error('[CouponService] Error getting coupon usage:', error);

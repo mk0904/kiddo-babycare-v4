@@ -1048,6 +1048,7 @@ export default function CartScreen() {
                             const calculatedSubtotal = itemSubtotal;
                             
                             // Create local order record with payment info for manual recovery
+                            const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
                             const localOrder = await orderService.createOrder({
                                 items: cartItems.map(item => ({
                                     id: item.id,
@@ -1075,7 +1076,9 @@ export default function CartScreen() {
                                 deliveryFee: calculatedDeliveryFee,
                                 discount: calculatedDiscount,
                                 currencyCode: 'INR',
+                                couponCode: appliedDiscountCode || undefined,
                                 note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
+                                userId: userIdForOrder ?? undefined,
                             });
                             
                             console.log('[Cart] Created local recovery order:', localOrder.id);
