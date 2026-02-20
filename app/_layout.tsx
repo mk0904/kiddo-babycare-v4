@@ -18,7 +18,7 @@ import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
-import { mixpanel } from '@/mixpanel';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 
@@ -79,16 +79,10 @@ export default function RootLayout() {
       });
       
       setAppIsReady(true);
-      // Track app opened event
-      if (mixpanel) {
-        try {
-          mixpanel.track('App Opened');
-          console.log('✅ Mixpanel: App Opened event tracked');
-        } catch (e) {
-          console.warn('Mixpanel tracking error:', e);
-        }
-      } else {
-        console.warn('⚠️ Mixpanel not initialized');
+      try {
+        trackEvent('App Opened');
+      } catch (e) {
+        console.warn('Analytics tracking error:', e);
       }
     };
 

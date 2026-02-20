@@ -1,28 +1,33 @@
-import { mixpanel } from '@/mixpanel';
+import { useUserStore } from '@/store/userStore';
+import { analyticsService } from '@/services/analyticsService';
 
 /**
- * Mixpanel Analytics Helpers
- * 
- * Usage examples:
- * - trackEvent('Add to Cart', { productId: '123', price: 499 })
- * - identifyUser('user123')
- * - trackScreenView('Home')
+ * Analytics Helpers - Events are sent to the backend and forwarded to Mixpanel.
+ * Changes to event names or properties can be made on the backend without an app release.
  */
 
+function getDistinctId(): string {
+  try {
+    const user = useUserStore.getState().user;
+    return user?.id || user?.customerId || user?.email || user?.phone || '';
+  } catch {
+    return '';
+  }
+}
+
 /**
- * Track a custom event
+ * Track a custom event (sent to backend → Mixpanel).
  */
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   try {
-    mixpanel.track(eventName, properties);
+    analyticsService.track(eventName, properties ?? {}, getDistinctId());
   } catch (error) {
-    console.error('Mixpanel tracking error:', error);
+    console.error('Analytics tracking error:', error);
   }
 };
 
 /**
- * Identify a user (call after login)
- * ⚠️ Never call before login
+ * Identify a user (call after login). Sends to backend for Mixpanel identify + people.set.
  */
 export const identifyUser = (userId: string, userProperties?: {
   name?: string;
@@ -30,12 +35,9 @@ export const identifyUser = (userId: string, userProperties?: {
   [key: string]: any;
 }) => {
   try {
-    mixpanel.identify(userId);
-    if (userProperties) {
-      mixpanel.people.set(userProperties);
-    }
+    analyticsService.identify(userId, userProperties ?? {});
   } catch (error) {
-    console.error('Mixpanel identify error:', error);
+    console.error('Analytics identify error:', error);
   }
 };
 
@@ -44,23 +46,20 @@ export const identifyUser = (userId: string, userProperties?: {
  */
 export const trackScreenView = (screenName: string, additionalProperties?: Record<string, any>) => {
   try {
-    mixpanel.track('Screen View', {
-      screen: screenName,
-      ...additionalProperties,
-    });
+    analyticsService.track('Screen View', { screen: screenName, ...additionalProperties }, getDistinctId());
   } catch (error) {
-    console.error('Mixpanel screen tracking error:', error);
+    console.error('Analytics screen tracking error:', error);
   }
 };
 
 /**
- * Reset user identity (call on logout)
+ * Reset user identity (call on logout). Backend no-ops; client clears local state.
  */
 export const resetUser = () => {
   try {
-    mixpanel.reset();
+    analyticsService.reset();
   } catch (error) {
-    console.error('Mixpanel reset error:', error);
+    console.error('Analytics reset error:', error);
   }
 };
 

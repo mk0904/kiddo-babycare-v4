@@ -573,26 +573,19 @@ const ProductDetailScreen = () => {
                 
                 // Track Product Viewed event
                 try {
-                    const { mixpanel } = require('@/mixpanel');
                     const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
-                    if (mixpanel) {
-                        const price = parseFloat(
-                            fullProduct.priceRange?.minVariantPrice?.amount || 
-                            fullProduct.variants?.edges?.[0]?.node?.price?.amount || 
-                            '0'
-                        );
-                        
-                        // Check if this is first product viewed
-                        const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
-                        if (!hasViewedProduct) {
-                            trackFirstProductViewed(fullProduct.id, fullProduct.title);
-                            await AsyncStorage.setItem('has_viewed_product', 'true');
-                        }
-                        
-                        trackProductViewed(fullProduct.id, fullProduct.title, price);
+                    const price = parseFloat(
+                        fullProduct.priceRange?.minVariantPrice?.amount ||
+                        fullProduct.variants?.edges?.[0]?.node?.price?.amount ||
+                        '0'
+                    );
+                    const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
+                    if (!hasViewedProduct) {
+                        trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                        await AsyncStorage.setItem('has_viewed_product', 'true');
                     }
+                    trackProductViewed(fullProduct.id, fullProduct.title, price);
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
                 }

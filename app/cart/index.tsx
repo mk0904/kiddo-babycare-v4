@@ -498,17 +498,15 @@ export default function CartScreen() {
 
         // Track Checkout Started
         try {
-            const { mixpanel } = require('@/mixpanel');
-            if (mixpanel) {
-                mixpanel.track('Checkout Started', {
-                    cartValue: cartTotal,
-                    itemCount: cartItems.length,
-                    hasCoupon: discountCodes.length > 0,
-                    paymentMethod: paymentMethod || 'not_selected',
-                });
-            }
+            const { trackEvent } = require('@/utils/mixpanelHelpers');
+            trackEvent('Checkout Started', {
+                cartValue: cartTotal,
+                itemCount: cartItems.length,
+                hasCoupon: discountCodes.length > 0,
+                paymentMethod: paymentMethod || 'not_selected',
+            });
         } catch (e) {
-            console.warn('Mixpanel tracking error:', e);
+            console.warn('Analytics tracking error:', e);
         }
 
         try {
@@ -1081,17 +1079,15 @@ export default function CartScreen() {
                 
                 // Track Payment Failed
                 try {
-                    const { mixpanel } = require('@/mixpanel');
-                    if (mixpanel) {
-                        mixpanel.track('Payment Failed', {
-                            orderId: result.order?.id || 'unknown',
-                            amount: cartTotal,
-                            paymentMethod: paymentMethod || 'cod',
-                            reason: result.error || 'Order creation failed',
-                        });
-                    }
+                    const { trackEvent } = require('@/utils/mixpanelHelpers');
+                    trackEvent('Payment Failed', {
+                        orderId: result.order?.id || 'unknown',
+                        amount: cartTotal,
+                        paymentMethod: paymentMethod || 'cod',
+                        reason: result.error || 'Order creation failed',
+                    });
                 } catch (e) {
-                    console.warn('Mixpanel tracking error:', e);
+                    console.warn('Analytics tracking error:', e);
                 }
                 
                 throw new Error(result.error || 'Order creation failed');
@@ -1115,32 +1111,25 @@ export default function CartScreen() {
 
             // Track Payment Success and Order Placed
             try {
-                const { mixpanel } = require('@/mixpanel');
-                const { trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                
-                if (mixpanel) {
-                    const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
-                    
-                    // Check if this is first order
-                    const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
-                    if (!hasPlacedOrder) {
-                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
-                        await AsyncStorage.setItem('has_placed_order', 'true');
-                    }
-                    
-                    trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
-                    
-                    mixpanel.track('Payment Success', {
-                        orderId: orderIdForDisplay,
-                        amount: cartTotal,
-                        paymentMethod: effectivePaymentMethod,
-                        itemCount: cartItems.length,
-                        hasCoupon: discountCodes.length > 0,
-                    });
+                const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
+
+                const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
+                if (!hasPlacedOrder) {
+                    trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
+                    await AsyncStorage.setItem('has_placed_order', 'true');
                 }
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
+                trackEvent('Payment Success', {
+                    orderId: orderIdForDisplay,
+                    amount: cartTotal,
+                    paymentMethod: effectivePaymentMethod,
+                    itemCount: cartItems.length,
+                    hasCoupon: discountCodes.length > 0,
+                });
             } catch (e) {
-                console.warn('Mixpanel tracking error:', e);
+                console.warn('Analytics tracking error:', e);
             }
 
             // CRITICAL: Verify order actually exists in Shopify before showing success

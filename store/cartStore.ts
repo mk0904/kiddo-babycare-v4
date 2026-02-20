@@ -364,21 +364,18 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
 
-                    // Track Add to Cart event
                     try {
-                        const { mixpanel } = require('@/mixpanel');
-                        if (mixpanel) {
-                            mixpanel.track('Add to Cart', {
-                                productId: item.productId,
-                                productName: item.title,
-                                variantId: item.variantId,
-                                price: item.price,
-                                quantity: item.quantity,
-                                currency: item.currencyCode || 'INR',
-                            });
-                        }
+                        const { trackEvent } = require('@/utils/mixpanelHelpers');
+                        trackEvent('Add to Cart', {
+                            productId: item.productId,
+                            productName: item.title,
+                            variantId: item.variantId,
+                            price: item.price,
+                            quantity: item.quantity,
+                            currency: item.currencyCode || 'INR',
+                        });
                     } catch (e) {
-                        console.warn('Mixpanel tracking error:', e);
+                        console.warn('Analytics tracking error:', e);
                     }
 
                     // Check for eligible gifts after adding item

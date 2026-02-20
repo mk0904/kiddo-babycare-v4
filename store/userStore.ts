@@ -87,26 +87,23 @@ export const useUserStore = create<UserStore>()(
                 });
                 console.log('[UserStore] User logged in:', user.email || user.phone);
                 
-                // Track login success in Mixpanel
+                // Track login success (backend → Mixpanel)
                 try {
-                    const { mixpanel } = require('@/mixpanel');
-                    if (mixpanel) {
-                        const userId = user.id || user.customerId || user.email || user.phone;
-                        mixpanel.identify(userId);
-                        mixpanel.track('Login Success', {
-                            userId,
-                            loginProvider: 'phone',
-                            email: user.email,
-                            phone: user.phone,
-                        });
-                        mixpanel.people.set({
-                            email: user.email,
-                            phone: user.phone,
-                            name: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
-                        });
-                    }
+                    const { trackEvent, identifyUser } = require('@/utils/mixpanelHelpers');
+                    const userId = user.id || user.customerId || user.email || user.phone;
+                    identifyUser(userId, {
+                        email: user.email,
+                        phone: user.phone,
+                        name: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+                    });
+                    trackEvent('Login Success', {
+                        userId,
+                        loginProvider: 'phone',
+                        email: user.email,
+                        phone: user.phone,
+                    });
                 } catch (e) {
-                    console.warn('Mixpanel tracking error:', e);
+                    console.warn('Analytics tracking error:', e);
                 }
             },
 
@@ -120,14 +117,12 @@ export const useUserStore = create<UserStore>()(
                 });
                 console.log('[UserStore] User logged out');
                 
-                // Reset Mixpanel on logout
+                // Reset analytics identity on logout
                 try {
-                    const { mixpanel } = require('@/mixpanel');
-                    if (mixpanel) {
-                        mixpanel.reset();
-                    }
+                    const { resetUser } = require('@/utils/mixpanelHelpers');
+                    resetUser();
                 } catch (e) {
-                    console.warn('Mixpanel reset error:', e);
+                    console.warn('Analytics reset error:', e);
                 }
             },
 
