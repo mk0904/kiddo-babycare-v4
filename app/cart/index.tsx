@@ -201,14 +201,13 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch ALL coupons (including inapplicable) and usage counts for firstOrderOnly/usageLimitPerUser
+    // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
     useEffect(() => {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const coupons = await couponService.getAllCouponCodes();
+                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
                 setAvailableCoupons(coupons);
-                // Fetch usage for coupons with usageLimitPerUser (needed for applicability display)
                 const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
                 if (userId) {
                     const codesToCheck = coupons
@@ -230,7 +229,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [user?.id, user?.customerId, user?.email, user?.phone]);
+    }, [hasTicketingProducts, hasFashionItems, user?.id, user?.customerId, user?.email, user?.phone]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
