@@ -147,13 +147,20 @@ export default function AccountScreen() {
     const handleRequestNotificationPermission = async () => {
         const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
         try {
+            // Always check current status first – if already allowed, don’t show any dialog
+            const hasPermission = await oneSignalService.getPermissionStatus();
+            if (hasPermission) {
+                Alert.alert('Notifications', 'Notifications are already enabled for this app.');
+                return;
+            }
             const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
             if (alreadyAsked === 'true') {
-                // We already asked once on first launch; send user to Settings to enable
+                // They denied before; open Settings so they can enable there
                 await Linking.openSettings();
                 return;
             }
-            await oneSignalService.requestPermission(true);
+            // First time: show system Allow dialog only (no “Open Settings” prompt)
+            await oneSignalService.requestPermission(false);
             await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
             console.log('📱 [OneSignal] Permission requested');
         } catch (error: any) {

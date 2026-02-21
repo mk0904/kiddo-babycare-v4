@@ -3,11 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import { Alert, Linking, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -135,19 +136,44 @@ export default function RootLayout() {
           
           if (!initialized) {
             console.error('❌ [OneSignal] Initialization failed or timed out');
-            console.error('❌ [OneSignal] This is a critical error - OneSignal will not work');
+            if (Platform.OS === 'ios') {
+              console.warn('📱 [OneSignal] On iOS Simulator OneSignal is unavailable. Showing notification permission via expo-notifications so you see the same prompt as on device.');
+              // On iOS Simulator, still show the system notification permission dialog (expo-notifications fallback)
+              const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
+              try {
+                const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
+                if (alreadyAsked !== 'true') {
+                  const { status: existing } = await Notifications.getPermissionsAsync();
+                  if (existing !== 'granted') {
+                    await Notifications.requestPermissionsAsync();
+                  }
+                  await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
+                }
+              } catch (e) {
+                console.warn('📱 [OneSignal] expo-notifications fallback failed:', e);
+              }
+            } else {
+              console.error('❌ [OneSignal] This is a critical error - OneSignal will not work');
+            }
             return;
           }
 
-          // Request permission only once (persist flag so we don't ask every app open)
-          const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
+          // When permission is off, always try the system prompt. On iOS, after user has denied or disabled in Settings, the system won't show "Allow" again – so we offer Settings.
           try {
             const hasPermission = await oneSignalService.getPermissionStatus();
             if (!hasPermission) {
-              const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
-              if (alreadyAsked !== 'true') {
-                await oneSignalService.requestPermission(true);
-                await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
+              await oneSignalService.requestPermission(false);
+              await AsyncStorage.setItem('onesignal_permission_asked', 'true');
+              const stillOff = await oneSignalService.getPermissionStatus();
+              if (Platform.OS === 'ios' && !stillOff) {
+                Alert.alert(
+                  'Notifications off',
+                  'To get order updates and offers, enable notifications in Settings.',
+                  [
+                    { text: 'Later', style: 'cancel' },
+                    { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                  ]
+                );
               }
             }
           } catch (error) {
@@ -177,7 +203,7 @@ export default function RootLayout() {
             } catch (error) {
               console.warn('⚠️ OneSignal status check error:', error);
             }
-          }, 5000); // Wait 5 seconds before checking status (gives OneSignal time to fully initialize and subscribe)
+          }, 3000); // Wait 3 seconds before checking status (gives OneSignal time to subscribe)
         } catch (error) {
           console.warn('⚠️ OneSignal initialization error:', error);
         }
@@ -187,7 +213,7 @@ export default function RootLayout() {
       initOneSignal().catch((error) => {
         console.warn('⚠️ OneSignal init error:', error);
       });
-    }, 5000); // Delay OneSignal init by 5 seconds to ensure app loads first
+    }, 1000); // Short delay so app mounts first, then init OneSignal (was 5s – reduced so push subscribes sooner)
     
     // Hide native splash immediately
     const hideNativeSplash = async () => {

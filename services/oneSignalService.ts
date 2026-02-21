@@ -1,15 +1,25 @@
-// Import OneSignal - Android uses direct import (original working code), iOS uses safe import for simulator
+/**
+ * OneSignal push notifications.
+ * - Android: FCM (google-services plugin required). Test on device or emulator with Play Services.
+ * - iOS: APNs. Push does NOT work on iOS Simulator (native module unavailable).
+ *   Use a real device; ensure Debug build uses development (sandbox) and OneSignal dashboard has APNs key.
+ *   Run `cd ios && pod install` after adding/changing native deps.
+ */
 import { Platform } from 'react-native';
 
 let OneSignal: any = null;
 let importError: any = null;
 
+// react-native-onesignal v5 exports OneSignal as named export (no default) - use .OneSignal for both platforms
 if (Platform.OS === 'android') {
-  // Android: Use original direct import - this was working perfectly
-  // @ts-ignore - Direct import works fine on Android
   try {
-    OneSignal = require('react-native-onesignal').default;
-    console.log('✅ [OneSignal] Android module loaded');
+    const OneSignalModule = require('react-native-onesignal');
+    OneSignal = OneSignalModule?.OneSignal ?? OneSignalModule?.default ?? OneSignalModule;
+    if (OneSignal) {
+      console.log('✅ [OneSignal] Android module loaded');
+    } else {
+      console.error('❌ [OneSignal] Android module export is null');
+    }
   } catch (error: any) {
     console.error('❌ [OneSignal] Android import failed:', error);
     importError = error;
@@ -19,22 +29,10 @@ if (Platform.OS === 'android') {
   try {
     console.log('🔵 [OneSignal] Attempting to load iOS module...');
     const OneSignalModule = require('react-native-onesignal');
-    // OneSignal v5 structure: module has OneSignal.OneSignal property
-    const moduleExports = OneSignalModule.default || OneSignalModule;
+    const moduleExports = OneSignalModule?.OneSignal ?? OneSignalModule?.default ?? OneSignalModule;
     console.log('🔵 [OneSignal] Module keys:', moduleExports ? Object.keys(moduleExports) : 'null');
-    
-    // Try to get the actual OneSignal SDK object
-    // In v5, it might be at OneSignal.OneSignal or just OneSignal
-    if (moduleExports?.OneSignal) {
-      OneSignal = moduleExports.OneSignal;
-      console.log('✅ [OneSignal] iOS module loaded via OneSignal.OneSignal');
-    } else if (typeof moduleExports?.initialize === 'function') {
-      OneSignal = moduleExports;
-      console.log('✅ [OneSignal] iOS module loaded directly');
-    } else {
-      OneSignal = moduleExports;
-      console.log('✅ [OneSignal] iOS module loaded (fallback)');
-    }
+    OneSignal = moduleExports;
+    console.log('✅ [OneSignal] iOS module loaded');
     console.log('🔵 [OneSignal] Final OneSignal type:', typeof OneSignal);
     console.log('🔵 [OneSignal] Final OneSignal keys:', OneSignal ? Object.keys(OneSignal) : 'null');
   } catch (error: any) {
