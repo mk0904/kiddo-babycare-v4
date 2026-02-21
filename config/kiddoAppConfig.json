@@ -2972,24 +2972,6 @@
         "clothingOnly": false,
         "nonCombinable": false,
         "isVisible": false
-      },
-      {
-        "code": "HOWDIDYOUEVENFINDTHISS!",
-        "title": "₹10,000 off",
-        "description": "Once per user, limited to 3 users only. Non-ticketing items only.",
-        "value": 10000,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "usageLimit": 3,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
       }
     ]
   },
