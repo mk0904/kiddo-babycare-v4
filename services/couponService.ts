@@ -1,11 +1,22 @@
-// Coupon Service - Fetches eligible coupons from backend API (eligibility logic in backend)
+// Coupon Service - Coupons are backend-only (kiddo-service). No kiddoAppConfig.
+import { configService } from '@/services/configService';
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-// Backend API base URL (same as otpService)
-const DEFAULT_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-const COUPONS_API_BASE_URL = DEFAULT_BACKEND_URL;
+const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+const LOCAL_BACKEND_URL_ANDROID = 'http://10.0.2.2:8080/api/v1';
+const LOCAL_BACKEND_URL_IOS = 'http://localhost:8080/api/v1';
+
+function getCouponsApiBase(): string {
+  if (__DEV__) {
+    return Platform.OS === 'android' ? LOCAL_BACKEND_URL_ANDROID : LOCAL_BACKEND_URL_IOS;
+  }
+  const raw = configService.getRawConfig();
+  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
+  return (base as string).replace(/\/+$/, '');
+}
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -37,14 +48,15 @@ export interface CouponCode {
   isVisible?: boolean;
 }
 
-// Extract numeric Shopify customer ID for backend API
+// Extract numeric Shopify customer ID for backend coupons API (backend expects integer in URL)
 const getNumericCustomerId = (userId: string | null | undefined): string | null => {
-  if (!userId) return null;
-  const str = String(userId);
+  if (userId == null || userId === '') return null;
+  const str = String(userId).trim();
   const match = str.match(/\d+/);
   if (match) return match[0];
-  if (str.startsWith('shopify-')) return str.replace('shopify-', '');
-  return str;
+  if (str.toLowerCase().startsWith('shopify-')) return str.replace(/^shopify-/i, '').trim();
+  if (str.includes('gid://shopify/Customer/')) return str.replace(/.*\/Customer\/(\d+).*/, '$1');
+  return null;
 };
 
 export interface GetEligibleCouponsParams {
@@ -65,12 +77,14 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
   const customerId = getNumericCustomerId(userId);
 
   if (!customerId) {
-    console.log('[CouponService] No customer ID - skipping backend coupons (guest user)');
+    console.warn('[CouponService] No numeric customer ID for coupons API (userId may be email or invalid). Need Shopify customer id.');
     return [];
   }
 
   try {
-    const url = `${COUPONS_API_BASE_URL.replace(/\/$/, '')}/coupons/${customerId}`;
+    const base = getCouponsApiBase();
+    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+    const url = `${prefix}/coupons/${customerId}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
@@ -87,7 +101,8 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText);
+      const errText = await response.text();
+      console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText, errText?.slice(0, 200));
       return [];
     }
 
@@ -224,7 +239,10 @@ export const validateCouponCode = async (
     }
 
     const eligibleCoupons = await getEligibleCouponsFromBackend(params);
-    const matchingCoupon = eligibleCoupons.find((coupon) => coupon.code?.toUpperCase() === upperCode);
+    const normalize = (s: string | null | undefined) => (s ?? '').trim().toUpperCase();
+    const matchingCoupon = eligibleCoupons.find(
+      (coupon) => normalize(coupon.code) === upperCode
+    );
 
     return matchingCoupon || null;
   } catch (error: any) {

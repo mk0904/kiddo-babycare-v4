@@ -291,7 +291,7 @@ export const useCartStore = create<CartState>()(
                         }
                     }
                     
-                    // Update discount codes if any were removed; recalc payment from config (no Shopify sync)
+                    // Update discount codes if any were removed; recalc payment from backend coupon values (no Shopify sync)
                     if (removedCodes.length > 0) {
                         console.log('[CartStore] Removed invalid discount codes:', removedCodes);
                         set({ discountCodes: validCodes });
@@ -611,12 +611,17 @@ export const useCartStore = create<CartState>()(
                     const { couponService } = await import('@/services/couponService');
                     const { useUserStore } = await import('@/store/userStore');
                     const userStore = useUserStore.getState();
-                    const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                    const u = userStore.user;
+                    // Prefer IDs that yield numeric Shopify customer ID for backend (customerId, or id with digits/GID)
+                    const userId =
+                        (u?.customerId && /[\d]/.test(String(u.customerId)))
+                            ? u.customerId
+                            : (u?.id || u?.customerId || u?.email || u?.phone || null);
 
                     const couponParams = {
                         userId,
-                        cartSubTotal: cartSubtotal,
-                        cartItemCount,
+                        cartSubTotal: Math.round(Number(cartSubtotal)) || 0,
+                        cartItemCount: Math.max(0, Math.floor(Number(cartItemCount))) || 0,
                         hasTicketing: hasTicketingProducts,
                         hasClothing: hasClothingItems,
                     };
@@ -696,7 +701,7 @@ export const useCartStore = create<CartState>()(
                     return { success: false, error: 'Cart not found. Please add items to cart first.' };
                 }
 
-                // Discounts are driven by config only (kiddoAppConfig.json) — do not call Shopify applyDiscountCodes.
+                // Discount values from backend-validated coupon only (no kiddoAppConfig).
                 const discountValue = configDiscount.value ?? 0;
                 const discountType: 'percentage' | 'fixed' = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
                 const newDiscountCodeEntry: DiscountCode = {
@@ -717,7 +722,7 @@ export const useCartStore = create<CartState>()(
 
                 set({ discountCodes: nextDiscountCodes });
 
-                // Get cart for subtotal/tax; discount and total are computed from config only
+                // Get cart for subtotal/tax; discount and total are computed from backend coupon values only
                 let cartForCost: { cost?: { subtotalAmount?: { amount: string }; totalTaxAmount?: { amount: string }; totalAmount?: { amount: string; currencyCode: string } }; checkoutUrl?: string } | null = null;
                 const isShopifyCartId = cartId.startsWith('gid://shopify/Cart/');
                 if (!isShopifyCartId && state.lineItems.length > 0) {
@@ -900,8 +905,7 @@ export const useCartStore = create<CartState>()(
                             console.log('[CartStore] Applied code check:', { normalizedCode, appliedCode });
                             
                             if (!appliedCode) {
-                                // If code is in config, it should have been added above, so this shouldn't happen
-                                // But if it does, check if we have the config discount
+                                // If code was validated by backend, it should have been added above
                                 if (configDiscount) {
                                     console.log('[CartStore] Code in config but not applied, forcing application');
                                     // This shouldn't happen, but just in case
@@ -1166,7 +1170,7 @@ export const useCartStore = create<CartState>()(
                         error: null,
                         lastSyncedAt: Date.now(),
                     });
-                    console.log('[CartStore] ✅ Discount applied from config only:', { code: normalizedCode, discount, total });
+                    console.log('[CartStore] ✅ Discount applied (backend):', { code: normalizedCode, discount, total });
                     return { success: true };
                 }
                 const subtotalFallback = get().subtotal();

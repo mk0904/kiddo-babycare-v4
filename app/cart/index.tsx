@@ -364,8 +364,11 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    // Backend returns only eligible coupons - use directly
-    const applicableCoupons = useMemo(() => availableCoupons, [availableCoupons]);
+    // Backend returns eligible coupons; show only visible ones in the list (hidden codes still work when entered manually)
+    const applicableCoupons = useMemo(
+        () => (availableCoupons ?? []).filter((c) => c.isVisible !== false),
+        [availableCoupons]
+    );
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
