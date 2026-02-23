@@ -10,7 +10,7 @@ import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { couponService } from '@/services/couponService';
-import PaymentService from '@/services/paymentService';
+import PaymentService, { type PaymentResult } from '@/services/paymentService';
 import {
     useCartId,
     useCartItems,
@@ -206,22 +206,20 @@ export default function CartScreen() {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
-                setAvailableCoupons(coupons);
                 const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
                 const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
                 const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
                 const hasTicketing = hasTicketingProducts;
                 const hasClothing = hasFashionItems;
 
-                const coupons = await couponService.getEligibleCouponsFromBackend({
+                const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
                     userId,
                     cartSubTotal,
                     cartItemCount,
                     hasTicketing,
                     hasClothing,
                 });
-                setAvailableCoupons(coupons ?? []);
+                setAvailableCoupons(eligibleCoupons ?? []);
             } catch (error) {
                 console.error('Error fetching coupons:', error);
                 setAvailableCoupons([]);
@@ -230,7 +228,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [hasTicketingProducts, hasFashionItems, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    }, [user?.id, user?.customerId, user?.email, user?.phone]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -597,7 +595,7 @@ export default function CartScreen() {
 
                     // Handle payment based on selected payment method
                     let paymentId: string | undefined = undefined;
-                    let paymentResult: { paymentId?: string; orderId?: string; signature?: string } | undefined;
+                    let paymentResult: PaymentResult | undefined;
                     if (paymentMethod === 'razorpay') {
                         // For Razorpay, process payment first
                         paymentResult = await PaymentService.initiateRazorpayPayment(
@@ -985,22 +983,28 @@ export default function CartScreen() {
                                     quantity: item.quantity,
                                     image: item.image,
                                 })),
-                                shippingAddress: selectedAddress || {
-                                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                    city: billingAddress.city,
-                                    state: billingAddress.province,
-                                    pincode: billingAddress.zip,
-                                    phone: billingAddress.phone,
-                                },
+                                shippingAddress: selectedAddress
+                                    ? {
+                                          name: selectedAddress.name,
+                                          address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
+                                          city: selectedAddress.city,
+                                          state: selectedAddress.province || selectedAddress.state,
+                                          pincode: selectedAddress.zip || selectedAddress.pincode,
+                                          phone: selectedAddress.phone,
+                                      }
+                                    : {
+                                          name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                                          address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                                          city: billingAddress.city,
+                                          state: billingAddress.province,
+                                          pincode: billingAddress.zip,
+                                          phone: billingAddress.phone,
+                                      },
                                 paymentMethod: paymentMethod || 'razorpay',
                                 paymentStatus: 'paid',
                                 paymentId: result.payment?.paymentId,
-                                totalAmount: cartTotal,
-                                subtotal: calculatedSubtotal,
                                 deliveryFee: calculatedDeliveryFee,
                                 discount: calculatedDiscount,
-                                currencyCode: 'INR',
                                 couponCode: appliedDiscountCode || undefined,
                                 note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
                                 userId: userIdForOrder ?? undefined,

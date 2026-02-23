@@ -1143,40 +1143,52 @@ export const useCartStore = create<CartState>()(
                     console.error('[CartStore] Error applying discount code to existing cart:', error);
                     set({ status: 'idle', error: error.message });
                     return { success: false, error: error.message || 'Failed to apply discount code' };
-                    }
-                }
                 }
 
-                const subtotal = cartForCost
-                    ? parseFloat(cartForCost.cost?.subtotalAmount?.amount || '0')
-                    : get().subtotal();
-                let discount = 0;
+                if (cartForCost != null) {
+                    const cart = cartForCost as NonNullable<typeof cartForCost>;
+                    const subtotal = parseFloat(cart.cost?.subtotalAmount?.amount || '0');
+                    let discount = 0;
+                    nextDiscountCodes.forEach((dc) => {
+                        if (dc.applicable !== false) {
+                            if (dc.type === 'percentage') discount += (subtotal * dc.value) / 100;
+                            else if (dc.type === 'fixed') discount += dc.value;
+                        }
+                    });
+                    discount = Math.min(discount, subtotal);
+                    const tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
+                    const total = Math.max(0, subtotal - discount + tax);
+                    const currencyCode = cart.cost?.totalAmount?.currencyCode || 'INR';
+                    set({
+                        payment: { subtotal, discount, shipping: 0, tax, total, currencyCode },
+                        checkoutUrl: cart.checkoutUrl ?? get().checkoutUrl ?? null,
+                        status: 'idle',
+                        error: null,
+                        lastSyncedAt: Date.now(),
+                    });
+                    console.log('[CartStore] ✅ Discount applied from config only:', { code: normalizedCode, discount, total });
+                    return { success: true };
+                }
+                const subtotalFallback = get().subtotal();
+                let discountFallback = 0;
                 nextDiscountCodes.forEach((dc) => {
                     if (dc.applicable !== false) {
-                        if (dc.type === 'percentage') discount += (subtotal * dc.value) / 100;
-                        else if (dc.type === 'fixed') discount += dc.value;
+                        if (dc.type === 'percentage') discountFallback += (subtotalFallback * dc.value) / 100;
+                        else if (dc.type === 'fixed') discountFallback += dc.value;
                     }
                 });
-                discount = Math.min(discount, subtotal);
-                const tax = cartForCost ? parseFloat(cartForCost.cost?.totalTaxAmount?.amount || '0') : (get().payment?.tax ?? 0);
-                const total = Math.max(0, subtotal - discount + tax);
-                const currencyCode = cartForCost?.cost?.totalAmount?.currencyCode || get().payment?.currencyCode || 'INR';
-
+                discountFallback = Math.min(discountFallback, subtotalFallback);
+                const taxFallback = get().payment?.tax ?? 0;
+                const totalFallback = Math.max(0, subtotalFallback - discountFallback + taxFallback);
+                const currencyCodeFallback = get().payment?.currencyCode || 'INR';
                 set({
-                    payment: {
-                        subtotal,
-                        discount,
-                        shipping: 0,
-                        tax,
-                        total,
-                        currencyCode,
-                    },
-                    checkoutUrl: cartForCost?.checkoutUrl ?? get().checkoutUrl ?? null,
+                    payment: { subtotal: subtotalFallback, discount: discountFallback, shipping: 0, tax: taxFallback, total: totalFallback, currencyCode: currencyCodeFallback },
+                    checkoutUrl: get().checkoutUrl ?? null,
                     status: 'idle',
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
-                console.log('[CartStore] ✅ Discount applied from config only:', { code: normalizedCode, discount, total });
+                console.log('[CartStore] ✅ Discount applied (fallback path):', { code: normalizedCode, discount: discountFallback, total: totalFallback });
                 return { success: true };
             },
 
@@ -1423,7 +1435,7 @@ export const useCartStore = create<CartState>()(
                             return sum + (Number(item.price ?? 0) * Number(item.quantity));
                         }, 0);
                         let discount = 0;
-                        discountCodesFromCart.forEach((dc) => {
+                        discountCodesFromCart.forEach((dc: DiscountCode) => {
                             if (dc.applicable !== false) {
                                 if (dc.type === 'percentage') discount += (lineItemsSubtotal * dc.value) / 100;
                                 else if (dc.type === 'fixed') discount += dc.value;
