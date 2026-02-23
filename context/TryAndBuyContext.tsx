@@ -3,6 +3,7 @@
 
 import { checkoutService } from '@/services/checkoutService';
 import { Order, OrderItem, calculateETA, orderService } from '@/services/orderService';
+import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ReactNode,
@@ -78,7 +79,9 @@ interface TryAndBuyContextType {
         },
         selectedShoe?: string,
         couponCode?: string,
-        discountAmount?: number
+        discountAmount?: number,
+        razorpayOrderId?: string,
+        razorpaySignature?: string
     ) => Promise<TryAndBuyOrder | null>;
 
     // Active order
@@ -346,8 +349,10 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 shopifyDraftOrderId: draftOrderId,
                 shopifyOrderId: shopifyOrderId !== draftOrderId ? shopifyOrderId : undefined,
                 shopifyOrderName: completedOrder?.name || undefined,
-                estimatedDeliveryMinutes: calculateETA(2), // Default 2km
+                estimatedDeliveryMinutes: calculateETA(2),
+                couponCode: couponCode || undefined,
                 note: `Try & Buy Order - Payment: ${paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}`,
+                userId: customerId ? String(customerId) : undefined,
             });
 
             const tryAndBuyOrder: TryAndBuyOrder = {
@@ -443,18 +448,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 const keptItems = order.items.filter((item) =>
                     keptItemIds.includes(item.id)
                 );
-                await shopifyAdminApi.updateDraftOrder(order.shopifyDraftOrderId, {
-                    lineItems: keptItems.map((item) => ({
-                        variantId: item.variantId,
-                        quantity: item.quantity,
-                    })),
-                    tags: ['try-and-buy', 'selection-confirmed'],
-                    customAttributes: [
-                        { key: 'order_type', value: 'try_and_buy' },
-                        { key: 'kept_items', value: keptItemIds.join(',') },
-                        { key: 'returned_items', value: returnedItemIds.join(',') },
-                    ],
-                });
+                await shopifyAdminApi.updateDraftOrder(order.shopifyDraftOrderId, { lineItems: keptItems.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), tags: ['try-and-buy', 'selection-confirmed'], customAttributes: [ { key: 'order_type', value: 'try_and_buy' }, { key: 'kept_items', value: keptItemIds.join(',') }, { key: 'returned_items', value: returnedItemIds.join(',') } ] });
             }
 
             await refreshOrders();
@@ -475,7 +469,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
 
             // Complete the draft order
             if (order.shopifyDraftOrderId) {
-                await shopifyAdminApi.completeDraftOrder(order.shopifyDraftOrderId, false);
+                await checkoutService.completeDraft({ draft_order_id: order.shopifyDraftOrderId, payment_method: 'cod' });
             }
 
             // Update local order

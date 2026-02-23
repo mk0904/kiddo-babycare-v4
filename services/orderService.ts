@@ -99,6 +99,9 @@ export interface Order {
     // Notes
     note?: string;
     couponCode?: string;
+
+    /** User identifier when order was placed (for coupon usageLimitPerUser). Same as user.id || customerId || email || phone. */
+    userId?: string;
 }
 
 export interface CreateOrderInput {
@@ -116,6 +119,8 @@ export interface CreateOrderInput {
     couponCode?: string;
     note?: string;
     estimatedDeliveryMinutes?: number;
+    /** User identifier (for coupon usage tracking). Same as user.id || customerId || email || phone. */
+    userId?: string;
 }
 
 // Utility functions
@@ -208,6 +213,7 @@ export const orderService = {
                 estimatedDeliveryMinutes: input.estimatedDeliveryMinutes,
                 couponCode: input.couponCode,
                 note: input.note,
+                userId: input.userId,
                 trackingUpdates: [
                     {
                         status: 'placed',

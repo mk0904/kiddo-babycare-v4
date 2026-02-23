@@ -201,11 +201,13 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch eligible coupons from backend (eligibility logic in backend)
+    // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
     useEffect(() => {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
+                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
+                setAvailableCoupons(coupons);
                 const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
                 const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
                 const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -228,7 +230,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    }, [hasTicketingProducts, hasFashionItems, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -971,6 +973,7 @@ export default function CartScreen() {
                             const calculatedSubtotal = itemSubtotal;
                             
                             // Create local order record with payment info for manual recovery
+                            const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
                             const localOrder = await orderService.createOrder({
                                 items: cartItems.map(item => ({
                                     id: item.id,
@@ -998,7 +1001,9 @@ export default function CartScreen() {
                                 deliveryFee: calculatedDeliveryFee,
                                 discount: calculatedDiscount,
                                 currencyCode: 'INR',
+                                couponCode: appliedDiscountCode || undefined,
                                 note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
+                                userId: userIdForOrder ?? undefined,
                             });
                             
                             console.log('[Cart] Created local recovery order:', localOrder.id);

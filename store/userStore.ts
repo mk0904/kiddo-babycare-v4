@@ -1,6 +1,7 @@
 // User Store - Zustand slice for authentication and user state
 // Handles login, logout, skip/guest mode, and user profile
 
+import { AUTH_SCHEMA_VERSION } from '@/constants/versionConfig';
 import { Customer } from '@/services/customerService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -17,6 +18,9 @@ export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'guest' | 'unaut
 interface UserState {
     // Rehydration flag - true once AsyncStorage has been read (prevents false logout on cold start)
     _hasRehydrated: boolean;
+
+    // Auth schema version for force re-login (bump in versionConfig to invalidate all sessions once)
+    authSchemaVersion: number;
 
     // User data
     user: UserProfile | null;
@@ -56,8 +60,16 @@ interface UserActions {
 
 export type UserStore = UserState & UserActions;
 
+/** Raw persisted state from last rehydration (before merge). Used for force re-login check. */
+let cachedRehydratedState: Record<string, unknown> | null = null;
+
+export function getCachedRehydratedUserState(): Record<string, unknown> | null {
+    return cachedRehydratedState;
+}
+
 const initialState: UserState = {
     _hasRehydrated: false,
+    authSchemaVersion: AUTH_SCHEMA_VERSION,
     user: null,
     status: 'unauthenticated', // Start as unauthenticated, not idle - prevents loading loop
     isGuest: false,
@@ -203,8 +215,24 @@ export const useUserStore = create<UserStore>()(
         }),
         {
             name: 'user-storage',
-            storage: createJSONStorage(() => AsyncStorage),
+            storage: (() => {
+                const base = createJSONStorage(() => AsyncStorage);
+                return {
+                    getItem: async (name: string) => {
+                        const value = await base.getItem(name);
+                        if (value && typeof value === 'object' && value !== null && 'state' in value) {
+                            cachedRehydratedState = (value as { state: Record<string, unknown> }).state;
+                        } else {
+                            cachedRehydratedState = null;
+                        }
+                        return value;
+                    },
+                    setItem: base.setItem,
+                    removeItem: base.removeItem,
+                };
+            })(),
             partialize: (state) => ({
+                authSchemaVersion: state.authSchemaVersion,
                 user: state.user,
                 status: state.status,
                 isGuest: state.isGuest,

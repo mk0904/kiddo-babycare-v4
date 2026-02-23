@@ -33,6 +33,8 @@ export interface CouponCode {
   ticketingOnly?: boolean; // Only valid for ticketing products (Events, Playhouses, Petting Farms)
   clothingOnly?: boolean; // Only valid when cart has clothing/fashion items
   nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
+  /** If false, coupon is hidden from UI (not in getAvailableCouponCodes); manual entry still applies it via validateCouponCode */
+  isVisible?: boolean;
 }
 
 // Extract numeric Shopify customer ID for backend API
@@ -232,6 +234,32 @@ export const validateCouponCode = async (
 };
 
 /**
+ * Get count of distinct users who have used this coupon (for usageLimit / "limited to N users").
+ * Uses order shippingAddress.phone as user identifier.
+ */
+const getDistinctUserCountForCoupon = async (couponCode: string): Promise<number> => {
+  try {
+    const { orderService } = await import('./orderService');
+    const allOrders = await orderService.getAllOrders();
+    const completedWithCoupon = allOrders.filter(
+      (order: any) =>
+        order.couponCode?.toUpperCase() === couponCode.toUpperCase() &&
+        order.status !== 'cancelled' &&
+        ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered'].includes(order.status)
+    );
+    const phones = new Set(
+      completedWithCoupon
+        .map((o: any) => o.shippingAddress?.phone?.trim?.())
+        .filter(Boolean)
+    );
+    return phones.size;
+  } catch (error) {
+    console.error('[CouponService] Error getting distinct user count for coupon:', error);
+    return 0;
+  }
+};
+
+/**
  * Get coupon usage count for a specific user
  * Checks actual completed orders (not cancelled) instead of just AsyncStorage
  * @param couponCode - The coupon code
@@ -252,16 +280,17 @@ const getCouponUsageForUser = async (
     
     // Filter orders that:
     // 1. Have the matching coupon code
-    // 2. Are NOT cancelled
-    // 3. Are completed/delivered (or at least placed and not cancelled)
-    const completedOrdersWithCoupon = allOrders.filter(order => {
+    // 2. Belong to this user (order.userId === userId; legacy orders without userId are not counted)
+    // 3. Are NOT cancelled
+    // 4. Are completed/delivered (or at least placed and not cancelled)
+    const completedOrdersWithCoupon = allOrders.filter((order: any) => {
       const hasCoupon = order.couponCode?.toUpperCase() === couponCode.toUpperCase();
+      const belongsToUser = order.userId != null && String(order.userId).trim() === String(userId).trim();
       const isNotCancelled = order.status !== 'cancelled';
-      // Count orders that are placed or beyond (not cancelled)
       const isCompleted = ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered'].includes(order.status);
-      return hasCoupon && isNotCancelled && isCompleted;
+      return hasCoupon && belongsToUser && isNotCancelled && isCompleted;
     });
-    
+
     const usageCount = completedOrdersWithCoupon.length;
     
     // Always prioritize actual orders over AsyncStorage
@@ -278,27 +307,10 @@ const getCouponUsageForUser = async (
       return usageCount;
     }
     
-    // If no actual orders found, check AsyncStorage but also verify it's not stale
-    // If AsyncStorage has a count but no orders exist, it might be from a cancelled order
-    // So we should reset it to 0
+    // No local orders for this user+coupon: use AsyncStorage (orders may exist only in Shopify)
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     const data = await AsyncStorage.getItem(storageKey);
     const storageCount = data ? (JSON.parse(data).count || 0) : 0;
-    
-    // If AsyncStorage has a count but no actual orders, reset it
-    // This handles the case where an order was cancelled/deleted
-    if (storageCount > 0 && usageCount === 0) {
-      // Reset AsyncStorage to match actual orders (0)
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          count: 0,
-          lastUsedAt: null,
-        })
-      );
-      return 0;
-    }
-    
     return storageCount;
   } catch (error) {
     console.error('[CouponService] Error getting coupon usage:', error);
@@ -441,7 +453,18 @@ export const validateCouponConditions = async (
         };
       }
     }
-    
+
+    // Check total redemption limit (e.g. "limited to 3 users only")
+    if (coupon.usageLimit != null && coupon.usageLimit > 0) {
+      const distinctUsers = await getDistinctUserCountForCoupon(coupon.code);
+      if (distinctUsers >= coupon.usageLimit) {
+        return {
+          isValid: false,
+          error: 'This coupon has reached its redemption limit.',
+        };
+      }
+    }
+
     // Check first order only
     if (coupon.firstOrderOnly) {
       if (userOrderCount === undefined || userOrderCount === null) {
@@ -539,7 +562,11 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
       conditions.push(`Max ${coupon.usageLimitPerUser} uses per user`);
     }
   }
-  
+
+  if (coupon.usageLimit != null && coupon.usageLimit > 0) {
+    conditions.push(`Limited to ${coupon.usageLimit} user${coupon.usageLimit === 1 ? '' : 's'} only`);
+  }
+
   if (coupon.firstOrderOnly) {
     conditions.push('Valid for first order only');
   }
