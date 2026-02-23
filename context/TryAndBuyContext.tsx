@@ -367,10 +367,12 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 paymentId: paymentId,
                 type: 'try_and_buy',
                 shopifyDraftOrderId: draftOrder.id,
-                shopifyOrderId: shopifyOrderId !== draftOrder.id ? shopifyOrderId : undefined, // Use completed order ID if available
+                shopifyOrderId: shopifyOrderId !== draftOrder.id ? shopifyOrderId : undefined,
                 shopifyOrderName: completedOrder?.name || undefined,
-                estimatedDeliveryMinutes: calculateETA(2), // Default 2km
+                estimatedDeliveryMinutes: calculateETA(2),
+                couponCode: couponCode || undefined,
                 note: `Try & Buy Order - Payment: ${paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}`,
+                userId: customerId ? String(customerId) : undefined,
             });
 
             const tryAndBuyOrder: TryAndBuyOrder = {

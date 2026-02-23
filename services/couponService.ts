@@ -1,11 +1,11 @@
-// Coupon Service - Uses config-based discounts and Shopify API for application
+// Coupon Service - Uses config-based discounts (local kiddoAppConfig.json only)
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { configService } from './configService';
 
-// Remote config URL for fetching discounts at runtime
-const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
+// Local app config: only source for discount codes (config/kiddoAppConfig.json)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const LOCAL_APP_CONFIG = require('../config/kiddoAppConfig.json') as { discounts?: { enabled?: boolean; codes?: any[] } };
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -33,83 +33,42 @@ export interface CouponCode {
   ticketingOnly?: boolean; // Only valid for ticketing products (Events, Playhouses, Petting Farms)
   clothingOnly?: boolean; // Only valid when cart has clothing/fashion items
   nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
+  /** If false, coupon is hidden from UI (not in getAvailableCouponCodes); manual entry still applies it via validateCouponCode */
+  isVisible?: boolean;
 }
 
-// Cache for remote discounts to avoid fetching on every call
-let cachedRemoteDiscounts: CouponCode[] | null = null;
-let lastFetchTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+function mapRawToCoupon(dc: any): CouponCode {
+  return {
+    code: dc.code,
+    title: dc.title,
+    description: dc.description,
+    value: dc.value,
+    valueType: dc.valueType || 'percentage',
+    minimumPurchaseAmount: dc.minimumPurchaseAmount,
+    minimumItemCount: dc.minimumItemCount ?? null,
+    startsAt: dc.startsAt,
+    endsAt: dc.endsAt,
+    usageLimitPerUser: dc.usageLimitPerUser ?? null,
+    usageLimit: dc.usageLimit != null ? Number(dc.usageLimit) : undefined,
+    firstOrderOnly: dc.firstOrderOnly ?? false,
+    ticketingOnly: dc.ticketingOnly ?? false,
+    clothingOnly: dc.clothingOnly ?? false,
+    nonCombinable: dc.nonCombinable ?? false,
+    isVisible: dc.isVisible !== false,
+  };
+}
 
-// Get discounts from remote config (for live updates) with fallback to local
-const getConfigDiscounts = async (): Promise<CouponCode[]> => {
-  try {
-    // Try to fetch from remote first (for live updates)
-    const now = Date.now();
-    if (!cachedRemoteDiscounts || (now - lastFetchTime) > CACHE_DURATION) {
-      try {
-        const response = await fetch(REMOTE_CONFIG_URL);
-        if (response.ok) {
-          const remoteConfig = await response.json();
-          const discountsConfig = remoteConfig.discounts;
-          
-          if (discountsConfig && discountsConfig.enabled) {
-            const remoteDiscounts = (discountsConfig.codes || []).map((dc: any) => ({
-              code: dc.code,
-              title: dc.title,
-              description: dc.description,
-              value: dc.value,
-              valueType: dc.valueType || 'percentage',
-              minimumPurchaseAmount: dc.minimumPurchaseAmount,
-              minimumItemCount: dc.minimumItemCount || null,
-              startsAt: dc.startsAt,
-              endsAt: dc.endsAt,
-              usageLimitPerUser: dc.usageLimitPerUser || null,
-              firstOrderOnly: dc.firstOrderOnly || false,
-              ticketingOnly: dc.ticketingOnly || false,
-              clothingOnly: dc.clothingOnly || false,
-              nonCombinable: dc.nonCombinable || false,
-            }));
-            cachedRemoteDiscounts = remoteDiscounts;
-            lastFetchTime = now;
-            console.log('[CouponService] ✅ Loaded discounts from remote config');
-            return remoteDiscounts;
-          }
-        }
-      } catch (remoteError) {
-        console.warn('[CouponService] Failed to fetch remote discounts, falling back to local:', remoteError);
-      }
-    } else if (cachedRemoteDiscounts) {
-      // Return cached remote discounts
-      return cachedRemoteDiscounts;
-    }
-    
-    // Fallback to local config if remote fetch fails
-    const discountsConfig = configService.getDiscountsConfig();
-    
-    if (!discountsConfig || !discountsConfig.enabled) {
-      return [];
-    }
-    
-    return (discountsConfig.codes || []).map((dc: any) => ({
-      code: dc.code,
-      title: dc.title,
-      description: dc.description,
-      value: dc.value,
-      valueType: dc.valueType || 'percentage',
-      minimumPurchaseAmount: dc.minimumPurchaseAmount,
-      minimumItemCount: dc.minimumItemCount || null,
-      startsAt: dc.startsAt,
-      endsAt: dc.endsAt,
-      usageLimitPerUser: dc.usageLimitPerUser || null,
-      firstOrderOnly: dc.firstOrderOnly || false,
-      ticketingOnly: dc.ticketingOnly || false,
-      clothingOnly: dc.clothingOnly || false,
-      nonCombinable: dc.nonCombinable || false,
-    }));
-  } catch (error) {
-    console.error('[CouponService] Error reading config discounts:', error);
+/** Get all discount codes from local config/kiddoAppConfig.json only. */
+function getDiscountsFromLocalConfig(): CouponCode[] {
+  const discountsConfig = LOCAL_APP_CONFIG?.discounts;
+  if (!discountsConfig || !discountsConfig.enabled || !Array.isArray(discountsConfig.codes)) {
     return [];
   }
+  return (discountsConfig.codes as any[]).map(mapRawToCoupon);
+}
+
+const getConfigDiscounts = async (): Promise<CouponCode[]> => {
+  return getDiscountsFromLocalConfig();
 };
 
 export interface PriceRule {
@@ -127,15 +86,12 @@ export interface PriceRule {
 }
 
 /**
- * Fetch all available discount codes from config
- * @param hasTicketing - If true, cart has ticketing items. If false, cart has no ticketing items. If undefined, unknown.
- * @param hasClothing - If true, cart has clothing items. If false, cart has no clothing items. If undefined, unknown.
+ * Coupon codes to show in the UI (e.g. "Apply a code" list).
+ * Excludes isVisible: false — those never appear here but are still valid when entered manually.
  */
 export const getAvailableCouponCodes = async (hasTicketing?: boolean, hasClothing?: boolean): Promise<CouponCode[]> => {
-  // Use config-based discounts (now fetches from remote first)
   const allCoupons = await getConfigDiscounts();
-  
-  let filteredCoupons = allCoupons;
+  let filteredCoupons = allCoupons.filter((c) => c.isVisible !== false);
   
   // If cart has BOTH ticketing and clothing items, show both types of coupons
   if (hasTicketing === true && hasClothing === true) {
@@ -246,26 +202,46 @@ export const getCouponApplicabilityForDisplay = (
 };
 
 /**
- * Validate a coupon code from config
+ * Validate a coupon code (config/kiddoAppConfig.json only).
+ * Includes codes with isVisible: false — they don’t show in the UI but are applicable when entered manually.
  */
 export const validateCouponCode = async (code: string): Promise<CouponCode | null> => {
   try {
-    const upperCode = code.toUpperCase();
-    
-    // Get all available coupons (fetches from remote first)
-    const allCoupons = await getAvailableCouponCodes();
-    
-    // Find the coupon with matching code
-    const matchingCoupon = allCoupons.find(coupon => coupon.code?.toUpperCase() === upperCode);
-    
-    if (matchingCoupon) {
-      return matchingCoupon;
-    }
-
-    return null;
+    const upperCode = code.toUpperCase().trim();
+    const allCoupons = getDiscountsFromLocalConfig();
+    const matchingCoupon = allCoupons.find(
+      (coupon) => (coupon.code ?? '').toString().toUpperCase().trim() === upperCode
+    );
+    return matchingCoupon ?? null;
   } catch (error: any) {
     console.error('[CouponService] Error validating coupon code:', error);
     return null;
+  }
+};
+
+/**
+ * Get count of distinct users who have used this coupon (for usageLimit / "limited to N users").
+ * Uses order shippingAddress.phone as user identifier.
+ */
+const getDistinctUserCountForCoupon = async (couponCode: string): Promise<number> => {
+  try {
+    const { orderService } = await import('./orderService');
+    const allOrders = await orderService.getAllOrders();
+    const completedWithCoupon = allOrders.filter(
+      (order: any) =>
+        order.couponCode?.toUpperCase() === couponCode.toUpperCase() &&
+        order.status !== 'cancelled' &&
+        ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered'].includes(order.status)
+    );
+    const phones = new Set(
+      completedWithCoupon
+        .map((o: any) => o.shippingAddress?.phone?.trim?.())
+        .filter(Boolean)
+    );
+    return phones.size;
+  } catch (error) {
+    console.error('[CouponService] Error getting distinct user count for coupon:', error);
+    return 0;
   }
 };
 
@@ -290,16 +266,17 @@ const getCouponUsageForUser = async (
     
     // Filter orders that:
     // 1. Have the matching coupon code
-    // 2. Are NOT cancelled
-    // 3. Are completed/delivered (or at least placed and not cancelled)
-    const completedOrdersWithCoupon = allOrders.filter(order => {
+    // 2. Belong to this user (order.userId === userId; legacy orders without userId are not counted)
+    // 3. Are NOT cancelled
+    // 4. Are completed/delivered (or at least placed and not cancelled)
+    const completedOrdersWithCoupon = allOrders.filter((order: any) => {
       const hasCoupon = order.couponCode?.toUpperCase() === couponCode.toUpperCase();
+      const belongsToUser = order.userId != null && String(order.userId).trim() === String(userId).trim();
       const isNotCancelled = order.status !== 'cancelled';
-      // Count orders that are placed or beyond (not cancelled)
       const isCompleted = ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered'].includes(order.status);
-      return hasCoupon && isNotCancelled && isCompleted;
+      return hasCoupon && belongsToUser && isNotCancelled && isCompleted;
     });
-    
+
     const usageCount = completedOrdersWithCoupon.length;
     
     // Always prioritize actual orders over AsyncStorage
@@ -316,27 +293,10 @@ const getCouponUsageForUser = async (
       return usageCount;
     }
     
-    // If no actual orders found, check AsyncStorage but also verify it's not stale
-    // If AsyncStorage has a count but no orders exist, it might be from a cancelled order
-    // So we should reset it to 0
+    // No local orders for this user+coupon: use AsyncStorage (orders may exist only in Shopify)
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     const data = await AsyncStorage.getItem(storageKey);
     const storageCount = data ? (JSON.parse(data).count || 0) : 0;
-    
-    // If AsyncStorage has a count but no actual orders, reset it
-    // This handles the case where an order was cancelled/deleted
-    if (storageCount > 0 && usageCount === 0) {
-      // Reset AsyncStorage to match actual orders (0)
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          count: 0,
-          lastUsedAt: null,
-        })
-      );
-      return 0;
-    }
-    
     return storageCount;
   } catch (error) {
     console.error('[CouponService] Error getting coupon usage:', error);
@@ -479,7 +439,18 @@ export const validateCouponConditions = async (
         };
       }
     }
-    
+
+    // Check total redemption limit (e.g. "limited to 3 users only")
+    if (coupon.usageLimit != null && coupon.usageLimit > 0) {
+      const distinctUsers = await getDistinctUserCountForCoupon(coupon.code);
+      if (distinctUsers >= coupon.usageLimit) {
+        return {
+          isValid: false,
+          error: 'This coupon has reached its redemption limit.',
+        };
+      }
+    }
+
     // Check first order only
     if (coupon.firstOrderOnly) {
       if (userOrderCount === undefined || userOrderCount === null) {
@@ -577,7 +548,11 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
       conditions.push(`Max ${coupon.usageLimitPerUser} uses per user`);
     }
   }
-  
+
+  if (coupon.usageLimit != null && coupon.usageLimit > 0) {
+    conditions.push(`Limited to ${coupon.usageLimit} user${coupon.usageLimit === 1 ? '' : 's'} only`);
+  }
+
   if (coupon.firstOrderOnly) {
     conditions.push('Valid for first order only');
   }
