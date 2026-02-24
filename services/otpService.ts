@@ -1,13 +1,8 @@
 // OTP Service - Handles OTP generation, sending, and verification via backend API
 import axios from 'axios';
-import { Platform } from 'react-native';
 import { configService } from './configService';
 
-// Production backend URL (used when not in __DEV__ or when config provides it)
 const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-// Local backend: Android emulator must use 10.0.2.2 to reach host machine; iOS simulator can use localhost
-const LOCAL_BACKEND_URL_ANDROID = 'http://10.0.2.2:8080/api/v1';
-const LOCAL_BACKEND_URL_IOS = 'http://localhost:8080/api/v1';
 
 
 interface OTPResponse {
@@ -62,15 +57,9 @@ class OTPService {
   }
 
   private getBackendUrl(): string {
-    // In development, use host machine: Android emulator uses 10.0.2.2, iOS simulator uses localhost
-    if (__DEV__) {
-      const localBase =
-        Platform.OS === 'android' ? LOCAL_BACKEND_URL_ANDROID : LOCAL_BACKEND_URL_IOS;
-      return localBase.replace(/\/+$/, '');
-    }
     const rawConfig = configService.getRawConfig();
     const base = rawConfig?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-    return base.replace(/\/+$/, '');
+    return (base as string).replace(/\/+$/, '');
   }
 
   private getApiPath(path: string): string {

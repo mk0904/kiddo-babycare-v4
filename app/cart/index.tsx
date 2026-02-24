@@ -203,10 +203,30 @@ export default function CartScreen() {
 
     // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
     useEffect(() => {
+        if (!isAuthenticated) {
+            setAvailableCoupons([]);
+            return;
+        }
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
+                // Use same customer id as rest of app (Shopify format); fallback to email/phone if backend accepts
+                const userStore = require('@/store/userStore').useUserStore.getState();
+                const userId =
+                    userStore.getCustomerId?.() ??
+                    user?.customerId ??
+                    user?.id ??
+                    user?.email ??
+                    user?.phone ??
+                    null;
+                if (__DEV__) {
+                    console.log('[CartScreen] Logged-in user ids for coupons:', {
+                        customerId: user?.customerId ?? null,
+                        id: user?.id ?? null,
+                        getCustomerId: userStore.getCustomerId?.() ?? null,
+                        resolvedUserId: userId ?? null,
+                    });
+                }
                 const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
                 const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
                 const hasTicketing = hasTicketingProducts;
@@ -228,7 +248,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    }, [isAuthenticated, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;

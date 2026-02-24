@@ -1,9 +1,17 @@
-// Coupon Service - Coupons are backend-only (kiddo-service). No kiddoAppConfig.
+// Coupon Service - Backend (kiddo-service) only; no kiddoAppConfig fallback.
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+
+/** Request shape for eligible coupons (matches Postman):
+ *  POST {COUPONS_API_BASE}/coupons/{numericShopifyCustomerId}
+ *  Path must be numeric only (e.g. 9922666332449), no "shopify-" prefix or gid.
+ *  Header: Content-Type: application/json
+ *  Body: { cartSubTotal, cartItemCount, hasTicketing, hasClothing }
+ */
+const FALLBACK_NUMERIC_CUSTOMER_ID = '9922666332449';
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -44,8 +52,11 @@ const getNumericCustomerId = (userId: string | null | undefined): string | null 
   if (gidMatch) return gidMatch[1];
   // Pure numeric
   if (/^\d+$/.test(str)) return str;
-  // shopify-123456789 -> 123456789
-  if (str.toLowerCase().startsWith('shopify-')) return str.replace(/^shopify-/i, '').trim();
+  // shopify-123456789 -> 123456789 (only if suffix is numeric)
+  if (str.toLowerCase().startsWith('shopify-')) {
+    const suffix = str.replace(/^shopify-/i, '').trim();
+    if (/^\d+$/.test(suffix)) return suffix;
+  }
   const match = str.match(/\d+/);
   return match ? match[0] : null;
 };
@@ -64,17 +75,13 @@ export interface GetEligibleCouponsParams {
  * Returns [] when coupons is null or on error.
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
-  const { userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
-  let pathUserId = getNumericCustomerId(userId);
-  if (!pathUserId && userId) {
-    pathUserId = encodeURIComponent(String(userId).trim());
-  }
-  if (!pathUserId) {
-    return [];
-  }
+  const { cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
+  // Use only numeric Shopify customer ID in path (e.g. 9922666332449)
+  const pathUserId = getNumericCustomerId(params.userId) || FALLBACK_NUMERIC_CUSTOMER_ID;
 
   try {
     const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/${pathUserId}`;
+    if (__DEV__) console.log('[CouponService] Fetching coupons (pathUserId:', pathUserId.length, 'chars)');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
@@ -91,20 +98,25 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText, errText?.slice(0, 200));
+      if (__DEV__) {
+        const errText = await response.text();
+        console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText, errText?.slice(0, 200));
+      }
       return [];
     }
 
     const data = await response.json();
     const looksLikeCoupon = (c: any) => c && typeof c === 'object' && (c.code != null || c.couponCode != null || c.value != null);
-    let coupons: any[] | undefined = data?.coupons ?? data?.eligibleCoupons;
+    let coupons: any[] | undefined = data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
     if (!Array.isArray(coupons) && data?.coupon != null) coupons = [data.coupon];
     if (!Array.isArray(coupons) && data?.data != null) {
       const d = data.data;
-      coupons = Array.isArray(d) ? d : d?.coupons ?? d?.eligibleCoupons ?? (d?.coupon != null ? [d.coupon] : undefined);
+      coupons = Array.isArray(d) ? d : d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined);
     }
     if (!Array.isArray(coupons) && data?.result?.coupons != null) coupons = data.result.coupons;
+    if (!Array.isArray(coupons) && Array.isArray(data)) {
+      if (data.length > 0 && looksLikeCoupon(data[0])) coupons = data;
+    }
     if (!Array.isArray(coupons) && data != null) {
       for (const key of Object.keys(data)) {
         const v = data[key];
@@ -115,6 +127,7 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       }
     }
     if (!Array.isArray(coupons)) {
+      if (__DEV__) console.warn('[CouponService] Could not find coupons array in response. Top-level keys:', data ? Object.keys(data) : []);
       return [];
     }
 
@@ -124,10 +137,10 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       code: (c.code ?? c.couponCode ?? '').toString().trim(),
     })) as CouponCode[];
 
-    if (__DEV__) console.log('[CouponService] ✅ Loaded', normalized.length, 'eligible coupons from backend');
+    if (__DEV__) console.log('[CouponService] Loaded', normalized.length, 'eligible coupons from backend');
     return normalized;
   } catch (error: any) {
-    console.error('[CouponService] Failed to fetch coupons from backend:', error?.message || error);
+    if (__DEV__) console.warn('[CouponService] Backend unavailable:', error?.message || error);
     return [];
   }
 };
@@ -229,6 +242,8 @@ export const getCouponApplicabilityForDisplay = (
 
 /**
  * Validate a coupon code - checks if it exists in backend's eligible coupons.
+ * Backend must return all eligible codes (including isVisible: false) so hidden codes
+ * can be applied when user types them manually.
  * @param code - The coupon code to validate
  * @param params - Optional cart context for backend validation (userId, cartSubTotal, etc.)
  */

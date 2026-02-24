@@ -2858,7 +2858,7 @@
         "code": "KIDDOCARES",
         "title": "₹150 off",
         "description": "Once per user",
-        "value": 150,
+        "value": 180,
         "valueType": "fixed_amount",
         "minimumPurchaseAmount": null,
         "minimumItemCount": null,
