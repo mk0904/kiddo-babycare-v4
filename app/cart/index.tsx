@@ -233,6 +233,18 @@ export default function CartScreen() {
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
 
+    // Detect ticketing placeholder address (from prior ticketing-only orders).
+    // Shopify may store this as the customer's default; it's not valid for physical delivery.
+    const isTicketingPlaceholderAddress = (addr: { address1?: string; address2?: string } | null): boolean => {
+        if (!addr) return false;
+        const a1 = (addr.address1 || '').toLowerCase();
+        const a2 = (addr.address2 || '').toLowerCase();
+        return a1.includes('digital delivery') || a2.includes('online event');
+    };
+
+    // For physical orders, we need a real delivery address (not the ticketing placeholder)
+    const hasValidDeliveryAddress = selectedAddress && !isTicketingPlaceholderAddress(selectedAddress);
+
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
     
@@ -474,8 +486,9 @@ export default function CartScreen() {
             return;
         }
 
-        // Only require address if cart contains non-ticketing products
-        if (!isTicketingOnly && !selectedAddress) {
+        // For physical products, require a real delivery address (not the ticketing placeholder).
+        // Users who bought ticketing first may have only the placeholder saved; prompt them to add address.
+        if (!isTicketingOnly && !hasValidDeliveryAddress) {
             setShowAddressModal(true);
             return;
         }
