@@ -28,6 +28,8 @@ import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { trackEvent } from '@/utils/mixpanelHelpers';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
+import { pushRegistrationService } from '@/services/pushRegistrationService';
+import { useUserStore } from '@/store/userStore';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -112,24 +114,18 @@ export default function RootLayout() {
             try {
               const initialized = oneSignalService.initialize();
               resolve(initialized);
-            } catch (error) {
-              console.warn('⚠️ OneSignal initialization error:', error);
+            } catch {
               resolve(false);
             }
           });
 
           // Add timeout to prevent hanging
           const timeoutPromise = new Promise<boolean>((resolve) => {
-            setTimeout(() => {
-              console.warn('⚠️ OneSignal initialization timeout');
-              resolve(false);
-            }, 5000); // 5 second timeout
+            setTimeout(() => resolve(false), 5000);
           });
 
           const initialized = await Promise.race([initPromise, timeoutPromise]);
-          
           if (!initialized) {
-            console.error('❌ [OneSignal] Initialization failed or timed out');
             if (Platform.OS === 'ios') {
               console.warn('📱 [OneSignal] On iOS Simulator OneSignal is unavailable. Showing notification permission via expo-notifications so you see the same prompt as on device.');
               // On iOS Simulator, still show the system notification permission dialog (expo-notifications fallback)
@@ -146,8 +142,6 @@ export default function RootLayout() {
               } catch (e) {
                 console.warn('📱 [OneSignal] expo-notifications fallback failed:', e);
               }
-            } else {
-              console.error('❌ [OneSignal] This is a critical error - OneSignal will not work');
             }
             return;
           }
@@ -171,42 +165,35 @@ export default function RootLayout() {
               }
             }
           } catch (error) {
-            console.warn('⚠️ OneSignal permission request error:', error);
+            if (__DEV__) console.warn('[OneSignal] permission error:', error);
           }
 
-          // Check status in background (non-blocking) - increased delay for better reliability
+          // Check status in background and register with backend when we have subscription id + user
           setTimeout(async () => {
             try {
-              // 2️⃣ Check permission status
-              const perm = await oneSignalService.getPermissionStatus();
-              console.log('📱 Permission Status:', perm);
-              
-              // 3️⃣ & 4️⃣ Check subscription status and ID
               const subStatus = await oneSignalService.checkSubscriptionStatus();
-              console.log('📱 Subscription Status:', subStatus);
-              
-              // Get comprehensive debug info (for logging only, no alerts)
-              const debugInfo = await oneSignalService.getDebugInfo();
-              console.log('📱 [OneSignal] Debug info:', debugInfo);
-              
               if (subStatus.isSubscribed && subStatus.id) {
-                console.log('✅ OneSignal push is set up correctly!');
-              } else {
-                console.warn('⚠️ OneSignal push not fully set up:', subStatus);
+                try {
+                  const userStore = useUserStore.getState();
+                  const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
+                  if (userId && subStatus.id) {
+                    await pushRegistrationService.registerWithBackend(userId, subStatus.id);
+                  }
+                } catch (e) {
+                  if (__DEV__) console.warn('[Push] Backend registration failed:', e);
+                }
               }
             } catch (error) {
-              console.warn('⚠️ OneSignal status check error:', error);
+              if (__DEV__) console.warn('[OneSignal] status check error:', error);
             }
-          }, 3000); // Wait 3 seconds before checking status (gives OneSignal time to subscribe)
+          }, 3000); // Wait 3 seconds before checking (gives OneSignal time to subscribe)
         } catch (error) {
-          console.warn('⚠️ OneSignal initialization error:', error);
+          if (__DEV__) console.warn('[OneSignal] init error:', error);
         }
       };
 
       // Run OneSignal initialization in background (non-blocking)
-      initOneSignal().catch((error) => {
-        console.warn('⚠️ OneSignal init error:', error);
-      });
+      initOneSignal().catch(() => {});
     }, 1000); // Short delay so app mounts first, then init OneSignal (was 5s – reduced so push subscribes sooner)
     
     // Hide native splash immediately

@@ -162,9 +162,8 @@ export default function AccountScreen() {
             // First time: show system Allow dialog only (no “Open Settings” prompt)
             await oneSignalService.requestPermission(false);
             await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
-            console.log('📱 [OneSignal] Permission requested');
         } catch (error: any) {
-            console.error('❌ [OneSignal] Permission request error:', error);
+            if (__DEV__) console.warn('[OneSignal] Permission request error:', error);
         }
     };
 

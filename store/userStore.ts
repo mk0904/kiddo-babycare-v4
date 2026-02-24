@@ -117,6 +117,16 @@ export const useUserStore = create<UserStore>()(
                 } catch (e) {
                     console.warn('Analytics tracking error:', e);
                 }
+                // Register push subscription with backend (fire-and-forget)
+                (async () => {
+                    try {
+                        const { oneSignalService } = require('@/services/oneSignalService');
+                        const { pushRegistrationService } = require('@/services/pushRegistrationService');
+                        const sub = await oneSignalService.checkSubscriptionStatus();
+                        const uid = user.id || user.customerId || user.email || user.phone;
+                        if (uid && sub?.id) await pushRegistrationService.registerWithBackend(uid, sub.id);
+                    } catch (_) { /* ignore */ }
+                })();
             },
 
             // Logout user
