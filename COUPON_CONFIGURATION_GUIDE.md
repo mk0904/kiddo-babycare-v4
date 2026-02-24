@@ -6,7 +6,7 @@ Coupons are **configured and served only from the backend** (kiddo-service). The
 
 **Backend (kiddo-service):** `config/coupon.json`
 
-The app fetches eligible coupons via `POST /api/v1/coupons/:userId` with body `{ cartSubTotal, cartItemCount, hasTicketing, hasClothing }`. Eligibility (usage limits, minimum purchase, first order, etc.) is computed on the backend using Shopify order history.
+The app fetches eligible coupons via `POST /api/v1/coupons/:userId` with body `{ cartSubTotal, cartItemCount, hasTicketing, hasClothing }`. When the user enters a code manually, the app checks if it exists in the backend response—if present (visible or hidden), it applies; otherwise not. Eligibility (usage limits, minimum purchase, first order, etc.) is computed on the backend using Shopify order history.
 
 ## 🔧 Configuration Fields (backend config/coupon.json)
 

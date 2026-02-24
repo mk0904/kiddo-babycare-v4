@@ -228,7 +228,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [user?.id, user?.customerId, user?.email, user?.phone]);
+    }, [user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -394,9 +394,7 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            console.log('[CartScreen] Calling applyDiscountCode...');
-            const result = await applyDiscountCode(code);
-            console.log('[CartScreen] applyDiscountCode result:', result);
+            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
             if (result.success) {
                 console.log('[CartScreen] ✅ Coupon applied successfully');
                 setCouponCode('');
@@ -433,7 +431,7 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            const result = await applyDiscountCode(code);
+            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
             if (result.success) {
                 setCouponCode(''); // Clear input
                 setCouponMessage(null); // Don't show success message

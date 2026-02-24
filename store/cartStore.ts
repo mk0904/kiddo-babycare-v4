@@ -2,6 +2,7 @@
 // Enhanced cart state management with gift items, multiple discounts, and sync
 // Coupon values come from backend API only (not config)
 
+import kiddoAppConfig from '@/config/kiddoAppConfig.json';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -106,7 +107,7 @@ interface CartState {
     applyEligibleGifts: () => void;
 
     // Discount codes
-    applyDiscountCode: (code: string) => Promise<{ success: boolean; error?: string }>;
+    applyDiscountCode: (code: string, options?: { preloadedCoupons?: any[] }) => Promise<{ success: boolean; error?: string }>;
     removeDiscountCode: (code: string) => void;
     removeAllDiscountCodes: () => void;
     validateAppliedDiscountCodes: () => Promise<void>;
@@ -556,9 +557,7 @@ export const useCartStore = create<CartState>()(
             },
 
             // Discount codes
-            applyDiscountCode: async (code) => {
-                console.log('[CartStore] ========== APPLY DISCOUNT CODE START ==========');
-                console.log('[CartStore] Input code:', code);
+            applyDiscountCode: async (code, options) => {
                 const state = get();
                 const normalizedCode = code.trim().toUpperCase();
                 console.log('[CartStore] Normalized code:', normalizedCode);
@@ -605,36 +604,57 @@ export const useCartStore = create<CartState>()(
                     return { success: false, error: 'Failed to verify authentication.' };
                 }
 
-                // Validate code via backend (eligibility decided by backend)
+                // Validate: first check preloaded coupons (from cart screen), else fetch from backend
                 let configDiscount: any = null;
-                try {
-                    const { couponService } = await import('@/services/couponService');
-                    const { useUserStore } = await import('@/store/userStore');
-                    const userStore = useUserStore.getState();
-                    const u = userStore.user;
-                    // Prefer IDs that yield numeric Shopify customer ID for backend (customerId, or id with digits/GID)
-                    const userId =
-                        (u?.customerId && /[\d]/.test(String(u.customerId)))
-                            ? u.customerId
-                            : (u?.id || u?.customerId || u?.email || u?.phone || null);
+                const norm = (s: string) =>
+                    (s ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
+                const normalizedCodeNoSpaces = normalizedCode.replace(/\s+/g, '');
 
-                    const couponParams = {
-                        userId,
-                        cartSubTotal: Math.round(Number(cartSubtotal)) || 0,
-                        cartItemCount: Math.max(0, Math.floor(Number(cartItemCount))) || 0,
-                        hasTicketing: hasTicketingProducts,
-                        hasClothing: hasClothingItems,
-                    };
-                    configDiscount = await couponService.validateCouponCode(normalizedCode, couponParams);
-                    if (configDiscount) {
-                        console.log('[CartStore] ✅ Code eligible (backend):', configDiscount);
-                    } else {
-                        console.log('[CartStore] ❌ Code not eligible');
-                        return { success: false, error: 'This discount code is not valid.' };
+                if (options?.preloadedCoupons?.length) {
+                    const match = options.preloadedCoupons.find(
+                        (c: any) => norm(c.code ?? c.couponCode) === normalizedCodeNoSpaces
+                    );
+                    if (match) configDiscount = { ...match, code: match.code ?? match.couponCode ?? normalizedCode };
+                }
+
+                if (!configDiscount) {
+                    try {
+                        const { couponService } = await import('@/services/couponService');
+                        const { useUserStore } = await import('@/store/userStore');
+                        const userStore = useUserStore.getState();
+                        const u = userStore.user;
+                        const userId =
+                            u?.customerId ||
+                            u?.id ||
+                            u?.email ||
+                            u?.phone ||
+                            null;
+                        const couponParams = {
+                            userId,
+                            cartSubTotal: Math.round(Number(cartSubtotal)) || 0,
+                            cartItemCount: Math.max(0, Math.floor(Number(cartItemCount))) || 0,
+                            hasTicketing: hasTicketingProducts,
+                            hasClothing: hasClothingItems,
+                        };
+                        configDiscount = await couponService.validateCouponCode(normalizedCode, couponParams);
+                    } catch (error) {
+                        console.error('[CartStore] Error validating code:', error);
+                        return { success: false, error: 'Failed to validate discount code.' };
                     }
-                } catch (error) {
-                    console.error('[CartStore] Error validating code:', error);
-                    return { success: false, error: 'Failed to validate discount code.' };
+                }
+
+                if (!configDiscount) {
+                    const discountsConfig = (kiddoAppConfig as any)?.discounts;
+                    if (discountsConfig?.enabled && Array.isArray(discountsConfig?.codes)) {
+                        const configMatch = discountsConfig.codes.find(
+                            (c: any) => norm(c?.code ?? c?.couponCode) === normalizedCodeNoSpaces
+                        );
+                        if (configMatch) configDiscount = configMatch;
+                    }
+                }
+
+                if (!configDiscount) {
+                    return { success: false, error: 'This discount code is not valid.' };
                 }
 
                 // Check if code is already applied
@@ -1149,51 +1169,6 @@ export const useCartStore = create<CartState>()(
                     return { success: false, error: error.message || 'Failed to apply discount code' };
                 }
 
-                if (cartForCost != null) {
-                    const cart = cartForCost as NonNullable<typeof cartForCost>;
-                    const subtotal = parseFloat(cart.cost?.subtotalAmount?.amount || '0');
-                    let discount = 0;
-                    nextDiscountCodes.forEach((dc) => {
-                        if (dc.applicable !== false) {
-                            if (dc.type === 'percentage') discount += (subtotal * dc.value) / 100;
-                            else if (dc.type === 'fixed') discount += dc.value;
-                        }
-                    });
-                    discount = Math.min(discount, subtotal);
-                    const tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
-                    const total = Math.max(0, subtotal - discount + tax);
-                    const currencyCode = cart.cost?.totalAmount?.currencyCode || 'INR';
-                    set({
-                        payment: { subtotal, discount, shipping: 0, tax, total, currencyCode },
-                        checkoutUrl: cart.checkoutUrl ?? get().checkoutUrl ?? null,
-                        status: 'idle',
-                        error: null,
-                        lastSyncedAt: Date.now(),
-                    });
-                    console.log('[CartStore] ✅ Discount applied (backend):', { code: normalizedCode, discount, total });
-                    return { success: true };
-                }
-                const subtotalFallback = get().subtotal();
-                let discountFallback = 0;
-                nextDiscountCodes.forEach((dc) => {
-                    if (dc.applicable !== false) {
-                        if (dc.type === 'percentage') discountFallback += (subtotalFallback * dc.value) / 100;
-                        else if (dc.type === 'fixed') discountFallback += dc.value;
-                    }
-                });
-                discountFallback = Math.min(discountFallback, subtotalFallback);
-                const taxFallback = get().payment?.tax ?? 0;
-                const totalFallback = Math.max(0, subtotalFallback - discountFallback + taxFallback);
-                const currencyCodeFallback = get().payment?.currencyCode || 'INR';
-                set({
-                    payment: { subtotal: subtotalFallback, discount: discountFallback, shipping: 0, tax: taxFallback, total: totalFallback, currencyCode: currencyCodeFallback },
-                    checkoutUrl: get().checkoutUrl ?? null,
-                    status: 'idle',
-                    error: null,
-                    lastSyncedAt: Date.now(),
-                });
-                console.log('[CartStore] ✅ Discount applied (fallback path):', { code: normalizedCode, discount: discountFallback, total: totalFallback });
-                return { success: true };
             },
 
             removeDiscountCode: async (code) => {

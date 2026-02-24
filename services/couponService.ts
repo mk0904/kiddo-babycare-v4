@@ -1,22 +1,9 @@
 // Coupon Service - Coupons are backend-only (kiddo-service). No kiddoAppConfig.
-import { configService } from '@/services/configService';
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { Platform } from 'react-native';
 
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-const LOCAL_BACKEND_URL_ANDROID = 'http://10.0.2.2:8080/api/v1';
-const LOCAL_BACKEND_URL_IOS = 'http://localhost:8080/api/v1';
-
-function getCouponsApiBase(): string {
-  if (__DEV__) {
-    return Platform.OS === 'android' ? LOCAL_BACKEND_URL_ANDROID : LOCAL_BACKEND_URL_IOS;
-  }
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return (base as string).replace(/\/+$/, '');
-}
+const COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -52,11 +39,15 @@ export interface CouponCode {
 const getNumericCustomerId = (userId: string | null | undefined): string | null => {
   if (userId == null || userId === '') return null;
   const str = String(userId).trim();
-  const match = str.match(/\d+/);
-  if (match) return match[0];
+  // gid://shopify/Customer/123456789 -> 123456789
+  const gidMatch = str.match(/Customer\/(\d+)/);
+  if (gidMatch) return gidMatch[1];
+  // Pure numeric
+  if (/^\d+$/.test(str)) return str;
+  // shopify-123456789 -> 123456789
   if (str.toLowerCase().startsWith('shopify-')) return str.replace(/^shopify-/i, '').trim();
-  if (str.includes('gid://shopify/Customer/')) return str.replace(/.*\/Customer\/(\d+).*/, '$1');
-  return null;
+  const match = str.match(/\d+/);
+  return match ? match[0] : null;
 };
 
 export interface GetEligibleCouponsParams {
@@ -74,17 +65,16 @@ export interface GetEligibleCouponsParams {
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
   const { userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
-  const customerId = getNumericCustomerId(userId);
-
-  if (!customerId) {
-    console.warn('[CouponService] No numeric customer ID for coupons API (userId may be email or invalid). Need Shopify customer id.');
+  let pathUserId = getNumericCustomerId(userId);
+  if (!pathUserId && userId) {
+    pathUserId = encodeURIComponent(String(userId).trim());
+  }
+  if (!pathUserId) {
     return [];
   }
 
   try {
-    const base = getCouponsApiBase();
-    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-    const url = `${prefix}/coupons/${customerId}`;
+    const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/${pathUserId}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
@@ -107,19 +97,35 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     }
 
     const data = await response.json();
-    const coupons = data?.coupons;
-
-    if (coupons === null || coupons === undefined) {
-      return [];
+    const looksLikeCoupon = (c: any) => c && typeof c === 'object' && (c.code != null || c.couponCode != null || c.value != null);
+    let coupons: any[] | undefined = data?.coupons ?? data?.eligibleCoupons;
+    if (!Array.isArray(coupons) && data?.coupon != null) coupons = [data.coupon];
+    if (!Array.isArray(coupons) && data?.data != null) {
+      const d = data.data;
+      coupons = Array.isArray(d) ? d : d?.coupons ?? d?.eligibleCoupons ?? (d?.coupon != null ? [d.coupon] : undefined);
     }
-
+    if (!Array.isArray(coupons) && data?.result?.coupons != null) coupons = data.result.coupons;
+    if (!Array.isArray(coupons) && data != null) {
+      for (const key of Object.keys(data)) {
+        const v = data[key];
+        if (Array.isArray(v) && v.length > 0 && looksLikeCoupon(v[0])) {
+          coupons = v;
+          break;
+        }
+      }
+    }
     if (!Array.isArray(coupons)) {
-      console.warn('[CouponService] Backend returned invalid coupons format');
       return [];
     }
 
-    console.log('[CouponService] ✅ Loaded', coupons.length, 'eligible coupons from backend');
-    return coupons as CouponCode[];
+    // Normalize coupon objects: ensure each has a `code` field (backend may use `couponCode`)
+    const normalized = coupons.map((c: any) => ({
+      ...c,
+      code: (c.code ?? c.couponCode ?? '').toString().trim(),
+    })) as CouponCode[];
+
+    if (__DEV__) console.log('[CouponService] ✅ Loaded', normalized.length, 'eligible coupons from backend');
+    return normalized;
   } catch (error: any) {
     console.error('[CouponService] Failed to fetch coupons from backend:', error?.message || error);
     return [];
@@ -231,7 +237,8 @@ export const validateCouponCode = async (
   params?: GetEligibleCouponsParams
 ): Promise<CouponCode | null> => {
   try {
-    const upperCode = code.toUpperCase();
+    const upperCode = (code ?? '').trim().toUpperCase();
+    if (!upperCode) return null;
 
     if (!params) {
       console.warn('[CouponService] validateCouponCode called without params - cannot validate via backend');
@@ -239,11 +246,17 @@ export const validateCouponCode = async (
     }
 
     const eligibleCoupons = await getEligibleCouponsFromBackend(params);
-    const normalize = (s: string | null | undefined) => (s ?? '').trim().toUpperCase();
+    const normalize = (s: string | null | undefined) =>
+      (s ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
+    const upperCodeNorm = upperCode.replace(/\s+/g, '');
     const matchingCoupon = eligibleCoupons.find(
-      (coupon) => normalize(coupon.code) === upperCode
+      (coupon) => normalize(coupon.code ?? (coupon as any).couponCode) === upperCodeNorm
     );
 
+    if (!matchingCoupon && __DEV__ && eligibleCoupons.length > 0) {
+      const codes = eligibleCoupons.map((c) => c.code ?? (c as any).couponCode).filter(Boolean);
+      console.warn('[CouponService] Code not in eligible list. Looking for:', upperCode, '| Eligible codes:', codes);
+    }
     return matchingCoupon || null;
   } catch (error: any) {
     console.error('[CouponService] Error validating coupon code:', error);
