@@ -53,6 +53,7 @@ export interface CheckoutDraftRequest {
     dateFormat: string;
   };
   selectedShoe?: string;
+  /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
 }
 

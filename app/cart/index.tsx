@@ -10,7 +10,7 @@ import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { couponService } from '@/services/couponService';
-import PaymentService, { type PaymentResult } from '@/services/paymentService';
+import PaymentService from '@/services/paymentService';
 import {
     useCartId,
     useCartItems,
@@ -62,7 +62,7 @@ export default function CartScreen() {
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
     const { defaultAddress } = useAddress();
-    const { addItem: addTryAndBuyItem, createOrder: createTryAndBuyOrder, clearCart: clearTryAndBuyCart } = useTryAndBuy();
+    useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
     
     // Use Zustand store
     const cartItems = useCartItems();
@@ -545,220 +545,8 @@ export default function CartScreen() {
         }
 
         try {
-            // If Try & Buy is enabled, handle it separately
-            if (isTryAndBuy) {
-                // Add eligible items to try and buy cart
-                // Eligible items are those that are returnable (not diapers, formula, food, etc.)
-                const NON_RETURNABLE_TAGS = [
-                    'diaper',
-                    'diapers',
-                    'formula',
-                    'food',
-                    'feeding',
-                    'non-returnable',
-                    'event',
-                    'ticket',
-                    'pass',
-                    'playhouse',
-                    'petting',
-                    'farm',
-                ];
-
-                const isProductReturnable = (tags?: string[]): boolean => {
-                    if (!tags || tags.length === 0) return true;
-                    const lowerTags = tags.map((t) => String(t).toLowerCase());
-                    return !NON_RETURNABLE_TAGS.some((nonRet) =>
-                        lowerTags.some((tag) => tag.includes(nonRet))
-                    );
-                };
-
-                const eligibleItems = cartItems.filter(item => {
-                    const isReturnable = isProductReturnable(item.tags);
-                    console.log('[Cart] Checking item for Try & Buy:', {
-                        title: item.title,
-                        tags: item.tags,
-                        isReturnable,
-                    });
-                    return isReturnable;
-                });
-
-                console.log('[Cart] Try & Buy eligible items:', {
-                    totalCartItems: cartItems.length,
-                    eligibleItems: eligibleItems.length,
-                    eligibleTitles: eligibleItems.map(i => i.title),
-                });
-
-                if (eligibleItems.length === 0) {
-                    // Automatically disable Try & Buy and continue with regular order
-                    // This prevents the error when user has only non-returnable items
-                    console.log('[Cart] No returnable items found, disabling Try & Buy and continuing as regular order');
-                    toggleTryAndBuy();
-                    // Fall through to regular order flow below (don't return, let it continue)
-                } else {
-                    // Has eligible items, proceed with Try & Buy flow
-                    // Prepare Try & Buy items directly (avoid state sync issues)
-                    // We'll pass items directly to createOrder instead of relying on state
-                    const tryAndBuyItems = eligibleItems.map(item => ({
-                        id: `tab_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-                        productId: item.productId,
-                        variantId: item.variantId,
-                        title: item.title,
-                        variantTitle: item.variantTitle || 'Default Title',
-                        price: item.price,
-                        currencyCode: item.currencyCode,
-                        image: item.image,
-                        quantity: item.quantity,
-                        tags: item.tags,
-                    }));
-
-                    // Also update the Try & Buy cart state (for UI consistency)
-                    clearTryAndBuyCart();
-                    for (const item of tryAndBuyItems) {
-                        await addTryAndBuyItem({
-                            productId: item.productId,
-                            variantId: item.variantId,
-                            title: item.title,
-                            variantTitle: item.variantTitle,
-                            price: item.price,
-                            currencyCode: item.currencyCode,
-                            image: item.image,
-                            quantity: item.quantity,
-                            tags: item.tags,
-                        });
-                    }
-
-                    // Handle payment based on selected payment method
-                    let paymentId: string | undefined = undefined;
-                    let paymentResult: PaymentResult | undefined;
-                    if (paymentMethod === 'razorpay') {
-                        // For Razorpay, process payment first
-                        paymentResult = await PaymentService.initiateRazorpayPayment(
-                            total,
-                            'INR',
-                            {
-                                email: user?.email || 'guest@example.com',
-                                phone: user?.phone || billingAddress.phone || '',
-                                name: user?.displayName || `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                customerId: user?.id,
-                                items: eligibleItems.map(item => ({
-                                    id: item.id,
-                                    productId: item.productId,
-                                    variantId: item.variantId,
-                                    quantity: item.quantity,
-                                    price: item.price,
-                                    title: item.title,
-                                    tags: item.tags,
-                                })),
-                            }
-                        );
-
-                        if (!paymentResult.success) {
-                            if (paymentResult.cancelled) {
-                                console.log('Payment cancelled');
-                                setOrderLoading(false);
-                                return;
-                            }
-                            throw new Error(paymentResult.error || 'Payment failed');
-                        }
-
-                        paymentId = paymentResult.paymentId;
-                    }
-
-                    // Create try and buy order with selected payment method and payment ID
-                    // Pass items directly to avoid state sync issues; for Razorpay pass orderId + signature for backend verification
-                    let tryAndBuyOrder;
-                    try {
-                        tryAndBuyOrder = await createTryAndBuyOrder(
-                            {
-                                name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                city: billingAddress.city,
-                                state: billingAddress.province,
-                                pincode: billingAddress.zip,
-                                phone: billingAddress.phone,
-                            },
-                            user?.id,
-                            paymentMethod,
-                            paymentId,
-                            tryAndBuyItems, // Pass items directly to avoid state sync issues
-                            deliverySchedule || undefined,
-                            selectedShoe || undefined,
-                            appliedDiscountCode || undefined,
-                            discount > 0 ? discount : undefined,
-                            paymentResult?.orderId,
-                            paymentResult?.signature
-                        );
-
-                        if (!tryAndBuyOrder) {
-                            throw new Error('Failed to create Try & Buy order');
-                        }
-                    } catch (orderError: any) {
-                        console.error('[Cart] Try & Buy order creation error:', orderError);
-                        console.error('[Cart] Error details:', {
-                            message: orderError.message,
-                            stack: orderError.stack,
-                            originalError: orderError.originalError,
-                            response: orderError.response?.data,
-                        });
-                        
-                        // Extract user-friendly error message
-                        let errorMessage = orderError.message || 'Failed to create Try & Buy order. Please try again.';
-                        
-                        // Check for Shopify user errors
-                        if (orderError.userErrors && orderError.userErrors.length > 0) {
-                            errorMessage = orderError.userErrors[0].message || errorMessage;
-                        }
-                        
-                        // Check response data for errors
-                        if (orderError.response?.data?.errors) {
-                            errorMessage = orderError.response.data.errors[0]?.message || errorMessage;
-                        }
-                        
-                        if (orderError.response?.data?.data?.draftOrderCreate?.userErrors) {
-                            const userError = orderError.response.data.data.draftOrderCreate.userErrors[0];
-                            errorMessage = userError.message || errorMessage;
-                        }
-                        
-                        // Re-throw with user-friendly message
-                        throw new Error(errorMessage);
-                    }
-
-                    // Increment coupon usage for applied discount codes (if any)
-                    if (appliedDiscountCode) {
-                        try {
-                            const { couponService } = await import('@/services/couponService');
-                            const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
-                            if (userId) {
-                                await couponService.incrementCouponUsage(appliedDiscountCode, userId);
-                                console.log('[Cart] Incremented coupon usage for Try & Buy:', appliedDiscountCode);
-                            }
-                        } catch (error) {
-                            console.error('[Cart] Error incrementing coupon usage:', error);
-                            // Don't fail the order if usage tracking fails
-                        }
-                    }
-
-                    // Clear regular cart
-                    clearCart();
-
-                    // Navigate to order success
-                    requestAnimationFrame(() => {
-                        router.push({
-                            pathname: '/order-success' as const,
-                            params: {
-                                orderId: tryAndBuyOrder.id,
-                                orderGraphId: tryAndBuyOrder.shopifyDraftOrderId || '',
-                                total: total.toString(),
-                            },
-                        });
-                    });
-
-                    setOrderLoading(false);
-                    return;
-                }
-            }
-
-            // Normal order flow (not try and buy)
+            // Checkout always uses normal order flow. Try & Buy is a tag only (sent as isTryAndBuy to backend).
+            // Normal order flow
             // Validate product availability before placing order
             try {
                 const { shopifyApi } = await import('@/services/shopifyApi');
@@ -967,6 +755,7 @@ export default function CartScreen() {
                 discountAmount: discount > 0 ? discount : undefined,
                 deliverySchedule: deliverySchedule || undefined,
                 selectedShoe: selectedShoe || undefined,
+                isTryAndBuy: isTryAndBuy, // Tag only: backend should create same draft (all items), use for order tagging
             };
 
             // Call Payment Service
