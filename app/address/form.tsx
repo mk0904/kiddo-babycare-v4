@@ -29,7 +29,7 @@ const ADDRESS_TAGS = [
 
 export default function AddressFormScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ locationData?: string; returnToCart?: string }>();
+    const params = useLocalSearchParams<{ locationData?: string; returnToCart?: string; returnToHome?: string }>();
     const { user } = useAuth();
     const { addAddress } = useAddress();
 
@@ -120,11 +120,13 @@ export default function AddressFormScreen() {
 
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const goToCart = params.returnToCart === '1';
+            const returnToHome = params.returnToHome === '1';
+            const targetRoute = returnToHome ? '/(tabs)' : goToCart ? '/cart' : '/address';
             Alert.alert('Success', 'Address saved successfully!', [
                 {
                     text: 'OK',
                     onPress: () => {
-                        router.dismissTo(goToCart ? '/cart' : '/address');
+                        router.dismissTo(targetRoute);
                     }
                 },
             ]);
