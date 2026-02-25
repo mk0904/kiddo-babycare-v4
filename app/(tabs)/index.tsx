@@ -148,7 +148,9 @@ export default function HomeScreen() {
     }
     if (categoryKey === selectedCategory) return;
     setSelectedCategory(categoryKey);
-  }, [selectedCategory]);
+    // Scroll to top of the new category content
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, [selectedCategory, categories]);
 
   // Load config on mount
   useEffect(() => {
