@@ -1025,6 +1025,7 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
+                {/* Share icon commented out for now
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={handleShare}
@@ -1032,6 +1033,7 @@ const ProductDetailScreen = () => {
                 >
                     <Ionicons name="share-outline" size={24} color="#000" />
                 </TouchableOpacity>
+                */}
                 <TouchableOpacity style={styles.wishlistButton} onPress={handleWishlistPress}>
                     <Ionicons
                         name={inWishlist ? "heart" : "heart-outline"}
