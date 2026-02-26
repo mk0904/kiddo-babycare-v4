@@ -1,5 +1,6 @@
 import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
 import { AddressModal } from '@/components/modals/AddressModal';
+import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
@@ -8,7 +9,6 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
-import { configService } from '@/services/configService';
 import { couponService } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import {
@@ -31,6 +31,7 @@ import {
     ActivityIndicator,
     Alert,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TextInput,
@@ -61,7 +62,7 @@ export default function CartScreen() {
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
     const { defaultAddress } = useAddress();
-    const { addItem: addTryAndBuyItem, createOrder: createTryAndBuyOrder, clearCart: clearTryAndBuyCart } = useTryAndBuy();
+    useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
     
     // Use Zustand store
     const cartItems = useCartItems();
@@ -161,7 +162,6 @@ export default function CartScreen() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
-    const [couponUsageMap, setCouponUsageMap] = useState<Record<string, number>>({});
     const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showShoesModal, setShowShoesModal] = useState(false);
@@ -203,36 +203,67 @@ export default function CartScreen() {
 
     // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
     useEffect(() => {
+        if (!isAuthenticated) {
+            setAvailableCoupons([]);
+            return;
+        }
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const coupons = await couponService.getAvailableCouponCodes(hasTicketingProducts, hasFashionItems);
-                setAvailableCoupons(coupons);
-                const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
-                if (userId) {
-                    const codesToCheck = coupons
-                        .filter(c => c.usageLimitPerUser || c.firstOrderOnly)
-                        .map(c => c.code);
-                    if (codesToCheck.length > 0) {
-                        const usageMap = await couponService.getCouponUsagesForUser(codesToCheck, userId);
-                        setCouponUsageMap(usageMap);
-                    } else {
-                        setCouponUsageMap({});
-                    }
-                } else {
-                    setCouponUsageMap({});
+                // Use same customer id as rest of app (Shopify format); fallback to email/phone if backend accepts
+                const userStore = require('@/store/userStore').useUserStore.getState();
+                const userId =
+                    userStore.getCustomerId?.() ??
+                    user?.customerId ??
+                    user?.id ??
+                    user?.email ??
+                    user?.phone ??
+                    null;
+                if (__DEV__) {
+                    console.log('[CartScreen] Logged-in user ids for coupons:', {
+                        customerId: user?.customerId ?? null,
+                        id: user?.id ?? null,
+                        getCustomerId: userStore.getCustomerId?.() ?? null,
+                        resolvedUserId: userId ?? null,
+                    });
                 }
+                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
+                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                const hasTicketing = hasTicketingProducts;
+                const hasClothing = hasFashionItems;
+
+                const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
+                    userId,
+                    cartSubTotal,
+                    cartItemCount,
+                    hasTicketing,
+                    hasClothing,
+                });
+                setAvailableCoupons(eligibleCoupons ?? []);
             } catch (error) {
                 console.error('Error fetching coupons:', error);
+                setAvailableCoupons([]);
             } finally {
                 setLoadingCoupons(false);
             }
         };
         fetchCoupons();
-    }, [hasTicketingProducts, hasFashionItems, user?.id, user?.customerId, user?.email, user?.phone]);
+    }, [isAuthenticated, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
+
+    // Detect ticketing placeholder address (from prior ticketing-only orders).
+    // Shopify may store this as the customer's default; it's not valid for physical delivery.
+    const isTicketingPlaceholderAddress = (addr: { address1?: string; address2?: string } | null): boolean => {
+        if (!addr) return false;
+        const a1 = (addr.address1 || '').toLowerCase();
+        const a2 = (addr.address2 || '').toLowerCase();
+        return a1.includes('digital delivery') || a2.includes('online event');
+    };
+
+    // For physical orders, we need a real delivery address (not the ticketing placeholder)
+    const hasValidDeliveryAddress = selectedAddress && !isTicketingPlaceholderAddress(selectedAddress);
 
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
@@ -252,67 +283,16 @@ export default function CartScreen() {
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
     
+    // Use discount values from cart store (source: backend API only, not config)
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
                 console.log('[CartScreen] Processing discount code:', discountCode);
             }
             
-            // Check if code exists in config - if it does, use it regardless of Shopify's applicable flag
-            let shouldProcess = discountCode.applicable !== false;
-            let discountValue = discountCode.value;
-            let discountType = discountCode.type;
-            
-            // Check config first - if code exists in config, process it even if Shopify says not applicable
-            try {
-                const discountsConfig = configService.getDiscountsConfig();
-                if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                    const configDiscount = discountsConfig.codes.find((cd: any) => 
-                        cd.code?.toUpperCase() === discountCode.code.toUpperCase()
-                    );
-                    if (configDiscount) {
-                        // Code exists in config - use config values and force processing
-                        discountValue = configDiscount.value;
-                        discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                        shouldProcess = true; // Force processing if code is in config
-                        if (__DEV__) {
-                            console.log('[CartScreen] Code found in config, forcing processing:', {
-                                code: discountCode.code,
-                                value: discountValue,
-                                type: discountType,
-                                shopifyApplicable: discountCode.applicable,
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('[CartScreen] Error reading discount config:', error);
-            }
-            
-            // If value is still 0 or missing, try to get from config (fallback)
-            if ((discountValue === 0 || !discountValue) && shouldProcess) {
-                try {
-                    const discountsConfig = configService.getDiscountsConfig();
-                    if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-                        const configDiscount = discountsConfig.codes.find((cd: any) => 
-                            cd.code?.toUpperCase() === discountCode.code.toUpperCase()
-                        );
-                        if (configDiscount) {
-                            discountValue = configDiscount.value;
-                            discountType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
-                            if (__DEV__) {
-                                console.log('[CartScreen] Got discount value from config (fallback):', {
-                                    code: discountCode.code,
-                                    value: discountValue,
-                                    type: discountType,
-                                });
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('[CartScreen] Error reading discount config:', error);
-                }
-            }
+            const shouldProcess = discountCode.applicable !== false;
+            const discountValue = discountCode.value;
+            const discountType = discountCode.type;
             
             if (shouldProcess && discountValue > 0) {
                 if (discountType === 'percentage') {
@@ -416,20 +396,11 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    // Filter to only applicable coupons (don't show inapplicable in UI)
-    const applicableCoupons = useMemo(() => {
-        return availableCoupons.filter((coupon) => {
-            const applicability = couponService.getCouponApplicabilityForDisplay(coupon, {
-                hasTicketingProducts,
-                hasFashionItems,
-                cartSubtotal: itemSubtotal,
-                cartItemCount: cartItems.length,
-                userOrderCount: user?.numberOfOrders ?? 0,
-                couponUsageCount: couponUsageMap[coupon.code?.toUpperCase() || ''] ?? 0,
-            });
-            return applicability.applicable;
-        });
-    }, [availableCoupons, hasTicketingProducts, hasFashionItems, itemSubtotal, cartItems.length, user?.numberOfOrders, couponUsageMap]);
+    // Backend returns eligible coupons; show only visible ones in the list (hidden codes still work when entered manually)
+    const applicableCoupons = useMemo(
+        () => (availableCoupons ?? []).filter((c) => c.isVisible !== false),
+        [availableCoupons]
+    );
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -455,9 +426,7 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            console.log('[CartScreen] Calling applyDiscountCode...');
-            const result = await applyDiscountCode(code);
-            console.log('[CartScreen] applyDiscountCode result:', result);
+            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
             if (result.success) {
                 console.log('[CartScreen] ✅ Coupon applied successfully');
                 setCouponCode('');
@@ -494,7 +463,7 @@ export default function CartScreen() {
         setCouponApplying(true);
         setCouponMessage(null);
         try {
-            const result = await applyDiscountCode(code);
+            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
             if (result.success) {
                 setCouponCode(''); // Clear input
                 setCouponMessage(null); // Don't show success message
@@ -537,8 +506,9 @@ export default function CartScreen() {
             return;
         }
 
-        // Only require address if cart contains non-ticketing products
-        if (!isTicketingOnly && !selectedAddress) {
+        // For physical products, require a real delivery address (not the ticketing placeholder).
+        // Users who bought ticketing first may have only the placeholder saved; prompt them to add address.
+        if (!isTicketingOnly && !hasValidDeliveryAddress) {
             setShowAddressModal(true);
             return;
         }
@@ -563,245 +533,20 @@ export default function CartScreen() {
 
         // Track Checkout Started
         try {
-            const { mixpanel } = require('@/mixpanel');
-            if (mixpanel) {
-                mixpanel.track('Checkout Started', {
-                    cartValue: cartTotal,
-                    itemCount: cartItems.length,
-                    hasCoupon: discountCodes.length > 0,
-                    paymentMethod: paymentMethod || 'not_selected',
-                });
-            }
+            const { trackEvent } = require('@/utils/mixpanelHelpers');
+            trackEvent('Checkout Started', {
+                cartValue: cartTotal,
+                itemCount: cartItems.length,
+                hasCoupon: discountCodes.length > 0,
+                paymentMethod: paymentMethod || 'not_selected',
+            });
         } catch (e) {
-            console.warn('Mixpanel tracking error:', e);
+            console.warn('Analytics tracking error:', e);
         }
 
         try {
-            // If Try & Buy is enabled, handle it separately
-            if (isTryAndBuy) {
-                // Add eligible items to try and buy cart
-                // Eligible items are those that are returnable (not diapers, formula, food, etc.)
-                const NON_RETURNABLE_TAGS = [
-                    'diaper',
-                    'diapers',
-                    'formula',
-                    'food',
-                    'feeding',
-                    'non-returnable',
-                    'event',
-                    'ticket',
-                    'pass',
-                    'playhouse',
-                    'petting',
-                    'farm',
-                ];
-
-                const isProductReturnable = (tags?: string[]): boolean => {
-                    if (!tags || tags.length === 0) return true;
-                    const lowerTags = tags.map((t) => String(t).toLowerCase());
-                    return !NON_RETURNABLE_TAGS.some((nonRet) =>
-                        lowerTags.some((tag) => tag.includes(nonRet))
-                    );
-                };
-
-                const eligibleItems = cartItems.filter(item => {
-                    const isReturnable = isProductReturnable(item.tags);
-                    console.log('[Cart] Checking item for Try & Buy:', {
-                        title: item.title,
-                        tags: item.tags,
-                        isReturnable,
-                    });
-                    return isReturnable;
-                });
-
-                console.log('[Cart] Try & Buy eligible items:', {
-                    totalCartItems: cartItems.length,
-                    eligibleItems: eligibleItems.length,
-                    eligibleTitles: eligibleItems.map(i => i.title),
-                });
-
-                if (eligibleItems.length === 0) {
-                    // Automatically disable Try & Buy and continue with regular order
-                    // This prevents the error when user has only non-returnable items
-                    console.log('[Cart] No returnable items found, disabling Try & Buy and continuing as regular order');
-                    toggleTryAndBuy();
-                    // Fall through to regular order flow below (don't return, let it continue)
-                } else {
-                    // Has eligible items, proceed with Try & Buy flow
-                    // Prepare Try & Buy items directly (avoid state sync issues)
-                    // We'll pass items directly to createOrder instead of relying on state
-                    const tryAndBuyItems = eligibleItems.map(item => ({
-                        id: `tab_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-                        productId: item.productId,
-                        variantId: item.variantId,
-                        title: item.title,
-                        variantTitle: item.variantTitle || 'Default Title',
-                        price: item.price,
-                        currencyCode: item.currencyCode,
-                        image: item.image,
-                        quantity: item.quantity,
-                        tags: item.tags,
-                    }));
-
-                    // Also update the Try & Buy cart state (for UI consistency)
-                    clearTryAndBuyCart();
-                    for (const item of tryAndBuyItems) {
-                        await addTryAndBuyItem({
-                            productId: item.productId,
-                            variantId: item.variantId,
-                            title: item.title,
-                            variantTitle: item.variantTitle,
-                            price: item.price,
-                            currencyCode: item.currencyCode,
-                            image: item.image,
-                            quantity: item.quantity,
-                            tags: item.tags,
-                        });
-                    }
-
-                    // Handle payment based on selected payment method
-                    let paymentId: string | undefined = undefined;
-                    
-                    if (paymentMethod === 'razorpay') {
-                        // For Razorpay, process payment first
-                        const paymentResult = await PaymentService.initiateRazorpayPayment(
-                            total,
-                            'INR',
-                            {
-                                email: user?.email || 'guest@example.com',
-                                phone: user?.phone || billingAddress.phone || '',
-                                name: user?.displayName || `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                customerId: user?.id,
-                                items: eligibleItems.map(item => ({
-                                    id: item.id,
-                                    productId: item.productId,
-                                    variantId: item.variantId,
-                                    quantity: item.quantity,
-                                    price: item.price,
-                                    title: item.title,
-                                    tags: item.tags,
-                                })),
-                            }
-                        );
-
-                        if (!paymentResult.success) {
-                            if (paymentResult.cancelled) {
-                                console.log('Payment cancelled');
-                                setOrderLoading(false);
-                                return;
-                            }
-                            throw new Error(paymentResult.error || 'Payment failed');
-                        }
-
-                        // Verify payment signature
-                        if (paymentResult.paymentId && paymentResult.orderId && paymentResult.signature) {
-                            const isVerified = await PaymentService.verifyRazorpayPayment(
-                                paymentResult.orderId,
-                                paymentResult.paymentId,
-                                paymentResult.signature
-                            );
-                            
-                            if (!isVerified) {
-                                throw new Error('Payment verification failed. Please contact support.');
-                            }
-                        }
-
-                        paymentId = paymentResult.paymentId;
-                    }
-
-                    // Create try and buy order with selected payment method and payment ID
-                    // Pass items directly to avoid state sync issues
-                    let tryAndBuyOrder;
-                    try {
-                        tryAndBuyOrder = await createTryAndBuyOrder(
-                            {
-                                name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                city: billingAddress.city,
-                                state: billingAddress.province,
-                                pincode: billingAddress.zip,
-                                phone: billingAddress.phone,
-                            },
-                            user?.id,
-                            paymentMethod,
-                            paymentId,
-                            tryAndBuyItems, // Pass items directly to avoid state sync issues
-                            deliverySchedule || undefined,
-                            selectedShoe || undefined,
-                            appliedDiscountCode || undefined,
-                            discountAmount || undefined
-                        );
-
-                        if (!tryAndBuyOrder) {
-                            throw new Error('Failed to create Try & Buy order');
-                        }
-                    } catch (orderError: any) {
-                        console.error('[Cart] Try & Buy order creation error:', orderError);
-                        console.error('[Cart] Error details:', {
-                            message: orderError.message,
-                            stack: orderError.stack,
-                            originalError: orderError.originalError,
-                            response: orderError.response?.data,
-                        });
-                        
-                        // Extract user-friendly error message
-                        let errorMessage = orderError.message || 'Failed to create Try & Buy order. Please try again.';
-                        
-                        // Check for Shopify user errors
-                        if (orderError.userErrors && orderError.userErrors.length > 0) {
-                            errorMessage = orderError.userErrors[0].message || errorMessage;
-                        }
-                        
-                        // Check response data for errors
-                        if (orderError.response?.data?.errors) {
-                            errorMessage = orderError.response.data.errors[0]?.message || errorMessage;
-                        }
-                        
-                        if (orderError.response?.data?.data?.draftOrderCreate?.userErrors) {
-                            const userError = orderError.response.data.data.draftOrderCreate.userErrors[0];
-                            errorMessage = userError.message || errorMessage;
-                        }
-                        
-                        // Re-throw with user-friendly message
-                        throw new Error(errorMessage);
-                    }
-
-                    // Increment coupon usage for applied discount codes (if any)
-                    if (appliedDiscountCode) {
-                        try {
-                            const { couponService } = await import('@/services/couponService');
-                            const userId = user?.id || user?.customerId || user?.email || user?.phone || null;
-                            if (userId) {
-                                await couponService.incrementCouponUsage(appliedDiscountCode, userId);
-                                console.log('[Cart] Incremented coupon usage for Try & Buy:', appliedDiscountCode);
-                            }
-                        } catch (error) {
-                            console.error('[Cart] Error incrementing coupon usage:', error);
-                            // Don't fail the order if usage tracking fails
-                        }
-                    }
-
-                    // Clear regular cart
-                    clearCart();
-
-                    // Navigate to order success
-                    requestAnimationFrame(() => {
-                        router.push({
-                            pathname: '/order-success' as const,
-                            params: {
-                                orderId: tryAndBuyOrder.id,
-                                orderGraphId: tryAndBuyOrder.shopifyDraftOrderId || '',
-                                total: total.toString(),
-                            },
-                        });
-                    });
-
-                    setOrderLoading(false);
-                    return;
-                }
-            }
-
-            // Normal order flow (not try and buy)
+            // Checkout always uses normal order flow. Try & Buy is a tag only (sent as isTryAndBuy to backend).
+            // Normal order flow
             // Validate product availability before placing order
             try {
                 const { shopifyApi } = await import('@/services/shopifyApi');
@@ -986,6 +731,7 @@ export default function CartScreen() {
                     price: item.price,
                     title: item.title,
                     tags: item.tags,
+                    bookingDate: item.bookingDate, // For Events, Playhouses, Petting Farms - sent to Shopify
                 })),
                 totalAmount: total,
                 currencyCode: 'INR',
@@ -1006,9 +752,10 @@ export default function CartScreen() {
                     price: giftWrapping.price
                 } : undefined,
                 couponCode: appliedDiscountCode || undefined,
-                discountAmount: discountAmount || undefined,
+                discountAmount: discount > 0 ? discount : undefined,
                 deliverySchedule: deliverySchedule || undefined,
                 selectedShoe: selectedShoe || undefined,
+                isTryAndBuy: isTryAndBuy, // Tag only: backend should create same draft (all items), use for order tagging
             };
 
             // Call Payment Service
@@ -1039,11 +786,10 @@ export default function CartScreen() {
                         // Try to create a local order record as fallback for recovery
                         try {
                             const { orderService } = await import('@/services/orderService');
-                            const { Clipboard } = require('@react-native-clipboard/clipboard');
-                            
+
                             // Calculate order values for local record
                             const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                            const calculatedDiscount = discountAmount || 0;
+                            const calculatedDiscount = discount || 0;
                             const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
                             const calculatedSubtotal = itemSubtotal;
                             
@@ -1060,22 +806,28 @@ export default function CartScreen() {
                                     quantity: item.quantity,
                                     image: item.image,
                                 })),
-                                shippingAddress: selectedAddress || {
-                                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                    city: billingAddress.city,
-                                    state: billingAddress.province,
-                                    pincode: billingAddress.zip,
-                                    phone: billingAddress.phone,
-                                },
+                                shippingAddress: selectedAddress
+                                    ? {
+                                          name: selectedAddress.name,
+                                          address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
+                                          city: selectedAddress.city,
+                                          state: selectedAddress.province || selectedAddress.state,
+                                          pincode: selectedAddress.zip || selectedAddress.pincode,
+                                          phone: selectedAddress.phone,
+                                      }
+                                    : {
+                                          name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                                          address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                                          city: billingAddress.city,
+                                          state: billingAddress.province,
+                                          pincode: billingAddress.zip,
+                                          phone: billingAddress.phone,
+                                      },
                                 paymentMethod: paymentMethod || 'razorpay',
                                 paymentStatus: 'paid',
                                 paymentId: result.payment?.paymentId,
-                                totalAmount: cartTotal,
-                                subtotal: calculatedSubtotal,
                                 deliveryFee: calculatedDeliveryFee,
                                 discount: calculatedDiscount,
-                                currencyCode: 'INR',
                                 couponCode: appliedDiscountCode || undefined,
                                 note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
                                 userId: userIdForOrder ?? undefined,
@@ -1083,22 +835,24 @@ export default function CartScreen() {
                             
                             console.log('[Cart] Created local recovery order:', localOrder.id);
                             
-                            // Show alert with copy payment ID option
+                            // Show alert with share payment ID option
                             Alert.alert(
                                 'Payment Successful - Order Issue',
                                 `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
                                 [
                                     {
-                                        text: 'Copy Payment ID',
+                                        text: 'Share Payment ID',
                                         onPress: async () => {
                                             try {
                                                 const paymentId = result.payment?.paymentId || '';
                                                 if (paymentId) {
-                                                    await Clipboard.setString(paymentId);
-                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                    await Share.share({
+                                                        message: `Payment ID for support: ${paymentId}`,
+                                                        title: 'Payment ID',
+                                                    });
                                                 }
                                             } catch (e) {
-                                                console.error('Failed to copy payment ID:', e);
+                                                console.error('Failed to share payment ID:', e);
                                             }
                                         },
                                     },
@@ -1123,17 +877,18 @@ export default function CartScreen() {
                                 `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
                                 [
                                     {
-                                        text: 'Copy Payment ID',
+                                        text: 'Share Payment ID',
                                         onPress: async () => {
                                             try {
-                                                const { Clipboard } = require('@react-native-clipboard/clipboard');
-                                                const paymentId = result.payment?.paymentId || '';
-                                                if (paymentId) {
-                                                    await Clipboard.setString(paymentId);
-                                                    Alert.alert('Copied!', 'Payment ID copied to clipboard');
+                                                const pid = result.payment?.paymentId || '';
+                                                if (pid) {
+                                                    await Share.share({
+                                                        message: `Payment ID for support: ${pid}`,
+                                                        title: 'Payment ID',
+                                                    });
                                                 }
                                             } catch (e) {
-                                                console.error('Failed to copy payment ID:', e);
+                                                console.error('Failed to share payment ID:', e);
                                             }
                                         },
                                     },
@@ -1148,17 +903,15 @@ export default function CartScreen() {
                 
                 // Track Payment Failed
                 try {
-                    const { mixpanel } = require('@/mixpanel');
-                    if (mixpanel) {
-                        mixpanel.track('Payment Failed', {
-                            orderId: result.order?.id || 'unknown',
-                            amount: cartTotal,
-                            paymentMethod: paymentMethod || 'cod',
-                            reason: result.error || 'Order creation failed',
-                        });
-                    }
+                    const { trackEvent } = require('@/utils/mixpanelHelpers');
+                    trackEvent('Payment Failed', {
+                        orderId: result.order?.id || 'unknown',
+                        amount: cartTotal,
+                        paymentMethod: paymentMethod || 'cod',
+                        reason: result.error || 'Order creation failed',
+                    });
                 } catch (e) {
-                    console.warn('Mixpanel tracking error:', e);
+                    console.warn('Analytics tracking error:', e);
                 }
                 
                 throw new Error(result.error || 'Order creation failed');
@@ -1182,71 +935,50 @@ export default function CartScreen() {
 
             // Track Payment Success and Order Placed
             try {
-                const { mixpanel } = require('@/mixpanel');
-                const { trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                
-                if (mixpanel) {
-                    const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
-                    
-                    // Check if this is first order
-                    const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
-                    if (!hasPlacedOrder) {
-                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
-                        await AsyncStorage.setItem('has_placed_order', 'true');
-                    }
-                    
-                    trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
-                    
-                    mixpanel.track('Payment Success', {
-                        orderId: orderIdForDisplay,
-                        amount: cartTotal,
-                        paymentMethod: effectivePaymentMethod,
-                        itemCount: cartItems.length,
-                        hasCoupon: discountCodes.length > 0,
-                    });
+                const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
+
+                const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
+                if (!hasPlacedOrder) {
+                    trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
+                    await AsyncStorage.setItem('has_placed_order', 'true');
                 }
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
+                trackEvent('Payment Success', {
+                    orderId: orderIdForDisplay,
+                    amount: cartTotal,
+                    paymentMethod: effectivePaymentMethod,
+                    itemCount: cartItems.length,
+                    hasCoupon: discountCodes.length > 0,
+                });
             } catch (e) {
-                console.warn('Mixpanel tracking error:', e);
+                console.warn('Analytics tracking error:', e);
             }
 
-            // CRITICAL: Verify order actually exists in Shopify before showing success
-            // This prevents showing success screen when order creation silently failed
+            // Optional: verify order visible in Shopify. Storefront API often returns null for Order
+            // when using only the storefront token (no customer access token), so empty result is expected.
             if (finalOrder?.id) {
                 try {
-                    console.log('[Cart] Verifying order exists in Shopify...');
                     const { shopifyApi } = await import('@/services/shopifyApi');
-                    
-                    // Format ID as GID if it's numeric
                     let orderIdToVerify = finalOrder.id;
                     if (typeof orderIdToVerify === 'number' || (typeof orderIdToVerify === 'string' && !orderIdToVerify.startsWith('gid://'))) {
                         orderIdToVerify = `gid://shopify/Order/${orderIdToVerify}`;
                     }
-                    
-                    // Try to fetch the order from Shopify to verify it exists
-                    // Use a short timeout to avoid blocking too long
                     const verificationPromise = shopifyApi.getOrderById(orderIdToVerify);
-                    const timeoutPromise = new Promise((_, reject) => 
+                    const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('Verification timeout')), 5000)
                     );
-                    
                     const verifiedOrder = await Promise.race([verificationPromise, timeoutPromise]) as any;
-                    
-                    if (!verifiedOrder || !verifiedOrder.id) {
-                        console.warn('[Cart] ⚠️ Order verification returned empty, but order was created successfully in backend. Proceeding.', {
-                            orderId: finalOrder.id,
-                            orderName: orderIdForDisplay,
-                        });
-                        // Don't throw error here, assume eventual consistency lag
-                    } else {
-                         console.log('[Cart] ✅ Order verified in Shopify:', {
+                    if (verifiedOrder?.id) {
+                        console.log('[Cart] ✅ Order verified in Shopify:', {
                             orderId: verifiedOrder.id,
                             orderNumber: verifiedOrder.orderNumber,
                         });
                     }
-                } catch (verifyError: any) {
-                     // Log verification error but don't fail the checkout flow since payment succeeded and ID exists
-                    console.warn('[Cart] ⚠️ Order verification failed (continuing anyway):', verifyError.message);
+                    // If empty: expected when Storefront API is called without customer token; order was still created by backend.
+                } catch (_verifyError) {
+                    // Verification is best-effort; do not fail or warn—backend already confirmed creation.
                 }
             }
 
@@ -1475,9 +1207,17 @@ export default function CartScreen() {
                         {cartItems.map(item => renderItem(item))}
                     </View>
 
-                    {/* Free Shoes Offer - Show only when cart has fashion items */}
-                    {hasFashionItems && (
-                        <FreeShoesOffer visible={true} />
+                    {/* Free Shoes Offer - Show when cart has fashion items OR HEYKIDDO coupon is available */}
+                    {(hasFashionItems || applicableCoupons.some(c => c.code?.toUpperCase() === 'HEYKIDDO')) && (
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => setShowShoesModal(true)}
+                        >
+                            <FreeShoesOffer
+                                visible={true}
+                                heykiddoCoupon={applicableCoupons.find(c => c.code?.toUpperCase() === 'HEYKIDDO') || undefined}
+                            />
+                        </TouchableOpacity>
                     )}
 
                     {/* Try Before You Buy Section */}
@@ -1661,8 +1401,8 @@ export default function CartScreen() {
                             </View>
                         )}
 
-                        {/* Available Coupons List - Only show applicable coupons, when no coupon applied and user logged in */}
-                        {isAuthenticated && applicableCoupons.length > 0 && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
+                        {/* Available Coupons / Offers - Show when no coupon applied and user logged in */}
+                        {isAuthenticated && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
                             <View style={styles.availableCouponsContainer}>
                                 <View style={styles.availableCouponsHeader}>
                                     <Ionicons name="pricetag" size={16} color={Colors.primary} />
@@ -1673,58 +1413,60 @@ export default function CartScreen() {
                                         <ActivityIndicator size="small" color={Colors.primary} />
                                         <Text style={styles.couponsLoadingText}>Loading offers...</Text>
                                     </View>
-                                ) : (
+                                ) : applicableCoupons.length > 0 ? (
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
                                         contentContainerStyle={styles.couponsList}
                                     >
                                         {applicableCoupons.map((coupon) => {
-                                                const conditions = couponService.getCouponConditionsText(coupon);
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={coupon.code}
-                                                        style={[
-                                                            styles.couponCard,
-                                                            couponApplying && styles.couponCardDisabled,
-                                                        ]}
-                                                        onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
-                                                        disabled={couponApplying}
-                                                        activeOpacity={0.7}
-                                                    >
-                                                        <View style={styles.couponCardContent}>
-                                                            <View style={styles.couponCodeRow}>
-                                                                <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                                {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
-                                                                    <View style={styles.discountBadge}>
-                                                                        <Text style={styles.discountBadgeText}>
-                                                                            {coupon.valueType === 'percentage'
-                                                                                ? `${coupon.value}%`
-                                                                                : `₹${coupon.value}`}
-                                                                        </Text>
-                                                                    </View>
-                                                                )}
-                                                            </View>
-                                                            {coupon.title && (
-                                                                <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                    {coupon.title}
-                                                                </Text>
-                                                            )}
-                                                            {conditions.length > 0 && (
-                                                                <View style={styles.couponConditionsContainer}>
-                                                                    {conditions.map((condition, index) => (
-                                                                        <View key={index} style={styles.couponConditionTag}>
-                                                                            <Ionicons name="information-circle" size={10} color="#666" />
-                                                                            <Text style={styles.couponConditionText}>{condition}</Text>
-                                                                        </View>
-                                                                    ))}
+                                            const conditions = couponService.getCouponConditionsText(coupon);
+                                            return (
+                                                <TouchableOpacity
+                                                    key={coupon.code}
+                                                    style={[
+                                                        styles.couponCard,
+                                                        couponApplying && styles.couponCardDisabled,
+                                                    ]}
+                                                    onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
+                                                    disabled={couponApplying}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <View style={styles.couponCardContent}>
+                                                        <View style={styles.couponCodeRow}>
+                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
+                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
+                                                                <View style={styles.discountBadge}>
+                                                                    <Text style={styles.discountBadgeText}>
+                                                                        {coupon.valueType === 'percentage'
+                                                                            ? `${coupon.value}%`
+                                                                            : `₹${coupon.value}`}
+                                                                    </Text>
                                                                 </View>
                                                             )}
                                                         </View>
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
+                                                        {coupon.title && (
+                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
+                                                                {coupon.title}
+                                                            </Text>
+                                                        )}
+                                                        {conditions.length > 0 && (
+                                                            <View style={styles.couponConditionsContainer}>
+                                                                {conditions.map((condition, index) => (
+                                                                    <View key={index} style={styles.couponConditionTag}>
+                                                                        <Ionicons name="information-circle" size={10} color="#666" />
+                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
+                                                                    </View>
+                                                                ))}
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
                                     </ScrollView>
+                                ) : (
+                                    <Text style={styles.noCouponsText}>No coupons available</Text>
                                 )}
                             </View>
                         )}
@@ -1939,6 +1681,13 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
+            {/* Free Shoes Selection Modal */}
+            <FreeShoesOfferModal
+                visible={showShoesModal}
+                onClose={() => setShowShoesModal(false)}
+                onSelect={(shoeId) => setSelectedShoe(shoeId || null)}
+                selectedShoe={selectedShoe}
+            />
 
             {/* Try And Buy Modal */}
             <TryAndBuyModal
@@ -2441,6 +2190,12 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#999',
         fontFamily: Fonts.Regular,
+    },
+    noCouponsText: {
+        fontSize: 13,
+        color: '#999',
+        fontFamily: Fonts.Regular,
+        paddingVertical: 12,
     },
     couponLoginPrompt: {
         backgroundColor: '#f8f9fa',

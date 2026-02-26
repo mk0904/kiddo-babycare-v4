@@ -2,13 +2,35 @@
 import axios from 'axios';
 import { configService } from './configService';
 
-// Default backend URL as fallback
-const DEFAULT_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+
 
 interface OTPResponse {
   success: boolean;
   message: string;
   devOtp?: string; // Only in dev mode for testing, if backend returns it
+}
+
+/** User shape returned by POST /auth/verify-and-login (matches backend AuthLoginUser) */
+export interface VerifyAndLoginUser {
+  id: string;
+  phone: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  customerId?: string;
+  displayName?: string;
+  numberOfOrders?: number;
+  acceptsMarketing?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  defaultAddress?: unknown;
+}
+
+export interface VerifyAndLoginResponse {
+  success: boolean;
+  accessToken: string;
+  user?: VerifyAndLoginUser | null;
 }
 
 class OTPService {
@@ -36,7 +58,18 @@ class OTPService {
 
   private getBackendUrl(): string {
     const rawConfig = configService.getRawConfig();
-    return rawConfig?.providers?.backend?.baseUrl || DEFAULT_BACKEND_URL;
+    const base = rawConfig?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
+    return (base as string).replace(/\/+$/, '');
+  }
+
+  private getApiPath(path: string): string {
+    const base = this.getBackendUrl();
+    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+    return `${prefix}/${path.replace(/^\//, '')}`;
+  }
+
+  private getVerifyAndLoginUrl(): string {
+    return this.getApiPath('auth/verify-and-login');
   }
 
   async sendOTP(phoneNumber: string): Promise<OTPResponse> {
@@ -50,12 +83,12 @@ class OTPService {
         }
       }
 
-      const backendUrl = this.getBackendUrl();
+      const url = this.getApiPath('send-otp');
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
       
-      console.log(`[OTP Service] Sending OTP to ${formattedPhone} via ${backendUrl}/send-otp`);
+      console.log(`[OTP Service] Sending OTP to ${formattedPhone} via ${url}`);
 
-      const response = await axios.post(`${backendUrl}/send-otp`, {
+      const response = await axios.post(url, {
         phone: formattedPhone
       });
 
@@ -88,12 +121,12 @@ class OTPService {
 
   async verifyOTP(phoneNumber: string, enteredOTP: string): Promise<OTPResponse> {
     try {
-      const backendUrl = this.getBackendUrl();
+      const url = this.getApiPath('verify-otp');
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
 
-      console.log(`[OTP Service] Verifying OTP for ${formattedPhone} via ${backendUrl}/verify-otp`);
+      console.log(`[OTP Service] Verifying OTP for ${formattedPhone} via ${url}`);
 
-      const response = await axios.post(`${backendUrl}/verify-otp`, {
+      const response = await axios.post(url, {
         phone: formattedPhone,
         code: enteredOTP
       });
@@ -130,6 +163,60 @@ class OTPService {
         success: false,
         message,
       };
+    }
+  }
+
+  /**
+   * Verify OTP and complete login/signup on backend (Shopify create or login).
+   * Replaces frontend flow: verify OTP → checkCustomerExists/createCustomer.
+   */
+  async verifyOTPAndLogin(
+    phoneNumber: string,
+    code: string,
+    firstName?: string,
+    lastName?: string
+  ): Promise<VerifyAndLoginResponse> {
+    const url = this.getVerifyAndLoginUrl();
+    const formattedPhone = this.formatPhoneNumber(phoneNumber);
+    const body = {
+      phone: formattedPhone,
+      code,
+      ...(firstName !== undefined && { firstName }),
+      ...(lastName !== undefined && { lastName }),
+    };
+    console.log('[OTP Service] verifyOTPAndLogin request', { url, phone: formattedPhone, codeLength: code?.length });
+
+    try {
+      const response = await axios.post<VerifyAndLoginResponse>(url, body);
+
+      const data = response.data;
+      console.log('[OTP Service] verifyOTPAndLogin response', { status: response.status, success: data?.success, hasToken: !!data?.accessToken });
+      if (data?.success && data?.accessToken) {
+        return {
+          success: true,
+          accessToken: data.accessToken,
+          user: data.user ?? undefined,
+        };
+      }
+      return {
+        success: false,
+        accessToken: '',
+        user: undefined,
+      };
+    } catch (error: any) {
+      const status = error.response?.status;
+      const responseData = error.response?.data;
+      const message =
+        error.response?.data?.error ||
+        error.message ||
+        'Something went wrong. Please try again.';
+      console.error('[OTP Service] verifyOTPAndLogin failed', {
+        url,
+        status,
+        responseData,
+        message: error.message,
+      });
+      throw new Error(message);
     }
   }
 

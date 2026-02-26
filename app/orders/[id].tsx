@@ -167,6 +167,7 @@ export default function OrderDetailScreen() {
                                         price: {
                                             amount: edge.node.originalUnitPrice
                                         },
+                                        customAttributes: edge.node.customAttributes || [],
                                         variant: {
                                             title: edge.node.variant?.title || 'Default Title',
                                             image: edge.node.variant?.image
@@ -302,19 +303,23 @@ export default function OrderDetailScreen() {
         return false;
     };
 
-    const isTicketingOrder = (o: any) => {
+    const isTicketingOrder = (o: any): boolean => {
         const edges = o?.lineItems?.edges || [];
         return edges.some((edge: any) => {
             const itemTitle = edge?.node?.title || '';
             const variantTitle = edge?.node?.variant?.title || '';
+            // Has booking_date in customAttributes = definitely Events/Playhouses/Petting Farms
+            const attrs = edge?.node?.customAttributes || [];
+            if (attrs.some((a: any) => a.key === 'booking_date' || a.key === 'booking_date_display')) return true;
             if (looksLikeTicketingDate(variantTitle)) return true;
-            if (/(event|workshop|playhouse|petting|farm|ticket)/i.test(String(itemTitle))) return true;
+            if (/(event|workshop|playhouse|petting|farm|ticket|zoo)/i.test(String(itemTitle))) return true;
             return false;
         });
     };
 
     const ticketing = isTicketingOrder(order);
-    const showBooked = ticketing && (order?.financialStatus === 'PAID' || order?.fulfillmentStatus === 'FULFILLED');
+    // For Events, Playhouses, Petting Farms - always show "Booked"
+    const showBooked = ticketing;
 
     if (loading) {
         return (
@@ -399,6 +404,19 @@ export default function OrderDetailScreen() {
                                 {item.variant?.title && item.variant.title !== 'Default Title' && (
                                     <Text style={styles.variantTitle}>{item.variant.title}</Text>
                                 )}
+                                {(() => {
+                                    const bookingAttr = item.customAttributes?.find((a: any) => a.key === 'booking_date_display');
+                                    const bookingDate = bookingAttr?.value || item.customAttributes?.find((a: any) => a.key === 'booking_date')?.value;
+                                    if (bookingDate) {
+                                        return (
+                                            <View style={styles.bookingDateRow}>
+                                                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                                <Text style={styles.bookingDateText}>Booked for: {bookingDate}</Text>
+                                            </View>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 <View style={styles.itemPriceRow}>
                                     <View style={styles.quantityBadge}>
                                         <Text style={styles.itemQuantity}>Qty: {item.quantity || 1}</Text>
@@ -719,6 +737,17 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Regular,
         color: Colors.textSecondary,
         marginBottom: 8,
+    },
+    bookingDateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 8,
+    },
+    bookingDateText: {
+        fontSize: 13,
+        fontFamily: Fonts.Medium,
+        color: Colors.primary,
     },
     itemPriceRow: {
         flexDirection: 'row',

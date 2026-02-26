@@ -2,9 +2,8 @@ import { Button } from '@/components/ui/Button';
 import { ErrorText } from '@/components/ui/ErrorText';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { customerService } from '@/services/customerService';
+import { Customer } from '@/services/customerService';
 import { otpService } from '@/services/otpService';
-import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -150,11 +149,16 @@ export default function OTPScreen() {
     try {
       setOtpVerified(false);
 
-      // Verify OTP using your service
-      const verifyResult = await otpService.verifyOTP(phoneNumber, otpToVerify);
+      // Verify OTP and complete login/signup on backend (single call)
+      const result = await otpService.verifyOTPAndLogin(
+        phoneNumber,
+        otpToVerify,
+        'User',
+        ''
+      );
 
-      if (!verifyResult.success) {
-        setError(verifyResult.message || 'Invalid OTP');
+      if (!result.success || !result.accessToken) {
+        setError(result.message || 'Invalid OTP');
         setOtpInput(['', '', '', '', '', '']);
         setOtpVerified(false);
         setLoading(false);
@@ -170,142 +174,36 @@ export default function OTPScreen() {
         console.warn('Mixpanel tracking error:', e);
       }
 
-      // OTP verified, try to login first (for existing customers)
-      // Format email: phone@kiddo.app
-      const cleanedPhone = phoneNumber.replace(/\D/g, '');
-      const email = `${cleanedPhone.slice(-10)}@kiddo.app`;
-      const password = 'kiddo@12345';
+      const u = result.user;
+      const customerPayload: Customer = {
+        id: u?.id ?? 'gid://shopify/Customer/existing',
+        phone: phoneNumber,
+        email: u?.email ?? '',
+        firstName: u?.firstName ?? 'User',
+        lastName: u?.lastName ?? '',
+        customerId: u?.customerId ?? u?.id ?? 'gid://shopify/Customer/existing',
+        customerAccessToken: result.accessToken,
+        isGuest: false,
+        displayName: u?.displayName ?? 'User',
+        numberOfOrders: u?.numberOfOrders,
+        acceptsMarketing: u?.acceptsMarketing,
+        createdAt: u?.createdAt,
+        updatedAt: u?.updatedAt,
+        defaultAddress: u?.defaultAddress,
+      };
 
-      // Try to login first (for existing customers)
-      const loginResult = await customerService.checkCustomerExists(email, password);
-      
-      if (loginResult.exists && loginResult.token) {
-        // Existing customer - login directly
-        console.log('[OTP] Existing customer, logging in...');
-        setOtpVerified(true);
-
-        if (loginResult.customer) {
-          await login({
-            id: loginResult.customer.id,
-            phone: phoneNumber,
-            email: loginResult.customer.email || email,
-            firstName: loginResult.customer.firstName || '',
-            lastName: loginResult.customer.lastName || '',
-            customerId: loginResult.customer.id,
-            customerAccessToken: loginResult.token,
-            isGuest: false,
-            displayName: loginResult.customer.displayName,
-            numberOfOrders: loginResult.customer.numberOfOrders,
-            acceptsMarketing: loginResult.customer.acceptsMarketing,
-            createdAt: loginResult.customer.createdAt,
-            updatedAt: loginResult.customer.updatedAt,
-            defaultAddress: loginResult.customer.defaultAddress,
-          });
-        } else {
-          // Customer exists but details not available - get them
-          try {
-            const details = await shopifyApi.getCustomerDetails(loginResult.token);
-            if (details) {
-              await login({
-                id: details.id,
-                phone: phoneNumber,
-                email: details.email || email,
-                firstName: details.firstName || '',
-                lastName: details.lastName || '',
-                customerId: details.id,
-                customerAccessToken: loginResult.token,
-                isGuest: false,
-                displayName: details.displayName,
-                numberOfOrders: details.numberOfOrders,
-                acceptsMarketing: details.acceptsMarketing,
-                createdAt: details.createdAt,
-                updatedAt: details.updatedAt,
-                defaultAddress: details.defaultAddress,
-              });
-            } else {
-              await login({
-                id: `gid://shopify/Customer/existing`,
-                phone: phoneNumber,
-                email: email,
-                firstName: '',
-                lastName: '',
-                customerId: `gid://shopify/Customer/existing`,
-                customerAccessToken: loginResult.token,
-                isGuest: false,
-              });
-            }
-          } catch (e) {
-            await login({
-              id: `gid://shopify/Customer/existing`,
-              phone: phoneNumber,
-              email: email,
-              firstName: '',
-              lastName: '',
-              customerId: `gid://shopify/Customer/existing`,
-              customerAccessToken: loginResult.token,
-              isGuest: false,
-            });
-          }
-        }
-      } else {
-        // New customer - create account with default name (skip name input screen)
-        console.log('[OTP] New customer, creating account without name input...');
-        setLoading(true);
-        
+      // Track signup if this looks like a new user (no createdAt or very recent)
+      if (u?.id && u.id !== 'gid://shopify/Customer/existing') {
         try {
-          // Create customer with default/empty name
-          const customerResult = await customerService.createCustomer(
-            phoneNumber,
-            'User', // Default first name
-            '' // Empty last name - user can update later
-          );
-
-          if (customerResult.success && customerResult.customer) {
-            if (!customerResult.customer.customerAccessToken) {
-              throw new Error('Failed to create account. Please try again.');
-            }
-
-            // Track signup completed
-            try {
-              const { trackSignupCompleted } = require('@/utils/mixpanelHelpers');
-              const userId = customerResult.customer.id || customerResult.customer.customerId;
-              trackSignupCompleted(userId, 'phone');
-            } catch (e) {
-              console.warn('Mixpanel tracking error:', e);
-            }
-
-            // Login user with default name
-            await login({
-              id: customerResult.customer.id,
-              phone: phoneNumber,
-              email: customerResult.customer.email,
-              firstName: customerResult.customer.firstName || 'User',
-              lastName: customerResult.customer.lastName || '',
-              customerId: customerResult.customer.id,
-              customerAccessToken: customerResult.customer.customerAccessToken,
-              isGuest: false,
-              displayName: customerResult.customer.displayName || 'User',
-              numberOfOrders: customerResult.customer.numberOfOrders,
-              acceptsMarketing: customerResult.customer.acceptsMarketing,
-              createdAt: customerResult.customer.createdAt,
-              updatedAt: customerResult.customer.updatedAt,
-              defaultAddress: customerResult.customer.defaultAddress,
-            });
-
-            setOtpVerified(true);
-          } else {
-            throw new Error(customerResult.message || 'Failed to create account. Please try again.');
-          }
-        } catch (error: any) {
-          console.error('[OTP] Error creating customer:', error);
-          setError(error.message || 'Failed to create account. Please try again.');
-          setOtpInput(['', '', '', '', '', '']);
-          setOtpVerified(false);
-        } finally {
-          setLoading(false);
-          verifyingRef.current = false;
+          const { trackSignupCompleted } = require('@/utils/mixpanelHelpers');
+          trackSignupCompleted(u.id, 'phone');
+        } catch (e) {
+          console.warn('Mixpanel tracking error:', e);
         }
       }
+
+      await login(customerPayload, result.accessToken);
+      setOtpVerified(true);
     } catch (error: any) {
       let errorMessage = 'Something went wrong. Please try again.';
 

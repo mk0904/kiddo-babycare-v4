@@ -1,30 +1,19 @@
+import { trackScreenView } from '@/utils/mixpanelHelpers';
 import { useEffect } from 'react';
 import { useSegments } from 'expo-router';
 
 /**
- * Hook to automatically track screen views in Mixpanel
- * Call this in your root layout or any screen component
+ * Hook to automatically track screen views (backend → Mixpanel)
  */
 export const useScreenTracking = () => {
   const segments = useSegments();
 
   useEffect(() => {
-    // Get current screen name from segments
-    const screenName = segments.length > 0 
-      ? segments[segments.length - 1] 
-      : 'Home';
-
-    // Track screen view
+    const screenName = segments.length > 0 ? segments[segments.length - 1] : 'Home';
     try {
-      const { mixpanel } = require('@/mixpanel');
-      if (mixpanel) {
-        mixpanel.track('Screen View', {
-          screen: screenName,
-          path: segments.join('/'),
-        });
-      }
-    } catch (e) {
-      // Silently fail - mixpanel might not be initialized
+      trackScreenView(screenName, { path: segments.join('/') });
+    } catch {
+      // Silently fail
     }
   }, [segments]);
 };

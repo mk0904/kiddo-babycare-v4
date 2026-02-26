@@ -1,11 +1,17 @@
-// Coupon Service - Uses config-based discounts (local kiddoAppConfig.json only)
+// Coupon Service - Backend (kiddo-service) only; no kiddoAppConfig fallback.
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Local app config: only source for discount codes (config/kiddoAppConfig.json)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const LOCAL_APP_CONFIG = require('../config/kiddoAppConfig.json') as { discounts?: { enabled?: boolean; codes?: any[] } };
+const COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+
+/** Request shape for eligible coupons (matches Postman):
+ *  POST {COUPONS_API_BASE}/coupons/{numericShopifyCustomerId}
+ *  Path must be numeric only (e.g. 9922666332449), no "shopify-" prefix or gid.
+ *  Header: Content-Type: application/json
+ *  Body: { cartSubTotal, cartItemCount, hasTicketing, hasClothing }
+ */
+const FALLBACK_NUMERIC_CUSTOMER_ID = '9922666332449';
 
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -37,38 +43,106 @@ export interface CouponCode {
   isVisible?: boolean;
 }
 
-function mapRawToCoupon(dc: any): CouponCode {
-  return {
-    code: dc.code,
-    title: dc.title,
-    description: dc.description,
-    value: dc.value,
-    valueType: dc.valueType || 'percentage',
-    minimumPurchaseAmount: dc.minimumPurchaseAmount,
-    minimumItemCount: dc.minimumItemCount ?? null,
-    startsAt: dc.startsAt,
-    endsAt: dc.endsAt,
-    usageLimitPerUser: dc.usageLimitPerUser ?? null,
-    usageLimit: dc.usageLimit != null ? Number(dc.usageLimit) : undefined,
-    firstOrderOnly: dc.firstOrderOnly ?? false,
-    ticketingOnly: dc.ticketingOnly ?? false,
-    clothingOnly: dc.clothingOnly ?? false,
-    nonCombinable: dc.nonCombinable ?? false,
-    isVisible: dc.isVisible !== false,
-  };
+// Extract numeric Shopify customer ID for backend coupons API (backend expects integer in URL)
+const getNumericCustomerId = (userId: string | null | undefined): string | null => {
+  if (userId == null || userId === '') return null;
+  const str = String(userId).trim();
+  // gid://shopify/Customer/123456789 -> 123456789
+  const gidMatch = str.match(/Customer\/(\d+)/);
+  if (gidMatch) return gidMatch[1];
+  // Pure numeric
+  if (/^\d+$/.test(str)) return str;
+  // shopify-123456789 -> 123456789 (only if suffix is numeric)
+  if (str.toLowerCase().startsWith('shopify-')) {
+    const suffix = str.replace(/^shopify-/i, '').trim();
+    if (/^\d+$/.test(suffix)) return suffix;
+  }
+  const match = str.match(/\d+/);
+  return match ? match[0] : null;
+};
+
+export interface GetEligibleCouponsParams {
+  userId: string | null;
+  cartSubTotal: number;
+  cartItemCount: number;
+  hasTicketing: boolean;
+  hasClothing: boolean;
 }
 
-/** Get all discount codes from local config/kiddoAppConfig.json only. */
-function getDiscountsFromLocalConfig(): CouponCode[] {
-  const discountsConfig = LOCAL_APP_CONFIG?.discounts;
-  if (!discountsConfig || !discountsConfig.enabled || !Array.isArray(discountsConfig.codes)) {
+/**
+ * Fetch eligible coupons from backend API.
+ * Backend validates based on user order history (first order, usage limits, etc.).
+ * Returns [] when coupons is null or on error.
+ */
+export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  const { cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
+  // Use only numeric Shopify customer ID in path (e.g. 9922666332449)
+  const pathUserId = getNumericCustomerId(params.userId) || FALLBACK_NUMERIC_CUSTOMER_ID;
+
+  try {
+    const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/${pathUserId}`;
+    if (__DEV__) console.log('[CouponService] Fetching coupons (pathUserId:', pathUserId.length, 'chars)');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cartSubTotal,
+        cartItemCount,
+        hasTicketing,
+        hasClothing,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      if (__DEV__) {
+        const errText = await response.text();
+        console.warn('[CouponService] Backend coupons API error:', response.status, response.statusText, errText?.slice(0, 200));
+      }
+      return [];
+    }
+
+    const data = await response.json();
+    const looksLikeCoupon = (c: any) => c && typeof c === 'object' && (c.code != null || c.couponCode != null || c.value != null);
+    let coupons: any[] | undefined = data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
+    if (!Array.isArray(coupons) && data?.coupon != null) coupons = [data.coupon];
+    if (!Array.isArray(coupons) && data?.data != null) {
+      const d = data.data;
+      coupons = Array.isArray(d) ? d : d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined);
+    }
+    if (!Array.isArray(coupons) && data?.result?.coupons != null) coupons = data.result.coupons;
+    if (!Array.isArray(coupons) && Array.isArray(data)) {
+      if (data.length > 0 && looksLikeCoupon(data[0])) coupons = data;
+    }
+    if (!Array.isArray(coupons) && data != null) {
+      for (const key of Object.keys(data)) {
+        const v = data[key];
+        if (Array.isArray(v) && v.length > 0 && looksLikeCoupon(v[0])) {
+          coupons = v;
+          break;
+        }
+      }
+    }
+    if (!Array.isArray(coupons)) {
+      if (__DEV__) console.warn('[CouponService] Could not find coupons array in response. Top-level keys:', data ? Object.keys(data) : []);
+      return [];
+    }
+
+    // Normalize coupon objects: ensure each has a `code` field (backend may use `couponCode`)
+    const normalized = coupons.map((c: any) => ({
+      ...c,
+      code: (c.code ?? c.couponCode ?? '').toString().trim(),
+    })) as CouponCode[];
+
+    if (__DEV__) console.log('[CouponService] Loaded', normalized.length, 'eligible coupons from backend');
+    return normalized;
+  } catch (error: any) {
+    if (__DEV__) console.warn('[CouponService] Backend unavailable:', error?.message || error);
     return [];
   }
-  return (discountsConfig.codes as any[]).map(mapRawToCoupon);
-}
-
-const getConfigDiscounts = async (): Promise<CouponCode[]> => {
-  return getDiscountsFromLocalConfig();
 };
 
 export interface PriceRule {
@@ -86,57 +160,22 @@ export interface PriceRule {
 }
 
 /**
- * Coupon codes to show in the UI (e.g. "Apply a code" list).
- * Excludes isVisible: false — those never appear here but are still valid when entered manually.
+ * Fetch eligible coupon codes from backend API.
+ * Backend handles all eligibility logic (order history, usage limits, first order, etc.).
+ * @param params - userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing
  */
-export const getAvailableCouponCodes = async (hasTicketing?: boolean, hasClothing?: boolean): Promise<CouponCode[]> => {
-  const allCoupons = await getConfigDiscounts();
-  let filteredCoupons = allCoupons.filter((c) => c.isVisible !== false);
-  
-  // If cart has BOTH ticketing and clothing items, show both types of coupons
-  if (hasTicketing === true && hasClothing === true) {
-    // Show: ticketing-only coupons, clothing-only coupons, and regular coupons (non-restricted)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.ticketingOnly === true || 
-      coupon.clothingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has ONLY ticketing items (no clothing)
-  else if (hasTicketing === true && hasClothing === false) {
-    // Show: ticketing-only coupons and regular coupons (exclude clothing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.ticketingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has ONLY clothing items (no ticketing)
-  else if (hasTicketing === false && hasClothing === true) {
-    // Show: clothing-only coupons and regular coupons (exclude ticketing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      coupon.clothingOnly === true || 
-      (!coupon.ticketingOnly && !coupon.clothingOnly)
-    );
-  }
-  // If cart has NEITHER ticketing nor clothing
-  else if (hasTicketing === false && hasClothing === false) {
-    // Show: only regular coupons (exclude both ticketing-only and clothing-only)
-    filteredCoupons = filteredCoupons.filter(coupon => 
-      !coupon.ticketingOnly && !coupon.clothingOnly
-    );
-  }
-  // If we don't know the cart contents (undefined), show all coupons
-  // This handles edge cases where cart state is unclear
-  
-  return filteredCoupons;
+export const getAvailableCouponCodes = async (params?: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  if (!params) return [];
+  return getEligibleCouponsFromBackend(params);
 };
 
 /**
- * Fetch ALL coupon codes (no cart-based filtering).
- * Use this when you want to show all offers including inapplicable ones.
+ * Fetch eligible coupon codes from backend API.
+ * Same as getAvailableCouponCodes - backend returns only eligible coupons.
  */
-export const getAllCouponCodes = async (): Promise<CouponCode[]> => {
-  return getConfigDiscounts();
+export const getAllCouponCodes = async (params?: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  if (!params) return [];
+  return getEligibleCouponsFromBackend(params);
 };
 
 export interface CouponApplicability {
@@ -202,17 +241,38 @@ export const getCouponApplicabilityForDisplay = (
 };
 
 /**
- * Validate a coupon code (config/kiddoAppConfig.json only).
- * Includes codes with isVisible: false — they don’t show in the UI but are applicable when entered manually.
+ * Validate a coupon code - checks if it exists in backend's eligible coupons.
+ * Backend must return all eligible codes (including isVisible: false) so hidden codes
+ * can be applied when user types them manually.
+ * @param code - The coupon code to validate
+ * @param params - Optional cart context for backend validation (userId, cartSubTotal, etc.)
  */
-export const validateCouponCode = async (code: string): Promise<CouponCode | null> => {
+export const validateCouponCode = async (
+  code: string,
+  params?: GetEligibleCouponsParams
+): Promise<CouponCode | null> => {
   try {
-    const upperCode = code.toUpperCase().trim();
-    const allCoupons = getDiscountsFromLocalConfig();
-    const matchingCoupon = allCoupons.find(
-      (coupon) => (coupon.code ?? '').toString().toUpperCase().trim() === upperCode
+    const upperCode = (code ?? '').trim().toUpperCase();
+    if (!upperCode) return null;
+
+    if (!params) {
+      console.warn('[CouponService] validateCouponCode called without params - cannot validate via backend');
+      return null;
+    }
+
+    const eligibleCoupons = await getEligibleCouponsFromBackend(params);
+    const normalize = (s: string | null | undefined) =>
+      (s ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
+    const upperCodeNorm = upperCode.replace(/\s+/g, '');
+    const matchingCoupon = eligibleCoupons.find(
+      (coupon) => normalize(coupon.code ?? (coupon as any).couponCode) === upperCodeNorm
     );
-    return matchingCoupon ?? null;
+
+    if (!matchingCoupon && __DEV__ && eligibleCoupons.length > 0) {
+      const codes = eligibleCoupons.map((c) => c.code ?? (c as any).couponCode).filter(Boolean);
+      console.warn('[CouponService] Code not in eligible list. Looking for:', upperCode, '| Eligible codes:', codes);
+    }
+    return matchingCoupon || null;
   } catch (error: any) {
     console.error('[CouponService] Error validating coupon code:', error);
     return null;
@@ -566,6 +626,7 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
 };
 
 export const couponService = {
+  getEligibleCouponsFromBackend,
   getAvailableCouponCodes,
   getAllCouponCodes,
   getCouponApplicabilityForDisplay,

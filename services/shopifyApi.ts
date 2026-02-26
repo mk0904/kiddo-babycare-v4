@@ -384,7 +384,12 @@ const GET_CUSTOMER_ORDERS_QUERY = `
                 node {
                   title
                   quantity
+                  customAttributes {
+                    key
+                    value
+                  }
                   variant {
+                    title
                     image {
                       url
                     }
@@ -439,6 +444,10 @@ const GET_ORDER_BY_ID_QUERY = `
               originalTotalPrice {
                 amount
                 currencyCode
+              }
+              customAttributes {
+                key
+                value
               }
               variant {
                 title
@@ -1371,219 +1380,6 @@ export const shopifyApi = {
     } catch (error) {
       console.error('Error fetching variants by IDs:', error);
       return [];
-    }
-  },
-
-  /**
-   * Execute arbitrary GraphQL query/mutation
-   */
-  query: async (query: string, variables?: any) => {
-    try {
-      const response = await client.post('', {
-        query,
-        variables,
-      });
-
-      if (response.data.errors) {
-        console.error('Shopify API errors:', response.data.errors);
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error('Error executing query:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Create customer and get access token
-   */
-  createCustomerAndGetToken: async (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string | undefined,
-    phone: string
-  ) => {
-    try {
-      // 1. Create Customer
-      const createMutation = `
-        mutation customerCreate($input: CustomerCreateInput!) {
-          customerCreate(input: $input) {
-            customer {
-              id
-              email
-              phone
-              firstName
-              lastName
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      // Build input object, only include lastName if it's not empty (like gauntlet)
-      const input: any = {
-            email,
-            password,
-            firstName,
-            phone,
-            acceptsMarketing: true,
-      };
-      
-      // Only include lastName if it's provided and not empty
-      if (lastName && lastName.trim()) {
-        input.lastName = lastName.trim();
-      }
-
-      const createResponse = await client.post('', {
-        query: createMutation,
-        variables: {
-          input,
-        },
-      });
-
-      // Check for GraphQL errors
-      if (createResponse.data.errors && createResponse.data.errors.length > 0) {
-        throw new Error(createResponse.data.errors[0].message || 'Failed to create customer');
-      }
-
-      // Check for user errors
-      if (createResponse.data.data?.customerCreate?.userErrors?.length > 0) {
-        const userError = createResponse.data.data.customerCreate.userErrors[0];
-        const errorMessage = userError.message || 'Failed to create customer';
-        
-        // Create a custom error that can be identified for fallback handling
-        const error: any = new Error(errorMessage);
-        error.isCustomerExistsError = 
-          errorMessage.toLowerCase().includes('taken') || 
-          errorMessage.toLowerCase().includes('already') ||
-          errorMessage.toLowerCase().includes('exists');
-        error.userError = userError;
-        throw error;
-      }
-
-      const customer = createResponse.data.data?.customerCreate?.customer;
-
-      if (!customer) {
-        throw new Error('Customer was not created successfully');
-      }
-
-      // 2. Get Access Token (with retry logic - Shopify sometimes needs a moment to process)
-      const tokenMutation = `
-        mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
-          customerAccessTokenCreate(input: $input) {
-            customerAccessToken {
-              accessToken
-              expiresAt
-            }
-            customerUserErrors {
-              field
-              message
-              code
-            }
-          }
-        }
-      `;
-
-      // Retry logic: Shopify may need a moment to process the customer creation
-      let accessToken: string | undefined;
-      const maxRetries = 3;
-      const retryDelay = 1000; // 1 second
-
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (attempt > 0) {
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
-        }
-
-        const tokenResponse = await client.post('', {
-          query: tokenMutation,
-          variables: {
-            input: {
-              email,
-              password,
-            },
-          },
-        });
-
-        const userErrors = tokenResponse.data.data?.customerAccessTokenCreate?.customerUserErrors;
-        const token = tokenResponse.data.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
-
-        if (token) {
-          accessToken = token;
-          break; // Success, exit retry loop
-        }
-
-        // If it's the last attempt or error is not "unidentified customer", throw error
-        if (attempt === maxRetries - 1 || 
-            (userErrors && userErrors.length > 0 && 
-             !userErrors[0].message?.toLowerCase().includes('unidentified'))) {
-          const errorMessage = userErrors?.[0]?.message || 'Failed to create access token';
-          throw new Error(errorMessage);
-        }
-      }
-
-      if (!accessToken) {
-        throw new Error('Failed to create access token after retries');
-      }
-
-      return {
-        customer,
-        customerAccessToken: accessToken,
-      };
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get full customer details
-   */
-  getCustomerDetails: async (customerAccessToken: string) => {
-    try {
-      const query = `
-        query getCustomer($customerAccessToken: String!) {
-          customer(customerAccessToken: $customerAccessToken) {
-            id
-            firstName
-            lastName
-            email
-            phone
-            displayName
-            numberOfOrders
-            acceptsMarketing
-            createdAt
-            updatedAt
-            defaultAddress {
-              id
-              address1
-              address2
-              city
-              province
-              country
-              zip
-              phone
-              firstName
-              lastName
-            }
-          }
-        }
-      `;
-
-      const response = await client.post('', {
-        query,
-        variables: { customerAccessToken },
-      });
-
-      return response.data.data?.customer;
-    } catch (error) {
-      console.error('Error getting customer details:', error);
-      throw error;
     }
   },
 

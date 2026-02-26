@@ -10,6 +10,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { getProductDeepLink } from '@/config/linking';
+import * as FileSystem from 'expo-file-system';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
@@ -24,6 +26,7 @@ import {
     Dimensions,
     Image,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -548,7 +551,12 @@ const ProductDetailScreen = () => {
             }
 
             if (!fullProduct && productId) {
-                fullProduct = await shopifyApi.getProductById(productId);
+                const looksLikeGid = typeof productId === 'string' && productId.startsWith('gid://');
+                if (looksLikeGid) {
+                    fullProduct = await shopifyApi.getProductById(productId);
+                } else {
+                    fullProduct = await shopifyApi.getProductByHandle(productId);
+                }
             }
 
             if (fullProduct) {
@@ -573,26 +581,19 @@ const ProductDetailScreen = () => {
                 
                 // Track Product Viewed event
                 try {
-                    const { mixpanel } = require('@/mixpanel');
                     const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
-                    if (mixpanel) {
-                        const price = parseFloat(
-                            fullProduct.priceRange?.minVariantPrice?.amount || 
-                            fullProduct.variants?.edges?.[0]?.node?.price?.amount || 
-                            '0'
-                        );
-                        
-                        // Check if this is first product viewed
-                        const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
-                        if (!hasViewedProduct) {
-                            trackFirstProductViewed(fullProduct.id, fullProduct.title);
-                            await AsyncStorage.setItem('has_viewed_product', 'true');
-                        }
-                        
-                        trackProductViewed(fullProduct.id, fullProduct.title, price);
+                    const price = parseFloat(
+                        fullProduct.priceRange?.minVariantPrice?.amount ||
+                        fullProduct.variants?.edges?.[0]?.node?.price?.amount ||
+                        '0'
+                    );
+                    const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
+                    if (!hasViewedProduct) {
+                        trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                        await AsyncStorage.setItem('has_viewed_product', 'true');
                     }
+                    trackProductViewed(fullProduct.id, fullProduct.title, price);
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
                 }
@@ -832,6 +833,43 @@ const ProductDetailScreen = () => {
         }
     };
 
+    const handleShare = useCallback(async () => {
+        if (!product) return;
+        const handle = product.handle || (params as any).handle;
+        const productId = (params as any).id || product.id;
+        const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
+        const productUrl = getProductDeepLink(pathSegment);
+        const message = `${product.title}\n\n${productUrl}`;
+        const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+        try {
+            let shareUrl: string = productUrl;
+            if (imageUrl) {
+                try {
+                    const pathBeforeQuery = imageUrl.split('?')[0];
+                    const ext = pathBeforeQuery.match(/\.(jpe?g|png|webp|gif)$/i)?.[1] || 'jpg';
+                    const localUri = `${FileSystem.cacheDirectory}share_product_${Date.now()}.${ext}`;
+                    await FileSystem.downloadAsync(imageUrl, localUri);
+                    shareUrl = localUri;
+                } catch (_) {
+                    // keep productUrl if download fails
+                }
+            }
+            await Share.share({
+                message,
+                url: shareUrl,
+                title: product.title,
+            });
+            try {
+                const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
+                trackProductShareClicked(product.id, product.title, 'native');
+            } catch (_e) {}
+        } catch (err: any) {
+            if (err?.message !== 'User did not share') {
+                console.warn('Share error:', err);
+            }
+        }
+    }, [product, params, images, selectedVariant]);
+
     const parsePriceSafely = (priceValue: any) => {
         if (!priceValue) return 0;
         const parsed = parseFloat(priceValue);
@@ -987,6 +1025,15 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
+                {/* Share icon commented out for now
+                <TouchableOpacity
+                    style={styles.shareButton}
+                    onPress={handleShare}
+                    accessibilityLabel="Share product"
+                >
+                    <Ionicons name="share-outline" size={24} color="#000" />
+                </TouchableOpacity>
+                */}
                 <TouchableOpacity style={styles.wishlistButton} onPress={handleWishlistPress}>
                     <Ionicons
                         name={inWishlist ? "heart" : "heart-outline"}
@@ -1432,6 +1479,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.SemiBold,
         color: '#000',
+    },
+    shareButton: {
+        padding: 8,
     },
     wishlistButton: {
         padding: 8,

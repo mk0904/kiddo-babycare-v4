@@ -72,7 +72,7 @@ const getPlaceDetails = async (placeId: string) => {
 
 export default function MapAddressScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ returnToCart?: string }>();
+    const params = useLocalSearchParams<{ returnToCart?: string; returnToHome?: string }>();
     const mapRef = useRef<MapView>(null);
 
     // Map State
@@ -288,6 +288,7 @@ export default function MapAddressScreen() {
                 params: {
                     locationData: locationDataString,
                     ...(params.returnToCart === '1' && { returnToCart: '1' }),
+                    ...(params.returnToHome === '1' && { returnToHome: '1' }),
                 },
             });
         } catch (error) {

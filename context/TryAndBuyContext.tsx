@@ -1,6 +1,7 @@
 // Try & Buy Context
 // Manages the Try & Buy cart and order lifecycle
 
+import { checkoutService } from '@/services/checkoutService';
 import { Order, OrderItem, calculateETA, orderService } from '@/services/orderService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -78,7 +79,9 @@ interface TryAndBuyContextType {
         },
         selectedShoe?: string,
         couponCode?: string,
-        discountAmount?: number
+        discountAmount?: number,
+        razorpayOrderId?: string,
+        razorpaySignature?: string
     ) => Promise<TryAndBuyOrder | null>;
 
     // Active order
@@ -240,7 +243,9 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
         },
         selectedShoe?: string,
         couponCode?: string,
-        discountAmount?: number
+        discountAmount?: number,
+        razorpayOrderId?: string,
+        razorpaySignature?: string
     ): Promise<TryAndBuyOrder | null> => {
         // Use provided items if available, otherwise use cartItems from state
         const orderItems = items && items.length > 0 ? items : cartItems;
@@ -262,88 +267,63 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 selectedShoe: selectedShoe || 'none',
             });
 
-            // Build custom attributes with payment method and payment ID
-            const customAttributes = [
-                { key: 'order_type', value: 'try_and_buy' },
-                { key: 'max_items', value: orderItems.length.toString() },
-                { key: 'payment_method', value: paymentMethod },
-                ...(paymentId ? [{ key: 'payment_id', value: paymentId }] : []),
-                ...(deliverySchedule
-                    ? [
-                        { key: 'delivery_date', value: deliverySchedule.date },
-                        { key: 'delivery_time', value: deliverySchedule.time },
-                        { key: 'delivery_day', value: deliverySchedule.day },
-                        { key: 'date_format', value: deliverySchedule.dateFormat },
-                    ]
-                    : []),
-                ...(selectedShoe ? [{ key: 'selected_shoe', value: selectedShoe }] : []),
-                ...(couponCode ? [{ key: 'coupon_code', value: couponCode }] : []),
-                ...(discountAmount !== undefined && discountAmount > 0 ? [{ key: 'discount_amount', value: discountAmount.toString() }] : []),
-            ];
+            const tryAndBuyDiscountAmount = discountAmount ?? 0;
+            const totalAmount = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0) - tryAndBuyDiscountAmount;
 
-            // Format customer ID if provided
-            let formattedCustomerId: string | undefined = undefined;
-            if (customerId) {
-                // Handle different customer ID formats
-                const customerIdStr = String(customerId);
-                if (customerIdStr.includes('gid://shopify/Customer/')) {
-                    formattedCustomerId = customerIdStr;
-                } else if (customerIdStr.startsWith('shopify-')) {
-                    // Extract numeric ID from shopify- prefix
-                    formattedCustomerId = `gid://shopify/Customer/${customerIdStr.replace('shopify-', '')}`;
-                } else {
-                    // Assume it's a numeric ID
-                    formattedCustomerId = `gid://shopify/Customer/${customerIdStr}`;
-                }
-            }
-
-            // 1. Create Shopify Draft Order
-            console.log('[TryAndBuy] Creating draft order with formatted customerId:', formattedCustomerId);
-            const draftOrder = await shopifyAdminApi.createDraftOrder({
-                customerId: formattedCustomerId,
-                lineItems: orderItems.map((item) => ({
+            // 1. Create draft order via backend
+            console.log('[TryAndBuy] Creating draft order via backend');
+            const draftRes = await checkoutService.createDraft({
+                items: orderItems.map((item) => ({
                     variantId: item.variantId,
                     quantity: item.quantity,
-                    originalUnitPrice: item.price.toString(),
+                    price: item.price,
+                    title: item.title,
+                    tags: item.tags ?? [],
                 })),
-                shippingAddress: {
-                    address1: shippingAddress.address,
+                totalAmount,
+                currencyCode: 'INR',
+                customerId: customerId ?? '',
+                address: {
+                    name: shippingAddress.name,
+                    address: shippingAddress.address,
                     city: shippingAddress.city,
-                    province: shippingAddress.state,
-                    country: 'India',
-                    zip: shippingAddress.pincode,
-                    firstName: shippingAddress.name.split(' ')[0] || shippingAddress.name,
-                    lastName: shippingAddress.name.split(' ').slice(1).join(' ') || '',
+                    state: shippingAddress.state,
+                    pincode: shippingAddress.pincode,
                     phone: shippingAddress.phone,
                 },
-                tags: ['try-and-buy'],
-                customAttributes,
+                couponCode: couponCode ?? '',
+                discountAmount: tryAndBuyDiscountAmount,
+                deliverySchedule,
+                selectedShoe: selectedShoe ?? '',
+                isTryAndBuy: true,
             });
+            const draftOrderId = draftRes.draft_order_id;
+            console.log('[TryAndBuy] Draft order created:', draftOrderId);
 
-            console.log('[TryAndBuy] Draft order created successfully:', draftOrder.id);
-
-            // 2. Complete the draft order to convert it to a regular order in Shopify
-            // This makes it appear in Shopify Orders section
-            let completedOrder = null;
-            let shopifyOrderId = draftOrder.id;
+            // 2. Complete draft via backend (verifies Razorpay if needed, then completes in Shopify)
+            let completedOrder: { id: string; name: string } | null = null;
+            let shopifyOrderId = draftOrderId;
             try {
-                console.log('[TryAndBuy] Completing draft order to convert to regular order...');
-                const completed = await shopifyAdminApi.completeDraftOrder(
-                    draftOrder.id,
-                    paymentMethod === 'cod' // paymentPending = true for COD, false for online payment
-                );
-                
+                console.log('[TryAndBuy] Completing draft order via backend...');
+                const completeReq: import('@/services/checkoutService').CheckoutCompleteRequest = {
+                    draft_order_id: draftOrderId,
+                    payment_method: paymentMethod === 'cod' ? 'cod' : 'razorpay',
+                };
+                if (paymentMethod === 'razorpay' && paymentId && razorpayOrderId && razorpaySignature) {
+                    completeReq.razorpay_payment_id = paymentId;
+                    completeReq.razorpay_order_id = razorpayOrderId;
+                    completeReq.razorpay_signature = razorpaySignature;
+                }
+                const completed = await checkoutService.completeDraft(completeReq);
                 if (completed?.order?.id) {
                     completedOrder = completed.order;
                     shopifyOrderId = completed.order.id;
-                    console.log('[TryAndBuy] Draft order completed successfully. Order ID:', completed.order.id);
-                } else {
-                    console.warn('[TryAndBuy] Draft order completed but no order ID returned');
+                    console.log('[TryAndBuy] Draft order completed. Order ID:', completed.order.id);
+                } else if (completed?.draft) {
+                    shopifyOrderId = completed.draft.id;
                 }
             } catch (completeError: any) {
                 console.error('[TryAndBuy] Error completing draft order:', completeError);
-                // Don't fail the entire order creation if completion fails
-                // The draft order still exists and can be completed manually
                 console.warn('[TryAndBuy] Continuing with draft order. Order may need to be completed manually.');
             }
 
@@ -366,8 +346,8 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
                 paymentId: paymentId,
                 type: 'try_and_buy',
-                shopifyDraftOrderId: draftOrder.id,
-                shopifyOrderId: shopifyOrderId !== draftOrder.id ? shopifyOrderId : undefined,
+                shopifyDraftOrderId: draftOrderId,
+                shopifyOrderId: shopifyOrderId !== draftOrderId ? shopifyOrderId : undefined,
                 shopifyOrderName: completedOrder?.name || undefined,
                 estimatedDeliveryMinutes: calculateETA(2),
                 couponCode: couponCode || undefined,
@@ -377,8 +357,8 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
 
             const tryAndBuyOrder: TryAndBuyOrder = {
                 ...localOrder,
-                shopifyDraftOrderId: draftOrder.id,
-                shopifyOrderId: shopifyOrderId !== draftOrder.id ? shopifyOrderId : undefined,
+                shopifyDraftOrderId: draftOrderId,
+                shopifyOrderId: shopifyOrderId !== draftOrderId ? shopifyOrderId : undefined,
                 shopifyOrderName: completedOrder?.name || undefined,
                 tryAndBuyStatus: 'pending_delivery',
             };
@@ -468,18 +448,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 const keptItems = order.items.filter((item) =>
                     keptItemIds.includes(item.id)
                 );
-                await shopifyAdminApi.updateDraftOrder(order.shopifyDraftOrderId, {
-                    lineItems: keptItems.map((item) => ({
-                        variantId: item.variantId,
-                        quantity: item.quantity,
-                    })),
-                    tags: ['try-and-buy', 'selection-confirmed'],
-                    customAttributes: [
-                        { key: 'order_type', value: 'try_and_buy' },
-                        { key: 'kept_items', value: keptItemIds.join(',') },
-                        { key: 'returned_items', value: returnedItemIds.join(',') },
-                    ],
-                });
+                await shopifyAdminApi.updateDraftOrder(order.shopifyDraftOrderId, { lineItems: keptItems.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), tags: ['try-and-buy', 'selection-confirmed'], customAttributes: [ { key: 'order_type', value: 'try_and_buy' }, { key: 'kept_items', value: keptItemIds.join(',') }, { key: 'returned_items', value: returnedItemIds.join(',') } ] });
             }
 
             await refreshOrders();
@@ -500,7 +469,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
 
             // Complete the draft order
             if (order.shopifyDraftOrderId) {
-                await shopifyAdminApi.completeDraftOrder(order.shopifyDraftOrderId, false);
+                await checkoutService.completeDraft({ draft_order_id: order.shopifyDraftOrderId, payment_method: 'cod' });
             }
 
             // Update local order

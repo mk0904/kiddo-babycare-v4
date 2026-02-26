@@ -9,9 +9,11 @@ const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
 interface FreeShoesOfferProps {
   visible?: boolean;
+  /** HEYKIDDO coupon from backend - only source for coupon code/values */
+  heykiddoCoupon?: { code?: string; minimumPurchaseAmount?: string | number | null } | null;
 }
 
-const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
+const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true, heykiddoCoupon }) => {
   if (!visible) return null;
 
   const [failedIds, setFailedIds] = React.useState<Set<string>>(new Set());
@@ -31,24 +33,19 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
           setShoeOptions([]);
         }
 
-        // Load coupon code from discounts config
-        const discountsConfig = configService.getDiscountsConfig();
-        if (discountsConfig && discountsConfig.enabled && discountsConfig.codes) {
-          // Find HEYKIDDO coupon (clothing-only coupon)
-          const heykiddoCoupon = discountsConfig.codes.find((dc: any) => 
-            dc.code?.toUpperCase() === 'HEYKIDDO' || (dc.clothingOnly === true && dc.code)
+        // Load coupon code from backend only (no config fallback)
+        if (heykiddoCoupon?.code) {
+          setCouponCode(heykiddoCoupon.code);
+          setMinimumPurchase(
+            heykiddoCoupon.minimumPurchaseAmount != null
+              ? (typeof heykiddoCoupon.minimumPurchaseAmount === 'string'
+                  ? parseFloat(heykiddoCoupon.minimumPurchaseAmount)
+                  : heykiddoCoupon.minimumPurchaseAmount)
+              : null
           );
-          
-          if (heykiddoCoupon) {
-            setCouponCode(heykiddoCoupon.code || '');
-            setMinimumPurchase(
-              heykiddoCoupon.minimumPurchaseAmount 
-                ? (typeof heykiddoCoupon.minimumPurchaseAmount === 'string' 
-                    ? parseFloat(heykiddoCoupon.minimumPurchaseAmount) 
-                    : heykiddoCoupon.minimumPurchaseAmount)
-                : null
-            );
-          }
+        } else {
+          setCouponCode('');
+          setMinimumPurchase(null);
         }
       } catch (error) {
         console.error('[FreeShoesOffer] Error loading config:', error);
@@ -57,7 +54,7 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true }) => {
     };
 
     loadConfig();
-  }, []);
+  }, [heykiddoCoupon]);
 
   const handleImageError = React.useCallback((id: string) => {
     setFailedIds((prev) => new Set(prev).add(id));

@@ -65,9 +65,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({
 
     const handleAddNewAddress = () => {
         onClose();
+        const params: Record<string, string> = {};
+        if (returnToCart) params.returnToCart = '1';
+        if (fromHome) params.returnToHome = '1';
         router.push({
             pathname: '/address/add',
-            params: returnToCart ? { returnToCart: '1' } : {},
+            params,
         });
     };
 

@@ -22,6 +22,7 @@ export interface LineItemInput {
   quantity: number;
   title?: string;
   originalUnitPrice?: string;
+  customAttributes?: Array<{ key: string; value: string }>;
 }
 
 export interface AddressInput {
@@ -36,6 +37,13 @@ export interface AddressInput {
   phone?: string;
 }
 
+export interface AppliedDiscountInput {
+  valueType: 'FIXED_AMOUNT' | 'PERCENTAGE';
+  value: number;
+  title?: string;
+  description?: string;
+}
+
 export interface DraftOrderInput {
   customerId?: string;
   email?: string;
@@ -45,6 +53,10 @@ export interface DraftOrderInput {
   tags?: string[];
   note?: string;
   customAttributes?: Array<{ key: string; value: string }>;
+  /** Discount codes to apply (Shopify applies eligible ones) */
+  discountCodes?: string[];
+  /** Exact discount amount to apply (overrides discountCodes calculation when set) */
+  appliedDiscount?: AppliedDiscountInput;
 }
 
 export interface DraftOrder {
@@ -231,6 +243,10 @@ const GET_DRAFT_ORDER_QUERY = `
             title
             quantity
             originalUnitPrice
+            customAttributes {
+              key
+              value
+            }
             variant {
               id
               title
@@ -267,7 +283,7 @@ export const shopifyAdminApi = {
    */
   createDraftOrder: async (input: DraftOrderInput): Promise<DraftOrder> => {
     try {
-      // Format line items for GraphQL
+      // Format line items for GraphQL (include customAttributes for booking_date etc.)
       const lineItems = input.lineItems.map((item) => {
         const variantId = item.variantId.includes('gid://')
           ? item.variantId
@@ -276,6 +292,7 @@ export const shopifyAdminApi = {
           variantId,
           quantity: item.quantity,
           ...(item.originalUnitPrice && { originalUnitPrice: item.originalUnitPrice }),
+          ...(item.customAttributes && item.customAttributes.length > 0 && { customAttributes: item.customAttributes }),
         };
       });
 
@@ -297,6 +314,16 @@ export const shopifyAdminApi = {
           ...(input.note && { note: input.note }),
           ...(input.customAttributes && input.customAttributes.length > 0 && {
             customAttributes: input.customAttributes,
+          }),
+          ...(input.discountCodes && input.discountCodes.length > 0 && !input.appliedDiscount && {
+            discountCodes: input.discountCodes.map((c) => c.toUpperCase()),
+          }),
+          ...(input.appliedDiscount && input.appliedDiscount.value > 0 && {
+            appliedDiscount: {
+              valueType: input.appliedDiscount.valueType,
+              value: input.appliedDiscount.value,
+              ...(input.appliedDiscount.title && { title: input.appliedDiscount.title }),
+            },
           }),
         },
       };
