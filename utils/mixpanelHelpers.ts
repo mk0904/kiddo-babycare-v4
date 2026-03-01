@@ -1,9 +1,10 @@
 import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
+import { logMetaEvent } from '@/utils/metaSDK';
 
 /**
- * Analytics Helpers - Events are sent to the backend and forwarded to Mixpanel.
- * Changes to event names or properties can be made on the backend without an app release.
+ * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap, Meta CAPI)
+ * and to Meta SDK in-app for attribution and dedup. Same event_id on both for CAPI dedup.
  */
 
 function getDistinctId(): string {
@@ -20,7 +21,9 @@ function getDistinctId(): string {
  */
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   try {
-    analyticsService.track(eventName, properties ?? {}, getDistinctId());
+    const props = properties ?? {};
+    analyticsService.track(eventName, props, getDistinctId());
+    logMetaEvent(eventName, props, props.event_id ?? props.orderId);
   } catch (error) {
     console.error('Analytics tracking error:', error);
   }
@@ -100,9 +103,12 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number) => {
 
 export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string) => {
   trackEvent('Payment Success', {
+    event_id: orderId,
     orderId,
     amount,
     paymentMethod,
+    value: amount,
+    currency: 'INR',
   });
 };
 
@@ -159,8 +165,11 @@ export const trackFirstAddToCart = (productId: string, productName?: string, pri
 
 export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
   trackEvent('First Order Placed', {
+    event_id: orderId,
     orderId,
     amount,
+    value: amount,
+    currency: 'INR',
   });
 };
 
@@ -259,17 +268,23 @@ export const trackPaymentMethodSelected = (paymentMethod: string) => {
 
 export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string) => {
   trackEvent('Order Placed', {
+    event_id: orderId,
     orderId,
     amount,
     itemCount,
     paymentMethod,
+    value: amount,
+    currency: 'INR',
   });
 };
 
 export const trackOrderConfirmed = (orderId: string, amount: number) => {
   trackEvent('Order Confirmed', {
+    event_id: orderId,
     orderId,
     amount,
+    value: amount,
+    currency: 'INR',
   });
 };
 

@@ -82,6 +82,18 @@
           "resizeMode": "cover",
           "imageWidth": 200
         }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "YOUR_FB_APP_ID",
+          "clientToken": "YOUR_FB_CLIENT_TOKEN",
+          "displayName": "Kiddo",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+        }
       ]
     ],
     "splash": {

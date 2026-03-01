@@ -26,6 +26,7 @@ import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { trackEvent } from '@/utils/mixpanelHelpers';
+import { initMetaSDK } from '@/utils/metaSDK';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
@@ -81,6 +82,12 @@ export default function RootLayout() {
         fontTimeout = null;
       }
       
+      // Init Meta SDK for app events (attribution + CAPI dedup)
+      try {
+        initMetaSDK();
+      } catch (e) {
+        if (__DEV__) console.warn('[Meta SDK] init error:', e);
+      }
       // Preload config in background (non-blocking)
       // This ensures config is available when OTP service is called
       configService.loadConfig().catch((error) => {
