@@ -5,14 +5,10 @@ import axios from 'axios';
 
 const COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
 
-/** Request shape for eligible coupons (matches Postman):
- *  POST {COUPONS_API_BASE}/coupons/{numericShopifyCustomerId}
- *  Path must be numeric only (e.g. 9922666332449), no "shopify-" prefix or gid.
- *  Header: Content-Type: application/json
- *  Body: { cartSubTotal, cartItemCount, hasTicketing, hasClothing }
+/** Coupons by phone: POST {COUPONS_API_BASE}/coupons/by-phone
+ *  Body: { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing }
+ *  Backend looks up customer by phone in Shopify and returns eligible coupons; if not found, treats as 0 orders.
  */
-const FALLBACK_NUMERIC_CUSTOMER_ID = '9922666332449';
-
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
   headers: {
@@ -43,26 +39,9 @@ export interface CouponCode {
   isVisible?: boolean;
 }
 
-// Extract numeric Shopify customer ID for backend coupons API (backend expects integer in URL)
-const getNumericCustomerId = (userId: string | null | undefined): string | null => {
-  if (userId == null || userId === '') return null;
-  const str = String(userId).trim();
-  // gid://shopify/Customer/123456789 -> 123456789
-  const gidMatch = str.match(/Customer\/(\d+)/);
-  if (gidMatch) return gidMatch[1];
-  // Pure numeric
-  if (/^\d+$/.test(str)) return str;
-  // shopify-123456789 -> 123456789 (only if suffix is numeric)
-  if (str.toLowerCase().startsWith('shopify-')) {
-    const suffix = str.replace(/^shopify-/i, '').trim();
-    if (/^\d+$/.test(suffix)) return suffix;
-  }
-  const match = str.match(/\d+/);
-  return match ? match[0] : null;
-};
-
 export interface GetEligibleCouponsParams {
-  userId: string | null;
+  /** User phone for lookup (backend finds Shopify customer by phone). Pass null/empty for guest → 0 orders. */
+  phone: string | null;
   cartSubTotal: number;
   cartItemCount: number;
   hasTicketing: boolean;
@@ -70,24 +49,23 @@ export interface GetEligibleCouponsParams {
 }
 
 /**
- * Fetch eligible coupons from backend API.
- * Backend validates based on user order history (first order, usage limits, etc.).
+ * Fetch eligible coupons from backend via by-phone endpoint.
+ * Backend looks up customer by phone and returns eligible coupons; if not found, treats as 0 orders.
  * Returns [] when coupons is null or on error.
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
-  const { cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
-  // Use only numeric Shopify customer ID in path (e.g. 9922666332449)
-  const pathUserId = getNumericCustomerId(params.userId) || FALLBACK_NUMERIC_CUSTOMER_ID;
+  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
 
   try {
-    const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/${pathUserId}`;
-    if (__DEV__) console.log('[CouponService] Fetching coupons (pathUserId:', pathUserId.length, 'chars)');
+    const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/by-phone`;
+    if (__DEV__) console.log('[CouponService] Fetching coupons by-phone');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        phone: phone ?? '',
         cartSubTotal,
         cartItemCount,
         hasTicketing,
@@ -162,7 +140,7 @@ export interface PriceRule {
 /**
  * Fetch eligible coupon codes from backend API.
  * Backend handles all eligibility logic (order history, usage limits, first order, etc.).
- * @param params - userId, cartSubTotal, cartItemCount, hasTicketing, hasClothing
+ * @param params - phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing
  */
 export const getAvailableCouponCodes = async (params?: GetEligibleCouponsParams): Promise<CouponCode[]> => {
   if (!params) return [];
@@ -245,7 +223,7 @@ export const getCouponApplicabilityForDisplay = (
  * Backend must return all eligible codes (including isVisible: false) so hidden codes
  * can be applied when user types them manually.
  * @param code - The coupon code to validate
- * @param params - Optional cart context for backend validation (userId, cartSubTotal, etc.)
+ * @param params - Optional cart context for backend validation (phone, cartSubTotal, etc.)
  */
 export const validateCouponCode = async (
   code: string,

@@ -210,30 +210,14 @@ export default function CartScreen() {
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                // Use same customer id as rest of app (Shopify format); fallback to email/phone if backend accepts
-                const userStore = require('@/store/userStore').useUserStore.getState();
-                const userId =
-                    userStore.getCustomerId?.() ??
-                    user?.customerId ??
-                    user?.id ??
-                    user?.email ??
-                    user?.phone ??
-                    null;
-                if (__DEV__) {
-                    console.log('[CartScreen] Logged-in user ids for coupons:', {
-                        customerId: user?.customerId ?? null,
-                        id: user?.id ?? null,
-                        getCustomerId: userStore.getCustomerId?.() ?? null,
-                        resolvedUserId: userId ?? null,
-                    });
-                }
+                const phone = user?.phone ?? null;
                 const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
                 const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
                 const hasTicketing = hasTicketingProducts;
                 const hasClothing = hasFashionItems;
 
                 const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                    userId,
+                    phone,
                     cartSubTotal,
                     cartItemCount,
                     hasTicketing,
@@ -248,7 +232,7 @@ export default function CartScreen() {
             }
         };
         fetchCoupons();
-    }, [isAuthenticated, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    }, [isAuthenticated, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
