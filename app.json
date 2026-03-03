@@ -86,9 +86,9 @@
       [
         "react-native-fbsdk-next",
         {
-          "appID": "YOUR_FB_APP_ID",
-          "clientToken": "YOUR_FB_CLIENT_TOKEN",
-          "displayName": "Kiddo",
+          "appID": "1494379925573507",
+          "clientToken": "04a657781e5dd2df8704fd3292d74e3d",
+          "displayName": "kiddo-babycare",
           "advertiserIDCollectionEnabled": true,
           "autoLogAppEventsEnabled": true,
           "isAutoInitEnabled": true,
