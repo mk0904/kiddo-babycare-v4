@@ -1,15 +1,15 @@
-import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Platform,
-} from 'react-native';
-import { Image } from 'expo-image';
+import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Colors, Fonts } from '@/constants/theme';
+import { Image } from 'expo-image';
+import React from 'react';
+import {
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface CartItemProps {
     item: {

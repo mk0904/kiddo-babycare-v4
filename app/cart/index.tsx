@@ -30,15 +30,21 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Dimensions,
+    Modal,
+    Platform,
     ScrollView,
     Share,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 export default function CartScreen() {
     const router = useRouter();
@@ -86,6 +92,7 @@ export default function CartScreen() {
     const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
+    const mrp = useCartStore(state => state.mrp());
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
     
@@ -169,6 +176,13 @@ export default function CartScreen() {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
+    const [showAllCouponsModal, setShowAllCouponsModal] = useState(false);
+    const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
+    const [selectedCouponForApply, setSelectedCouponForApply] = useState<any>(null);
+
+    // Collection for "Complete your purchase with" - use first category or a suggestions collection if present in config
+    const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/508646719777';
+
     // Redirect back if cart is empty
     useEffect(() => {
         if (!loading && cartItems.length === 0) {
@@ -360,9 +374,15 @@ export default function CartScreen() {
     const giftWrappingFee = hasTicketingProducts ? 0 : getGiftWrappingPrice();
     
     // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
-    // Shopify's payment.total may be based on different subtotal (cart sync issue)
-    // So we always use our calculated total to ensure accuracy
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
+    const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
+
+    // Bill details display constants (for UX only; Kiddo Cash is dummy)
+    const HANDLING_FEE_ORIGINAL = 10;
+    const DELIVERY_FEE_ORIGINAL = 50;
+    const KIDDO_CASH_APPLIED = 250;
+    const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
+    const displaySavings = totalSavings + HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL + (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
     
     // Debug log to verify calculation
     if (__DEV__) {
@@ -467,6 +487,7 @@ export default function CartScreen() {
             if (result.success) {
                 setCouponCode(''); // Clear input
                 setCouponMessage(null); // Don't show success message
+                setSelectedCouponForApply(null); // Clear selection after apply
             } else {
                 setCouponMessage(result.error || 'Failed to apply coupon');
             }
@@ -733,7 +754,7 @@ export default function CartScreen() {
                     tags: item.tags,
                     bookingDate: item.bookingDate, // For Events, Playhouses, Petting Farms - sent to Shopify
                 })),
-                totalAmount: total,
+                totalAmount: toPay,
                 currencyCode: 'INR',
                 email: user?.email || 'guest@example.com',
                 phone: user?.phone || billingAddress.phone || '',
@@ -760,13 +781,26 @@ export default function CartScreen() {
 
             // Call Payment Service
             console.log('Calling PaymentService.createOrderWithPayment...');
-            // Check if total is 0 or payment method is free
-            const isFreeOrder = total === 0;
-            const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
+            const isFreeOrder = toPay === 0;
+            const chosenPayment = paymentMethod === 'cod' ? 'cod' : 'razorpay';
+            const effectivePaymentMethod = isFreeOrder ? 'free' : chosenPayment;
 
-                            const result = await PaymentService.createOrderWithPayment(
+            // For Pay Online, sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
+            if (effectivePaymentMethod === 'razorpay') {
+                try {
+                    const cartId = await ensureCart();
+                    if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                        const { shopifyApi } = await import('@/services/shopifyApi');
+                        await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
+                    }
+                } catch (syncErr) {
+                    console.warn('[Cart] Failed to sync discount codes to Shopify before Pay Online', syncErr);
+                }
+            }
+
+            const result = await PaymentService.createOrderWithPayment(
                 orderData,
-                isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay')
+                effectivePaymentMethod
             );
             console.log('PaymentService result received:', result);
 
@@ -1067,7 +1101,19 @@ export default function CartScreen() {
                     }
                 }
             }
-            
+
+            // If order failed due to invalid/already-used coupon, remove it from cart so user can retry
+            const isCouponError = /already been used|coupon|invalid coupon|expired coupon/i.test(errorMessage);
+            if (isCouponError && appliedDiscountCodes?.length) {
+                try {
+                    const { useCartStore: getCartStore } = await import('@/store/cartStore');
+                    appliedDiscountCodes.forEach((code: string) => getCartStore.getState().removeDiscountCode(code));
+                    setSelectedCouponForApply(null);
+                } catch (e) {
+                    console.warn('Failed to remove invalid coupon from cart', e);
+                }
+            }
+
             Alert.alert('Order Failed', errorMessage);
         } finally {
             setOrderLoading(false);
@@ -1083,85 +1129,68 @@ export default function CartScreen() {
     };
 
 
-    // Render cart item
+    // Render cart item: row1 = title + quantity buttons; row2 = prices in same column as +/-
     const renderItem = (item: any) => {
-        const hasFashionTag = item.tags?.some(
-            (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
-        );
+        const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
+        const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
 
         return (
             <TouchableOpacity
                 key={item.id}
-                style={styles.cartItem}
+                style={styles.cartItemRow}
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.7}
             >
-                {/* T&B Badge */}
-                {hasFashionTag && (
-                    <View style={styles.tbBadge}>
-                        <Text style={styles.tbBadgeText}>T&B</Text>
-                    </View>
-                )}
-
-                <Image
-                    source={{ uri: item.image }}
-                    style={styles.itemImage}
-                    contentFit="cover"
-                />
+                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
                 <View style={styles.itemInfo}>
-                    <View style={styles.titleRow}>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.itemTitle} numberOfLines={2}>
-                                {item.title}
+                    {/* Row 1: Title + variant on left; quantity +/- and prices (same row, vertically centered) on right */}
+                    <View style={styles.itemTopRow}>
+                        <View style={styles.itemTitleBlock}>
+                            <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                            <Text style={styles.itemVariantSubtext} numberOfLines={1}>
+                                {item.variantTitle && item.variantTitle !== 'Default Title'
+                                    ? `${item.variantTitle} • Pack of ${item.quantity}`
+                                    : `Pack of ${item.quantity}`}
                             </Text>
-                            {item.variantTitle && item.variantTitle !== 'Default Title' && (
-                                <View style={styles.variantPillStatic}>
-                                    <Text style={styles.variantTextStatic} numberOfLines={1}>
-                                        {item.variantTitle}
-                                    </Text>
-                                </View>
-                            )}
                             {item.bookingDate && (
                                 <View style={styles.bookingDateContainer}>
                                     <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
                                     <Text style={styles.bookingDateText}>
                                         {new Date(item.bookingDate).toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
+                                            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
                                         })}
                                     </Text>
                                 </View>
                             )}
                         </View>
-                        <View style={styles.quantityContainer}>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                            >
-                                <Ionicons name="remove" size={18} color="#000" />
-                            </TouchableOpacity>
-                            <Text style={styles.quantityText}>{item.quantity}</Text>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            >
-                                <Ionicons name="add" size={18} color="#000" />
-                            </TouchableOpacity>
+                        <View style={styles.quantityAndPriceRow}>
+                            <View style={styles.quantityContainer}>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                >
+                                    <Ionicons name="remove" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                                <Text style={styles.quantityText}>{item.quantity}</Text>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                >
+                                    <Ionicons name="add" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.itemPriceBlock}>
+                                <View style={styles.itemPriceInline}>
+                                    {compareAt != null && (
+                                        <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
+                                    )}
+                                    <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                                </View>
+                                {discountPct > 0 && (
+                                    <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                                )}
+                            </View>
                         </View>
-                    </View>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-                    </View>
-                    <View style={styles.itemBottomRow}>
-                        <View style={styles.spacer} />
-                        <TouchableOpacity
-                            style={styles.removeButton}
-                            onPress={() => handleRemoveItem(item.id)}
-                        >
-                            <Ionicons name="trash-outline" size={18} color="#ff4444" />
-                        </TouchableOpacity>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -1182,15 +1211,13 @@ export default function CartScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar style="dark" />
 
-            {/* Header */}
+            {/* Header - light beige to match page */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Cart</Text>
+                <Text style={styles.headerTitle}>Your Cart</Text>
+                <View style={styles.headerSpacer} />
             </View>
 
             {cartItems.length > 0 && (
@@ -1199,121 +1226,148 @@ export default function CartScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Cart Items */}
+                    {/* Total Savings Banner - full width, lighter green, thinner */}
+                    {totalSavings > 0 && (
+                        <View style={styles.savingsBanner}>
+                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(totalSavings)}!</Text>
+                        </View>
+                    )}
+
+                    {/* Delivery Information Card - same width as other cards */}
+                    {!hasTicketingProducts && (
+                        <View style={styles.deliveryCard}>
+                            <Ionicons name="flash" size={24} color="#E6B800" style={styles.deliveryIcon} />
+                            <View style={styles.deliveryCardContent}>
+                                <Text style={styles.deliveryCardTitle}>Delivery in 35 min</Text>
+                                <TouchableOpacity onPress={() => setShowScheduleModal(true)} activeOpacity={0.7}>
+                                    <Text style={styles.deliveryCardLink}>Want it later? Schedule delivery</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Cart Items - one card with "X added items" header and all items inside */}
                     <View style={styles.itemsSection}>
                         <View style={styles.itemsHeader}>
-                            <Text style={styles.itemsHeaderText}>{cartItems.length} Items</Text>
+                            <Text style={styles.itemsHeaderText}>
+                                {cartItems.reduce((s, i) => s + i.quantity, 0)} added items
+                            </Text>
                         </View>
                         {cartItems.map(item => renderItem(item))}
                     </View>
 
-                    {/* Free Shoes Offer - Show when cart has fashion items OR HEYKIDDO coupon is available */}
-                    {(hasFashionItems || applicableCoupons.some(c => c.code?.toUpperCase() === 'HEYKIDDO')) && (
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => setShowShoesModal(true)}
-                        >
-                            <FreeShoesOffer
-                                visible={true}
-                                heykiddoCoupon={applicableCoupons.find(c => c.code?.toUpperCase() === 'HEYKIDDO') || undefined}
+                    {/* Gift Wrapping - Make this a gift? Get items gift wrapped for FREE (underlined), red Select */}
+                    {!hasTicketingProducts && (
+                        <View style={styles.giftWrappingSection}>
+                            <TouchableOpacity style={styles.giftWrappingButton} onPress={() => setShowGiftModal(true)}>
+                                <View style={styles.giftWrappingLeft}>
+                                    <Ionicons name="gift-outline" size={24} color={Colors.primary} />
+                                    <View style={styles.giftWrappingInfo}>
+                                        <Text style={styles.giftWrappingTitle}>Make this a gift?</Text>
+                                        <Text style={styles.giftWrappingDescription}>Get items gift wrapped for FREE</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.giftWrappingSelect}>Select</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Complete your purchase with - horizontal product list from collection */}
+                    {!hasTicketingProducts && (
+                        <View style={styles.completePurchaseSection}>
+                            <Text style={styles.completePurchaseTitle}>Complete your purchase with</Text>
+                            <HorizontalProductList
+                                collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
+                                config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
+                                title=""
+                                onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
+                                onAddToCart={(p) => {
+                                    if (p?.variants?.edges?.[0]?.node) {
+                                        const v = p.variants.edges[0].node;
+                                        useCartStore.getState().addItem({
+                                            productId: p.id,
+                                            variantId: v.id,
+                                            title: p.title,
+                                            variantTitle: v.title,
+                                            price: parseFloat(v.price?.amount || '0'),
+                                            compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
+                                            currencyCode: v.price?.currencyCode || 'INR',
+                                            image: p.featuredImage?.url || v.image?.url || '',
+                                            quantity: 1,
+                                            availableForSale: v.availableForSale !== false,
+                                            tags: p.tags || [],
+                                        });
+                                    }
+                                }}
                             />
-                        </TouchableOpacity>
+                        </View>
                     )}
 
-                    {/* Try Before You Buy Section */}
-                    {tryAndBuyEligibility.hasFashionTag && (
-                        <View style={styles.tryAndBuySection}>
-                            <View style={styles.tryAndBuyHeader}>
-                                <Text style={styles.tryAndBuyTitle}>Try Before You Buy</Text>
-                                <TouchableOpacity 
-                                    style={styles.knowMoreButton}
-                                    onPress={() => setShowTryAndBuyModal(true)}
-                                >
-                                    <Text style={styles.knowMoreText}>Know more</Text>
-                                    <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
+                    {/* Savings Corner - coupon row, View all coupons (modal), Kiddo Cash dummy, Kiddo Coins bar */}
+                    <View style={styles.savingsCornerSection}>
+                        <Text style={styles.savingsCornerTitle}>Savings Corner</Text>
+                        <View style={styles.savingsCornerRow}>
+                            <View style={styles.savingsCornerLeft}>
+                                <View style={styles.savingsCornerIconBlue}>
+                                    <Text style={styles.savingsCornerIconPercent}>%</Text>
+                                </View>
+                                <View style={styles.savingsCornerTextWrap}>
+                                    <Text style={styles.savingsCornerMain}>
+                                        {selectedCouponForApply
+                                            ? `Save ${formatCurrency(selectedCouponForApply?.valueType === 'percentage'
+                                                ? Math.round((itemSubtotal * (selectedCouponForApply?.value || 0)) / 100)
+                                                : (selectedCouponForApply?.value || 0))} with ${selectedCouponForApply?.code}`
+                                            : applicableCoupons.length > 0
+                                                ? 'Select a coupon'
+                                                : 'Add a coupon'}
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setShowAllCouponsModal(true)} activeOpacity={0.7}>
+                                        <Text style={styles.savingsCornerViewAll}>View all coupons</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                            <TouchableOpacity
-                                style={styles.tryAndBuyCheckbox}
-                                onPress={toggleTryAndBuy}
-                            >
-                                <View style={[styles.checkbox, isTryAndBuy && styles.checkboxChecked]}>
-                                    {isTryAndBuy && <Ionicons name="checkmark" size={16} color="#fff" />}
-                                </View>
-                                <Text style={styles.checkboxLabel}>
-                                    I'd like to Try & Buy the eligible items
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Gift Wrapping - Hide for ticketing products */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity
-                                style={styles.giftWrappingButton}
-                                onPress={() => setShowGiftModal(true)}
-                            >
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="gift-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>
-                                            {giftWrapping ? giftWrapping.name : 'Add Gift Wrapping'}
-                                        </Text>
-                                        {giftWrapping && (
-                                            <Text style={styles.giftWrappingDescription}>
-                                                {giftWrapping.description}
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <View style={styles.giftWrappingRight}>
-                                    {giftWrapping ? (
-                                        <Text style={styles.giftWrappingPrice}>
-                                            ₹{giftWrapping.price}
-                                        </Text>
+                            {(!appliedDiscountCodes || appliedDiscountCodes.length === 0) && isAuthenticated && (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.savingsCornerApplyBtn,
+                                        (couponApplying || !selectedCouponForApply) && styles.savingsCornerApplyBtnDisabled,
+                                    ]}
+                                    onPress={() => {
+                                        if (selectedCouponForApply) handleApplyCouponFromList(selectedCouponForApply);
+                                    }}
+                                    disabled={couponApplying || !selectedCouponForApply}
+                                    activeOpacity={0.8}
+                                >
+                                    {couponApplying ? (
+                                        <ActivityIndicator size="small" color="#fff" />
                                     ) : (
-                                        <Ionicons name="chevron-forward" size={20} color="#666" />
+                                        <Text style={styles.savingsCornerApplyText}>Apply</Text>
                                     )}
-                                </View>
-                            </TouchableOpacity>
+                                </TouchableOpacity>
+                            )}
                         </View>
-                    )}
-
-                    
-
-                    {/* Schedule Delivery - Hide for ticketing products */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity
-                                style={styles.giftWrappingButton}
-                                onPress={() => setShowScheduleModal(true)}
-                            >
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>
-                                            {deliverySchedule ? 'Schedule Delivery' : 'Schedule Delivery'}
-                                        </Text>
-                                        {deliverySchedule && deliverySchedule.date && deliverySchedule.time && (
-                                            <Text style={styles.giftWrappingDescription}>
-                                                {deliverySchedule.date} at {deliverySchedule.time}
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <View style={styles.giftWrappingRight}>
-                                    {deliverySchedule ? (
-                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                                    ) : (
-                                        <Ionicons name="chevron-forward" size={20} color="#666" />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
+                        <View style={styles.kiddoCashRow}>
+                            <View style={styles.kiddoCashIconWrap}>
+                                <Ionicons name="cash-outline" size={20} color="#5B21B6" />
+                            </View>
+                            <View style={styles.kiddoCashTextWrap}>
+                                <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
+                                <Text style={styles.kiddoCashSub}>₹250 available</Text>
+                            </View>
+                            <Switch
+                                value={kiddoCashEnabled}
+                                onValueChange={setKiddoCashEnabled}
+                                trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
+                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
+                            />
                         </View>
-                    )}
+                        <View style={styles.kiddoCoinsBar}>
+                            <Text style={styles.kiddoCoinsBarText}>You will earn 20 Kiddo Coins with this order</Text>
+                        </View>
+                    </View>
 
-                    {/* Coupon Code */}
+                    {/* Coupon Code - hidden */}
+                    {false && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Coupon Code</Text>
                         {/* Only show input when no coupon is applied */}
@@ -1427,8 +1481,12 @@ export default function CartScreen() {
                                                     style={[
                                                         styles.couponCard,
                                                         couponApplying && styles.couponCardDisabled,
+                                                        selectedCouponForApply?.code === coupon.code && styles.couponModalCardSelected,
                                                     ]}
-                                                    onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
+                                                    onPress={() => {
+                                                        if (couponApplying) return;
+                                                        setSelectedCouponForApply(coupon);
+                                                    }}
                                                     disabled={couponApplying}
                                                     activeOpacity={0.7}
                                                 >
@@ -1471,59 +1529,80 @@ export default function CartScreen() {
                             </View>
                         )}
                     </View>
+                    )}
 
-                    {/* Bill Summary */}
-                    <View style={styles.billSummarySection}>
-                        <TouchableOpacity
-                            style={styles.billSummaryHeader}
-                            onPress={() => setShowBillSummary(!showBillSummary)}
-                        >
-                            <View style={styles.billSummaryTitleRow}>
-                                <Ionicons name="receipt-outline" size={20} color="#000" />
-                                <Text style={styles.billSummaryTitle}>Bill Summary</Text>
+                    {/* Bill details - wave inside card with zIndex so scalloped bottom always shows */}
+                    <View style={styles.billDetailsWrapper}>
+                        <View style={styles.billSummarySection} collapsable={false}>
+                            <View style={styles.billSummarySectionBg} pointerEvents="none" />
+                            <View style={styles.billSummaryHeader}>
+                                <Text style={styles.billDetailsTitle}>Bill details</Text>
                             </View>
-                            <Ionicons
-                                name={showBillSummary ? 'chevron-up' : 'chevron-down'}
-                                size={20}
-                                color="#666"
-                            />
-                        </TouchableOpacity>
-
-                        {showBillSummary && (
                             <View style={styles.billSummaryContent}>
                                 <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(itemSubtotal)}</Text>
-                                </View>
-                                {discount > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Total Discount</Text>
-                                        <Text style={[styles.billValue, styles.discountValue]}>
-                                            -{formatCurrency(discount)}
-                                        </Text>
+                                    <Text style={styles.billLabel}>Item Total</Text>
+                                    <View style={styles.billValueRow}>
+                                        {mrp > subtotalAfterDiscount && (
+                                            <Text style={styles.billValueStruck}>{formatCurrency(mrp)}</Text>
+                                        )}
+                                        <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
                                     </View>
-                                )}
+                                </View>
                                 <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal After Discount</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
-                                </View>
-                                {!hasTicketingProducts && giftWrappingFee > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Gift Wrapping</Text>
-                                        <Text style={styles.billValue}>
-                                            {formatCurrency(giftWrappingFee)}
-                                        </Text>
+                                    <Text style={styles.billLabel}>Handling Fee</Text>
+                                    <View style={styles.billValueRow}>
+                                        <Text style={styles.billValueStruck}>{formatCurrency(HANDLING_FEE_ORIGINAL)}</Text>
+                                        <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
                                     </View>
-                                )}
+                                </View>
                                 <View style={styles.billRow}>
                                     <Text style={styles.billLabel}>Delivery Fee</Text>
-                                    <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
+                                    <View style={styles.billValueRow}>
+                                        <Text style={styles.billValueStruck}>{formatCurrency(DELIVERY_FEE_ORIGINAL)}</Text>
+                                        <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
+                                    </View>
+                                </View>
+                                {kiddoCashEnabled && (
+                                    <View style={styles.billRow}>
+                                        <Text style={styles.billLabel}>Kiddo Cash</Text>
+                                        <Text style={[styles.billValue, styles.kiddoCashDeduction]}>
+                                            -{formatCurrency(KIDDO_CASH_APPLIED)}
+                                        </Text>
+                                    </View>
+                                )}
+                                <View style={styles.billSeparator} />
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabelToPay}>To Pay</Text>
+                                    <View style={styles.billValueRow}>
+                                        {total !== toPay && (
+                                            <Text style={styles.billValueStruck}>{formatCurrency(total)}</Text>
+                                        )}
+                                        <Text style={styles.billValueToPay}>{formatCurrency(toPay)}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.billSavingsBannerWrap}>
+                                    <Text style={styles.billSavingsBanner}>
+                                        You saved {formatCurrency(displaySavings)}!
+                                    </Text>
                                 </View>
                             </View>
-                        )}
+                            <View style={[styles.billWaveOuter, { width: Dimensions.get('window').width - 32 }]} pointerEvents="none">
+                                <Svg
+                                    viewBox="0 0 100 38"
+                                    preserveAspectRatio="none"
+                                    width={Dimensions.get('window').width - 32}
+                                    height={32}
+                                >
+                                    <Path
+                                        d="M0,0 L100,0 L100,14 L96.67,25 L93.33,14 L90,25 L86.67,14 L83.33,25 L80,14 L76.67,25 L73.33,14 L70,25 L66.67,14 L63.33,25 L60,14 L56.67,25 L53.33,14 L50,25 L46.67,14 L43.33,25 L40,14 L36.67,25 L33.33,14 L30,25 L26.67,14 L23.33,25 L20,14 L16.67,25 L13.33,14 L10,25 L6.67,14 L3.33,25 L0,14 L0,0 Z"
+                                        fill="#fff"
+                                    />
+                                </Svg>
+                            </View>
+                        </View>
                     </View>
 
-                    {/* Payment Method - Always show when cart has items and total > 0 */}
+                    {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
                     {cartItems.length > 0 && total > 0 && (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Payment Method</Text>
@@ -1629,13 +1708,16 @@ export default function CartScreen() {
                         </TouchableOpacity>
                         )}
 
-                        {/* Price and Button */}
+                        {/* Payment row: Pay using + method, Pay button */}
                         <View style={styles.footerBottom}>
                             <View style={styles.footerLeft}>
-                                <View style={styles.footerPriceRow}>
-                                    <Text style={styles.footerTotal}>{formatCurrency(total)}</Text>
+                                <View style={styles.footerPayUsingRow}>
+                                    <Text style={styles.footerPayUsingLabel}>Pay using</Text>
+                                    <Ionicons name="chevron-down" size={18} color="#666" />
                                 </View>
-                                <Text style={styles.footerLabel}>Total</Text>
+                                <Text style={styles.footerPaymentMethod}>
+                                    {paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Pay Online - Card, UPI, Net Banking'}
+                                </Text>
                             </View>
                             {selectedAddress || isTicketingOnly ? (
                                 <TouchableOpacity
@@ -1650,7 +1732,7 @@ export default function CartScreen() {
                                         <ActivityIndicator color="#fff" />
                                     ) : (
                                         <Text style={styles.checkoutButtonText}>
-                                            {isAuthenticated ? 'Place Order' : 'Login to Order'}
+                                            {isAuthenticated ? `Pay ${formatCurrency(toPay)}` : 'Login to Order'}
                                         </Text>
                                     )}
                                 </TouchableOpacity>
@@ -1700,15 +1782,87 @@ export default function CartScreen() {
                 visible={showScheduleModal}
                 onClose={() => setShowScheduleModal(false)}
                 onConfirm={(schedule) => {
-                    // If schedule is empty (removed), set to null
-                    if (!schedule.date || !schedule.time) {
-                        setDeliverySchedule(null);
-                    } else {
-                        setDeliverySchedule(schedule);
-                    }
+                    if (!schedule.date || !schedule.time) setDeliverySchedule(null);
+                    else setDeliverySchedule(schedule);
                 }}
                 initialSchedule={deliverySchedule}
             />
+
+            {/* View all coupons Modal */}
+            <Modal
+                visible={showAllCouponsModal}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowAllCouponsModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.couponsModalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowAllCouponsModal(false)}
+                >
+                    <View style={styles.couponsModalContent} onStartShouldSetResponder={() => true}>
+                        <View style={styles.couponsModalHeader}>
+                            <Text style={styles.couponsModalTitle}>Available coupons</Text>
+                            <TouchableOpacity onPress={() => setShowAllCouponsModal(false)} hitSlop={12}>
+                                <Ionicons name="close" size={24} color="#1A1A1A" />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.couponsModalScroll} showsVerticalScrollIndicator={false}>
+                            {!isAuthenticated ? (
+                                <View style={styles.couponLoginPrompt}>
+                                    <Text style={styles.couponLoginText}>Please login to view and apply coupons.</Text>
+                                    <TouchableOpacity style={styles.loginButton} onPress={() => { setShowAllCouponsModal(false); router.push('/(auth)/login'); }}>
+                                        <Text style={styles.loginButtonText}>Login</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : loadingCoupons ? (
+                                <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 24 }} />
+                            ) : applicableCoupons.length === 0 ? (
+                                <Text style={styles.noCouponsText}>No coupons available</Text>
+                            ) : (
+                                applicableCoupons.map((coupon) => {
+                                    const conditions = couponService.getCouponConditionsText(coupon);
+                                    const isSelected = selectedCouponForApply?.code === coupon.code;
+                                    return (
+                                        <TouchableOpacity
+                                            key={coupon.code}
+                                            style={[styles.couponModalCardWhite, isSelected && styles.couponModalCardSelected, couponApplying && styles.couponCardDisabled]}
+                                            onPress={() => {
+                                                if (couponApplying) return;
+                                                setSelectedCouponForApply(coupon);
+                                                setShowAllCouponsModal(false);
+                                            }}
+                                            disabled={couponApplying}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.couponCardContent}>
+                                                <View style={styles.couponCodeRow}>
+                                                    <Text style={styles.couponCardCode}>{coupon.code}</Text>
+                                                    {coupon.value != null && coupon.value !== 0 && (
+                                                        <View style={styles.discountBadge}>
+                                                            <Text style={styles.discountBadgeText}>
+                                                                {coupon.valueType === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                {coupon.title && <Text style={styles.couponCardTitle} numberOfLines={1}>{coupon.title}</Text>}
+                                                {conditions.length > 0 && (
+                                                    <View style={styles.couponConditionsContainer}>
+                                                        {conditions.slice(0, 2).map((c, i) => (
+                                                            <Text key={i} style={styles.couponConditionText}>{c}</Text>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })
+                            )}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -1716,37 +1870,88 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#FDF6EC',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#FDF6EC',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
+        paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
+        backgroundColor: '#FDF6EC',
     },
     backButton: {
-        marginRight: 10,
+        padding: 4,
+    },
+    headerSpacer: {
+        width: 32,
     },
     headerTitle: {
         flex: 1,
         fontSize: 18,
-        color: '#000',
-        fontFamily: Fonts.SemiBold,
+        color: '#1A1A1A',
+        fontFamily: Fonts.Bold,
+        textAlign: 'center',
+    },
+    savingsBanner: {
+        backgroundColor: '#6BCB77',
+        marginHorizontal: -16,
+        marginTop: 0,
+        marginBottom: 12,
+        paddingVertical: 8,
+        borderRadius: 0,
+        alignItems: 'center',
+    },
+    savingsBannerText: {
+        fontSize: 15,
+        fontFamily: Fonts.Bold,
+        color: '#fff',
+    },
+    deliveryCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        marginHorizontal: 0,
+        marginBottom: 12,
+        padding: 16,
+        borderRadius: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
+    },
+    deliveryIcon: {
+        marginRight: 12,
+    },
+    deliveryCardContent: {
+        flex: 1,
+    },
+    deliveryCardTitle: {
+        fontSize: 16,
+        fontFamily: Fonts.Bold,
+        color: '#2D2D2D',
+        marginBottom: 4,
+    },
+    deliveryCardLink: {
+        fontSize: 13,
+        fontFamily: Fonts.Regular,
+        color: Colors.primary,
+        textDecorationLine: 'underline',
     },
     scrollView: {
         flex: 1,
+        backgroundColor: '#FDF6EC',
     },
     scrollContent: {
-        padding: 15,
+        paddingHorizontal: 16,
+        paddingTop: 0,
         paddingBottom: 200,
+        backgroundColor: '#FDF6EC',
     },
     tryAndBuySection: {
         backgroundColor: Colors.backgroundSecondary || '#F5F9FA',
@@ -1800,75 +2005,87 @@ const styles = StyleSheet.create({
     itemsSection: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
+        padding: 16,
+        marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
     },
     itemsHeader: {
-        marginBottom: 15,
+        marginBottom: 12,
     },
     itemsHeaderText: {
         fontSize: 14,
-        color: '#666',
+        color: '#2D2D2D',
         fontFamily: Fonts.Regular,
     },
-    cartItem: {
+    cartItemRow: {
         flexDirection: 'row',
-        marginBottom: 20,
-        position: 'relative',
-    },
-    tbBadge: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-        zIndex: 1,
-    },
-    tbBadgeText: {
-        fontSize: 10,
-        color: '#fff',
-        fontFamily: Fonts.Bold,
+        marginBottom: 16,
     },
     itemImage: {
-        width: 90,
-        height: 90,
+        width: 80,
+        height: 80,
         borderRadius: 8,
         marginRight: 12,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#F0F0F0',
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
     },
     itemInfo: {
         flex: 1,
+        marginLeft: 12,
     },
-    titleRow: {
+    itemTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
+        alignItems: 'center',
     },
-    titleContainer: {
+    itemTitleBlock: {
         flex: 1,
         marginRight: 12,
     },
+    quantityAndPriceRow: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+    },
     itemTitle: {
         fontSize: 14,
-        color: '#000',
-        marginBottom: 4,
+        color: '#1A1A1A',
+        marginBottom: 2,
         fontFamily: Fonts.SemiBold,
     },
-    variantPillStatic: {
-        marginTop: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 10,
-        backgroundColor: '#f2f2f2',
-        alignSelf: 'flex-start',
-    },
-    variantTextStatic: {
+    itemVariantSubtext: {
         fontSize: 12,
-        color: '#777',
-        fontFamily: Fonts.Medium || Fonts.Regular,
+        color: '#666',
+        fontFamily: Fonts.Regular,
+    },
+    itemPriceBlock: {
+        alignItems: 'center',
+    },
+    itemPriceInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    itemPriceStrikethrough: {
+        fontSize: 12,
+        color: '#999',
+        fontFamily: Fonts.Regular,
+        textDecorationLine: 'line-through',
+    },
+    itemPrice: {
+        fontSize: 14,
+        color: '#1A1A1A',
+        fontFamily: Fonts.Bold,
+    },
+    itemDiscountPct: {
+        fontSize: 11,
+        color: '#28A745',
+        fontFamily: Fonts.SemiBold,
+        marginTop: 2,
     },
     bookingDateContainer: {
         flexDirection: 'row',
@@ -1891,18 +2108,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
-    itemPrice: {
-        fontSize: 16,
-        color: '#000',
-        marginRight: 8,
-        fontFamily: Fonts.Bold,
-    },
-    itemBottomRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        marginTop: 4,
-    },
     spacer: {
         flex: 1,
     },
@@ -1912,34 +2117,38 @@ const styles = StyleSheet.create({
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: Colors.primary,
-        borderRadius: 6,
+        borderRadius: 16,
+        paddingVertical: 4,
         paddingHorizontal: 2,
+        backgroundColor: '#fff',
     },
     quantityButton: {
-        padding: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 6,
         justifyContent: 'center',
         alignItems: 'center',
-        minWidth: 28,
+        minWidth: 24,
     },
     quantityText: {
-        fontSize: 14,
+        fontSize: 13,
         marginHorizontal: 6,
         minWidth: 18,
         textAlign: 'center',
         fontFamily: Fonts.SemiBold,
-    },
-    removeButton: {
-        padding: 6,
-        justifyContent: 'center',
-        alignItems: 'center',
+        color: '#1A1A1A',
     },
     giftWrappingSection: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
+        padding: 16,
+        marginHorizontal: 0,
+        marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
     },
     giftWrappingButton: {
         flexDirection: 'row',
@@ -1956,15 +2165,203 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     giftWrappingTitle: {
-        fontSize: 14,
-        color: '#000',
-        fontFamily: Fonts.SemiBold,
-        marginBottom: 2,
+        fontSize: 15,
+        color: '#2D2D2D',
+        fontFamily: Fonts.Bold,
+        marginBottom: 4,
     },
     giftWrappingDescription: {
         fontSize: 12,
-        color: '#666',
+        color: '#888',
         fontFamily: Fonts.Regular,
+        textDecorationLine: 'underline',
+    },
+    giftWrappingSelect: {
+        fontSize: 14,
+        color: Colors.primary,
+        fontFamily: Fonts.SemiBold,
+    },
+    completePurchaseSection: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
+        paddingLeft: 8,
+        marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
+    },
+    completePurchaseTitle: {
+        fontSize: 15,
+        color: '#2D2D2D',
+        fontFamily: Fonts.Bold,
+        marginBottom: 12,
+        textAlign: 'left',
+        paddingLeft: 8,
+    },
+    savingsCornerSection: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
+    },
+    savingsCornerTitle: {
+        fontSize: 15,
+        color: '#2D2D2D',
+        fontFamily: Fonts.Bold,
+        marginBottom: 14,
+    },
+    savingsCornerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    savingsCornerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    savingsCornerIconBlue: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#E3F2FD',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    savingsCornerIconPercent: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: '#1E88E5',
+    },
+    savingsCornerTextWrap: {
+        flex: 1,
+    },
+    savingsCornerMain: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: '#2D2D2D',
+    },
+    savingsCornerViewAll: {
+        fontSize: 12,
+        color: '#1E88E5',
+        fontFamily: Fonts.Regular,
+        textDecorationLine: 'underline',
+        marginTop: 2,
+    },
+    savingsCornerApplyBtn: {
+        backgroundColor: '#C41E3A',
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        minWidth: 72,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 8,
+    },
+    savingsCornerApplyBtnDisabled: {
+        opacity: 0.7,
+    },
+    savingsCornerApplyText: {
+        fontSize: 14,
+        color: '#fff',
+        fontFamily: Fonts.SemiBold,
+    },
+    kiddoCashRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    kiddoCashIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F5F3FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    kiddoCashTextWrap: {
+        flex: 1,
+    },
+    kiddoCashTitle: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: '#1A1A1A',
+    },
+    kiddoCashSub: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        fontFamily: Fonts.Regular,
+        marginTop: 2,
+    },
+    kiddoCoinsBar: {
+        backgroundColor: '#EDE9FE',
+        borderRadius: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+    },
+    kiddoCoinsBarText: {
+        fontSize: 13,
+        fontFamily: Fonts.SemiBold,
+        color: '#6D28D9',
+    },
+    couponsModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    couponsModalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '70%',
+        paddingBottom: 34,
+    },
+    couponsModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    couponsModalTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: '#1A1A1A',
+    },
+    couponsModalScroll: {
+        maxHeight: 400,
+        padding: 16,
+    },
+    couponModalCard: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#e9ecef',
+    },
+    couponModalCardWhite: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    couponModalCardSelected: {
+        borderColor: Colors.primary,
+        borderWidth: 1.5,
     },
     giftWrappingRight: {
         flexDirection: 'row',
@@ -1976,17 +2373,30 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
         marginRight: 8,
     },
+    billDetailsWrapper: {
+        marginBottom: 15,
+        position: 'relative',
+    },
     billSummarySection: {
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
         borderRadius: 12,
         padding: 15,
-        marginBottom: 15,
+        paddingBottom: 40,
+        overflow: 'visible',
+        position: 'relative',
+    },
+    billSummarySectionBg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 32,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
     },
     billSummaryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 12,
     },
     billSummaryTitleRow: {
         flexDirection: 'row',
@@ -1998,32 +2408,86 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontFamily: Fonts.Bold,
     },
+    billDetailsTitle: {
+        fontSize: 16,
+        color: '#6B7280',
+        fontFamily: Fonts.Bold,
+    },
+    billWaveOuter: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 32,
+        backgroundColor: 'transparent',
+        zIndex: 10,
+    },
     billSummaryContent: {
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        paddingTop: 0,
     },
     billRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 12,
     },
     billLabel: {
         fontSize: 14,
-        color: '#666',
+        color: '#1A1A1A',
         fontFamily: Fonts.Regular,
+    },
+    billValueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     billValue: {
         fontSize: 14,
-        color: '#000',
+        color: '#2D2D2D',
         fontFamily: Fonts.SemiBold,
     },
+    billValueStruck: {
+        fontSize: 14,
+        color: '#9CA3AF',
+        fontFamily: Fonts.Regular,
+        textDecorationLine: 'line-through',
+    },
+    kiddoCashDeduction: {
+        color: '#16a34a',
+    },
+    billSeparator: {
+        height: 1,
+        backgroundColor: '#e5e7eb',
+        marginVertical: 12,
+    },
+    billLabelToPay: {
+        fontSize: 14,
+        color: '#2D2D2D',
+        fontFamily: Fonts.SemiBold,
+    },
+    billValueToPay: {
+        fontSize: 14,
+        color: '#1A1A1A',
+        fontFamily: Fonts.Bold,
+    },
+    billSavingsBannerWrap: {
+        marginTop: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+    },
+    billSavingsBanner: {
+        fontSize: 14,
+        color: '#16a34a',
+        fontFamily: Fonts.SemiBold,
+        textAlign: 'center',
+    },
     discountValue: {
-        color: '#4caf50',
+        color: '#16a34a',
     },
     freeText: {
-        color: '#4caf50',
-        fontFamily: Fonts.Bold,
+        color: '#16a34a',
+        fontFamily: Fonts.SemiBold,
     },
     section: {
         backgroundColor: '#fff',
@@ -2342,12 +2806,28 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        backgroundColor: '#FAF9F7',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e8e6e3',
     },
     footerContent: {
         padding: 15,
+    },
+    footerPayUsingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginBottom: 4,
+    },
+    footerPayUsingLabel: {
+        fontSize: 13,
+        color: '#666',
+        fontFamily: Fonts.Regular,
+    },
+    footerPaymentMethod: {
+        fontSize: 14,
+        color: '#2D2D2D',
+        fontFamily: Fonts.SemiBold,
     },
     footerAddress: {
         marginBottom: 12,
@@ -2391,10 +2871,10 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Regular,
     },
     checkoutButton: {
-        backgroundColor: Colors.primary,
+        backgroundColor: '#E07A5F',
         paddingHorizontal: 24,
         paddingVertical: 14,
-        borderRadius: 8,
+        borderRadius: 10,
         minWidth: 120,
         justifyContent: 'center',
         alignItems: 'center',

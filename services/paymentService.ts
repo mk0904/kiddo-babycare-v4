@@ -449,9 +449,19 @@ export const createOrderWithPayment = async (
 
     } catch (error: any) {
         console.error('[PaymentService] Error:', error);
-        
-        // Improve error message for user
+
+        // Prefer backend message for 4xx (e.g. 422 validation)
+        const status = error.response?.status;
+        const data = error.response?.data;
         let userMessage = error.message;
+        if (status === 422 || status === 400) {
+            const backendMsg = typeof data === 'string' ? data : (data?.message ?? data?.error ?? data?.details);
+            if (backendMsg) {
+                userMessage = typeof backendMsg === 'string' ? backendMsg : JSON.stringify(backendMsg);
+            } else {
+                userMessage = 'Validation failed. Please check your address, cart items, and try again.';
+            }
+        }
         if (userMessage.includes('inventory') || userMessage.includes('unavailable') || userMessage.includes('Variant')) {
             userMessage = 'Some items in your cart are no longer available. Please check your cart.';
         } else if (userMessage.includes('phone') || userMessage.includes('Phone')) {
@@ -459,7 +469,7 @@ export const createOrderWithPayment = async (
         } else if (userMessage.includes('zip') || userMessage.includes('Zip')) {
             userMessage = 'Invalid PIN code. Please check your address.';
         }
-        
+
         return {
             success: false,
             error: userMessage

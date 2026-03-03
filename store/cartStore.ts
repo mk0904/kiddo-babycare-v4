@@ -1058,8 +1058,17 @@ export const useCartStore = create<CartState>()(
                 const updatedDiscountCodes = state.discountCodes.filter((dc) => dc.code.toUpperCase() !== normalizedCode);
                 set({ discountCodes: updatedDiscountCodes });
 
-                // Discounts are config-only; get cart for subtotal/tax and recalc from remaining codes
                 const cartId = await get().ensureCart();
+                // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
+                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                    try {
+                        const codesToApply = updatedDiscountCodes.map((dc) => dc.code);
+                        await shopifyApi.applyDiscountCodes(cartId, codesToApply);
+                    } catch (e) {
+                        console.warn('[CartStore] Failed to sync discount codes to Shopify cart after remove', e);
+                    }
+                }
+
                 let subtotal = state.subtotal();
                 let tax = state.payment?.tax ?? 0;
                 const currencyCode = state.payment?.currencyCode || 'INR';
@@ -1103,6 +1112,15 @@ export const useCartStore = create<CartState>()(
                 set({ discountCodes: [] });
 
                 const cartId = await get().ensureCart();
+                // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
+                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                    try {
+                        await shopifyApi.applyDiscountCodes(cartId, []);
+                    } catch (e) {
+                        console.warn('[CartStore] Failed to clear discount codes on Shopify cart', e);
+                    }
+                }
+
                 let subtotal = state.subtotal();
                 let tax = state.payment?.tax ?? 0;
                 const currencyCode = state.payment?.currencyCode || 'INR';
