@@ -49,6 +49,15 @@
       "borderRightColor": "#E84E4B"
     }
   },
+  "babycareCollectionSidebar": {
+    "508371206433": {
+      "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510757241121", "label": "Moisturizer & Powders", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510757306657", "label": "Body Wash/Shampoo", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510757372193", "label": "Sunscreen", "imageUrl": "" }
+      ]
+    }
+  },
   "productGridDefaults": {
     "gap": 16,
     "rowGap": 16,

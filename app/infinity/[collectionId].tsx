@@ -7,9 +7,11 @@ import { Colors, Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+    Dimensions,
     ScrollView,
     StyleSheet,
     Text,
@@ -48,6 +50,34 @@ export default function InfinityScreen() {
 
     // Transform local filters to Shopify API format
     const [apiFilters, setApiFilters] = useState<any[]>([]);
+
+    // Babycare collection sidebar (subcategories) – configurable per collection, starts below filters row
+    const sidebarSubcategories = useMemo(
+        () => (collectionId ? configService.getBabycareCollectionSidebar(collectionId) : null),
+        [collectionId]
+    );
+
+    // When sidebar is shown, subcategory tap updates content in place (no navigation)
+    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+    const [activeTitle, setActiveTitle] = useState<string | null>(null);
+    // Measured width of the grid container (so product cards adapt and don't get cropped when sidebar is present)
+    const [gridContainerWidth, setGridContainerWidth] = useState<number | null>(null);
+    const effectiveCollectionId = (sidebarSubcategories?.length && activeCollectionId) ? activeCollectionId : (collectionId || '');
+    const effectiveTitle = (sidebarSubcategories?.length && activeTitle !== null) ? activeTitle : (title || collection?.title || 'Products');
+
+    useEffect(() => {
+        if (collectionId && sidebarSubcategories?.length) {
+            setActiveCollectionId(collectionId.startsWith('gid://') ? collectionId : `gid://shopify/Collection/${collectionId}`);
+            setActiveTitle(title || '');
+        }
+    }, [collectionId, title, sidebarSubcategories?.length]);
+
+    useEffect(() => {
+        if (effectiveCollectionId && sidebarSubcategories?.length) {
+            const formattedId = effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`;
+            shopifyApi.getCollectionById(formattedId).then(setCollection).catch(() => setCollection(null));
+        }
+    }, [effectiveCollectionId, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
     // Gender filter should only be available in clothing category (girls/boys)
@@ -559,7 +589,7 @@ export default function InfinityScreen() {
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle} numberOfLines={1}>
-                            {collection?.title || title || 'Products'}
+                            {effectiveTitle}
                         </Text>
                     </View>
                     <View style={styles.headerRightPlaceholder} />
@@ -582,9 +612,51 @@ export default function InfinityScreen() {
                     />
                 )}
 
-                <View style={styles.gridContainer}>
+                <View style={styles.contentRow}>
+                    {sidebarSubcategories && sidebarSubcategories.length > 0 && (
+                        <ScrollView
+                            style={styles.sidebar}
+                            contentContainerStyle={styles.sidebarContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {sidebarSubcategories.map((sub) => {
+                                const subId = sub.collectionId.startsWith('gid://') ? sub.collectionId : `gid://shopify/Collection/${sub.collectionId}`;
+                                const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
+                                const subNorm = sub.collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
+                                const isSelected = currentNorm === subNorm;
+                                return (
+                                    <TouchableOpacity
+                                        key={sub.collectionId}
+                                        style={[styles.sidebarItem, isSelected && styles.sidebarItemSelected]}
+                                        onPress={() => {
+                                            setActiveCollectionId(subId);
+                                            setActiveTitle(sub.label || '');
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        {sub.imageUrl ? (
+                                            <Image source={{ uri: sub.imageUrl }} style={styles.sidebarItemImage} contentFit="cover" />
+                                        ) : (
+                                            <View style={styles.sidebarItemPlaceholder}>
+                                                <Ionicons name="pricetag-outline" size={18} color="#999" />
+                                            </View>
+                                        )}
+                                        <Text style={[styles.sidebarItemLabel, isSelected && styles.sidebarItemLabelSelected]} numberOfLines={2}>
+                                            {sub.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    )}
+                    <View
+                        style={styles.gridContainer}
+                        onLayout={(e) => setGridContainerWidth(e.nativeEvent.layout.width)}
+                    >
                     <InfiniteProductGrid
-                        collectionId={collectionId.startsWith('gid://') ? collectionId : `gid://shopify/Collection/${collectionId}`}
+                        key={effectiveCollectionId}
+                        collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
+                        contentWidth={sidebarSubcategories?.length ? (gridContainerWidth != null && gridContainerWidth > 0 ? gridContainerWidth : Dimensions.get('window').width - 50) : undefined}
                         sortKey={sortKey}
                         reverse={reverse}
                         filters={apiFilters} // Pass filters for client-side filtering
@@ -604,6 +676,7 @@ export default function InfinityScreen() {
                         genderFilter={selectedGender}
                         ageFilter={selectedAge}
                     />
+                    </View>
                 </View>
 
                 {!shouldHideFilters && (
@@ -816,6 +889,61 @@ const styles = StyleSheet.create({
     },
     pills: {
         zIndex: 10,
+    },
+    contentRow: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    sidebar: {
+        width: 80,
+        maxWidth: 80,
+        borderRightWidth: 1,
+        borderRightColor: '#e8e8e8',
+        backgroundColor: '#fff',
+        overflow: 'hidden',
+    },
+    sidebarContent: {
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+        paddingBottom: 24,
+    },
+    sidebarItem: {
+        alignItems: 'center',
+        marginBottom: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 4,
+        borderRadius: 0,
+        position: 'relative',
+    },
+    sidebarItemSelected: {
+        backgroundColor: '#E8F5E9',
+        borderRightWidth: 4,
+        borderRightColor: '#4CAF50',
+    },
+    sidebarItemImage: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginBottom: 4,
+    },
+    sidebarItemPlaceholder: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginBottom: 4,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sidebarItemLabel: {
+        fontSize: 9,
+        fontFamily: Fonts.Regular,
+        color: '#363636',
+        textAlign: 'center',
+    },
+    sidebarItemLabelSelected: {
+        fontFamily: Fonts.SemiBold,
+        color: '#2E7D32',
     },
     gridContainer: {
         flex: 1,
