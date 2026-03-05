@@ -21,6 +21,16 @@ const GRID_COLUMNS = 3;
 const ITEM_SPACING = 8;
 const ITEM_WIDTH = (SCREEN_WIDTH - 40 - (ITEM_SPACING * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
 
+function isTicketingItem(item: { bookingDate?: string; tags?: string[] }): boolean {
+    if (item.bookingDate) return true;
+    const hasTicketingTag = item.tags?.some((tag: any) => {
+        const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+        return tagLower.includes('event') || tagLower.includes('playhouse') || tagLower.includes('petting') ||
+            tagLower.includes('farm') || tagLower.includes('ticket') || tagLower.includes('pass');
+    });
+    return !!hasTicketingTag;
+}
+
 interface GiftWrappingModalProps {
     visible: boolean;
     onClose: () => void;
@@ -54,19 +64,29 @@ const GIFT_WRAP_OPTIONS = [
 ];
 
 export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) => {
-    // Use Zustand store
     const cartItems = useCartItems();
     const giftWrapping = useGiftWrapping();
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
     const [selectedWrap, setSelectedWrap] = useState(giftWrapping);
     const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
+    // Only non-ticketing products are eligible for gift wrap
+    const eligibleItems = React.useMemo(
+        () => cartItems.filter(item => !isTicketingItem(item)),
+        [cartItems]
+    );
+    const eligibleIds = React.useMemo(() => eligibleItems.map(item => item.id), [eligibleItems]);
+
     useEffect(() => {
         if (visible) {
             setSelectedWrap(giftWrapping);
-            setSelectedProducts(giftWrapping?.productIds || cartItems.map(item => item.id)); // Default select all if new
+            const existingIds = giftWrapping?.productIds ?? [];
+            const defaultIds = existingIds.length > 0
+                ? existingIds.filter(id => eligibleIds.includes(id))
+                : eligibleIds;
+            setSelectedProducts(defaultIds);
         }
-    }, [visible, giftWrapping, cartItems]);
+    }, [visible, giftWrapping, eligibleIds]);
 
     const handleWrapSelect = (wrap: any) => {
         setSelectedWrap(wrap);
@@ -83,10 +103,10 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
     };
 
     const handleSelectAll = () => {
-        if (selectedProducts.length === cartItems.length) {
+        if (selectedProducts.length === eligibleIds.length) {
             setSelectedProducts([]);
         } else {
-            setSelectedProducts(cartItems.map(item => item.id));
+            setSelectedProducts([...eligibleIds]);
         }
     };
 
@@ -205,31 +225,40 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                             scrollEnabled={false}
                         />
 
-                        {/* Product Selection */}
+                        {/* Product Selection - only non-ticketing items are eligible */}
                         {selectedWrap && (
                             <View style={styles.productSection}>
                                 <View style={styles.productSectionHeader}>
                                     <View>
                                         <Text style={styles.sectionTitle}>Select Products</Text>
-                                        <Text style={styles.sectionSubtitle}>Select items to be wrapped</Text>
+                                        <Text style={styles.sectionSubtitle}>Select items to be wrapped. Ticketing products (events, playhouses, etc.) are not eligible for gift wrap.</Text>
                                     </View>
-                                    <TouchableOpacity
-                                        style={styles.selectAllBtn}
-                                        onPress={handleSelectAll}
-                                    >
-                                        <Text style={styles.selectAllText}>
-                                            {selectedProducts.length === cartItems.length ? 'Deselect All' : 'Select All'}
-                                        </Text>
-                                    </TouchableOpacity>
+                                    {eligibleIds.length > 0 && (
+                                        <TouchableOpacity
+                                            style={styles.selectAllBtn}
+                                            onPress={handleSelectAll}
+                                        >
+                                            <Text style={styles.selectAllText}>
+                                                {selectedProducts.length === eligibleIds.length ? 'Deselect All' : 'Select All'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
 
-                                <FlatList
-                                    data={cartItems}
-                                    renderItem={renderProductItem}
-                                    keyExtractor={(item) => item.id}
-                                    scrollEnabled={false}
-                                    scrollEventThrottle={16}
-                                />
+                                {eligibleItems.length === 0 ? (
+                                    <View style={styles.ineligibleNotice}>
+                                        <Ionicons name="information-circle-outline" size={20} color="#888" />
+                                        <Text style={styles.ineligibleNoticeText}>No items in your cart are eligible for gift wrap. Ticketing products (events, playhouses, petting farms) cannot be gift wrapped.</Text>
+                                    </View>
+                                ) : (
+                                    <FlatList
+                                        data={eligibleItems}
+                                        renderItem={renderProductItem}
+                                        keyExtractor={(item) => item.id}
+                                        scrollEnabled={false}
+                                        scrollEventThrottle={16}
+                                    />
+                                )}
                             </View>
                         )}
                     </ScrollView>
@@ -307,6 +336,24 @@ const styles = StyleSheet.create({
     },
     sectionSubtitle: {
         fontSize: 12,
+        fontFamily: Fonts.Regular,
+        color: '#666',
+        marginTop: 2,
+        maxWidth: 260,
+    },
+    ineligibleNotice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 14,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    ineligibleNoticeText: {
+        flex: 1,
+        fontSize: 13,
         fontFamily: Fonts.Regular,
         color: '#666',
     },

@@ -77,6 +77,17 @@ export interface PaymentResult {
     error?: string;
 }
 
+/** Bill breakdown for backend to persist on Shopify order (note/metafields). */
+export interface OrderBillDetails {
+    subtotal: number;
+    subtotalAfterDiscount: number;
+    deliveryFee: number;
+    giftWrappingFee: number;
+    discount: number;
+    total: number;
+    currencyCode: string;
+}
+
 export interface OrderData {
     items: OrderItem[];
     totalAmount: number;
@@ -100,12 +111,20 @@ export interface OrderData {
     couponCode?: string;
     discountAmount?: number;
     selectedShoe?: string;
+    /** When provided, backend should persist scheduled date/time on order; otherwise treat as instant. */
     deliverySchedule?: {
-        date: string; // Format: DD/MM/YYYY
-        time: string; // Format: HH:MM AM/PM
-        day: string; // Day name (e.g., "Saturday")
-        dateFormat: string; // Format: "dd/mm/yy"
+        date: string; // DD/MM/YYYY
+        time: string; // HH:MM AM/PM
+        day: string;
+        dateFormat: string; // dd/mm/yy
+        timeSlotLabel?: string; // e.g. "11AM - 12PM"
     };
+    /** 'scheduled' = user chose a slot; 'instant' = no schedule (deliver as soon as possible). */
+    deliveryType?: 'scheduled' | 'instant';
+    /** Payment method for this order (backend stores on Shopify order). */
+    paymentMethod?: 'razorpay' | 'cod' | 'free' | 'try_and_buy';
+    /** Full bill breakdown for backend to store in Shopify order. */
+    billDetails?: OrderBillDetails;
 }
 
 export interface CreateOrderResult {
@@ -126,6 +145,9 @@ function orderDataToCheckoutDraftRequest(
         quantity: item.quantity,
         price: item.price,
         title: item.title,
+        variantTitle: item.variantTitle ?? undefined,
+        image: item.image ?? undefined,
+        compareAtPrice: item.compareAtPrice ?? undefined,
         tags: item.tags ?? [],
         bookingDate: item.bookingDate ?? '',
     }));
@@ -142,6 +164,9 @@ function orderDataToCheckoutDraftRequest(
         couponCode: orderData.couponCode ?? '',
         discountAmount: orderData.discountAmount ?? 0,
         deliverySchedule: orderData.deliverySchedule,
+        deliveryType: orderData.deliveryType ?? (orderData.deliverySchedule?.date && orderData.deliverySchedule?.time ? 'scheduled' : 'instant'),
+        paymentMethod: (orderData.paymentMethod ?? paymentMethod) as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
+        billDetails: orderData.billDetails,
         selectedShoe: orderData.selectedShoe ?? '',
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
     };

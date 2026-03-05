@@ -1,4 +1,8 @@
-import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
+import { BillDetails } from '@/components/cart/BillDetails';
+import { DeliveryCard } from '@/components/cart/DeliveryCard';
+import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
+import { SavingsCorner } from '@/components/cart/SavingsCorner';
+import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
@@ -9,7 +13,6 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
-import { couponService } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -30,26 +33,22 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Dimensions,
     Modal,
     Platform,
     ScrollView,
     Share,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
-import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    
+
     // Track cart viewed on mount
     useEffect(() => {
         const trackCartView = async () => {
@@ -69,7 +68,7 @@ export default function CartScreen() {
     const { user, isAuthenticated } = useAuth();
     const { defaultAddress } = useAddress();
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
-    
+
     // Use Zustand store
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
@@ -78,7 +77,7 @@ export default function CartScreen() {
     const status = useCartStatus();
     const cartId = useCartId();
     const checkoutUrl = useCheckoutUrl();
-    
+
     // Store actions
     const updateQuantity = useCartStore(state => state.updateQuantity);
     const removeItem = useCartStore(state => state.removeItem);
@@ -88,14 +87,12 @@ export default function CartScreen() {
     const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
     const selectedShoe = useCartStore(state => state.selectedShoe);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
-    const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
-    const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
     const mrp = useCartStore(state => state.mrp());
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
-    
+
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -108,18 +105,18 @@ export default function CartScreen() {
         return cartItems.some(item => {
             // Check if item has booking date (indicates ticketing product)
             if (item.bookingDate) return true;
-            
+
             // Check tags
             const hasTicketingTag = item.tags?.some((tag: any) => {
                 const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-                return tagLower.includes('event') || 
-                       tagLower.includes('playhouse') || 
-                       tagLower.includes('petting') ||
-                       tagLower.includes('farm') ||
-                       tagLower.includes('ticket') ||
-                       tagLower.includes('pass');
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
             });
-            
+
             return hasTicketingTag;
         });
     }, [cartItems]);
@@ -129,19 +126,36 @@ export default function CartScreen() {
         return cartItems.length > 0 && cartItems.every(item => {
             // Check if item has booking date (indicates ticketing product)
             if (item.bookingDate) return true;
-            
+
             // Check tags
             const hasTicketingTag = item.tags?.some((tag: any) => {
                 const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-                return tagLower.includes('event') || 
-                       tagLower.includes('playhouse') || 
-                       tagLower.includes('petting') ||
-                       tagLower.includes('farm') ||
-                       tagLower.includes('ticket') ||
-                       tagLower.includes('pass');
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
             });
-            
+
             return hasTicketingTag;
+        });
+    }, [cartItems]);
+
+    // Show delivery card when at least one non-ticketing product exists in cart
+    const hasNonTicketingProducts = useMemo(() => {
+        return cartItems.some(item => {
+            if (item.bookingDate) return false;
+            const hasTicketingTag = item.tags?.some((tag: any) => {
+                const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
+            });
+            return !hasTicketingTag;
         });
     }, [cartItems]);
 
@@ -163,23 +177,15 @@ export default function CartScreen() {
 
     const [showBillSummary, setShowBillSummary] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('razorpay');
-    const [couponCode, setCouponCode] = useState('');
-    const [couponApplying, setCouponApplying] = useState(false);
-    const [couponMessage, setCouponMessage] = useState<string | null>(null);
     const [orderLoading, setOrderLoading] = useState(false);
+    const [couponMessage, setCouponMessage] = useState<string | null>(null); // Used by CheckoutRedeemCoins for reward coupon feedback
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
-    const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
-    const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
-    const [showAllCouponsModal, setShowAllCouponsModal] = useState(false);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
-    const [selectedCouponForApply, setSelectedCouponForApply] = useState<any>(null);
-
     // Collection for "Complete your purchase with" - use first category or a suggestions collection if present in config
     const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/508646719777';
 
@@ -189,24 +195,6 @@ export default function CartScreen() {
             router.back();
         }
     }, [loading, cartItems.length, router]);
-    
-    // Watch for discount code removals (when conditions no longer met)
-    useEffect(() => {
-        const currentCodes = discountCodes.map(dc => dc.code);
-        const removedCodes = previousDiscountCodes.filter(code => !currentCodes.includes(code));
-        
-        if (removedCodes.length > 0 && previousDiscountCodes.length > 0) {
-            // A discount code was automatically removed
-            const removedCode = removedCodes[0];
-            setCouponMessage(`${removedCode} was removed as it no longer meets the requirements.`);
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                setCouponMessage(null);
-            }, 5000);
-        }
-        
-        setPreviousDiscountCodes(currentCodes);
-    }, [discountCodes.map(dc => dc.code).join(',')]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
@@ -214,55 +202,6 @@ export default function CartScreen() {
             setPaymentMethod('razorpay');
         }
     }, [hasTicketingProducts, paymentMethod]);
-
-    // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setAvailableCoupons([]);
-            return;
-        }
-        const fetchCoupons = async () => {
-            setLoadingCoupons(true);
-            try {
-                // Use same customer id as rest of app (Shopify format); fallback to email/phone if backend accepts
-                const userStore = require('@/store/userStore').useUserStore.getState();
-                const userId =
-                    userStore.getCustomerId?.() ??
-                    user?.customerId ??
-                    user?.id ??
-                    user?.email ??
-                    user?.phone ??
-                    null;
-                if (__DEV__) {
-                    console.log('[CartScreen] Logged-in user ids for coupons:', {
-                        customerId: user?.customerId ?? null,
-                        id: user?.id ?? null,
-                        getCustomerId: userStore.getCustomerId?.() ?? null,
-                        resolvedUserId: userId ?? null,
-                    });
-                }
-                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
-                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                const hasTicketing = hasTicketingProducts;
-                const hasClothing = hasFashionItems;
-
-                const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                    userId,
-                    cartSubTotal,
-                    cartItemCount,
-                    hasTicketing,
-                    hasClothing,
-                });
-                setAvailableCoupons(eligibleCoupons ?? []);
-            } catch (error) {
-                console.error('Error fetching coupons:', error);
-                setAvailableCoupons([]);
-            } finally {
-                setLoadingCoupons(false);
-            }
-        };
-        fetchCoupons();
-    }, [isAuthenticated, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -281,33 +220,33 @@ export default function CartScreen() {
 
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
-    
+
     // Calculate subtotal from lineItems (like gauntlet does in payment-details)
     let itemSubtotal = 0;
     for (const item of cartItems) {
         itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
     }
-    
+
     // Calculate discount ourselves from discountCodes (don't trust Shopify's discount value)
     let calculatedDiscount = 0;
-    
+
     // Debug: Log discountCodes to see what we have
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
-    
+
     // Use discount values from cart store (source: backend API only, not config)
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
                 console.log('[CartScreen] Processing discount code:', discountCode);
             }
-            
+
             const shouldProcess = discountCode.applicable !== false;
             const discountValue = discountCode.value;
             const discountType = discountCode.type;
-            
+
             if (shouldProcess && discountValue > 0) {
                 if (discountType === 'percentage') {
                     // Percentage discount: value is the percentage (e.g., 10 means 10%)
@@ -350,11 +289,11 @@ export default function CartScreen() {
             console.log('[CartScreen] No discount codes found in store');
         }
     }
-    
+
     // Use our calculated discount instead of Shopify's
     // Cap the discount to not exceed the subtotal (for fixed discounts)
     const discount = Math.min(calculatedDiscount, itemSubtotal);
-    
+
     // Debug log
     if (__DEV__) {
         console.log('[CartScreen] Final discount calculation:', {
@@ -365,14 +304,14 @@ export default function CartScreen() {
             itemSubtotal,
         });
     }
-    
+
     // Subtotal after discount
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
-    
+
     const deliveryFee = 0;
     // Don't charge gift wrapping fee for ticketing products
     const giftWrappingFee = hasTicketingProducts ? 0 : getGiftWrappingPrice();
-    
+
     // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
@@ -383,7 +322,7 @@ export default function CartScreen() {
     const KIDDO_CASH_APPLIED = 250;
     const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
     const displaySavings = totalSavings + HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL + (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
-    
+
     // Debug log to verify calculation
     if (__DEV__) {
         console.log('[CartScreen] Total calculation:', {
@@ -416,12 +355,6 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    // Backend returns eligible coupons; show only visible ones in the list (hidden codes still work when entered manually)
-    const applicableCoupons = useMemo(
-        () => (availableCoupons ?? []).filter((c) => c.isVisible !== false),
-        [availableCoupons]
-    );
-
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         await updateQuantity(itemId, newQuantity);
@@ -430,81 +363,6 @@ export default function CartScreen() {
     const handleRemoveItem = async (itemId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         await removeItem(itemId);
-    };
-
-    const handleApplyCoupon = async () => {
-        const code = couponCode.trim().toUpperCase();
-        console.log('[CartScreen] handleApplyCoupon called with code:', code);
-        if (!code) return;
-
-        if (appliedDiscountCodes?.includes(code)) {
-            console.log('[CartScreen] Code already applied:', code);
-            setCouponMessage(`${code} is already applied.`);
-            return;
-        }
-
-        setCouponApplying(true);
-        setCouponMessage(null);
-        try {
-            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
-            if (result.success) {
-                console.log('[CartScreen] ✅ Coupon applied successfully');
-                setCouponCode('');
-                setCouponMessage(null); // Don't show success message
-                
-                // Track coupon applied
-                try {
-                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
-                    trackCouponApplied(code, discount);
-                } catch (e) {
-                    console.warn('Mixpanel tracking error:', e);
-                }
-            } else {
-                console.log('[CartScreen] ❌ Coupon application failed:', result.error);
-                setCouponMessage(result.error || 'Failed to apply coupon');
-            }
-        } catch (error: any) {
-            console.error('[CartScreen] ❌ Error applying coupon:', error);
-            setCouponMessage(error.message || 'Failed to apply coupon');
-        } finally {
-            setCouponApplying(false);
-        }
-    };
-
-    const handleApplyCouponFromList = async (coupon: any) => {
-        const code = coupon.code?.toUpperCase();
-        if (!code) return;
-
-        if (appliedDiscountCodes?.includes(code)) {
-            setCouponMessage(`${code} is already applied.`);
-            return;
-        }
-
-        setCouponApplying(true);
-        setCouponMessage(null);
-        try {
-            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
-            if (result.success) {
-                setCouponCode(''); // Clear input
-                setCouponMessage(null); // Don't show success message
-                setSelectedCouponForApply(null); // Clear selection after apply
-            } else {
-                setCouponMessage(result.error || 'Failed to apply coupon');
-            }
-        } catch (error: any) {
-            setCouponMessage(error.message || 'Failed to apply coupon');
-        } finally {
-            setCouponApplying(false);
-        }
-    };
-
-    const handleRemoveCoupon = async (code: string) => {
-        try {
-            await removeDiscountCode(code);
-            setCouponMessage(null); // Don't show success message
-        } catch (error: any) {
-            setCouponMessage(error.message || 'Failed to remove coupon');
-        }
     };
 
     const handlePlaceOrder = async () => {
@@ -533,7 +391,7 @@ export default function CartScreen() {
             setShowAddressModal(true);
             return;
         }
-        
+
         // For ticketing-only orders, use a default/placeholder address if none selected
         // This ensures the order creation doesn't fail due to missing address structure
         // Use a valid Indian address structure to pass Shopify validation
@@ -573,7 +431,7 @@ export default function CartScreen() {
                 const { shopifyApi } = await import('@/services/shopifyApi');
                 const variantIds = cartItems.map(item => item.variantId);
                 const variants = await shopifyApi.getVariantsByIds(variantIds);
-                
+
                 // Create a map of variant ID to variant data for easier lookup
                 const variantMap = new Map();
                 variants.forEach((variant: any) => {
@@ -581,22 +439,22 @@ export default function CartScreen() {
                         variantMap.set(variant.id, variant);
                     }
                 });
-                
+
                 // Check if any products are unavailable
                 const unavailableItems: Array<{ title: string; id: string; productId?: string }> = [];
                 const itemsToFix: Array<{ item: any; realVariant: any }> = [];
-                
+
                 // First pass: identify items with wrong variant IDs and collect fixes
                 for (const item of cartItems) {
                     let variant = variantMap.get(item.variantId);
-                    
+
                     // If variant not found, it might be a search result with wrong variant ID
                     // Try to fetch the product and get the real variant ID
                     if (!variant && item.productId) {
                         try {
                             const { shopifyApi } = await import('@/services/shopifyApi');
                             const fullProduct = await shopifyApi.getProductById(item.productId);
-                            
+
                             if (fullProduct && fullProduct.variants?.edges && fullProduct.variants.edges.length > 0) {
                                 // Find matching variant by title or use first available
                                 const matchingVariant = fullProduct.variants.edges.find((e: any) => {
@@ -614,7 +472,7 @@ export default function CartScreen() {
                                     }
                                     return false;
                                 })?.node || fullProduct.variants.edges[0]?.node;
-                                
+
                                 if (matchingVariant) {
                                     itemsToFix.push({ item, realVariant: matchingVariant });
                                     // Update variant map with the correct variant for validation
@@ -627,16 +485,16 @@ export default function CartScreen() {
                             console.error('[Cart] Error fixing variant ID for product:', item.productId, error);
                         }
                     }
-                    
+
                     // Check multiple conditions for unavailability:
                     // 1. Variant not found in Shopify (after trying to fix)
                     // 2. availableForSale is false
                     // 3. quantityAvailable is 0 or less than requested quantity
-                    const isUnavailable = !variant || 
+                    const isUnavailable = !variant ||
                         variant.availableForSale === false ||
                         (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
                         (variant.quantityAvailable === 0);
-                    
+
                     if (isUnavailable) {
                         unavailableItems.push({
                             title: item.title || `Product ${item.variantId}`,
@@ -645,12 +503,12 @@ export default function CartScreen() {
                         });
                     }
                 }
-                
+
                 // Second pass: Apply fixes if any
                 if (itemsToFix.length > 0) {
                     const { useCartStore } = await import('@/store/cartStore');
                     const cartStore = useCartStore.getState();
-                    
+
                     for (const { item, realVariant } of itemsToFix) {
                         try {
                             // Remove old item and add with correct variant ID
@@ -661,8 +519,8 @@ export default function CartScreen() {
                                 title: item.title,
                                 variantTitle: realVariant.title,
                                 price: parseFloat(realVariant.price?.amount || '0'),
-                                compareAtPrice: realVariant.compareAtPrice?.amount 
-                                    ? parseFloat(realVariant.compareAtPrice.amount) 
+                                compareAtPrice: realVariant.compareAtPrice?.amount
+                                    ? parseFloat(realVariant.compareAtPrice.amount)
                                     : undefined,
                                 currencyCode: realVariant.price?.currencyCode || 'INR',
                                 image: item.image,
@@ -681,7 +539,7 @@ export default function CartScreen() {
                             });
                         }
                     }
-                    
+
                     // If we fixed items, refresh cart items and retry validation
                     if (itemsToFix.length > 0 && unavailableItems.length === 0) {
                         // Get updated cart items
@@ -693,15 +551,15 @@ export default function CartScreen() {
                         updatedVariants.forEach((v: any) => {
                             if (v && v.id) updatedVariantMap.set(v.id, v);
                         });
-                        
+
                         // Check updated items
                         for (const item of updatedCartItems) {
                             const variant = updatedVariantMap.get(item.variantId);
-                            const isUnavailable = !variant || 
+                            const isUnavailable = !variant ||
                                 variant.availableForSale === false ||
                                 (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
                                 (variant.quantityAvailable === 0);
-                            
+
                             if (isUnavailable) {
                                 unavailableItems.push({
                                     title: item.title || `Product ${item.variantId}`,
@@ -712,7 +570,7 @@ export default function CartScreen() {
                         }
                     }
                 }
-                
+
                 if (unavailableItems.length > 0) {
                     const itemNames = unavailableItems.map(item => item.title).join(', ');
                     Alert.alert(
@@ -742,7 +600,12 @@ export default function CartScreen() {
                 // Shopify will catch it anyway, but this gives better UX
             }
 
-            // Prepare order data
+            // Effective payment method for backend (so Shopify order has correct method)
+            const isFreeOrder = toPay === 0;
+            const chosenPayment = paymentMethod === 'cod' ? 'cod' : 'razorpay';
+            const effectivePaymentMethod = isFreeOrder ? 'free' : chosenPayment;
+
+            // Prepare order data with full checkout details for backend/Shopify
             const orderData = {
                 items: cartItems.map(item => ({
                     id: item.id,
@@ -751,15 +614,18 @@ export default function CartScreen() {
                     quantity: item.quantity,
                     price: item.price,
                     title: item.title,
+                    variantTitle: item.variantTitle,
+                    image: item.image,
+                    compareAtPrice: item.compareAtPrice,
                     tags: item.tags,
-                    bookingDate: item.bookingDate, // For Events, Playhouses, Petting Farms - sent to Shopify
+                    bookingDate: item.bookingDate,
                 })),
                 totalAmount: toPay,
                 currencyCode: 'INR',
                 email: user?.email || 'guest@example.com',
                 phone: user?.phone || billingAddress.phone || '',
                 name: user?.displayName || `${billingAddress.firstName} ${billingAddress.lastName}`,
-                customerId: user?.id, // Pass the raw ID, let service handle formatting if needed
+                customerId: user?.id,
                 address: {
                     name: `${billingAddress.firstName} ${billingAddress.lastName}`,
                     address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
@@ -775,15 +641,23 @@ export default function CartScreen() {
                 couponCode: appliedDiscountCode || undefined,
                 discountAmount: discount > 0 ? discount : undefined,
                 deliverySchedule: deliverySchedule || undefined,
+                deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
+                paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
+                billDetails: {
+                    subtotal: itemSubtotal,
+                    subtotalAfterDiscount,
+                    deliveryFee,
+                    giftWrappingFee,
+                    discount,
+                    total: toPay,
+                    currencyCode: 'INR',
+                },
                 selectedShoe: selectedShoe || undefined,
-                isTryAndBuy: isTryAndBuy, // Tag only: backend should create same draft (all items), use for order tagging
+                isTryAndBuy: isTryAndBuy,
             };
 
             // Call Payment Service
             console.log('Calling PaymentService.createOrderWithPayment...');
-            const isFreeOrder = toPay === 0;
-            const chosenPayment = paymentMethod === 'cod' ? 'cod' : 'razorpay';
-            const effectivePaymentMethod = isFreeOrder ? 'free' : chosenPayment;
 
             // For Pay Online, sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
             if (effectivePaymentMethod === 'razorpay') {
@@ -810,131 +684,131 @@ export default function CartScreen() {
                     console.log('Payment cancelled');
                     return;
                 }
-                
-                    if (result.orderCreationFailed && result.payment?.paymentId) {
-                        console.error('[Cart] 🚨 CRITICAL: Payment successful but order creation failed', {
-                            paymentId: result.payment.paymentId,
-                            error: result.error,
-                        });
-                        
-                        // Try to create a local order record as fallback for recovery
-                        try {
-                            const { orderService } = await import('@/services/orderService');
 
-                            // Calculate order values for local record
-                            const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                            const calculatedDiscount = discount || 0;
-                            const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
-                            const calculatedSubtotal = itemSubtotal;
-                            
-                            // Create local order record with payment info for manual recovery
-                            const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
-                            const localOrder = await orderService.createOrder({
-                                items: cartItems.map(item => ({
-                                    id: item.id,
-                                    variantId: item.variantId,
-                                    productId: item.productId,
-                                    title: item.title,
-                                    variantTitle: item.variantTitle,
-                                    price: item.price,
-                                    quantity: item.quantity,
-                                    image: item.image,
-                                })),
-                                shippingAddress: selectedAddress
-                                    ? {
-                                          name: selectedAddress.name,
-                                          address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
-                                          city: selectedAddress.city,
-                                          state: selectedAddress.province || selectedAddress.state,
-                                          pincode: selectedAddress.zip || selectedAddress.pincode,
-                                          phone: selectedAddress.phone,
-                                      }
-                                    : {
-                                          name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                          address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                          city: billingAddress.city,
-                                          state: billingAddress.province,
-                                          pincode: billingAddress.zip,
-                                          phone: billingAddress.phone,
-                                      },
-                                paymentMethod: paymentMethod || 'razorpay',
-                                paymentStatus: 'paid',
-                                paymentId: result.payment?.paymentId,
-                                deliveryFee: calculatedDeliveryFee,
-                                discount: calculatedDiscount,
-                                couponCode: appliedDiscountCode || undefined,
-                                note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
-                                userId: userIdForOrder ?? undefined,
-                            });
-                            
-                            console.log('[Cart] Created local recovery order:', localOrder.id);
-                            
-                            // Show alert with share payment ID option
-                            Alert.alert(
-                                'Payment Successful - Order Issue',
-                                `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
-                                [
-                                    {
-                                        text: 'Share Payment ID',
-                                        onPress: async () => {
-                                            try {
-                                                const paymentId = result.payment?.paymentId || '';
-                                                if (paymentId) {
-                                                    await Share.share({
-                                                        message: `Payment ID for support: ${paymentId}`,
-                                                        title: 'Payment ID',
-                                                    });
-                                                }
-                                            } catch (e) {
-                                                console.error('Failed to share payment ID:', e);
+                if (result.orderCreationFailed && result.payment?.paymentId) {
+                    console.error('[Cart] 🚨 CRITICAL: Payment successful but order creation failed', {
+                        paymentId: result.payment.paymentId,
+                        error: result.error,
+                    });
+
+                    // Try to create a local order record as fallback for recovery
+                    try {
+                        const { orderService } = await import('@/services/orderService');
+
+                        // Calculate order values for local record
+                        const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                        const calculatedDiscount = discount || 0;
+                        const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
+                        const calculatedSubtotal = itemSubtotal;
+
+                        // Create local order record with payment info for manual recovery
+                        const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
+                        const localOrder = await orderService.createOrder({
+                            items: cartItems.map(item => ({
+                                id: item.id,
+                                variantId: item.variantId,
+                                productId: item.productId,
+                                title: item.title,
+                                variantTitle: item.variantTitle,
+                                price: item.price,
+                                quantity: item.quantity,
+                                image: item.image,
+                            })),
+                            shippingAddress: selectedAddress
+                                ? {
+                                    name: selectedAddress.name,
+                                    address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
+                                    city: selectedAddress.city,
+                                    state: selectedAddress.province || selectedAddress.state,
+                                    pincode: selectedAddress.zip || selectedAddress.pincode,
+                                    phone: selectedAddress.phone,
+                                }
+                                : {
+                                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                                    city: billingAddress.city,
+                                    state: billingAddress.province,
+                                    pincode: billingAddress.zip,
+                                    phone: billingAddress.phone,
+                                },
+                            paymentMethod: paymentMethod || 'razorpay',
+                            paymentStatus: 'paid',
+                            paymentId: result.payment?.paymentId,
+                            deliveryFee: calculatedDeliveryFee,
+                            discount: calculatedDiscount,
+                            couponCode: appliedDiscountCode || undefined,
+                            note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
+                            userId: userIdForOrder ?? undefined,
+                        });
+
+                        console.log('[Cart] Created local recovery order:', localOrder.id);
+
+                        // Show alert with share payment ID option
+                        Alert.alert(
+                            'Payment Successful - Order Issue',
+                            `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
+                            [
+                                {
+                                    text: 'Share Payment ID',
+                                    onPress: async () => {
+                                        try {
+                                            const paymentId = result.payment?.paymentId || '';
+                                            if (paymentId) {
+                                                await Share.share({
+                                                    message: `Payment ID for support: ${paymentId}`,
+                                                    title: 'Payment ID',
+                                                });
                                             }
-                                        },
+                                        } catch (e) {
+                                            console.error('Failed to share payment ID:', e);
+                                        }
                                     },
-                                    {
-                                        text: 'Contact Support',
-                                        onPress: () => {
-                                            // You can navigate to support or open support URL
-                                            console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
-                                            // TODO: Navigate to support screen or open support URL
-                                        },
+                                },
+                                {
+                                    text: 'Contact Support',
+                                    onPress: () => {
+                                        // You can navigate to support or open support URL
+                                        console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
+                                        // TODO: Navigate to support screen or open support URL
                                     },
-                                    { text: 'OK' },
-                                ]
-                            );
-                        } catch (recoveryError) {
-                            console.error('[Cart] Failed to create local recovery order:', recoveryError);
-                            
-                            // Fallback: Show alert without local order creation
-                            const paymentId = result.payment?.paymentId || 'unknown';
-                            Alert.alert(
-                                'Payment Successful - Order Issue',
-                                `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
-                                [
-                                    {
-                                        text: 'Share Payment ID',
-                                        onPress: async () => {
-                                            try {
-                                                const pid = result.payment?.paymentId || '';
-                                                if (pid) {
-                                                    await Share.share({
-                                                        message: `Payment ID for support: ${pid}`,
-                                                        title: 'Payment ID',
-                                                    });
-                                                }
-                                            } catch (e) {
-                                                console.error('Failed to share payment ID:', e);
+                                },
+                                { text: 'OK' },
+                            ]
+                        );
+                    } catch (recoveryError) {
+                        console.error('[Cart] Failed to create local recovery order:', recoveryError);
+
+                        // Fallback: Show alert without local order creation
+                        const paymentId = result.payment?.paymentId || 'unknown';
+                        Alert.alert(
+                            'Payment Successful - Order Issue',
+                            `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
+                            [
+                                {
+                                    text: 'Share Payment ID',
+                                    onPress: async () => {
+                                        try {
+                                            const pid = result.payment?.paymentId || '';
+                                            if (pid) {
+                                                await Share.share({
+                                                    message: `Payment ID for support: ${pid}`,
+                                                    title: 'Payment ID',
+                                                });
                                             }
-                                        },
+                                        } catch (e) {
+                                            console.error('Failed to share payment ID:', e);
+                                        }
                                     },
-                                    { text: 'OK' },
-                                ]
-                            );
-                        }
-                        
-                        setOrderLoading(false);
-                        return;
+                                },
+                                { text: 'OK' },
+                            ]
+                        );
                     }
-                
+
+                    setOrderLoading(false);
+                    return;
+                }
+
                 // Track Payment Failed
                 try {
                     const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -947,7 +821,7 @@ export default function CartScreen() {
                 } catch (e) {
                     console.warn('Analytics tracking error:', e);
                 }
-                
+
                 throw new Error(result.error || 'Order creation failed');
             }
 
@@ -1033,7 +907,7 @@ export default function CartScreen() {
 
             // Clear cart first
             clearCart();
-            
+
             // Navigate to order success screen
             // Use a small delay to ensure state updates complete
             requestAnimationFrame(() => {
@@ -1046,7 +920,7 @@ export default function CartScreen() {
                             total: total.toString(),
                         },
                     };
-                    
+
                     console.log('[Cart] Navigating with params:', navParams);
                     router.push(navParams);
                 } catch (error) {
@@ -1062,10 +936,10 @@ export default function CartScreen() {
                 // Payment cancelled by user
                 return;
             }
-            
+
             // Parse Shopify errors for better user experience
             let errorMessage = error.description || error.message || 'Something went wrong while placing your order.';
-            
+
             // Check if error is about product availability
             if (errorMessage.includes('no longer available') || errorMessage.includes('is no longer available')) {
                 // Extract product ID from error message
@@ -1073,14 +947,14 @@ export default function CartScreen() {
                 if (productIdMatch) {
                     const unavailableProductId = productIdMatch[1];
                     // Find the product in cart
-                    const unavailableItem = cartItems.find(item => 
-                        item.variantId.includes(unavailableProductId) || 
+                    const unavailableItem = cartItems.find(item =>
+                        item.variantId.includes(unavailableProductId) ||
                         item.productId.includes(unavailableProductId)
                     );
-                    
+
                     if (unavailableItem) {
                         errorMessage = `${unavailableItem.title || 'One or more items'} is no longer available. Please remove it from your cart and try again.`;
-                        
+
                         // Offer to remove the item
                         Alert.alert(
                             'Product Unavailable',
@@ -1108,7 +982,6 @@ export default function CartScreen() {
                 try {
                     const { useCartStore: getCartStore } = await import('@/store/cartStore');
                     appliedDiscountCodes.forEach((code: string) => getCartStore.getState().removeDiscountCode(code));
-                    setSelectedCouponForApply(null);
                 } catch (e) {
                     console.warn('Failed to remove invalid coupon from cart', e);
                 }
@@ -1221,464 +1094,177 @@ export default function CartScreen() {
             </View>
 
             {cartItems.length > 0 && (
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
+                <>
                     {/* Total Savings Banner - full width, lighter green, thinner */}
                     {totalSavings > 0 && (
                         <View style={styles.savingsBanner}>
                             <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(totalSavings)}!</Text>
                         </View>
                     )}
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
 
-                    {/* Delivery Information Card - same width as other cards */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.deliveryCard}>
-                            <Ionicons name="flash" size={24} color="#E6B800" style={styles.deliveryIcon} />
-                            <View style={styles.deliveryCardContent}>
-                                <Text style={styles.deliveryCardTitle}>Delivery in 35 min</Text>
-                                <TouchableOpacity onPress={() => setShowScheduleModal(true)} activeOpacity={0.7}>
-                                    <Text style={styles.deliveryCardLink}>Want it later? Schedule delivery</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* Cart Items - one card with "X added items" header and all items inside */}
-                    <View style={styles.itemsSection}>
-                        <View style={styles.itemsHeader}>
-                            <Text style={styles.itemsHeaderText}>
-                                {cartItems.reduce((s, i) => s + i.quantity, 0)} added items
-                            </Text>
-                        </View>
-                        {cartItems.map(item => renderItem(item))}
-                    </View>
-
-                    {/* Gift Wrapping - Make this a gift? Get items gift wrapped for FREE (underlined), red Select */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity style={styles.giftWrappingButton} onPress={() => setShowGiftModal(true)}>
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="gift-outline" size={24} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>Make this a gift?</Text>
-                                        <Text style={styles.giftWrappingDescription}>Get items gift wrapped for FREE</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.giftWrappingSelect}>Select</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Complete your purchase with - horizontal product list from collection */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.completePurchaseSection}>
-                            <Text style={styles.completePurchaseTitle}>Complete your purchase with</Text>
-                            <HorizontalProductList
-                                collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
-                                config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
-                                title=""
-                                onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
-                                onAddToCart={(p) => {
-                                    if (p?.variants?.edges?.[0]?.node) {
-                                        const v = p.variants.edges[0].node;
-                                        useCartStore.getState().addItem({
-                                            productId: p.id,
-                                            variantId: v.id,
-                                            title: p.title,
-                                            variantTitle: v.title,
-                                            price: parseFloat(v.price?.amount || '0'),
-                                            compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
-                                            currencyCode: v.price?.currencyCode || 'INR',
-                                            image: p.featuredImage?.url || v.image?.url || '',
-                                            quantity: 1,
-                                            availableForSale: v.availableForSale !== false,
-                                            tags: p.tags || [],
-                                        });
-                                    }
-                                }}
+                        {/* Delivery Information Card - when at least one non-ticketing product in cart */}
+                        {hasNonTicketingProducts && (
+                            <DeliveryCard
+                                deliverySchedule={deliverySchedule}
+                                onSchedulePress={() => setShowScheduleModal(true)}
                             />
-                        </View>
-                    )}
-
-                    {/* Savings Corner - coupon row, View all coupons (modal), Kiddo Cash dummy, Kiddo Coins bar */}
-                    <View style={styles.savingsCornerSection}>
-                        <Text style={styles.savingsCornerTitle}>Savings Corner</Text>
-                        <View style={styles.savingsCornerRow}>
-                            <View style={styles.savingsCornerLeft}>
-                                <View style={styles.savingsCornerIconBlue}>
-                                    <Text style={styles.savingsCornerIconPercent}>%</Text>
-                                </View>
-                                <View style={styles.savingsCornerTextWrap}>
-                                    <Text style={styles.savingsCornerMain}>
-                                        {selectedCouponForApply
-                                            ? `Save ${formatCurrency(selectedCouponForApply?.valueType === 'percentage'
-                                                ? Math.round((itemSubtotal * (selectedCouponForApply?.value || 0)) / 100)
-                                                : (selectedCouponForApply?.value || 0))} with ${selectedCouponForApply?.code}`
-                                            : applicableCoupons.length > 0
-                                                ? 'Select a coupon'
-                                                : 'Add a coupon'}
-                                    </Text>
-                                    <TouchableOpacity onPress={() => setShowAllCouponsModal(true)} activeOpacity={0.7}>
-                                        <Text style={styles.savingsCornerViewAll}>View all coupons</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            {(!appliedDiscountCodes || appliedDiscountCodes.length === 0) && isAuthenticated && (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.savingsCornerApplyBtn,
-                                        (couponApplying || !selectedCouponForApply) && styles.savingsCornerApplyBtnDisabled,
-                                    ]}
-                                    onPress={() => {
-                                        if (selectedCouponForApply) handleApplyCouponFromList(selectedCouponForApply);
-                                    }}
-                                    disabled={couponApplying || !selectedCouponForApply}
-                                    activeOpacity={0.8}
-                                >
-                                    {couponApplying ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text style={styles.savingsCornerApplyText}>Apply</Text>
-                                    )}
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                        <View style={styles.kiddoCashRow}>
-                            <View style={styles.kiddoCashIconWrap}>
-                                <Ionicons name="cash-outline" size={20} color="#5B21B6" />
-                            </View>
-                            <View style={styles.kiddoCashTextWrap}>
-                                <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
-                                <Text style={styles.kiddoCashSub}>₹250 available</Text>
-                            </View>
-                            <Switch
-                                value={kiddoCashEnabled}
-                                onValueChange={setKiddoCashEnabled}
-                                trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
-                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
-                            />
-                        </View>
-                        <View style={styles.kiddoCoinsBar}>
-                            <Text style={styles.kiddoCoinsBarText}>You will earn 20 Kiddo Coins with this order</Text>
-                        </View>
-                    </View>
-
-                    {/* Coupon Code - hidden */}
-                    {false && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Coupon Code</Text>
-                        {/* Only show input when no coupon is applied */}
-                        {(!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
-                            <>
-                                {!isAuthenticated ? (
-                                    <View style={styles.couponLoginPrompt}>
-                                        <Ionicons name="lock-closed" size={20} color={Colors.primary} />
-                                        <Text style={styles.couponLoginText}>
-                                            Please login or create an account to use discount coupons
-                                        </Text>
-                                        <TouchableOpacity
-                                            style={styles.loginButton}
-                                            onPress={() => router.push('/(auth)/login')}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.loginButtonText}>Login / Sign Up</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <View style={styles.couponContainer}>
-                                        <View style={styles.couponInputWrapper}>
-                                            <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
-                                            <TextInput
-                                                style={styles.couponInput}
-                                                placeholder="Enter coupon code"
-                                                value={couponCode}
-                                                onChangeText={setCouponCode}
-                                                placeholderTextColor="#999"
-                                                autoCapitalize="characters"
-                                            />
-                                        </View>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.applyButton,
-                                                (!couponCode.trim() || couponApplying) && styles.applyButtonDisabled
-                                            ]}
-                                            disabled={couponApplying || !couponCode.trim()}
-                                            onPress={handleApplyCoupon}
-                                            activeOpacity={0.7}
-                                        >
-                                            {couponApplying ? (
-                                                <ActivityIndicator size="small" color="#fff" />
-                                            ) : (
-                                                <Text style={styles.applyButtonText}>Apply</Text>
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            </>
                         )}
-                        {couponMessage && (
-                            <View style={styles.couponMessageContainer}>
-                                <Ionicons
-                                    name={couponMessage.startsWith('✓') ? 'checkmark-circle' : 'alert-circle'}
-                                    size={14}
-                                    color={couponMessage.startsWith('✓') ? '#4caf50' : '#ff4444'}
-                                />
-                                <Text
-                                    style={[
-                                        styles.couponMessage,
-                                        couponMessage.startsWith('✓') && styles.couponMessageSuccess,
-                                    ]}
-                                >
-                                    {couponMessage}
+
+                        {/* Cart Items - one card with "X added items" header and all items inside */}
+                        <View style={styles.itemsSection}>
+                            <View style={styles.itemsHeader}>
+                                <Text style={styles.itemsHeaderText}>
+                                    {cartItems.reduce((s, i) => s + i.quantity, 0)} added items
                                 </Text>
                             </View>
-                        )}
-                        {/* Applied Coupons */}
-                        {appliedDiscountCodes && appliedDiscountCodes.length > 0 && (
-                            <View style={styles.appliedCouponsContainer}>
-                                {appliedDiscountCodes.map((code, index) => (
-                                    <View key={`${code}-${index}`} style={styles.couponChip}>
-                                        <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                                        <Text style={styles.couponChipText}>{code}</Text>
-                                        <TouchableOpacity
-                                            onPress={() => handleRemoveCoupon(code)}
-                                            style={styles.couponRemove}
-                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                        >
-                                            <Ionicons name="close" size={14} color="#fff" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-
-                        {/* Available Coupons / Offers - Show when no coupon applied and user logged in */}
-                        {isAuthenticated && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
-                            <View style={styles.availableCouponsContainer}>
-                                <View style={styles.availableCouponsHeader}>
-                                    <Ionicons name="pricetag" size={16} color={Colors.primary} />
-                                    <Text style={styles.availableCouponsTitle}>Offers</Text>
-                                </View>
-                                {loadingCoupons ? (
-                                    <View style={styles.couponsLoadingContainer}>
-                                        <ActivityIndicator size="small" color={Colors.primary} />
-                                        <Text style={styles.couponsLoadingText}>Loading offers...</Text>
-                                    </View>
-                                ) : applicableCoupons.length > 0 ? (
-                                    <ScrollView
-                                        horizontal
-                                        showsHorizontalScrollIndicator={false}
-                                        contentContainerStyle={styles.couponsList}
-                                    >
-                                        {applicableCoupons.map((coupon) => {
-                                            const conditions = couponService.getCouponConditionsText(coupon);
-                                            return (
-                                                <TouchableOpacity
-                                                    key={coupon.code}
-                                                    style={[
-                                                        styles.couponCard,
-                                                        couponApplying && styles.couponCardDisabled,
-                                                        selectedCouponForApply?.code === coupon.code && styles.couponModalCardSelected,
-                                                    ]}
-                                                    onPress={() => {
-                                                        if (couponApplying) return;
-                                                        setSelectedCouponForApply(coupon);
-                                                    }}
-                                                    disabled={couponApplying}
-                                                    activeOpacity={0.7}
-                                                >
-                                                    <View style={styles.couponCardContent}>
-                                                        <View style={styles.couponCodeRow}>
-                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
-                                                                <View style={styles.discountBadge}>
-                                                                    <Text style={styles.discountBadgeText}>
-                                                                        {coupon.valueType === 'percentage'
-                                                                            ? `${coupon.value}%`
-                                                                            : `₹${coupon.value}`}
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {coupon.title && (
-                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                {coupon.title}
-                                                            </Text>
-                                                        )}
-                                                        {conditions.length > 0 && (
-                                                            <View style={styles.couponConditionsContainer}>
-                                                                {conditions.map((condition, index) => (
-                                                                    <View key={index} style={styles.couponConditionTag}>
-                                                                        <Ionicons name="information-circle" size={10} color="#666" />
-                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
-                                                                    </View>
-                                                                ))}
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                ) : (
-                                    <Text style={styles.noCouponsText}>No coupons available</Text>
-                                )}
-                            </View>
-                        )}
-                    </View>
-                    )}
-
-                    {/* Bill details - wave inside card with zIndex so scalloped bottom always shows */}
-                    <View style={styles.billDetailsWrapper}>
-                        <View style={styles.billSummarySection} collapsable={false}>
-                            <View style={styles.billSummarySectionBg} pointerEvents="none" />
-                            <View style={styles.billSummaryHeader}>
-                                <Text style={styles.billDetailsTitle}>Bill details</Text>
-                            </View>
-                            <View style={styles.billSummaryContent}>
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Item Total</Text>
-                                    <View style={styles.billValueRow}>
-                                        {mrp > subtotalAfterDiscount && (
-                                            <Text style={styles.billValueStruck}>{formatCurrency(mrp)}</Text>
-                                        )}
-                                        <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Handling Fee</Text>
-                                    <View style={styles.billValueRow}>
-                                        <Text style={styles.billValueStruck}>{formatCurrency(HANDLING_FEE_ORIGINAL)}</Text>
-                                        <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Delivery Fee</Text>
-                                    <View style={styles.billValueRow}>
-                                        <Text style={styles.billValueStruck}>{formatCurrency(DELIVERY_FEE_ORIGINAL)}</Text>
-                                        <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
-                                    </View>
-                                </View>
-                                {kiddoCashEnabled && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Kiddo Cash</Text>
-                                        <Text style={[styles.billValue, styles.kiddoCashDeduction]}>
-                                            -{formatCurrency(KIDDO_CASH_APPLIED)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.billSeparator} />
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabelToPay}>To Pay</Text>
-                                    <View style={styles.billValueRow}>
-                                        {total !== toPay && (
-                                            <Text style={styles.billValueStruck}>{formatCurrency(total)}</Text>
-                                        )}
-                                        <Text style={styles.billValueToPay}>{formatCurrency(toPay)}</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.billSavingsBannerWrap}>
-                                    <Text style={styles.billSavingsBanner}>
-                                        You saved {formatCurrency(displaySavings)}!
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={[styles.billWaveOuter, { width: Dimensions.get('window').width - 32 }]} pointerEvents="none">
-                                <Svg
-                                    viewBox="0 0 100 38"
-                                    preserveAspectRatio="none"
-                                    width={Dimensions.get('window').width - 32}
-                                    height={32}
-                                >
-                                    <Path
-                                        d="M0,0 L100,0 L100,14 L96.67,25 L93.33,14 L90,25 L86.67,14 L83.33,25 L80,14 L76.67,25 L73.33,14 L70,25 L66.67,14 L63.33,25 L60,14 L56.67,25 L53.33,14 L50,25 L46.67,14 L43.33,25 L40,14 L36.67,25 L33.33,14 L30,25 L26.67,14 L23.33,25 L20,14 L16.67,25 L13.33,14 L10,25 L6.67,14 L3.33,25 L0,14 L0,0 Z"
-                                        fill="#fff"
-                                    />
-                                </Svg>
-                            </View>
+                            {cartItems.map(item => renderItem(item))}
                         </View>
-                    </View>
 
-                    {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
-                    {cartItems.length > 0 && total > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Payment Method</Text>
-                            {/* Hide COD option for ticketing products */}
-                            {!hasTicketingProducts && (
+                        {/* Gift Wrapping - when at least one non-ticketing product in cart */}
+                        {hasNonTicketingProducts && (
+                            <GiftWrappingCard onSelectPress={() => setShowGiftModal(true)} />
+                        )}
+
+                        {/* Complete your purchase with - horizontal product list from collection */}
+                        {!hasTicketingProducts && (
+                            <View style={styles.completePurchaseSection}>
+                                <Text style={styles.completePurchaseTitle}>Complete your purchase with</Text>
+                                <HorizontalProductList
+                                    collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
+                                    config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
+                                    title=""
+                                    onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
+                                    onAddToCart={(p) => {
+                                        if (p?.variants?.edges?.[0]?.node) {
+                                            const v = p.variants.edges[0].node;
+                                            useCartStore.getState().addItem({
+                                                productId: p.id,
+                                                variantId: v.id,
+                                                title: p.title,
+                                                variantTitle: v.title,
+                                                price: parseFloat(v.price?.amount || '0'),
+                                                compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
+                                                currencyCode: v.price?.currencyCode || 'INR',
+                                                image: p.featuredImage?.url || v.image?.url || '',
+                                                quantity: 1,
+                                                availableForSale: v.availableForSale !== false,
+                                                tags: p.tags || [],
+                                            });
+                                        }
+                                    }}
+                                />
+                            </View>
+                        )}
+
+                        <SavingsCorner
+                            itemSubtotal={itemSubtotal}
+                            isAuthenticated={isAuthenticated}
+                            hasTicketingProducts={hasTicketingProducts}
+                            hasFashionItems={hasFashionItems}
+                            kiddoCashEnabled={kiddoCashEnabled}
+                            formatCurrency={formatCurrency}
+                            onLoginPress={() => router.push('/(auth)/login')}
+                            onKiddoCashChange={setKiddoCashEnabled}
+                        />
+
+                        <BillDetails
+                            mrp={mrp}
+                            itemTotal={subtotalAfterDiscount}
+                            handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
+                            deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
+                            couponDiscount={discountAmount}
+                            giftWrappingFee={giftWrappingFee}
+                            kiddoCashEnabled={kiddoCashEnabled}
+                            kiddoCashApplied={KIDDO_CASH_APPLIED}
+                            total={total}
+                            toPay={toPay}
+                            displaySavings={displaySavings}
+                            formatCurrency={formatCurrency}
+                        />
+
+                        {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
+                        {cartItems.length > 0 && total > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Payment Method</Text>
+                                {/* Hide COD option for ticketing products */}
+                                {!hasTicketingProducts && (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.paymentOption,
+                                            paymentMethod === 'cod' && styles.paymentOptionSelected,
+                                        ]}
+                                        onPress={() => {
+                                            setPaymentMethod('cod');
+                                            // Track payment method selected
+                                            try {
+                                                const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
+                                                trackPaymentMethodSelected('cod');
+                                            } catch (e) {
+                                                console.warn('Mixpanel tracking error:', e);
+                                            }
+                                        }}
+                                    >
+                                        <Ionicons
+                                            name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
+                                            size={24}
+                                            color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
+                                        />
+                                        <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                    </TouchableOpacity>
+                                )}
                                 <TouchableOpacity
                                     style={[
                                         styles.paymentOption,
-                                        paymentMethod === 'cod' && styles.paymentOptionSelected,
+                                        paymentMethod === 'razorpay' && styles.paymentOptionSelected,
                                     ]}
                                     onPress={() => {
-                                        setPaymentMethod('cod');
+                                        setPaymentMethod('razorpay');
                                         // Track payment method selected
                                         try {
                                             const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
-                                            trackPaymentMethodSelected('cod');
+                                            trackPaymentMethodSelected('razorpay');
                                         } catch (e) {
                                             console.warn('Mixpanel tracking error:', e);
                                         }
                                     }}
                                 >
                                     <Ionicons
-                                        name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
+                                        name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
                                         size={24}
-                                        color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
+                                        color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
                                     />
-                                    <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                    <View style={styles.paymentOptionContent}>
+                                        <Text style={styles.paymentOptionText}>Pay Online</Text>
+                                        <Text style={styles.paymentOptionSubtext}>
+                                            Card, UPI, Net Banking via Razorpay
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                                style={[
-                                    styles.paymentOption,
-                                    paymentMethod === 'razorpay' && styles.paymentOptionSelected,
-                                ]}
-                                onPress={() => {
-                                    setPaymentMethod('razorpay');
-                                    // Track payment method selected
-                                    try {
-                                        const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
-                                        trackPaymentMethodSelected('razorpay');
-                                    } catch (e) {
-                                        console.warn('Mixpanel tracking error:', e);
-                                    }
+                            </View>
+                        )}
+
+                        {/* Nector Loyalty Coins Redemption */}
+                        <View style={styles.section}>
+                            <CheckoutRedeemCoins
+                                cartAmount={total}
+                                onCouponApplied={(code) => {
+                                    setCouponMessage(`✓ ${code} applied from rewards!`);
                                 }}
-                            >
-                                <Ionicons
-                                    name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
-                                    size={24}
-                                    color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
-                                />
-                                <View style={styles.paymentOptionContent}>
-                                    <Text style={styles.paymentOptionText}>Pay Online</Text>
-                                    <Text style={styles.paymentOptionSubtext}>
-                                        Card, UPI, Net Banking via Razorpay
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
+                                onCouponRemoved={() => {
+                                    setCouponMessage(null);
+                                }}
+                            />
                         </View>
-                    )}
 
-                    {/* Nector Loyalty Coins Redemption */}
-                    <View style={styles.section}>
-                        <CheckoutRedeemCoins
-                            cartAmount={total}
-                            onCouponApplied={(code) => {
-                                setCouponMessage(`✓ ${code} applied from rewards!`);
-                            }}
-                            onCouponRemoved={() => {
-                                setCouponMessage(null);
-                            }}
-                        />
-                    </View>
-
-                    {/* Spacer */}
-                    <View style={styles.spacerEnd} />
-                </ScrollView>
+                        {/* Spacer */}
+                        <View style={styles.spacerEnd} />
+                    </ScrollView>
+                </>
             )}
 
             {/* Footer - Only show when cart has items */}
@@ -1687,25 +1273,25 @@ export default function CartScreen() {
                     <View style={styles.footerContent}>
                         {/* Address Section */}
                         {!isTicketingOnly && (
-                        <TouchableOpacity
-                            style={styles.footerAddress}
-                            onPress={handleAddressSelection}
-                        >
-                            {selectedAddress ? (
-                                <View style={styles.footerAddressContent}>
-                                    <Ionicons name="location" size={16} color={Colors.primary} />
-                                    <Text style={styles.footerAddressText} numberOfLines={1}>
-                                        {selectedAddress.address1}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={16} color="#666" />
-                                </View>
-                            ) : (
-                                <View style={styles.footerAddressContent}>
-                                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
-                                    <Text style={styles.footerAddressText}>Add Delivery Address</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.footerAddress}
+                                onPress={handleAddressSelection}
+                            >
+                                {selectedAddress ? (
+                                    <View style={styles.footerAddressContent}>
+                                        <Ionicons name="location" size={16} color={Colors.primary} />
+                                        <Text style={styles.footerAddressText} numberOfLines={1}>
+                                            {selectedAddress.address1}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={16} color="#666" />
+                                    </View>
+                                ) : (
+                                    <View style={styles.footerAddressContent}>
+                                        <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
+                                        <Text style={styles.footerAddressText}>Add Delivery Address</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
                         )}
 
                         {/* Payment row: Pay using + method, Pay button */}
@@ -1787,82 +1373,6 @@ export default function CartScreen() {
                 }}
                 initialSchedule={deliverySchedule}
             />
-
-            {/* View all coupons Modal */}
-            <Modal
-                visible={showAllCouponsModal}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setShowAllCouponsModal(false)}
-            >
-                <TouchableOpacity
-                    style={styles.couponsModalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setShowAllCouponsModal(false)}
-                >
-                    <View style={styles.couponsModalContent} onStartShouldSetResponder={() => true}>
-                        <View style={styles.couponsModalHeader}>
-                            <Text style={styles.couponsModalTitle}>Available coupons</Text>
-                            <TouchableOpacity onPress={() => setShowAllCouponsModal(false)} hitSlop={12}>
-                                <Ionicons name="close" size={24} color="#1A1A1A" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.couponsModalScroll} showsVerticalScrollIndicator={false}>
-                            {!isAuthenticated ? (
-                                <View style={styles.couponLoginPrompt}>
-                                    <Text style={styles.couponLoginText}>Please login to view and apply coupons.</Text>
-                                    <TouchableOpacity style={styles.loginButton} onPress={() => { setShowAllCouponsModal(false); router.push('/(auth)/login'); }}>
-                                        <Text style={styles.loginButtonText}>Login</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : loadingCoupons ? (
-                                <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 24 }} />
-                            ) : applicableCoupons.length === 0 ? (
-                                <Text style={styles.noCouponsText}>No coupons available</Text>
-                            ) : (
-                                applicableCoupons.map((coupon) => {
-                                    const conditions = couponService.getCouponConditionsText(coupon);
-                                    const isSelected = selectedCouponForApply?.code === coupon.code;
-                                    return (
-                                        <TouchableOpacity
-                                            key={coupon.code}
-                                            style={[styles.couponModalCardWhite, isSelected && styles.couponModalCardSelected, couponApplying && styles.couponCardDisabled]}
-                                            onPress={() => {
-                                                if (couponApplying) return;
-                                                setSelectedCouponForApply(coupon);
-                                                setShowAllCouponsModal(false);
-                                            }}
-                                            disabled={couponApplying}
-                                            activeOpacity={0.7}
-                                        >
-                                            <View style={styles.couponCardContent}>
-                                                <View style={styles.couponCodeRow}>
-                                                    <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                    {coupon.value != null && coupon.value !== 0 && (
-                                                        <View style={styles.discountBadge}>
-                                                            <Text style={styles.discountBadgeText}>
-                                                                {coupon.valueType === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
-                                                            </Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-                                                {coupon.title && <Text style={styles.couponCardTitle} numberOfLines={1}>{coupon.title}</Text>}
-                                                {conditions.length > 0 && (
-                                                    <View style={styles.couponConditionsContainer}>
-                                                        {conditions.slice(0, 2).map((c, i) => (
-                                                            <Text key={i} style={styles.couponConditionText}>{c}</Text>
-                                                        ))}
-                                                    </View>
-                                                )}
-                                            </View>
-                                        </TouchableOpacity>
-                                    );
-                                })
-                            )}
-                        </ScrollView>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
         </SafeAreaView>
     );
 }
@@ -1911,37 +1421,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: Fonts.Bold,
         color: '#fff',
-    },
-    deliveryCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        marginHorizontal: 0,
-        marginBottom: 12,
-        padding: 16,
-        borderRadius: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
-    },
-    deliveryIcon: {
-        marginRight: 12,
-    },
-    deliveryCardContent: {
-        flex: 1,
-    },
-    deliveryCardTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
-        color: '#2D2D2D',
-        marginBottom: 4,
-    },
-    deliveryCardLink: {
-        fontSize: 13,
-        fontFamily: Fonts.Regular,
-        color: Colors.primary,
-        textDecorationLine: 'underline',
     },
     scrollView: {
         flex: 1,
@@ -2139,48 +1618,6 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.SemiBold,
         color: '#1A1A1A',
     },
-    giftWrappingSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginHorizontal: 0,
-        marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
-    },
-    giftWrappingButton: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    giftWrappingLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    giftWrappingInfo: {
-        marginLeft: 12,
-        flex: 1,
-    },
-    giftWrappingTitle: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
-        marginBottom: 4,
-    },
-    giftWrappingDescription: {
-        fontSize: 12,
-        color: '#888',
-        fontFamily: Fonts.Regular,
-        textDecorationLine: 'underline',
-    },
-    giftWrappingSelect: {
-        fontSize: 14,
-        color: Colors.primary,
-        fontFamily: Fonts.SemiBold,
-    },
     completePurchaseSection: {
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -2200,119 +1637,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         textAlign: 'left',
         paddingLeft: 8,
-    },
-    savingsCornerSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
-    },
-    savingsCornerTitle: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
-        marginBottom: 14,
-    },
-    savingsCornerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    savingsCornerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    savingsCornerIconBlue: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#E3F2FD',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    savingsCornerIconPercent: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#1E88E5',
-    },
-    savingsCornerTextWrap: {
-        flex: 1,
-    },
-    savingsCornerMain: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#2D2D2D',
-    },
-    savingsCornerViewAll: {
-        fontSize: 12,
-        color: '#1E88E5',
-        fontFamily: Fonts.Regular,
-        textDecorationLine: 'underline',
-        marginTop: 2,
-    },
-    savingsCornerApplyBtn: {
-        backgroundColor: '#C41E3A',
-        paddingVertical: 8,
-        paddingHorizontal: 20,
-        minWidth: 72,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 8,
-    },
-    savingsCornerApplyBtnDisabled: {
-        opacity: 0.7,
-    },
-    savingsCornerApplyText: {
-        fontSize: 14,
-        color: '#fff',
-        fontFamily: Fonts.SemiBold,
-    },
-    kiddoCashRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    kiddoCashIconWrap: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F5F3FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    kiddoCashTextWrap: {
-        flex: 1,
-    },
-    kiddoCashTitle: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
-    },
-    kiddoCashSub: {
-        fontSize: 12,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
-        marginTop: 2,
-    },
-    kiddoCoinsBar: {
-        backgroundColor: '#EDE9FE',
-        borderRadius: 10,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        alignItems: 'center',
-    },
-    kiddoCoinsBarText: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#6D28D9',
     },
     couponsModalOverlay: {
         flex: 1,
@@ -2372,122 +1696,6 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontFamily: Fonts.Bold,
         marginRight: 8,
-    },
-    billDetailsWrapper: {
-        marginBottom: 15,
-        position: 'relative',
-    },
-    billSummarySection: {
-        backgroundColor: 'transparent',
-        borderRadius: 12,
-        padding: 15,
-        paddingBottom: 40,
-        overflow: 'visible',
-        position: 'relative',
-    },
-    billSummarySectionBg: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 32,
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-    },
-    billSummaryHeader: {
-        marginBottom: 12,
-    },
-    billSummaryTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    billSummaryTitle: {
-        fontSize: 16,
-        color: '#000',
-        marginLeft: 8,
-        fontFamily: Fonts.Bold,
-    },
-    billDetailsTitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        fontFamily: Fonts.Bold,
-    },
-    billWaveOuter: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 32,
-        backgroundColor: 'transparent',
-        zIndex: 10,
-    },
-    billSummaryContent: {
-        paddingTop: 0,
-    },
-    billRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    billLabel: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Regular,
-    },
-    billValueRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    billValue: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
-    },
-    billValueStruck: {
-        fontSize: 14,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
-        textDecorationLine: 'line-through',
-    },
-    kiddoCashDeduction: {
-        color: '#16a34a',
-    },
-    billSeparator: {
-        height: 1,
-        backgroundColor: '#e5e7eb',
-        marginVertical: 12,
-    },
-    billLabelToPay: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
-    },
-    billValueToPay: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Bold,
-    },
-    billSavingsBannerWrap: {
-        marginTop: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        alignItems: 'center',
-    },
-    billSavingsBanner: {
-        fontSize: 14,
-        color: '#16a34a',
-        fontFamily: Fonts.SemiBold,
-        textAlign: 'center',
-    },
-    discountValue: {
-        color: '#16a34a',
-    },
-    freeText: {
-        color: '#16a34a',
-        fontFamily: Fonts.SemiBold,
     },
     section: {
         backgroundColor: '#fff',
