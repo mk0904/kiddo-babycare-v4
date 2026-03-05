@@ -26,7 +26,7 @@ import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { trackEvent } from '@/utils/mixpanelHelpers';
-import { initMetaSDK } from '@/utils/metaSDK';
+import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
@@ -85,6 +85,10 @@ export default function RootLayout() {
       // Init Meta SDK for app events (attribution + CAPI dedup)
       try {
         initMetaSDK();
+        // iOS: request ATT so Meta can receive events (must run when app is in foreground)
+        setTimeout(() => {
+          requestMetaTrackingPermission().catch(() => {});
+        }, 500);
       } catch (e) {
         if (__DEV__) console.warn('[Meta SDK] init error:', e);
       }

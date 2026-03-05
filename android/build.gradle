@@ -21,5 +21,14 @@ allprojects {
   }
 }
 
+// Disable lint vital analyze for release in all subprojects to avoid Metaspace OOM
+subprojects { subproject ->
+  subproject.tasks.configureEach { task ->
+    if (task.name == 'lintVitalAnalyzeRelease') {
+      task.enabled = false
+    }
+  }
+}
+
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
