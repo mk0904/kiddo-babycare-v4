@@ -53,6 +53,8 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isSplashVisible, setIsSplashVisible] = React.useState(false);
   const [appIsReady, setAppIsReady] = React.useState(false);
+  const metaReadyRef = React.useRef(Platform.OS !== 'ios');
+  const metaInitStartedRef = React.useRef(false);
 
   const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
@@ -70,7 +72,7 @@ export default function RootLayout() {
   // Hide the native splash screen as soon as component mounts
   // This happens before the custom splash renders
   React.useEffect(() => {
-    let fontTimeout: NodeJS.Timeout | null = null;
+    let fontTimeout: ReturnType<typeof setTimeout> | null = null;
     let isReadySet = false;
 
     const setReady = () => {
@@ -82,16 +84,6 @@ export default function RootLayout() {
         fontTimeout = null;
       }
       
-      // Init Meta SDK for app events (attribution + CAPI dedup)
-      try {
-        initMetaSDK();
-        // iOS: request ATT so Meta can receive events (must run when app is in foreground)
-        setTimeout(() => {
-          requestMetaTrackingPermission().catch(() => {});
-        }, 500);
-      } catch (e) {
-        if (__DEV__) console.warn('[Meta SDK] init error:', e);
-      }
       // Preload config in background (non-blocking)
       // This ensures config is available when OTP service is called
       configService.loadConfig().catch((error) => {
@@ -109,10 +101,37 @@ export default function RootLayout() {
       }
     };
 
+    // On iOS: only set ready (and thus send events) after ATT + ATE flag + Meta init.
+    const trySetReady = () => {
+      if (isReadySet) return;
+      if (Platform.OS === 'ios' && !metaReadyRef.current) return;
+      if (!fontsLoaded && !fontError) return;
+      setReady();
+    };
+
+    // Meta order on iOS: request ATT → set ATE flag → init SDK → then send events.
+    // Guard with a ref so this only runs once, even if the effect re-runs due to font state changes.
+    if (!metaInitStartedRef.current) {
+      metaInitStartedRef.current = true;
+      (async () => {
+        try {
+          if (Platform.OS === 'ios') {
+            await requestMetaTrackingPermission();
+          }
+          initMetaSDK();
+          if (Platform.OS === 'ios') metaReadyRef.current = true;
+        } catch (e) {
+          if (__DEV__) console.warn('[Meta SDK] early init error:', e);
+          if (Platform.OS === 'ios') metaReadyRef.current = true;
+        }
+        trySetReady();
+      })();
+    }
+
     // Set a timeout to ensure app loads even if fonts fail
     fontTimeout = setTimeout(() => {
       console.warn('⚠️ Font loading timeout - proceeding without fonts');
-      setReady();
+      trySetReady();
     }, 5000); // 5 second timeout
 
     // Initialize OneSignal in background with delay (non-blocking)
@@ -219,7 +238,7 @@ export default function RootLayout() {
     
     // Set app ready if fonts loaded OR if there was an error (don't block on font errors)
     if (fontsLoaded || fontError) {
-      setReady();
+      trySetReady();
     }
 
     // Cleanup timeout

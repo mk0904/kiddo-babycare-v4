@@ -90,9 +90,15 @@
           "clientToken": "04a657781e5dd2df8704fd3292d74e3d",
           "displayName": "kiddo-babycare",
           "advertiserIDCollectionEnabled": true,
-          "autoLogAppEventsEnabled": true,
-          "isAutoInitEnabled": true,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": false,
           "iosUserTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
         }
       ]
     ],

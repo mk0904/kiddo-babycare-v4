@@ -14,15 +14,39 @@ let initialized = false;
  * Call once at app startup (e.g. in _layout.tsx).
  */
 export function initMetaSDK(): void {
-  if (initialized) return;
+  if (initialized) {
+    if (__DEV__) console.log('[Meta SDK] Already initialized');
+    return;
+  }
   try {
+    if (__DEV__) console.log('[Meta SDK] Initializing...');
+    
+    // Explicitly set App ID and Client Token for robustness
+    Settings.setAppID('1494379925573507');
+    Settings.setClientToken('04a657781e5dd2df8704fd3292d74e3d');
+    
+    // Configure SDK - auto-log is disabled natively so we enable it here after ATT/ATE is set.
     Settings.initializeSDK();
     Settings.setAutoLogAppEventsEnabled(true);
-    // On Android we can enable tracking; on iOS we set it after ATT in requestMetaTrackingPermission()
-    if (Platform.OS !== 'ios') {
+    Settings.setAdvertiserIDCollectionEnabled(true);
+    
+    // Native [FBSDKAppEvents] logs go to Xcode console / Console.app, not Metro terminal.
+    if (__DEV__) {
+      Settings.setAppEventsDebugLogEnabled(true);
+    }
+    
+    // On iOS, ATE is set only after ATT in requestMetaTrackingPermission(); do not set it here.
+    if (Platform.OS === 'android') {
       Settings.setAdvertiserTrackingEnabled(true);
     }
+    
     initialized = true;
+    if (__DEV__) console.log('[Meta SDK] Initialized successfully');
+    try {
+      AppEventsLogger.flush();
+    } catch {
+      // ignore
+    }
   } catch (e) {
     if (__DEV__) {
       console.warn('[Meta SDK] init failed:', e);
@@ -31,25 +55,36 @@ export function initMetaSDK(): void {
 }
 
 /**
- * Request App Tracking Transparency on iOS and tell Meta SDK the result.
- * Call this when the app is in the foreground (e.g. after splash); required for iOS events to be received.
- * No-op on Android.
+ * Request App Tracking Transparency on iOS and set the ATE flag for Meta.
+ * Must be called before initMetaSDK() on iOS so Meta receives the ATE flag.
+ * We never bypass the ATT prompt or default to granted: ATE is true only when
+ * the user actually grants (status === 'granted'). No-op on Android.
  */
+const ATT_REQUEST_TIMEOUT_MS = 15000;
+
 export async function requestMetaTrackingPermission(): Promise<void> {
-  if (Platform.OS !== 'ios' || !initialized) return;
+  if (Platform.OS !== 'ios') return;
+  
   try {
+    if (__DEV__) console.log('[Meta SDK] Requesting ATT permission...');
     const { requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
-    const { status } = await requestTrackingPermissionsAsync();
-    Settings.setAdvertiserTrackingEnabled(status === 'granted');
-    if (__DEV__) {
-      console.log('[Meta SDK] ATT status:', status);
-    }
+    const attPromise = requestTrackingPermissionsAsync();
+    const timeoutPromise = new Promise<{ status: string }>((_, reject) =>
+      setTimeout(() => reject(new Error('ATT request timeout')), ATT_REQUEST_TIMEOUT_MS)
+    );
+    const { status } = await Promise.race([attPromise, timeoutPromise]);
+    
+    if (__DEV__) console.log('[Meta SDK] ATT status received:', status);
+    
+    // Only set ATE true when the user actually granted; never assume or default to granted.
+    const granted = status === 'granted';
+    Settings.setAdvertiserTrackingEnabled(granted);
   } catch (e) {
     if (__DEV__) {
       console.warn('[Meta SDK] ATT request failed:', e);
     }
-    // If ATT module fails (e.g. not installed), allow tracking so events still attempt to send
-    Settings.setAdvertiserTrackingEnabled(true);
+    // On error or timeout (e.g. simulator), do not assume granted; app still sends events with ATE=false.
+    Settings.setAdvertiserTrackingEnabled(false);
   }
 }
 
@@ -85,25 +120,86 @@ export function logMetaEvent(
   properties?: Record<string, unknown>,
   eventId?: string
 ): void {
-  if (!initialized) return;
+  if (!initialized) {
+    // Do not force-init here on iOS: init must happen after ATT/ATE in _layout.tsx.
+    // Dropping event rather than sending it without ATE set.
+    if (__DEV__) console.warn(`[Meta SDK] logMetaEvent dropped (not yet initialized): ${eventName}`);
+    return;
+  }
+  
   try {
     const metaEventName = META_STANDARD_EVENTS[eventName] ?? eventName;
     const params = properties ?? {};
     const dedupId = eventId ?? (params.event_id as string) ?? (params.orderId as string);
+    
+    if (__DEV__) {
+      console.log(`[Meta SDK] Logging event: ${metaEventName}`, { params, dedupId });
+    }
+
+    // Sanitize parameters (Meta expects strings or numbers)
     const sanitized: Record<string, string | number> = {};
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== null && typeof v !== 'object') {
         sanitized[k] = v as string | number;
       }
     }
+
+    // Handle Purchase events specially (Meta dashboard requirement)
+    if (metaEventName === 'Purchase') {
+      const value = Number(params.value || params.amount || params.revenue || 0);
+      const currency = String(params.currency || 'INR');
+      if (dedupId) {
+        // @ts-ignore - logPurchase supports eventId in some versions
+        AppEventsLogger.logPurchase(value, currency, sanitized, dedupId);
+      } else {
+        AppEventsLogger.logPurchase(value, currency, sanitized);
+      }
+      
+      AppEventsLogger.flush();
+      return;
+    }
+
     if (dedupId) {
       AppEventsLogger.logEvent(metaEventName, sanitized, dedupId);
     } else {
       AppEventsLogger.logEvent(metaEventName, sanitized);
     }
+    
+    AppEventsLogger.flush();
   } catch (e) {
     if (__DEV__) {
       console.warn('[Meta SDK] logEvent failed:', eventName, e);
     }
+  }
+}
+
+/**
+ * Set user data for Advanced Matching (helps Meta match events without IDFA).
+ * Pass raw strings; the SDK handles hashing (or we can hash manually).
+ */
+export function setMetaUserData(userData: {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+}): void {
+  if (!initialized) {
+    if (__DEV__) console.warn('[Meta SDK] setMetaUserData called before init, skipping');
+    return;
+  }
+  try {
+    const data: Record<string, string> = {};
+    if (userData.email) data.email = userData.email.toLowerCase().trim();
+    if (userData.phone) data.phone = userData.phone.replace(/[^0-9]/g, '');
+    if (userData.firstName) data.firstName = userData.firstName.toLowerCase().trim();
+    if (userData.lastName) data.lastName = userData.lastName.toLowerCase().trim();
+    
+    if (__DEV__) {
+      console.log('[Meta SDK] Setting user data for advanced matching:', data);
+    }
+    
+    Settings.setUserData(data);
+  } catch (e) {
+    if (__DEV__) console.warn('[Meta SDK] setUserData failed:', e);
   }
 }

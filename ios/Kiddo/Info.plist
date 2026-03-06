@@ -45,9 +45,9 @@
     <key>FacebookAppID</key>
     <string>1494379925573507</string>
     <key>FacebookAutoInitEnabled</key>
-    <true/>
+    <false/>
     <key>FacebookAutoLogAppEventsEnabled</key>
-    <true/>
+    <false/>
     <key>FacebookClientToken</key>
     <string>04a657781e5dd2df8704fd3292d74e3d</string>
     <key>FacebookDisplayName</key>

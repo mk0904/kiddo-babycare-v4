@@ -76,3 +76,18 @@ Ensure kiddo-service has Meta CAPI configured (`META_PIXEL_ID`, `META_CAPI_ACCES
 
 - **Order / Purchase** events include `event_id: orderId` so the same event from the app and from the backend are deduplicated by Meta.
 - Other events can pass `event_id` or `orderId` in `properties` when calling `trackEvent()` for CAPI dedup.
+
+## 7. Testing events (Simulator vs device)
+
+**iOS Simulator limitations**
+
+- The **simulator has a zeroed IDFA**; Meta may still receive events but attribution and some reporting can differ.
+- **ATT** on simulator may not show the system dialog (depending on OS version and Simulator settings). If the prompt doesn’t appear, the app still continues and sends events with `ATE = false`.
+- **Events Manager** can show events with a **24–48 hour delay**. For quicker feedback, use **Test Events** (see below).
+
+**How to verify events**
+
+1. **Real device** – For reliable delivery and ATT/IDFA behavior, test on a physical iPhone.
+2. **Xcode / Console.app** – In development, the native Facebook SDK logs to the **Xcode console** (or macOS Console.app), not Metro. Run the app from Xcode or attach the console to see FBSDK logs and confirm events are being sent.
+3. **Meta Test Events** – In [Meta Events Manager](https://business.facebook.com/events_manager2) → your app → **Test Events**: add your test device (or simulator) so events show up in near real time.
+4. **Flush** – The app calls `AppEventsLogger.flush()` after init and after each event so events are sent promptly.
