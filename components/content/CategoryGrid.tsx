@@ -108,11 +108,13 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
+      const icon = (categoryDef as { icon?: string })?.icon;
+      const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
         label: categoryDef?.label || defaultLabels[key] || key,
-        iconImage: defaultIcons[key],
-        iconUrl: categoryDef?.header?.backgroundImage,
+        iconImage: iconUrl ? undefined : defaultIcons[key],
+        iconUrl: iconUrl || undefined,
       };
     });
   }, []);

@@ -128,10 +128,13 @@ export default function HomeScreen() {
         babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
+      const icon = (categoryDef as { icon?: string })?.icon;
+      const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
         label: categoryDef?.label || defaultLabels[key] || key,
-        iconImage: defaultIcons[key],
+        iconUrl: iconUrl || undefined,
+        iconImage: iconUrl ? undefined : defaultIcons[key],
       };
     });
   }, [configLoading]);

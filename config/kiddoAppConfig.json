@@ -80,7 +80,8 @@
   "categoryScreen": {
     "header": {
       "title": "All Categories",
-      "showSearch": true
+      "showSearch": true,
+      "showWishlist": true
     },
     "blocks": [
       {
@@ -433,16 +434,19 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingVertical": 16,
+          "backgroundColor": ""
         },
         "title": {
           "marginBottom": 0,
           "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
+          "fontFamily": "bold",
           "color": "#363636"
         },
         "text": {
+          "fontFamily": "semiBold",
           "fontWeight": "700",
           "color": "#000000"
         }
@@ -1675,10 +1679,64 @@
         }
       }
     }
-  ],
+    ],
   "header": {
     "textColor": "#363636",
     "primaryColor": "#363636"
+  },
+  "ticketingScreen": {
+    "header": {
+      "title": "Ticketing",
+      "showSearch": false,
+      "showWishlist": false
+    },
+    "blocks": [
+      {
+        "id": "ticketing-banner",
+        "type": "imageBanner",
+        "order": 1,
+        "visible": true,
+        "imageBannerConfig": {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_5_2026_02_06_50_PM.png?v=1770280647",
+          "height": 200
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 20,
+            "paddingTop": 16,
+            "paddingBottom": 24
+          }
+        }
+      },
+      {
+        "id": "ticketing-grid",
+        "type": "categoryGrid",
+        "order": 2,
+        "visible": true,
+        "title": "Buy tickets to your favourite spots",
+        "collectionIds": [
+          { "id": "gid://shopify/Collection/509726458145", "name": "Playhouses" },
+          { "id": "gid://shopify/Collection/509771153697", "name": "Petting Farms" },
+          { "id": "gid://shopify/Collection/509771120929", "name": "Events" }
+        ],
+        "gridConfig": {
+          "numColumns": 2,
+          "colGap": 16,
+          "rowGap": 16,
+          "limit": 0,
+          "aspectRatio": 1,
+          "resizeMode": "cover",
+          "showLabels": true,
+          "borderRadius": 12
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 20,
+            "paddingBottom": 20
+          }
+        }
+      }
+    ]
   },
   "categories": {
     "order": [
@@ -1692,6 +1750,7 @@
     "items": {
       "all": {
         "label": "All",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-header.png",
           "labelColors": {
@@ -1702,6 +1761,7 @@
       },
       "girls": {
         "label": "Girls",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -1714,6 +1774,7 @@
       },
       "boys": {
         "label": "Boys",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys-fashion-selected_1180e57b-cf0a-4647-9e8d-78864b002f09.png?v=1772801263",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#4169E1",
@@ -1726,6 +1787,7 @@
       },
       "babycare": {
         "label": "Baby Care",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare-selected_e686a7e3-ec46-412b-a563-289532e32bc6.png?v=1772801243",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
@@ -1738,6 +1800,7 @@
       },
       "toys": {
         "label": "Toys & Craft",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys-selected.png?v=1772801403",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
@@ -1750,6 +1813,7 @@
       },
       "babygear": {
         "label": "Baby Gear",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/BabyGearLogo_0fabb389-5fb9-42cd-ba29-985ad36694bb.png?v=1772801112",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#90EE90",

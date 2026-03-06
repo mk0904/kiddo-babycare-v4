@@ -202,10 +202,25 @@ class ConfigService {
     };
   }
 
-  // Get category screen configuration
+  // Get category screen configuration (header, blocks, styles)
   getCategoryScreenConfig() {
     if (!this.rawConfig) return {};
     return this.rawConfig.categoryScreen || {};
+  }
+
+  // Get ticketing screen configuration (header, blocks, styles)
+  getTicketingScreenConfig() {
+    if (!this.rawConfig) return {};
+    return this.rawConfig.ticketingScreen || {};
+  }
+
+  // Get ticketing screen blocks (same block types as home/category)
+  getTicketingScreenBlocks(): ContentBlock[] {
+    if (!this.rawConfig) return [];
+    const blocks = this.rawConfig.ticketingScreen?.blocks || [];
+    return blocks
+      .filter((block: ContentBlock) => block.visible !== false)
+      .sort((a: ContentBlock, b: ContentBlock) => (a.order ?? 0) - (b.order ?? 0));
   }
 
   /**

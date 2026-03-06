@@ -1,5 +1,12 @@
 // Content block types - similar to gauntlet's block system
 
+/**
+ * Block styles (e.g. styles.title, styles.text, styles.heading) support config-driven typography:
+ * - fontFamily: alias ("bold" | "medium" | "semiBold" | "regular") or exact name ("Metropolis-Bold")
+ * - fontWeight: "400" | "500" | "600" | "700" | "900" or number
+ * - fontStyle: "normal" | "italic"
+ * - fontSize, color, etc. as usual
+ */
 export interface BaseBlock {
   id: string;
   type: string;
@@ -368,6 +375,8 @@ export interface AppConfig {
     order?: string[];
     items?: Record<string, {
       label?: string;
+      /** Icon image URL for category nav and grids. When set, overrides bundled asset. */
+      icon?: string;
       header?: {
         textColor?: string;
         backgroundColor?: string;

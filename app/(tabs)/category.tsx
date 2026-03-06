@@ -4,27 +4,32 @@ import { Colors } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
-  StyleSheet
+  StyleSheet,
+  ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const DEFAULT_HEADER = { title: 'Category', showSearch: true, showWishlist: true };
 
 export default function CategoryScreen() {
   const router = useRouter();
   const [configLoading, setConfigLoading] = useState(true);
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
 
-  // Load category screen blocks
+  const screenConfig = useMemo(() => configService.getCategoryScreenConfig(), [configLoading]);
+  const headerConfig = useMemo(() => ({ ...DEFAULT_HEADER, ...screenConfig?.header }), [screenConfig]);
+  const screenStyles = useMemo(() => screenConfig?.styles?.container as ViewStyle | undefined, [screenConfig]);
+
+  // Load category screen blocks from config
   useEffect(() => {
     const loadConfig = async () => {
       setConfigLoading(true);
       try {
-        // Force reload config to get latest from remote
-        await configService.reloadConfig();
-        const categoryBlocks = configService.getCategoryScreenBlocks();
-        console.log('[CategoryScreen] Loaded blocks:', categoryBlocks.map(b => ({ id: b.id, type: b.type, title: b.title, visible: b.visible, order: b.order })));        setBlocks(categoryBlocks);
+        await configService.loadConfig();
+        setBlocks(configService.getCategoryScreenBlocks());
       } catch (error) {
         console.error('[CategoryScreen] Error loading config:', error);
       } finally {
@@ -82,8 +87,12 @@ export default function CategoryScreen() {
   }, [router]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="Category" showWishlist={true} />
+    <SafeAreaView style={[styles.container, screenStyles]} edges={['top']}>
+      <ScreenHeader
+        title={headerConfig.title ?? DEFAULT_HEADER.title}
+        showSearch={headerConfig.showSearch ?? DEFAULT_HEADER.showSearch}
+        showWishlist={headerConfig.showWishlist ?? DEFAULT_HEADER.showWishlist}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

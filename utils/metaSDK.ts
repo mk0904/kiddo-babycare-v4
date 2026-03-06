@@ -4,11 +4,23 @@
  *
  * On iOS 14+, App Tracking Transparency (ATT) must be requested for Meta to receive
  * events; call requestMetaTrackingPermission() after app is in foreground (e.g. from _layout).
+ *
+ * In Expo Go the native module is not available; we guard all usage so the app does not crash.
  */
 import { Platform } from 'react-native';
-import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
 
 let initialized = false;
+
+/** Lazy-load Meta SDK; returns null in Expo Go or when native module is missing. */
+function getMetaSDK(): { Settings: typeof import('react-native-fbsdk-next').Settings; AppEventsLogger: typeof import('react-native-fbsdk-next').AppEventsLogger } | null {
+  try {
+    const sdk = require('react-native-fbsdk-next');
+    if (!sdk?.Settings) return null; // native module not linked (e.g. Expo Go)
+    return sdk;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Call once at app startup (e.g. in _layout.tsx).
@@ -18,27 +30,22 @@ export function initMetaSDK(): void {
     if (__DEV__) console.log('[Meta SDK] Already initialized');
     return;
   }
+  const sdk = getMetaSDK();
+  if (!sdk) {
+    if (__DEV__) console.warn('[Meta SDK] Native module not available (Expo Go?)');
+    return;
+  }
+  const { Settings, AppEventsLogger } = sdk;
   try {
     if (__DEV__) console.log('[Meta SDK] Initializing...');
     
-    // Explicitly set App ID and Client Token for robustness
     Settings.setAppID('1494379925573507');
     Settings.setClientToken('04a657781e5dd2df8704fd3292d74e3d');
-    
-    // Configure SDK - auto-log is disabled natively so we enable it here after ATT/ATE is set.
     Settings.initializeSDK();
     Settings.setAutoLogAppEventsEnabled(true);
     Settings.setAdvertiserIDCollectionEnabled(true);
-    
-    // Native [FBSDKAppEvents] logs go to Xcode console / Console.app, not Metro terminal.
-    if (__DEV__) {
-      Settings.setAppEventsDebugLogEnabled(true);
-    }
-    
-    // On iOS, ATE is set only after ATT in requestMetaTrackingPermission(); do not set it here.
-    if (Platform.OS === 'android') {
-      Settings.setAdvertiserTrackingEnabled(true);
-    }
+    if (__DEV__) Settings.setAppEventsDebugLogEnabled(true);
+    if (Platform.OS === 'android') Settings.setAdvertiserTrackingEnabled(true);
     
     initialized = true;
     if (__DEV__) console.log('[Meta SDK] Initialized successfully');
@@ -48,9 +55,7 @@ export function initMetaSDK(): void {
       // ignore
     }
   } catch (e) {
-    if (__DEV__) {
-      console.warn('[Meta SDK] init failed:', e);
-    }
+    if (__DEV__) console.warn('[Meta SDK] init failed:', e);
   }
 }
 
@@ -64,7 +69,13 @@ const ATT_REQUEST_TIMEOUT_MS = 15000;
 
 export async function requestMetaTrackingPermission(): Promise<void> {
   if (Platform.OS !== 'ios') return;
-  
+  const sdk = getMetaSDK();
+  if (!sdk) {
+    if (__DEV__) console.warn('[Meta SDK] Native module not available, skipping ATT');
+    return;
+  }
+  const { Settings } = sdk;
+
   try {
     if (__DEV__) console.log('[Meta SDK] Requesting ATT permission...');
     const { requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
@@ -75,16 +86,15 @@ export async function requestMetaTrackingPermission(): Promise<void> {
     const { status } = await Promise.race([attPromise, timeoutPromise]);
     
     if (__DEV__) console.log('[Meta SDK] ATT status received:', status);
-    
-    // Only set ATE true when the user actually granted; never assume or default to granted.
     const granted = status === 'granted';
     Settings.setAdvertiserTrackingEnabled(granted);
   } catch (e) {
-    if (__DEV__) {
-      console.warn('[Meta SDK] ATT request failed:', e);
+    if (__DEV__) console.warn('[Meta SDK] ATT request failed:', e);
+    try {
+      Settings.setAdvertiserTrackingEnabled(false);
+    } catch {
+      // native module may be unavailable (Expo Go)
     }
-    // On error or timeout (e.g. simulator), do not assume granted; app still sends events with ATE=false.
-    Settings.setAdvertiserTrackingEnabled(false);
   }
 }
 
@@ -121,12 +131,13 @@ export function logMetaEvent(
   eventId?: string
 ): void {
   if (!initialized) {
-    // Do not force-init here on iOS: init must happen after ATT/ATE in _layout.tsx.
-    // Dropping event rather than sending it without ATE set.
     if (__DEV__) console.warn(`[Meta SDK] logMetaEvent dropped (not yet initialized): ${eventName}`);
     return;
   }
-  
+  const sdk = getMetaSDK();
+  if (!sdk) return;
+  const { AppEventsLogger } = sdk;
+
   try {
     const metaEventName = META_STANDARD_EVENTS[eventName] ?? eventName;
     const params = properties ?? {};
@@ -187,17 +198,16 @@ export function setMetaUserData(userData: {
     if (__DEV__) console.warn('[Meta SDK] setMetaUserData called before init, skipping');
     return;
   }
+  const sdk = getMetaSDK();
+  if (!sdk) return;
+  const { Settings } = sdk;
   try {
     const data: Record<string, string> = {};
     if (userData.email) data.email = userData.email.toLowerCase().trim();
     if (userData.phone) data.phone = userData.phone.replace(/[^0-9]/g, '');
     if (userData.firstName) data.firstName = userData.firstName.toLowerCase().trim();
     if (userData.lastName) data.lastName = userData.lastName.toLowerCase().trim();
-    
-    if (__DEV__) {
-      console.log('[Meta SDK] Setting user data for advanced matching:', data);
-    }
-    
+    if (__DEV__) console.log('[Meta SDK] Setting user data for advanced matching:', data);
     Settings.setUserData(data);
   } catch (e) {
     if (__DEV__) console.warn('[Meta SDK] setUserData failed:', e);
