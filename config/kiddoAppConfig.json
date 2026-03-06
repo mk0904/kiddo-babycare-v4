@@ -49,12 +49,25 @@
       "borderRightColor": "#E84E4B"
     }
   },
+  "babycareSidebarEnabled": true,
   "babycareCollectionSidebar": {
     "508371206433": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/510757241121", "label": "Moisturizer & Powders", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510757306657", "label": "Body Wash/Shampoo", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510757372193", "label": "Sunscreen", "imageUrl": "" }
+        {
+          "collectionId": "gid://shopify/Collection/510757241121",
+          "label": "Moisturizer & Powders",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510757306657",
+          "label": "Body Wash/Shampoo",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510757372193",
+          "label": "Sunscreen",
+          "imageUrl": ""
+        }
       ]
     }
   },
@@ -302,7 +315,7 @@
           }
         },
         "order": 12
-    }
+      }
     ]
   },
   "all": [
@@ -354,7 +367,7 @@
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/509538205985"
+              "id": "gid://shopify/Collection/507797111073"
             }
           }
         }
@@ -368,13 +381,15 @@
       },
       "styles": {
         "container": {
-          "marginTop": -30
+          "marginTop": -61
         },
         "imageContainer": {},
         "image": {
           "width": "100%",
-          "padding": 12,
-          "borderRadius": 20
+          "padding": 0,
+          "borderRadius": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
         "img": {}
       },
@@ -422,6 +437,7 @@
         },
         "title": {
           "marginBottom": 0,
+          "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
@@ -554,7 +570,6 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        
         {
           "id": "gid://shopify/Collection/510762123553",
           "name": "Top Wear"
@@ -587,7 +602,6 @@
           "id": "gid://shopify/Collection/509514449185",
           "name": "Footwear & Socks"
         }
-        
       ],
       "styles": {
         "container": {
@@ -939,7 +953,6 @@
         }
       }
     },
-    
     {
       "id": "all-product-list-1",
       "type": "horizontalProductList",
@@ -959,7 +972,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
         },
@@ -999,7 +1012,6 @@
       },
       "order": 15
     },
-    
     {
       "id": "all-infinite-grid-1",
       "type": "infiniteProductGrid",
@@ -1022,7 +1034,7 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
         }
@@ -1044,12 +1056,16 @@
           }
         },
         "height": 250,
-        "borderRadius": 12,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginTop": -30
+          "marginTop": -31,
+          "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20
         },
         "wrapper": {
           "marginHorizontal": 0
@@ -1095,13 +1111,14 @@
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingHorizontal": 16
+
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "marginTop": 20,
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "image": {
@@ -1121,11 +1138,6 @@
         }
       }
     },
-    
-    
-    
-    
-    
     {
       "id": "girls-product-list-6",
       "type": "horizontalProductList",
@@ -1230,13 +1242,15 @@
       ],
       "styles": {
         "container": {
-          "marginTop": -30
+          "marginTop": -39
         },
         "imageContainer": {},
         "image": {
           "width": "100%",
-          "padding": 12,
-          "borderRadius": 20
+          "padding": 0,
+          "borderRadius": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
         "img": {}
       },
@@ -1244,7 +1258,6 @@
         "autoPlay": true,
         "autoPlayInterval": 3000,
         "loop": true,
-        "height": 0.6,
         "resizeMode": "cover"
       }
     },
@@ -1287,13 +1300,13 @@
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingHorizontal": 16
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "marginTop": 20,  
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "image": {
@@ -1313,10 +1326,6 @@
         }
       }
     },
-    
-    
-    
-    
     {
       "id": "all-product-list-boy-6",
       "type": "horizontalProductList",
@@ -1493,6 +1502,7 @@
         },
         "title": {
           "marginBottom": 0,
+          "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
@@ -1893,12 +1903,14 @@
       "imageBannerConfig": {
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
         "height": 250,
-        "borderRadius": 12,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginTop": -30
+          "marginTop": -31
         },
         "wrapper": {
           "marginHorizontal": 0
@@ -1952,13 +1964,13 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
           "paddingHorizontal": 16
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "marginTop": 20,
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "imageContainer": {
@@ -2313,12 +2325,14 @@
       "imageBannerConfig": {
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/RFR_Baby_Products_Banner.jpg?v=1770056652",
         "height": 250,
-        "borderRadius": 12,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginTop": -30,
+          "marginTop": -31,
           "marginBottom": 0
         },
         "wrapper": {
@@ -2333,7 +2347,7 @@
       "title": "Baby Gear",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 4,
+        "numColumns": 2,
         "colGap": 12,
         "rowGap": 12,
         "limit": 0,
@@ -2367,8 +2381,9 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "marginTop": 20,
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
@@ -2384,7 +2399,7 @@
       "title": "Nursery and Kids Furniture",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 4,
+        "numColumns": 3,
         "colGap": 12,
         "rowGap": 12,
         "limit": 0,
@@ -2433,62 +2448,6 @@
         "text": {
           "fontWeight": "700",
           "color": "#000000"
-        }
-      }
-    },
-    {
-      "id": "babygear-grid-collections",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/509533749537",
-          "name": "Strollers, Prams and Accessories"
-        },
-        {
-          "id": "gid://shopify/Collection/509559472417",
-          "name": "Baby Bed & Nursery"
-        },
-        {
-          "id": "gid://shopify/Collection/509560324385",
-          "name": "Car Seats & Carriers"
-        },
-        {
-          "id": "gid://shopify/Collection/509560389921",
-          "name": "Baby Proofing & Furniture"
-        }
-      ],
-      "title": "Shop by Category",
-      "gridConfig": {
-        "numColumns": 2,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "paddingVertical": 16,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636"
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "borderColor": "#97612f",
-          "borderWidth": 0.2,
-          "backgroundColor": "#FFFFFF"
-        },
-        "text": {
-          "display": "block",
-          "marginTop": 12,
-          "color": "#666666",
-          "textAlign": "center",
-          "fontSize": 14,
-          "fontWeight": "500"
         }
       }
     },

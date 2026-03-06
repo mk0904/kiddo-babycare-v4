@@ -14,12 +14,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -191,7 +190,7 @@ export default function HomeScreen() {
 
     // Check if this is a collection click
     const isCollection = (typeof link === 'string' && link.includes('/collections/')) || item?.collectionId;
-    
+
     if (isCollection) {
       let collectionId = '';
       let title = '';
@@ -211,10 +210,10 @@ export default function HomeScreen() {
 
       if (collectionId) {
         // Ensure collectionId is properly formatted (handle gid:// format)
-        const formattedId = collectionId.startsWith('gid://') 
-          ? collectionId 
+        const formattedId = collectionId.startsWith('gid://')
+          ? collectionId
           : collectionId;
-        
+
         router.push({
           pathname: '/infinity/[collectionId]',
           params: { collectionId: formattedId, title: title || '' }
@@ -296,7 +295,7 @@ export default function HomeScreen() {
 
       const deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
       setEstimatedTime(deliveryTime);
-      
+
       // Track delivery ETA checked
       try {
         const { trackDeliveryETAChecked } = require('@/utils/mixpanelHelpers');
@@ -329,7 +328,7 @@ export default function HomeScreen() {
     useCallback(() => {
       // Check if we're on a detail screen (segments length > 1 means we're in a detail screen)
       const isOnDetailScreen = segments.length > 1;
-      
+
       // If we're navigating to a detail screen, save scroll position
       if (isOnDetailScreen) {
         savedScrollPosition.current = scrollYValue.current;
@@ -391,11 +390,11 @@ export default function HomeScreen() {
   const headerTopHeight = useMemo(() => {
     return insets.top + 60;
   }, [insets.top]);
-  
+
   const stickyThreshold = useMemo(() => {
     return headerTopHeight;
   }, [headerTopHeight]);
-  
+
   const labelTranslateY = scrollY.interpolate({
     inputRange: [0, stickyThreshold],
     outputRange: [0, -stickyThreshold],
@@ -421,7 +420,8 @@ export default function HomeScreen() {
       />
 
       {/* Delivery Time Label - Only visible on homepage (all category) */}
-      {selectedCategory === 'all' && (
+
+{selectedCategory === 'all' && (
         <Animated.View
           style={[
             styles.deliveryLabel,
@@ -433,10 +433,8 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <Text style={styles.deliveryLabelText}>Everything for kids in 30 mins ⚡️</Text>
         </Animated.View>
       )}
-
       <Animated.ScrollView
         ref={scrollViewRef}
         style={[
@@ -445,7 +443,7 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={[
           styles.scrollContent,
-          { 
+          {
             paddingTop: effectiveHeaderHeight,
             // Ensure minimum padding to prevent overlap
             minHeight: '100%',

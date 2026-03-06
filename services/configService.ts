@@ -211,9 +211,11 @@ class ConfigService {
   /**
    * Get sidebar subcategories for a babycare collection. Used on the collection (infinity) screen
    * when viewing a collection that has sidebar config. Returns null if no config for this collection.
-   * Config key: babycareCollectionSidebar[collectionId] = { subcategories: [{ collectionId, label, imageUrl? }] }
+   * Visibility: set babycareSidebarEnabled to false in config to hide the sidebar everywhere.
+   * Config keys: babycareSidebarEnabled (boolean), babycareCollectionSidebar[collectionId] = { subcategories: [...] }
    */
   getBabycareCollectionSidebar(collectionId: string): { collectionId: string; label: string; imageUrl?: string }[] | null {
+    if (this.rawConfig?.babycareSidebarEnabled === false) return null;
     if (!this.rawConfig?.babycareCollectionSidebar || !collectionId) return null;
     const map = this.rawConfig.babycareCollectionSidebar as Record<string, { subcategories?: Array<{ collectionId: string; label: string; imageUrl?: string }> }>;
     const normalized = collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0];
