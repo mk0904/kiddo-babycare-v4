@@ -486,15 +486,9 @@ export const useCartStore = create<CartState>()(
                     const { couponService } = await import('@/services/couponService');
                     const { useUserStore } = await import('@/store/userStore');
                     const userStore = useUserStore.getState();
-                    const u = userStore.user;
-                    const userId =
-                        u?.customerId ||
-                        u?.id ||
-                        u?.email ||
-                        u?.phone ||
-                        null;
+                    const phone = userStore.user?.phone ?? null;
                     const couponParams = {
-                        userId,
+                        phone,
                         cartSubTotal: Math.round(Number(cartSubtotal)) || 0,
                         cartItemCount: Math.max(0, Math.floor(Number(cartItemCount))) || 0,
                         hasTicketing: hasTicketingProducts,
@@ -544,9 +538,9 @@ export const useCartStore = create<CartState>()(
                         const { couponService } = await import('@/services/couponService');
                         const { useUserStore } = await import('@/store/userStore');
                         const userStore = useUserStore.getState();
-                        const userId = userStore.user?.id || userStore.user?.customerId || null;
+                        const phone = userStore.user?.phone ?? null;
                         const couponParams = {
-                            userId,
+                            phone,
                             cartSubTotal: cartSubtotal,
                             cartItemCount,
                             hasTicketing: hasTicketingProducts,
@@ -652,9 +646,9 @@ export const useCartStore = create<CartState>()(
                             const { couponService } = await import('@/services/couponService');
                             const { useUserStore } = await import('@/store/userStore');
                             const userStore = useUserStore.getState();
-                            const userId = userStore.user?.id || userStore.user?.customerId || null;
+                            const phone = userStore.user?.phone ?? null;
                             const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                                userId,
+                                phone,
                                 cartSubTotal: cartSubtotal,
                                 cartItemCount,
                                 hasTicketing: hasTicketingProducts,
@@ -909,9 +903,9 @@ export const useCartStore = create<CartState>()(
                     const { couponService } = await import('@/services/couponService');
                     const { useUserStore } = await import('@/store/userStore');
                     const userStore = useUserStore.getState();
-                    const userId = userStore.user?.id || userStore.user?.customerId || null;
+                    const phone = userStore.user?.phone ?? null;
                     const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                        userId,
+                        phone,
                         cartSubTotal: cartSubtotal,
                         cartItemCount,
                         hasTicketing: hasTicketingProducts,
@@ -1219,13 +1213,13 @@ export const useCartStore = create<CartState>()(
                         const { couponService } = await import('@/services/couponService');
                         const { useUserStore } = await import('@/store/userStore');
                         const userStore = useUserStore.getState();
-                        const userId = userStore.user?.id || userStore.user?.customerId || null;
+                        const phone = userStore.user?.phone ?? null;
                         const fetchCartSubtotal = lineItems.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (i.quantity || 0), 0);
                         const fetchCartItemCount = lineItems.reduce((s: number, i: any) => s + (i.quantity || 0), 0);
                         const fetchHasTicketing = lineItems.some((item: any) => item.bookingDate || (item.tags || []).some((t: string) => /event|playhouse|petting|farm|ticket|pass/i.test(String(t))));
                         const fetchHasClothing = lineItems.some((item: any) => (item.tags || []).some((t: string) => String(t).toLowerCase() === 'fashion'));
                         const eligibleForFetch = await couponService.getEligibleCouponsFromBackend({
-                            userId,
+                            phone,
                             cartSubTotal: fetchCartSubtotal,
                             cartItemCount: fetchCartItemCount,
                             hasTicketing: fetchHasTicketing,

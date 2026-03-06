@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.8.5",
+    "version": "1.8.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
@@ -81,6 +81,24 @@
           "backgroundColor": "#ffffff",
           "resizeMode": "cover",
           "imageWidth": 200
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1494379925573507",
+          "clientToken": "04a657781e5dd2df8704fd3292d74e3d",
+          "displayName": "kiddo-babycare",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": false,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
         }
       ]
     ],

@@ -42,6 +42,13 @@ target 'Kiddo' do
 # @generated begin react-native-maps - expo prebuild (DO NOT MODIFY) sync-e9cc66c360abe50bc66d89fffb3c55b034d7d369
   pod 'react-native-google-maps', path: File.dirname(`node --print "require.resolve('react-native-maps/package.json')"`)
 # @generated end react-native-maps
+
+  # Meta (Facebook) SDK for iOS - official doc shows ~> 8.0.0; react-native-fbsdk-next 13.x requires ~> 18.0 (see META_SDK_SETUP.md)
+  pod 'FBSDKCoreKit', '~> 18.0.0'
+  pod 'FBSDKLoginKit', '~> 18.0.0'
+  pod 'FBSDKShareKit', '~> 18.0.0'
+  pod 'FBSDKGamingServicesKit', '~> 18.0.0'
+
   config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
@@ -62,67 +69,5 @@ target 'Kiddo' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
-    
-    # Fix expo-configure-project.sh to handle .xcode.env sourcing errors gracefully
-    expo_script_path = File.join(installer.sandbox.root, 'Target Support Files', 'Pods-Kiddo', 'expo-configure-project.sh')
-    if File.exist?(expo_script_path)
-      script_content = File.read(expo_script_path)
-      
-      # Check if the fix is already applied
-      unless script_content.include?('SOURCE_EXIT_CODE=$?')
-        puts "Applying fix to expo-configure-project.sh..."
-        
-        # Replace source "$ENV_PATH" with error-handled version
-        script_content.gsub!(/if \[\[ -f "\$ENV_PATH" \]\]; then\s+source "\$ENV_PATH"\s+fi/m, 
-          'if [[ -f "$ENV_PATH" ]]; then
-    # Temporarily disable exit on error for sourcing
-    set +e
-    source "$ENV_PATH" 2>&1
-    SOURCE_EXIT_CODE=$?
-    set -e
-    if [[ $SOURCE_EXIT_CODE -ne 0 ]]; then
-      echo "Warning: Error sourcing .xcode.env (exit code: $SOURCE_EXIT_CODE), continuing..." >&2
-    fi
-  fi')
-        
-        # Replace source "$LOCAL_ENV_PATH" with error-handled version
-        script_content.gsub!(/if \[\[ -f "\$LOCAL_ENV_PATH" \]\]; then\s+source "\$LOCAL_ENV_PATH"\s+fi/m,
-          'if [[ -f "$LOCAL_ENV_PATH" ]]; then
-    # Temporarily disable exit on error for sourcing
-    set +e
-    source "$LOCAL_ENV_PATH" 2>&1
-    SOURCE_EXIT_CODE=$?
-    set -e
-    if [[ $SOURCE_EXIT_CODE -ne 0 ]]; then
-      echo "Warning: Error sourcing .xcode.env.local (exit code: $SOURCE_EXIT_CODE), continuing..." >&2
-    fi
-  fi')
-        
-        # Add cd to project root before executing node command (if not already present)
-        unless script_content.include?('PROJECT_ROOT="$PODS_ROOT/../.."')
-          script_content.gsub!(/  if \[\[ -n "\$NODE_BINARY" && -x "\$NODE_BINARY" \]\]; then\s+echo "Node found at: \$\{NODE_BINARY\}"\s+else/m,
-            '  if [[ -n "$NODE_BINARY" && -x "$NODE_BINARY" ]]; then
-    echo "Node found at: ${NODE_BINARY}"
-  else')
-          
-          script_content.gsub!(/    exit 1\s+fi\s+\s+# Execute argument, if present/m,
-            '    exit 1
-  fi
-
-  # Change to project root to ensure node_modules can be found
-  # PODS_ROOT is ios/Pods, so we need to go up two levels to get to project root
-  PROJECT_ROOT="$PODS_ROOT/../.."
-  cd "$PROJECT_ROOT" || {
-    echo "Error: Failed to change to project root: $PROJECT_ROOT" >&2
-    exit 1
-  }
-
-  # Execute argument, if present')
-        end
-        
-        File.write(expo_script_path, script_content)
-        puts "Fix applied successfully!"
-      end
-    end
   end
 end

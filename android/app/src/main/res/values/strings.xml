@@ -1,6 +1,9 @@
 <resources>
   <string name="app_name">Kiddo</string>
   <string name="expo_system_ui_user_interface_style" translatable="false">automatic</string>
+  <string name="facebook_app_id">1494379925573507</string>
+  <string name="facebook_client_token">04a657781e5dd2df8704fd3292d74e3d</string>
+  <string name="fb_login_protocol_scheme">fb1494379925573507</string>
   <string name="expo_splash_screen_resize_mode" translatable="false">cover</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
 </resources>
