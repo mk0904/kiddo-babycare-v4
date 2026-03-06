@@ -201,38 +201,7 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setAvailableCoupons([]);
-            return;
-        }
-        const fetchCoupons = async () => {
-            setLoadingCoupons(true);
-            try {
-                const phone = user?.phone ?? null;
-                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
-                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                const hasTicketing = hasTicketingProducts;
-                const hasClothing = hasFashionItems;
-
-                const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                    phone,
-                    cartSubTotal,
-                    cartItemCount,
-                    hasTicketing,
-                    hasClothing,
-                });
-                setAvailableCoupons(eligibleCoupons ?? []);
-            } catch (error) {
-                console.error('Error fetching coupons:', error);
-                setAvailableCoupons([]);
-            } finally {
-                setLoadingCoupons(false);
-            }
-        };
-        fetchCoupons();
-    }, [isAuthenticated, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    // Coupon fetching is handled inside SavingsCorner.
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
