@@ -76,6 +76,10 @@ export interface CheckoutDraftRequest {
   selectedShoe?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
+  /** App version for coupon/eligibility (e.g. Constants.expoConfig?.version). */
+  appVersion?: string;
+  /** Device type for coupon/eligibility (e.g. 'ios' | 'android' from Platform.OS). */
+  deviceType?: string;
 }
 
 export interface CheckoutDraftResponse {
@@ -150,6 +154,8 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     billDetails: body.billDetails,
     selectedShoe: body.selectedShoe ?? '',
     isTryAndBuy: body.isTryAndBuy ?? false,
+    appVersion: body.appVersion ?? '',
+    deviceType: body.deviceType ?? '',
   };
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,

@@ -1,10 +1,11 @@
 // Payment Service - Razorpay Integration
 // Checkout (draft + complete) runs via backend; only Razorpay SDK runs on device.
 
-import { Alert } from 'react-native';
+import Constants from 'expo-constants';
+import { Alert, Platform } from 'react-native';
+import { checkoutService } from './checkoutService';
 import { configService } from './configService';
 import { OrderItem } from './orderService';
-import { checkoutService } from './checkoutService';
 
 // Helper to format phone number to E.164
 const formatPhone = (phone: string): string => {
@@ -169,6 +170,8 @@ function orderDataToCheckoutDraftRequest(
         billDetails: orderData.billDetails,
         selectedShoe: orderData.selectedShoe ?? '',
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
+        appVersion: Constants.expoConfig?.version ?? '',
+        deviceType: Platform.OS ?? '',
     };
 }
 

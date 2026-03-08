@@ -4,6 +4,7 @@
 import { checkoutService } from '@/services/checkoutService';
 import { Order, OrderItem, calculateETA, orderService } from '@/services/orderService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ReactNode,
@@ -12,6 +13,7 @@ import {
     useEffect,
     useState
 } from 'react';
+import { Platform } from 'react-native';
 
 // Constants
 const TRY_AND_BUY_CART_KEY = 'kiddo_try_and_buy_cart';
@@ -296,6 +298,8 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 deliverySchedule,
                 selectedShoe: selectedShoe ?? '',
                 isTryAndBuy: true,
+                appVersion: Constants.expoConfig?.version ?? '',
+                deviceType: Platform.OS ?? '',
             });
             const draftOrderId = draftRes.draft_order_id;
             console.log('[TryAndBuy] Draft order created:', draftOrderId);

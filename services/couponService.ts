@@ -46,6 +46,12 @@ export interface GetEligibleCouponsParams {
   cartItemCount: number;
   hasTicketing: boolean;
   hasClothing: boolean;
+  /** Category/tag strings from cart (e.g. from line item tags) for category-specific coupons. */
+  cartCategories?: string[];
+  /** App version for version-gated coupons (e.g. from Constants.expoConfig?.version). */
+  appVersion?: string;
+  /** Device type for device-gated coupons (e.g. 'ios' | 'android' from Platform.OS). */
+  deviceType?: string;
 }
 
 /**
@@ -54,23 +60,27 @@ export interface GetEligibleCouponsParams {
  * Returns [] when coupons is null or on error.
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
-  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
+  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing, cartCategories, appVersion, deviceType } = params;
 
   try {
     const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/by-phone`;
     if (__DEV__) console.log('[CouponService] Fetching coupons by-phone');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const body: Record<string, unknown> = {
+      phone: phone ?? '',
+      cartSubTotal,
+      cartItemCount,
+      hasTicketing,
+      hasClothing,
+    };
+    if (cartCategories != null && cartCategories.length > 0) body.cartCategories = cartCategories;
+    if (appVersion != null && appVersion !== '') body.appVersion = appVersion;
+    if (deviceType != null && deviceType !== '') body.deviceType = deviceType;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: phone ?? '',
-        cartSubTotal,
-        cartItemCount,
-        hasTicketing,
-        hasClothing,
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { couponService, type CouponCode } from '@/services/couponService';
 import { useCartItems, useCartStore } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -76,22 +77,18 @@ export function SavingsCorner({
         const fetchCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const userStore = require('@/store/userStore').useUserStore.getState();
-                const userId =
-                    userStore.getCustomerId?.() ??
-                    user?.customerId ??
-                    user?.id ??
-                    user?.email ??
-                    user?.phone ??
-                    null;
                 const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
                 const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                const cartCategories = [...new Set((cartItems.flatMap((item) => (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))))];
                 const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                    userId,
+                    phone: user?.phone ?? null,
                     cartSubTotal,
                     cartItemCount,
                     hasTicketing: hasTicketingProducts,
                     hasClothing: hasFashionItems,
+                    cartCategories: cartCategories.length > 0 ? cartCategories : undefined,
+                    appVersion: Constants.expoConfig?.version ?? '',
+                    deviceType: Platform.OS ?? '',
                 });
                 const normalized: SavingsCornerCoupon[] = (eligibleCoupons ?? []).map((c: CouponCode) => ({
                     ...c,

@@ -4,6 +4,8 @@
 
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -154,6 +156,18 @@ function parseInvalidVariantFromError(message: string): string | null {
     if (!message || !message.includes('does not exist')) return null;
     const match = message.match(/gid:\/\/shopify\/ProductVariant\/(\d+)/);
     return match ? match[1] : null; // numeric id; lineItems may store full GID or just id
+}
+
+/** Unique lowercase category/tag strings from line items for coupon eligibility. */
+function getCartCategoriesFromLineItems(items: { tags?: string[] }[]): string[] {
+  const set = new Set<string>();
+  for (const item of items) {
+    for (const t of item.tags ?? []) {
+      const s = String(t).trim().toLowerCase();
+      if (s) set.add(s);
+    }
+  }
+  return Array.from(set);
 }
 
 function lineItemMatchesVariant(item: CartItem, variantIdNumeric: string): boolean {
@@ -659,12 +673,16 @@ export const useCartStore = create<CartState>()(
                             const { useUserStore } = await import('@/store/userStore');
                             const userStore = useUserStore.getState();
                             const phone = userStore.user?.phone ?? null;
+                            const lineItemsForCoupons = get().lineItems;
                             const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
                                 phone,
                                 cartSubTotal: cartSubtotal,
                                 cartItemCount,
                                 hasTicketing: hasTicketingProducts,
                                 hasClothing: hasClothingItems,
+                                cartCategories: getCartCategoriesFromLineItems(lineItemsForCoupons),
+                                appVersion: Constants.expoConfig?.version ?? '',
+                                deviceType: Platform.OS ?? '',
                             });
                             const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
                             
@@ -943,12 +961,16 @@ export const useCartStore = create<CartState>()(
                     const { useUserStore } = await import('@/store/userStore');
                     const userStore = useUserStore.getState();
                     const phone = userStore.user?.phone ?? null;
+                    const lineItemsForCoupons = get().lineItems;
                     const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
                         phone,
                         cartSubTotal: cartSubtotal,
                         cartItemCount,
                         hasTicketing: hasTicketingProducts,
                         hasClothing: hasClothingItems,
+                        cartCategories: getCartCategoriesFromLineItems(lineItemsForCoupons),
+                        appVersion: Constants.expoConfig?.version ?? '',
+                        deviceType: Platform.OS ?? '',
                     });
                     const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
 
@@ -1281,6 +1303,9 @@ export const useCartStore = create<CartState>()(
                             cartItemCount: fetchCartItemCount,
                             hasTicketing: fetchHasTicketing,
                             hasClothing: fetchHasClothing,
+                            cartCategories: getCartCategoriesFromLineItems(lineItems),
+                            appVersion: Constants.expoConfig?.version ?? '',
+                            deviceType: Platform.OS ?? '',
                         });
                         const backendCouponMapFetch = new Map(eligibleForFetch.map((c: any) => [c.code?.toUpperCase(), c]));
 
