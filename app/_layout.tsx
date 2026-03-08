@@ -27,6 +27,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { trackEvent } from '@/utils/mixpanelHelpers';
 import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
@@ -51,6 +52,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const user = useUserStore(state => state.user);
   const [isSplashVisible, setIsSplashVisible] = React.useState(false);
   const [appIsReady, setAppIsReady] = React.useState(false);
   const metaReadyRef = React.useRef(Platform.OS !== 'ios');
@@ -84,13 +86,18 @@ export default function RootLayout() {
         fontTimeout = null;
       }
       
-      // Preload config in background (non-blocking)
-      // This ensures config is available when OTP service is called
-      configService.loadConfig().catch((error) => {
-        // Config loading failed, but OTP service will fallback to local config
-        if (__DEV__) {
-          console.warn('[RootLayout] Failed to preload config:', error);
-        }
+      // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
+      configService.loadConfig().then(() => {
+        appConfigService.loadAppConfig(false, {
+          phone: user?.phone ?? undefined,
+          customerId: user?.customerId ?? user?.id ?? undefined,
+          appVersion: Constants.expoConfig?.version ?? undefined,
+          deviceType: Platform.OS,
+        }).catch((error) => {
+          if (__DEV__) console.warn('[RootLayout] Failed to load app config from backend:', error);
+        });
+      }).catch((error) => {
+        if (__DEV__) console.warn('[RootLayout] Failed to preload config:', error);
       });
       
       setAppIsReady(true);

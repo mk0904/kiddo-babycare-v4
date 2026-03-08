@@ -1,5 +1,6 @@
+import type { FreeShoesOfferConfig, SizeOption } from '@/types/appConfig';
 import { Colors, Fonts } from '@/constants/theme';
-import { configService } from '@/services/configService';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
@@ -16,9 +17,7 @@ import {
 const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 const OFFER_BLUE = '#2563EB';
 const FREE_GREEN = '#16A34A';
-const ORIGINAL_PRICE = 4999;
-const SIZES = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10'];
-const SIZES_DISABLED_START = 8; // S8, S9, S10 disabled (indices 7, 8, 9)
+const ORIGINAL_PRICE_DEFAULT = 4999;
 
 export interface FreePairShoesProps {
     visible?: boolean;
@@ -44,27 +43,35 @@ export function FreePairShoes({
     onAddPress,
     onConfirmSize,
     onRemoveOffer,
-    originalPrice = ORIGINAL_PRICE,
+    originalPrice = ORIGINAL_PRICE_DEFAULT,
 }: FreePairShoesProps) {
     const [shoeOptions, setShoeOptions] = useState<ShoeOption[]>([]);
+    const [sizeOptions, setSizeOptions] = useState<SizeOption[]>([]);
     const [offerEnabled, setOfferEnabled] = useState(false);
     const [showSizeModal, setShowSizeModal] = useState(false);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
     const [sizeModalSelection, setSizeModalSelection] = useState<string | null>(null);
+    const [offerCopy, setOfferCopy] = useState<FreeShoesOfferConfig['copy'] | undefined>(undefined);
+    const [configOriginalPrice, setConfigOriginalPrice] = useState(ORIGINAL_PRICE_DEFAULT);
 
     useEffect(() => {
         try {
-            const config = configService.getFreeShoesOfferConfig();
+            const config = appConfigService.getFreeShoesOfferConfig();
             if (config && config.enabled && config.shoes && config.shoes.length > 0) {
                 setShoeOptions(config.shoes);
+                setSizeOptions(config.sizes?.length ? config.sizes : []);
                 setOfferEnabled(true);
+                setOfferCopy(config.copy ?? undefined);
+                setConfigOriginalPrice(config.originalPrice ?? ORIGINAL_PRICE_DEFAULT);
             } else {
                 setShoeOptions([]);
+                setSizeOptions([]);
                 setOfferEnabled(false);
             }
         } catch (error) {
             console.error('[FreePairShoes] Error loading config:', error);
             setShoeOptions([]);
+            setSizeOptions([]);
             setOfferEnabled(false);
         }
     }, [visible]);
@@ -79,10 +86,15 @@ export function FreePairShoes({
         ? shoeOptions.find((s) => s.id === selectedShoe) ?? shoeOptions[0]
         : shoeOptions[0];
     const isApplied = !!selectedShoe;
-    const displaySize = selectedSize || 'S1';
+    const firstAvailableSize = sizeOptions.find((s) => s.isAvailable)?.size ?? 'S1';
+    const displaySize = selectedSize || firstAvailableSize;
+    const effectiveOriginalPrice = originalPrice ?? configOriginalPrice;
 
     const openSizeModal = () => {
-        setSizeModalSelection(selectedSize || null);
+        const currentSelection = selectedSize && sizeOptions.some((s) => s.size === selectedSize && s.isAvailable)
+            ? selectedSize
+            : firstAvailableSize;
+        setSizeModalSelection(currentSelection);
         setShowSizeModal(true);
     };
     const closeSizeModal = () => {
@@ -113,9 +125,9 @@ export function FreePairShoes({
                     <Ionicons name="lock-open-outline" size={22} color={OFFER_BLUE} />
                 </View>
                 <View style={styles.offerTextBlock}>
-                    <Text style={styles.offerTitle}>Introductory Offer!</Text>
+                    <Text style={styles.offerTitle}>{offerCopy?.title ?? 'Introductory Offer!'}</Text>
                     <Text style={styles.offerSubtitle}>
-                        FREE Shoes on 1st apparel order worth &lt;₹500
+                        {offerCopy?.subtitle ?? 'FREE Shoes on 1st apparel order worth <₹500'}
                     </Text>
                 </View>
             </View>
@@ -136,7 +148,7 @@ export function FreePairShoes({
                     </Text>
                     <Text style={styles.productSubtext}>baby shoes</Text>
                     <Text style={styles.sizeText}>
-                        {isApplied ? `Size: ${displaySize}` : 'Sizes 1-4 available'}
+                        {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : (offerCopy?.cta ?? 'Add')}
                     </Text>
                     {isApplied && (
                         <View style={styles.editRemoveRow}>
@@ -161,8 +173,8 @@ export function FreePairShoes({
                                 <Ionicons name="checkmark" size={20} color="#fff" />
                             </View>
                             <View style={styles.priceRow}>
-                                <Text style={styles.originalPrice}>{formatPrice(originalPrice)}</Text>
-                                <Text style={styles.freeText}>FREE</Text>
+                                <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
+                                <Text style={styles.freeText}>{offerCopy?.freeLabel ?? 'FREE'}</Text>
                             </View>
                         </View>
                     ) : (
@@ -175,8 +187,8 @@ export function FreePairShoes({
                                 <Text style={styles.addButtonText}>Add</Text>
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
-                                <Text style={styles.originalPrice}>{formatPrice(originalPrice)}</Text>
-                                <Text style={styles.freeText}>FREE</Text>
+                                <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
+                                <Text style={styles.freeText}>{offerCopy?.freeLabel ?? 'FREE'}</Text>
                             </View>
                         </>
                     )}
@@ -201,26 +213,26 @@ export function FreePairShoes({
                             <Ionicons name="close" size={24} color="#374151" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.sizeModalTitle}>Select Size</Text>
-                    <Text style={styles.sizeModalSubtitle}>Choose the shoe size</Text>
+                    <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
+                    <Text style={styles.sizeModalSubtitle}>{offerCopy?.sizeModalSubtitle ?? 'Choose the shoe size'}</Text>
                     <View style={styles.sizeGrid}>
-                        {SIZES.map((size, index) => {
-                            const disabled = index >= SIZES_DISABLED_START;
-                            const isSelected = sizeModalSelection === size;
+                        {sizeOptions.map((sizeOption) => {
+                            const disabled = !sizeOption.isAvailable;
+                            const isSelected = sizeModalSelection === sizeOption.size;
                             return (
                                 <TouchableOpacity
-                                    key={size}
+                                    key={sizeOption.size}
                                     style={[
                                         styles.sizeButton,
                                         disabled && styles.sizeButtonDisabled,
                                         isSelected && styles.sizeButtonSelected,
                                     ]}
-                                    onPress={() => !disabled && setSizeModalSelection(size)}
+                                    onPress={() => !disabled && setSizeModalSelection(sizeOption.size)}
                                     disabled={disabled}
                                     activeOpacity={0.7}
                                 >
                                     <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled]}>
-                                        {size}
+                                        {sizeOption.size}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -233,7 +245,7 @@ export function FreePairShoes({
                         activeOpacity={0.8}
                     >
                         <Text style={[styles.sizeConfirmText, !sizeModalSelection && styles.sizeConfirmTextDisabled]}>
-                            Confirm
+                            {offerCopy?.confirmLabel ?? 'Confirm'}
                         </Text>
                     </TouchableOpacity>
                     </View>

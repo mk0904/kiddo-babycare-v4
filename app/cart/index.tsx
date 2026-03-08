@@ -14,7 +14,6 @@ import {
     getDeliveryTimeFromGoogleMaps,
 } from '@/config/deliveryConfig';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { SchedulingOrderModal } from '@/components/modals/SchedulingOrderModal';
@@ -24,6 +23,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
+import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -36,6 +36,7 @@ import {
     useIsTryAndBuy
 } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -75,7 +76,32 @@ export default function CartScreen() {
         }
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
-    const { defaultAddress } = useAddress();
+    const { defaultAddress, detectedLocationStatus, detectedEta } = useAddress();
+    const [appConfigRefresh, setAppConfigRefresh] = useState(0);
+    // Load app config from backend with Postman-style params (phone, customerId, appVersion, deviceType) for cart/checkout
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.phone, user?.customerId, user?.id]);
+    const cartFeatures = useMemo(
+        () => appConfigService.getCartFeatures(),
+        [appConfigRefresh]
+    );
+    const checkoutConfig = useMemo(
+        () => appConfigService.getCheckoutConfig(),
+        [appConfigRefresh]
+    );
     const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
         defaultAddress?.latitude,
         defaultAddress?.longitude,
@@ -274,7 +300,6 @@ export default function CartScreen() {
     const [couponMessage, setCouponMessage] = useState<string | null>(null); // Used by CheckoutRedeemCoins for reward coupon feedback
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
-    const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showSchedulingOrderModal, setShowSchedulingOrderModal] = useState(false);
@@ -1006,7 +1031,7 @@ export default function CartScreen() {
             // Use a small delay to ensure state updates complete
             requestAnimationFrame(() => {
                 try {
-                    const resolvedEta = estimatedDeliveryMinutes ?? etaFromGeocode;
+                    const resolvedEta = estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null);
                     const navParams = {
                         pathname: '/order-success/v2' as const,
                         params: {
@@ -1204,20 +1229,23 @@ export default function CartScreen() {
                     >
 
                         {/* Delivery Information Card - when at least one non-ticketing product in cart */}
-                        {hasNonTicketingProducts && (
+                        {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
                             <DeliveryCard
                                 deliverySchedule={deliverySchedule}
                                 onSchedulePress={() => setShowScheduleModal(true)}
-                                estimatedDeliveryMinutes={estimatedDeliveryMinutes ?? etaFromGeocode}
+                                estimatedDeliveryMinutes={
+                                    estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
+                                }
+                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
                             />
                         )}
 
                         {/* Introductory Offer - Free Pair of Shoes (same logic as FreeShoesOffer modal) */}
-                        {hasNonTicketingProducts && (
+                        {hasNonTicketingProducts && cartFeatures.showFreePairShoes && (
                             <FreePairShoes
                                 visible
                                 selectedShoe={selectedShoe}
-                                onAddPress={() => setShowShoesModal(true)}
+                                onAddPress={() => {}}
                                 onConfirmSize={(shoeId) => setSelectedShoe(shoeId)}
                                 onRemoveOffer={() => setSelectedShoe(null)}
                             />
@@ -1255,7 +1283,7 @@ export default function CartScreen() {
                         )}
 
                         {/* Gift Wrapping - when at least one non-ticketing product in cart */}
-                        {hasNonTicketingProducts && (
+                        {hasNonTicketingProducts && cartFeatures.showGiftWrap && (
                             <GiftWrappingCard
                                 giftWrapping={giftWrapping}
                                 onSelectPress={() => setShowGiftModal(true)}
@@ -1264,18 +1292,20 @@ export default function CartScreen() {
                         )}
 
                         {/* Complete your purchase with - horizontal product list from collection */}
-                        {!hasTicketingProducts && <CompletePurchaseSection />}
+                        {!hasTicketingProducts && cartFeatures.showCompletePurchaseSection && <CompletePurchaseSection />}
 
-                        <SavingsCorner
-                            itemSubtotal={itemSubtotal}
-                            isAuthenticated={isAuthenticated}
-                            hasTicketingProducts={hasTicketingProducts}
-                            hasFashionItems={hasFashionItems}
-                            kiddoCashEnabled={kiddoCashEnabled}
-                            formatCurrency={formatCurrency}
-                            onLoginPress={() => router.push('/(auth)/login')}
-                            onKiddoCashChange={setKiddoCashEnabled}
-                        />
+                        {cartFeatures.showSavingsCorner && (
+                            <SavingsCorner
+                                itemSubtotal={itemSubtotal}
+                                isAuthenticated={isAuthenticated}
+                                hasTicketingProducts={hasTicketingProducts}
+                                hasFashionItems={hasFashionItems}
+                                kiddoCashEnabled={kiddoCashEnabled}
+                                formatCurrency={formatCurrency}
+                                onLoginPress={() => router.push('/(auth)/login')}
+                                onKiddoCashChange={setKiddoCashEnabled}
+                            />
+                        )}
 
                         <BillDetails
                             mrp={mrp}
@@ -1410,6 +1440,7 @@ export default function CartScreen() {
                             isAuthenticated={isAuthenticated}
                             onPlaceOrder={() => setShowSchedulingOrderModal(true)}
                             onAddAddress={handleAddressSelection}
+                            payButtonLabel={checkoutConfig?.payButtonLabel}
                         />
                     </View>
                 </View>
@@ -1429,14 +1460,6 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
-            {/* Free Shoes Selection Modal */}
-            <FreeShoesOfferModal
-                visible={showShoesModal}
-                onClose={() => setShowShoesModal(false)}
-                onSelect={(shoeId) => setSelectedShoe(shoeId || null)}
-                selectedShoe={selectedShoe}
-            />
-
             {/* Try And Buy Modal */}
             <TryAndBuyModal
                 visible={showTryAndBuyModal}
@@ -1452,6 +1475,7 @@ export default function CartScreen() {
                     else setDeliverySchedule(schedule);
                 }}
                 initialSchedule={deliverySchedule}
+                title={checkoutConfig?.scheduleModalTitle}
             />
 
             {/* Scheduling your order - shows 4s with progress bar when user taps Pay */}

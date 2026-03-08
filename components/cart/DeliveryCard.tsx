@@ -1,5 +1,6 @@
 import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -13,8 +14,10 @@ export interface DeliverySchedule {
 export interface DeliveryCardProps {
     deliverySchedule: DeliverySchedule | null;
     onSchedulePress: () => void;
-    /** ETA in minutes (uses deliveryConfig formula). When not provided, shows default. */
+    /** ETA in minutes (uses deliveryConfig formula). When not provided, shows default unless isUnserviceable. */
     estimatedDeliveryMinutes?: number | null;
+    /** When true, show "Area unserviceable" instead of ETA (e.g. detected location outside delivery range). */
+    isUnserviceable?: boolean;
 }
 
 /** Format date string (DD/MM/YYYY or YYYY-MM-DD) to "7 March 2026" style. */
@@ -32,9 +35,17 @@ function formatDeliveryDate(dateStr: string | undefined): string {
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliveryMinutes }: DeliveryCardProps) {
+const DEFAULT_SCHEDULED_TITLE = 'Delivery scheduled!';
+const DEFAULT_INSTANT_LABEL = 'Delivery in {minutes} min';
+const DEFAULT_SCHEDULE_CTA = 'Want it later? Schedule delivery';
+
+export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliveryMinutes, isUnserviceable }: DeliveryCardProps) {
     const isScheduled = Boolean(deliverySchedule?.date && deliverySchedule?.time);
     const etaMins = estimatedDeliveryMinutes != null ? estimatedDeliveryMinutes : DEFAULT_ETA_MINUTES;
+    const deliveryCardCopy = appConfigService.getCartConfig()?.deliveryCard;
+    const scheduledTitle = deliveryCardCopy?.scheduledTitle?.trim() || DEFAULT_SCHEDULED_TITLE;
+    const instantLabel = (deliveryCardCopy?.instantLabel?.trim() || DEFAULT_INSTANT_LABEL).replace(/\{minutes\}/g, String(etaMins));
+    const scheduleCta = deliveryCardCopy?.scheduleCta?.trim() || DEFAULT_SCHEDULE_CTA;
 
     return (
         <View style={styles.card}>
@@ -48,7 +59,7 @@ export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliv
                     />
                     <View style={styles.content}>
                         <Text style={styles.title}>
-                            Delivery scheduled! 
+                            {scheduledTitle}
                         </Text>
                         <Text style={styles.subtitle}>
                             For {deliverySchedule?.timeSlotLabel ?? deliverySchedule?.time} · {formatDeliveryDate(deliverySchedule?.date)}
@@ -64,10 +75,12 @@ export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliv
                 <>
                     <Ionicons name="flash" size={24} color="#E6B800" style={styles.icon} />
                     <View style={styles.content}>
-                        <Text style={styles.title}>Delivery in {etaMins} min</Text>
+                        <Text style={[styles.title, isUnserviceable && styles.unserviceableTitle]}>
+                            {isUnserviceable ? 'Area unserviceable' : instantLabel}
+                        </Text>
                         <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
                             <Text style={[styles.link, styles.linkUnderline]}>
-                                Want it later? Schedule delivery
+                                {scheduleCta}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -102,6 +115,9 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
         color: '#2D2D2D',
         marginBottom: 4,
+    },
+    unserviceableTitle: {
+        color: '#DC2626',
     },
     subtitle: {
         fontSize: 14,

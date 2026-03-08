@@ -8,6 +8,8 @@ import {
   estimateDeliveryTime,
   geocodeAddress,
   getDeliveryTimeFromGoogleMaps,
+  isWithinDeliveryRange,
+  reverseGeocode,
 } from '@/config/deliveryConfig';
 import { Colors } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
@@ -17,6 +19,7 @@ import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
+import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -31,7 +34,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { defaultAddress } = useAddress();
+  const { defaultAddress, setDetectedLocation } = useAddress();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -42,10 +45,22 @@ export default function HomeScreen() {
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  // Use address from AddressContext
+  // Auto-detected location when user has no saved address (serviceable / unserviceable)
+  type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+  const [detectedLocationLabel, setDetectedLocationLabel] = useState<string | null>(null);
+  const [detectedEta, setDetectedEta] = useState<number | null>(null);
+
+  // Use address from AddressContext when set; otherwise show detected location or prompt
   const address = defaultAddress
     ? defaultAddress.address1 || 'Default Address'
-    : null;
+    : (detectedLocationLabel || (locationStatus === 'unserviceable' ? null : null));
+  const displayAddress = defaultAddress
+    ? (defaultAddress.address1 || 'Default Address')
+    : detectedLocationLabel;
+  const isUnserviceable = !defaultAddress && locationStatus === 'unserviceable';
+  const homeEstimatedTime = defaultAddress ? estimatedTime : detectedEta;
+  const homeLoadingTime = defaultAddress ? loadingTime : locationStatus === 'loading';
 
   const searchSuggestions = [
     'Search for Toys & Games',
@@ -334,6 +349,89 @@ export default function HomeScreen() {
     fetchEstimatedTime();
   }, [fetchEstimatedTime]);
 
+  // When user clears their address, reset so we can re-detect location
+  const hadAddressRef = useRef(!!defaultAddress);
+  useEffect(() => {
+    if (defaultAddress) {
+      hadAddressRef.current = true;
+      return;
+    }
+    if (hadAddressRef.current) {
+      hadAddressRef.current = false;
+      setLocationStatus('idle');
+      setDetectedLocationLabel(null);
+      setDetectedEta(null);
+      setDetectedLocation('idle');
+    }
+  }, [defaultAddress, setDetectedLocation]);
+
+  // Auto-detect location on home when user has no saved address (e.g. after login)
+  useEffect(() => {
+    if (defaultAddress) return;
+    if (locationStatus !== 'idle') return;
+
+    let cancelled = false;
+    setLocationStatus('loading');
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (cancelled) return;
+        if (status !== 'granted') {
+          setLocationStatus('denied');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('denied');
+          return;
+        }
+
+        let position: Location.LocationObject | null = await Location.getLastKnownPositionAsync();
+        if (!position?.coords && !cancelled) {
+          position = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+        }
+        if (cancelled || !position?.coords) {
+          setLocationStatus('error');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('error');
+          return;
+        }
+
+        const { latitude, longitude } = position.coords;
+        const range = isWithinDeliveryRange(latitude, longitude);
+        if (cancelled) return;
+
+        if (!range.isDeliverable) {
+          setLocationStatus('unserviceable');
+          setDetectedLocationLabel(null);
+          setDetectedEta(null);
+          setDetectedLocation('unserviceable');
+          return;
+        }
+
+        let eta = await getDeliveryTimeFromGoogleMaps(latitude, longitude);
+        if (eta == null) eta = range.estimatedTime;
+        if (cancelled) return;
+
+        const label = await reverseGeocode(latitude, longitude);
+        if (cancelled) return;
+
+        setLocationStatus('serviceable');
+        setDetectedLocationLabel(label || 'Current location');
+        setDetectedEta(eta);
+        setDetectedLocation('serviceable', eta);
+      } catch (e) {
+        if (!cancelled) {
+          setLocationStatus('error');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('error');
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [defaultAddress]);
+
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();
   const navigationState = useNavigationState((state) => state);
@@ -425,9 +523,11 @@ export default function HomeScreen() {
       <StatusBar style="dark" />
       <HomeHeader
         scrollY={scrollY}
-        address={address}
-        estimatedTime={estimatedTime}
-        loadingTime={loadingTime}
+        address={displayAddress}
+        estimatedTime={homeEstimatedTime}
+        loadingTime={homeLoadingTime}
+        isUnserviceable={isUnserviceable}
+        locationStatus={locationStatus}
         headerConfig={headerConfig}
         searchSuggestions={searchSuggestions}
         onSearchPress={handleSearchPress}

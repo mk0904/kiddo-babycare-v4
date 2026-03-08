@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { configService } from '@/services/configService';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
@@ -26,7 +26,7 @@ const FreeShoesOffer: React.FC<FreeShoesOfferProps> = ({ visible = true, heykidd
     const loadConfig = () => {
       try {
         // Load shoe options
-        const freeShoesConfig = configService.getFreeShoesOfferConfig();
+        const freeShoesConfig = appConfigService.getFreeShoesOfferConfig();
         if (freeShoesConfig && freeShoesConfig.enabled && freeShoesConfig.shoes && freeShoesConfig.shoes.length > 0) {
           setShoeOptions(freeShoesConfig.shoes);
         } else {

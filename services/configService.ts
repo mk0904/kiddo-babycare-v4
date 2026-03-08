@@ -278,12 +278,6 @@ class ConfigService {
     return this.rawConfig.delivery || null;
   }
 
-  // Get free shoes offer configuration
-  getFreeShoesOfferConfig() {
-    if (!this.rawConfig) return null;
-    return this.rawConfig.freeShoesOffer || null;
-  }
-
   // Update config
   updateConfig(config: AppConfig) {
     this.config = config;

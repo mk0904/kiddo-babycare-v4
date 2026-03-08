@@ -26,10 +26,16 @@ export interface Address {
     longitude?: number;
 }
 
+export type DetectedLocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
+
 interface AddressContextType {
     addresses: Address[];
     defaultAddress: Address | null;
     loading: boolean;
+    /** Set by home when auto-detecting location (no saved address). Cart uses this to show "Area unserviceable" instead of default ETA. */
+    detectedLocationStatus: DetectedLocationStatus;
+    detectedEta: number | null;
+    setDetectedLocation: (status: DetectedLocationStatus, eta?: number | null) => void;
     addAddress: (addressData: Partial<Address>) => Promise<Address>;
     updateAddress: (addressId: string, addressData: Partial<Address>) => Promise<void>;
     deleteAddress: (addressId: string) => Promise<void>;
@@ -52,6 +58,13 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [defaultAddress, setDefaultAddress] = useState<Address | null>(null);
     const [loading, setLoading] = useState(true);
+    const [detectedLocationStatus, setDetectedLocationStatus] = useState<DetectedLocationStatus>('idle');
+    const [detectedEta, setDetectedEta] = useState<number | null>(null);
+
+    const setDetectedLocation = useCallback((status: DetectedLocationStatus, eta?: number | null) => {
+        setDetectedLocationStatus(status);
+        setDetectedEta(eta ?? null);
+    }, []);
 
     useEffect(() => {
         loadAddresses();
@@ -357,6 +370,9 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 addresses,
                 defaultAddress,
                 loading,
+                detectedLocationStatus,
+                detectedEta,
+                setDetectedLocation,
                 addAddress,
                 updateAddress,
                 deleteAddress,

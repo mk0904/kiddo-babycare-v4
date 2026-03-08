@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-06T00:00:00Z",
+  "features": {
+    "cart": {
+      "showGiftWrap": true,
+      "showFreePairShoes": true,
+      "showDeliveryCard": true,
+      "showSavingsCorner": true,
+      "showCompletePurchaseSection": true
+    },
+    "checkout": {
+      "showScheduleDelivery": true,
+      "showGiftWrapInBill": true
+    }
+  },
+  "cart": {
+    "deliveryCard": {
+      "instantLabel": "Delivery in {minutes} min",
+      "scheduleCta": "Want it later? Schedule delivery",
+      "scheduledTitle": "Delivery scheduled!"
+    },
+    "giftWrap": {
+      "enabled": true,
+      "perItemPrice": 30,
+      "options": [
+        {
+          "id": "standard",
+          "name": "Wrap-1",
+          "description": "Beautiful paper wrapping with a ribbon.",
+          "price": 30,
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap1.jpeg",
+          "color": "#FF6B6B"
+        },
+        {
+          "id": "premium",
+          "name": "Wrap-2",
+          "description": "Hardcase premium box with satin ribbon.",
+          "price": 30,
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap2.jpeg",
+          "color": "#FFD700"
+        },
+        {
+          "id": "deluxe",
+          "name": "Wrap-3",
+          "price": 30,
+          "description": "Luxury velvet box with personalized note.",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap3.jpeg",
+          "color": "#9C27B0"
+        }
+      ],
+      "cardCopy": {
+        "cta": "Add gift wrap",
+        "appliedTitle": "Gift wrap applied!",
+        "appliedSubtitle": "Your order will be gift wrapped"
+      },
+      "ribbonImageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ribbon.png",
+      "modalHeaderImageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftWrapperHeader.png"
+    },
+    "freeShoesOffer": {
+      "enabled": true,
+      "originalPrice": 4999,
+      "sizes": [
+        { "size": "S1", "isAvailable": true },
+        { "size": "S2", "isAvailable": true },
+        { "size": "S3", "isAvailable": true },
+        { "size": "S4", "isAvailable": true },
+        { "size": "S5", "isAvailable": true },
+        { "size": "S6", "isAvailable": true },
+        { "size": "S7", "isAvailable": true },
+        { "size": "S8", "isAvailable": false },
+        { "size": "S9", "isAvailable": false },
+        { "size": "S10", "isAvailable": false }
+      ],
+      "shoes": [
+        {
+          "id": "shoe-1",
+          "name": "Adidas Comfy Cloud",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
+        }
+      ],
+      "copy": {
+        "title": "Introductory Offer!",
+        "subtitle": "FREE Shoes on 1st apparel order worth <₹500",
+        "cta": "Add",
+        "selectedLabel": "Size: {size}",
+        "freeLabel": "FREE",
+        "sizeModalTitle": "Select Size",
+        "sizeModalSubtitle": "Choose the shoe size",
+        "confirmLabel": "Confirm"
+      }
+    },
+    "savingsCorner": {
+      "title": "Savings Corner",
+      "applyCta": "Apply"
+    },
+    "billDetails": {
+      "subtotalLabel": "Subtotal",
+      "deliveryLabel": "Delivery",
+      "giftWrapLabel": "Gift wrap",
+      "discountLabel": "Discount",
+      "totalLabel": "Total"
+    }
+  },
+  "checkout": {
+    "payButtonLabel": "Pay",
+    "scheduleModalTitle": "Schedule your delivery"
+  }
+}

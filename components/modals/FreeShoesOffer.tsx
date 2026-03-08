@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { configService } from '@/services/configService';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
@@ -33,7 +33,7 @@ export const FreeShoesOffer = ({ visible, onClose, onSelect, selectedShoe }: Fre
     useEffect(() => {
         const loadShoeOptions = () => {
             try {
-                const config = configService.getFreeShoesOfferConfig();
+                const config = appConfigService.getFreeShoesOfferConfig();
                 if (config && config.enabled && config.shoes && config.shoes.length > 0) {
                     setShoeOptions(config.shoes);
                 } else {

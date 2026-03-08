@@ -112,3 +112,24 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
     return null;
   }
 };
+
+/** Reverse geocode coordinates to a short label (locality or formatted address). */
+export const reverseGeocode = async (
+  latitude: number,
+  longitude: number
+): Promise<string | null> => {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAP_API}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.status !== 'OK' || !data.results?.length) return null;
+    const result = data.results[0];
+    const components = result.address_components || [];
+    const locality = components.find((c: any) => c.types.includes('locality'))?.long_name;
+    const area = components.find((c: any) => c.types.includes('sublocality') || c.types.includes('neighborhood'))?.long_name;
+    return locality || area || result.formatted_address || null;
+  } catch (error) {
+    console.error('Error reverse geocoding:', error);
+    return null;
+  }
+};

@@ -23,6 +23,8 @@ export interface CartFooterPaymentProps {
     onPlaceOrder: () => void;
     onAddAddress: () => void;
     onPaymentMethodPress?: () => void;
+    /** Pay button prefix from backend app config (e.g. "Pay"). */
+    payButtonLabel?: string | null;
 }
 
 export function CartFooterPayment({
@@ -35,7 +37,9 @@ export function CartFooterPayment({
     onPlaceOrder,
     onAddAddress,
     onPaymentMethodPress,
+    payButtonLabel,
 }: CartFooterPaymentProps) {
+    const payPrefix = payButtonLabel?.trim() || 'Pay';
     const paymentMethodLabel =
         paymentMethod === 'cod'
             ? 'Cash on Delivery (COD)'
@@ -67,7 +71,7 @@ export function CartFooterPayment({
                         <ActivityIndicator color="#fff" size="small" />
                     ) : isAuthenticated ? (
                         <View style={styles.payButtonContent}>
-                            <Text style={styles.payButtonPrefix}>Pay </Text>
+                            <Text style={styles.payButtonPrefix}>{payPrefix} </Text>
                             <Text style={styles.payButtonAmount}>{formatCurrency(toPay)}</Text>
                             <Ionicons name="arrow-forward" size={18} color="#fff" style={styles.payButtonArrow} />
                         </View>

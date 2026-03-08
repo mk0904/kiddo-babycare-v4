@@ -20,6 +20,10 @@ interface HomeHeaderProps {
   address?: string | null;
   estimatedTime?: number | null;
   loadingTime?: boolean;
+  /** When true, show "Area unserviceable" instead of ETA (detected location outside delivery range). */
+  isUnserviceable?: boolean;
+  /** For optional copy when no address: 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error' */
+  locationStatus?: string;
   headerConfig?: {
     backgroundColor?: string;
     textColor?: string;
@@ -46,6 +50,8 @@ export function HomeHeader({
   address,
   estimatedTime,
   loadingTime = false,
+  isUnserviceable = false,
+  locationStatus,
   headerConfig = {},
   searchSuggestions = [],
   onSearchPress,
@@ -192,10 +198,14 @@ export function HomeHeader({
                 <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
                   The best for your kiddo 
                 </Text>
-                {address && (estimatedTime !== null || loadingTime) && (
+                {(address || isUnserviceable || locationStatus === 'loading') && (estimatedTime !== null || loadingTime || isUnserviceable) && (
                   <View style={styles.estimatedTimeWrapper}>
                     {loadingTime ? (
                       <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
+                    ) : isUnserviceable ? (
+                      <Text style={[styles.estimatedTimeText, styles.unserviceableText]}>
+                        Area unserviceable
+                      </Text>
                     ) : estimatedTime !== null ? (
                       <Text style={[styles.estimatedTimeText, { color: textColor }]}>
                         in ⚡️{estimatedTime} mins
@@ -292,6 +302,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Bold,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  unserviceableText: {
+    color: '#DC2626',
   },
   searchContainer: {
     paddingHorizontal: 20,

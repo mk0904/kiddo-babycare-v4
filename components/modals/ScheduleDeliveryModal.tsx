@@ -18,6 +18,8 @@ interface ScheduleDeliveryModalProps {
     onClose: () => void;
     onConfirm: (schedule: DeliverySchedule) => void;
     initialSchedule?: DeliverySchedule | null;
+    /** Title from backend app config (e.g. "Schedule your delivery"). */
+    title?: string | null;
 }
 
 export interface DeliverySchedule {
@@ -69,7 +71,7 @@ const TIME_SLOT_RANGES: { label: string; value: string }[] = [
     { label: '9PM - 10PM', value: '09:00 PM' },
 ];
 
-export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule }: ScheduleDeliveryModalProps) => {
+export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule, title }: ScheduleDeliveryModalProps) => {
     const [isToday, setIsToday] = useState(true); // true = Today, false = Tomorrow
     const [selectedTime, setSelectedTime] = useState<string>('');
 
@@ -168,7 +170,7 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                             <View style={styles.headerIconWrap}>
                                 <Ionicons name="calendar-outline" size={22} color="#5C5C5C" />
                             </View>
-                            <Text style={styles.headerTitle}>Schedule delivery</Text>
+                            <Text style={styles.headerTitle}>{title?.trim() || 'Schedule delivery'}</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#4A4A4A" />
