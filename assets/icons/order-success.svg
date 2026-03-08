@@ -1,0 +1,50 @@
+<svg width="170" height="170" viewBox="0 0 170 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+.outer1{
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: draw 1.2s ease forwards;
+}
+
+.outer2{
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: draw 1.6s ease forwards;
+}
+
+.check{
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: draw 0.6s ease forwards;
+  animation-delay: 1.2s;
+}
+
+.circle{
+  animation: pop 0.4s ease-out forwards;
+  transform-origin:center;
+}
+
+@keyframes draw{
+  to{ stroke-dashoffset:0; }
+}
+
+@keyframes pop{
+  0%{ transform:scale(0.7); opacity:0; }
+  100%{ transform:scale(1); opacity:1; }
+}
+</style>
+
+<g opacity="0.3">
+<path class="outer1" d="M85 26C117.585 26 144 52.4152 144 85C144 117.585 117.585 144 85 144C52.4152 144 26 117.585 26 85C26 52.4152 52.4152 26 85 26Z" stroke="#079455" stroke-width="2"/>
+</g>
+
+<g opacity="0.1">
+<path class="outer2" d="M85 1C131.392 1 169 38.6081 169 85C169 131.392 131.392 169 85 169C38.6081 169 1 131.392 1 85C1 38.6081 38.6081 1 85 1Z" stroke="#079455" stroke-width="2"/>
+</g>
+
+<path class="circle" d="M85 118.333C103.409 118.333 118.333 103.409 118.333 84.9998C118.333 66.5903 103.409 51.6665 85 51.6665C66.5905 51.6665 51.6666 66.5903 51.6666 84.9998C51.6666 103.409 66.5905 118.333 85 118.333Z" fill="#079455"/>
+
+<path class="check" d="M70 85L80 95L100 75" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+</svg>

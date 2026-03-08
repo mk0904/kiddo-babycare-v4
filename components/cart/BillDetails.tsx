@@ -15,8 +15,10 @@ export interface BillDetailsProps {
     deliveryFeeOriginal: number;
     /** Coupon discount amount (positive number; show as -₹X when > 0) */
     couponDiscount: number;
-    /** Gift wrap fee (0 = show FREE) */
+    /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
+    /** Gift wrapping applied (when set, show row with this price) */
+    giftWrapping?: { price: number } | null;
     /** Whether Kiddo Cash is applied */
     kiddoCashEnabled: boolean;
     /** Kiddo Cash amount when enabled */
@@ -37,6 +39,7 @@ export function BillDetails({
     deliveryFeeOriginal,
     couponDiscount,
     giftWrappingFee,
+    giftWrapping = null,
     kiddoCashEnabled,
     kiddoCashApplied,
     total,
@@ -105,17 +108,17 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Gift Wrap */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Gift Wrap</Text>
-                        <View style={styles.valueRow}>
-                            {giftWrappingFee > 0 ? (
-                                <Text style={styles.value}>{formatCurrency(giftWrappingFee)}</Text>
-                            ) : (
-                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
-                            )}
+                    {/* Gift Wrap - show when gift wrap is applied (use giftWrapping.price or giftWrappingFee) */}
+                    {(giftWrapping != null && Number(giftWrapping.price) > 0) || giftWrappingFee > 0 ? (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Gift Wrap</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.value}>
+                                    {formatCurrency(Number(giftWrapping?.price) || giftWrappingFee)}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
+                    ) : null}
 
                     {/* Kiddo Cash */}
                     {kiddoCashEnabled && (

@@ -35,6 +35,8 @@ interface HorizontalProductListProps {
     onSeeMore?: () => void;
     onCollectionPress?: (collection: any) => void;
     showSeeMore?: boolean; // Legacy prop for backward compatibility
+    /** Called when products have finished loading (with the loaded products array). */
+    onProductsLoaded?: (products: any[]) => void;
 }
 
 const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
@@ -48,6 +50,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
     onSeeMore,
     onCollectionPress,
     showSeeMore = false,
+    onProductsLoaded,
 }) => {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,8 +82,10 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
 
     useEffect(() => {
         if (directProducts && directProducts.length > 0) {
-            setProducts(sortInStockFirst(directProducts));
+            const sorted = sortInStockFirst(directProducts);
+            setProducts(sorted);
             setLoading(false);
+            onProductsLoaded?.(sorted);
             return;
         }
 
@@ -126,8 +131,10 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
             const sortedProducts = sortInStockFirst(allProducts);
             const limitedProducts = limit > 0 ? sortedProducts.slice(0, limit) : sortedProducts;
             setProducts(limitedProducts);
+            onProductsLoaded?.(limitedProducts);
         } catch (error) {
             console.error('Error loading products:', error);
+            onProductsLoaded?.([]);
         } finally {
             setLoading(false);
         }

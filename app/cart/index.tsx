@@ -1,12 +1,23 @@
 import { BillDetails } from '@/components/cart/BillDetails';
+import { CartFooterPayment } from '@/components/cart/CartFooterPayment';
+import { CompletePurchaseSection } from '@/components/cart/CompletePurchaseSection';
 import { DeliveryCard } from '@/components/cart/DeliveryCard';
+import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
-import HorizontalProductList from '@/components/content/HorizontalProductList';
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
+import {
+    calculateDistance,
+    DARK_STORE_LOCATION,
+    estimateDeliveryTime,
+    geocodeAddress,
+    getDeliveryTimeFromGoogleMaps,
+} from '@/config/deliveryConfig';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { SchedulingOrderModal } from '@/components/modals/SchedulingOrderModal';
 import { CheckoutRedeemCoins } from '@/components/nector';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import { Colors, Fonts } from '@/constants/theme';
@@ -65,6 +76,42 @@ export default function CartScreen() {
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
     const { defaultAddress } = useAddress();
+    const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
+        defaultAddress?.latitude,
+        defaultAddress?.longitude,
+        defaultAddress ?? undefined
+    );
+    // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
+    // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
+    const [etaFromGeocode, setEtaFromGeocode] = useState<number | null>(null);
+    const hasCoords = defaultAddress?.latitude != null && defaultAddress?.longitude != null;
+    useEffect(() => {
+        if (!defaultAddress || hasCoords) {
+            setEtaFromGeocode(null);
+            return;
+        }
+        let cancelled = false;
+        const run = async () => {
+            const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
+            if (!addressString) return;
+            const coords = await geocodeAddress(addressString);
+            if (cancelled || !coords) return;
+            let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
+            if (deliveryTime == null) {
+                const distanceKm = calculateDistance(
+                    DARK_STORE_LOCATION.latitude,
+                    DARK_STORE_LOCATION.longitude,
+                    coords.latitude,
+                    coords.longitude
+                );
+                deliveryTime = estimateDeliveryTime(distanceKm);
+            }
+            if (!cancelled) setEtaFromGeocode(deliveryTime);
+        };
+        run();
+        return () => { cancelled = true; };
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode]);
+
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
     // Use Zustand store
@@ -82,7 +129,6 @@ export default function CartScreen() {
     const clearCart = useCartStore(state => state.clearCart);
     const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
-    const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
     const selectedShoe = useCartStore(state => state.selectedShoe);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
     const discountCodes = useCartStore(state => state.discountCodes);
@@ -118,6 +164,55 @@ export default function CartScreen() {
             return hasTicketingTag;
         });
     }, [cartItems]);
+
+    // Split cart items: gift-wrapped vs regular (for separate display)
+    const giftWrapProductIds = useMemo(() => giftWrapping?.productIds ?? [], [giftWrapping?.productIds]);
+    const itemsNotGiftWrapped = useMemo(
+        () => cartItems.filter(item => !giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const itemsGiftWrapped = useMemo(
+        () => cartItems.filter(item => giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const totalCartItems = useMemo(
+        () => cartItems.reduce((s, i) => s + i.quantity, 0),
+        [cartItems]
+    );
+
+    // Gift wrap fee: only charge for products still in cart (so removing a product or deselecting from gift wrap updates the fee)
+    const validGiftWrapIds = useMemo(
+        () => (giftWrapping?.productIds ?? []).filter(id => cartItems.some(item => item.id === id)),
+        [giftWrapping?.productIds, cartItems]
+    );
+    const giftWrapPerItemPrice = useMemo(() => {
+        const ids = giftWrapping?.productIds ?? [];
+        if (ids.length === 0 || !giftWrapping?.price) return 30;
+        return giftWrapping.price / ids.length;
+    }, [giftWrapping?.productIds, giftWrapping?.price]);
+    const derivedGiftWrappingFee = useMemo(
+        () => validGiftWrapIds.length * giftWrapPerItemPrice,
+        [validGiftWrapIds.length, giftWrapPerItemPrice]
+    );
+
+    // Sync gift wrap state when cart items change (e.g. user removed a product) so stored productIds and price stay correct
+    const validGiftWrapIdsKey = useMemo(() => validGiftWrapIds.join(','), [validGiftWrapIds]);
+    useEffect(() => {
+        if (!giftWrapping || hasTicketingProducts) return;
+        const storedIds = giftWrapping.productIds ?? [];
+        if (validGiftWrapIds.length === 0) {
+            setGiftWrapping(null);
+            return;
+        }
+        if (validGiftWrapIds.length !== storedIds.length || validGiftWrapIds.some((id, i) => id !== storedIds[i])) {
+            setGiftWrapping({
+                name: giftWrapping.name,
+                description: giftWrapping.description,
+                price: validGiftWrapIds.length * giftWrapPerItemPrice,
+                productIds: validGiftWrapIds,
+            });
+        }
+    }, [validGiftWrapIdsKey, giftWrapping, giftWrapPerItemPrice, hasTicketingProducts, setGiftWrapping]);
 
     // Check if cart has only ticketing products
     const isTicketingOnly = useMemo(() => {
@@ -182,10 +277,9 @@ export default function CartScreen() {
     const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [showSchedulingOrderModal, setShowSchedulingOrderModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
-    // Collection for "Complete your purchase with" - use first category or a suggestions collection if present in config
-    const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/508646719777';
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -309,8 +403,8 @@ export default function CartScreen() {
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
 
     const deliveryFee = 0;
-    // Don't charge gift wrapping fee for ticketing products
-    const giftWrappingFee = hasTicketingProducts ? 0 : getGiftWrappingPrice();
+    // Gift wrap fee: only for products still in cart; recalculates when items are removed from cart or from gift wrap
+    const giftWrappingFee = hasTicketingProducts ? 0 : derivedGiftWrappingFee;
 
     // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
@@ -912,12 +1006,14 @@ export default function CartScreen() {
             // Use a small delay to ensure state updates complete
             requestAnimationFrame(() => {
                 try {
+                    const resolvedEta = estimatedDeliveryMinutes ?? etaFromGeocode;
                     const navParams = {
-                        pathname: '/order-success' as const,
+                        pathname: '/order-success/v2' as const,
                         params: {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
+                            ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                         },
                     };
 
@@ -926,7 +1022,7 @@ export default function CartScreen() {
                 } catch (error) {
                     console.error('[Cart] Navigation error:', error);
                     // Fallback: try direct path
-                    router.push('/order-success' as any);
+                    router.push('/order-success/v2' as any);
                 }
             });
 
@@ -1112,54 +1208,63 @@ export default function CartScreen() {
                             <DeliveryCard
                                 deliverySchedule={deliverySchedule}
                                 onSchedulePress={() => setShowScheduleModal(true)}
+                                estimatedDeliveryMinutes={estimatedDeliveryMinutes ?? etaFromGeocode}
                             />
                         )}
 
-                        {/* Cart Items - one card with "X added items" header and all items inside */}
-                        <View style={styles.itemsSection}>
-                            <View style={styles.itemsHeader}>
-                                <Text style={styles.itemsHeaderText}>
-                                    {cartItems.reduce((s, i) => s + i.quantity, 0)} added items
-                                </Text>
+                        {/* Introductory Offer - Free Pair of Shoes (same logic as FreeShoesOffer modal) */}
+                        {hasNonTicketingProducts && (
+                            <FreePairShoes
+                                visible
+                                selectedShoe={selectedShoe}
+                                onAddPress={() => setShowShoesModal(true)}
+                                onConfirmSize={(shoeId) => setSelectedShoe(shoeId)}
+                                onRemoveOffer={() => setSelectedShoe(null)}
+                            />
+                        )}
+
+                        {/* Cart Items - gift-wrapped first, then regular; "X added items" shown once with total */}
+                        {itemsGiftWrapped.length > 0 && (
+                            <View style={[styles.itemsSection, styles.itemsSectionGiftWrap]}>
+                                <View style={styles.itemsHeader}>
+                                    <Text style={styles.itemsHeaderText}>
+                                        {totalCartItems} added items
+                                    </Text>
+                                </View>
+                                {itemsGiftWrapped.map(item => renderItem(item))}
+                                <View style={styles.giftWrapRibbonContainer}>
+                                    <Image
+                                        source={require('@/assets/images/ribbon.png')}
+                                        style={styles.giftWrapRibbon}
+                                        contentFit="cover"
+                                    />
+                                </View>
                             </View>
-                            {cartItems.map(item => renderItem(item))}
-                        </View>
+                        )}
+                        {itemsNotGiftWrapped.length > 0 && (
+                            <View style={styles.itemsSection}>
+                                {itemsGiftWrapped.length === 0 && (
+                                    <View style={styles.itemsHeader}>
+                                        <Text style={styles.itemsHeaderText}>
+                                            {totalCartItems} added items
+                                        </Text>
+                                    </View>
+                                )}
+                                {itemsNotGiftWrapped.map(item => renderItem(item))}
+                            </View>
+                        )}
 
                         {/* Gift Wrapping - when at least one non-ticketing product in cart */}
                         {hasNonTicketingProducts && (
-                            <GiftWrappingCard onSelectPress={() => setShowGiftModal(true)} />
+                            <GiftWrappingCard
+                                giftWrapping={giftWrapping}
+                                onSelectPress={() => setShowGiftModal(true)}
+                                onRemovePress={() => setGiftWrapping(null)}
+                            />
                         )}
 
                         {/* Complete your purchase with - horizontal product list from collection */}
-                        {!hasTicketingProducts && (
-                            <View style={styles.completePurchaseSection}>
-                                <Text style={styles.completePurchaseTitle}>Complete your purchase with</Text>
-                                <HorizontalProductList
-                                    collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
-                                    config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
-                                    title=""
-                                    onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
-                                    onAddToCart={(p) => {
-                                        if (p?.variants?.edges?.[0]?.node) {
-                                            const v = p.variants.edges[0].node;
-                                            useCartStore.getState().addItem({
-                                                productId: p.id,
-                                                variantId: v.id,
-                                                title: p.title,
-                                                variantTitle: v.title,
-                                                price: parseFloat(v.price?.amount || '0'),
-                                                compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
-                                                currencyCode: v.price?.currencyCode || 'INR',
-                                                image: p.featuredImage?.url || v.image?.url || '',
-                                                quantity: 1,
-                                                availableForSale: v.availableForSale !== false,
-                                                tags: p.tags || [],
-                                            });
-                                        }
-                                    }}
-                                />
-                            </View>
-                        )}
+                        {!hasTicketingProducts && <CompletePurchaseSection />}
 
                         <SavingsCorner
                             itemSubtotal={itemSubtotal}
@@ -1179,6 +1284,7 @@ export default function CartScreen() {
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
                             couponDiscount={discountAmount}
                             giftWrappingFee={giftWrappingFee}
+                            giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}
                             kiddoCashApplied={KIDDO_CASH_APPLIED}
                             total={total}
@@ -1294,43 +1400,17 @@ export default function CartScreen() {
                             </TouchableOpacity>
                         )}
 
-                        {/* Payment row: Pay using + method, Pay button */}
-                        <View style={styles.footerBottom}>
-                            <View style={styles.footerLeft}>
-                                <View style={styles.footerPayUsingRow}>
-                                    <Text style={styles.footerPayUsingLabel}>Pay using</Text>
-                                    <Ionicons name="chevron-down" size={18} color="#666" />
-                                </View>
-                                <Text style={styles.footerPaymentMethod}>
-                                    {paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Pay Online - Card, UPI, Net Banking'}
-                                </Text>
-                            </View>
-                            {selectedAddress || isTicketingOnly ? (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.checkoutButton,
-                                        (orderLoading || !isAuthenticated) && styles.checkoutButtonDisabled,
-                                    ]}
-                                    onPress={handlePlaceOrder}
-                                    disabled={orderLoading || !isAuthenticated}
-                                >
-                                    {orderLoading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text style={styles.checkoutButtonText}>
-                                            {isAuthenticated ? `Pay ${formatCurrency(toPay)}` : 'Login to Order'}
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.addAddressButtonFooter}
-                                    onPress={handleAddressSelection}
-                                >
-                                    <Text style={styles.addAddressButtonText}>Add Address</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        {/* Payment row: Pay using + method, Pay button (new UI) */}
+                        <CartFooterPayment
+                            showPayButton={!!(selectedAddress || isTicketingOnly)}
+                            paymentMethod={paymentMethod}
+                            toPay={toPay}
+                            formatCurrency={formatCurrency}
+                            orderLoading={orderLoading}
+                            isAuthenticated={isAuthenticated}
+                            onPlaceOrder={() => setShowSchedulingOrderModal(true)}
+                            onAddAddress={handleAddressSelection}
+                        />
                     </View>
                 </View>
             )}
@@ -1372,6 +1452,25 @@ export default function CartScreen() {
                     else setDeliverySchedule(schedule);
                 }}
                 initialSchedule={deliverySchedule}
+            />
+
+            {/* Scheduling your order - shows 4s with progress bar when user taps Pay */}
+            <SchedulingOrderModal
+                visible={showSchedulingOrderModal}
+                onComplete={() => {
+                    setShowSchedulingOrderModal(false);
+                    handlePlaceOrder();
+                }}
+                arrivingText={
+                    deliverySchedule?.timeSlotLabel && deliverySchedule?.date
+                        ? `${deliverySchedule.timeSlotLabel} | ${deliverySchedule.date}`
+                        : '11am-12pm | Today'
+                }
+                deliveringToText={
+                    selectedAddress?.address1
+                        ? `Home: ${selectedAddress.address1}${selectedAddress.address2 ? `, ${selectedAddress.address2}` : ''}`
+                        : 'Home'
+                }
             />
         </SafeAreaView>
     );
@@ -1491,6 +1590,17 @@ const styles = StyleSheet.create({
             android: { elevation: 3 },
         }),
     },
+    itemsSectionGiftWrap: {
+        paddingBottom: 0,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
+    },
     itemsHeader: {
         marginBottom: 12,
     },
@@ -1498,6 +1608,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2D2D2D',
         fontFamily: Fonts.Regular,
+    },
+    giftWrapRibbonContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    giftWrapRibbon: {
+        width: '100%',
+        height: 36,
     },
     cartItemRow: {
         flexDirection: 'row',
@@ -1617,26 +1736,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontFamily: Fonts.SemiBold,
         color: '#1A1A1A',
-    },
-    completePurchaseSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        paddingVertical: 16,
-        paddingHorizontal: 8,
-        paddingLeft: 8,
-        marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
-    },
-    completePurchaseTitle: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
-        marginBottom: 12,
-        textAlign: 'left',
-        paddingLeft: 8,
     },
     couponsModalOverlay: {
         flex: 1,
@@ -2021,22 +2120,6 @@ const styles = StyleSheet.create({
     footerContent: {
         padding: 15,
     },
-    footerPayUsingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginBottom: 4,
-    },
-    footerPayUsingLabel: {
-        fontSize: 13,
-        color: '#666',
-        fontFamily: Fonts.Regular,
-    },
-    footerPaymentMethod: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
-    },
     footerAddress: {
         marginBottom: 12,
         paddingBottom: 12,
@@ -2054,14 +2137,6 @@ const styles = StyleSheet.create({
         color: '#000',
         fontFamily: Fonts.Regular,
     },
-    footerBottom: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    footerLeft: {
-        flex: 1,
-    },
     footerPriceRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -2078,36 +2153,7 @@ const styles = StyleSheet.create({
         color: '#666',
         fontFamily: Fonts.Regular,
     },
-    checkoutButton: {
-        backgroundColor: '#E07A5F',
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 10,
-        minWidth: 120,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     tryAndBuyButton: {
         backgroundColor: '#FF9800',
-    },
-    checkoutButtonDisabled: {
-        opacity: 0.6,
-    },
-    checkoutButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
-    },
-    addAddressButtonFooter: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderRadius: 8,
-    },
-    addAddressButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
     },
 });

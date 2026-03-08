@@ -2,7 +2,13 @@ import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
-import { geocodeAddress, getDeliveryTimeFromGoogleMaps } from '@/config/deliveryConfig';
+import {
+  calculateDistance,
+  DARK_STORE_LOCATION,
+  estimateDeliveryTime,
+  geocodeAddress,
+  getDeliveryTimeFromGoogleMaps,
+} from '@/config/deliveryConfig';
 import { Colors } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
@@ -296,7 +302,17 @@ export default function HomeScreen() {
         lng = coords.longitude;
       }
 
-      const deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
+      let deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
+      // Fallback to distance-based formula (same as rest of app) when Google Maps fails
+      if (deliveryTime == null) {
+        const distanceKm = calculateDistance(
+          DARK_STORE_LOCATION.latitude,
+          DARK_STORE_LOCATION.longitude,
+          lat,
+          lng
+        );
+        deliveryTime = estimateDeliveryTime(distanceKm);
+      }
       setEstimatedTime(deliveryTime);
 
       // Track delivery ETA checked

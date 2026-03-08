@@ -5,21 +5,18 @@ import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
-    FlatList,
     Modal,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_COLUMNS = 3;
-const ITEM_SPACING = 8;
-const ITEM_WIDTH = (SCREEN_WIDTH - 40 - (ITEM_SPACING * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
+const WRAP_OPTION_SIZE = (SCREEN_WIDTH - 32 - 24) / 3;
 
 function isTicketingItem(item: { bookingDate?: string; tags?: string[] }): boolean {
     if (item.bookingDate) return true;
@@ -64,13 +61,13 @@ const GIFT_WRAP_OPTIONS = [
 ];
 
 export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) => {
+    const insets = useSafeAreaInsets();
     const cartItems = useCartItems();
     const giftWrapping = useGiftWrapping();
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
-    const [selectedWrap, setSelectedWrap] = useState(giftWrapping);
+    const [selectedWrap, setSelectedWrap] = useState<typeof GIFT_WRAP_OPTIONS[0] | null>(null);
     const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
-    // Only non-ticketing products are eligible for gift wrap
     const eligibleItems = React.useMemo(
         () => cartItems.filter(item => !isTicketingItem(item)),
         [cartItems]
@@ -79,7 +76,10 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
 
     useEffect(() => {
         if (visible) {
-            setSelectedWrap(giftWrapping);
+            const match = giftWrapping
+                ? GIFT_WRAP_OPTIONS.find(w => w.name === giftWrapping.name)
+                : null;
+            setSelectedWrap(match ?? GIFT_WRAP_OPTIONS[0]);
             const existingIds = giftWrapping?.productIds ?? [];
             const defaultIds = existingIds.length > 0
                 ? existingIds.filter(id => eligibleIds.includes(id))
@@ -88,37 +88,26 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
         }
     }, [visible, giftWrapping, eligibleIds]);
 
-    const handleWrapSelect = (wrap: any) => {
+    const handleWrapSelect = (wrap: typeof GIFT_WRAP_OPTIONS[0]) => {
         setSelectedWrap(wrap);
     };
 
     const toggleProductSelection = (productId: string) => {
-        setSelectedProducts(prev => {
-            if (prev.includes(productId)) {
-                return prev.filter(id => id !== productId);
-            } else {
-                return [...prev, productId];
-            }
-        });
-    };
-
-    const handleSelectAll = () => {
-        if (selectedProducts.length === eligibleIds.length) {
-            setSelectedProducts([]);
-        } else {
-            setSelectedProducts([...eligibleIds]);
-        }
+        setSelectedProducts(prev =>
+            prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+        );
     };
 
     const handleConfirm = () => {
         if (selectedWrap && selectedProducts.length > 0) {
+            const totalPrice = selectedProducts.length * selectedWrap.price;
             setGiftWrapping({
-                ...selectedWrap,
+                name: selectedWrap.name,
+                description: selectedWrap.description ?? '',
+                price: totalPrice,
                 productIds: selectedProducts,
             });
         } else if (selectedWrap) {
-            // If wrap selected but no products, warn or just clear?
-            // Kiddo logic: if no products, remove wrapping.
             setGiftWrapping(null);
         }
         onClose();
@@ -131,82 +120,35 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
         onClose();
     };
 
-    const renderWrapOption = ({ item }: { item: any }) => {
-        const isSelected = selectedWrap?.name === item.name;
-        return (
-            <TouchableOpacity
-                style={[
-                    styles.wrapCard,
-                    isSelected && styles.wrapCardSelected,
-                ]}
-                onPress={() => handleWrapSelect(item)}
-            >
-                <Image
-                    source={item.image} // In real app use configured images
-                    style={styles.wrapImage}
-                    contentFit="cover"
-                    placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-                    transition={200}
-                />
-                <View style={[styles.wrapOverlay, isSelected && styles.wrapOverlaySelected]}>
-                    {isSelected && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
-                </View>
-                <View style={styles.wrapInfo}>
-                    <Text style={styles.wrapName}>{item.name}</Text>
-                    <Text style={styles.wrapPrice}>₹{item.price}</Text>
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
-    const renderProductItem = ({ item }: { item: any }) => {
-        const isSelected = selectedProducts.includes(item.id);
-
-        return (
-            <TouchableOpacity
-                style={[
-                    styles.productCard,
-                    isSelected && styles.productCardSelected,
-                ]}
-                onPress={() => toggleProductSelection(item.id)}
-            >
-                <Image
-                    source={item.image}
-                    style={styles.productImage}
-                    contentFit="cover"
-                />
-                <View style={styles.productInfo}>
-                    <Text style={styles.productTitle} numberOfLines={2}>
-                        {item.title}
-                    </Text>
-                    {item.variantTitle && item.variantTitle !== 'Default Title' && (
-                        <Text style={styles.variantText}>{item.variantTitle}</Text>
-                    )}
-                </View>
-                <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
-                    {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    const perItemPrice = selectedWrap?.price ?? GIFT_WRAP_OPTIONS[0]?.price ?? 30;
+    const giftWrapTotal = selectedProducts.length * perItemPrice;
 
     return (
         <Modal
             animationType="slide"
-            transparent={true}
             visible={visible}
             onRequestClose={onClose}
+            statusBarTranslucent
         >
-            <View style={styles.container}>
-                <Pressable style={styles.backdrop} onPress={onClose} />
-
+            <SafeAreaView style={styles.container} edges={['bottom']}>
                 <View style={styles.content}>
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Text style={styles.headerTitle}>Gift Wrapping</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Ionicons name="close" size={24} color="#000" />
+                    {/* Header with gift wrapper image (red + ribbon) - extends under status bar */}
+                    <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
+                        <Image
+                            source={require('@/assets/images/giftWrapperHeader.png')}
+                            style={styles.headerImage}
+                            contentFit="fill"
+                        />
+                        <TouchableOpacity onPress={onClose} style={styles.backButton} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <Ionicons name="chevron-back" size={28} color="#fff" />
                         </TouchableOpacity>
+                        <View style={styles.headerTextWrap}>
+                            <Text style={styles.headerTitle}>Make this a gift</Text>
+                            <Text style={styles.headerSubtitle}>
+                                Get items gift wrapped for ₹{perItemPrice} per item
+                                {selectedProducts.length > 0 ? ` · ₹${giftWrapTotal} total` : ''}
+                            </Text>
+                        </View>
                     </View>
 
                     <ScrollView
@@ -214,58 +156,81 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                         contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                     >
-                        {/* Wrapping Options */}
-                        <Text style={styles.sectionTitle}>Choose Wrapping Style</Text>
-                        <FlatList
-                            data={GIFT_WRAP_OPTIONS}
-                            renderItem={renderWrapOption}
-                            keyExtractor={(item) => item.id}
-                            numColumns={GRID_COLUMNS}
-                            columnWrapperStyle={styles.gridRow}
-                            scrollEnabled={false}
-                        />
-
-                        {/* Product Selection - only non-ticketing items are eligible */}
-                        {selectedWrap && (
-                            <View style={styles.productSection}>
-                                <View style={styles.productSectionHeader}>
-                                    <View>
-                                        <Text style={styles.sectionTitle}>Select Products</Text>
-                                        <Text style={styles.sectionSubtitle}>Select items to be wrapped. Ticketing products (events, playhouses, etc.) are not eligible for gift wrap.</Text>
-                                    </View>
-                                    {eligibleIds.length > 0 && (
-                                        <TouchableOpacity
-                                            style={styles.selectAllBtn}
-                                            onPress={handleSelectAll}
-                                        >
-                                            <Text style={styles.selectAllText}>
-                                                {selectedProducts.length === eligibleIds.length ? 'Deselect All' : 'Select All'}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-
-                                {eligibleItems.length === 0 ? (
-                                    <View style={styles.ineligibleNotice}>
-                                        <Ionicons name="information-circle-outline" size={20} color="#888" />
-                                        <Text style={styles.ineligibleNoticeText}>No items in your cart are eligible for gift wrap. Ticketing products (events, playhouses, petting farms) cannot be gift wrapped.</Text>
-                                    </View>
-                                ) : (
-                                    <FlatList
-                                        data={eligibleItems}
-                                        renderItem={renderProductItem}
-                                        keyExtractor={(item) => item.id}
-                                        scrollEnabled={false}
-                                        scrollEventThrottle={16}
-                                    />
-                                )}
+                        {/* Eligible items - first */}
+                        <Text style={styles.sectionTitle}>Eligible items</Text>
+                        {eligibleItems.length === 0 ? (
+                            <View style={styles.ineligibleNotice}>
+                                <Text style={styles.ineligibleNoticeText}>No items in your cart are eligible for gift wrap.</Text>
                             </View>
+                        ) : (
+                            <>
+                                <View style={styles.productCardsContainer}>
+                                    {eligibleItems.map((item, index) => {
+                                        const isSelected = selectedProducts.includes(item.id);
+                                        const isLast = index === eligibleItems.length - 1;
+                                        return (
+                                            <TouchableOpacity
+                                                key={item.id}
+                                                style={[styles.productRow ]}
+                                                onPress={() => toggleProductSelection(item.id)}
+                                                activeOpacity={0.8}
+                                            >
+                                                <Image
+                                                    source={item.image}
+                                                    style={styles.productImage}
+                                                    contentFit="cover"
+                                                />
+                                                <View style={styles.productInfo}>
+                                                    <Text style={styles.productTitle} numberOfLines={2}>
+                                                        {item.title}
+                                                    </Text>
+                                                    {item.variantTitle && item.variantTitle !== 'Default Title' && (
+                                                        <Text style={styles.variantText}>{item.variantTitle}</Text>
+                                                    )}
+                                                </View>
+                                                <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
+                                                    {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                                <View style={styles.footnoteContainer}>
+                                    <Text style={styles.footnote}>Certain items are not eligible for gift wrap</Text>
+                                </View>
+                            </>
                         )}
+
+                        {/* Choose gift wrap - second */}
+                        <Text style={[styles.sectionTitle, styles.sectionTitleSecond]}>Choose gift wrap</Text>
+                        <View style={styles.wrapRow}>
+                            {GIFT_WRAP_OPTIONS.map((wrap) => {
+                                const isSelected = selectedWrap?.id === wrap.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={wrap.id}
+                                        style={styles.wrapOptionWrap}
+                                        onPress={() => handleWrapSelect(wrap)}
+                                        activeOpacity={0.9}
+                                    >
+                                        <View style={styles.wrapCard}>
+                                            <Image source={wrap.image} style={styles.wrapCardImage} contentFit="cover" />
+                                        </View>
+                                        <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                                            {isSelected && <View style={styles.radioInner} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <View style={styles.footnoteContainer}>
+                            <Text style={styles.footnote}>All items selected are wrapped separately</Text>
+                        </View>
                     </ScrollView>
 
-                    {/* Footer */}
+                    {/* Sticky footer - Add for ₹20 */}
                     <View style={styles.footer}>
-                        {giftWrapping && (
+                        {giftWrapping != null && (
                             <TouchableOpacity style={styles.removeButton} onPress={handleRemove}>
                                 <Ionicons name="trash-outline" size={18} color="#FF4444" />
                                 <Text style={styles.removeButtonText}>Remove</Text>
@@ -273,19 +238,18 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                         )}
                         <TouchableOpacity
                             style={[
-                                styles.confirmButton,
-                                (!selectedWrap || selectedProducts.length === 0) && styles.confirmButtonDisabled
+                                styles.addButton,
+                                (!selectedWrap || selectedProducts.length === 0) && styles.addButtonDisabled,
                             ]}
                             onPress={handleConfirm}
                             disabled={!selectedWrap || selectedProducts.length === 0}
+                            activeOpacity={0.9}
                         >
-                            <Text style={styles.confirmButtonText}>
-                                {selectedWrap ? `Confirm (₹${selectedWrap.price})` : 'Confirm'}
-                            </Text>
+                            <Text style={styles.addButtonText}>Add for ₹{giftWrapTotal}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
-            </View>
+            </SafeAreaView>
         </Modal>
     );
 };
@@ -293,182 +257,118 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    backdrop: {
-        ...StyleSheet.absoluteFillObject,
+        backgroundColor: Colors.grey,
     },
     content: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: '90%',
+        flex: 1,
+        backgroundColor: Colors.grey,
         width: '100%',
+        overflow: 'hidden',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        position: 'relative',
+        minHeight: 200,
+        paddingBottom: 20,
+        paddingHorizontal: 16,
+        overflow: 'hidden',
+        backgroundColor: Colors.primary,
+    },
+    headerImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: SCREEN_WIDTH,
+        height: 290,
+    },
+    backButton: {
+        marginBottom: 8,
+        zIndex: 1,
+    },
+    headerTextWrap: {
+        marginTop: 48,
+        zIndex: 1,
     },
     headerTitle: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#000',
+        fontSize: 24,
+        fontFamily: Fonts.SemiBold,
+        color: '#fff',
+        marginBottom: 4,
     },
-    closeButton: {
-        padding: 4,
+    headerSubtitle: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: '#fff',
+        opacity: 0.95,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: 16,
+        paddingBottom: 24,
     },
     sectionTitle: {
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.SemiBold,
         color: '#000',
         marginBottom: 12,
     },
-    sectionSubtitle: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        color: '#666',
-        marginTop: 2,
-        maxWidth: 260,
+    sectionTitleSecond: {
+        marginTop: 24,
     },
-    ineligibleNotice: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        padding: 14,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    ineligibleNoticeText: {
-        flex: 1,
-        fontSize: 13,
-        fontFamily: Fonts.Regular,
-        color: '#666',
-    },
-    gridRow: {
-        gap: ITEM_SPACING,
-        marginBottom: 15,
-    },
-    wrapCard: {
-        width: ITEM_WIDTH,
-        borderRadius: 8,
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#eee',
+    productCardsContainer: {
+        backgroundColor: Colors.backgroundWhite,
+        borderRadius: 16,
         overflow: 'hidden',
+        marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            android: { elevation: 3 },
+        }),
     },
-    wrapCardSelected: {
-        borderColor: Colors.primary,
-        backgroundColor: '#fff5f5',
-    },
-    wrapImage: {
-        width: '100%',
-        height: ITEM_WIDTH, // Square image
-        backgroundColor: '#f9f9f9',
-    },
-    wrapOverlay: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.8)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    wrapOverlaySelected: {
-        backgroundColor: '#fff',
-    },
-    wrapInfo: {
-        padding: 8,
-    },
-    wrapName: {
-        fontSize: 12,
-        fontFamily: Fonts.SemiBold,
-        color: '#000',
-        marginBottom: 2,
-    },
-    wrapPrice: {
-        fontSize: 12,
-        fontFamily: Fonts.Bold,
-        color: Colors.primary,
-    },
-    productSection: {
-        marginTop: 20,
-        marginBottom: 40,
-    },
-    productSectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    selectAllBtn: {
-        backgroundColor: '#f5f5f5',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 6,
-    },
-    selectAllText: {
-        fontSize: 12,
-        fontFamily: Fonts.SemiBold,
-        color: Colors.primary,
-    },
-    productCard: {
+    productRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#eee',
-        marginBottom: 10,
+        padding: 14,
     },
-    productCardSelected: {
-        borderColor: Colors.primary,
-        backgroundColor: '#fdfdfd',
+    productRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
     productImage: {
-        width: 60,
-        height: 60,
-        borderRadius: 8,
-        marginRight: 12,
-        backgroundColor: '#f5f5f5',
+        width: 56,
+        height: 56,
+        borderRadius: 10,
+        marginRight: 14,
+        backgroundColor: Colors.grey,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        overflow: 'hidden',
     },
     productInfo: {
         flex: 1,
-        marginRight: 12,
+        marginRight: 14,
+        minWidth: 0,
     },
     productTitle: {
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
-        color: '#000',
+        color: '#2D2D2D',
         marginBottom: 4,
     },
     variantText: {
-        fontSize: 12,
+        fontSize: 13,
         fontFamily: Fonts.Regular,
-        color: '#777',
+        color: '#666',
     },
     checkbox: {
         width: 22,
         height: 22,
         borderRadius: 6,
         borderWidth: 2,
-        borderColor: '#ddd',
+        borderColor: Colors.border,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -476,48 +376,108 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         borderColor: Colors.primary,
     },
-    footer: {
-        padding: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-        flexDirection: 'row',
-        gap: 15,
+    footnoteContainer: {
+        width: '100%',
+        marginTop: 8,
     },
-    removeButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 14,
+    footnote: {
+        fontSize: 12,
+        fontFamily: Fonts.Regular,
+        color: '#999',
+        textAlign: 'center',
+    },
+    ineligibleNotice: {
+        padding: 14,
+        backgroundColor: Colors.backgroundWhite,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#ff4444',
+        borderColor: Colors.border,
+    },
+    ineligibleNoticeText: {
+        fontSize: 13,
+        fontFamily: Fonts.Regular,
+        color: '#666',
+    },
+    wrapRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    wrapOptionWrap: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    wrapCard: {
+        width: WRAP_OPTION_SIZE,
+        height: WRAP_OPTION_SIZE,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: Colors.backgroundWhite,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
+            android: { elevation: 2 },
+        }),
+    },
+    wrapCardImage: {
+        width: '100%',
+        height: '100%',
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: Colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    radioSelected: {
+        borderColor: Colors.primary,
+    },
+    radioInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: Colors.primary,
+    },
+    footer: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+        backgroundColor: Colors.backgroundWhite,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
+        gap: 10,
+    },
+    removeButton: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 6,
+        paddingVertical: 10,
     },
     removeButtonText: {
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
-        color: '#ff4444',
+        color: '#FF4444',
     },
-    confirmButton: {
-        flex: 1,
+    addButton: {
         backgroundColor: Colors.primary,
-        paddingVertical: 14,
+        paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+            android: { elevation: 3 },
+        }),
     },
-    confirmButtonDisabled: {
-        backgroundColor: '#ccc',
-        shadowOpacity: 0,
-        elevation: 0,
+    addButtonDisabled: {
+        backgroundColor: Colors.disabled,
+        ...Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0 } }),
     },
-    confirmButtonText: {
+    addButtonText: {
         fontSize: 16,
         fontFamily: Fonts.Bold,
         color: '#fff',

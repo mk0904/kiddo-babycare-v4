@@ -1,3 +1,4 @@
+import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -17,7 +18,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function OrderSuccessScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { orderId, orderGraphId, total } = params;
+    const { orderId, orderGraphId, total, estimatedDeliveryMinutes } = params as {
+        orderId?: string;
+        orderGraphId?: string;
+        total?: string;
+        estimatedDeliveryMinutes?: string;
+    };
+    const etaMins = estimatedDeliveryMinutes != null ? Number(estimatedDeliveryMinutes) : DEFAULT_ETA_MINUTES;
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -132,7 +139,7 @@ export default function OrderSuccessScreen() {
                         )}
                         <View style={[styles.orderRow, styles.lastOrderRow]}>
                             <Text style={styles.orderLabel}>Estimated Delivery</Text>
-                            <Text style={styles.orderValue}>30 mins</Text>
+                            <Text style={styles.orderValue}>{etaMins} mins</Text>
                         </View>
                     </View>
 

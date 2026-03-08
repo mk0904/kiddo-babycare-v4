@@ -28,11 +28,15 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 
 // Estimate delivery time in minutes based on distance
 // Formula: (distance in km * 2 mins per km) + 5 mins packing time
+// Use this formula everywhere the app shows ETA.
 export const estimateDeliveryTime = (distanceKm: number): number => {
   const travelTime = distanceKm * 2; // 2 mins per km
   const totalTime = Math.ceil(PACKING_TIME + travelTime);
   return totalTime;
 };
+
+/** Default ETA (minutes) when distance/address is unknown. Used for order success and order detail when no stored ETA. */
+export const DEFAULT_ETA_MINUTES = 30;
 
 // Check if location is within delivery range (max 60 mins)
 export const isWithinDeliveryRange = (latitude: number, longitude: number) => {

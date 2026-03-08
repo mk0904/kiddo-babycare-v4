@@ -149,6 +149,18 @@ const AVAILABLE_GIFTS: Omit<GiftItem, 'isApplied'>[] = [
     // },
 ];
 
+/** Parse Shopify "merchandise does not exist" error and return the invalid variant id (GID or numeric). */
+function parseInvalidVariantFromError(message: string): string | null {
+    if (!message || !message.includes('does not exist')) return null;
+    const match = message.match(/gid:\/\/shopify\/ProductVariant\/(\d+)/);
+    return match ? match[1] : null; // numeric id; lineItems may store full GID or just id
+}
+
+function lineItemMatchesVariant(item: CartItem, variantIdNumeric: string): boolean {
+    const id = item.variantId;
+    return id === variantIdNumeric || id.endsWith(variantIdNumeric) || id === `gid://shopify/ProductVariant/${variantIdNumeric}`;
+}
+
 // Create store
 export const useCartStore = create<CartState>()(
     persist(
@@ -813,8 +825,21 @@ export const useCartStore = create<CartState>()(
                         }
                     } catch (error: any) {
                         console.error('[CartStore] Error creating Shopify cart for discount:', error);
-                        set({ status: 'idle', error: error.message });
-                        return { success: false, error: error.message || 'Failed to apply discount code' };
+                        const msg = error?.message || '';
+                        const invalidVariantId = parseInvalidVariantFromError(msg);
+                        if (invalidVariantId) {
+                            const state = get();
+                            const kept = state.lineItems.filter((item) => !lineItemMatchesVariant(item, invalidVariantId));
+                            if (kept.length < state.lineItems.length) {
+                                set({ lineItems: kept, status: 'idle', error: null });
+                                return {
+                                    success: false,
+                                    error: 'An item in your cart is no longer available and was removed. Please try applying your discount again.',
+                                };
+                            }
+                        }
+                        set({ status: 'idle', error: msg });
+                        return { success: false, error: msg || 'Failed to apply discount code' };
                     }
                 }
 
@@ -829,8 +854,22 @@ export const useCartStore = create<CartState>()(
                         // If cart fetch fails, it might be expired or invalid
                         // Try to recreate the cart if we have items
                         if (state.lineItems.length > 0) {
-                            const lines = state.lineItems.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
-                            const newCart = await shopifyApi.createCart(lines);
+                            let lines = state.lineItems.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
+                            let newCart = null;
+                            try {
+                                newCart = await shopifyApi.createCart(lines);
+                            } catch (createErr: any) {
+                                const invalidVariantId = parseInvalidVariantFromError(createErr?.message || '');
+                                if (invalidVariantId) {
+                                    const kept = state.lineItems.filter((item) => !lineItemMatchesVariant(item, invalidVariantId));
+                                    if (kept.length < state.lineItems.length) {
+                                        set({ lineItems: kept });
+                                        lines = kept.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
+                                        if (lines.length > 0) newCart = await shopifyApi.createCart(lines);
+                                    }
+                                }
+                                if (!newCart) throw createErr;
+                            }
                             if (newCart?.id) {
                                 set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
                                 currentCart = newCart;
