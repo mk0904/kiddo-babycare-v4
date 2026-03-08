@@ -37,6 +37,8 @@ export interface CouponCode {
   nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
   /** If false, coupon is hidden from UI (not in getAvailableCouponCodes); manual entry still applies it via validateCouponCode */
   isVisible?: boolean;
+  /** Max discount in currency units (e.g. INR). Applied when valueType is percentage (or fixed) to cap the discount. */
+  maxDiscountAmount?: number | null;
 }
 
 export interface GetEligibleCouponsParams {

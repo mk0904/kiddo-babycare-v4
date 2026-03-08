@@ -45,6 +45,8 @@ export interface DiscountCode {
     value: number;
     applicable?: boolean;
     appliedAt: number;
+    /** Max discount in currency units; cap applied discount at this amount when set. */
+    maxDiscountAmount?: number | null;
 }
 
 export interface GiftWrapping {
@@ -235,22 +237,28 @@ export const useCartStore = create<CartState>()(
                 
                 // Fallback: calculate from discount codes if payment not available
                 let discount = 0;
+                const subtotalVal = state.subtotal();
                 state.discountCodes.forEach((dc) => {
                     if (dc.applicable !== false) {
+                        let codeDiscount = 0;
                         if (dc.type === 'percentage') {
-                            const codeDiscount = (state.subtotal() * dc.value) / 100;
-                            console.log(`[CartStore] Code ${dc.code}: ${dc.value}% = ${codeDiscount}`);
-                            discount += codeDiscount;
+                            codeDiscount = (subtotalVal * dc.value) / 100;
                         } else if (dc.type === 'fixed') {
-                            console.log(`[CartStore] Code ${dc.code}: Fixed ${dc.value}`);
-                            discount += dc.value;
+                            codeDiscount = dc.value;
+                        }
+                        if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
+                            codeDiscount = Math.min(codeDiscount, dc.maxDiscountAmount);
+                        }
+                        if (codeDiscount > 0) {
+                            console.log(`[CartStore] Code ${dc.code}: ${dc.type} ${dc.value}${dc.type === 'percentage' ? '%' : ''} = ${codeDiscount}${dc.maxDiscountAmount != null ? ` (capped at ${dc.maxDiscountAmount})` : ''}`);
+                            discount += codeDiscount;
                         }
                     } else {
                         console.log(`[CartStore] Code ${dc.code} is not applicable, skipping`);
                     }
                 });
                 // Cap discount to not exceed subtotal (prevent negative totals)
-                const finalDiscount = Math.min(discount, state.subtotal());
+                const finalDiscount = Math.min(discount, subtotalVal);
                 console.log('[CartStore] Calculated total discount:', discount, 'Final (capped):', finalDiscount);
                 return finalDiscount;
             },
@@ -604,6 +612,7 @@ export const useCartStore = create<CartState>()(
                     value: Number(discountValue),
                     applicable: true,
                     appliedAt: Date.now(),
+                    maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
                 };
 
                 let nextDiscountCodes: DiscountCode[];
@@ -736,13 +745,14 @@ export const useCartStore = create<CartState>()(
                                 if (discountValue === 0) {
                                     console.log(`[CartStore] ⚠️ No discount value found for ${dc.code}`);
                                 }
-                                
+                                const maxCap = backendCoupon?.maxDiscountAmount != null ? Number(backendCoupon.maxDiscountAmount) : undefined;
                                 return {
                                     code: dc.code.toUpperCase(),
                                     type: discountType,
                                     value: discountValue,
                                     applicable: isApplicable,
                                     appliedAt: Date.now(),
+                                    maxDiscountAmount: maxCap,
                                 };
                             });
                             
@@ -778,6 +788,7 @@ export const useCartStore = create<CartState>()(
                                     value: backendValue,
                                     applicable: true,
                                     appliedAt: Date.now(),
+                                    maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
                                 };
                                 if (!codeInResponse) {
                                     console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -789,12 +800,13 @@ export const useCartStore = create<CartState>()(
                                 }
                             }
 
-                            // Recalc payment from final discount codes so backend-only codes are reflected
+                            // Recalc payment from final discount codes so backend-only codes are reflected (with maxDiscountAmount cap)
                             let recalcDiscount = 0;
                             for (const dc of discountCodesFromCart) {
                                 if (dc.applicable !== false && dc.value > 0) {
-                                    if (dc.type === 'percentage') recalcDiscount += (lineItemsSubtotal * dc.value) / 100;
-                                    else recalcDiscount += dc.value;
+                                    let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                                    if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
+                                    recalcDiscount += contrib;
                                 }
                             }
                             recalcDiscount = Math.min(recalcDiscount, lineItemsSubtotal);
@@ -1032,13 +1044,14 @@ export const useCartStore = create<CartState>()(
                         if (discountValue === 0) {
                             console.log(`[CartStore] ⚠️ No discount value found for ${dc.code}`);
                         }
-
+                        const maxCap2 = backendCoupon?.maxDiscountAmount != null ? Number(backendCoupon.maxDiscountAmount) : undefined;
                         return {
                             code: dc.code.toUpperCase(),
                             type: discountType,
                             value: discountValue,
                             applicable: isApplicable,
-                        appliedAt: Date.now(),
+                            appliedAt: Date.now(),
+                            maxDiscountAmount: maxCap2,
                         };
                     });
                     
@@ -1057,6 +1070,7 @@ export const useCartStore = create<CartState>()(
                             value: backendValue,
                             applicable: true,
                             appliedAt: Date.now(),
+                            maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
                         };
                         if (!codeInResponse) {
                             console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -1071,12 +1085,13 @@ export const useCartStore = create<CartState>()(
                     const lineItemsSubtotal = state.lineItems.reduce((sum, item) => {
                         return sum + (Number(item.price ?? 0) * Number(item.quantity));
                     }, 0);
-                    // Recalc payment from final discount codes so backend-only codes are reflected
+                    // Recalc payment from final discount codes so backend-only codes are reflected (with maxDiscountAmount cap)
                     let recalcDiscount = 0;
                     for (const dc of discountCodesFromCart) {
                         if (dc.applicable !== false && dc.value > 0) {
-                            if (dc.type === 'percentage') recalcDiscount += (lineItemsSubtotal * dc.value) / 100;
-                            else recalcDiscount += dc.value;
+                            let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                            if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
+                            recalcDiscount += contrib;
                         }
                     }
                     recalcDiscount = Math.min(recalcDiscount, lineItemsSubtotal);
@@ -1356,25 +1371,27 @@ export const useCartStore = create<CartState>()(
                             if (discountValue === 0) {
                                 console.log(`[CartStore] fetchCart ⚠️ No discount value found for ${dc.code}`);
                             }
-
+                            const maxCapFetch = backendCoupon?.maxDiscountAmount != null ? Number(backendCoupon.maxDiscountAmount) : undefined;
                             return {
                                 code: dc.code.toUpperCase(),
                                 type: discountType,
                                 value: discountValue,
                                 applicable: isApplicable,
                                 appliedAt: Date.now(),
+                                maxDiscountAmount: maxCapFetch,
                             };
                         });
 
-                        // Calculate subtotal from lineItems; discount from discountCodesFromCart
+                        // Calculate subtotal from lineItems; discount from discountCodesFromCart (with maxDiscountAmount cap)
                         const lineItemsSubtotal = lineItems.reduce((sum, item) => {
                             return sum + (Number(item.price ?? 0) * Number(item.quantity));
                         }, 0);
                         let discount = 0;
                         discountCodesFromCart.forEach((dc: DiscountCode) => {
                             if (dc.applicable !== false) {
-                                if (dc.type === 'percentage') discount += (lineItemsSubtotal * dc.value) / 100;
-                                else if (dc.type === 'fixed') discount += dc.value;
+                                let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                                if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
+                                discount += contrib;
                             }
                         });
                         discount = Math.min(discount, lineItemsSubtotal);

@@ -367,31 +367,26 @@ export default function CartScreen() {
             const discountType = discountCode.type;
 
             if (shouldProcess && discountValue > 0) {
+                let codeDiscount = 0;
                 if (discountType === 'percentage') {
-                    // Percentage discount: value is the percentage (e.g., 10 means 10%)
-                    const percentageDiscount = (itemSubtotal * discountValue) / 100;
-                    calculatedDiscount += percentageDiscount;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied percentage discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            itemSubtotal,
-                            percentageDiscount,
-                            calculatedDiscount,
-                        });
-                    }
+                    codeDiscount = (itemSubtotal * discountValue) / 100;
                 } else if (discountType === 'fixed') {
-                    // Fixed amount discount: value is the fixed amount
-                    calculatedDiscount += discountValue;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied fixed discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            calculatedDiscount,
-                        });
-                    }
+                    codeDiscount = discountValue;
+                }
+                if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
+                    codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
+                }
+                calculatedDiscount += codeDiscount;
+                if (__DEV__) {
+                    console.log('[CartScreen] Applied discount:', {
+                        code: discountCode.code,
+                        type: discountType,
+                        value: discountValue,
+                        itemSubtotal,
+                        codeDiscount,
+                        maxDiscountAmount: discountCode.maxDiscountAmount,
+                        calculatedDiscount,
+                    });
                 }
             } else {
                 if (__DEV__) {
