@@ -5,7 +5,13 @@ import { DeliveryCard } from '@/components/cart/DeliveryCard';
 import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
+import { AddressModal } from '@/components/modals/AddressModal';
+import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
+import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { SchedulingOrderModal } from '@/components/modals/SchedulingOrderModal';
+import { CheckoutRedeemCoins } from '@/components/nector';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
+import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
     calculateDistance,
     DARK_STORE_LOCATION,
@@ -13,12 +19,6 @@ import {
     geocodeAddress,
     getDeliveryTimeFromGoogleMaps,
 } from '@/config/deliveryConfig';
-import { AddressModal } from '@/components/modals/AddressModal';
-import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
-import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
-import { SchedulingOrderModal } from '@/components/modals/SchedulingOrderModal';
-import { CheckoutRedeemCoins } from '@/components/nector';
-import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';

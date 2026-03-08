@@ -1257,7 +1257,7 @@ export const useCartStore = create<CartState>()(
                                 quantity: node.quantity,
                                 availableForSale: node.merchandise?.availableForSale ?? true,
                                 tags: node.merchandise?.product?.tags || [],
-                                bookingDate: node.merchandise?.customAttributes?.find((a: any) => a.key === 'booking_date')?.value,
+                                bookingDate: (node.attributes || node.merchandise?.customAttributes)?.find((a: any) => a.key === 'booking_date')?.value,
                             };
                         }) || [];
 
@@ -1415,13 +1415,19 @@ export const useCartStore = create<CartState>()(
                     return state.id;
                 }
 
-                // Create a Shopify cart if we have items
+                // Create a Shopify cart if we have items (include booking_date for ticketing lines)
                 if (state.lineItems.length > 0) {
                     try {
-                        const lines = state.lineItems.map(item => ({
-                            merchandiseId: item.variantId,
-                            quantity: item.quantity,
-                        }));
+                        const lines = state.lineItems.map(item => {
+                            const line: { merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] } = {
+                                merchandiseId: item.variantId,
+                                quantity: item.quantity,
+                            };
+                            if (item.bookingDate) {
+                                line.attributes = [{ key: 'booking_date', value: item.bookingDate }];
+                            }
+                            return line;
+                        });
 
                         const cart = await shopifyApi.createCart(lines);
                         if (cart && cart.id) {

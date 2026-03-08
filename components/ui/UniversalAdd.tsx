@@ -14,6 +14,14 @@ interface UniversalAddProps {
     onValidationError?: () => void; // Callback when validation fails
 }
 
+/** Format date as YYYY-MM-DD in local time so the calendar date is preserved (no UTC shift). */
+function bookingDateToYYYYMMDD(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 const UniversalAdd: React.FC<UniversalAddProps> = ({
     item,
     selectedVariant,
@@ -156,7 +164,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             quantity: 1,
             availableForSale: isVariantAvailable(finalVariant) !== false,
             tags: finalProduct.tags || [],
-            bookingDate: bookingDate ? bookingDate.toISOString() : undefined,
+            bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
         };
 
         await addItem(cartItem);

@@ -787,6 +787,10 @@ const GET_CART_QUERY = `
           node {
             id
             quantity
+            attributes {
+              key
+              value
+            }
             merchandise {
               ... on ProductVariant {
                 id
@@ -1231,9 +1235,13 @@ export const shopifyApi = {
   },
 
   /**
-   * Create a new Shopify cart
+   * Create a new Shopify cart.
+   * Lines may include attributes (e.g. booking_date for ticketing) so they persist when cart is fetched.
    */
-  createCart: async (lines?: Array<{ merchandiseId: string; quantity: number }>, attributes?: { key: string; value: string }[]) => {
+  createCart: async (
+    lines?: Array<{ merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }>,
+    attributes?: { key: string; value: string }[]
+  ) => {
     try {
       const variables: any = {
         input: {
