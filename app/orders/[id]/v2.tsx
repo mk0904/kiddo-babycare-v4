@@ -1,4 +1,5 @@
 import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
+import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
@@ -174,17 +175,7 @@ export default function OrderDetailV2Screen() {
             </View>
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Need help card */}
-                {/* <View style={styles.card}>
-                    <View style={styles.helpIconWrap}>
-                        <Ionicons name="chatbubbles-outline" size={24} color="#9CA3AF" />
-                    </View>
-                    <View style={styles.helpTextWrap}>
-                        <Text style={styles.helpTitle}>Need help?</Text>
-                        <Text style={styles.helpSub}>Chat with us for any issue related to your order</Text>
-                    </View>
-                    <Text style={styles.chatLink}>Chat with us</Text>
-                </View> */}
+                <NeedHelpChatCard onChatPress={() => { /* TODO: open chat / support */ }} />
 
                 {/* Map placeholder */}
                 <View style={styles.mapPlaceholder}>
