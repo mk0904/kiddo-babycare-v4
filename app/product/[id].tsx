@@ -5,13 +5,12 @@ import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
+import { getProductDeepLink } from '@/config/linking';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
-import { getProductDeepLink } from '@/config/linking';
-import * as FileSystem from 'expo-file-system';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
@@ -19,6 +18,7 @@ import { isVariantAvailable } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
+import * as FileSystem from 'expo-file-system';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -839,30 +839,57 @@ const ProductDetailScreen = () => {
         const productId = (params as any).id || product.id;
         const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
         const productUrl = getProductDeepLink(pathSegment);
-        const message = `${product.title}\n\n${productUrl}`;
-        const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+        
+        // Share message
+        const message = `${product.title}\n\nCheck this out on Kiddo:\n${productUrl}`;
+        
         try {
-            let shareUrl: string = productUrl;
+            // Android: Share text only (native Share doesn't support file + text well)
+            // Apps like WhatsApp will generate a link preview with thumbnail if the meta tags are set on the domain.
+            if (Platform.OS === 'android') {
+                await Share.share({
+                    message,
+                    title: product.title,
+                });
+                return;
+            }
+
+            // iOS: Try to share image + text
+            const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+            let shareUrl = productUrl; // Fallback to link if no image or download fails
+
             if (imageUrl) {
                 try {
-                    const pathBeforeQuery = imageUrl.split('?')[0];
-                    const ext = pathBeforeQuery.match(/\.(jpe?g|png|webp|gif)$/i)?.[1] || 'jpg';
-                    const localUri = `${FileSystem.cacheDirectory}share_product_${Date.now()}.${ext}`;
-                    await FileSystem.downloadAsync(imageUrl, localUri);
-                    shareUrl = localUri;
-                } catch (_) {
-                    // keep productUrl if download fails
+                    // Clean URL and get extension
+                    const cleanUrl = imageUrl.split('?')[0];
+                    const extMatch = cleanUrl.match(/\.(jpe?g|png|webp|gif)$/i);
+                    const ext = extMatch ? extMatch[1] : 'jpg';
+                    
+                    const cacheDir = FileSystem.cacheDirectory;
+                    if (cacheDir) {
+                        const localUri = `${cacheDir}share_product_${Date.now()}.${ext}`;
+                        const downloadRes = await FileSystem.downloadAsync(imageUrl, localUri);
+                        if (downloadRes && downloadRes.status === 200) {
+                            shareUrl = localUri;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Image download failed for share:', e);
                 }
             }
+
             await Share.share({
-                message,
+                message, // iOS supports message + url (image)
                 url: shareUrl,
                 title: product.title,
             });
+
+            // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
                 trackProductShareClicked(product.id, product.title, 'native');
-            } catch (_e) {}
+            } catch (_) {}
+
         } catch (err: any) {
             if (err?.message !== 'User did not share') {
                 console.warn('Share error:', err);
@@ -1025,7 +1052,7 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
-                {/* Share icon commented out for now
+                {/* Share product – commented out for now
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={handleShare}
