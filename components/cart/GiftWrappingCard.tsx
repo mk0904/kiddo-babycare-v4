@@ -42,7 +42,7 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
                     <Ionicons name="gift-outline" size={24} color={Colors.primary} />
                     <View style={styles.info}>
                         <Text style={styles.title}>Make this a gift?</Text>
-                        <Text style={styles.description}>Get items gift wrapped for FREE</Text>
+                        <Text style={styles.description}>Get items gift wrapped</Text>
                     </View>
                 </View>
                 <Text style={styles.select}>Select</Text>

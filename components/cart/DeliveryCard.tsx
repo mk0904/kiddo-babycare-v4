@@ -66,7 +66,7 @@ export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliv
                         </Text>
                         <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
                             <Text style={styles.link}>
-                                <Text style={styles.linkUnderline}>Changed your mind? Update now</Text>
+                                <Text>Changed your mind? Update now</Text>
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -79,7 +79,7 @@ export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliv
                             {isUnserviceable ? 'Area unserviceable' : instantLabel}
                         </Text>
                         <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
-                            <Text style={[styles.link, styles.linkUnderline]}>
+                            <Text style={[styles.link]}>
                                 {scheduleCta}
                             </Text>
                         </TouchableOpacity>

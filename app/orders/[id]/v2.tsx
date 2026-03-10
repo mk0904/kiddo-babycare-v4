@@ -1,5 +1,12 @@
-import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
+import {
+    calculateDistance,
+    DEFAULT_ETA_MINUTES,
+    DARK_STORE_LOCATION,
+    estimateDeliveryTime,
+    geocodeAddress,
+    getDeliveryTimeFromGoogleMaps,
+} from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
@@ -21,7 +28,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const HEADER_BG = '#FDF6EC';
+const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
 
 export default function OrderDetailV2Screen() {
@@ -31,6 +38,7 @@ export default function OrderDetailV2Screen() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fetchedEtaMinutes, setFetchedEtaMinutes] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -104,6 +112,49 @@ export default function OrderDetailV2Screen() {
         fetchOrder();
     }, [id, user?.customerAccessToken]);
 
+    // Fetch ETA to destination (same as homepage): current time + time to reach shipping address
+    useEffect(() => {
+        if (!order?.shippingAddress) {
+            setFetchedEtaMinutes(null);
+            return;
+        }
+        const addr = order.shippingAddress;
+        const addressString = [addr.address1, addr.address2, addr.city, addr.province, addr.zip, addr.country]
+            .filter(Boolean)
+            .join(', ')
+            .trim();
+        if (!addressString) {
+            setFetchedEtaMinutes(null);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const coords = await geocodeAddress(addressString);
+                if (cancelled || !coords) {
+                    setFetchedEtaMinutes(null);
+                    return;
+                }
+                let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
+                if (deliveryTime == null) {
+                    const distanceKm = calculateDistance(
+                        DARK_STORE_LOCATION.latitude,
+                        DARK_STORE_LOCATION.longitude,
+                        coords.latitude,
+                        coords.longitude
+                    );
+                    deliveryTime = estimateDeliveryTime(distanceKm);
+                }
+                if (!cancelled) setFetchedEtaMinutes(deliveryTime);
+            } catch (e) {
+                if (!cancelled) setFetchedEtaMinutes(null);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.city, order?.shippingAddress?.zip]);
+
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
         try {
@@ -116,6 +167,17 @@ export default function OrderDetailV2Screen() {
     const addressLine = order?.shippingAddress
         ? [order.shippingAddress.address1, order.shippingAddress.address2].filter(Boolean).join(', ') || 'Address'
         : '—';
+
+    const etaMinutes = fetchedEtaMinutes ?? (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
+    const baseTime = new Date();
+    const deliveryByDate = new Date(baseTime.getTime() + etaMinutes * 60 * 1000);
+    const h = deliveryByDate.getHours();
+    const m = deliveryByDate.getMinutes();
+    const hour12 = h % 12 || 12;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const deliveryByTimeStr = `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+    const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
+    const headerStatusText = isDelivered ? `Delivered by ${deliveryByTimeStr}` : `Arriving by ${deliveryByTimeStr}`;
 
     if (loading) {
         return (
@@ -169,7 +231,7 @@ export default function OrderDetailV2Screen() {
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Delivered in {order?.estimatedDeliveryMinutes ?? (paramEta != null ? Number(paramEta) : DEFAULT_ETA_MINUTES)} mins</Text>
+                    <Text style={styles.headerTitle}>{headerStatusText}</Text>
                     <Text style={styles.headerAddress} numberOfLines={1}>{addressLine}</Text>
                 </View>
             </View>
@@ -178,20 +240,20 @@ export default function OrderDetailV2Screen() {
                 <NeedHelpChatCard onChatPress={() => { /* TODO: open chat / support */ }} />
 
                 {/* Map placeholder */}
-                <View style={styles.mapPlaceholder}>
+                {/* <View style={styles.mapPlaceholder}>
                     <Ionicons name="map-outline" size={40} color="#9CA3AF" />
                     <Text style={styles.mapPlaceholderText}>Map</Text>
-                </View>
+                </View> */}
 
                 {/* Delivery status card */}
-                <View style={styles.card}>
+                {/* <View style={styles.card}>
                     <View style={styles.deliveryIconWrap}>
                         <Ionicons name="bicycle-outline" size={24} color="#9CA3AF" />
                     </View>
                     <Text style={styles.deliveryText}>
                         Your delivery partner has left the kiddo light store and is on the way!
                     </Text>
-                </View>
+                </View> */}
 
                 {/* Order summary header */}
                 <View style={styles.summaryRow}>
@@ -268,6 +330,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 14,
         paddingTop: Platform.OS === 'ios' ? 14 : 18,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F5F0E8',
     },
     backBtn: {
         padding: 4,
@@ -284,8 +348,8 @@ const styles = StyleSheet.create({
     headerAddress: {
         fontSize: 13,
         fontFamily: Fonts.Regular,
-        color: '#374151',
-        marginTop: 2,
+        color: '#6B7280',
+        marginTop: 4,
     },
     loadingWrap: {
         flex: 1,

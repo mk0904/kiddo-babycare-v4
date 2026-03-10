@@ -1,6 +1,6 @@
-import type { FreeShoesOfferConfig, SizeOption } from '@/types/appConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
+import type { FreeShoesOfferConfig, SizeOption } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
@@ -122,7 +122,7 @@ export function FreePairShoes({
             {/* Offer header with padlock */}
             <View style={styles.offerHeader}>
                 <View style={styles.padlockWrap}>
-                    <Ionicons name="lock-open-outline" size={22} color={OFFER_BLUE} />
+                    <Ionicons name="lock-open-outline" size={22} />
                 </View>
                 <View style={styles.offerTextBlock}>
                     <Text style={styles.offerTitle}>{offerCopy?.title ?? 'Introductory Offer!'}</Text>
@@ -148,30 +148,27 @@ export function FreePairShoes({
                     </Text>
                     <Text style={styles.productSubtext}>baby shoes</Text>
                     <Text style={styles.sizeText}>
-                        {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : (offerCopy?.cta ?? 'Add')}
+                        {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : ('Sizes 1-4 available')}
                     </Text>
                     {isApplied && (
                         <View style={styles.editRemoveRow}>
                             <TouchableOpacity onPress={openSizeModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                                 <Text style={styles.editLink}>Edit</Text>
                             </TouchableOpacity>
-                            {onRemoveOffer && (
-                                <>
-                                    <Text style={styles.editRemoveSeparator}> · </Text>
-                                    <TouchableOpacity onPress={onRemoveOffer} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                        <Text style={styles.removeOfferLink}>Remove offer</Text>
-                                    </TouchableOpacity>
-                                </>
-                            )}
                         </View>
                     )}
                 </View>
                 <View style={styles.actionBlock}>
                     {isApplied ? (
                         <View style={styles.selectedStateWrap}>
-                            <View style={styles.appliedButton}>
-                                <Ionicons name="checkmark" size={20} color="#fff" />
-                            </View>
+                            <TouchableOpacity
+                                style={styles.appliedButton}
+                                onPress={onRemoveOffer}
+                                activeOpacity={0.8}
+                                accessibilityLabel="Remove offer"
+                            >
+                                <Text style={[styles.appliedButtonText, { color: Colors.primary }]}>Remove</Text>
+                            </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
                                 <Text style={styles.freeText}>{offerCopy?.freeLabel ?? 'FREE'}</Text>
@@ -286,13 +283,13 @@ const styles = StyleSheet.create({
     offerTitle: {
         fontSize: 16,
         fontFamily: Fonts.Bold,
-        color: '#2E90FA',
+       
         marginBottom: 2,
     },
     offerSubtitle: {
         fontSize: 13,
-        fontFamily: Fonts.Regular,
-        color: '#2E90FA',
+        fontFamily: Fonts.SemiBold,
+        color: '#6B7280',
         opacity: 0.9,
     },
     productCard: {
@@ -321,7 +318,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     productSubtext: {
-        fontSize: 13,
+        fontSize: 14,
         fontFamily: Fonts.SemiBold,
         color: '#374151',
         marginBottom: 2,
@@ -364,7 +361,6 @@ const styles = StyleSheet.create({
         borderColor: '#2E90FA',
     },
     addButtonText: {
-        fontSize: 14,
         fontFamily: Fonts.SemiBold,
         color: '#2E90FA',
     },
@@ -372,19 +368,24 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     appliedButton: {
-        backgroundColor: '#2E90FA',
-        paddingHorizontal: 32,
-        paddingVertical: 6,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: Colors.primary,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-       
-        
+        marginBottom: 6,
+    },
+    appliedButtonText: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 8,      
     },
     originalPrice: {
         fontSize: 12,

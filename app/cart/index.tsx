@@ -8,8 +8,6 @@ import { SavingsCorner } from '@/components/cart/SavingsCorner';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
-import { SchedulingOrderModal } from '@/components/modals/SchedulingOrderModal';
-import { CheckoutRedeemCoins } from '@/components/nector';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
@@ -302,7 +300,6 @@ export default function CartScreen() {
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
-    const [showSchedulingOrderModal, setShowSchedulingOrderModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
 
@@ -1212,9 +1209,9 @@ export default function CartScreen() {
             {cartItems.length > 0 && (
                 <>
                     {/* Total Savings Banner - full width, lighter green, thinner */}
-                    {totalSavings > 0 && (
+                    {displaySavings > 0 && (
                         <View style={styles.savingsBanner}>
-                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(totalSavings)}!</Text>
+                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(displaySavings)}!</Text>
                         </View>
                     )}
                     <ScrollView
@@ -1380,7 +1377,7 @@ export default function CartScreen() {
                         )}
 
                         {/* Nector Loyalty Coins Redemption */}
-                        <View style={styles.section}>
+                        {/* <View style={styles.section}>
                             <CheckoutRedeemCoins
                                 cartAmount={total}
                                 onCouponApplied={(code) => {
@@ -1390,7 +1387,7 @@ export default function CartScreen() {
                                     setCouponMessage(null);
                                 }}
                             />
-                        </View>
+                        </View> */}
 
                         {/* Spacer */}
                         <View style={styles.spacerEnd} />
@@ -1433,7 +1430,7 @@ export default function CartScreen() {
                             formatCurrency={formatCurrency}
                             orderLoading={orderLoading}
                             isAuthenticated={isAuthenticated}
-                            onPlaceOrder={() => setShowSchedulingOrderModal(true)}
+                            onPlaceOrder={handlePlaceOrder}
                             onAddAddress={handleAddressSelection}
                             payButtonLabel={checkoutConfig?.payButtonLabel}
                         />
@@ -1473,24 +1470,6 @@ export default function CartScreen() {
                 title={checkoutConfig?.scheduleModalTitle}
             />
 
-            {/* Scheduling your order - shows 4s with progress bar when user taps Pay */}
-            <SchedulingOrderModal
-                visible={showSchedulingOrderModal}
-                onComplete={() => {
-                    setShowSchedulingOrderModal(false);
-                    handlePlaceOrder();
-                }}
-                arrivingText={
-                    deliverySchedule?.timeSlotLabel && deliverySchedule?.date
-                        ? `${deliverySchedule.timeSlotLabel} | ${deliverySchedule.date}`
-                        : '11am-12pm | Today'
-                }
-                deliveringToText={
-                    selectedAddress?.address1
-                        ? `Home: ${selectedAddress.address1}${selectedAddress.address2 ? `, ${selectedAddress.address2}` : ''}`
-                        : 'Home'
-                }
-            />
         </SafeAreaView>
     );
 }
