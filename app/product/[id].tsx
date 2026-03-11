@@ -94,6 +94,16 @@ const EventDatePicker: React.FC<{
         return d1.getTime() === d2.getTime();
     };
 
+    const isTodayOrTomorrow = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime() || d.getTime() === tomorrow.getTime();
+    };
+
     const next7Days = datesToShow;
 
     return (
@@ -105,6 +115,7 @@ const EventDatePicker: React.FC<{
             >
                 {next7Days.length > 0 ? next7Days.map((date, index) => {
                     const isSelected = isDateSelected(date);
+                    const showSubLabel = isTodayOrTomorrow(date);
                     return (
                         <TouchableOpacity
                             key={`date-${index}-${date.getTime()}`}
@@ -122,16 +133,18 @@ const EventDatePicker: React.FC<{
                                 ]}>
                                     {formatDateLabel(date)}
                                 </Text>
-                                <Text style={[
-                                    datePickerStyles.dateSubLabel,
-                                    isSelected && datePickerStyles.dateSubLabelSelected
-                                ]}>
-                                    {date.toLocaleDateString('en-US', { 
-                                        month: 'long', 
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    })}
-                                </Text>
+                                {showSubLabel && (
+                                    <Text style={[
+                                        datePickerStyles.dateSubLabel,
+                                        isSelected && datePickerStyles.dateSubLabelSelected
+                                    ]}>
+                                        {date.toLocaleDateString('en-US', { 
+                                            month: 'long', 
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        })}
+                                    </Text>
+                                )}
                             </View>
                             {isSelected && (
                                 <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
