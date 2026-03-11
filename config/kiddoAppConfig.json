@@ -187,19 +187,19 @@
         "color": "#000000"
       },
       "mainPrice": {
-        "fontSize": 12,
+        "fontSize": 14,
         "fontWeight": "700",
         "fontFamily": "bold",
-        "color": "#2c6975"
+        "color": "#000000"
       },
       "comparePrice": {
-        "fontSize": 11,
+        "fontSize": 12,
         "fontWeight": "500",
         "fontFamily": "medium",
-        "color": "#888888"
+        "color": "#666666"
       },
       "discountPercentage": {
-        "fontSize": 11,
+        "fontSize": 12,
         "fontWeight": "600",
         "fontFamily": "semibold",
         "color": "#2c6975"
@@ -359,33 +359,7 @@
         },
         "order": 5
       },
-      {
-        "id": "grid-shop-diapers-by-size",
-        "type": "grid",
-        "title": "Shop diapers by size",
-        "collectionIds": [
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_S", "name": "Small" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_M", "name": "Medium" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_L", "name": "Large" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XL", "name": "X-Large" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XXL", "name": "XX-Large" }
-        ],
-        "gridConfig": {
-          "columnsPerRow": [2, 3],
-          "colGap": 12,
-          "rowGap": 12,
-          "limit": 0,
-          "resizeMode": "contain",
-          "aspectRatio": 1
-        },
-        "styles": {
-          "container": { "paddingHorizontal": 16, "paddingVertical": 16 },
-          "title": { "fontSize": 16, "fontWeight": "600", "color": "#363636", "marginBottom": 12 },
-          "imageContainer": { "borderRadius": 20, "backgroundColor": "#E8F4FD" },
-          "text": { "marginTop": 12, "color": "#363636", "textAlign": "center", "fontSize": 14 }
-        },
-        "order": 6
-      },
+
       {
         "id": "all-grid-1",
         "type": "grid",
@@ -2224,7 +2198,7 @@
           "fontSize": 14
         }
       },
-      "visible": true
+      "visible": false
     },
     {
       "id": "babycare-grid-brands",

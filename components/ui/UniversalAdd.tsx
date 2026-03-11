@@ -242,17 +242,31 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     return (
         <View>
             {count === 0 ? (
-                <TouchableOpacity
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        handleAdd();
-                    }}
-                    activeOpacity={0.7}
-                    style={styles.addCircleButton}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    <Ionicons name="add" size={22} color="#fff" />
-                </TouchableOpacity>
+                variant === 'pdp' ? (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleAdd();
+                        }}
+                        activeOpacity={0.7}
+                        style={[currentStyles.container, currentStyles.add]}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Text style={currentStyles.addText}>{addText}</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleAdd();
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.addCircleButton}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Ionicons name="add" size={22} color="#fff" />
+                    </TouchableOpacity>
+                )
             ) : (
                 <View style={currentStyles.counterContainer}>
                     <TouchableOpacity

@@ -295,7 +295,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 4,
     backgroundColor: 'transparent',
   },
   wishlistButton: {

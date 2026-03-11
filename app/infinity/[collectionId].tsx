@@ -724,7 +724,14 @@ export default function InfinityScreen() {
                             type,
                             buckets: Array.isArray(buckets) ? buckets : [],
                         };
-                    }).filter((f: any) => f.buckets && f.buckets.length > 0 && f.attribute)}
+                    }).filter((f: any) => {
+                        if (!f.buckets || f.buckets.length === 0 || !f.attribute) return false;
+                        const attr = (f.attribute || '').toLowerCase();
+                        const titleLower = (f.title || '').toLowerCase();
+                        const exclude = ['collections', 'tags', 'availability'];
+                        if (exclude.some((key) => attr === key || titleLower === key || attr.includes(key) || titleLower.includes(key))) return false;
+                        return true;
+                    })}
                     selectedFilters={selectedFilters}
                     onApplyFilters={handleApplyFilters}
                     totalResults={totalItems}
@@ -928,9 +935,9 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     sidebarItemSelected: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#FFEBEE',
         borderRightWidth: 4,
-        borderRightColor: '#4CAF50',
+        borderRightColor: Colors.primary,
     },
     sidebarItemImage: {
         width: 52,
@@ -955,7 +962,7 @@ const styles = StyleSheet.create({
     },
     sidebarItemLabelSelected: {
         fontFamily: Fonts.SemiBold,
-        color: '#2E7D32',
+        color: Colors.primary,
     },
     gridContainer: {
         flex: 1,
