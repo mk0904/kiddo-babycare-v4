@@ -187,19 +187,19 @@
         "color": "#000000"
       },
       "mainPrice": {
-        "fontSize": 12,
+        "fontSize": 14,
         "fontWeight": "700",
         "fontFamily": "bold",
-        "color": "#2c6975"
+        "color": "#000000"
       },
       "comparePrice": {
-        "fontSize": 11,
+        "fontSize": 12,
         "fontWeight": "500",
         "fontFamily": "medium",
-        "color": "#888888"
+        "color": "#666666"
       },
       "discountPercentage": {
-        "fontSize": 11,
+        "fontSize": 12,
         "fontWeight": "600",
         "fontFamily": "semibold",
         "color": "#2c6975"
@@ -359,33 +359,7 @@
         },
         "order": 5
       },
-      {
-        "id": "grid-shop-diapers-by-size",
-        "type": "grid",
-        "title": "Shop diapers by size",
-        "collectionIds": [
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_S", "name": "Small" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_M", "name": "Medium" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_L", "name": "Large" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XL", "name": "X-Large" },
-          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XXL", "name": "XX-Large" }
-        ],
-        "gridConfig": {
-          "columnsPerRow": [2, 3],
-          "colGap": 12,
-          "rowGap": 12,
-          "limit": 0,
-          "resizeMode": "contain",
-          "aspectRatio": 1
-        },
-        "styles": {
-          "container": { "paddingHorizontal": 16, "paddingVertical": 16 },
-          "title": { "fontSize": 16, "fontWeight": "600", "color": "#363636", "marginBottom": 12 },
-          "imageContainer": { "borderRadius": 20, "backgroundColor": "#E8F4FD" },
-          "text": { "marginTop": 12, "color": "#363636", "textAlign": "center", "fontSize": 14 }
-        },
-        "order": 6
-      },
+
       {
         "id": "all-grid-1",
         "type": "grid",
@@ -1887,9 +1861,9 @@
         },
         "styles": {
           "container": {
-            "paddingHorizontal": 20,
-            "paddingTop": 16,
-            "paddingBottom": 24
+            "paddingHorizontal": 10,
+            "paddingTop": 10,
+            "paddingBottom": 10
           }
         }
       },
@@ -1926,7 +1900,20 @@
         "styles": {
           "container": {
             "paddingHorizontal": 20,
-            "paddingBottom": 20
+            "paddingBottom": 200
+          }, 
+          "title": {
+            "marginBottom": 5,
+            "fontSize": 18,
+            "fontWeight": "700",
+            "color": "#363636"
+          },
+          "text": {
+            "marginTop": 12,
+            "color": "#363636",
+            "textAlign": "center",
+            "fontSize": 14,
+            "fontWeight": "500"
           }
         }
       }
@@ -2007,7 +1994,7 @@
       },
       "babygear": {
         "label": "Baby Gear",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/BabyGearLogo_0fabb389-5fb9-42cd-ba29-985ad36694bb.png?v=1772801112",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby-Gear_e445edf2-9527-4924-9755-6578e63ef39e.png?v=1773208150",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#90EE90",
@@ -2178,13 +2165,13 @@
     {
       "id": "babycare-grid-2-3",
       "type": "grid",
-      "title": "Shop diapers by size",
+      "title": "Shop By Category",
       "collectionIds": [
-        { "id": "gid://shopify/Collection/508169584929" },
-        { "id": "gid://shopify/Collection/508169552161" },
-        { "id": "gid://shopify/Collection/508168634657" },
-        { "id": "gid://shopify/Collection/508168765729" },
-        { "id": "gid://shopify/Collection/508172075297" }
+        { "id": "gid://shopify/Collection/511117197601" },
+        { "id": "gid://shopify/Collection/511117263137" },
+        { "id": "gid://shopify/Collection/511117295905" },
+        { "id": "gid://shopify/Collection/511117328673" },
+        { "id": "gid://shopify/Collection/511117361441" }
       ],
       "gridConfig": {
         "columnsPerRow": [2, 3],

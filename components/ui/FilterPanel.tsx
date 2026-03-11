@@ -130,15 +130,13 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 }
             }
             
-            // Round to nearest 10
-            priceMin = Math.floor(priceMin / 10) * 10;
+            // Allow price range to start from 0
+            priceMin = 0;
             priceMax = Math.ceil(priceMax / 10) * 10;
             
-            // Ensure we have valid min/max values - if max is 0 or <= min, set reasonable defaults
-            if (priceMin < 0) priceMin = 0;
+            // Ensure we have valid max - if max is 0 or <= min, set reasonable default
             if (priceMax <= priceMin || priceMax === 0) {
-                // If max is invalid, set it to at least 1000 or min + 1000, whichever is larger
-                priceMax = Math.max(priceMin + 1000, 10000);
+                priceMax = Math.max(1000, 10000);
             }
             
             let currentValue: { min: number; max: number } | undefined;

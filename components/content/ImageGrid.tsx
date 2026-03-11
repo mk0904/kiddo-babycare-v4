@@ -403,6 +403,8 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                     key={`row-${rowIndex}`}
                     style={{
                       flexDirection: 'row',
+                      flexWrap: 'nowrap',
+                      width: availableWidth,
                       marginBottom: rowIndex < rows.length - 1 ? rowGap : 0,
                       gap: colGap,
                       alignItems: 'flex-start',
@@ -417,7 +419,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                           style={[
                             defaultStyles.itemWrapper,
                             blockStyles?.itemWrapper,
-                            { width: rowItemWidth, height: uniformTotalHeight },
+                            { width: rowItemWidth, minWidth: rowItemWidth, height: uniformTotalHeight },
                           ]}
                         >
                           <TouchableOpacity

@@ -1,22 +1,22 @@
-import React, { useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-    Platform,
-    Animated,
-} from 'react-native';
-import { Image } from 'expo-image';
+import { Colors, Fonts } from '@/constants/theme';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { useCartItemCount, useCartItems, useCartTotal } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, usePathname } from 'expo-router';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCartStore, useCartItems, useCartItemCount, useCartTotal } from '@/store/cartStore';
-import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { Colors, Fonts } from '@/constants/theme';
+import { usePathname, useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
