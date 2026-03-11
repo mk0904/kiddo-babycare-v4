@@ -146,7 +146,6 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                             <Text style={styles.headerTitle}>Make this a gift</Text>
                             <Text style={styles.headerSubtitle}>
                                 Get items gift wrapped for ₹{perItemPrice} per item
-                                {selectedProducts.length > 0 ? ` · ₹${giftWrapTotal} total` : ''}
                             </Text>
                         </View>
                     </View>
@@ -196,7 +195,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                                     })}
                                 </View>
                                 <View style={styles.footnoteContainer}>
-                                    <Text style={styles.footnote}>Certain items are not eligible for gift wrap</Text>
+                                    <Text style={styles.footnote}>Larger items may not be eligible for gift wrap</Text>
                                 </View>
                             </>
                         )}

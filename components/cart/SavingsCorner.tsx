@@ -7,6 +7,8 @@ import Constants from 'expo-constants';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
     Modal,
     Platform,
     ScrollView,
@@ -201,8 +203,8 @@ export function SavingsCorner({
             <View style={styles.section}>
                 <View style={[styles.row, hasAppliedCoupon && styles.rowApplied]}>
                     <View style={styles.left}>
-                        <View style={styles.iconBlue}>
-                            <Text style={styles.iconPercent}>%</Text>
+                        <View style={styles.iconWrap}>
+                            <Image source={require('@/assets/icons/coupon.png')} style={styles.iconPercentImage} resizeMode="contain" />
                         </View>
                         <View style={styles.textWrap}>
                             <Text
@@ -271,7 +273,7 @@ export function SavingsCorner({
             {/* Available coupons modal with manual code entry */}
             <Modal
                 visible={showCouponsModal}
-                animationType="slide"
+                animationType="fade"
                 transparent
                 onRequestClose={closeModal}
             >
@@ -280,14 +282,29 @@ export function SavingsCorner({
                     activeOpacity={1}
                     onPress={closeModal}
                 >
-                    <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Available coupons</Text>
-                            <TouchableOpacity onPress={closeModal} hitSlop={12}>
-                                <Ionicons name="close" size={24} color="#1A1A1A" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={styles.modalKeyboardAvoid}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                    >
+                        <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+                            <View style={styles.modalHeader}>
+                                <View style={styles.modalHeaderLeft}>
+                                    <View style={styles.modalHeaderIconWrap}>
+                                        <Image source={require('@/assets/icons/coupon.png')} style={styles.modalHeaderIconImage} resizeMode="contain" />
+                                    </View>
+                                    <Text style={styles.modalTitle}>Coupons</Text>
+                                </View>
+                                <TouchableOpacity onPress={closeModal} hitSlop={12}>
+                                    <Ionicons name="close" size={24} color="#1A1A1A" />
+                                </TouchableOpacity>
+                            </View>
+                            <ScrollView
+                                style={styles.modalScroll}
+                                contentContainerStyle={styles.modalScrollContent}
+                                showsVerticalScrollIndicator={true}
+                                keyboardShouldPersistTaps="handled"
+                            >
                             {!isAuthenticated ? (
                                 <View style={styles.loginPrompt}>
                                     <Text style={styles.loginPromptText}>Please login to view and apply coupons.</Text>
@@ -303,9 +320,9 @@ export function SavingsCorner({
                                 </View>
                             ) : (
                                 <>
-                                    {/* Manual coupon code entry */}
+                                    {/* Manual coupon code entry - enter code input at top */}
                                     <View style={styles.manualCodeSection}>
-                                        <Text style={styles.manualCodeLabel}>Have a coupon code?</Text>
+                                        <Text style={styles.manualCodeLabel}>Enter coupon code</Text>
                                         <View style={styles.couponInputRow}>
                                             <View style={styles.couponInputWrapper}>
                                                 <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
@@ -360,57 +377,64 @@ export function SavingsCorner({
                                                       valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
                                                   } as CouponCode)
                                                 : [];
-                                            const isSelected = selectedCouponForApply?.code === coupon.code;
+                                            const offerTitle =
+                                                coupon.title ||
+                                                (coupon.value != null && coupon.value !== 0
+                                                    ? coupon.valueType === 'percentage'
+                                                        ? `Get ${coupon.value}% off`
+                                                        : `Get ₹${coupon.value} off`
+                                                    : coupon.code
+                                                      ? `Use code ${coupon.code}`
+                                                      : 'Coupon');
                                             return (
-                                                <TouchableOpacity
+                                                <View
                                                     key={coupon.code}
                                                     style={[
                                                         styles.couponCard,
-                                                        isSelected && styles.couponCardSelected,
                                                         couponApplying && styles.couponCardDisabled,
                                                     ]}
-                                                    onPress={() => {
-                                                        if (couponApplying) return;
-                                                        setSelectedCouponForApply(coupon);
-                                                        closeModal();
-                                                    }}
-                                                    disabled={couponApplying}
-                                                    activeOpacity={0.7}
                                                 >
-                                                    <View style={styles.couponCardContent}>
-                                                        <View style={styles.couponCodeRow}>
-                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                            {coupon.value != null && coupon.value !== 0 && (
-                                                                <View style={styles.discountBadge}>
-                                                                    <Text style={styles.discountBadgeText}>
-                                                                        {coupon.valueType === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {coupon.title && (
-                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                {coupon.title}
-                                                            </Text>
+                                                    <View style={styles.couponCardIconWrap}>
+                                                        <Ionicons name="pricetag" size={20} color="#fff" />
+                                                    </View>
+                                                    <View style={styles.couponCardMain}>
+                                                        <Text style={styles.couponCardOfferTitle} numberOfLines={2}>
+                                                            {offerTitle}
+                                                        </Text>
+                                                        {coupon.code && (
+                                                            <Text style={styles.couponCardUseCode}>Use code {coupon.code}</Text>
                                                         )}
                                                         {conditions.length > 0 && (
                                                             <View style={styles.couponConditionsContainer}>
                                                                 {conditions.slice(0, 2).map((c, i) => (
                                                                     <Text key={i} style={styles.couponConditionText}>
-                                                                        {c}
+                                                                        • {c}
                                                                     </Text>
                                                                 ))}
                                                             </View>
                                                         )}
                                                     </View>
-                                                </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        style={[styles.couponCardApplyBtn, couponApplying && styles.couponCardApplyDisabled]}
+                                                        onPress={() => {
+                                                            if (couponApplying) return;
+                                                            handleApplyCouponFromList(coupon);
+                                                            closeModal();
+                                                        }}
+                                                        disabled={couponApplying}
+                                                        activeOpacity={0.8}
+                                                    >
+                                                        <Text style={styles.couponCardApplyText}>Apply</Text>
+                                                    </TouchableOpacity>
+                                                </View>
                                             );
                                         })
                                     )}
                                 </>
                             )}
-                        </ScrollView>
-                    </View>
+                            </ScrollView>
+                        </View>
+                    </KeyboardAvoidingView>
                 </TouchableOpacity>
             </Modal>
         </>
@@ -452,60 +476,58 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    iconBlue: {
+    iconWrap: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#E3F2FD',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
-    iconPercent: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#1E88E5',
+    iconPercentImage: {
+        width: 22,
+        height: 22,
     },
     textWrap: {
         flex: 1,
     },
     mainText: {
         fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#2D2D2D',
+        fontFamily: Fonts.Bold,
+        color: '#181D27',
     },
     mainTextApplied: {
-        color: '#1E88E5',
+        color: '#6B7280',
         fontFamily: Fonts.Bold,
+        fontSize: 14,
     },
     viewAll: {
-        fontSize: 12,
-        color: '#1E88E5',
-        fontFamily: Fonts.Regular,
+        fontSize: 14,
+        color: '#6B7280',
+        fontFamily: Fonts.SemiBold,
         textDecorationLine: 'underline',
         marginTop: 2,
     },
     applyBtn: {
         // backgroundColor: '#C41E3A',
         paddingVertical: 8,
-        paddingHorizontal: 20,
-        minWidth: 72,
+       paddingHorizontal: 12,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
+        color: '#F15E5E',
+        fontFamily: Fonts.SemiBold,
     },
     applyBtnDisabled: {
-        opacity: 0.7,
+        opacity: 0.5,
     },
     applyText: {
         fontSize: 14,
-        color: '#C41E3A',
+        color: '#F15E5E',
         fontFamily: Fonts.SemiBold,
     },
     removeBtn: {
-        backgroundColor: '#E8ECF0',
         paddingVertical: 8,
-        paddingHorizontal: 20,
         minWidth: 72,
         alignItems: 'center',
         justifyContent: 'center',
@@ -513,7 +535,7 @@ const styles = StyleSheet.create({
     },
     removeText: {
         fontSize: 14,
-        color: '#1E88E5',
+        color: Colors.primary,
         fontFamily: Fonts.SemiBold,
     },
     kiddoCashRow: {
@@ -560,14 +582,22 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    modalKeyboardAvoid: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 400,
+        maxHeight: '80%',
     },
     modalContent: {
+        flex: 1,
+        maxHeight: '80%',
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        maxHeight: '70%',
-        paddingBottom: 34,
+        borderRadius: 20,
+        paddingBottom: 24,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -577,14 +607,39 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
     },
+    modalHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        minWidth: 0,
+    },
+    modalHeaderIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+       borderWidth: 1,
+       borderColor: '#EFF8FF',
+
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    modalHeaderIconImage: {
+        width: 20,
+        height: 20,
+    },
     modalTitle: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
         color: '#1A1A1A',
     },
     modalScroll: {
-        maxHeight: 400,
-        padding: 16,
+        flex: 1,
+        paddingHorizontal: 16,
+    },
+    modalScrollContent: {
+        paddingTop: 16,
+        paddingBottom: 24,
     },
     loginPrompt: {
         backgroundColor: '#f8f9fa',
@@ -695,63 +750,68 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     couponCard: {
-        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#F5F5F5',
         borderRadius: 12,
         padding: 14,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-    },
-    couponCardSelected: {
-        borderColor: Colors.primary,
-        borderWidth: 1.5,
+        marginBottom: 12,
     },
     couponCardDisabled: {
         opacity: 0.6,
     },
-    couponCardContent: {
-        position: 'relative',
-    },
-    couponCodeRow: {
-        flexDirection: 'row',
+    couponCardIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: '#6B7280',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-        gap: 6,
+        justifyContent: 'center',
+        marginRight: 12,
     },
-    couponCardCode: {
-        fontSize: 13,
-        color: '#000',
-        fontFamily: Fonts.Bold,
-        letterSpacing: 0.3,
+    couponCardMain: {
         flex: 1,
+        minWidth: 0,
     },
-    discountBadge: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    discountBadgeText: {
-        fontSize: 10,
-        color: '#fff',
+    couponCardOfferTitle: {
+        fontSize: 14,
         fontFamily: Fonts.Bold,
+        color: '#1A1A1A',
+        marginBottom: 4,
     },
-    couponCardTitle: {
-        fontSize: 10,
-        color: '#888',
-        fontFamily: Fonts.Regular,
-        lineHeight: 14,
-        marginTop: 2,
+    couponCardUseCode: {
+        fontSize: 12,
+        color: '#666',
+        fontFamily: Fonts.SemiBold,
+        marginBottom: 6,
     },
     couponConditionsContainer: {
-        marginTop: 6,
-        gap: 4,
+        gap: 2,
+        marginBottom: 6,
     },
     couponConditionText: {
-        fontSize: 9,
+        fontSize: 11,
         color: '#666',
         fontFamily: Fonts.Regular,
-        lineHeight: 12,
+        lineHeight: 14,
+    },
+    couponReadMore: {
+        fontSize: 12,
+        color: '#2563EB',
+        fontFamily: Fonts.Regular,
+        textDecorationLine: 'underline',
+    },
+    couponCardApplyBtn: {
+        justifyContent: 'center',
+        paddingVertical: 8,
+        paddingLeft: 12,
+    },
+    couponCardApplyDisabled: {
+        opacity: 0.5,
+    },
+    couponCardApplyText: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.primary,
     },
 });

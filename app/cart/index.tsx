@@ -422,8 +422,11 @@ export default function CartScreen() {
     const deliveryFee = 0;
     // Gift wrap fee: only for products still in cart; recalculates when items are removed from cart or from gift wrap
     const giftWrappingFee = hasTicketingProducts ? 0 : derivedGiftWrappingFee;
+    // Platform fee for display only (ticket-only): shown struck + FREE, not added to total
+    const PLATFORM_FEE_DISPLAY = 20;
+    const platformFeeDisplay = isTicketingOnly ? PLATFORM_FEE_DISPLAY : 0;
 
-    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
+    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total (platform fee not added)
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
 
@@ -1202,7 +1205,38 @@ export default function CartScreen() {
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Your Cart</Text>
+                <View style={styles.headerCenter}>
+                    {isTicketingOnly ? (
+                        <Text style={styles.headerTitle}>Cart</Text>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.headerAddressRow}
+                            onPress={handleAddressSelection}
+                            activeOpacity={0.7}
+                        >
+                            {selectedAddress ? (
+                                <View style={styles.headerAddressContent}>
+                                    <View style={styles.headerAddressTextBlock}>
+                                        <View style={styles.headerAddressTagRow}>
+                                            <Text style={styles.headerAddressTag} numberOfLines={1}>
+                                                {selectedAddress.tag ? selectedAddress.tag.charAt(0).toUpperCase() + selectedAddress.tag.slice(1) : 'Address'}
+                                                <Ionicons name="chevron-down" size={18} color="#666" style={styles.headerAddressChevron} />
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.headerAddressLine} numberOfLines={1}>
+                                            {selectedAddress.address1}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View style={styles.headerAddressContent}>
+                                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
+                                    <Text style={styles.headerAddressLine}>Add Delivery Address</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -1302,8 +1336,10 @@ export default function CartScreen() {
                         <BillDetails
                             mrp={mrp}
                             itemTotal={subtotalAfterDiscount}
+                            isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
+                            platformFee={platformFeeDisplay}
                             couponDiscount={discountAmount}
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
@@ -1399,30 +1435,6 @@ export default function CartScreen() {
             {cartItems.length > 0 && (
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <View style={styles.footerContent}>
-                        {/* Address Section */}
-                        {!isTicketingOnly && (
-                            <TouchableOpacity
-                                style={styles.footerAddress}
-                                onPress={handleAddressSelection}
-                            >
-                                {selectedAddress ? (
-                                    <View style={styles.footerAddressContent}>
-                                        <Ionicons name="location" size={16} color={Colors.primary} />
-                                        <Text style={styles.footerAddressText} numberOfLines={1}>
-                                            {selectedAddress.address1}
-                                        </Text>
-                                        <Ionicons name="chevron-down" size={16} color="#666" />
-                                    </View>
-                                ) : (
-                                    <View style={styles.footerAddressContent}>
-                                        <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
-                                        <Text style={styles.footerAddressText}>Add Delivery Address</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Payment row: Pay using + method, Pay button (new UI) */}
                         <CartFooterPayment
                             showPayButton={!!(selectedAddress || isTicketingOnly)}
                             paymentMethod={paymentMethod}
@@ -1498,12 +1510,48 @@ const styles = StyleSheet.create({
     headerSpacer: {
         width: 32,
     },
-    headerTitle: {
+    headerCenter: {
         flex: 1,
+        justifyContent: 'center',
+        minWidth: 0,
+    },
+    headerTitle: {
         fontSize: 18,
         color: '#1A1A1A',
         fontFamily: Fonts.Bold,
         textAlign: 'center',
+    },
+    headerAddressRow: {
+        marginTop: 4,
+    },
+    headerAddressContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 0,
+    },
+    headerAddressTextBlock: {
+        flex: 1,
+        minWidth: 0,
+        marginLeft: 8,
+    },
+    headerAddressTagRow: {
+        flexDirection: 'row',
+        
+        gap: 4,
+    },
+    headerAddressTag: {
+        fontSize: 20,
+        fontFamily: Fonts.SemiBold,
+        color: '#1A1A1A',
+        flex: 1,
+        minWidth: 0,
+    },
+    headerAddressLine: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
+        color: '#666',
+        marginTop: 2,
     },
     savingsBanner: {
         backgroundColor: '#6BCB77',
@@ -2118,23 +2166,6 @@ const styles = StyleSheet.create({
     footerContent: {
         padding: 15,
     },
-    footerAddress: {
-        marginBottom: 12,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    footerAddressContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    footerAddressText: {
-        flex: 1,
-        fontSize: 12,
-        color: '#000',
-        fontFamily: Fonts.Regular,
-    },
     footerPriceRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -2153,5 +2184,8 @@ const styles = StyleSheet.create({
     },
     tryAndBuyButton: {
         backgroundColor: '#FF9800',
+    },
+    headerAddressChevron: {
+        marginLeft: 8,
     },
 });

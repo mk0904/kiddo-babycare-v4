@@ -9,10 +9,14 @@ export interface BillDetailsProps {
     mrp: number;
     /** Subtotal after coupon (item total) */
     itemTotal: number;
-    /** Original handling fee shown struck; actual is FREE */
-    handlingFeeOriginal: number;
-    /** Original delivery fee shown struck; actual is FREE */
-    deliveryFeeOriginal: number;
+    /** When true, hide Handling Fee and Delivery Fee (ticket-only cart). */
+    isTicketingOnly?: boolean;
+    /** Original handling fee shown struck + FREE (only when !isTicketingOnly). */
+    handlingFeeOriginal?: number;
+    /** Original delivery fee shown struck + FREE (only when !isTicketingOnly). */
+    deliveryFeeOriginal?: number;
+    /** Platform fee when cart has only ticket products (e.g. 20); 0 = hide row. Shown like handling fee. */
+    platformFee?: number;
     /** Coupon discount amount (positive number; show as -₹X when > 0) */
     couponDiscount: number;
     /** Gift wrap fee (0 = hide row or show FREE) */
@@ -35,8 +39,10 @@ export interface BillDetailsProps {
 export function BillDetails({
     mrp,
     itemTotal,
-    handlingFeeOriginal,
-    deliveryFeeOriginal,
+    isTicketingOnly = false,
+    handlingFeeOriginal = 0,
+    deliveryFeeOriginal = 0,
+    platformFee = 0,
     couponDiscount,
     giftWrappingFee,
     giftWrapping = null,
@@ -80,23 +86,38 @@ export function BillDetails({
                         </View>
                     </View>
 
-                    {/* Handling Fee */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Handling Fee</Text>
-                        <View style={styles.valueRow}>
-                            <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
-                            <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                    {/* Handling Fee - only when not ticket-only */}
+                    {!isTicketingOnly && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Handling Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
 
-                    {/* Delivery Fee */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Delivery Fee</Text>
-                        <View style={styles.valueRow}>
-                            <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
-                            <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                    {/* Delivery Fee - only when not ticket-only */}
+                    {!isTicketingOnly && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Delivery Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
+
+                    {/* Platform Fee (ticket-only, display only: struck + FREE, not added to bill) */}
+                    {platformFee > 0 && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Platform Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(platformFee)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
+                        </View>
+                    )}
 
                     {/* Coupon Discount */}
                     {couponDiscount > 0 && (
@@ -108,8 +129,8 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Gift Wrap - show when gift wrap is applied (use giftWrapping.price or giftWrappingFee) */}
-                    {(giftWrapping != null && Number(giftWrapping.price) > 0) || giftWrappingFee > 0 ? (
+                    {/* Gift Wrap - show only when gift wrap is actually applied (fee charged) */}
+                    {giftWrappingFee > 0 ? (
                         <View style={styles.row}>
                             <Text style={styles.label}>Gift Wrap</Text>
                             <View style={styles.valueRow}>

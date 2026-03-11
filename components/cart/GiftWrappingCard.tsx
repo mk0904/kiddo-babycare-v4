@@ -1,8 +1,7 @@
 import { Colors, Fonts } from '@/constants/theme';
 import type { GiftWrapping } from '@/store/cartStore';
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const REMOVE_RED = '#E85D5B';
 const CARD_BG_APPLIED = '#FFFBF7';
@@ -21,7 +20,7 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
             <View style={[styles.section, styles.sectionApplied]}>
                 <View style={styles.appliedLeft}>
                     <View style={styles.giftIconWrap}>
-                        <Ionicons name="gift" size={28} color="#1E3A5F" />
+                    <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
                     </View>
                     <View style={styles.info}>
                         <Text style={styles.appliedTitle}>Gift wrap applied!</Text>
@@ -39,7 +38,7 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
         <View style={styles.section}>
             <TouchableOpacity style={styles.button} onPress={onSelectPress} activeOpacity={0.7}>
                 <View style={styles.left}>
-                    <Ionicons name="gift-outline" size={24} color={Colors.primary} />
+                    <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
                     <View style={styles.info}>
                         <Text style={styles.title}>Make this a gift?</Text>
                         <Text style={styles.description}>Get items gift wrapped</Text>
@@ -82,8 +81,7 @@ const styles = StyleSheet.create({
     giftIconWrap: {
         width: 44,
         height: 44,
-        borderRadius: 10,
-        backgroundColor: 'rgba(30, 58, 95, 0.12)',
+        
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -91,6 +89,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
+    },
+    giftIcon: {
+        width: 32,
+        height: 32,
     },
     info: {
         marginLeft: 12,
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#2D2D2D',
         fontFamily: Fonts.Bold,
-        marginBottom: 4,
+        marginBottom: 0,
     },
     description: {
         fontSize: 12,

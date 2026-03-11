@@ -100,7 +100,7 @@ export default function TicketingScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} />
+        <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -115,6 +115,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 48,
   },
 });

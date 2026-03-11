@@ -122,7 +122,7 @@ export function FreePairShoes({
             {/* Offer header with padlock */}
             <View style={styles.offerHeader}>
                 <View style={styles.padlockWrap}>
-                    <Ionicons name="lock-open-outline" size={22} />
+                    <Image source={require('@/assets/icons/Icon.png')} style={styles.padlockIcon} contentFit="contain" />
                 </View>
                 <View style={styles.offerTextBlock}>
                     <Text style={styles.offerTitle}>{offerCopy?.title ?? 'Introductory Offer!'}</Text>
@@ -271,14 +271,17 @@ const styles = StyleSheet.create({
     padlockWrap: {
         width: 36,
         height: 36,
-        borderRadius: 8,
-        backgroundColor: `${OFFER_BLUE}18`,
+       
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+    },
+    padlockIcon: {
+        width: 22,
+        height: 22,
     },
     offerTextBlock: {
         flex: 1,
+        marginLeft: 8,
     },
     offerTitle: {
         fontSize: 16,
@@ -294,10 +297,8 @@ const styles = StyleSheet.create({
     },
     productCard: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        backgroundColor: '#EFF8FF',
+        borderRadius: 12,
         padding: 12,
         alignItems: 'center',
     },
@@ -352,17 +353,17 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     addButton: {
-        backgroundColor: '#D1E9FF',
+        backgroundColor: Colors.primary,
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
         marginBottom: 6,
         borderWidth: 1,
-        borderColor: '#2E90FA',
+        borderColor: Colors.primary,
     },
     addButtonText: {
         fontFamily: Fonts.SemiBold,
-        color: '#2E90FA',
+        color: Colors.backgroundWhite,
     },
     selectedStateWrap: {
         alignItems: 'flex-end',
