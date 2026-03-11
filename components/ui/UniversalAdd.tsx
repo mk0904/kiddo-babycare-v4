@@ -248,14 +248,10 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                         handleAdd();
                     }}
                     activeOpacity={0.7}
-                    style={currentStyles.container}
+                    style={styles.addCircleButton}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                    <View style={currentStyles.add}>
-                        <Text style={currentStyles.addText}>
-                            {addText}
-                        </Text>
-                    </View>
+                    <Ionicons name="add" size={22} color="#fff" />
                 </TouchableOpacity>
             ) : (
                 <View style={currentStyles.counterContainer}>
@@ -291,6 +287,14 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 };
 
 const styles = StyleSheet.create({
+    addCircleButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     container: {
         alignItems: 'center',
         justifyContent: 'center',

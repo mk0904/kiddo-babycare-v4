@@ -54,28 +54,157 @@
     "508371206433": {
       "subcategories": [
         {
-          "collectionId": "gid://shopify/Collection/510757241121",
-          "label": "Moisturizer & Powders",
-          "imageUrl": ""
+          "collectionId": "gid://shopify/Collection/510564532513",
+          "label": "Baby Face Wash",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey.png?v=1773134350"
         },
         {
-          "collectionId": "gid://shopify/Collection/510757306657",
+          "collectionId": "gid://shopify/Collection/510564598049",
+          "label": "Baby Soaps ",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_1.png?v=1773134350"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564630817",
           "label": "Body Wash/Shampoo",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_2.png?v=1773134350"
         },
         {
-          "collectionId": "gid://shopify/Collection/510757372193",
-          "label": "Sunscreen",
+          "collectionId": "gid://shopify/Collection/510564696353",
+          "label": "Kids Toothbrush and Tooth paste",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_3.png?v=1773134351"
+        },{
+          "collectionId": "gid://shopify/Collection/510564761889",
+          "label": "Bath Towels, Wraps & Wash Cloths",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_4.png?v=1773134350"
+        },{
+          "collectionId": "gid://shopify/Collection/510564794657",
+          "label": "Bath Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_5.png?v=1773134350"
+        },{
+          "collectionId": "gid://shopify/Collection/510564827425",
+          "label": "Baby Powder",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_6.png?v=1773134350"
+        },{
+          "collectionId": "gid://shopify/Collection/510564860193",
+          "label": "Bath Tub and other accessories",
           "imageUrl": ""
+        },{
+          "collectionId": "gid://shopify/Collection/510564958497",
+          "label": "Baby Lotions",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_7.png?v=1773134350"
+        },{
+          "collectionId": "gid://shopify/Collection/510565024033",
+          "label": "Baby Cream",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_8.png?v=1773134351"
+        },{
+          "collectionId": "gid://shopify/Collection/510565089569",
+          "label": "Baby Oil / Massage Oil",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_9.png?v=1773134350"
+        },{
+          "collectionId": "gid://shopify/Collection/510565187873",
+          "label": "Sunscreen",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_10.png?v=1773134351"
+        },{
+          "collectionId": "gid://shopify/Collection/510565220641",
+          "label": "Kids Grooming Essentials (Lip Balm, Combs, nail cutters)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_11.png?v=1773134350"
         }
       ]
+    },
+    "508173123873": {
+      "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510563975457", "label": "Taped Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510563975457?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564008225", "label": "Pant Diaper", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564008225?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564040993", "label": "Cloth Nappies", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564040993?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564073761", "label": "Baby Wipes", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564073761?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564172065", "label": "Bed Protectors and changing mats", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564172065?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564237601", "label": "Diaper Rash Cream", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564237601?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564303137", "label": "Diaper Bag and Travel Pouches", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564303137?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564368673", "label": "Swim Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564368673?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564401441", "label": "Potty Training Pants", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564401441?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564434209", "label": "Diaper Bin", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564434209?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564466977", "label": "Cloth Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564466977?isNewlyCreated=true" },
+        { "collectionId": "gid://shopify/Collection/510564499745", "label": "Potty Training Seats", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564499745?isNewlyCreated=true" }
+      ]
+    },
+    "510565417249":{
+      "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510565286177", "label": "Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565318945", "label": "Sensitive Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_1.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565351713", "label": "Baby Cereals", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_2.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565384481", "label": "Ready-to-Feed Food", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_3.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565417249", "label": "Baby Snacks / food", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_4.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565450017", "label": "Kids Utensils & Containers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_5.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565482785", "label": "Drinks & Mixes", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_6.png?v=1773133813" },
+        { "collectionId": "gid://shopify/Collection/510565515553", "label": "Kids Condiments & Sweeteners", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_7.png?v=1773133813" }
+     
+      ]
+    },
+    "510566334753":{
+      "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510566334753", "label": "Fever", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566367521", "label": "Cough & Cold", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566400289", "label": "Stomach Care", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566433057", "label": "Medical Devices (Thermometers, nebulizer, etc)", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566465825", "label": "Medicines and First Aid", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566498593", "label": "Mosquito repellents and patches", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566531361", "label": "Handwash and sanitizers", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566564129", "label": "Kids Detergents & Cleaners", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566596897", "label": "Safety Bed Rails", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566629665", "label": "Cotton Balls and Swab", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566662433", "label": "Teethers", "imageUrl": "" }
+     
+      ]
+    },
+    "508371239201":{
+      "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510565548321", "label": "Feeding Bottles & Nipples", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510565581089", "label": "Sippy Cups", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510565613857", "label": "Breast Pumps Manual", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510565384481", "label": "Breast Pumps Electric", "imageUrl": "" }
+      ]
     }
+    
   },
   "productGridDefaults": {
     "gap": 16,
     "rowGap": 16,
     "colGap": 16,
     "paddingHorizontal": 16
+  },
+  "productCard": {
+    "styles": {
+      "productName": {
+        "fontSize": 13,
+        "fontWeight": "600",
+        "fontFamily": "semibold",
+        "color": "#363636"
+      },
+      "vendorBadgeText": {
+        "fontSize": 10,
+        "fontWeight": "600",
+        "fontFamily": "semibold",
+        "color": "#000000"
+      },
+      "mainPrice": {
+        "fontSize": 12,
+        "fontWeight": "700",
+        "fontFamily": "bold",
+        "color": "#2c6975"
+      },
+      "comparePrice": {
+        "fontSize": 11,
+        "fontWeight": "500",
+        "fontFamily": "medium",
+        "color": "#888888"
+      },
+      "discountPercentage": {
+        "fontSize": 11,
+        "fontWeight": "600",
+        "fontFamily": "semibold",
+        "color": "#2c6975"
+      }
+    }
   },
   "categoryScreen": {
     "header": {
@@ -229,6 +358,33 @@
           }
         },
         "order": 5
+      },
+      {
+        "id": "grid-shop-diapers-by-size",
+        "type": "grid",
+        "title": "Shop diapers by size",
+        "collectionIds": [
+          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_S", "name": "Small" },
+          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_M", "name": "Medium" },
+          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_L", "name": "Large" },
+          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XL", "name": "X-Large" },
+          { "imageUrl": "", "id": "gid://shopify/Collection/REPLACE_XXL", "name": "XX-Large" }
+        ],
+        "gridConfig": {
+          "columnsPerRow": [2, 3],
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "resizeMode": "contain",
+          "aspectRatio": 1
+        },
+        "styles": {
+          "container": { "paddingHorizontal": 16, "paddingVertical": 16 },
+          "title": { "fontSize": 16, "fontWeight": "600", "color": "#363636", "marginBottom": 12 },
+          "imageContainer": { "borderRadius": 20, "backgroundColor": "#E8F4FD" },
+          "text": { "marginTop": 12, "color": "#363636", "textAlign": "center", "fontSize": 14 }
+        },
+        "order": 6
       },
       {
         "id": "all-grid-1",
@@ -434,7 +590,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "backgroundColor": ""
         },
         "title": {
@@ -446,8 +602,8 @@
           "color": "#363636"
         },
         "text": {
-          "fontFamily": "semiBold",
-          "fontWeight": "700",
+          "fontFamily": "",
+          "fontWeight": "400",
           "color": "#000000"
         }
       }
@@ -490,7 +646,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -499,7 +655,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -542,7 +698,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -551,7 +707,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -610,7 +766,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -619,7 +775,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -694,7 +850,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -703,7 +859,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -746,7 +902,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -755,7 +911,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -798,7 +954,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -850,7 +1006,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -859,7 +1015,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -885,7 +1041,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -916,7 +1072,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -947,7 +1103,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -972,7 +1128,7 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
@@ -1003,7 +1159,7 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16
+          "paddingTop": 10
         },
         "title": {
           "fontSize": 16,
@@ -1069,7 +1225,7 @@
         "container": {
           "marginTop": -31,
           "borderBottomLeftRadius": 20,
-        "borderBottomRightRadius": 20
+          "borderBottomRightRadius": 20
         },
         "wrapper": {
           "marginHorizontal": 0
@@ -1081,27 +1237,37 @@
       "type": "grid",
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/508366094625",
-          "name": "Jackets and Sweaters"
+          "id": "gid://shopify/Collection/510879301921",
+          "name": "Onesies"
         },
         {
-          "id": "gid://shopify/Collection/508646785313",
-          "name": "Thermals"
+          "id": "gid://shopify/Collection/510860001569",
+          "name": "Top Wear"
         },
         {
-          "id": "gid://shopify/Collection/508366225697",
+          "id": "gid://shopify/Collection/510860067105",
           "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/508646850849",
-          "name": "Everyday"
+          "id": "gid://shopify/Collection/510860198177",
+          "name": "Dresses & Coord Sets"
         },
         {
-          "id": "gid://shopify/Collection/508366291233",
-          "name": "Occasion Wear"
+          "id": "gid://shopify/Collection/510860525857",
+          "name": "Nightsuits & Inner Wear"
         },
         {
-          "id": "gid://shopify/Collection/508366848289",
+          "id": "gid://shopify/Collection/510860689697",
+          "name": "Ethnic Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/510860788001",
+          "name": "Party Wear"
+        },{
+          "id": "gid://shopify/Collection/510860984609",
+          "name": "Footwear & Socks"
+        },{
+          "id": "gid://shopify/Collection/510861017377",
           "name": "Accessories"
         }
       ],
@@ -1115,12 +1281,13 @@
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 16
-
+          "paddingHorizontal": 16,
+          "paddingTop": 30,
+          "marginBottom": 20
         },
         "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
+          "marginBottom": 10,
+          "marginTop": 10,
           "fontSize": 18,
           "fontWeight": "700",
           "color": "#363636"
@@ -1136,9 +1303,11 @@
         },
         "text": {
           "marginTop": 12,
-          "display": "none",
-          "color": "#666666",
-          "textAlign": "center"
+          "color": "#363636",
+          "textAlign": "center",
+          "fontSize": 12,
+          "fontWeight": "600",
+          "fontFamily": "medium"
         }
       }
     },
@@ -1157,12 +1326,13 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
-          "paddingHorizontal": 16
+          "paddingTop": 20,
+          "paddingHorizontal": 16,
+          "marginBottom": 10
         },
         "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "titleContainer": {
@@ -1186,13 +1356,13 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636"
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": ""
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1222,9 +1392,9 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636"
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": ""
         }
       }
     }
@@ -1270,27 +1440,37 @@
       "type": "grid",
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/508364947745",
-          "name": "Jacket and Sweaters"
+          "id": "gid://shopify/Collection/510879269153",
+          "name": "Onesies"
         },
         {
-          "id": "gid://shopify/Collection/508646785313",
-          "name": "Thermals"
+          "id": "gid://shopify/Collection/510861345057",
+          "name": "Top Wear"
         },
         {
-          "id": "gid://shopify/Collection/508365242657",
+          "id": "gid://shopify/Collection/510861476129",
           "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/508646850849",
-          "name": "Everyday"
+          "id": "gid://shopify/Collection/510861508897",
+          "name": "Dresses & Coord Sets"
         },
         {
-          "id": "gid://shopify/Collection/508365701409",
-          "name": "Occasion Wear"
+          "id": "gid://shopify/Collection/510861771041",
+          "name": "Nightsuits & Inner Wear"
         },
         {
-          "id": "gid://shopify/Collection/508365930785",
+          "id": "gid://shopify/Collection/510861836577",
+          "name": "Ethnic Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/510861967649",
+          "name": "Party Wear"
+        },{
+          "id": "gid://shopify/Collection/510862065953",
+          "name": "Footwear & Socks"
+        },{
+          "id": "gid://shopify/Collection/510862131489",
           "name": "Accessories"
         }
       ],
@@ -1304,14 +1484,16 @@
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 16
+          "paddingHorizontal": 16,
+          "paddingTop": 10,
+          "marginBottom": 20
         },
         "title": {
-          "marginBottom": 0,
-          "marginTop": 20,  
+          "marginBottom": 10,
+          "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": ""
         },
         "image": {
           "width": "100%",
@@ -1324,9 +1506,11 @@
         },
         "text": {
           "marginTop": 12,
-          "display": "none",
-          "color": "#666666",
-          "textAlign": "center"
+          "color": "#363636",
+          "textAlign": "center",
+          "fontSize": 12,
+          "fontWeight": "600",
+          "fontFamily": "medium"
         }
       }
     },
@@ -1345,11 +1529,12 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
-          "paddingHorizontal": 16
+          "paddingTop": 30,
+          "paddingHorizontal": 16,
+          "marginBottom": 10
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -1374,13 +1559,13 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": ""
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1410,9 +1595,9 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": ""
         }
       }
     },
@@ -1434,13 +1619,13 @@
       },
       "styles": {
         "container": {
-          "paddingTop": 10,
+          "paddingTop": 20,
           "paddingBottom": 20
         },
         "title": {
           "fontSize": 16,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": ""
         }
       }
     }
@@ -1502,7 +1687,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -1512,7 +1697,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -1554,7 +1739,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -1563,7 +1748,7 @@
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -1637,16 +1822,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -1673,13 +1858,13 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         }
       }
     }
-    ],
+  ],
   "header": {
     "textColor": "#363636",
     "primaryColor": "#363636"
@@ -1715,9 +1900,18 @@
         "visible": true,
         "title": "Buy tickets to your favourite spots",
         "collectionIds": [
-          { "id": "gid://shopify/Collection/509726458145", "name": "Playhouses" },
-          { "id": "gid://shopify/Collection/509771153697", "name": "Petting Farms" },
-          { "id": "gid://shopify/Collection/509771120929", "name": "Events" }
+          {
+            "id": "gid://shopify/Collection/509726458145",
+            "name": "Playhouses"
+          },
+          {
+            "id": "gid://shopify/Collection/509771153697",
+            "name": "Petting Farms"
+          },
+          {
+            "id": "gid://shopify/Collection/509771120929",
+            "name": "Events"
+          }
         ],
         "gridConfig": {
           "numColumns": 2,
@@ -1982,6 +2176,51 @@
       }
     },
     {
+      "id": "babycare-grid-2-3",
+      "type": "grid",
+      "title": "Shop diapers by size",
+      "collectionIds": [
+        { "id": "gid://shopify/Collection/508169584929" },
+        { "id": "gid://shopify/Collection/508169552161" },
+        { "id": "gid://shopify/Collection/508168634657" },
+        { "id": "gid://shopify/Collection/508168765729" },
+        { "id": "gid://shopify/Collection/508172075297" }
+      ],
+      "gridConfig": {
+        "columnsPerRow": [2, 3],
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "contain",
+        "aspectRatio": 1.25
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingVertical": 16
+        },
+        "title": {
+          "fontSize": 18,
+          "fontWeight": "700",
+          "color": "#363636",
+          "marginBottom": 12
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderWidth": 1,
+          "borderColor": "#E5E7EB",
+          "backgroundColor": "#E8F4FD"
+        },
+        "text": {
+          "marginTop": 12,
+          "color": "#363636",
+          "textAlign": "center",
+          "fontSize": 14
+        }
+      },
+      "visible": false
+    },
+    {
       "id": "babycare-grid-brands",
       "type": "grid",
       "collectionIds": [
@@ -2028,10 +2267,11 @@
       },
       "styles": {
         "container": {
-          "paddingHorizontal": 16
+          "paddingHorizontal": 16,
+          "paddingTop": 20
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": 10,
           "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
@@ -2047,7 +2287,8 @@
           "display": "none",
           "marginTop": 12,
           "color": "#666666",
-          "textAlign": "center"
+          "textAlign": "center",
+          "fontWeight": "500"
         }
       }
     },
@@ -2104,16 +2345,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 30
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -2171,16 +2412,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 20
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -2222,16 +2463,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 20
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -2285,16 +2526,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 20
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -2336,16 +2577,16 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 20
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
-          "fontWeight": "600",
+          "fontSize": 18,
+          "fontWeight": "700",
           "color": "#363636"
         },
         "text": {
-          "fontWeight": "700",
+          "fontWeight": "500",
           "color": "#000000"
         }
       }
@@ -2365,11 +2606,11 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 20,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2441,7 +2682,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -2501,11 +2742,11 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 0
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2530,11 +2771,11 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2559,11 +2800,11 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2588,11 +2829,11 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2617,11 +2858,11 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16,
+          "paddingTop": 10,
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 16,
+          "fontSize": 18,
           "fontWeight": "600",
           "color": "#363636"
         },
@@ -2684,7 +2925,7 @@
       },
       {
         "code": "ALLFORKIDDO",
-        "title": "₹50 off",
+        "title": "\u20b950 off",
         "description": "Applicable thrice per user",
         "value": 50,
         "valueType": "fixed_amount",
@@ -2701,7 +2942,7 @@
       },
       {
         "code": "ILOVEKIDDO",
-        "title": "₹100 off",
+        "title": "\u20b9100 off",
         "description": "Applicable twice per user",
         "value": 100,
         "valueType": "fixed_amount",
@@ -2718,7 +2959,7 @@
       },
       {
         "code": "KIDDOCARES",
-        "title": "₹150 off",
+        "title": "\u20b9150 off",
         "description": "Once per user",
         "value": 180,
         "valueType": "fixed_amount",
@@ -2735,7 +2976,7 @@
       },
       {
         "code": "FUNWITHKIDDO",
-        "title": "₹200 off",
+        "title": "\u20b9200 off",
         "description": "Once per user",
         "value": 200,
         "valueType": "fixed_amount",
@@ -2752,7 +2993,7 @@
       },
       {
         "code": "KIDDOMAGIC",
-        "title": "₹250 off",
+        "title": "\u20b9250 off",
         "description": "Once per user",
         "value": 250,
         "valueType": "fixed_amount",
@@ -2769,7 +3010,7 @@
       },
       {
         "code": "WOWKIDDO",
-        "title": "₹300 off",
+        "title": "\u20b9300 off",
         "description": "Once per user",
         "value": 300,
         "valueType": "fixed_amount",
@@ -2786,7 +3027,7 @@
       },
       {
         "code": "CHEERFULKIDDO",
-        "title": "₹350 off",
+        "title": "\u20b9350 off",
         "description": "Once per user",
         "value": 350,
         "valueType": "fixed_amount",
@@ -2803,7 +3044,7 @@
       },
       {
         "code": "WONDERFULKIDDO",
-        "title": "₹400 off",
+        "title": "\u20b9400 off",
         "description": "Once per user",
         "value": 400,
         "valueType": "fixed_amount",
@@ -2820,7 +3061,7 @@
       },
       {
         "code": "HEYTHEREKIDDO",
-        "title": "₹500 off",
+        "title": "\u20b9500 off",
         "description": "Once per user",
         "value": 500,
         "valueType": "fixed_amount",

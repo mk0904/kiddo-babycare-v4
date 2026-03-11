@@ -1,19 +1,19 @@
+import { Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { CollectionListBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Dimensions,
+    Dimensions,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { CollectionListBlock } from '@/types/content';
-import { useRouter } from 'expo-router';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-import { Fonts } from '@/constants/theme';
-import { processFontStyle } from '@/utils/fontUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

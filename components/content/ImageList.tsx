@@ -5,12 +5,12 @@ import { processFontStyle } from '@/utils/fontUtils';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity
 } from 'react-native';
 import { ProductList } from '../product/ProductList';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';

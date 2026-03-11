@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 // import { FlashList } from '@shopify/flash-list';
 import { Colors, Fonts } from '@/constants/theme';
@@ -91,15 +91,42 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     loadCollections();
   }, [loadCollections]);
 
+  // Rows for irregular grid (e.g. [2, 3]) - must be at top level to avoid conditional hooks
+  const columnsPerRow = gridConfig.columnsPerRow;
+  const useIrregularRows = Array.isArray(columnsPerRow) && columnsPerRow.length > 0;
+  const limitForRows = gridConfig.limit ?? 0;
+  const limitedCollectionsForRows =
+    collectionIds && collectionIds.length > 0
+      ? limitForRows > 0
+        ? collections.slice(0, limitForRows)
+        : collections
+      : [];
+
+  const rows = useMemo(() => {
+    if (!useIrregularRows || !columnsPerRow?.length) return null;
+    const result: CollectionItem[][] = [];
+    let i = 0;
+    let rowIndex = 0;
+    while (i < limitedCollectionsForRows.length) {
+      const cols = columnsPerRow[rowIndex % columnsPerRow.length];
+      result.push(limitedCollectionsForRows.slice(i, i + cols));
+      i += cols;
+      rowIndex += 1;
+    }
+    return result;
+  }, [useIrregularRows, columnsPerRow, limitedCollectionsForRows]);
+
   // If it has collectionIds, render collection images grid (Kiddo pattern)
   if (collectionIds && collectionIds.length > 0) {
     // Get gridConfig values (with defaults matching Kiddo)
+    const columnsPerRow = gridConfig.columnsPerRow; // optional: [2, 3] = first row 2 cols, second row 3 cols
     const numColumns = gridConfig.numColumns ?? 3;
     const colGap = gridConfig.colGap ?? 0;
     const rowGap = gridConfig.rowGap ?? 0;
     const limit = gridConfig.limit ?? 0;
     const resizeMode = gridConfig.resizeMode || 'contain';
     const aspectRatio = gridConfig.aspectRatio ?? 1; // Default to square
+    const useIrregularRows = Array.isArray(columnsPerRow) && columnsPerRow.length > 0;
 
     // Get styles from config (Kiddo pattern) - all properties from JSON
     // Default: no padding (can be overridden by config)
@@ -137,9 +164,10 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     const textStyle = {
       color: '#666666',
       textAlign: 'center' as const,
+      fontSize: 12,
+      fontWeight: '700' as const,
       ...processedTextStyle,
-      ...blockStyles?.text, // Apply all text styles
-      fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
+      ...blockStyles?.text, // Config overrides: fontSize, fontWeight, fontFamily, fontStyle, color, etc.
     };
 
     // Calculate available width accounting for container margins and padding (Kiddo pattern)
@@ -313,6 +341,8 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
 
     const limitedCollections = limit > 0 ? collections.slice(0, limit) : collections;
 
+    const availableWidth = width - (containerMarginHorizontal * 2) - (containerPaddingHorizontal * 2);
+
     const ContainerWrapper: React.ComponentType<any> = backgroundImage ? ImageBackground : View;
     const containerWrapperProps = backgroundImage
       ? {
@@ -322,6 +352,135 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
         resizeMode: blockStyles?.container?.backgroundResizeMode || 'cover',
       }
       : { style: finalContainerStyle };
+
+    // Irregular rows layout: row 1 has N columns, row 2 has M columns, etc. (e.g. [2, 3])
+    if (useIrregularRows && rows && rows.length > 0) {
+      const mergedImageContainerStyle = StyleSheet.flatten(imageContainerStyle);
+      const imageContainerPadding = typeof mergedImageContainerStyle.padding === 'number'
+        ? mergedImageContainerStyle.padding
+        : (mergedImageContainerStyle.padding as any)?.horizontal ?? 0;
+
+      return (
+        <BaseContentBlock
+          block={block}
+          style={{
+            padding: 0,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+            paddingTop: 0,
+            paddingBottom: 0
+          }}
+        >
+          <ContainerWrapper {...containerWrapperProps}>
+            {title && (
+              <Text style={[defaultStyles.title, titleStyle]}>{title}</Text>
+            )}
+            <View
+              style={[
+                {
+                  paddingHorizontal: containerPaddingHorizontal > 0 ? containerPaddingHorizontal : 0,
+                  paddingTop: 8,
+                  paddingBottom: 8,
+                  backgroundColor: Colors.backgroundWhite,
+                },
+                listContentStyle,
+              ]}
+            >
+              {(() => {
+                // Uniform height for all items: same image height + fixed label space so all 5 cells match
+                const maxCols = Math.max(...(columnsPerRow ?? [2]));
+                const uniformImageHeight = (availableWidth - colGap * (maxCols - 1)) / maxCols / aspectRatio;
+                const labelAreaHeight = 40; // fixed space for label so total height is same for all
+                const uniformTotalHeight = uniformImageHeight + labelAreaHeight;
+                return rows.map((rowItems, rowIndex) => {
+                  const cols = columnsPerRow[rowIndex % columnsPerRow.length];
+                  const rowItemWidth = (availableWidth - colGap * (cols - 1)) / cols;
+                  const rowItemHeight = uniformImageHeight;
+                  const imageWidthAvailable = rowItemWidth - imageContainerPadding * 2;
+                  const imageHeightAvailable = rowItemHeight - imageContainerPadding * 2;
+                  return (
+                  <View
+                    key={`row-${rowIndex}`}
+                    style={{
+                      flexDirection: 'row',
+                      marginBottom: rowIndex < rows.length - 1 ? rowGap : 0,
+                      gap: colGap,
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    {rowItems.map((item) => {
+                      const hasImageError = imageErrors[item.id];
+                      const imageUrl = item.imageUrl;
+                      return (
+                        <View
+                          key={item.id}
+                          style={[
+                            defaultStyles.itemWrapper,
+                            blockStyles?.itemWrapper,
+                            { width: rowItemWidth, height: uniformTotalHeight },
+                          ]}
+                        >
+                          <TouchableOpacity
+                            style={[
+                              imageContainerStyle,
+                              {
+                                width: rowItemWidth,
+                                height: rowItemHeight,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              },
+                            ]}
+                            onPress={() => handleCollectionPress(item)}
+                            activeOpacity={0.8}
+                          >
+                            {imageUrl && !hasImageError ? (
+                              <Image
+                                source={{ uri: imageUrl }}
+                                style={[
+                                  defaultStyles.image,
+                                  imageStyle,
+                                  {
+                                    width: Math.max(0, imageWidthAvailable),
+                                    height: Math.max(0, imageHeightAvailable),
+                                  },
+                                ]}
+                                resizeMode={resizeMode}
+                                onError={() => handleImageError(item.id)}
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  defaultStyles.placeholder,
+                                  blockStyles?.placeholder,
+                                  {
+                                    width: Math.max(0, imageWidthAvailable),
+                                    height: Math.max(0, imageHeightAvailable),
+                                  },
+                                ]}
+                              />
+                            )}
+                          </TouchableOpacity>
+                          {item.name && (
+                            <Text
+                              style={[textStyle, { maxWidth: rowItemWidth }]}
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
+                            >
+                              {item.name}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+                });
+              })()}
+            </View>
+          </ContainerWrapper>
+        </BaseContentBlock>
+      );
+    }
 
     return (
       <BaseContentBlock

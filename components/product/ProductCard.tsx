@@ -5,7 +5,9 @@ import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { configService } from '@/services/configService';
 import { isProductOutOfStock } from '@/utils/availability';
+import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -65,6 +67,28 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [imageErrorCount, setImageErrorCount] = useState(0);
   const router = useRouter();
+
+  // Product card text styles from config (fontSize, fontWeight, fontFamily, color)
+  const cardTextStyles = useMemo(() => {
+    const config = configService.getProductCardStyles();
+    const merge = (baseStyle: object, key: string) => {
+      const base = StyleSheet.flatten(baseStyle as any) || {};
+      const fromConfig = config?.[key];
+      if (!fromConfig) return base;
+      return {
+        ...base,
+        ...processFontStyle(fromConfig),
+        ...fromConfig,
+      };
+    };
+    return {
+      productName: merge(styles.productName, 'productName'),
+      vendorBadgeText: merge(styles.vendorBadgeText, 'vendorBadgeText'),
+      mainPrice: merge(styles.mainPrice, 'mainPrice'),
+      comparePrice: merge(styles.comparePrice, 'comparePrice'),
+      discountPercentage: merge(styles.discountPercentage, 'discountPercentage'),
+    };
+  }, []);
 
   // Get product handle
   const productHandle = useMemo(() => product.handle, [product]);
@@ -365,7 +389,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           {/* Vendor Badge - bottom left */}
           {product.vendor && (
             <View style={styles.vendorBadge}>
-              <Text style={styles.vendorBadgeText} numberOfLines={1}>
+              <Text style={cardTextStyles.vendorBadgeText} numberOfLines={1}>
                 {product.vendor}
               </Text>
             </View>
@@ -404,7 +428,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.productName} numberOfLines={1}>
+          <Text style={cardTextStyles.productName} numberOfLines={2} ellipsizeMode="tail">
             {product.title || product.name || 'Product'}
           </Text>
 
@@ -428,17 +452,17 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               ) : (
                 <View style={styles.priceRow}>
                   <View style={styles.priceInfo}>
-                    <Text style={styles.mainPrice}>
+                    <Text style={cardTextStyles.mainPrice}>
                       {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
                     </Text>
                     {discountPrice && parsePrice(discountPrice) > priceNumber && (
-                      <Text style={styles.comparePrice}>
+                      <Text style={cardTextStyles.comparePrice}>
                         ₹{parsePrice(discountPrice).toFixed(0)}
                       </Text>
                     )}
                   </View>
                   {discountPercentage !== null && (
-                    <Text style={styles.discountPercentage}>
+                    <Text style={cardTextStyles.discountPercentage}>
                       {discountPercentage}% off
                     </Text>
                   )}
@@ -468,7 +492,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
     borderRadius: 12,
     position: 'relative',
     backgroundColor: Colors.backgroundSecondary,
@@ -637,8 +661,8 @@ const styles = StyleSheet.create({
   },
   addButtonContainer: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: -6,
+    right: -6,
     zIndex: 10,
   },
 });

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, Dimensions } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { CategoryRailBlock } from '@/types/content';
-import { shopifyApi } from '@/services/shopifyApi';
 import { Fonts } from '@/constants/theme';
+import { shopifyApi } from '@/services/shopifyApi';
+import { CategoryRailBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface VisualCategoryRailProps extends Omit<BaseContentBlockProps, 'onPress'> {
     block: CategoryRailBlock;

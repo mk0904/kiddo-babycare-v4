@@ -232,15 +232,15 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     ...blockStyles?.title,
   };
 
-  // Text/label style (matching ImageGrid pattern)
-  // Process font style first, then apply all text styles (so custom styles override)
+  // Text/label style under each cell: configurable via styles.text (fontSize, fontWeight, fontFamily, etc.)
   const processedTextStyle = processFontStyle(blockStyles?.text);
   const textStyle = {
     color: '#666666',
     textAlign: 'center' as const,
+    fontSize: 12,
+    fontWeight: '700' as const,
     ...processedTextStyle,
-    ...blockStyles?.text, // Apply all text styles last so they override defaults
-    fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
+    ...blockStyles?.text, // Config overrides: fontSize, fontWeight, fontFamily, fontStyle, color, etc.
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)

@@ -266,6 +266,12 @@ class ConfigService {
     return this.rawConfig.discounts || null;
   }
 
+  /** Product card font/label styles (fontSize, fontWeight, fontFamily, color, etc.) for listing cards */
+  getProductCardStyles(): Record<string, Record<string, any>> | null {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.productCard?.styles ?? this.rawConfig.productCard ?? null;
+  }
+
   // Get account configuration
   getAccountConfig() {
     if (!this.rawConfig) return null;

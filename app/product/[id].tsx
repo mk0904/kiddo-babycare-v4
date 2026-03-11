@@ -760,8 +760,16 @@ const ProductDetailScreen = () => {
         } else if (product?.image) {
             extractedImages = [product.image.url || product.image];
         }
-        return extractedImages.filter(Boolean);
-    }, [product]);
+        const productUrls = extractedImages.filter(Boolean) as string[];
+
+        // When a variant is selected and has its own image, show that image first
+        const variantImageUrl = selectedVariant?.image?.url || selectedVariant?.image;
+        if (variantImageUrl && typeof variantImageUrl === 'string') {
+            const rest = productUrls.filter((url) => url !== variantImageUrl);
+            return [variantImageUrl, ...rest];
+        }
+        return productUrls;
+    }, [product, selectedVariant]);
 
     const variants = useMemo(() => {
         if (product?.variants?.edges) {
@@ -806,9 +814,18 @@ const ProductDetailScreen = () => {
             const matchingVariant = findVariantByOptions(selectedOptions, variants);
             if (matchingVariant) {
                 setSelectedVariant(matchingVariant);
+                // Reset carousel to first image so variant's image is shown
+                setSelectedImageIndex(0);
             }
         }
     }, [selectedOptions, variants, productOptions, findVariantByOptions]);
+
+    // When selected variant changes, scroll image carousel to first slide
+    useEffect(() => {
+        if (selectedVariant && imageFlatListRef.current) {
+            imageFlatListRef.current.scrollToOffset({ offset: 0, animated: true });
+        }
+    }, [selectedVariant?.id]);
 
     const handleOptionSelect = (optionName: string, optionValue: string) => {
         setSelectedOptions((prev) => ({

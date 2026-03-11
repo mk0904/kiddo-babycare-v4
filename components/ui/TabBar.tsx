@@ -95,13 +95,24 @@ export const TabBar = (props: BottomTabBarProps) => {
         }
     }, [props.state, visibleTabs]);
 
-    // Render tab icon - simple and consistent for all tabs
+    // Render tab icon: use config URLs (e.g. Shopify) when set, otherwise fall back to local assets
     const renderTabIcon = (routeName: string, isFocused: boolean) => {
+        const itemConfig = tabBarConfig?.items?.[routeName];
+        const configIconUrl = isFocused ? itemConfig?.activeIcon : itemConfig?.icon;
+
+        if (configIconUrl && typeof configIconUrl === 'string' && configIconUrl.startsWith('http')) {
+            return (
+                <Image
+                    source={{ uri: configIconUrl }}
+                    style={{ width: iconSize, height: iconSize }}
+                    contentFit="contain"
+                />
+            );
+        }
+
         const icons = TAB_ICONS[routeName];
         if (!icons) return null;
-
         const iconSource = isFocused ? icons.active : icons.inactive;
-
         return (
             <Image
                 source={iconSource}

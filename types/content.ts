@@ -67,6 +67,8 @@ export interface ImageGridBlock extends BaseBlock {
   title?: string;
   gridConfig?: {
     numColumns?: number;
+    /** Irregular rows: e.g. [2, 3] = first row 2 columns, second row 3 columns. Repeats for more items. */
+    columnsPerRow?: number[];
     colGap?: number;
     rowGap?: number;
     limit?: number;

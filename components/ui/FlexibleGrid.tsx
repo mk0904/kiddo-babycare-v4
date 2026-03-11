@@ -2,13 +2,13 @@ import { Colors, Fonts } from '@/constants/theme';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo } from 'react';
 import {
-  Dimensions,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
