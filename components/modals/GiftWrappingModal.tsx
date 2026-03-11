@@ -356,6 +356,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.SemiBold,
         color: '#2D2D2D',
         marginBottom: 4,
+        lineHeight: 20,
     },
     variantText: {
         fontSize: 13,
@@ -455,6 +456,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 6,
         paddingVertical: 10,
+        paddingHorizontal: 16,
     },
     removeButtonText: {
         fontSize: 14,

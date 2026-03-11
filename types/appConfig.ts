@@ -84,6 +84,10 @@ export interface CheckoutConfig {
   scheduleModalTitle?: string;
 }
 
+export interface OrderDetailConfig {
+  imageUrl?: string;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
@@ -93,4 +97,5 @@ export interface AppConfigResponse {
   };
   cart?: CartConfig;
   checkout?: CheckoutConfig;
+  orderDetail?: OrderDetailConfig;
 }

@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 12,
-        color: '#888',
-        fontFamily: Fonts.Regular,
+        color: '#717680',
+        fontFamily: Fonts.SemiBold,
         textDecorationLine: 'underline',
     },
     select: {
@@ -130,5 +130,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: REMOVE_RED,
         fontFamily: Fonts.SemiBold,
+        marginRight: 12,
     },
 });

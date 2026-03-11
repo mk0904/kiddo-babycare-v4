@@ -32,6 +32,22 @@ export interface DeliverySchedule {
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+/** Next 3 days: today, tomorrow, day after. Each has label and date in "12 March" format. */
+function getNextThreeDays(): { label: string; date: Date; dateLabel: string }[] {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const result: { label: string; date: Date; dateLabel: string }[] = [];
+    const labels = ['Today', 'Tomorrow', 'Day after'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    for (let i = 0; i < 3; i++) {
+        const d = new Date(base);
+        d.setDate(d.getDate() + i);
+        const dateLabel = `${d.getDate()} ${monthNames[d.getMonth()]}`;
+        result.push({ label: labels[i], date: d, dateLabel });
+    }
+    return result;
+}
+
 // Design spec: vibrant red and neutrals to match the Schedule delivery mock
 const DESIGN_RED = '#E84E4E';
 const PILL_RADIUS = 999;
@@ -57,6 +73,9 @@ function getAvailableTimeSlots(isToday: boolean): { label: string; value: string
 
 // Time slots as ranges for display; value is start time for DeliverySchedule
 const TIME_SLOT_RANGES: { label: string; value: string }[] = [
+    { label: '7AM - 8AM', value: '07:00 AM' },
+    { label: '8AM - 9AM', value: '08:00 AM' },
+    { label: '9AM - 10AM', value: '09:00 AM' },
     { label: '10AM - 11AM', value: '10:00 AM' },
     { label: '11AM - 12PM', value: '11:00 AM' },
     { label: '12PM - 1PM', value: '12:00 PM' },
@@ -69,27 +88,29 @@ const TIME_SLOT_RANGES: { label: string; value: string }[] = [
     { label: '7PM - 8PM', value: '07:00 PM' },
     { label: '8PM - 9PM', value: '08:00 PM' },
     { label: '9PM - 10PM', value: '09:00 PM' },
+    { label: '10PM - 11PM', value: '10:00 PM' },
+    { label: '11PM - 11:30AM', value: '11:00 PM' },
 ];
 
 export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule, title }: ScheduleDeliveryModalProps) => {
-    const [isToday, setIsToday] = useState(true); // true = Today, false = Tomorrow
+    const [selectedDayIndex, setSelectedDayIndex] = useState(0); // 0 = Today, 1 = Tomorrow, 2 = Day after
     const [selectedTime, setSelectedTime] = useState<string>('');
+
+    const nextThreeDays = React.useMemo(() => getNextThreeDays(), [visible]);
 
     useEffect(() => {
         if (visible) {
+            const days = getNextThreeDays();
             if (initialSchedule?.date && initialSchedule?.time) {
-                const today = new Date();
-                const todayStr = formatDate(today);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = formatDate(tomorrow);
-                const initialIsToday = initialSchedule.date === todayStr;
-                setIsToday(initialIsToday);
-                const available = getAvailableTimeSlots(initialIsToday);
+                const matchIndex = days.findIndex((opt) => formatDate(opt.date) === initialSchedule.date);
+                const idx = matchIndex >= 0 ? matchIndex : 0;
+                setSelectedDayIndex(idx);
+                const isToday = idx === 0;
+                const available = getAvailableTimeSlots(isToday);
                 const stillValid = available.some((s) => s.value === initialSchedule.time);
                 setSelectedTime(stillValid ? initialSchedule.time : '');
             } else {
-                setIsToday(true);
+                setSelectedDayIndex(0);
                 setSelectedTime('');
             }
         }
@@ -97,10 +118,10 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
 
     // When "Today" is selected, clear time if it's now in the past
     useEffect(() => {
-        if (!isToday || !selectedTime) return;
+        if (selectedDayIndex !== 0 || !selectedTime) return;
         const available = getAvailableTimeSlots(true);
         if (!available.some((s) => s.value === selectedTime)) setSelectedTime('');
-    }, [isToday, selectedTime]);
+    }, [selectedDayIndex, selectedTime]);
 
     const formatDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0');
@@ -118,11 +139,8 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
 
     const getDayName = (date: Date): string => DAYS[date.getDay()];
 
-    const selectedDate = (() => {
-        const d = new Date();
-        if (!isToday) d.setDate(d.getDate() + 1);
-        return d;
-    })();
+    const selectedDate = nextThreeDays[selectedDayIndex]?.date ?? new Date();
+    const isTodaySelected = selectedDayIndex === 0;
 
     const handleConfirm = () => {
         if (!selectedTime) return;
@@ -179,26 +197,33 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
 
                     <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
 
-                    {/* Date: Today / Tomorrow – single track, selected chip with subtle outline */}
+                    {/* Date: Today (with date); next two show date only (e.g. 13 March, 14 March) */}
                     <View style={styles.dateTrack}>
-                        <TouchableOpacity
-                            style={[styles.dateChip, isToday && styles.dateChipSelected]}
-                            onPress={() => setIsToday(true)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.dateChipText, isToday && styles.dateChipTextSelected]}>
-                                Today
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.dateChip, !isToday && styles.dateChipSelected]}
-                            onPress={() => setIsToday(false)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.dateChipText, !isToday && styles.dateChipTextSelected]}>
-                                Tomorrow
-                            </Text>
-                        </TouchableOpacity>
+                        {nextThreeDays.map((opt, index) => {
+                            const isSelected = selectedDayIndex === index;
+                            const isToday = index === 0;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.dateChip, isSelected && styles.dateChipSelected]}
+                                    onPress={() => setSelectedDayIndex(index)}
+                                    activeOpacity={0.8}
+                                >
+                                    {isToday ? (
+                                        <>
+                                            <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                                Today
+                                            </Text>
+                                            
+                                        </>
+                                    ) : (
+                                        <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                            {opt.dateLabel}
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
 
                     <View style={styles.dateTimeDivider} />
@@ -211,7 +236,7 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                         keyboardShouldPersistTaps="handled"
                     >
                         <View style={styles.timeSlotsSection}>
-                            {getAvailableTimeSlots(isToday).map((slot) => {
+                            {getAvailableTimeSlots(isTodaySelected).map((slot) => {
                                 const isSelected = selectedTime === slot.value;
                                 return (
                                     <TouchableOpacity
@@ -316,7 +341,7 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     dateTrack: {
-        width: '60%',
+        width: '80%',
         alignSelf: 'center',
         flexDirection: 'row',
         backgroundColor: '#E8E8E8',
@@ -326,8 +351,8 @@ const styles = StyleSheet.create({
     },
     dateChip: {
         flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
         borderRadius: 10,
         backgroundColor: 'transparent',
         alignItems: 'center',
@@ -345,13 +370,22 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     dateChipText: {
-        fontSize: 15,
+        fontSize: 14,
         fontFamily: Fonts.SemiBold,
         color: '#6B6B6B',
     },
     dateChipTextSelected: {
         color: DESIGN_RED,
         fontFamily: Fonts.Bold,
+    },
+    dateChipSubtext: {
+        fontSize: 11,
+        fontFamily: Fonts.Regular,
+        color: '#6B6B6B',
+        marginTop: 2,
+    },
+    dateChipSubtextSelected: {
+        color: DESIGN_RED,
     },
     dateTimeDivider: {
         height: 1,

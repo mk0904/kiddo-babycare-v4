@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     payButton: {
         width: '90%',
         alignSelf: 'center',
-        backgroundColor: PAY_BUTTON_COLOR,
+        backgroundColor: '#DB5656',
         paddingHorizontal: 24,
         paddingVertical: 14,
         borderRadius: 28,

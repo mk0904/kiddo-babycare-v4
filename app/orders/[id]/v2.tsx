@@ -1,4 +1,4 @@
-import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
+import { NeedHelpChatCard, openSupportCall } from '@/components/orders/NeedHelpChatCard';
 import {
     calculateDistance,
     DEFAULT_ETA_MINUTES,
@@ -9,6 +9,7 @@ import {
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { appConfigService } from '@/services/appConfigService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
@@ -207,12 +208,12 @@ export default function OrderDetailV2Screen() {
     if (error || !order) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)')} hitSlop={12}>
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
                 <View style={styles.loadingWrap}>
                     <Text style={styles.errorText}>{error || 'Order not found'}</Text>
-                    <TouchableOpacity style={styles.primaryButton} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
                         <Text style={styles.primaryButtonText}>Go back</Text>
                     </TouchableOpacity>
                 </View>
@@ -241,7 +242,7 @@ export default function OrderDetailV2Screen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header - light beige */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={12}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)')} hitSlop={12}>
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
@@ -251,23 +252,19 @@ export default function OrderDetailV2Screen() {
             </View>
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <NeedHelpChatCard onChatPress={() => { /* TODO: open chat / support */ }} />
+                <NeedHelpChatCard onCallPress={openSupportCall} />
 
-                {/* Map placeholder */}
-                {/* <View style={styles.mapPlaceholder}>
-                    <Ionicons name="map-outline" size={40} color="#9CA3AF" />
-                    <Text style={styles.mapPlaceholderText}>Map</Text>
-                </View> */}
-
-                {/* Delivery status card */}
-                {/* <View style={styles.card}>
-                    <View style={styles.deliveryIconWrap}>
-                        <Ionicons name="bicycle-outline" size={24} color="#9CA3AF" />
-                    </View>
-                    <Text style={styles.deliveryText}>
-                        Your delivery partner has left the kiddo light store and is on the way!
-                    </Text>
-                </View> */}
+                {/* Order detail banner image from app-config (orderDetail.imageUrl) */}
+                {(() => {
+                    const orderDetailConfig = appConfigService.getOrderDetailConfig();
+                    const imageUrl = orderDetailConfig?.imageUrl;
+                    if (!imageUrl) return null;
+                    return (
+                        <View style={styles.orderDetailImageWrap}>
+                            <Image source={{ uri: imageUrl }} style={styles.orderDetailImage} contentFit="cover" />
+                        </View>
+                    );
+                })()}
 
                 {/* Order summary header */}
                 <View style={styles.summaryRow}>
@@ -305,26 +302,29 @@ export default function OrderDetailV2Screen() {
                 })}
 
                 {/* Bill details */}
-                <View style={styles.billCard}>
-                    <Text style={styles.billTitle}>Bill details</Text>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>Subtotal</Text>
-                        <Text style={styles.billValue}>{formatCurrency(subtotal)}</Text>
-                    </View>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>Shipping</Text>
-                        <Text style={styles.billValue}>{formatCurrency(shipping)}</Text>
-                    </View>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>Tax</Text>
-                        <Text style={styles.billValue}>{formatCurrency(tax)}</Text>
-                    </View>
-                    <View style={styles.billDivider} />
-                    <View style={styles.billRow}>
-                        <Text style={styles.billTotalLabel}>Total</Text>
-                        <Text style={styles.billTotalValue}>{formatCurrency(total)}</Text>
-                    </View>
-                </View>
+                {(() => {
+                    const discountAmount = Math.max(0, subtotal + shipping + tax - total);
+                    return (
+                        <View style={styles.billCard}>
+                            <Text style={styles.billTitle}>Bill details</Text>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Subtotal</Text>
+                                <Text style={styles.billValue}>{formatCurrency(subtotal)}</Text>
+                            </View>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Discount</Text>
+                                <Text style={[styles.billValue, discountAmount > 0 && styles.billDiscountValue]}>
+                                    {discountAmount > 0 ? `-${formatCurrency(discountAmount)}` : formatCurrency(0)}
+                                </Text>
+                            </View>
+                            <View style={styles.billDivider} />
+                            <View style={styles.billRow}>
+                                <Text style={styles.billTotalLabel}>Total</Text>
+                                <Text style={styles.billTotalValue}>{formatCurrency(total)}</Text>
+                            </View>
+                        </View>
+                    );
+                })()}
 
                 <View style={styles.footerSpacer} />
             </ScrollView>
@@ -444,6 +444,17 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Regular,
         color: '#9CA3AF',
         marginTop: 8,
+    },
+    orderDetailImageWrap: {
+        marginBottom: 12,
+        borderRadius: CARD_RADIUS,
+        overflow: 'hidden',
+        backgroundColor: '#F3F4F6',
+    },
+    orderDetailImage: {
+        width: '100%',
+        aspectRatio: 2,
+        minHeight: 120,
     },
     deliveryIconWrap: {
         width: 44,
@@ -565,6 +576,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.Medium,
         color: '#1A1A1A',
+    },
+    billDiscountValue: {
+        color: '#16a34a',
     },
     billDivider: {
         height: 1,

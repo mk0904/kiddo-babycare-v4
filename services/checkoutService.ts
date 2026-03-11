@@ -74,6 +74,8 @@ export interface CheckoutDraftRequest {
   /** Full bill breakdown – backend can put in order note or metafields. */
   billDetails?: CheckoutBillDetails;
   selectedShoe?: string;
+  /** Free shoes offer: selected size (e.g. S1, S2) – backend should store in Shopify order (note_attributes or similar) */
+  selectedShoeSize?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
   /** App version for coupon/eligibility (e.g. Constants.expoConfig?.version). */
@@ -153,6 +155,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     paymentMethod: body.paymentMethod ?? 'cod',
     billDetails: body.billDetails,
     selectedShoe: body.selectedShoe ?? '',
+    selectedShoeSize: body.selectedShoeSize ?? '',
     isTryAndBuy: body.isTryAndBuy ?? false,
     appVersion: body.appVersion ?? '',
     deviceType: body.deviceType ?? '',

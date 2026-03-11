@@ -74,6 +74,7 @@ export function SavingsCorner({
     useEffect(() => {
         if (!isAuthenticated) {
             setAvailableCoupons([]);
+            if (__DEV__) console.log('[SavingsCorner] Skipping coupon fetch: user not authenticated');
             return;
         }
         const fetchCoupons = async () => {
@@ -198,9 +199,12 @@ export function SavingsCorner({
                 : 'Add a coupon';
 
     return (
-        <>
-            <Text style={styles.title}>Savings Corner</Text>
+        <View style={styles.wrapper}>
+
             <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.title}>Savings Corner</Text>
+                </View>
                 <View style={[styles.row, hasAppliedCoupon && styles.rowApplied]}>
                     <View style={styles.left}>
                         <View style={styles.iconWrap}>
@@ -277,17 +281,18 @@ export function SavingsCorner({
                 transparent
                 onRequestClose={closeModal}
             >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={closeModal}
-                >
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity
+                        style={StyleSheet.absoluteFill}
+                        activeOpacity={1}
+                        onPress={closeModal}
+                    />
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                         style={styles.modalKeyboardAvoid}
                         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     >
-                        <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+                        <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
                                 <View style={styles.modalHeaderLeft}>
                                     <View style={styles.modalHeaderIconWrap}>
@@ -299,149 +304,170 @@ export function SavingsCorner({
                                     <Ionicons name="close" size={24} color="#1A1A1A" />
                                 </TouchableOpacity>
                             </View>
+                            {/* Fixed input section - not inside ScrollView so it does not scroll */}
+                            {isAuthenticated && (
+                                <View style={styles.manualCodeSection}>
+                                    <Text style={styles.manualCodeLabel}>Enter coupon code</Text>
+                                    <View style={styles.couponInputRow}>
+                                        <View style={styles.couponInputWrapper}>
+                                            <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
+                                            <TextInput
+                                                style={styles.couponInput}
+                                                placeholder="Enter code"
+                                                placeholderTextColor="#999"
+                                                value={manualCode}
+                                                onChangeText={(t) => {
+                                                    setManualCode(t.toUpperCase());
+                                                    setManualCodeMessage(null);
+                                                }}
+                                                editable={!couponApplying}
+                                                autoCapitalize="characters"
+                                                autoCorrect={false}
+                                                scrollEnabled={false}
+                                                multiline={false}
+                                            />
+                                        </View>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.applyCodeBtn,
+                                                (!manualCode.trim() || couponApplying) && styles.applyCodeBtnDisabled,
+                                            ]}
+                                            onPress={handleApplyManualCode}
+                                            disabled={!manualCode.trim() || couponApplying}
+                                            activeOpacity={0.8}
+                                        >
+                                            {couponApplying ? (
+                                                <ActivityIndicator size="small" color="#fff" />
+                                            ) : (
+                                                <Text style={styles.applyCodeBtnText}>Apply</Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                    {manualCodeMessage != null && (
+                                        <Text style={styles.manualCodeMessage}>{manualCodeMessage}</Text>
+                                    )}
+                                </View>
+                            )}
                             <ScrollView
                                 style={styles.modalScroll}
                                 contentContainerStyle={styles.modalScrollContent}
                                 showsVerticalScrollIndicator={true}
                                 keyboardShouldPersistTaps="handled"
+                                keyboardDismissMode="on-drag"
                             >
-                            {!isAuthenticated ? (
-                                <View style={styles.loginPrompt}>
-                                    <Text style={styles.loginPromptText}>Please login to view and apply coupons.</Text>
-                                    <TouchableOpacity
-                                        style={styles.loginButton}
-                                        onPress={() => {
-                                            closeModal();
-                                            onLoginPress();
-                                        }}
-                                    >
-                                        <Text style={styles.loginButtonText}>Login</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                <>
-                                    {/* Manual coupon code entry - enter code input at top */}
-                                    <View style={styles.manualCodeSection}>
-                                        <Text style={styles.manualCodeLabel}>Enter coupon code</Text>
-                                        <View style={styles.couponInputRow}>
-                                            <View style={styles.couponInputWrapper}>
-                                                <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
-                                                <TextInput
-                                                    style={styles.couponInput}
-                                                    placeholder="Enter code"
-                                                    placeholderTextColor="#999"
-                                                    value={manualCode}
-                                                    onChangeText={(t) => {
-                                                        setManualCode(t.toUpperCase());
-                                                        setManualCodeMessage(null);
-                                                    }}
-                                                    editable={!couponApplying}
-                                                    autoCapitalize="characters"
-                                                    autoCorrect={false}
-                                                />
-                                            </View>
-                                            <TouchableOpacity
-                                                style={[
-                                                    styles.applyCodeBtn,
-                                                    (!manualCode.trim() || couponApplying) && styles.applyCodeBtnDisabled,
-                                                ]}
-                                                onPress={handleApplyManualCode}
-                                                disabled={!manualCode.trim() || couponApplying}
-                                                activeOpacity={0.8}
-                                            >
-                                                {couponApplying ? (
-                                                    <ActivityIndicator size="small" color="#fff" />
-                                                ) : (
-                                                    <Text style={styles.applyCodeBtnText}>Apply</Text>
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
-                                        {manualCodeMessage != null && (
-                                            <Text style={styles.manualCodeMessage}>{manualCodeMessage}</Text>
-                                        )}
+                                {!isAuthenticated ? (
+                                    <View style={styles.loginPrompt}>
+                                        <Text style={styles.loginPromptText}>Please login to view and apply coupons.</Text>
+                                        <TouchableOpacity
+                                            style={styles.loginButton}
+                                            onPress={() => {
+                                                closeModal();
+                                                onLoginPress();
+                                            }}
+                                        >
+                                            <Text style={styles.loginButtonText}>Login</Text>
+                                        </TouchableOpacity>
                                     </View>
+                                ) : (
+                                    <>
+                                        <View style={styles.availableDivider} />
+                                        <Text style={styles.availableTitle}>Or choose from available coupons</Text>
 
-                                    <View style={styles.availableDivider} />
-                                    <Text style={styles.availableTitle}>Or choose from available coupons</Text>
-
-                                    {loadingCoupons ? (
-                                        <ActivityIndicator size="small" color={Colors.primary} style={styles.couponsLoading} />
-                                    ) : applicableCoupons.length === 0 ? (
-                                        <Text style={styles.noCouponsText}>No coupons available</Text>
-                                    ) : (
-                                        applicableCoupons.map((coupon) => {
-                                            const conditions = coupon.code
-                                                ? couponService.getCouponConditionsText({
-                                                      ...coupon,
-                                                      code: coupon.code,
-                                                      valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
-                                                  } as CouponCode)
-                                                : [];
-                                            const offerTitle =
-                                                coupon.title ||
-                                                (coupon.value != null && coupon.value !== 0
-                                                    ? coupon.valueType === 'percentage'
-                                                        ? `Get ${coupon.value}% off`
-                                                        : `Get ₹${coupon.value} off`
-                                                    : coupon.code
-                                                      ? `Use code ${coupon.code}`
-                                                      : 'Coupon');
-                                            return (
-                                                <View
-                                                    key={coupon.code}
-                                                    style={[
-                                                        styles.couponCard,
-                                                        couponApplying && styles.couponCardDisabled,
-                                                    ]}
-                                                >
-                                                    <View style={styles.couponCardIconWrap}>
-                                                        <Ionicons name="pricetag" size={20} color="#fff" />
-                                                    </View>
-                                                    <View style={styles.couponCardMain}>
-                                                        <Text style={styles.couponCardOfferTitle} numberOfLines={2}>
-                                                            {offerTitle}
-                                                        </Text>
-                                                        {coupon.code && (
-                                                            <Text style={styles.couponCardUseCode}>Use code {coupon.code}</Text>
-                                                        )}
-                                                        {conditions.length > 0 && (
-                                                            <View style={styles.couponConditionsContainer}>
-                                                                {conditions.slice(0, 2).map((c, i) => (
-                                                                    <Text key={i} style={styles.couponConditionText}>
-                                                                        • {c}
-                                                                    </Text>
-                                                                ))}
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                    <TouchableOpacity
-                                                        style={[styles.couponCardApplyBtn, couponApplying && styles.couponCardApplyDisabled]}
-                                                        onPress={() => {
-                                                            if (couponApplying) return;
-                                                            handleApplyCouponFromList(coupon);
-                                                            closeModal();
-                                                        }}
-                                                        disabled={couponApplying}
-                                                        activeOpacity={0.8}
+                                        {loadingCoupons ? (
+                                            <ActivityIndicator size="small" color={Colors.primary} style={styles.couponsLoading} />
+                                        ) : applicableCoupons.length === 0 ? (
+                                            <Text style={styles.noCouponsText}>No coupons available</Text>
+                                        ) : (
+                                            applicableCoupons.map((coupon, index) => {
+                                                const conditions = coupon.code
+                                                    ? couponService.getCouponConditionsText({
+                                                        ...coupon,
+                                                        code: coupon.code,
+                                                        valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
+                                                    } as CouponCode)
+                                                    : [];
+                                                const offerTitle =
+                                                    coupon.title ||
+                                                    (coupon.value != null && coupon.value !== 0
+                                                        ? coupon.valueType === 'percentage'
+                                                            ? `Get ${coupon.value}% off`
+                                                            : `Get ₹${coupon.value} off`
+                                                        : coupon.code
+                                                            ? `Use code ${coupon.code}`
+                                                            : 'Coupon');
+                                                return (
+                                                    <View
+                                                        key={coupon.code || `coupon-${coupon.title ?? index}`}
+                                                        style={[
+                                                            styles.couponCard,
+                                                            couponApplying && styles.couponCardDisabled,
+                                                        ]}
                                                     >
-                                                        <Text style={styles.couponCardApplyText}>Apply</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            );
-                                        })
-                                    )}
-                                </>
-                            )}
+                                                        <View style={styles.couponCardIconWrap}>
+                                                            <Ionicons name="pricetag" size={20} color="#fff" />
+                                                        </View>
+                                                        <View style={styles.couponCardMain}>
+                                                            <Text style={styles.couponCardOfferTitle} numberOfLines={2}>
+                                                                {offerTitle}
+                                                            </Text>
+                                                            {coupon.code && (
+                                                                <Text style={styles.couponCardUseCode}>Use code {coupon.code}</Text>
+                                                            )}
+                                                            {conditions.length > 0 && (
+                                                                <View style={styles.couponConditionsContainer}>
+                                                                    {conditions.slice(0, 2).map((c, i) => (
+                                                                        <Text key={i} style={styles.couponConditionText}>
+                                                                            • {c}
+                                                                        </Text>
+                                                                    ))}
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            style={[styles.couponCardApplyBtn, couponApplying && styles.couponCardApplyDisabled]}
+                                                            onPress={() => {
+                                                                if (couponApplying) return;
+                                                                handleApplyCouponFromList(coupon);
+                                                                closeModal();
+                                                            }}
+                                                            disabled={couponApplying}
+                                                            activeOpacity={0.8}
+                                                        >
+                                                            <Text style={styles.couponCardApplyText}>Apply</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                );
+                                            })
+                                        )}
+                                    </>
+                                )}
                             </ScrollView>
                         </View>
                     </KeyboardAvoidingView>
-                </TouchableOpacity>
+                </View>
             </Modal>
-        </>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    wrapper: {
+        marginBottom: 12,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+
+    },
+    titleIcon: {
+        marginRight: 8,
+    },
+    title: {
+        fontSize: 16,
+        color: '#717680',
+        fontFamily: Fonts.Bold,
+    },
     section: {
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -451,13 +477,6 @@ const styles = StyleSheet.create({
             ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
             android: { elevation: 3 },
         }),
-    },
-    title: {
-        fontSize: 16,
-        color: '#717680',
-        fontFamily: Fonts.Bold,
-        marginBottom: 14,
-        marginTop: 12,
     },
     row: {
         flexDirection: 'row',
@@ -511,7 +530,7 @@ const styles = StyleSheet.create({
     applyBtn: {
         // backgroundColor: '#C41E3A',
         paddingVertical: 8,
-       paddingHorizontal: 12,
+        paddingHorizontal: 12,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
@@ -587,17 +606,17 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     modalKeyboardAvoid: {
-        flex: 1,
         width: '100%',
         maxWidth: 400,
+        height: '80%',
         maxHeight: '80%',
     },
     modalContent: {
         flex: 1,
-        maxHeight: '80%',
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
         paddingBottom: 24,
+        overflow: 'hidden',
     },
     modalHeader: {
         flexDirection: 'row',
@@ -617,8 +636,8 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 12,
-       borderWidth: 1,
-       borderColor: '#EFF8FF',
+        borderWidth: 1,
+        borderColor: '#EFF8FF',
 
         alignItems: 'center',
         justifyContent: 'center',
@@ -635,6 +654,7 @@ const styles = StyleSheet.create({
     },
     modalScroll: {
         flex: 1,
+        minHeight: 0,
         paddingHorizontal: 16,
     },
     modalScrollContent: {
@@ -670,7 +690,9 @@ const styles = StyleSheet.create({
         letterSpacing: 0.3,
     },
     manualCodeSection: {
-        marginBottom: 16,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 8,
     },
     manualCodeLabel: {
         fontSize: 13,

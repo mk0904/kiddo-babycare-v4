@@ -37,6 +37,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+/** Format date as YYYY-MM-DD for ticketing cart item. */
+function bookingDateToYYYYMMDD(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 // Event Date Picker Component - Shows next 7 days or available dates
 const EventDatePicker: React.FC<{
     selectedDate: Date | null;
@@ -783,6 +791,70 @@ const ProductDetailScreen = () => {
         return [];
     }, [product]);
 
+    // When user selects a date in ticketing, add the item to cart immediately (1 qty, with bookingDate)
+    const handleDateSelectAndAddToCart = useCallback(
+        async (date: Date) => {
+            const variant = isEventsProduct ? variantForDate(date) : (selectedVariant || variants[0]);
+            if (!variant || !product) return;
+
+            setSelectedEventDate(date);
+            setSelectedVariant(variant);
+            syncSelectedOptionsFromVariant(variant);
+            setShowDateError(false);
+
+            try {
+                const addItem = useCartStore.getState().addItem;
+                const imageUrl =
+                    variant.image?.url ||
+                    product.images?.[0]?.url ||
+                    product.featuredImage?.url ||
+                    product.images?.edges?.[0]?.node?.url ||
+                    '';
+                const price = parseFloat(
+                    variant.price?.amount ||
+                        product.priceRange?.minVariantPrice?.amount ||
+                        product.price?.amount ||
+                        '0'
+                );
+                const quantityAvailable =
+                    variant.quantityAvailable != null ? Number(variant.quantityAvailable) : undefined;
+                const cartItem = {
+                    productId: productId || '',
+                    variantId: variant.id || '',
+                    title: product.title || product.name || 'Product',
+                    variantTitle: variant.title,
+                    price,
+                    compareAtPrice: variant.compareAtPrice?.amount
+                        ? parseFloat(variant.compareAtPrice.amount)
+                        : undefined,
+                    currencyCode:
+                        variant.price?.currencyCode ||
+                        product.priceRange?.minVariantPrice?.currencyCode ||
+                        'INR',
+                    image: imageUrl,
+                    quantity: 1,
+                    availableForSale: variant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
+                    tags: product.tags || [],
+                    bookingDate: bookingDateToYYYYMMDD(date),
+                };
+                await addItem(cartItem);
+            } catch (error: any) {
+                alert(error?.message || 'Failed to add to cart. Please try again.');
+            }
+            setShowDatePicker(false);
+        },
+        [
+            isEventsProduct,
+            variantForDate,
+            selectedVariant,
+            variants,
+            product,
+            productId,
+            syncSelectedOptionsFromVariant,
+        ]
+    );
+
     const productOptions = useMemo(() => {
         if (!product?.options) return [];
         const options = Array.isArray(product.options) ? product.options : [];
@@ -1420,7 +1492,7 @@ const ProductDetailScreen = () => {
                 {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                     isTicketingProduct && !selectedEventDate ? (
                         <TouchableOpacity
-                            style={[styles.addToCartButton, styles.disabledButton]}
+                            style={[styles.addToCartButton]}
                             onPress={() => {
                                 setShowDatePicker(true);
                                 setShowDateError(false); // Clear error when user opens date picker
@@ -1471,19 +1543,7 @@ const ProductDetailScreen = () => {
                 >
                     <EventDatePicker
                         selectedDate={selectedEventDate}
-                        onDateSelect={(date) => {
-                            setSelectedEventDate(date);
-                            // Only Events variants represent predefined dates.
-                            if (isEventsProduct) {
-                                const v = variantForDate(date);
-                                if (v) {
-                                    setSelectedVariant(v);
-                                    syncSelectedOptionsFromVariant(v);
-                                }
-                            }
-                            setShowDatePicker(false);
-                            setShowDateError(false); // Clear error when date is selected
-                        }}
+                        onDateSelect={handleDateSelectAndAddToCart}
                         // Events: pass predefined variant dates. Others: undefined → falls back to next 7 days.
                         availableDates={isEventsProduct ? (availableDates ?? []) : undefined}
                     />

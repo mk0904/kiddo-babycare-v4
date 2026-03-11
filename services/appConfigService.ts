@@ -11,6 +11,7 @@ import type {
   CartFeatures,
   FreeShoesOfferConfig,
   GiftWrapConfig,
+  OrderDetailConfig,
 } from '@/types/appConfig';
 import { configService } from './configService';
 
@@ -104,6 +105,10 @@ class AppConfigService {
 
   getCheckoutConfig() {
     return this.config?.checkout ?? null;
+  }
+
+  getOrderDetailConfig(): OrderDetailConfig | null {
+    return this.config?.orderDetail ?? null;
   }
 }
 

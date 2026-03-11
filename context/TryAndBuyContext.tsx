@@ -80,6 +80,7 @@ interface TryAndBuyContextType {
             dateFormat: string;
         },
         selectedShoe?: string,
+        selectedShoeSize?: string,
         couponCode?: string,
         discountAmount?: number,
         razorpayOrderId?: string,
@@ -244,6 +245,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
             dateFormat: string;
         },
         selectedShoe?: string,
+        selectedShoeSize?: string,
         couponCode?: string,
         discountAmount?: number,
         razorpayOrderId?: string,
@@ -297,6 +299,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 discountAmount: tryAndBuyDiscountAmount,
                 deliverySchedule,
                 selectedShoe: selectedShoe ?? '',
+                selectedShoeSize: selectedShoeSize ?? '',
                 isTryAndBuy: true,
                 appVersion: Constants.expoConfig?.version ?? '',
                 deviceType: Platform.OS ?? '',

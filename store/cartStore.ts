@@ -88,6 +88,8 @@ interface CartState {
     isTryAndBuy: boolean;
     giftWrapping: GiftWrapping | null;
     selectedShoe: string | null;
+    /** Free shoes offer: selected size (e.g. S1, S2) – sent to Shopify with selectedShoe */
+    selectedShoeSize: string | null;
 
     // Computed getters
     itemCount: () => number;
@@ -134,6 +136,7 @@ interface CartState {
 
     // Free Shoes Offer
     setSelectedShoe: (shoeId: string | null) => void;
+    setSelectedShoeSize: (size: string | null) => void;
 
     // Cart management
     ensureCart: () => Promise<string | null>;
@@ -198,6 +201,7 @@ export const useCartStore = create<CartState>()(
             isTryAndBuy: false,
             giftWrapping: null,
             selectedShoe: null,
+            selectedShoeSize: null,
 
             // Computed getters
             itemCount: () => {
@@ -453,6 +457,7 @@ export const useCartStore = create<CartState>()(
                     status: 'idle',
                     error: null,
                     selectedShoe: null,
+                    selectedShoeSize: null,
                 });
             },
 
@@ -1490,7 +1495,10 @@ export const useCartStore = create<CartState>()(
 
             // Free Shoes Offer
             setSelectedShoe: (shoeId) => {
-                set({ selectedShoe: shoeId });
+                set({ selectedShoe: shoeId, selectedShoeSize: shoeId ? get().selectedShoeSize : null });
+            },
+            setSelectedShoeSize: (size) => {
+                set({ selectedShoeSize: size });
             },
 
             // Ensure cart exists (create if needed)

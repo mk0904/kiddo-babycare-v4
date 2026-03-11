@@ -155,7 +155,9 @@ export default function CartScreen() {
     const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
     const selectedShoe = useCartStore(state => state.selectedShoe);
+    const selectedShoeSize = useCartStore(state => state.selectedShoeSize);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
+    const setSelectedShoeSize = useCartStore(state => state.setSelectedShoeSize);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
     const mrp = useCartStore(state => state.mrp());
@@ -778,6 +780,7 @@ export default function CartScreen() {
                     currencyCode: 'INR',
                 },
                 selectedShoe: selectedShoe || undefined,
+                selectedShoeSize: selectedShoeSize || undefined,
                 isTryAndBuy: isTryAndBuy,
             };
 
@@ -1282,8 +1285,12 @@ export default function CartScreen() {
                             <FreePairShoes
                                 visible
                                 selectedShoe={selectedShoe}
+                                selectedShoeSize={selectedShoeSize}
                                 onAddPress={() => {}}
-                                onConfirmSize={(shoeId) => setSelectedShoe(shoeId)}
+                                onConfirmSize={(shoeId, size) => {
+                                    setSelectedShoeSize(size);
+                                    setSelectedShoe(shoeId);
+                                }}
                                 onRemoveOffer={() => setSelectedShoe(null)}
                             />
                         )}
@@ -1670,8 +1677,8 @@ const styles = StyleSheet.create({
     },
     itemsHeaderText: {
         fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Regular,
+        color: '#717680',
+        fontFamily: Fonts.SemiBold,
     },
     giftWrapRibbonContainer: {
         width: '100%',
@@ -1721,8 +1728,8 @@ const styles = StyleSheet.create({
     },
     itemVariantSubtext: {
         fontSize: 12,
-        color: '#666',
-        fontFamily: Fonts.Regular,
+        color: '#717680',
+        fontFamily: Fonts.SemiBold,
     },
     itemPriceBlock: {
         alignItems: 'center',
@@ -1784,7 +1791,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         paddingVertical: 4,
         paddingHorizontal: 2,
-        backgroundColor: '#fff',
+        backgroundColor: '#FEEFEF',
     },
     quantityButton: {
         paddingVertical: 4,

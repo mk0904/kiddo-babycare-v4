@@ -19,9 +19,25 @@ const OFFER_BLUE = '#2563EB';
 const FREE_GREEN = '#16A34A';
 const ORIGINAL_PRICE_DEFAULT = 4999;
 
+/** Default shoe size options (baby/kids) when backend config does not provide sizes. */
+const DEFAULT_SHOE_SIZES: SizeOption[] = [
+    { size: '0 - 3M', isAvailable: true },
+    { size: '3 - 6M', isAvailable: true },
+    { size: '6 - 9M', isAvailable: true },
+    { size: '9 - 12M', isAvailable: true },
+    { size: '1 - 2Y', isAvailable: true },
+    { size: '2 - 3Y', isAvailable: true },
+    { size: '3 - 4Y', isAvailable: true },
+    { size: '4 - 5Y', isAvailable: true },
+    { size: '5 - 6Y', isAvailable: true },
+    { size: '6 - 7Y', isAvailable: true },
+];
+
 export interface FreePairShoesProps {
     visible?: boolean;
     selectedShoe?: string | null;
+    /** When provided (e.g. from cart store), used as the displayed/confirmed size so it can be sent to Shopify */
+    selectedShoeSize?: string | null;
     onAddPress: () => void;
     /** When set, size confirm applies the offer with this shoe/size and does not open the shoe selection modal */
     onConfirmSize?: (shoeId: string, size: string) => void;
@@ -40,6 +56,7 @@ interface ShoeOption {
 export function FreePairShoes({
     visible = true,
     selectedShoe,
+    selectedShoeSize: selectedShoeSizeProp,
     onAddPress,
     onConfirmSize,
     onRemoveOffer,
@@ -59,7 +76,7 @@ export function FreePairShoes({
             const config = appConfigService.getFreeShoesOfferConfig();
             if (config && config.enabled && config.shoes && config.shoes.length > 0) {
                 setShoeOptions(config.shoes);
-                setSizeOptions(config.sizes?.length ? config.sizes : []);
+                setSizeOptions(config.sizes?.length ? config.sizes : DEFAULT_SHOE_SIZES);
                 setOfferEnabled(true);
                 setOfferCopy(config.copy ?? undefined);
                 setConfigOriginalPrice(config.originalPrice ?? ORIGINAL_PRICE_DEFAULT);
@@ -78,7 +95,8 @@ export function FreePairShoes({
 
     useEffect(() => {
         if (!selectedShoe) setSelectedSize(null);
-    }, [selectedShoe]);
+        else if (selectedShoeSizeProp != null && selectedShoeSizeProp !== '') setSelectedSize(selectedShoeSizeProp);
+    }, [selectedShoe, selectedShoeSizeProp]);
 
     if (!visible || !offerEnabled || shoeOptions.length === 0) return null;
 
@@ -86,7 +104,7 @@ export function FreePairShoes({
         ? shoeOptions.find((s) => s.id === selectedShoe) ?? shoeOptions[0]
         : shoeOptions[0];
     const isApplied = !!selectedShoe;
-    const firstAvailableSize = sizeOptions.find((s) => s.isAvailable)?.size ?? 'S1';
+    const firstAvailableSize = sizeOptions.find((s) => s.isAvailable)?.size ?? DEFAULT_SHOE_SIZES[0]?.size ?? '0 - 3M';
     const displaySize = selectedSize || firstAvailableSize;
     const effectiveOriginalPrice = originalPrice ?? configOriginalPrice;
 
@@ -127,7 +145,7 @@ export function FreePairShoes({
                 <View style={styles.offerTextBlock}>
                     <Text style={styles.offerTitle}>{offerCopy?.title ?? 'Introductory Offer!'}</Text>
                     <Text style={styles.offerSubtitle}>
-                        {offerCopy?.subtitle ?? 'FREE Shoes on 1st apparel order worth <₹500'}
+                        {offerCopy?.subtitle ?? 'FREE Shoes on 1st apparel order worth ₹500'}
                     </Text>
                 </View>
             </View>
@@ -204,14 +222,13 @@ export function FreePairShoes({
                     <View style={styles.sizeModalCard}>
                     <View style={styles.sizeModalHeader}>
                         <View style={styles.sizeModalRulerWrap}>
-                            <Ionicons name="resize-outline" size={22} color="#374151" />
+                            <Image source={require('@/assets/icons/ruler.png')} style={styles.sizeModalRulerIcon} contentFit="contain" />
                         </View>
                         <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#374151" />
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
-                    <Text style={styles.sizeModalSubtitle}>{offerCopy?.sizeModalSubtitle ?? 'Choose the shoe size'}</Text>
                     <View style={styles.sizeGrid}>
                         {sizeOptions.map((sizeOption) => {
                             const disabled = !sizeOption.isAvailable;
@@ -431,6 +448,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    sizeModalRulerIcon: {
+        width: 22,
+        height: 22,
+    },
     sizeModalClose: {
         padding: 4,
     },
@@ -438,7 +459,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: Fonts.Bold,
         color: '#111',
-        marginBottom: 6,
+        marginBottom: 18,
     },
     sizeModalSubtitle: {
         fontSize: 14,

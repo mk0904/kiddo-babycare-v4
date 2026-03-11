@@ -59,21 +59,22 @@ export function BillDetails({
 
     return (
         <View style={styles.wrapper}>
-            <TouchableOpacity
-                style={styles.headerRow}
-                onPress={() => setExpanded((e) => !e)}
-                activeOpacity={0.7}
-            >
-                <Text style={styles.title}>Bill details</Text>
-                <Ionicons
-                    name={expanded ? 'chevron-up' : 'chevron-down'}
-                    size={22}
-                    color="#6B7280"
-                />
-            </TouchableOpacity>
-            {expanded && (
-                <View style={styles.section} collapsable={false}>
-                    <View style={styles.sectionBg} pointerEvents="none" />
+            <View style={styles.section} collapsable={false}>
+                <View style={[styles.sectionBg, !expanded && styles.sectionBgCollapsed]} pointerEvents="none" />
+                <TouchableOpacity
+                    style={styles.headerRow}
+                    onPress={() => setExpanded((e) => !e)}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.title}>Bill details</Text>
+                    <Ionicons
+                        name={expanded ? 'chevron-up' : 'chevron-down'}
+                        size={22}
+                        color="#6B7280"
+                    />
+                </TouchableOpacity>
+                {expanded && (
+                    <>
                     <View style={styles.content}>
                     {/* Item Total */}
                     <View style={styles.row}>
@@ -129,17 +130,20 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Gift Wrap - show only when gift wrap is actually applied (fee charged) */}
-                    {giftWrappingFee > 0 ? (
+                    {/* Gift Wrap - show when gift wrap is applied; price from giftWrapping or fee */}
+                    {(giftWrapping != null || giftWrappingFee > 0) && (
                         <View style={styles.row}>
                             <Text style={styles.label}>Gift Wrap</Text>
                             <View style={styles.valueRow}>
                                 <Text style={styles.value}>
-                                    {formatCurrency(Number(giftWrapping?.price) || giftWrappingFee)}
+                                    {(() => {
+                                        const price = Number(giftWrapping?.price) || giftWrappingFee || 0;
+                                        return price > 0 ? formatCurrency(price) : 'FREE';
+                                    })()}
                                 </Text>
                             </View>
                         </View>
-                    ) : null}
+                    )}
 
                     {/* Kiddo Cash */}
                     {kiddoCashEnabled && (
@@ -180,8 +184,9 @@ export function BillDetails({
                             />
                         </Svg>
                     </View>
-                </View>
-            )}
+                    </>
+                )}
+            </View>
         </View>
     );
 }
@@ -191,21 +196,14 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         position: 'relative',
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-        paddingVertical: 4,
-        marginTop: 12,
-    },
     section: {
         backgroundColor: 'transparent',
         borderRadius: 12,
         padding: 15,
-        paddingBottom: 40,
+        
         overflow: 'visible',
         position: 'relative',
+        marginTop: 16,
     },
     sectionBg: {
         position: 'absolute',
@@ -217,10 +215,23 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
     },
+    sectionBgCollapsed: {
+        bottom: 0,
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 4,
+        marginBottom: 4,
+    },
     title: {
         fontSize: 16,
         color: '#6B7280',
         fontFamily: Fonts.Bold,
+        marginBottom: 10,
     },
     waveOuter: {
         position: 'absolute',
@@ -242,8 +253,8 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Regular,
+        color: '#717680',
+        fontFamily: Fonts.SemiBold,
     },
     valueRow: {
         flexDirection: 'row',
@@ -279,8 +290,8 @@ const styles = StyleSheet.create({
     },
     labelToPay: {
         fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
+        color: '#717680',
+        fontFamily: Fonts.Bold,
     },
     valueToPay: {
         fontSize: 14,
