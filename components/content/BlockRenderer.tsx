@@ -1,23 +1,23 @@
 // Block Renderer - Renders blocks from config (similar to gauntlet's ConfigRenderer)
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { ContentBlock } from '@/types/content';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { AnnouncementCarousel } from './AnnouncementCarousel';
+import { BaseModal } from './BaseModal';
+import { CategoryGrid } from './CategoryGrid';
+import { CollectionList } from './CollectionList';
+import { FeatureStrip } from './FeatureStrip';
+import { FlashSaleTimer } from './FlashSaleTimer';
 import { ImageBanner } from './ImageBanner';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageGrid } from './ImageGrid';
 import { ImageList } from './ImageList';
 import { InfiniteProductGrid } from './InfiniteProductGrid';
-import { BaseModal } from './BaseModal';
-import { AnnouncementCarousel } from './AnnouncementCarousel';
+import { NoInternet } from './NoInternet';
 import { PromoCarousel } from './PromoCarousel';
 import { SearchProductList } from './SearchProductList';
-import { CollectionList } from './CollectionList';
-import { NoInternet } from './NoInternet';
-import { VisualCategoryRail } from './VisualCategoryRail';
-import { FlashSaleTimer } from './FlashSaleTimer';
-import { FeatureStrip } from './FeatureStrip';
 import { VideoBanner } from './VideoBanner';
-import { CategoryGrid } from './CategoryGrid';
+import { VisualCategoryRail } from './VisualCategoryRail';
 
 interface BlockRendererProps {
   blocks: ContentBlock[];

@@ -614,11 +614,12 @@ export default function InfinityScreen() {
 
                 <View style={styles.contentRow}>
                     {sidebarSubcategories && sidebarSubcategories.length > 0 && (
-                        <ScrollView
-                            style={styles.sidebar}
-                            contentContainerStyle={styles.sidebarContent}
-                            showsVerticalScrollIndicator={false}
-                        >
+                        <View style={styles.sidebarShadowWrapper}>
+                            <ScrollView
+                                style={styles.sidebar}
+                                contentContainerStyle={styles.sidebarContent}
+                                showsVerticalScrollIndicator={false}
+                            >
                             {sidebarSubcategories.map((sub) => {
                                 const subId = sub.collectionId.startsWith('gid://') ? sub.collectionId : `gid://shopify/Collection/${sub.collectionId}`;
                                 const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
@@ -648,6 +649,7 @@ export default function InfinityScreen() {
                                 );
                             })}
                         </ScrollView>
+                        </View>
                     )}
                     <View
                         style={styles.gridContainer}
@@ -894,6 +896,16 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
     },
+    sidebarShadowWrapper: {
+        width: 80,
+        maxWidth: 80,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 1, height: 0 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+        elevation: 6,
+    },
     sidebar: {
         width: 80,
         maxWidth: 80,
@@ -921,15 +933,15 @@ const styles = StyleSheet.create({
         borderRightColor: '#4CAF50',
     },
     sidebarItemImage: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         marginBottom: 4,
     },
     sidebarItemPlaceholder: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         marginBottom: 4,
         backgroundColor: '#f0f0f0',
         justifyContent: 'center',
