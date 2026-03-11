@@ -727,7 +727,8 @@ const ProductDetailScreen = () => {
                     '0'
                 );
 
-                // Create cart item
+                // Create cart item (include quantityAvailable so cart can enforce stock)
+                const quantityAvailable = selectedVariant.quantityAvailable != null ? Number(selectedVariant.quantityAvailable) : undefined;
                 const cartItem = {
                     productId: productId || '',
                     variantId: selectedVariant.id || '',
@@ -741,6 +742,7 @@ const ProductDetailScreen = () => {
                     image: imageUrl,
                     quantity: 1,
                     availableForSale: selectedVariant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
                     tags: product.tags || [],
                 };
 
@@ -1433,6 +1435,7 @@ const ProductDetailScreen = () => {
                             variant="pdp"
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                            isTicketing={isTicketingProduct}
                             onValidationError={() => {
                                 if (isTicketingProduct && !selectedEventDate) {
                                     setShowDateError(true);

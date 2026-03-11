@@ -8,6 +8,7 @@ import { SavingsCorner } from '@/components/cart/SavingsCorner';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
@@ -302,6 +303,7 @@ export default function CartScreen() {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
+    const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -435,7 +437,10 @@ export default function CartScreen() {
     const DELIVERY_FEE_ORIGINAL = 50;
     const KIDDO_CASH_APPLIED = 250;
     const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
-    const displaySavings = totalSavings + HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL + (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
+    const displaySavings =
+      totalSavings +
+      (isTicketingOnly ? PLATFORM_FEE_DISPLAY : HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL) +
+      (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
 
     // Debug log to verify calculation
     if (__DEV__) {
@@ -471,6 +476,12 @@ export default function CartScreen() {
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const item = cartItems.find((li) => li.id === itemId);
+        const maxQty = item?.quantityAvailable;
+        if (typeof maxQty === 'number' && newQuantity > maxQty) {
+            setStockLimitModal({ visible: true, maxQty });
+            newQuantity = maxQty;
+        }
         await updateQuantity(itemId, newQuantity);
     };
 
@@ -1468,6 +1479,13 @@ export default function CartScreen() {
             <TryAndBuyModal
                 visible={showTryAndBuyModal}
                 onClose={() => setShowTryAndBuyModal(false)}
+            />
+
+            {/* Stock limit (quantity) modal */}
+            <StockLimitModal
+                visible={stockLimitModal.visible}
+                maxQuantity={stockLimitModal.maxQty}
+                onClose={() => setStockLimitModal((s) => ({ ...s, visible: false }))}
             />
 
             {/* Schedule Delivery Modal */}

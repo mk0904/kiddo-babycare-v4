@@ -18,8 +18,8 @@ import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
-import { useRouter, useSegments } from 'expo-router';
 import * as Location from 'expo-location';
+import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -546,7 +546,7 @@ export default function HomeScreen() {
             styles.deliveryLabel,
             {
               transform: [{ translateY: labelTranslateY }],
-              top: (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + 8, // Add 8px gap between header and label
+              top: (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight), // Add 8px gap between header and label
               zIndex: 999,
               elevation: 999, // For Android
             },

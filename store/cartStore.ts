@@ -22,6 +22,8 @@ export interface CartItem {
     image: string;
     quantity: number;
     availableForSale: boolean;
+    /** Max quantity that can be in cart for this variant (from inventory). Enforced on add/update. */
+    quantityAvailable?: number;
     tags?: string[];
     customAttributes?: Record<string, string>;
     bookingDate?: string; // ISO date string for ticketing products
@@ -293,19 +295,50 @@ export const useCartStore = create<CartState>()(
                         (li) => li.variantId === item.variantId
                     );
 
+                    const maxQty = typeof item.quantityAvailable === 'number' ? item.quantityAvailable : undefined;
+                    if (maxQty !== undefined && maxQty < 1) {
+                        set({ status: 'idle', error: null });
+                        throw new Error('This item is currently out of stock.');
+                    }
+
                     let newLineItems: CartItem[];
 
                     if (existingIndex >= 0) {
-                        // Update quantity
+                        const existing = state.lineItems[existingIndex];
+                        const requestedTotal = existing.quantity + item.quantity;
+                        const effectiveMax = typeof maxQty === 'number' ? maxQty : (existing.quantityAvailable ?? requestedTotal);
+                        const cappedQty = Math.min(requestedTotal, effectiveMax);
+                        if (cappedQty <= 0) {
+                            set({ status: 'idle', error: null });
+                            throw new Error('This item is currently out of stock.');
+                        }
+                        if (cappedQty < requestedTotal) {
+                            set({ status: 'idle', error: null });
+                            throw new Error(`Only ${effectiveMax} item(s) available. You already have ${existing.quantity} in cart.`);
+                        }
                         newLineItems = state.lineItems.map((li, idx) =>
                             idx === existingIndex
-                                ? { ...li, quantity: li.quantity + item.quantity }
+                                ? {
+                                        ...li,
+                                        quantity: li.quantity + item.quantity,
+                                        quantityAvailable: maxQty ?? li.quantityAvailable,
+                                    }
                                 : li
                         );
                     } else {
-                        // Add new item
+                        const addQty = maxQty !== undefined ? Math.min(item.quantity, maxQty) : item.quantity;
+                        if (addQty < 1) {
+                            set({ status: 'idle', error: null });
+                            throw new Error('This item is currently out of stock.');
+                        }
+                        if (maxQty !== undefined && item.quantity > maxQty) {
+                            set({ status: 'idle', error: null });
+                            throw new Error(`Only ${maxQty} item(s) available.`);
+                        }
                         const newItem: CartItem = {
                             ...item,
+                            quantity: addQty,
+                            quantityAvailable: maxQty,
                             id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                         };
                         newLineItems = [...state.lineItems, newItem];
@@ -387,9 +420,12 @@ export const useCartStore = create<CartState>()(
                         return;
                     }
 
-                    const newLineItems = state.lineItems.map((li) =>
-                        li.id === itemId ? { ...li, quantity } : li
-                    );
+                    const newLineItems = state.lineItems.map((li) => {
+                        if (li.id !== itemId) return li;
+                        const maxQty = li.quantityAvailable;
+                        const capped = typeof maxQty === 'number' ? Math.min(quantity, maxQty) : quantity;
+                        return { ...li, quantity: capped };
+                    });
 
                     set({
                         lineItems: newLineItems,
@@ -1240,6 +1276,9 @@ export const useCartStore = create<CartState>()(
                                 (v: any) => v.id === item.variantId
                             );
                             if (updated) {
+                                const qtyAvail = (updated as any).quantityAvailable;
+                                const quantityAvailable = typeof qtyAvail === 'number' ? qtyAvail : item.quantityAvailable;
+                                const quantity = typeof quantityAvailable === 'number' ? Math.min(item.quantity, quantityAvailable) : item.quantity;
                                 return {
                                     ...item,
                                     price: parseFloat(updated.price?.amount || item.price),
@@ -1247,6 +1286,8 @@ export const useCartStore = create<CartState>()(
                                         ? parseFloat(updated.compareAtPrice.amount)
                                         : item.compareAtPrice,
                                     availableForSale: updated.availableForSale ?? item.availableForSale,
+                                    quantityAvailable,
+                                    quantity,
                                 };
                             }
                             return item;
@@ -1282,6 +1323,7 @@ export const useCartStore = create<CartState>()(
                     if (cart) {
                         const lineItems: CartItem[] = cart.lines?.edges?.map((edge: any) => {
                             const node = edge.node;
+                            const qtyAvail = node.merchandise?.quantityAvailable;
                             return {
                                 id: node.id,
                                 productId: node.merchandise?.product?.id,
@@ -1293,6 +1335,7 @@ export const useCartStore = create<CartState>()(
                                 image: node.merchandise?.image?.url || '',
                                 quantity: node.quantity,
                                 availableForSale: node.merchandise?.availableForSale ?? true,
+                                quantityAvailable: typeof qtyAvail === 'number' ? qtyAvail : undefined,
                                 tags: node.merchandise?.product?.tags || [],
                                 bookingDate: (node.attributes || node.merchandise?.customAttributes)?.find((a: any) => a.key === 'booking_date')?.value,
                             };

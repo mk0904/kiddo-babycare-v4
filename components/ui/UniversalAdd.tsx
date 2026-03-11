@@ -1,8 +1,9 @@
+import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useCartItems, useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UniversalAddProps {
@@ -11,6 +12,8 @@ interface UniversalAddProps {
     variant?: 'default' | 'prominent' | 'pdp';
     addText?: string;
     bookingDate?: Date | null; // For ticketing products
+    /** When true and count is 0, show "Add to cart" instead of + icon */
+    isTicketing?: boolean;
     onValidationError?: () => void; // Callback when validation fails
 }
 
@@ -28,6 +31,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     variant = 'default',
     addText = 'ADD',
     bookingDate,
+    isTicketing = false,
     onValidationError
 }) => {
     // Use Zustand store instead of context
@@ -35,6 +39,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const addItem = useCartStore(state => state.addItem);
     const removeItem = useCartStore(state => state.removeItem);
     const updateQuantity = useCartStore(state => state.updateQuantity);
+    const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
 
     // Get variant to create the correct cart item ID
     const variants = item.variants?.edges || item.variants || [];
@@ -149,7 +154,13 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             '0'
         );
 
-        // Create cart item with real variant ID
+        // Create cart item with real variant ID (include quantityAvailable so cart can enforce stock)
+        // Applies to all products including ticketing: limit add/increment to variant stock
+        const quantityAvailable = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
+        if (typeof quantityAvailable === 'number' && quantityAvailable < 1) {
+            setStockLimitModal({ visible: true, maxQty: 0 });
+            return;
+        }
         const cartItem = {
             productId: productId || '',
             variantId: finalVariant.id || variantId || '',
@@ -163,11 +174,16 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             image: imageUrl,
             quantity: 1,
             availableForSale: isVariantAvailable(finalVariant) !== false,
+            quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
             tags: finalProduct.tags || [],
             bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
         };
 
-        await addItem(cartItem);
+        try {
+            await addItem(cartItem);
+        } catch (err: any) {
+            Alert.alert('Cannot add to cart', err?.message || 'This item is not available in the requested quantity.');
+        }
     };
 
     const getCartItem = () => {
@@ -194,6 +210,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         } else {
             const cartItem = getCartItem();
             if (cartItem) {
+                const maxQty = cartItem.quantityAvailable;
+                if (typeof maxQty === 'number' && count >= maxQty) {
+                    setStockLimitModal({ visible: true, maxQty });
+                    return;
+                }
                 await updateQuantity(cartItem.id, count + 1);
             }
         }
@@ -220,7 +241,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     counterContainer: styles.prominentCounterContainer,
                     counterText: styles.prominentCounterText,
                     iconSize: 16,
-                    iconColor: Colors.secondary
+                    iconColor: '#FFFFFF'
                 };
             case 'pdp':
                 return {
@@ -240,7 +261,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     counterContainer: styles.counterContainer,
                     counterText: styles.counterText,
                     iconSize: 15,
-                    iconColor: Colors.secondary
+                    iconColor: '#FFFFFF'
                 };
         }
     };
@@ -248,18 +269,23 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const currentStyles = getStyles();
 
     return (
-        <View>
-            {count === 0 ? (
+        <>
+            <View>
+                {count === 0 ? (
                 <TouchableOpacity
                     onPress={(e) => {
                         e.stopPropagation();
                         handleAdd();
                     }}
                     activeOpacity={0.7}
-                    style={styles.addCircleButton}
+                    style={isTicketing ? styles.addToCartButton : styles.addCircleButton}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                    <Ionicons name="add" size={22} color="#fff" />
+                    {isTicketing ? (
+                        <Text style={styles.addToCartButtonText}>Add to cart</Text>
+                    ) : (
+                        <Ionicons name="add" size={22} color="#fff" />
+                    )}
                 </TouchableOpacity>
             ) : (
                 <View style={currentStyles.counterContainer}>
@@ -290,7 +316,13 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     </TouchableOpacity>
                 </View>
             )}
-        </View>
+            </View>
+            <StockLimitModal
+                visible={stockLimitModal.visible}
+                maxQuantity={stockLimitModal.maxQty}
+                onClose={() => setStockLimitModal((s) => ({ ...s, visible: false }))}
+            />
+        </>
     );
 };
 
@@ -302,6 +334,20 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    addToCartButton: {
+        backgroundColor: Colors.primary,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 42,
+    },
+    addToCartButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
     },
     container: {
         alignItems: 'center',
@@ -339,11 +385,11 @@ const styles = StyleSheet.create({
         height: 42,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.secondary,
-        backgroundColor: '#FFFFFF',
+        borderColor: Colors.primary,
+        backgroundColor: Colors.primary,
     },
     counterText: {
-        color: Colors.secondary,
+        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -383,10 +429,12 @@ const styles = StyleSheet.create({
         minWidth: 70,
         height: 38,
         borderRadius: 8,
-        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        backgroundColor: Colors.primary,
     },
     prominentCounterText: {
-        color: Colors.secondary,
+        color: '#FFFFFF',
         fontSize: 12,
         fontWeight: '600',
     },
@@ -421,6 +469,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: Colors.primary,
+        borderWidth: 1,
+        borderColor: Colors.primary,
         paddingHorizontal: 20,
         paddingVertical: 6,
         borderRadius: 12,

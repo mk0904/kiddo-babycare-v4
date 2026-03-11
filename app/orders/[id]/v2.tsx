@@ -73,6 +73,8 @@ export default function OrderDetailV2Screen() {
                         fetchedOrder = {
                             id: draft.id,
                             orderNumber: draft.name,
+                            processedAt: draftAny.createdAt,
+                            createdAt: draftAny.createdAt,
                             lineItems: {
                                 edges: draft.lineItems.edges.map((e: any) => ({
                                     node: {
@@ -112,7 +114,7 @@ export default function OrderDetailV2Screen() {
         fetchOrder();
     }, [id, user?.customerAccessToken]);
 
-    // Fetch ETA to destination (same as homepage): current time + time to reach shipping address
+    // Fetch delivery duration (minutes) to shipping address; "Arriving by" = order placed time + this duration
     useEffect(() => {
         if (!order?.shippingAddress) {
             setFetchedEtaMinutes(null);
@@ -169,15 +171,27 @@ export default function OrderDetailV2Screen() {
         : '—';
 
     const etaMinutes = fetchedEtaMinutes ?? (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
-    const baseTime = new Date();
+    const orderPlacedAt = order?.processedAt || order?.createdAt;
+    const baseTime = orderPlacedAt ? new Date(orderPlacedAt) : new Date();
     const deliveryByDate = new Date(baseTime.getTime() + etaMinutes * 60 * 1000);
     const h = deliveryByDate.getHours();
     const m = deliveryByDate.getMinutes();
     const hour12 = h % 12 || 12;
     const ampm = h < 12 ? 'AM' : 'PM';
-    const deliveryByTimeStr = `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+    const timeStr = `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+    const dateStr = deliveryByDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const deliveryByTimeStr = `${timeStr}, ${dateStr}`;
     const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
-    const headerStatusText = isDelivered ? `Delivered by ${deliveryByTimeStr}` : `Arriving by ${deliveryByTimeStr}`;
+    const hasArrivalTimePassed = deliveryByDate.getTime() < Date.now();
+
+    const headerStatusText = (() => {
+        if (hasArrivalTimePassed) {
+            const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+            return `Arrived at ${timeStr}, ${arrivedDateStr}`;
+        }
+        if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
+        return `Arriving by ${deliveryByTimeStr}`;
+    })();
 
     if (loading) {
         return (
