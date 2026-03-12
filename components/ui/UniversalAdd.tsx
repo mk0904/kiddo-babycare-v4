@@ -138,7 +138,21 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 throw new Error('Unable to verify product availability. Please try again.');
             }
         }
-        
+
+        // If listing didn't include tags (e.g. some collection responses), fetch once so cart shows Try & Buy badge
+        let tagsToUse = finalProduct.tags || [];
+        if (productId && (!tagsToUse || tagsToUse.length === 0)) {
+            try {
+                const { shopifyApi } = await import('@/services/shopifyApi');
+                const fullProduct = await shopifyApi.getProductById(productId);
+                if (fullProduct?.tags?.length) {
+                    tagsToUse = fullProduct.tags;
+                }
+            } catch {
+                // Non-blocking; cart item still added, just without tags for badge
+            }
+        }
+
         // Get image URL
         const imageUrl = finalVariant.image?.url || 
                         finalProduct.images?.[0]?.url || 
@@ -175,7 +189,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             quantity: 1,
             availableForSale: isVariantAvailable(finalVariant) !== false,
             quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
-            tags: finalProduct.tags || [],
+            tags: tagsToUse,
             bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
         };
 

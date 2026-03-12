@@ -1184,10 +1184,24 @@ export default function CartScreen() {
     };
 
 
+    // Try & Buy badge: show when item has fashion or try-and-buy style tag
+    const hasTryAndBuyTag = (it: { tags?: string[] | string }) => {
+        const raw = it.tags;
+        const tags = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+        return tags.some((tag: string) => {
+            const t = String(tag).trim().toLowerCase();
+            if (t === 'fashion') return true;
+            if (['try and buy', 'try & buy', 'try-and-buy', 'tryandbuy'].includes(t)) return true;
+            if (t.includes('try') && t.includes('buy')) return true;
+            return false;
+        });
+    };
+
     // Render cart item: row1 = title + quantity buttons; row2 = prices in same column as +/-
     const renderItem = (item: any) => {
         const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
         const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
+        const showTryAndBuyBadge = hasTryAndBuyTag(item);
 
         return (
             <TouchableOpacity
@@ -1196,7 +1210,14 @@ export default function CartScreen() {
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.7}
             >
-                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                <View style={styles.itemImageContainer}>
+                    {showTryAndBuyBadge && (
+                        <View style={styles.tryAndBuyBadgeCart}>
+                            <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                        </View>
+                    )}
+                    <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                </View>
                 <View style={styles.itemInfo}>
                     {/* Row 1: Title + variant on left; quantity +/- and prices (same row, vertically centered) on right */}
                     <View style={styles.itemTopRow}>
@@ -1743,14 +1764,33 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         marginBottom: 16,
     },
+    itemImageContainer: {
+        position: 'relative',
+        marginRight: 12,
+    },
     itemImage: {
         width: 80,
         height: 80,
         borderRadius: 8,
-        marginRight: 12,
         backgroundColor: '#F0F0F0',
         borderWidth: 1,
         borderColor: '#E5E5E5',
+    },
+    tryAndBuyBadgeCart: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: '#FEF7C3',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderTopLeftRadius: 8,
+        borderBottomRightRadius: 8,
+        zIndex: 1,
+    },
+    tryAndBuyBadgeCartText: {
+        color: '#EAAA08',
+        fontSize: 10,
+        fontFamily: Fonts.Bold,
     },
     itemInfo: {
         flex: 1,

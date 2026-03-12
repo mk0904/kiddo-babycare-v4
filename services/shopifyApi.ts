@@ -802,6 +802,7 @@ const GET_CART_QUERY = `
                 product {
                   id
                   title
+                  tags
                   images(first: 1) {
                     edges {
                       node {
