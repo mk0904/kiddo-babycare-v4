@@ -64,6 +64,7 @@ export const Fonts = {
   Bold: 'Metropolis-Bold',
   ExtraBold: 'Metropolis-ExtraBold',
   Black: 'Metropolis-Black',
+  Bogart: 'Bogart-SemiBold',
   Lexend: 'Lexend',
   RegularWeight: fontWeight.Regular,
   MediumWeight: fontWeight.Medium,

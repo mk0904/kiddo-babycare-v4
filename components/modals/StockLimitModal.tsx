@@ -1,6 +1,6 @@
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Modal,
     Pressable,
@@ -9,6 +9,11 @@ import {
     View,
 } from 'react-native';
 
+const LIGHT_GREEN_ACCENT = '#A8DDC6';
+const CREAM_BG = '#FDFDF5';
+const BAG_ICON_COLOR = '#D4A84B';
+const MESSAGE_TEXT_COLOR = '#424242';
+
 interface StockLimitModalProps {
     visible: boolean;
     maxQuantity: number;
@@ -16,7 +21,12 @@ interface StockLimitModalProps {
 }
 
 export function StockLimitModal({ visible, maxQuantity, onClose }: StockLimitModalProps) {
-    const isSoldOut = maxQuantity === 0;
+    useEffect(() => {
+        if (!visible) return;
+        const timer = setTimeout(onClose, 2000);
+        return () => clearTimeout(timer);
+    }, [visible, onClose]);
+
     return (
         <Modal
             visible={visible}
@@ -27,21 +37,15 @@ export function StockLimitModal({ visible, maxQuantity, onClose }: StockLimitMod
         >
             <Pressable style={styles.overlay} onPress={onClose}>
                 <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
+                    <View style={styles.accentTop} />
+                    <View style={styles.accentLeft} />
+                    <View style={styles.accentRight} />
                     <View style={styles.iconWrap}>
-                        <Ionicons name="bag-handle-outline" size={32} color={Colors.primary} />
+                        <Ionicons name="bag" size={36} color={BAG_ICON_COLOR} />
                     </View>
-                    <Text style={styles.title}>{isSoldOut ? 'Sold out' : 'Limit reached'}</Text>
                     <Text style={styles.message}>
-                        {isSoldOut
-                            ? 'This product is currently sold out.'
-                            : `Only ${maxQuantity} item${maxQuantity === 1 ? '' : 's'} available for this product.`}
+                        Sorry, we have limited quantity available for this item!
                     </Text>
-                    <Pressable
-                        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-                        onPress={onClose}
-                    >
-                        <Text style={styles.buttonText}>OK</Text>
-                    </Pressable>
                 </Pressable>
             </Pressable>
         </Modal>
@@ -51,62 +55,38 @@ export function StockLimitModal({ visible, maxQuantity, onClose }: StockLimitMod
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        padding: 24,
+        paddingTop: 56,
+        paddingHorizontal: 20,
     },
     card: {
-        backgroundColor: Colors.backgroundWhite,
-        borderRadius: 16,
-        paddingVertical: 24,
-        paddingHorizontal: 24,
-        width: '100%',
-        maxWidth: 320,
+        flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: CREAM_BG,
+        borderRadius: 18,
+        paddingVertical: 18,
+        paddingHorizontal: 18,
+        width: '100%',
+        maxWidth: 400,
+        overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 6,
     },
     iconWrap: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: Colors.backgroundSecondary,
+        marginRight: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    title: {
-        fontFamily: Fonts.SemiBold,
-        fontSize: 18,
-        color: Colors.text,
-        marginBottom: 8,
     },
     message: {
-        fontFamily: Fonts.Regular,
-        fontSize: 15,
-        color: Colors.textSecondary,
-        textAlign: 'center',
+        flex: 1,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        fontSize: Fonts.SmallFontSize,
+        color: MESSAGE_TEXT_COLOR,
         lineHeight: 22,
-        marginBottom: 20,
-    },
-    button: {
-        backgroundColor: Colors.primary,
-        paddingVertical: 12,
-        paddingHorizontal: 32,
-        borderRadius: 10,
-        minWidth: 120,
-        alignItems: 'center',
-    },
-    buttonPressed: {
-        opacity: 0.9,
-    },
-    buttonText: {
-        fontFamily: Fonts.SemiBold,
-        fontSize: 16,
-        color: Colors.backgroundWhite,
     },
 });

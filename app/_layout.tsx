@@ -69,6 +69,8 @@ export default function RootLayout() {
     'Metropolis-Medium': require('../assets/fonts/Metropolis-Medium.otf'),
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
+    'Bogart-SemiBold': require('../assets/fonts/Bogart-Alt-Medium-trial.ttf'),
+    'Lexend': require('../assets/fonts/Lexend-VariableFont.ttf'),
   });
 
   // Hide the native splash screen as soon as component mounts

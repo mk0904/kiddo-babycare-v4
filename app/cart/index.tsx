@@ -1640,7 +1640,8 @@ const styles = StyleSheet.create({
     },
     headerAddressTag: {
         fontSize: 24,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.Bogart,
+        fontWeight: Fonts.MediumWeight,
         color: '#000000',
         flex: 1,
         minWidth: 0,
