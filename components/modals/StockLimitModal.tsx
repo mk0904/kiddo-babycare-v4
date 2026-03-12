@@ -83,8 +83,7 @@ const styles = StyleSheet.create({
     },
     message: {
         flex: 1,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         fontSize: Fonts.SmallFontSize,
         color: MESSAGE_TEXT_COLOR,
         lineHeight: 22,

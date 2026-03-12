@@ -1,3 +1,5 @@
+import CodIcon from '@/assets/icons/cod.svg';
+import RazorpayIcon from '@/assets/icons/razorpay.svg';
 import { BillDetails } from '@/components/cart/BillDetails';
 import { CartFooterPayment } from '@/components/cart/CartFooterPayment';
 import { CompletePurchaseSection } from '@/components/cart/CompletePurchaseSection';
@@ -1464,7 +1466,7 @@ export default function CartScreen() {
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.paymentMethodIconWrap}>
-                                            <Image source={require('@/assets/icons/cod.png')} style={styles.paymentMethodCodIcon} contentFit="contain" />
+                                            <CodIcon width={22} height={22} style={styles.paymentMethodCodIcon} />
                                         </View>
                                         <View style={styles.paymentMethodTextBlock}>
                                             <Text style={styles.paymentMethodOptionTitle}>Pay on delivery</Text>
@@ -1489,7 +1491,7 @@ export default function CartScreen() {
                                     activeOpacity={0.7}
                                 >
                                     <View style={[styles.paymentMethodIconWrap, styles.paymentMethodIconWrapOnline]}>
-                                        <Image source={require('@/assets/icons/online_pay.png')} style={styles.paymentMethodOnlineIcon} contentFit="contain" />
+                                        <RazorpayIcon width={33} height={33} style={styles.paymentMethodOnlineIcon} />
                                     </View>
                                     <View style={styles.paymentMethodTextBlock}>
                                         <Text style={styles.paymentMethodOptionTitle}>Pay online</Text>
@@ -1586,7 +1588,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#FFFFFF',
     },
     loadingContainer: {
         flex: 1,
@@ -1599,7 +1601,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
         padding: 4,
@@ -1649,24 +1651,21 @@ const styles = StyleSheet.create({
     },
     headerAddressLine: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         color: '#535862',
         marginTop: 2,
     },
     savingsBanner: {
         backgroundColor: '#3CCB7F',
-        marginHorizontal: -16,
         marginTop: 0,
-        marginBottom: 8,
+       
         paddingVertical: 8,
         borderRadius: 0,
         alignItems: 'center',
     },
     savingsBannerText: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#EDFCF2',
     },
     scrollView: {
@@ -1757,8 +1756,7 @@ const styles = StyleSheet.create({
     itemsHeaderText: {
         fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     giftWrapRibbonContainer: {
         width: '100%',
@@ -1845,14 +1843,12 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         color: '#181D27',
         marginBottom: 2,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     itemVariantSubtext: {
         fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         marginTop: 6,
     },
     itemPriceBlock: {
@@ -1872,8 +1868,7 @@ const styles = StyleSheet.create({
     itemPrice: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     itemDiscountPct: {
         fontSize: 11,
@@ -1930,8 +1925,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 6,
         minWidth: 18,
         textAlign: 'center',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#181D27',
     },
     couponsModalOverlay: {
@@ -2048,8 +2042,7 @@ const styles = StyleSheet.create({
         fontSize: Fonts.SmallFontSize,
         marginBottom: 14,
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     paymentMethodOption: {
         flexDirection: 'row',
@@ -2085,15 +2078,13 @@ const styles = StyleSheet.create({
     paymentMethodOptionTitle: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     paymentMethodOptionSubtext: {
         fontSize: Fonts.ExtraSmallFontSize,
         color: '#535862',
         marginTop: 2,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     paymentMethodRadio: {
         width: 22,

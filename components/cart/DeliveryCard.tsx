@@ -1,9 +1,10 @@
+import FlashIcon from '@/assets/icons/Icon.svg';
 import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface DeliverySchedule {
     date?: string;
@@ -73,7 +74,7 @@ export function DeliveryCard({ deliverySchedule, onSchedulePress, estimatedDeliv
                 </>
             ) : (
                 <>
-                    <Ionicons name="flash" size={24} color="#E6B800" style={styles.icon} />
+                    <FlashIcon width={44} height={44} style={styles.icon} />
                     <View style={styles.content}>
                         <Text style={[styles.title, isUnserviceable && styles.unserviceableTitle]}>
                             {isUnserviceable ? 'Area unserviceable' : instantLabel}
@@ -95,43 +96,37 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        marginHorizontal: 0,
-        marginBottom: 24,
-        padding: 8,
-        paddingVertical: 16,
-        borderRadius: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        marginBottom: 16,
+        padding: 6,
+        paddingVertical: 12,
+        borderRadius: 16,
     },
     icon: {
-        marginRight: 12,
+        marginRight: 6,
     },
     content: {
         flex: 1,
     },
     title: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
+        fontFamily: Fonts.LexendBold,
         color: '#181D27',
-        marginBottom: 4,
-        fontWeight: Fonts.BoldWeight,
+        marginBottom: 2,
     },
     unserviceableTitle: {
-        color: '#DC2626',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#181D27',
     },
     subtitle: {
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
         color: '#414651',
         marginBottom: 6,
     },
     link: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         color: '#F15E5E',
     },
     linkUnderline: {

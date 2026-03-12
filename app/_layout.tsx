@@ -70,13 +70,19 @@ export default function RootLayout() {
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
     'Bogart-SemiBold': require('../assets/fonts/Bogart-Alt-Medium-trial.ttf'),
-    // Use static font: variable fonts (Lexend-VariableFont_wght) have known issues on iOS/Android in Expo
+    // Each weight loaded as its own family so components can use fontFamily: 'Lexend-Bold'
+    // without needing fontWeight – which reliably works on both iOS and Android.
     'Lexend': require('../assets/fonts/Lexend-Regular.ttf'),
     'Lexend-Regular': require('../assets/fonts/Lexend-Regular.ttf'),
     'Lexend-Medium': require('../assets/fonts/Lexend-Medium.ttf'),
     'Lexend-SemiBold': require('../assets/fonts/Lexend-SemiBold.ttf'),
     'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
   });
+
+  React.useEffect(() => {
+    if (fontsLoaded) console.log('[Fonts] Loaded OK:', fontsLoaded);
+    if (fontError) console.warn('[Fonts] Error:', fontError);
+  }, [fontsLoaded, fontError]);
 
 
   // Hide the native splash screen as soon as component mounts

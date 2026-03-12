@@ -1,7 +1,7 @@
 import { Fonts } from '@/constants/theme';
 import type { GiftWrapping } from '@/store/cartStore';
 import React from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const REMOVE_RED = '#E85D5B';
 const CARD_BG_APPLIED = '#FFFBF7';
@@ -52,18 +52,15 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
 
 const styles = StyleSheet.create({
     section: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 8,
-        marginBottom: 24,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        marginBottom: 16,
+        
     },
     sectionApplied: {
-        backgroundColor: CARD_BG_APPLIED,
+        backgroundColor: '#FFFFFF',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -101,35 +98,30 @@ const styles = StyleSheet.create({
     appliedTitle: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         marginBottom: 4,
     },
     appliedSubtitle: {
         fontSize: Fonts.ExtraSmallFontSize,
         color: '#535862',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     title: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         marginBottom: 2,
     },
     description: {
         fontSize: Fonts.SmallFontSize,
         color: '#535862',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         textDecorationLine: 'underline',
     },
     select: {
         fontSize: Fonts.SmallFontSize,
         color: '#F15E5E',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         marginRight: 12,
     },
     removeText: {

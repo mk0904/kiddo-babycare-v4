@@ -90,7 +90,7 @@ const TIME_SLOT_RANGES: { label: string; value: string }[] = [
     { label: '8PM - 9PM', value: '08:00 PM' },
     { label: '9PM - 10PM', value: '09:00 PM' },
     { label: '10PM - 11PM', value: '10:00 PM' },
-    { label: '11PM - 11:30AM', value: '11:00 PM' },
+    { label: '11PM - 11:30PM', value: '11:00 PM' },
 ];
 
 export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule, title }: ScheduleDeliveryModalProps) => {
@@ -334,8 +334,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: Fonts.MediumFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         color: '#181D27',
     },
     closeButton: {
@@ -343,8 +342,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.RegularWeight,
+        fontFamily: Fonts.LexendRegular,
         color: '#535862',
         paddingBottom: 20,
     },
@@ -388,14 +386,12 @@ const styles = StyleSheet.create({
     },
     dateChipText: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#717680',
     },
     dateChipTextSelected: {
         color: '#DB5656',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     dateChipSubtext: {
         fontSize: 11,
@@ -421,8 +417,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     timeSlotSelected: {
         backgroundColor: '#FEEFEF',
@@ -432,14 +427,12 @@ const styles = StyleSheet.create({
     },
     timeSlotText: {
         fontSize: 15,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         color: '#717680',
     },
     timeSlotTextSelected: {
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     footer: {
         paddingHorizontal: 20,
@@ -461,9 +454,8 @@ const styles = StyleSheet.create({
     },
     confirmButtonText: {
         fontSize: 17,
-        fontFamily: Fonts.Lexend,
+        fontFamily: Fonts.LexendBold,
         color: '#FFFFFF',
-        fontWeight: Fonts.BoldWeight,
     },
     wantItNowButton: {
         alignSelf: 'center',

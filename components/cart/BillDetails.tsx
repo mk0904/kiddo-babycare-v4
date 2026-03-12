@@ -230,8 +230,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         marginBottom: 10,
     },
     waveOuter: {
@@ -255,8 +254,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     valueRow: {
         flexDirection: 'row',
@@ -266,14 +264,12 @@ const styles = StyleSheet.create({
     value: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     valueStruck: {
         fontSize: Fonts.SmallFontSize,
         color: '#878F9E',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         textDecorationLine: 'line-through',
     },
     freeText: {
@@ -295,14 +291,12 @@ const styles = StyleSheet.create({
     labelToPay: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     valueToPay: {
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
     },
     savingsBannerWrap: {
         marginTop: 0,
@@ -313,8 +307,7 @@ const styles = StyleSheet.create({
     savingsBanner: {
         fontSize: Fonts.SmallFontSize,
         color: '#099250',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         textAlign: 'center',
     },
 });

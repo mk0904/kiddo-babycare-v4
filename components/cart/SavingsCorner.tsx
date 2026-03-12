@@ -452,7 +452,10 @@ export function SavingsCorner({
 
 const styles = StyleSheet.create({
     wrapper: {
-        marginBottom: 24,
+        marginBottom: 16,
+        padding: 6,
+        paddingVertical: 12,
+        borderRadius: 16,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -461,25 +464,21 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     titleIcon: {
-        marginRight: 8,
+        marginRight: 0,
     },
     title: {
         fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     section: {
         backgroundColor: '#fff',
-        borderRadius: 12,
-        paddingHorizontal: 16,
+        borderRadius: 16,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         paddingBottom: 12,
-        marginBottom: 8,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        marginBottom: 0,
+        
     },
     row: {
         flexDirection: 'row',
@@ -504,7 +503,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: 6,
     },
     iconPercentImage: {
         width: 22,
@@ -515,21 +514,18 @@ const styles = StyleSheet.create({
     },
     mainText: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#181D27',
     },
     mainTextApplied: {
         color: '#181D27',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         fontSize: Fonts.SmallFontSize,
     },
     viewAll: {
         fontSize: Fonts.ExtraSmallFontSize,
         color: '#6B7280',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         textDecorationLine: 'underline',
         marginTop: 2,
     },
@@ -549,8 +545,7 @@ const styles = StyleSheet.create({
     applyText: {
         fontSize: Fonts.SmallFontSize,
         color: '#F15E5E',
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
     },
     removeBtn: {
         paddingVertical: 8,

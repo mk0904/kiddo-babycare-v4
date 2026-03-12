@@ -318,14 +318,10 @@ export function FreePairShoes({
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 8,
-        paddingVertical: 16,
-        marginBottom: 24,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        paddingVertical: 12,
+        marginBottom: 16,
     },
     offerHeader: {
         flexDirection: 'row',
@@ -350,13 +346,11 @@ const styles = StyleSheet.create({
     offerTitle: {
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendBold,
-        fontWeight: Fonts.BoldWeight,
         marginBottom: 2,
     },
     offerSubtitle: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.RegularWeight,
+        fontFamily: Fonts.LexendRegular,
         color: '#535862',
         opacity: 0.9,
     },
@@ -379,8 +373,7 @@ const styles = StyleSheet.create({
     },
     productName: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.LexendMedium,
         color: '#181D27',
         marginBottom: 6,
         lineHeight: 18,
@@ -393,8 +386,7 @@ const styles = StyleSheet.create({
     },
     sizeText: {
         fontSize: 10,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.RegularWeight,
+        fontFamily: Fonts.LexendRegular,
         color: '#717680',
     },
     editRemoveRow: {
@@ -404,8 +396,7 @@ const styles = StyleSheet.create({
     },
     editLink: {
         fontSize: 10,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#F15E5E',
     },
     editRemoveSeparator: {
@@ -465,8 +456,7 @@ const styles = StyleSheet.create({
     },
     freeText: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#16B364',
     },
     sizeModalContainer: {
@@ -525,8 +515,7 @@ const styles = StyleSheet.create({
     },
     sizeModalTitle: {
         fontSize: Fonts.MediumFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#181D27',
     },
     sizeModalDivider: {
@@ -563,8 +552,7 @@ const styles = StyleSheet.create({
     },
     sizeModalSubtitle: {
         fontSize: Fonts.MediumFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#181D27',
         marginBottom: 12,
     },
@@ -597,8 +585,7 @@ const styles = StyleSheet.create({
     },
     sizeButtonText: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
-        fontWeight: Fonts.BoldWeight,
+        fontFamily: Fonts.LexendBold,
         color: '#414651',
     },
     sizeButtonTextDisabled: {
