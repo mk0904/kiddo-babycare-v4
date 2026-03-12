@@ -54,6 +54,11 @@
     "508371206433": {
       "subcategories": [
         {
+          "collectionId": "gid://shopify/Collection/508371206433",
+          "label": "All",
+          "imageUrl": ""
+        },        
+        {
           "collectionId": "gid://shopify/Collection/510564532513",
           "label": "Baby Face Wash",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey.png?v=1773134350"
@@ -113,22 +118,26 @@
     },
     "508173123873": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/510563975457", "label": "Taped Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510563975457?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564008225", "label": "Pant Diaper", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564008225?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564040993", "label": "Cloth Nappies", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564040993?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564073761", "label": "Baby Wipes", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564073761?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564172065", "label": "Bed Protectors and changing mats", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564172065?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564237601", "label": "Diaper Rash Cream", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564237601?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564303137", "label": "Diaper Bag and Travel Pouches", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564303137?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564368673", "label": "Swim Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564368673?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564401441", "label": "Potty Training Pants", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564401441?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564434209", "label": "Diaper Bin", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564434209?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564466977", "label": "Cloth Diapers", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564466977?isNewlyCreated=true" },
-        { "collectionId": "gid://shopify/Collection/510564499745", "label": "Potty Training Seats", "imageUrl": "https://admin.shopify.com/store/kiddo-quick-baby-joy-m4bpo/collections/510564499745?isNewlyCreated=true" }
+        { "collectionId": "gid://shopify/Collection/508173123873", "label": "All", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460" },
+
+        { "collectionId": "gid://shopify/Collection/510563975457", "label": "Taped Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460" },
+        { "collectionId": "gid://shopify/Collection/510564008225", "label": "Pant Diaper", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_e53f19db-7846-4130-b87c-fab8f295e8f0.jpg?v=1773230238" },
+        { "collectionId": "gid://shopify/Collection/510564040993", "label": "Cloth Nappies", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_5c850c95-bf81-42a3-a92c-1f8f1c38e97b.jpg?v=1773230238" },
+        { "collectionId": "gid://shopify/Collection/510564073761", "label": "Baby Wipes", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_208ji2208ji2208j.png?v=1773226601" },
+        { "collectionId": "gid://shopify/Collection/510564172065", "label": "Bed Protectors and changing mats", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_vch5navch5navch5.png?v=1773226661" },
+        { "collectionId": "gid://shopify/Collection/510564237601", "label": "Diaper Rash Cream", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_332a3da3-efdc-4f7f-b31f-dc14df0a17d3.jpg?v=1773230237" },
+        { "collectionId": "gid://shopify/Collection/510564303137", "label": "Diaper Bag and Travel Pouches", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_9rm3du9rm3du9rm3.png?v=1773225549" },
+        { "collectionId": "gid://shopify/Collection/510564368673", "label": "Swim Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_3am7s3am7s3am7s3.png?v=1773225643" },
+        { "collectionId": "gid://shopify/Collection/510564401441", "label": "Potty Training Pants", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_w6epdww6epdww6ep.png?v=1773225987" },
+        { "collectionId": "gid://shopify/Collection/510564434209", "label": "Diaper Bin", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_poazslpoazslpoaz.png?v=1773226092" },
+        { "collectionId": "gid://shopify/Collection/510564466977", "label": "Cloth Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6ruktv6ruktv6ruk.png?v=1773226431" },
+        { "collectionId": "gid://shopify/Collection/510564499745", "label": "Potty Training Seats", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_19.jpg?v=1773230666" }
       ]
     },
     "510565417249":{
       "subcategories": [
+        { "collectionId": "gid://shopify/Collection/510565417249", "label": "All", "imageUrl": "" },
+
         { "collectionId": "gid://shopify/Collection/510565286177", "label": "Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey.png?v=1773133813" },
         { "collectionId": "gid://shopify/Collection/510565318945", "label": "Sensitive Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_1.png?v=1773133813" },
         { "collectionId": "gid://shopify/Collection/510565351713", "label": "Baby Cereals", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_2.png?v=1773133813" },
@@ -142,7 +151,7 @@
     },
     "510566334753":{
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/510566334753", "label": "Fever", "imageUrl": "" },
+        { "collectionId": "gid://shopify/Collection/510566334753", "label": "All", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510566367521", "label": "Cough & Cold", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510566400289", "label": "Stomach Care", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510566433057", "label": "Medical Devices (Thermometers, nebulizer, etc)", "imageUrl": "" },
@@ -158,6 +167,7 @@
     },
     "508371239201":{
       "subcategories": [
+        { "collectionId": "gid://shopify/Collection/508371239201", "label": "All", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510565548321", "label": "Feeding Bottles & Nipples", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510565581089", "label": "Sippy Cups", "imageUrl": "" },
         { "collectionId": "gid://shopify/Collection/510565613857", "label": "Breast Pumps Manual", "imageUrl": "" },
@@ -2205,7 +2215,7 @@
           "fontSize": 14
         }
       },
-      "visible": false
+      "visible": true
     },
     {
       "id": "babycare-grid-brands",

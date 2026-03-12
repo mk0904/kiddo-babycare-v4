@@ -32,6 +32,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -257,6 +258,8 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
+    // Hide highlights section when user scrolls down the page
+    const [highlightsSectionVisible, setHighlightsSectionVisible] = useState(true);
     
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
@@ -937,6 +940,21 @@ const ProductDetailScreen = () => {
         }
     };
 
+    const HIDE_HIGHLIGHTS_THRESHOLD = 100;
+    const SHOW_HIGHLIGHTS_THRESHOLD = 80;
+    const onPDPScroll = useCallback(
+        (event: any) => {
+            handleScroll(event);
+            const offsetY = event.nativeEvent?.contentOffset?.y ?? 0;
+            setHighlightsSectionVisible((prev) => {
+                if (offsetY > HIDE_HIGHLIGHTS_THRESHOLD) return false;
+                if (offsetY <= SHOW_HIGHLIGHTS_THRESHOLD) return true;
+                return prev;
+            });
+        },
+        [handleScroll]
+    );
+
     const handleShare = useCallback(async () => {
         if (!product) return;
         const handle = product.handle || (params as any).handle;
@@ -1072,6 +1090,34 @@ const ProductDetailScreen = () => {
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
 
+    // Highlights from metafields (highlight_1..4 or JSON "highlights")
+    const highlightsList = useMemo(() => {
+        const list: string[] = [];
+        const h1 = getMetafieldValue(product, 'highlight_1');
+        const h2 = getMetafieldValue(product, 'highlight_2');
+        const h3 = getMetafieldValue(product, 'highlight_3');
+        const h4 = getMetafieldValue(product, 'highlight_4');
+        [h1, h2, h3, h4].forEach((v) => {
+            if (v && String(v).trim()) list.push(String(v).trim());
+        });
+        if (list.length > 0) return list;
+        const jsonHighlights = getMetafieldValue(product, 'highlights');
+        if (jsonHighlights) {
+            try {
+                const parsed = JSON.parse(jsonHighlights);
+                const arr = Array.isArray(parsed) ? parsed : (parsed?.items ?? parsed?.list ?? []);
+                arr.forEach((item: any) => {
+                    const s = typeof item === 'string' ? item : (item?.text ?? item?.label ?? item?.value ?? '');
+                    if (s) list.push(String(s).trim());
+                });
+            } catch (_) {
+                // single string
+                if (String(jsonHighlights).trim()) list.push(String(jsonHighlights).trim());
+            }
+        }
+        return list;
+    }, [product]);
+
     // Price comparison metafields - using exact metafield keys from Shopify
     const priceOnKiddo = getMetafieldValue(product, 'price_on_kiddo');
     const priceOnAmazon = getMetafieldValue(product, 'price_on_amazon');
@@ -1175,7 +1221,7 @@ const ProductDetailScreen = () => {
             </View>
 
             <ScrollView
-                onScroll={handleScroll}
+                onScroll={onPDPScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -1218,6 +1264,33 @@ const ProductDetailScreen = () => {
                             </TouchableOpacity>
                         )}
                     </GestureHandlerRootView>
+                )}
+
+                {/* Highlights from metafields - rounded boxes below image; hide when user scrolls down */}
+                {highlightsList.length > 0 && highlightsSectionVisible && (
+                    <View style={styles.highlightsSection}>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.highlightsScrollContent}
+                        >
+                            <View style={styles.highlightChipLabelWrap}>
+                                <LinearGradient
+                                    colors={[Colors.primary, '#FFFFFF']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.highlightChipLabel}
+                                >
+                                    <Text style={styles.highlightChipLabelText} numberOfLines={1}>Highlights</Text>
+                                </LinearGradient>
+                            </View>
+                            {highlightsList.map((text, index) => (
+                                <View key={`highlight-${index}`} style={styles.highlightChip}>
+                                    <Text style={styles.highlightChipText} numberOfLines={1}>{text}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
                 )}
 
                 <View style={styles.infoContainer}>
@@ -1778,6 +1851,41 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9F9F9', // Light gray gap
         marginTop: 24, // Space above
         marginBottom: 8, // Space below
+    },
+    highlightsSection: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 4,
+    },
+    highlightsScrollContent: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingRight: 16,
+    },
+    highlightChipLabelWrap: {
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    highlightChipLabel: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    highlightChipLabelText: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+    },
+    highlightChip: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    highlightChipText: {
+        fontSize: 12,
+        fontFamily: Fonts.Medium,
+        color: '#363636',
     },
     accordionContainer: {
         borderBottomWidth: 1,

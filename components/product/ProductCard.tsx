@@ -298,6 +298,62 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Get metafield value (supports edges or array, key match case-insensitive)
+  const getMetafieldValue = useCallback((key: string) => {
+    const productMetafields = product?.metafields;
+    if (!productMetafields) return null;
+    const keyLower = key.toLowerCase();
+    if (Array.isArray(productMetafields.edges)) {
+      const edge = productMetafields.edges.find(
+        (e: any) => e?.node?.key?.toLowerCase() === keyLower,
+      );
+      return edge?.node?.value ?? null;
+    }
+    if (Array.isArray(productMetafields)) {
+      const m = productMetafields.find(
+        (m: any) => (m?.key ?? m?.node?.key)?.toLowerCase() === keyLower,
+      );
+      return m?.value ?? m?.node?.value ?? null;
+    }
+    return null;
+  }, [product?.metafields]);
+
+  // Essentials-only: two separate boxes – Pack size (e.g. 72 pcs) and Size (e.g. XL, M)
+  const essentialsMetaParts = useMemo(() => {
+    if (!hasEssentialsTag) return { packSize: null, size: null };
+    const variants = product?.variants?.edges ?? product?.variants ?? [];
+    const firstVariant = variants[0]?.node ?? variants[0];
+    const options = firstVariant?.selectedOptions ?? [];
+
+    // Pack size: count/number of pieces (metafields or variant option "Pack Size" / "Count")
+    const packSizeRaw =
+      getMetafieldValue('number_of_pieces') ??
+      getMetafieldValue('quantity') ??
+      getMetafieldValue('pack_size') ??
+      getMetafieldValue('number') ??
+      (product as any).number_of_pieces ??
+      (product as any).numberOfPieces ??
+      (product as any).pack_size;
+    const packSizeFromVariant = options.find((o: any) => {
+      const name = (o?.name ?? '').toLowerCase().replace(/\s+/g, ' ');
+      return ['pack size', 'pack_size', 'count', 'pieces', 'quantity'].some(
+        (key) => name === key || name === key.replace('_', ' '),
+      );
+    })?.value;
+    const packSizeStr = (packSizeRaw != null ? String(packSizeRaw).trim() : '') || (packSizeFromVariant ? String(packSizeFromVariant).trim() : '');
+    const packSizeLabel = packSizeStr ? `${packSizeStr}${/^\d+$/.test(packSizeStr) ? ' pcs' : ''}` : null;
+
+    // Size: product size only (metafield "size" or variant option "Size" / "Sizes" – not pack size)
+    const sizeRaw = getMetafieldValue('size') ?? getMetafieldValue('sizes') ?? (product as any).size ?? (product as any).sizes;
+    const sizeFromVariant = options.find(
+      (o: any) => ['size', 'sizes'].includes((o?.name ?? '').toLowerCase()),
+    )?.value;
+    const sizeLabel = (sizeRaw != null ? String(sizeRaw).trim() : '') || (sizeFromVariant ? String(sizeFromVariant).trim() : '') || null;
+
+    if (!packSizeLabel && !sizeLabel) return { packSize: null, size: null };
+    return { packSize: packSizeLabel || null, size: sizeLabel || null };
+  }, [hasEssentialsTag, getMetafieldValue, product]);
+
   // Check if product is a ticketing product (Events, Playhouses, Petting Farms)
   const isTicketingProduct = useMemo(() => {
     // Collection IDs that are ticketing products
@@ -428,6 +484,24 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         </View>
 
         <View style={styles.content}>
+          {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
+            <View style={styles.essentialsMetaRow}>
+              {essentialsMetaParts.packSize ? (
+                <View style={styles.essentialsMetaBox}>
+                  <Text style={styles.essentialsMetaText} numberOfLines={1}>
+                    {essentialsMetaParts.packSize}
+                  </Text>
+                </View>
+              ) : null}
+              {essentialsMetaParts.size ? (
+                <View style={styles.essentialsMetaBox}>
+                  <Text style={styles.essentialsMetaText} numberOfLines={1}>
+                    {essentialsMetaParts.size}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           <Text style={cardTextStyles.productName} numberOfLines={2} ellipsizeMode="tail">
             {product.title || product.name || 'Product'}
           </Text>
@@ -515,6 +589,24 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     color: Colors.text,
     lineHeight: 18,
+  },
+  essentialsMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 6,
+  },
+  essentialsMetaBox: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  essentialsMetaText: {
+    fontSize: 10,
+    fontFamily: Fonts.SemiBold,
+    color: '#1565C0',
+    lineHeight: 14,
   },
   tbTag: {
     position: 'absolute',
