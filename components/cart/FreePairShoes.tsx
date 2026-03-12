@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     },
     offerTitle: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.Lexend,
+        fontFamily: Fonts.LexendBold,
         fontWeight: Fonts.BoldWeight,
         marginBottom: 2,
     },

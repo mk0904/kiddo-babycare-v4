@@ -70,8 +70,14 @@ export default function RootLayout() {
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
     'Bogart-SemiBold': require('../assets/fonts/Bogart-Alt-Medium-trial.ttf'),
-    'Lexend': require('../assets/fonts/Lexend-VariableFont.ttf'),
+    // Use static font: variable fonts (Lexend-VariableFont_wght) have known issues on iOS/Android in Expo
+    'Lexend': require('../assets/fonts/Lexend-Regular.ttf'),
+    'Lexend-Regular': require('../assets/fonts/Lexend-Regular.ttf'),
+    'Lexend-Medium': require('../assets/fonts/Lexend-Medium.ttf'),
+    'Lexend-SemiBold': require('../assets/fonts/Lexend-SemiBold.ttf'),
+    'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
   });
+
 
   // Hide the native splash screen as soon as component mounts
   // This happens before the custom splash renders
