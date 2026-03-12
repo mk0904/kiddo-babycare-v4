@@ -25,13 +25,13 @@ import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
-import { trackEvent } from '@/utils/mixpanelHelpers';
-import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({

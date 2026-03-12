@@ -175,9 +175,7 @@ export function FreePairShoes({
                             ? (displayShoe.name || (displayShoe as { title?: string }).title || 'Free pair')
                             : 'Select from shoe options & sizes'}
                     </Text>
-                    {isApplied && (
-                    <Text style={styles.productSubtext}>baby shoes</Text>
-                    )}
+                    
                     <Text style={styles.sizeText}>
                         {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : 'Sizes 1-4 available'}
                     </Text>
@@ -236,7 +234,7 @@ export function FreePairShoes({
                     <View style={styles.sizeModalTitleRow}>
                         <Text style={styles.sizeModalTitle}>Select Shoe</Text>
                         <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
-                            <Ionicons name="close" size={24} color="#374151" />
+                            <Ionicons name="close" size={24} color="#717680" />
                         </TouchableOpacity>
                     </View>
                     <View style={styles.sizeModalDivider} />
@@ -284,7 +282,7 @@ export function FreePairShoes({
                                         disabled={disabled}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled]}>
+                                        <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled, isSelected && styles.sizeButtonTextSelected]}>
                                             {sizeOption.size}
                                         </Text>
                                     </TouchableOpacity>
@@ -321,8 +319,9 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
+        padding: 8,
+        paddingVertical: 16,
+        marginBottom: 24,
         ...Platform.select({
             ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
             android: { elevation: 3 },
@@ -349,15 +348,16 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     offerTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
-       
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
         marginBottom: 2,
     },
     offerSubtitle: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#6B7280',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.RegularWeight,
+        color: '#535862',
         opacity: 0.9,
     },
     productCard: {
@@ -378,11 +378,12 @@ const styles = StyleSheet.create({
         marginLeft: 12,
     },
     productName: {
-        fontSize: 15,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
-        marginBottom: 2,
-        lineHeight: 22,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        color: '#181D27',
+        marginBottom: 6,
+        lineHeight: 18,
     },
     productSubtext: {
         fontSize: 14,
@@ -391,9 +392,10 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     sizeText: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        color: '#6B7280',
+        fontSize: 10,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.RegularWeight,
+        color: '#717680',
     },
     editRemoveRow: {
         flexDirection: 'row',
@@ -401,9 +403,10 @@ const styles = StyleSheet.create({
         marginTop: 6,
     },
     editLink: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#DC2626',
+        fontSize: 10,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#F15E5E',
     },
     editRemoveSeparator: {
         fontSize: 13,
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
     },
     appliedButton: {
         backgroundColor: 'transparent',
-        borderWidth: 1.5,
+        borderWidth: 1,
         borderColor: Colors.primary,
         paddingHorizontal: 14,
         paddingVertical: 8,
@@ -461,9 +464,10 @@ const styles = StyleSheet.create({
         textDecorationLine: 'line-through',
     },
     freeText: {
-        fontSize: 14,
-        fontFamily: Fonts.Bold,
-        color: FREE_GREEN,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#16B364',
     },
     sizeModalContainer: {
         flex: 1,
@@ -476,11 +480,11 @@ const styles = StyleSheet.create({
     sizeModalCard: {
         backgroundColor: '#fff',
         borderRadius: 16,
-        padding: 20,
-        paddingBottom: 32,
+        padding: 12,
+        paddingBottom: 8,
         marginHorizontal: 20,
         marginBottom: 28,
-        width: undefined,
+        width: '90%',
         alignSelf: 'stretch',
         maxHeight: '85%',
     },
@@ -490,7 +494,7 @@ const styles = StyleSheet.create({
         maxHeight: '100%',
     },
     sizeModalScrollContent: {
-        paddingBottom: 8,
+        paddingBottom: 4,
     },
     sizeModalHeader: {
         flexDirection: 'row',
@@ -520,9 +524,10 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     sizeModalTitle: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#111',
+        fontSize: Fonts.MediumFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#181D27',
     },
     sizeModalDivider: {
         height: 1,
@@ -533,7 +538,7 @@ const styles = StyleSheet.create({
     shoeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 6,
         marginBottom: 20,
     },
     shoeOption: {
@@ -541,7 +546,7 @@ const styles = StyleSheet.create({
         height: 72,
         borderRadius: 12,
         overflow: 'hidden',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: 'transparent',
         backgroundColor: '#F0F0F0',
     },
@@ -553,27 +558,29 @@ const styles = StyleSheet.create({
         }),
     },
     shoeOptionImage: {
-        width: '100%',
-        height: '100%',
+        width: 72,
+        height: 72,
     },
     sizeModalSubtitle: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#374151',
+        fontSize: Fonts.MediumFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#181D27',
         marginBottom: 12,
     },
     sizeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 6,
         marginBottom: 24,
     },
     sizeButton: {
-        width: '17%',
+        width: '18.5%',
         paddingVertical: 12,
+        paddingHorizontal: 2,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#D5D7DA',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#fff',
@@ -584,17 +591,22 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     sizeButtonSelected: {
-        borderColor: Colors.primary,
+        borderColor: '#F15E5E',
         borderWidth: 2,
-        backgroundColor: `${Colors.primary}10`,
+        backgroundColor: '#F15E5E',
     },
     sizeButtonText: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#374151',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#414651',
     },
     sizeButtonTextDisabled: {
         color: '#9CA3AF',
+    },
+    sizeButtonTextSelected: {
+        color: '#FFFFFF',
+        opacity: 1,
     },
     sizeConfirmButton: {
         backgroundColor: Colors.primary,

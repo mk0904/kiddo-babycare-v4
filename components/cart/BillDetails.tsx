@@ -69,8 +69,8 @@ export function BillDetails({
                     <Text style={styles.title}>Bill details</Text>
                     <Ionicons
                         name={expanded ? 'chevron-up' : 'chevron-down'}
-                        size={22}
-                        color="#6B7280"
+                        size={18}
+                        color="#717680"
                     />
                 </TouchableOpacity>
                 {expanded && (
@@ -193,7 +193,7 @@ export function BillDetails({
 
 const styles = StyleSheet.create({
     wrapper: {
-        marginBottom: 15,
+        marginBottom: 28,
         position: 'relative',
     },
     section: {
@@ -228,9 +228,10 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     title: {
-        fontSize: 16,
-        color: '#6B7280',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
         marginBottom: 10,
     },
     waveOuter: {
@@ -252,9 +253,10 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     label: {
-        fontSize: 14,
-        color: '#717680',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     valueRow: {
         flexDirection: 'row',
@@ -262,14 +264,16 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     value: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     valueStruck: {
-        fontSize: 14,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        color: '#878F9E',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
         textDecorationLine: 'line-through',
     },
     freeText: {
@@ -289,14 +293,16 @@ const styles = StyleSheet.create({
         marginVertical: 12,
     },
     labelToPay: {
-        fontSize: 14,
-        color: '#717680',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     valueToPay: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     savingsBannerWrap: {
         marginTop: 0,
@@ -305,9 +311,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     savingsBanner: {
-        fontSize: 14,
-        color: '#16a34a',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#099250',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
         textAlign: 'center',
     },
 });

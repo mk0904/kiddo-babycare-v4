@@ -1,4 +1,4 @@
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import type { GiftWrapping } from '@/store/cartStore';
 import React from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -54,9 +54,9 @@ const styles = StyleSheet.create({
     section: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 16,
-        marginHorizontal: 0,
-        marginBottom: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginBottom: 24,
         ...Platform.select({
             ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
             android: { elevation: 3 },
@@ -99,32 +99,38 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     appliedTitle: {
-        fontSize: 16,
-        color: '#212121',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
         marginBottom: 4,
     },
     appliedSubtitle: {
-        fontSize: 13,
-        color: '#414651',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#535862',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     title: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
-        marginBottom: 0,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        marginBottom: 2,
     },
     description: {
-        fontSize: 12,
-        color: '#717680',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#535862',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
         textDecorationLine: 'underline',
     },
     select: {
-        fontSize: 14,
-        color: Colors.primary,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#F15E5E',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        marginRight: 12,
     },
     removeText: {
         fontSize: 14,

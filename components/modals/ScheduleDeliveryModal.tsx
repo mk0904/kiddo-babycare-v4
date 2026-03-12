@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
+    Image,
     Modal,
     Platform,
     Pressable,
@@ -186,16 +187,21 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
                             <View style={styles.headerIconWrap}>
-                                <Ionicons name="calendar-outline" size={22} color="#5C5C5C" />
+                                <Image
+                                    source={require('@/assets/icons/schedule.png')}
+                                    style={styles.scheduleIcon}
+                                    resizeMode="contain"
+                                />
                             </View>
-                            <Text style={styles.headerTitle}>{title?.trim() || 'Schedule delivery'}</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#4A4A4A" />
                         </TouchableOpacity>
                     </View>
-
-                    <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>{title?.trim() || 'Schedule delivery'}</Text>
+                        <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
+                    </View>
 
                     {/* Date: Today (with date); next two show date only (e.g. 13 March, 14 March) */}
                     <View style={styles.dateTrack}>
@@ -264,9 +270,9 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                         >
                             <Text style={styles.confirmButtonText}>Confirm</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
+                        {/* <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
                             <Text style={styles.wantItNowText}>No, I want it now</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                     </View>
                 </View>
             </View>
@@ -316,19 +322,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    scheduleIcon: {
+        width: 48,
+        height: 48,
+    },
+    headerTextContainer: {
+        marginTop: 12,
+        justifyContent: 'flex-start',
+        gap: 6,
+        paddingHorizontal: 20,
+    },
     headerTitle: {
-        fontSize: 20,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
+        fontSize: Fonts.MediumFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        color: '#181D27',
     },
     closeButton: {
         padding: 4,
     },
     subtitle: {
-        fontSize: 14,
-        fontFamily: Fonts.Regular,
-        color: '#888888',
-        paddingHorizontal: 20,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.RegularWeight,
+        color: '#535862',
         paddingBottom: 20,
     },
     timeSlotsScrollView: {
@@ -344,10 +361,10 @@ const styles = StyleSheet.create({
         width: '80%',
         alignSelf: 'center',
         flexDirection: 'row',
-        backgroundColor: '#E8E8E8',
+        backgroundColor: '#FAFAFA',
         borderRadius: 36,
         padding: 4,
-        marginBottom: 16,
+        marginBottom: 8,
     },
     dateChip: {
         flex: 1,
@@ -370,13 +387,15 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     dateChipText: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#6B6B6B',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#717680',
     },
     dateChipTextSelected: {
-        color: DESIGN_RED,
-        fontFamily: Fonts.Bold,
+        color: '#DB5656',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     dateChipSubtext: {
         fontSize: 11,
@@ -401,21 +420,26 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
+        color: '#717680',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     timeSlotSelected: {
         backgroundColor: '#FEEFEF',
-        borderColor: DESIGN_RED,
+        borderColor: '#F15E5E',
         borderWidth: 1,
         borderRadius: PILL_RADIUS
     },
     timeSlotText: {
         fontSize: 15,
-        fontFamily: Fonts.Medium,
-        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        color: '#717680',
     },
     timeSlotTextSelected: {
         color: '#181D27',
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     footer: {
         paddingHorizontal: 20,
@@ -426,7 +450,7 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: DESIGN_RED,
+        backgroundColor: '#DB5656',
         paddingVertical: 16,
         borderRadius: PILL_RADIUS,
         alignItems: 'center',
@@ -437,8 +461,9 @@ const styles = StyleSheet.create({
     },
     confirmButtonText: {
         fontSize: 17,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Lexend,
         color: '#FFFFFF',
+        fontWeight: Fonts.BoldWeight,
     },
     wantItNowButton: {
         alignSelf: 'center',

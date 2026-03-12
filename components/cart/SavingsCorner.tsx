@@ -187,7 +187,7 @@ export function SavingsCorner({
     };
 
     const mainText = hasAppliedCoupon
-        ? `Saving ${formatCurrency(discountAmount)}! ${appliedDiscountCode ?? ''} Applied`
+        ? `Save ${formatCurrency(discountAmount)} with ${appliedDiscountCode ?? ''} `
         : selectedCouponForApply
             ? `Save ${formatCurrency(
                 selectedCouponForApply.valueType === 'percentage'
@@ -452,27 +452,30 @@ export function SavingsCorner({
 
 const styles = StyleSheet.create({
     wrapper: {
-        marginBottom: 12,
+        marginBottom: 24,
     },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 14,
-
+        marginTop: 12,
     },
     titleIcon: {
         marginRight: 8,
     },
     title: {
-        fontSize: 16,
+        fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     section: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        paddingBottom: 12,
+        marginBottom: 8,
         ...Platform.select({
             ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
             android: { elevation: 3 },
@@ -511,19 +514,22 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     mainText: {
-        fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
         color: '#181D27',
     },
     mainTextApplied: {
-        color: '#6B7280',
-        fontFamily: Fonts.Bold,
-        fontSize: 14,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        fontSize: Fonts.SmallFontSize,
     },
     viewAll: {
-        fontSize: 14,
+        fontSize: Fonts.ExtraSmallFontSize,
         color: '#6B7280',
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
         textDecorationLine: 'underline',
         marginTop: 2,
     },
@@ -541,9 +547,10 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     applyText: {
-        fontSize: 14,
+        fontSize: Fonts.SmallFontSize,
         color: '#F15E5E',
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     removeBtn: {
         paddingVertical: 8,

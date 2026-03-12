@@ -1210,17 +1210,17 @@ export default function CartScreen() {
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.7}
             >
-                <View style={styles.itemImageContainer}>
-                    {showTryAndBuyBadge && (
-                        <View style={styles.tryAndBuyBadgeCart}>
-                            <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                <View style={styles.cartItemRowInner}>
+                <View style={styles.cartItemBlock}>
+                    <View style={styles.itemImageAndTitleBlock}>
+                        <View style={styles.itemImageContainer}>
+                            {showTryAndBuyBadge && (
+                                <View style={styles.tryAndBuyBadgeCart}>
+                                    <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                                </View>
+                            )}
+                            <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
                         </View>
-                    )}
-                    <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
-                </View>
-                <View style={styles.itemInfo}>
-                    {/* Row 1: Title + variant on left; quantity +/- and prices (same row, vertically centered) on right */}
-                    <View style={styles.itemTopRow}>
                         <View style={styles.itemTitleBlock}>
                             <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
                             <Text style={styles.itemVariantSubtext} numberOfLines={1}>
@@ -1239,35 +1239,36 @@ export default function CartScreen() {
                                 </View>
                             )}
                         </View>
-                        <View style={styles.quantityAndPriceRow}>
-                            <View style={styles.quantityContainer}>
-                                <TouchableOpacity
-                                    style={styles.quantityButton}
-                                    onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                >
-                                    <Ionicons name="remove" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
-                                <Text style={styles.quantityText}>{item.quantity}</Text>
-                                <TouchableOpacity
-                                    style={styles.quantityButton}
-                                    onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                                >
-                                    <Ionicons name="add" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.itemPriceBlock}>
-                                <View style={styles.itemPriceInline}>
-                                    {compareAt != null && (
-                                        <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
-                                    )}
-                                    <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-                                </View>
-                                {discountPct > 0 && (
-                                    <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                    </View>
+                    <View style={styles.quantityAndPriceRow}>
+                        <View style={styles.quantityContainer}>
+                            <TouchableOpacity
+                                style={styles.quantityButton}
+                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                            >
+                                <Ionicons name="remove" size={16} color={Colors.primary} />
+                            </TouchableOpacity>
+                            <Text style={styles.quantityText}>{item.quantity}</Text>
+                            <TouchableOpacity
+                                style={styles.quantityButton}
+                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                            >
+                                <Ionicons name="add" size={16} color={Colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.itemPriceBlock}>
+                            <View style={styles.itemPriceInline}>
+                                {compareAt != null && (
+                                    <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
                                 )}
+                                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
                             </View>
+                            {discountPct > 0 && (
+                                <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                            )}
                         </View>
                     </View>
+                </View>
                 </View>
             </TouchableOpacity>
         );
@@ -1290,7 +1291,7 @@ export default function CartScreen() {
             {/* Header - light beige to match page */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+                    <Ionicons name="arrow-back" size={20} color="#717680" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     {isTicketingOnly ? (
@@ -1307,7 +1308,7 @@ export default function CartScreen() {
                                         <View style={styles.headerAddressTagRow}>
                                             <Text style={styles.headerAddressTag} numberOfLines={1}>
                                                 {selectedAddress.tag ? selectedAddress.tag.charAt(0).toUpperCase() + selectedAddress.tag.slice(1) : 'Address'}
-                                                <Ionicons name="chevron-down" size={18} color="#666" style={styles.headerAddressChevron} />
+                                                <Ionicons name="chevron-down" size={18} color="#717680" style={styles.headerAddressChevron} />
                                             </Text>
                                         </View>
                                         <Text style={styles.headerAddressLine} numberOfLines={1}>
@@ -1602,6 +1603,7 @@ const styles = StyleSheet.create({
     },
     backButton: {
         padding: 4,
+        marginRight: 8,
     },
     headerSpacer: {
         width: 32,
@@ -1637,31 +1639,34 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     headerAddressTag: {
-        fontSize: 20,
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
+        fontSize: 24,
+        fontFamily: Fonts.Medium,
+        color: '#000000',
         flex: 1,
         minWidth: 0,
+        gap: 4,
     },
     headerAddressLine: {
-        fontSize: 12,
-        fontFamily: Fonts.SemiBold,
-        color: '#666',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        color: '#535862',
         marginTop: 2,
     },
     savingsBanner: {
-        backgroundColor: '#6BCB77',
+        backgroundColor: '#3CCB7F',
         marginHorizontal: -16,
         marginTop: 0,
-        marginBottom: 12,
+        marginBottom: 8,
         paddingVertical: 8,
         borderRadius: 0,
         alignItems: 'center',
     },
     savingsBannerText: {
-        fontSize: 15,
-        fontFamily: Fonts.Bold,
-        color: '#fff',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#EDFCF2',
     },
     scrollView: {
         flex: 1,
@@ -1669,8 +1674,8 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingTop: 0,
-        paddingBottom: 200,
+        paddingTop: 20,
+        paddingBottom: 100,
         backgroundColor: '#FDF6EC',
     },
     tryAndBuySection: {
@@ -1726,7 +1731,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 16,
-        marginBottom: 12,
+        marginBottom: 24,
+        overflow: 'hidden',
         ...Platform.select({
             ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
             android: { elevation: 3 },
@@ -1734,6 +1740,7 @@ const styles = StyleSheet.create({
     },
     itemsSectionGiftWrap: {
         paddingBottom: 0,
+        marginBottom: 24,
         overflow: 'hidden',
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -1747,9 +1754,10 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     itemsHeaderText: {
-        fontSize: 14,
+        fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     giftWrapRibbonContainer: {
         width: '100%',
@@ -1761,16 +1769,34 @@ const styles = StyleSheet.create({
         height: 36,
     },
     cartItemRow: {
+        marginBottom: 24,
+        width: '100%',
+    },
+    cartItemRowInner: {
+        width: '100%',
+        overflow: 'hidden',
+    },
+    cartItemBlock: {
         flexDirection: 'row',
-        marginBottom: 16,
+        alignItems: 'center',
+        flexWrap: 'nowrap',
+        width: '100%',
+    },
+    itemImageAndTitleBlock: {
+        flexDirection: 'row',
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'flex-start',
+        marginRight: 12,
+        maxWidth: '100%',
     },
     itemImageContainer: {
         position: 'relative',
         marginRight: 12,
     },
     itemImage: {
-        width: 80,
-        height: 80,
+        width: 72,
+        height: 72,
         borderRadius: 8,
         backgroundColor: '#F0F0F0',
         borderWidth: 1,
@@ -1803,23 +1829,30 @@ const styles = StyleSheet.create({
     },
     itemTitleBlock: {
         flex: 1,
+        minWidth: 0,
         marginRight: 12,
     },
     quantityAndPriceRow: {
         flexDirection: 'column',
         alignItems: 'center',
         gap: 8,
+        flexShrink: 0,
+        maxWidth: 120,
     },
     itemTitle: {
-        fontSize: 14,
-        color: '#1A1A1A',
+        fontSize: Fonts.SmallFontSize,
+        lineHeight: 20,
+        color: '#181D27',
         marginBottom: 2,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     itemVariantSubtext: {
-        fontSize: 12,
+        fontSize: Fonts.SmallFontSize,
         color: '#717680',
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
+        marginTop: 6,
     },
     itemPriceBlock: {
         alignItems: 'center',
@@ -1836,9 +1869,10 @@ const styles = StyleSheet.create({
         textDecorationLine: 'line-through',
     },
     itemPrice: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     itemDiscountPct: {
         fontSize: 11,
@@ -1876,10 +1910,10 @@ const styles = StyleSheet.create({
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: Colors.primary,
-        borderRadius: 16,
-        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: '#F15E5E',
+        borderRadius: 12,
+        paddingVertical: 2,
         paddingHorizontal: 2,
         backgroundColor: '#FEEFEF',
     },
@@ -1891,12 +1925,13 @@ const styles = StyleSheet.create({
         minWidth: 24,
     },
     quantityText: {
-        fontSize: 13,
+        fontSize: Fonts.SmallFontSize,
         marginHorizontal: 6,
         minWidth: 18,
         textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
+        color: '#181D27',
     },
     couponsModalOverlay: {
         flex: 1,
@@ -1961,7 +1996,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 12,
-        marginBottom: 15,
+        marginBottom: 28,
     },
     sectionTitle: {
         fontSize: 16,
@@ -2002,21 +2037,23 @@ const styles = StyleSheet.create({
     paymentMethodSection: {
         backgroundColor: '#FFFFFF',
         borderRadius: 14,
-        padding: 16,
-        marginBottom: 15,
+        padding: 8,
+        paddingTop: 16,
+        marginBottom: 14,
         borderWidth: 1,
         borderColor: '#FFFFFF',
     },
     paymentMethodSectionTitle: {
-        fontSize: 16,
+        fontSize: Fonts.SmallFontSize,
         marginBottom: 14,
         color: '#717680',
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     paymentMethodOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
+        paddingVertical: 6,
         paddingHorizontal: 4,
     },
     paymentMethodIconWrap: {
@@ -2045,15 +2082,17 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     paymentMethodOptionTitle: {
-        fontSize: 15,
+        fontSize: Fonts.SmallFontSize,
         color: '#181D27',
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.BoldWeight,
     },
     paymentMethodOptionSubtext: {
-        fontSize: 13,
+        fontSize: Fonts.ExtraSmallFontSize,
         color: '#535862',
         marginTop: 2,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.Lexend,
+        fontWeight: Fonts.MediumWeight,
     },
     paymentMethodRadio: {
         width: 22,
@@ -2376,6 +2415,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#FF9800',
     },
     headerAddressChevron: {
-        marginLeft: 8,
+        marginLeft: 16,
     },
 });
