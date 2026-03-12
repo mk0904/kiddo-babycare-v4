@@ -545,7 +545,7 @@ const ProductDetailScreen = () => {
 
     // Accordion State
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        description: true,
+        description: false,
         material: false,
         wash_care: false,
     });
@@ -1327,18 +1327,37 @@ const ProductDetailScreen = () => {
                     {/* Separator */}
                     <View style={styles.separator} />
 
-                    {/* Product Description - Display directly */}
+                    {/* Product Description - Collapsible */}
                     {product.description && (
-                        <View style={styles.descriptionContainer}>
-                            <Text style={[
-                                styles.descriptionBody,
-                                productStyles.description && {
-                                    fontSize: productStyles.description.fontSize,
-                                    color: productStyles.description.color,
-                                    lineHeight: productStyles.description.lineHeight,
-                                    ...processFontStyle(productStyles.description, Fonts.Regular),
-                                }
-                            ]}>{product.description}</Text>
+                        <View style={styles.accordionContainer}>
+                            <TouchableOpacity
+                                style={styles.accordionHeader}
+                                onPress={() => toggleSection('description')}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.accordionTitleContainer}>
+                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
+                                    <Text style={styles.accordionTitle}>Description</Text>
+                                </View>
+                                <Ionicons
+                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
+                                    size={20}
+                                    color={Colors.textSecondary}
+                                />
+                            </TouchableOpacity>
+                            {expandedSections['description'] && (
+                                <View style={[styles.accordionContent, styles.descriptionContainer]}>
+                                    <Text style={[
+                                        styles.descriptionBody,
+                                        productStyles.description && {
+                                            fontSize: productStyles.description.fontSize,
+                                            color: productStyles.description.color,
+                                            lineHeight: productStyles.description.lineHeight,
+                                            ...processFontStyle(productStyles.description, Fonts.Regular),
+                                        }
+                                    ]}>{product.description}</Text>
+                                </View>
+                            )}
                         </View>
                     )}
 
