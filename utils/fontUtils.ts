@@ -10,6 +10,7 @@ const FONT_FAMILY_ALIASES: Record<string, string> = {
   extrabold: Fonts.ExtraBold,
   'extra-bold': Fonts.ExtraBold,
   black: Fonts.Black,
+  bogart: 'bogart', // Bogart (loaded in app _layout)
   // Exact names (so config can use "Metropolis-Bold" etc.)
   [Fonts.Regular]: Fonts.Regular,
   [Fonts.Medium]: Fonts.Medium,

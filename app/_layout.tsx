@@ -69,6 +69,7 @@ export default function RootLayout() {
     'Metropolis-Medium': require('../assets/fonts/Metropolis-Medium.otf'),
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
+    bogart: require('./assets/fonts/BOGARTREGULARTRIAL.ttf'),
     'Bogart-SemiBold': require('../assets/fonts/Bogart-Alt-Medium-trial.ttf'),
     // Each weight loaded as its own family so components can use fontFamily: 'Lexend-Bold'
     // without needing fontWeight – which reliably works on both iOS and Android.

@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { PromoCarouselBlock } from '@/types/content';
-import { ImageCarousel } from './ImageCarousel';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { PromoCarouselBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
+import { ImageCarousel } from './ImageCarousel';
 
 interface PromoCarouselProps extends BaseContentBlockProps {
   block: PromoCarouselBlock;

@@ -6,9 +6,9 @@ import { ContentBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
+    ScrollView,
+    StyleSheet,
+    ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

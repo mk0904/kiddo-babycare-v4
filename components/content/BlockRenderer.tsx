@@ -104,5 +104,8 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
+  blockSpacing: {
+    marginBottom: 0,
+  },
 });
 
