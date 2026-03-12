@@ -60,6 +60,9 @@
     "freeShoesOffer": {
       "enabled": true,
       "originalPrice": 4999,
+      "showWhen": {
+        "cartHasAnyCategory": ["apparel", "fashion"]
+      },
       "sizes": [
         { "size": "S1", "isAvailable": true },
         { "size": "S2", "isAvailable": true },
@@ -75,6 +78,21 @@
       "shoes": [
         {
           "id": "shoe-1",
+          "name": "Adidas Comfy Cloud",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
+        },
+        {
+          "id": "shoe-2",
+          "name": "Adidas Comfy Cloud",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
+        },
+        {
+          "id": "shoe-3",
+          "name": "Adidas Comfy Cloud",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
+        },
+        {
+          "id": "shoe-4",
           "name": "Adidas Comfy Cloud",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
         }

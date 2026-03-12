@@ -33,6 +33,8 @@ function getAppConfigUrl(payload?: AppConfigPayload): string {
   if (payload.customerId != null && payload.customerId !== '') params.set('customerId', payload.customerId);
   if (payload.appVersion != null && payload.appVersion !== '') params.set('appVersion', payload.appVersion);
   if (payload.deviceType != null && payload.deviceType !== '') params.set('deviceType', payload.deviceType);
+  if (payload.cartSubtotal != null && payload.cartSubtotal > 0) params.set('cartSubtotal', String(payload.cartSubtotal));
+  if (payload.cartCategories != null && payload.cartCategories !== '') params.set('cartCategories', payload.cartCategories);
   const q = params.toString();
   return q ? `${url}?${q}` : url;
 }
@@ -42,6 +44,10 @@ export interface AppConfigPayload {
   customerId?: string | null;
   appVersion?: string | null;
   deviceType?: string | null;
+  /** Cart subtotal (INR) – backend uses this to compute offer visibility (e.g. freeShoesOffer.visible). */
+  cartSubtotal?: number;
+  /** Comma-separated cart category/tag strings – backend uses this to compute offer visibility. */
+  cartCategories?: string;
 }
 
 const DEFAULT_CART_FEATURES: CartFeatures = {

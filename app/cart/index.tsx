@@ -38,9 +38,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -287,6 +287,58 @@ export default function CartScreen() {
             );
         });
     }, [cartItems]);
+
+    // Unique category/tag strings from cart (lowercase) for backend-driven offer visibility
+    const cartCategoryTags = useMemo(
+        () => [
+            ...new Set(
+                cartItems.flatMap((item) =>
+                    (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean)
+                )
+            ),
+        ],
+        [cartItems]
+    );
+    const itemSubtotalForOffers = useMemo(
+        () => cartItems.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity), 0),
+        [cartItems]
+    );
+    // Refetch app config when cart screen is focused (with cart context so backend can return offer visibility)
+    useFocusEffect(
+        useCallback(() => {
+            const payload: AppConfigPayload = {
+                phone: user?.phone ?? undefined,
+                customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+                appVersion: Constants.expoConfig?.version ?? undefined,
+                deviceType: Platform.OS,
+                cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+                cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+            };
+            appConfigService.loadAppConfig(true, payload).then(() => setAppConfigRefresh((r) => r + 1));
+        }, [user?.phone, user?.customerId, user?.id, cartCategoryTags, itemSubtotalForOffers])
+    );
+    // Refetch app config when cart changes so backend can return updated offer visibility
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+            cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+            cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => { cancelled = true; };
+    }, [user?.phone, user?.customerId, user?.id, cartCategoryTags.join(','), itemSubtotalForOffers]);
+    const freeShoesOfferConfig = useMemo(
+        () => appConfigService.getCartConfig()?.freeShoesOffer,
+        [appConfigRefresh]
+    );
+    /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
+    const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
 
     // Computed values
     const appliedDiscountCodes = discountCodes.map(dc => dc.code);
@@ -1281,9 +1333,10 @@ export default function CartScreen() {
                         )}
 
                         {/* Introductory Offer - Free Pair of Shoes (same logic as FreeShoesOffer modal) */}
-                        {hasNonTicketingProducts && cartFeatures.showFreePairShoes && (
+                        {hasNonTicketingProducts && cartFeatures.showFreePairShoes && showFreeShoesByBackend && (
                             <FreePairShoes
                                 visible
+                                configRefreshKey={appConfigRefresh}
                                 selectedShoe={selectedShoe}
                                 selectedShoeSize={selectedShoeSize}
                                 onAddPress={() => {}}
@@ -1371,18 +1424,14 @@ export default function CartScreen() {
 
                         {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
                         {cartItems.length > 0 && total > 0 && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Payment Method</Text>
+                            <View style={styles.paymentMethodSection}>
+                                <Text style={styles.paymentMethodSectionTitle}>Payment method</Text>
                                 {/* Hide COD option for ticketing products */}
                                 {!hasTicketingProducts && (
                                     <TouchableOpacity
-                                        style={[
-                                            styles.paymentOption,
-                                            paymentMethod === 'cod' && styles.paymentOptionSelected,
-                                        ]}
+                                        style={styles.paymentMethodOption}
                                         onPress={() => {
                                             setPaymentMethod('cod');
-                                            // Track payment method selected
                                             try {
                                                 const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
                                                 trackPaymentMethodSelected('cod');
@@ -1390,23 +1439,24 @@ export default function CartScreen() {
                                                 console.warn('Mixpanel tracking error:', e);
                                             }
                                         }}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons
-                                            name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
-                                            size={24}
-                                            color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
-                                        />
-                                        <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                        <View style={styles.paymentMethodIconWrap}>
+                                            <Image source={require('@/assets/icons/cod.png')} style={styles.paymentMethodCodIcon} contentFit="contain" />
+                                        </View>
+                                        <View style={styles.paymentMethodTextBlock}>
+                                            <Text style={styles.paymentMethodOptionTitle}>Pay on delivery</Text>
+                                            <Text style={styles.paymentMethodOptionSubtext}>Pay by cash or UPI on delivery</Text>
+                                        </View>
+                                        <View style={[styles.paymentMethodRadio, paymentMethod !== 'cod' && styles.paymentMethodRadioEmpty]}>
+                                            {paymentMethod === 'cod' && <View style={styles.paymentMethodRadioInner} />}
+                                        </View>
                                     </TouchableOpacity>
                                 )}
                                 <TouchableOpacity
-                                    style={[
-                                        styles.paymentOption,
-                                        paymentMethod === 'razorpay' && styles.paymentOptionSelected,
-                                    ]}
+                                    style={styles.paymentMethodOption}
                                     onPress={() => {
                                         setPaymentMethod('razorpay');
-                                        // Track payment method selected
                                         try {
                                             const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
                                             trackPaymentMethodSelected('razorpay');
@@ -1414,17 +1464,17 @@ export default function CartScreen() {
                                             console.warn('Mixpanel tracking error:', e);
                                         }
                                     }}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons
-                                        name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
-                                        size={24}
-                                        color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
-                                    />
-                                    <View style={styles.paymentOptionContent}>
-                                        <Text style={styles.paymentOptionText}>Pay Online</Text>
-                                        <Text style={styles.paymentOptionSubtext}>
-                                            Card, UPI, Net Banking via Razorpay
-                                        </Text>
+                                    <View style={[styles.paymentMethodIconWrap, styles.paymentMethodIconWrapOnline]}>
+                                        <Image source={require('@/assets/icons/online_pay.png')} style={styles.paymentMethodOnlineIcon} contentFit="contain" />
+                                    </View>
+                                    <View style={styles.paymentMethodTextBlock}>
+                                        <Text style={styles.paymentMethodOptionTitle}>Pay online</Text>
+                                        <Text style={styles.paymentMethodOptionSubtext}>Pay by card/ UPI/ Netbanking</Text>
+                                    </View>
+                                    <View style={[styles.paymentMethodRadio, paymentMethod !== 'razorpay' && styles.paymentMethodRadioEmpty]}>
+                                        {paymentMethod === 'razorpay' && <View style={styles.paymentMethodRadioInner} />}
                                     </View>
                                 </TouchableOpacity>
                             </View>
@@ -1908,6 +1958,81 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         marginTop: 2,
         fontFamily: Fonts.Regular,
+    },
+    paymentMethodSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#FFFFFF',
+    },
+    paymentMethodSectionTitle: {
+        fontSize: 16,
+        marginBottom: 14,
+        color: '#717680',
+        fontFamily: Fonts.Bold,
+    },
+    paymentMethodOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 4,
+    },
+    paymentMethodIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    paymentMethodCodIcon: {
+        width: 22,
+        height: 22,
+    },
+    paymentMethodIconWrapOnline: {
+        width: 44,
+        height: 44,
+        
+    },
+    paymentMethodOnlineIcon: {
+        width: 44,
+        height: 44,
+    },
+    paymentMethodTextBlock: {
+        flex: 1,
+    },
+    paymentMethodOptionTitle: {
+        fontSize: 15,
+        color: '#181D27',
+        fontFamily: Fonts.Bold,
+    },
+    paymentMethodOptionSubtext: {
+        fontSize: 13,
+        color: '#535862',
+        marginTop: 2,
+        fontFamily: Fonts.SemiBold,
+    },
+    paymentMethodRadio: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    paymentMethodRadioEmpty: {
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#d1d5db',
+    },
+    paymentMethodRadioInner: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#fff',
     },
     couponContainer: {
         flexDirection: 'row',

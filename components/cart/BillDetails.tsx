@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
         
         overflow: 'visible',
         position: 'relative',
-        marginTop: 16,
+        marginTop: 0,
     },
     sectionBg: {
         position: 'absolute',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
     },
     savingsBannerWrap: {
-        marginTop: 12,
+        marginTop: 0,
         paddingVertical: 14,
         paddingHorizontal: 16,
         alignItems: 'center',

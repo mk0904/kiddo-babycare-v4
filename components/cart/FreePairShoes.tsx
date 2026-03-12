@@ -8,6 +8,7 @@ import {
     Modal,
     Platform,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -35,6 +36,8 @@ const DEFAULT_SHOE_SIZES: SizeOption[] = [
 
 export interface FreePairShoesProps {
     visible?: boolean;
+    /** When this changes (e.g. cart appConfigRefresh), config is re-read so backend updates (e.g. shoe name) show up */
+    configRefreshKey?: number;
     selectedShoe?: string | null;
     /** When provided (e.g. from cart store), used as the displayed/confirmed size so it can be sent to Shopify */
     selectedShoeSize?: string | null;
@@ -55,6 +58,7 @@ interface ShoeOption {
 
 export function FreePairShoes({
     visible = true,
+    configRefreshKey,
     selectedShoe,
     selectedShoeSize: selectedShoeSizeProp,
     onAddPress,
@@ -68,6 +72,8 @@ export function FreePairShoes({
     const [showSizeModal, setShowSizeModal] = useState(false);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
     const [sizeModalSelection, setSizeModalSelection] = useState<string | null>(null);
+    /** Shoe selected inside the size modal (for "Select Shoe" grid) */
+    const [sizeModalShoeSelection, setSizeModalShoeSelection] = useState<string | null>(null);
     const [offerCopy, setOfferCopy] = useState<FreeShoesOfferConfig['copy'] | undefined>(undefined);
     const [configOriginalPrice, setConfigOriginalPrice] = useState(ORIGINAL_PRICE_DEFAULT);
 
@@ -91,7 +97,7 @@ export function FreePairShoes({
             setSizeOptions([]);
             setOfferEnabled(false);
         }
-    }, [visible]);
+    }, [visible, configRefreshKey]);
 
     useEffect(() => {
         if (!selectedShoe) setSelectedSize(null);
@@ -113,19 +119,23 @@ export function FreePairShoes({
             ? selectedSize
             : firstAvailableSize;
         setSizeModalSelection(currentSelection);
+        setSizeModalShoeSelection(selectedShoe ?? shoeOptions[0]?.id ?? null);
         setShowSizeModal(true);
     };
     const closeSizeModal = () => {
         setShowSizeModal(false);
         setSizeModalSelection(null);
+        setSizeModalShoeSelection(null);
     };
     const confirmSize = () => {
-        if (sizeModalSelection) {
+        const shoeId = sizeModalShoeSelection ?? displayShoe.id;
+        if (sizeModalSelection && shoeId) {
             setSelectedSize(sizeModalSelection);
             setShowSizeModal(false);
             setSizeModalSelection(null);
+            setSizeModalShoeSelection(null);
             if (onConfirmSize) {
-                onConfirmSize(displayShoe.id, sizeModalSelection);
+                onConfirmSize(shoeId, sizeModalSelection);
             } else {
                 onAddPress();
             }
@@ -140,7 +150,7 @@ export function FreePairShoes({
             {/* Offer header with padlock */}
             <View style={styles.offerHeader}>
                 <View style={styles.padlockWrap}>
-                    <Image source={require('@/assets/icons/Icon.png')} style={styles.padlockIcon} contentFit="contain" />
+                    <Image source={require('@/assets/icons/unlock.png')} style={styles.padlockIcon} contentFit="contain" />
                 </View>
                 <View style={styles.offerTextBlock}>
                     <Text style={styles.offerTitle}>{offerCopy?.title ?? 'Introductory Offer!'}</Text>
@@ -160,13 +170,16 @@ export function FreePairShoes({
                     placeholderContentFit="cover"
                 />
                 <View style={styles.productInfo}>
-                    <Text style={styles.productName} numberOfLines={1}>
-                        {/* {displayShoe.name} */}
-                        Adidas Comfy Cloud
+                    <Text style={styles.productName} numberOfLines={2}>
+                        {isApplied
+                            ? (displayShoe.name || (displayShoe as { title?: string }).title || 'Free pair')
+                            : 'Select from shoe options & sizes'}
                     </Text>
+                    {isApplied && (
                     <Text style={styles.productSubtext}>baby shoes</Text>
+                    )}
                     <Text style={styles.sizeText}>
-                        {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : ('Sizes 1-4 available')}
+                        {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : 'Sizes 1-4 available'}
                     </Text>
                     {isApplied && (
                         <View style={styles.editRemoveRow}>
@@ -220,48 +233,83 @@ export function FreePairShoes({
                 <View style={styles.sizeModalContainer}>
                     <Pressable style={styles.sizeModalBackdrop} onPress={closeSizeModal} />
                     <View style={styles.sizeModalCard}>
-                    <View style={styles.sizeModalHeader}>
-                        <View style={styles.sizeModalRulerWrap}>
-                            <Image source={require('@/assets/icons/ruler.png')} style={styles.sizeModalRulerIcon} contentFit="contain" />
-                        </View>
+                    <View style={styles.sizeModalTitleRow}>
+                        <Text style={styles.sizeModalTitle}>Select Shoe</Text>
                         <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#374151" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
-                    <View style={styles.sizeGrid}>
-                        {sizeOptions.map((sizeOption) => {
-                            const disabled = !sizeOption.isAvailable;
-                            const isSelected = sizeModalSelection === sizeOption.size;
-                            return (
-                                <TouchableOpacity
-                                    key={sizeOption.size}
-                                    style={[
-                                        styles.sizeButton,
-                                        disabled && styles.sizeButtonDisabled,
-                                        isSelected && styles.sizeButtonSelected,
-                                    ]}
-                                    onPress={() => !disabled && setSizeModalSelection(sizeOption.size)}
-                                    disabled={disabled}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled]}>
-                                        {sizeOption.size}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                    <TouchableOpacity
-                        style={[styles.sizeConfirmButton, !sizeModalSelection && styles.sizeConfirmButtonDisabled]}
-                        onPress={confirmSize}
-                        disabled={!sizeModalSelection}
-                        activeOpacity={0.8}
+                    <View style={styles.sizeModalDivider} />
+                    <ScrollView
+                        style={styles.sizeModalScroll}
+                        contentContainerStyle={styles.sizeModalScrollContent}
+                        showsVerticalScrollIndicator={true}
                     >
-                        <Text style={[styles.sizeConfirmText, !sizeModalSelection && styles.sizeConfirmTextDisabled]}>
-                            {offerCopy?.confirmLabel ?? 'Confirm'}
-                        </Text>
-                    </TouchableOpacity>
+                        {/* Shoe selection grid - all 4 from backend config */}
+                        <View style={styles.shoeGrid}>
+                            {shoeOptions.map((shoe) => {
+                                const isSelected = sizeModalShoeSelection === shoe.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={shoe.id}
+                                        style={[styles.shoeOption, isSelected && styles.shoeOptionSelected]}
+                                        onPress={() => setSizeModalShoeSelection(shoe.id)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Image
+                                            source={{ uri: shoe.imageUrl }}
+                                            style={styles.shoeOptionImage}
+                                            contentFit="cover"
+                                            placeholder={{ blurhash: BLURHASH }}
+                                            placeholderContentFit="cover"
+                                        />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <Text style={styles.sizeModalSubtitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
+                        <View style={styles.sizeGrid}>
+                            {sizeOptions.map((sizeOption) => {
+                                const disabled = !sizeOption.isAvailable;
+                                const isSelected = sizeModalSelection === sizeOption.size;
+                                return (
+                                    <TouchableOpacity
+                                        key={sizeOption.size}
+                                        style={[
+                                            styles.sizeButton,
+                                            disabled && styles.sizeButtonDisabled,
+                                            isSelected && styles.sizeButtonSelected,
+                                        ]}
+                                        onPress={() => !disabled && setSizeModalSelection(sizeOption.size)}
+                                        disabled={disabled}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled]}>
+                                            {sizeOption.size}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <TouchableOpacity
+                            style={[
+                                styles.sizeConfirmButton,
+                                (!sizeModalShoeSelection || !sizeModalSelection) && styles.sizeConfirmButtonDisabled,
+                            ]}
+                            onPress={confirmSize}
+                            disabled={!sizeModalShoeSelection || !sizeModalSelection}
+                            activeOpacity={0.8}
+                        >
+                            <Text
+                                style={[
+                                    styles.sizeConfirmText,
+                                    (!sizeModalShoeSelection || !sizeModalSelection) && styles.sizeConfirmTextDisabled,
+                                ]}
+                            >
+                                {offerCopy?.confirmLabel ?? 'Confirm'}
+                            </Text>
+                        </TouchableOpacity>
+                    </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -334,6 +382,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
         color: '#1A1A1A',
         marginBottom: 2,
+        lineHeight: 22,
     },
     productSubtext: {
         fontSize: 14,
@@ -433,6 +482,15 @@ const styles = StyleSheet.create({
         marginBottom: 28,
         width: undefined,
         alignSelf: 'stretch',
+        maxHeight: '85%',
+    },
+    sizeModalScroll: {
+        flexGrow: 0,
+        flexShrink: 1,
+        maxHeight: '100%',
+    },
+    sizeModalScrollContent: {
+        paddingBottom: 8,
     },
     sizeModalHeader: {
         flexDirection: 'row',
@@ -455,17 +513,54 @@ const styles = StyleSheet.create({
     sizeModalClose: {
         padding: 4,
     },
+    sizeModalTitleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
     sizeModalTitle: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
         color: '#111',
-        marginBottom: 18,
+    },
+    sizeModalDivider: {
+        height: 1,
+        backgroundColor: '#E5E7EB',
+        marginBottom: 14,
+        marginHorizontal: -20,
+    },
+    shoeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 20,
+    },
+    shoeOption: {
+        width: 72,
+        height: 72,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'transparent',
+        backgroundColor: '#F0F0F0',
+    },
+    shoeOptionSelected: {
+        borderColor: Colors.primary,
+        ...Platform.select({
+            ios: { shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+            android: { elevation: 4 },
+        }),
+    },
+    shoeOptionImage: {
+        width: '100%',
+        height: '100%',
     },
     sizeModalSubtitle: {
-        fontSize: 14,
-        fontFamily: Fonts.Regular,
-        color: '#6B7280',
-        marginBottom: 20,
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: '#374151',
+        marginBottom: 12,
     },
     sizeGrid: {
         flexDirection: 'row',

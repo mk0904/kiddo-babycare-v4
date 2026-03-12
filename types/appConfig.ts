@@ -16,6 +16,8 @@ export interface FreeShoesOfferShoe {
 
 export interface FreeShoesOfferConfig {
   enabled: boolean;
+  /** When false, offer is hidden. When true or undefined, offer is shown (if enabled). Computed by backend from cart context (cartSubtotal, cartCategories). */
+  visible?: boolean;
   originalPrice?: number;
   sizes: SizeOption[];
   shoes: FreeShoesOfferShoe[];
