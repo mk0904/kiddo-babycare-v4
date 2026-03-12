@@ -1,18 +1,18 @@
+import { Colors, Fonts } from '@/constants/theme';
+import { ModalBlock } from '@/types/content';
+import { processFontStyle } from '@/utils/fontUtils';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { ModalBlock } from '@/types/content';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts } from '@/constants/theme';
-import { processFontStyle } from '@/utils/fontUtils';
+import { BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

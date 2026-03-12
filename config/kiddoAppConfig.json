@@ -57,7 +57,7 @@
           "collectionId": "gid://shopify/Collection/508371206433",
           "label": "All",
           "imageUrl": ""
-        },        
+        },
         {
           "collectionId": "gid://shopify/Collection/510564532513",
           "label": "Baby Face Wash",
@@ -77,39 +77,48 @@
           "collectionId": "gid://shopify/Collection/510564696353",
           "label": "Kids Toothbrush and Tooth paste",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_3.png?v=1773134351"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510564761889",
           "label": "Bath Towels, Wraps & Wash Cloths",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_4.png?v=1773134350"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510564794657",
           "label": "Bath Toys",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_5.png?v=1773134350"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510564827425",
           "label": "Baby Powder",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_6.png?v=1773134350"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510564860193",
           "label": "Bath Tub and other accessories",
           "imageUrl": ""
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510564958497",
           "label": "Baby Lotions",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_7.png?v=1773134350"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510565024033",
           "label": "Baby Cream",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_8.png?v=1773134351"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510565089569",
           "label": "Baby Oil / Massage Oil",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_9.png?v=1773134350"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510565187873",
           "label": "Sunscreen",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_10.png?v=1773134351"
-        },{
+        },
+        {
           "collectionId": "gid://shopify/Collection/510565220641",
           "label": "Kids Grooming Essentials (Lip Balm, Combs, nail cutters)",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/skincare_and_bath_subcatgrey_11.png?v=1773134350"
@@ -118,63 +127,210 @@
     },
     "508173123873": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/508173123873", "label": "All", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460" },
-
-        { "collectionId": "gid://shopify/Collection/510563975457", "label": "Taped Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460" },
-        { "collectionId": "gid://shopify/Collection/510564008225", "label": "Pant Diaper", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_e53f19db-7846-4130-b87c-fab8f295e8f0.jpg?v=1773230238" },
-        { "collectionId": "gid://shopify/Collection/510564040993", "label": "Cloth Nappies", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_5c850c95-bf81-42a3-a92c-1f8f1c38e97b.jpg?v=1773230238" },
-        { "collectionId": "gid://shopify/Collection/510564073761", "label": "Baby Wipes", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_208ji2208ji2208j.png?v=1773226601" },
-        { "collectionId": "gid://shopify/Collection/510564172065", "label": "Bed Protectors and changing mats", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_vch5navch5navch5.png?v=1773226661" },
-        { "collectionId": "gid://shopify/Collection/510564237601", "label": "Diaper Rash Cream", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_332a3da3-efdc-4f7f-b31f-dc14df0a17d3.jpg?v=1773230237" },
-        { "collectionId": "gid://shopify/Collection/510564303137", "label": "Diaper Bag and Travel Pouches", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_9rm3du9rm3du9rm3.png?v=1773225549" },
-        { "collectionId": "gid://shopify/Collection/510564368673", "label": "Swim Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_3am7s3am7s3am7s3.png?v=1773225643" },
-        { "collectionId": "gid://shopify/Collection/510564401441", "label": "Potty Training Pants", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_w6epdww6epdww6ep.png?v=1773225987" },
-        { "collectionId": "gid://shopify/Collection/510564434209", "label": "Diaper Bin", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_poazslpoazslpoaz.png?v=1773226092" },
-        { "collectionId": "gid://shopify/Collection/510564466977", "label": "Cloth Diapers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6ruktv6ruktv6ruk.png?v=1773226431" },
-        { "collectionId": "gid://shopify/Collection/510564499745", "label": "Potty Training Seats", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_19.jpg?v=1773230666" }
+        {
+          "collectionId": "gid://shopify/Collection/508173123873",
+          "label": "All",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510563975457",
+          "label": "Taped Diapers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564008225",
+          "label": "Pant Diaper",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_e53f19db-7846-4130-b87c-fab8f295e8f0.jpg?v=1773230238"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564040993",
+          "label": "Cloth Nappies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_5c850c95-bf81-42a3-a92c-1f8f1c38e97b.jpg?v=1773230238"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564073761",
+          "label": "Baby Wipes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_208ji2208ji2208j.png?v=1773226601"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564172065",
+          "label": "Bed Protectors and changing mats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_vch5navch5navch5.png?v=1773226661"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564237601",
+          "label": "Diaper Rash Cream",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_332a3da3-efdc-4f7f-b31f-dc14df0a17d3.jpg?v=1773230237"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564303137",
+          "label": "Diaper Bag and Travel Pouches",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_9rm3du9rm3du9rm3.png?v=1773225549"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564368673",
+          "label": "Swim Diapers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_3am7s3am7s3am7s3.png?v=1773225643"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564401441",
+          "label": "Potty Training Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_w6epdww6epdww6ep.png?v=1773225987"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564434209",
+          "label": "Diaper Bin",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_poazslpoazslpoaz.png?v=1773226092"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564466977",
+          "label": "Cloth Diapers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6ruktv6ruktv6ruk.png?v=1773226431"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564499745",
+          "label": "Potty Training Seats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_19.jpg?v=1773230666"
+        }
       ]
     },
-    "510565417249":{
+    "510565417249": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/510565417249", "label": "All", "imageUrl": "" },
-
-        { "collectionId": "gid://shopify/Collection/510565286177", "label": "Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565318945", "label": "Sensitive Infant Formula", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_1.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565351713", "label": "Baby Cereals", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_2.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565384481", "label": "Ready-to-Feed Food", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_3.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565417249", "label": "Baby Snacks / food", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_4.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565450017", "label": "Kids Utensils & Containers", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_5.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565482785", "label": "Drinks & Mixes", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_6.png?v=1773133813" },
-        { "collectionId": "gid://shopify/Collection/510565515553", "label": "Kids Condiments & Sweeteners", "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_7.png?v=1773133813" }
-     
+        {
+          "collectionId": "gid://shopify/Collection/510565417249",
+          "label": "All",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565286177",
+          "label": "Infant Formula",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565318945",
+          "label": "Sensitive Infant Formula",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_1.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565351713",
+          "label": "Baby Cereals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_2.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565384481",
+          "label": "Ready-to-Feed Food",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_3.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565417249",
+          "label": "Baby Snacks / food",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_4.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565450017",
+          "label": "Kids Utensils & Containers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_5.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565482785",
+          "label": "Drinks & Mixes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_6.png?v=1773133813"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565515553",
+          "label": "Kids Condiments & Sweeteners",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/baby_food_and_formula_subcat_grey_7.png?v=1773133813"
+        }
       ]
     },
-    "510566334753":{
+    "510566334753": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/510566334753", "label": "All", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566367521", "label": "Cough & Cold", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566400289", "label": "Stomach Care", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566433057", "label": "Medical Devices (Thermometers, nebulizer, etc)", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566465825", "label": "Medicines and First Aid", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566498593", "label": "Mosquito repellents and patches", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566531361", "label": "Handwash and sanitizers", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566564129", "label": "Kids Detergents & Cleaners", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566596897", "label": "Safety Bed Rails", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566629665", "label": "Cotton Balls and Swab", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510566662433", "label": "Teethers", "imageUrl": "" }
-     
+        {
+          "collectionId": "gid://shopify/Collection/510566334753",
+          "label": "All",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566367521",
+          "label": "Cough & Cold",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566400289",
+          "label": "Stomach Care",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566433057",
+          "label": "Medical Devices (Thermometers, nebulizer, etc)",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566465825",
+          "label": "Medicines and First Aid",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566498593",
+          "label": "Mosquito repellents and patches",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566531361",
+          "label": "Handwash and sanitizers",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566564129",
+          "label": "Kids Detergents & Cleaners",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566596897",
+          "label": "Safety Bed Rails",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566629665",
+          "label": "Cotton Balls and Swab",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566662433",
+          "label": "Teethers",
+          "imageUrl": ""
+        }
       ]
     },
-    "508371239201":{
+    "508371239201": {
       "subcategories": [
-        { "collectionId": "gid://shopify/Collection/508371239201", "label": "All", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510565548321", "label": "Feeding Bottles & Nipples", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510565581089", "label": "Sippy Cups", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510565613857", "label": "Breast Pumps Manual", "imageUrl": "" },
-        { "collectionId": "gid://shopify/Collection/510565384481", "label": "Breast Pumps Electric", "imageUrl": "" }
+        {
+          "collectionId": "gid://shopify/Collection/508371239201",
+          "label": "All",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565548321",
+          "label": "Feeding Bottles & Nipples",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565581089",
+          "label": "Sippy Cups",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565613857",
+          "label": "Breast Pumps Manual",
+          "imageUrl": ""
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510565384481",
+          "label": "Breast Pumps Electric",
+          "imageUrl": ""
+        }
       ]
     }
-    
   },
   "productGridDefaults": {
     "gap": 16,
@@ -369,7 +525,6 @@
         },
         "order": 5
       },
-
       {
         "id": "all-grid-1",
         "type": "grid",
@@ -490,7 +645,8 @@
       "styles": {
         "container": {
           "paddingHorizontal": 20,
-          "paddingVertical": 16
+          "paddingVertical": 16,
+          "backgroundColor": "#FDF6EC"
         },
         "text": {
           "display": "none"
@@ -522,7 +678,8 @@
       },
       "styles": {
         "container": {
-          "marginTop": -61
+          "marginTop": -61,
+          "backgroundColor": "#FDF6EC"
         },
         "imageContainer": {},
         "image": {
@@ -575,18 +732,17 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": ""
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "marginTop": 20,
           "fontSize": 18,
           "fontWeight": "700",
-          "fontFamily": "bold",
+          "fontFamily": "bogart",
           "color": "#363636"
         },
         "text": {
-          "fontFamily": "",
           "fontWeight": "400",
           "color": "#000000"
         }
@@ -630,13 +786,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -682,13 +840,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -750,13 +910,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -834,13 +996,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -886,13 +1050,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -938,13 +1104,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -990,13 +1158,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "text": {
           "fontWeight": "500",
@@ -1025,13 +1195,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         }
       }
     },
@@ -1056,13 +1228,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         }
       }
     },
@@ -1087,13 +1261,15 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 18,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         }
       }
     },
@@ -1113,12 +1289,14 @@
       "styles": {
         "container": {
           "paddingTop": 10,
-          "paddingHorizontal": 16
+          "paddingHorizontal": 16,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1143,12 +1321,14 @@
       },
       "styles": {
         "container": {
-          "paddingTop": 10
+          "paddingTop": 10,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "fontSize": 16,
           "fontWeight": "600",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1175,12 +1355,14 @@
       "styles": {
         "container": {
           "paddingTop": 10,
-          "paddingBottom": 20
+          "paddingBottom": 20,
+          "backgroundColor": "#FDF6EC"
         },
         "title": {
           "fontSize": 18,
           "fontWeight": "700",
-          "color": "#363636"
+          "color": "#363636",
+          "fontFamily": "bogart"
         }
       },
       "order": 21
@@ -1247,10 +1429,12 @@
         {
           "id": "gid://shopify/Collection/510860788001",
           "name": "Party Wear"
-        },{
+        },
+        {
           "id": "gid://shopify/Collection/510860984609",
           "name": "Footwear & Socks"
-        },{
+        },
+        {
           "id": "gid://shopify/Collection/510861017377",
           "name": "Accessories"
         }
@@ -1450,10 +1634,12 @@
         {
           "id": "gid://shopify/Collection/510861967649",
           "name": "Party Wear"
-        },{
+        },
+        {
           "id": "gid://shopify/Collection/510862065953",
           "name": "Footwear & Socks"
-        },{
+        },
+        {
           "id": "gid://shopify/Collection/510862131489",
           "name": "Accessories"
         }
@@ -1911,7 +2097,7 @@
           "container": {
             "paddingHorizontal": 20,
             "paddingBottom": 200
-          }, 
+          },
           "title": {
             "marginBottom": 5,
             "fontSize": 18,
@@ -2177,14 +2363,27 @@
       "type": "grid",
       "title": "Shop By Category",
       "collectionIds": [
-        { "id": "gid://shopify/Collection/511117197601" },
-        { "id": "gid://shopify/Collection/511117263137" },
-        { "id": "gid://shopify/Collection/511117295905" },
-        { "id": "gid://shopify/Collection/511117328673" },
-        { "id": "gid://shopify/Collection/511117361441" }
+        {
+          "id": "gid://shopify/Collection/511117197601"
+        },
+        {
+          "id": "gid://shopify/Collection/511117263137"
+        },
+        {
+          "id": "gid://shopify/Collection/511117295905"
+        },
+        {
+          "id": "gid://shopify/Collection/511117328673"
+        },
+        {
+          "id": "gid://shopify/Collection/511117361441"
+        }
       ],
       "gridConfig": {
-        "columnsPerRow": [2, 3],
+        "columnsPerRow": [
+          2,
+          3
+        ],
         "colGap": 12,
         "rowGap": 12,
         "limit": 0,
@@ -2215,7 +2414,7 @@
           "fontSize": 14
         }
       },
-      "visible": true
+      "visible": false
     },
     {
       "id": "babycare-grid-brands",
@@ -2922,7 +3121,7 @@
       },
       {
         "code": "ALLFORKIDDO",
-        "title": "\u20b950 off",
+        "title": "₹50 off",
         "description": "Applicable thrice per user",
         "value": 50,
         "valueType": "fixed_amount",
@@ -2939,7 +3138,7 @@
       },
       {
         "code": "ILOVEKIDDO",
-        "title": "\u20b9100 off",
+        "title": "₹100 off",
         "description": "Applicable twice per user",
         "value": 100,
         "valueType": "fixed_amount",
@@ -2956,7 +3155,7 @@
       },
       {
         "code": "KIDDOCARES",
-        "title": "\u20b9150 off",
+        "title": "₹150 off",
         "description": "Once per user",
         "value": 180,
         "valueType": "fixed_amount",
@@ -2973,7 +3172,7 @@
       },
       {
         "code": "FUNWITHKIDDO",
-        "title": "\u20b9200 off",
+        "title": "₹200 off",
         "description": "Once per user",
         "value": 200,
         "valueType": "fixed_amount",
@@ -2990,7 +3189,7 @@
       },
       {
         "code": "KIDDOMAGIC",
-        "title": "\u20b9250 off",
+        "title": "₹250 off",
         "description": "Once per user",
         "value": 250,
         "valueType": "fixed_amount",
@@ -3007,7 +3206,7 @@
       },
       {
         "code": "WOWKIDDO",
-        "title": "\u20b9300 off",
+        "title": "₹300 off",
         "description": "Once per user",
         "value": 300,
         "valueType": "fixed_amount",
@@ -3024,7 +3223,7 @@
       },
       {
         "code": "CHEERFULKIDDO",
-        "title": "\u20b9350 off",
+        "title": "₹350 off",
         "description": "Once per user",
         "value": 350,
         "valueType": "fixed_amount",
@@ -3041,7 +3240,7 @@
       },
       {
         "code": "WONDERFULKIDDO",
-        "title": "\u20b9400 off",
+        "title": "₹400 off",
         "description": "Once per user",
         "value": 400,
         "valueType": "fixed_amount",
@@ -3058,7 +3257,7 @@
       },
       {
         "code": "HEYTHEREKIDDO",
-        "title": "\u20b9500 off",
+        "title": "₹500 off",
         "description": "Once per user",
         "value": 500,
         "valueType": "fixed_amount",

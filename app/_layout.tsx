@@ -25,12 +25,12 @@ import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
-import { trackEvent } from '@/utils/mixpanelHelpers';
-import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -67,6 +67,7 @@ export default function RootLayout() {
     'Metropolis-Medium': require('../assets/fonts/Metropolis-Medium.otf'),
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
+    bogart: require('./assets/fonts/BOGARTREGULARTRIAL.ttf'),
   });
 
   // Hide the native splash screen as soon as component mounts

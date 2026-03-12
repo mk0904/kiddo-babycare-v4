@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   blockSpacing: {
-    marginBottom: 4, // Consistent reduced gap between all sections
+    marginBottom: 0,
   },
 });
 
