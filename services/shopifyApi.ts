@@ -394,6 +394,14 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
 
 `;
 
+const GET_CUSTOMER_ID_QUERY = `
+  query getCustomerId($customerAccessToken: String!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      id
+    }
+  }
+`;
+
 const GET_CUSTOMER_ORDERS_QUERY = `
   query getCustomerOrders($customerAccessToken: String!, $first: Int!) {
     customer(customerAccessToken: $customerAccessToken) {
@@ -1129,6 +1137,26 @@ export const shopifyApi = {
     } catch (error) {
       console.error('Error fetching product recommendations:', error);
       return [];
+    }
+  },
+
+  /**
+   * Get current customer ID (GID) using Storefront API. Use when backend did not return id.
+   */
+  getCurrentCustomerId: async (customerAccessToken: string): Promise<string | null> => {
+    try {
+      const response = await client.post('', {
+        query: GET_CUSTOMER_ID_QUERY,
+        variables: { customerAccessToken },
+      });
+      if (response.data.errors) {
+        console.error('[ShopifyApi] getCurrentCustomerId errors:', response.data.errors);
+        return null;
+      }
+      return response.data.data.customer?.id ?? null;
+    } catch (error) {
+      console.error('[ShopifyApi] getCurrentCustomerId error:', error);
+      return null;
     }
   },
 
