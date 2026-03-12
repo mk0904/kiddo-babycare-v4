@@ -1,3 +1,9 @@
+import CategoryActive from '@/assets/icons/category-active.svg';
+import CategoryInactive from '@/assets/icons/category-inactive-fill.svg';
+import HomeActive from '@/assets/icons/home-active-fill.svg';
+import HomeInactive from '@/assets/icons/home-inactive-fill.svg';
+import ProfileActive from '@/assets/icons/profile-active-fill.svg';
+import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { Colors, Fonts } from '@/constants/theme';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -14,24 +20,16 @@ const DEFAULT_TAB_BAR_HEIGHT = 60;
 const ICON_SIZE = 26;
 const SCREENS_WITH_TAB_BAR = ['index', 'category', 'ticketing', 'account'];
 
-// Local icon mapping - using SVG files from assets/icons
-const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
-    index: {
-        active: require('@/assets/icons/home-active-fill.svg'),
-        inactive: require('@/assets/icons/home-inactive-fill.svg'),
-    },
-    category: {
-        active: require('@/assets/icons/category-active.svg'),
-        inactive: require('@/assets/icons/category-inactive-fill.svg'),
-    },
+type TabIconSource = React.ComponentType<{ width?: number; height?: number }> | number;
+
+const TAB_ICONS: Record<string, { active: TabIconSource; inactive: TabIconSource }> = {
+    index: { active: HomeActive, inactive: HomeInactive },
+    category: { active: CategoryActive, inactive: CategoryInactive },
     ticketing: {
         active: require('@/assets/icons/ticket-active.png'),
         inactive: require('@/assets/icons/ticketicon.png'),
     },
-    account: {
-        active: require('@/assets/icons/profile-active-fill.svg'),
-        inactive: require('@/assets/icons/profile-inactive-fill.svg'),
-    },
+    account: { active: ProfileActive, inactive: ProfileInactive },
 };
 
 export const TabBar = (props: BottomTabBarProps) => {
@@ -113,6 +111,10 @@ export const TabBar = (props: BottomTabBarProps) => {
         const icons = TAB_ICONS[routeName];
         if (!icons) return null;
         const iconSource = isFocused ? icons.active : icons.inactive;
+        if (typeof iconSource === 'function') {
+            const IconComponent = iconSource;
+            return <IconComponent width={iconSize} height={iconSize} />;
+        }
         return (
             <Image
                 source={iconSource}
