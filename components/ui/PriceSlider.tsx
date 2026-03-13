@@ -18,6 +18,8 @@ interface PriceSliderProps {
   value?: { min: number; max: number };
   onValueChange: (value: { min: number; max: number }) => void;
   step?: number;
+  /** Minimum gap between min and max (in value units). Max thumb can be dragged down to min + minRange. Default 10. */
+  minRange?: number;
 }
 
 export const PriceSlider: React.FC<PriceSliderProps> = ({
@@ -26,6 +28,7 @@ export const PriceSlider: React.FC<PriceSliderProps> = ({
   value,
   onValueChange,
   step = 100,
+  minRange = 10,
 }) => {
   const [sliderWidth, setSliderWidth] = useState(SCREEN_WIDTH - 200); // Default fallback
   
@@ -40,6 +43,9 @@ export const PriceSlider: React.FC<PriceSliderProps> = ({
   const startMinPos = useSharedValue(0);
   const startMaxPos = useSharedValue(0);
 
+  const range = max - min || 1;
+  const minGapPixels = (minRange / range) * sliderWidth;
+
   // Update shared values when props or sliderWidth change
   useEffect(() => {
     const nextMin = value?.min ?? min;
@@ -47,9 +53,9 @@ export const PriceSlider: React.FC<PriceSliderProps> = ({
     setDisplayMin(nextMin);
     setDisplayMax(nextMax);
     
-    const range = max - min || 1;
-    minPos.value = ((nextMin - min) / range) * sliderWidth;
-    maxPos.value = ((nextMax - min) / range) * sliderWidth;
+    const r = max - min || 1;
+    minPos.value = ((nextMin - min) / r) * sliderWidth;
+    maxPos.value = ((nextMax - min) / r) * sliderWidth;
   }, [value, min, max, sliderWidth]);
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -87,9 +93,9 @@ export const PriceSlider: React.FC<PriceSliderProps> = ({
     })
     .onUpdate((event) => {
       let nextPos = startMinPos.value + event.translationX;
-      // Boundaries: 0 to maxPos (leave space for thumb)
+      // Boundaries: 0 to maxPos - minGapPixels (so max can go down to min + minRange)
       if (nextPos < 0) nextPos = 0;
-      if (nextPos > maxPos.value - 20) nextPos = maxPos.value - 20;
+      if (nextPos > maxPos.value - minGapPixels) nextPos = maxPos.value - minGapPixels;
       minPos.value = nextPos;
       runOnJS(updateLabels)(nextPos, true);
     })
@@ -103,9 +109,9 @@ export const PriceSlider: React.FC<PriceSliderProps> = ({
     })
     .onUpdate((event) => {
       let nextPos = startMaxPos.value + event.translationX;
-      // Boundaries: minPos to sliderWidth
+      // Boundaries: minPos + minGapPixels (scrollable down to min + minRange) to sliderWidth
       if (nextPos > sliderWidth) nextPos = sliderWidth;
-      if (nextPos < minPos.value + 20) nextPos = minPos.value + 20;
+      if (nextPos < minPos.value + minGapPixels) nextPos = minPos.value + minGapPixels;
       maxPos.value = nextPos;
       runOnJS(updateLabels)(nextPos, false);
     })
