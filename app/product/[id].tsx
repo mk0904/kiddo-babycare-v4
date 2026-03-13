@@ -258,9 +258,6 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
-    // Hide highlights section when user scrolls down the page
-    const [highlightsSectionVisible, setHighlightsSectionVisible] = useState(true);
-    
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -940,21 +937,6 @@ const ProductDetailScreen = () => {
         }
     };
 
-    const HIDE_HIGHLIGHTS_THRESHOLD = 100;
-    const SHOW_HIGHLIGHTS_THRESHOLD = 80;
-    const onPDPScroll = useCallback(
-        (event: any) => {
-            handleScroll(event);
-            const offsetY = event.nativeEvent?.contentOffset?.y ?? 0;
-            setHighlightsSectionVisible((prev) => {
-                if (offsetY > HIDE_HIGHLIGHTS_THRESHOLD) return false;
-                if (offsetY <= SHOW_HIGHLIGHTS_THRESHOLD) return true;
-                return prev;
-            });
-        },
-        [handleScroll]
-    );
-
     const handleShare = useCallback(async () => {
         if (!product) return;
         const handle = product.handle || (params as any).handle;
@@ -1250,7 +1232,7 @@ const ProductDetailScreen = () => {
             </View>
 
             <ScrollView
-                onScroll={onPDPScroll}
+                onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -1296,7 +1278,7 @@ const ProductDetailScreen = () => {
                 )}
 
                 {/* Highlights from metafields - rounded boxes below image; hide when user scrolls down */}
-                {highlightsList.length > 0 && highlightsSectionVisible && (
+                {highlightsList.length > 0 && (
                     <View style={styles.highlightsSection}>
                         <ScrollView
                             horizontal
