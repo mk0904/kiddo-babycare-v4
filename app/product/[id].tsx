@@ -1193,17 +1193,6 @@ const ProductDetailScreen = () => {
                 )}
 
                 <View style={styles.infoContainer}>
-                    <Text style={[
-                        styles.title,
-                        productStyles.title && {
-                            fontSize: productStyles.title.fontSize,
-                            color: productStyles.title.color,
-                            paddingHorizontal: productStyles.title.paddingHorizontal,
-                            paddingTop: productStyles.title.paddingTop,
-                            lineHeight: productStyles.title.lineHeight,
-                            ...processFontStyle(productStyles.title, Fonts.Bold),
-                        }
-                    ]}>{product.title}</Text>
                     {product.vendor && (
                         <Text style={[
                             styles.vendorText,
@@ -1218,6 +1207,17 @@ const ProductDetailScreen = () => {
                             }
                         ]}>{product.vendor}</Text>
                     )}
+                    <Text style={[
+                        styles.title,
+                        productStyles.title && {
+                            fontSize: productStyles.title.fontSize,
+                            color: productStyles.title.color,
+                            paddingHorizontal: productStyles.title.paddingHorizontal,
+                            paddingTop: productStyles.title.paddingTop,
+                            lineHeight: productStyles.title.lineHeight,
+                            ...processFontStyle(productStyles.title, Fonts.Bold),
+                        }
+                    ]}>{product.title}</Text>
 
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
@@ -1664,17 +1664,18 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontFamily: Fonts.Bold,
-        paddingHorizontal: 16, // Reduced
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        marginTop: 6,
         lineHeight: 28,
     },
     vendorText: {
         fontSize: 14,
         fontFamily: Fonts.Medium,
         color: '#666',
-        paddingHorizontal: 16, // Reduced
-        marginTop: 8,
-        marginBottom: 4,
+        paddingHorizontal: 16,
+        marginTop: 0,
+        marginBottom: 0,
         textTransform: 'uppercase',
     },
     variantsContainer: {

@@ -20,6 +20,8 @@ class ConfigService {
   private listeners: Set<(config: AppConfig) => void> = new Set();
   private isLoading: boolean = false;
   private loadPromise: Promise<AppConfig> | null = null;
+  /** Set when config is successfully loaded; used to cache-bust sidebar images so they refresh each app session */
+  private configLoadedAt: number | null = null;
 
   // Load config from remote or local
   async loadConfig(remoteUrl?: string, forceReload: boolean = false): Promise<AppConfig> {
@@ -32,6 +34,7 @@ class ConfigService {
     if (forceReload) {
       this.rawConfig = null;
       this.config = defaultConfig;
+      this.configLoadedAt = null;
     }
 
     const url = remoteUrl || REMOTE_CONFIG_URL;
@@ -72,6 +75,7 @@ class ConfigService {
         console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
         console.log('[ConfigService] Config loaded at:', new Date().toISOString());
         this.rawConfig = remoteConfig;
+        this.configLoadedAt = Date.now();
       } else {
         const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
         console.error('[ConfigService] ❌ Remote config fetch failed:', error);
@@ -237,6 +241,11 @@ class ConfigService {
     const entry = map[normalized] || map[collectionId];
     if (!entry?.subcategories?.length) return null;
     return entry.subcategories;
+  }
+
+  /** Timestamp when config was last loaded; use to cache-bust sidebar image URLs so they refresh each app session */
+  getConfigLoadedAt(): number | null {
+    return this.configLoadedAt;
   }
 
   // Get config

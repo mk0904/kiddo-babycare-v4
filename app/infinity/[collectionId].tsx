@@ -625,6 +625,14 @@ export default function InfinityScreen() {
                                 const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
                                 const subNorm = sub.collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
                                 const isSelected = currentNorm === subNorm;
+                                const imageUri = sub.imageUrl
+                                    ? (() => {
+                                          const t = configService.getConfigLoadedAt();
+                                          if (t == null) return sub.imageUrl!;
+                                          const sep = sub.imageUrl!.includes('?') ? '&' : '?';
+                                          return `${sub.imageUrl!}${sep}_t=${t}`;
+                                      })()
+                                    : null;
                                 return (
                                     <TouchableOpacity
                                         key={sub.collectionId}
@@ -635,8 +643,8 @@ export default function InfinityScreen() {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        {sub.imageUrl ? (
-                                            <Image source={{ uri: sub.imageUrl }} style={styles.sidebarItemImage} contentFit="cover" />
+                                        {imageUri ? (
+                                            <Image source={{ uri: imageUri }} style={styles.sidebarItemImage} contentFit="cover" />
                                         ) : (
                                             <View style={styles.sidebarItemPlaceholder}>
                                                 <Ionicons name="pricetag-outline" size={18} color="#999" />
