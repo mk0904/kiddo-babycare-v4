@@ -1734,10 +1734,6 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 24,
         overflow: 'hidden',
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
     },
     itemsSectionGiftWrap: {
         paddingBottom: 0,
@@ -1746,10 +1742,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 16,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
     },
     itemsHeader: {
         marginBottom: 12,
