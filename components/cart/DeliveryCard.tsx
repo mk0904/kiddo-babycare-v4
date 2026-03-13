@@ -106,6 +106,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+        marginLeft: 6,
     },
     title: {
         fontSize: Fonts.SmallFontSize,
@@ -122,10 +123,10 @@ const styles = StyleSheet.create({
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#414651',
-        marginBottom: 6,
+        marginBottom: 4,
     },
     link: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#F15E5E',
     },

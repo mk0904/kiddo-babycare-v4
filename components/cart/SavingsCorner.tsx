@@ -453,7 +453,6 @@ export function SavingsCorner({
 const styles = StyleSheet.create({
     wrapper: {
         marginBottom: 16,
-        padding: 6,
         paddingVertical: 12,
         borderRadius: 16,
     },

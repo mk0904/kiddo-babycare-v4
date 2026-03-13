@@ -22,6 +22,8 @@ export interface CartFooterPaymentProps {
     isAuthenticated: boolean;
     onPlaceOrder: () => void;
     onAddAddress: () => void;
+    /** Called when user taps "Login to Order" (when not authenticated). */
+    onLoginPress?: () => void;
     onPaymentMethodPress?: () => void;
     /** Pay button prefix from backend app config (e.g. "Pay"). */
     payButtonLabel?: string | null;
@@ -36,6 +38,7 @@ export function CartFooterPayment({
     isAuthenticated,
     onPlaceOrder,
     onAddAddress,
+    onLoginPress,
     onPaymentMethodPress,
     payButtonLabel,
 }: CartFooterPaymentProps) {
@@ -62,9 +65,9 @@ export function CartFooterPayment({
 
             {showPayButton ? (
                 <TouchableOpacity
-                    style={[styles.payButton, (orderLoading || !isAuthenticated) && styles.payButtonDisabled]}
-                    onPress={onPlaceOrder}
-                    disabled={orderLoading || !isAuthenticated}
+                    style={[styles.payButton, orderLoading && styles.payButtonDisabled]}
+                    onPress={isAuthenticated ? onPlaceOrder : (onLoginPress ?? onPlaceOrder)}
+                    disabled={orderLoading}
                     activeOpacity={0.85}
                 >
                     {orderLoading ? (
@@ -119,7 +122,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#DB5656',
         paddingHorizontal: 24,
         paddingVertical: 14,
-        borderRadius: 28,
+        borderRadius: 16,
         minWidth: 140,
         justifyContent: 'center',
         alignItems: 'center',
@@ -142,21 +145,21 @@ const styles = StyleSheet.create({
     },
     payButtonPrefix: {
         color: '#fff',
-        fontSize: 15,
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
     },
     payButtonAmount: {
         color: '#fff',
-        fontSize: 15,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
     },
     payButtonArrow: {
         marginLeft: 6,
     },
     payButtonText: {
         color: '#fff',
-        fontSize: 15,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
     },
     addAddressButton: {
         width: '90%',

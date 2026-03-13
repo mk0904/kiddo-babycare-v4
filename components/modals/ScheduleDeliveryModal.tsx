@@ -1,3 +1,4 @@
+import FlashIcon from '@/assets/icons/Icon.svg';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
@@ -5,13 +6,12 @@ import {
     Dimensions,
     Image,
     Modal,
-    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 interface ScheduleDeliveryModalProps {
@@ -270,9 +270,10 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                         >
                             <Text style={styles.confirmButtonText}>Confirm</Text>
                         </TouchableOpacity>
-                        {/* <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
-                            <Text style={styles.wantItNowText}>No, I want it now</Text>
-                        </TouchableOpacity> */}
+                        <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
+                            <FlashIcon width={44} height={44} style={styles.icon} />
+                            <Text style={styles.wantItNowText}>Changed my mind, want it now</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: 20,
         paddingTop: 20,
-        paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+        paddingBottom: 12,
         borderTopWidth: 1,
         borderTopColor: '#E0E0E0',
     },
@@ -459,13 +460,17 @@ const styles = StyleSheet.create({
     },
     wantItNowButton: {
         alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingVertical: 14,
         paddingHorizontal: 8,
     },
     wantItNowText: {
-        fontSize: 15,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
-        textDecorationLine: 'underline',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#F15E5E',
+    },
+    icon: {
+        marginRight: -4,
     },
 });

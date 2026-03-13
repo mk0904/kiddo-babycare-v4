@@ -1536,6 +1536,7 @@ export default function CartScreen() {
                             isAuthenticated={isAuthenticated}
                             onPlaceOrder={handlePlaceOrder}
                             onAddAddress={handleAddressSelection}
+                            onLoginPress={() => router.push('/(auth)/login')}
                             payButtonLabel={checkoutConfig?.payButtonLabel}
                         />
                     </View>
