@@ -19,6 +19,7 @@ import ProductCard from '@/components/product/ProductCard';
 import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { EmptyState } from '@/components/ui/EmptyState';
+import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -172,6 +173,7 @@ export default function WishlistScreen() {
                 }}
                 onLogin={() => router.push('/login')} // Update with actual login route
             />
+            <FloatingCartButton showTabBar={false} />
         </SafeAreaView>
     );
 }
