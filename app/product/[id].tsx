@@ -19,6 +19,7 @@ import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -32,7 +33,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -1305,17 +1305,6 @@ const ProductDetailScreen = () => {
                 )}
 
                 <View style={styles.infoContainer}>
-                    <Text style={[
-                        styles.title,
-                        productStyles.title && {
-                            fontSize: productStyles.title.fontSize,
-                            color: productStyles.title.color,
-                            paddingHorizontal: productStyles.title.paddingHorizontal,
-                            paddingTop: productStyles.title.paddingTop,
-                            lineHeight: productStyles.title.lineHeight,
-                            ...processFontStyle(productStyles.title, Fonts.Bold),
-                        }
-                    ]}>{product.title}</Text>
                     <View style={styles.vendorRow}>
                         {product.vendor ? (
                             <Text style={[
@@ -1346,6 +1335,17 @@ const ProductDetailScreen = () => {
                             </View>
                         ) : null}
                     </View>
+                    <Text style={[
+                        styles.title,
+                        productStyles.title && {
+                            fontSize: productStyles.title.fontSize,
+                            color: productStyles.title.color,
+                            paddingHorizontal: productStyles.title.paddingHorizontal,
+                            paddingTop: productStyles.title.paddingTop,
+                            lineHeight: productStyles.title.lineHeight,
+                            ...processFontStyle(productStyles.title, Fonts.Bold),
+                        }
+                    ]}>{product.title}</Text>
 
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
@@ -1781,8 +1781,9 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontFamily: Fonts.Bold,
-        paddingHorizontal: 16, // Reduced
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        marginTop: 6,
         lineHeight: 28,
     },
     vendorRow: {
@@ -1798,7 +1799,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.Medium,
         color: '#666',
-        paddingHorizontal: 0,
+        paddingHorizontal: 16,
+        marginTop: 0,
+        marginBottom: 0,
         textTransform: 'uppercase',
     },
     variantsContainer: {

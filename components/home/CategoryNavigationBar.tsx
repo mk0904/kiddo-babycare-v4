@@ -223,6 +223,7 @@ const defaultStyles = StyleSheet.create({
     padding: 0,
     borderRadius: 0,
     backgroundColor: 'transparent',
+    marginBottom: -4,
   },
   selectedIconWrapper: {
     backgroundColor: 'transparent',
@@ -259,7 +260,7 @@ const defaultStyles = StyleSheet.create({
     color: '#222222',
     textAlign: 'center',
     fontWeight: '400',
-    marginTop: 1,
+    marginTop: 0,
     marginBottom: 4,
     minHeight: 16,
     lineHeight: 14,
