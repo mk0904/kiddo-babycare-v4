@@ -17,8 +17,14 @@ export interface BillDetailsProps {
     deliveryFeeOriginal?: number;
     /** Platform fee when cart has only ticket products (e.g. 20); 0 = hide row. Shown like handling fee. */
     platformFee?: number;
-    /** Coupon discount amount (positive number; show as -₹X when > 0) */
+    /** Coupon discount amount (positive number; total of all coupon discounts) */
     couponDiscount: number;
+    /** When true, show a "Free Shoes" row with FREE Shoes instead of amount (HEYKIDDO) */
+    hasHeyKiddo?: boolean;
+    /** Original price for HEYKIDDO row (shown struck when present) */
+    heyKiddoOriginalPrice?: number;
+    /** Discount from other coupons (non-HEYKIDDO); show as "Coupon Discount" -₹X when > 0 */
+    otherCouponDiscount?: number;
     /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
     /** Gift wrapping applied (when set, show row with this price; may include productIds to detect "applied") */
@@ -44,6 +50,9 @@ export function BillDetails({
     deliveryFeeOriginal = 0,
     platformFee = 0,
     couponDiscount,
+    hasHeyKiddo = false,
+    heyKiddoOriginalPrice,
+    otherCouponDiscount = 0,
     giftWrappingFee,
     giftWrapping = null,
     kiddoCashEnabled,
@@ -120,12 +129,25 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Coupon Discount */}
-                    {couponDiscount > 0 && (
+                    {/* Free Shoes (HEYKIDDO) – show original price struck + FREE Shoes */}
+                    {hasHeyKiddo && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Free Shoes</Text>
+                            <View style={styles.valueRow}>
+                                {heyKiddoOriginalPrice != null && heyKiddoOriginalPrice > 0 && (
+                                    <Text style={styles.valueStruck}>{formatCurrency(heyKiddoOriginalPrice)}</Text>
+                                )}
+                                <Text style={[styles.value, styles.freeShoesText]}>FREE SHOES</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Coupon Discount (other coupons; when only HEYKIDDO applied, otherCouponDiscount is 0) */}
+                    {otherCouponDiscount > 0 && (
                         <View style={styles.row}>
                             <Text style={styles.label}>Coupon Discount</Text>
                             <Text style={[styles.value, styles.discountText]}>
-                                -{formatCurrency(couponDiscount)}
+                                -{formatCurrency(otherCouponDiscount)}
                             </Text>
                         </View>
                     )}
@@ -275,6 +297,11 @@ const styles = StyleSheet.create({
         textDecorationLine: 'line-through',
     },
     freeText: {
+        fontSize: Fonts.SmallFontSize,
+        color: '#16a34a',
+        fontFamily: Fonts.SemiBold,
+    },
+    freeShoesText: {
         fontSize: Fonts.SmallFontSize,
         color: '#16a34a',
         fontFamily: Fonts.SemiBold,

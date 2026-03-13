@@ -1,5 +1,6 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { appConfigService } from '@/services/appConfigService';
 import { couponService, type CouponCode } from '@/services/couponService';
 import { useCartItems, useCartStore } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -186,8 +187,19 @@ export function SavingsCorner({
         setManualCodeMessage(null);
     };
 
+    const isHeyKiddoApplied = (appliedDiscountCode ?? '').toUpperCase() === 'HEYKIDDO';
+    const heyKiddoOriginalPrice = useMemo(() => {
+        if (!isHeyKiddoApplied) return undefined;
+        const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
+        if (fromCode != null && Number.isFinite(fromCode)) return fromCode;
+        const config = appConfigService.getCartConfig()?.freeShoesOffer ?? appConfigService.getFreeShoesOfferConfig();
+        const raw = (config as any)?.originalPrice ?? (config as any)?.original_price;
+        const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
+        return Number.isFinite(num) && num >= 0 ? num : undefined;
+    }, [isHeyKiddoApplied, discountCodes]);
+    const appliedSaveAmount = isHeyKiddoApplied && heyKiddoOriginalPrice != null ? heyKiddoOriginalPrice : discountAmount;
     const mainText = hasAppliedCoupon
-        ? `Save ${formatCurrency(discountAmount)} with ${appliedDiscountCode ?? ''} `
+        ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''} `
         : selectedCouponForApply
             ? `Save ${formatCurrency(
                 selectedCouponForApply.valueType === 'percentage'

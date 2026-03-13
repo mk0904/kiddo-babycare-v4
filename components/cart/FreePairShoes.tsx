@@ -46,8 +46,10 @@ export interface FreePairShoesProps {
     onConfirmSize?: (shoeId: string, size: string) => void;
     /** Called when user taps "Remove offer" in selected state */
     onRemoveOffer?: () => void;
-    /** Optional original price for display (strikethrough); defaults to 4999 */
+    /** Optional original price for display (strikethrough); defaults to config/4999 */
     originalPrice?: number;
+    /** When HEYKIDDO is applied, original price from coupon state (overrides originalPrice when set) */
+    appliedCouponOriginalPrice?: number;
 }
 
 interface ShoeOption {
@@ -65,6 +67,7 @@ export function FreePairShoes({
     onConfirmSize,
     onRemoveOffer,
     originalPrice,
+    appliedCouponOriginalPrice,
 }: FreePairShoesProps) {
     const [shoeOptions, setShoeOptions] = useState<ShoeOption[]>([]);
     const [sizeOptions, setSizeOptions] = useState<SizeOption[]>([]);
@@ -114,7 +117,9 @@ export function FreePairShoes({
     const isApplied = !!selectedShoe;
     const firstAvailableSize = sizeOptions.find((s) => s.isAvailable)?.size ?? DEFAULT_SHOE_SIZES[0]?.size ?? '0 - 3M';
     const displaySize = selectedSize || firstAvailableSize;
-    const effectiveOriginalPrice = originalPrice != null ? originalPrice : configOriginalPrice;
+    const effectiveOriginalPrice = appliedCouponOriginalPrice != null
+        ? appliedCouponOriginalPrice
+        : (originalPrice != null ? originalPrice : configOriginalPrice);
 
     const openSizeModal = () => {
         const currentSelection = selectedSize && sizeOptions.some((s) => s.size === selectedSize && s.isAvailable)
@@ -451,9 +456,9 @@ const styles = StyleSheet.create({
         gap: 8,      
     },
     originalPrice: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        color: '#9CA3AF',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#717680',
         textDecorationLine: 'line-through',
     },
     freeText: {

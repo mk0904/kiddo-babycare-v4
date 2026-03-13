@@ -39,6 +39,8 @@ export interface CouponCode {
   isVisible?: boolean;
   /** Max discount in currency units (e.g. INR). Applied when valueType is percentage (or fixed) to cap the discount. */
   maxDiscountAmount?: number | null;
+  /** Original price for display (e.g. HEYKIDDO free shoe – show struck in bill details). */
+  originalPrice?: number | null;
 }
 
 export interface GetEligibleCouponsParams {

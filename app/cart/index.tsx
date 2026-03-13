@@ -160,6 +160,8 @@ export default function CartScreen() {
     const selectedShoeSize = useCartStore(state => state.selectedShoeSize);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
     const setSelectedShoeSize = useCartStore(state => state.setSelectedShoeSize);
+    const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
+    const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
     const mrp = useCartStore(state => state.mrp());
@@ -375,6 +377,16 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
+    // When HEYKIDDO is applied from coupon list, auto-select first free shoe (vice versa of shoe → coupon)
+    useEffect(() => {
+        const hasHeyKiddo = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+        if (!hasHeyKiddo || selectedShoe || !freeShoesOfferConfig?.shoes?.length) return;
+        const firstShoe = freeShoesOfferConfig.shoes[0];
+        const firstSize = freeShoesOfferConfig.sizes?.find((s) => s.isAvailable)?.size ?? freeShoesOfferConfig.sizes?.[0]?.size;
+        setSelectedShoe(firstShoe.id);
+        if (firstSize) setSelectedShoeSize(firstSize);
+    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, setSelectedShoe, setSelectedShoeSize]);
+
     // Coupon fetching is handled inside SavingsCorner.
 
     // Use address from AddressContext
@@ -411,6 +423,8 @@ export default function CartScreen() {
     }
 
     // Use discount values from cart store (source: backend API only, not config)
+    let heyKiddoDiscountAmount = 0;
+    let otherCouponDiscountAmount = 0;
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
@@ -420,6 +434,7 @@ export default function CartScreen() {
             const shouldProcess = discountCode.applicable !== false;
             const discountValue = Number(discountCode.value ?? 0);
             const discountType = discountCode.type;
+            const isHeyKiddo = discountCode.code.toUpperCase() === 'HEYKIDDO';
 
             if (shouldProcess && discountValue > 0) {
                 let codeDiscount = 0;
@@ -433,6 +448,8 @@ export default function CartScreen() {
                     codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
                 }
                 calculatedDiscount += codeDiscount;
+                if (isHeyKiddo) heyKiddoDiscountAmount += codeDiscount;
+                else otherCouponDiscountAmount += codeDiscount;
                 if (__DEV__) {
                     console.log('[CartScreen] Applied discount:', {
                         code: discountCode.code,
@@ -459,6 +476,8 @@ export default function CartScreen() {
             console.log('[CartScreen] No discount codes found in store');
         }
     }
+    const hasHeyKiddoApplied = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO' && dc.applicable !== false);
+    const heyKiddoOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
 
     // Use our calculated discount instead of Shopify's
     // Cap the discount to not exceed the subtotal (for fixed discounts)
@@ -1369,11 +1388,22 @@ export default function CartScreen() {
                                 selectedShoe={selectedShoe}
                                 selectedShoeSize={selectedShoeSize}
                                 onAddPress={() => {}}
-                                onConfirmSize={(shoeId, size) => {
+                                onConfirmSize={async (shoeId, size) => {
                                     setSelectedShoeSize(size);
                                     setSelectedShoe(shoeId);
+                                    const rawOrig = (freeShoesOfferConfig as any)?.originalPrice ?? (freeShoesOfferConfig as any)?.original_price;
+                                    const orig = typeof rawOrig === 'number' ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                    const originalPrice = orig != null && Number.isFinite(orig) && orig >= 0 ? orig : undefined;
+                                    const result = await applyDiscountCode('HEYKIDDO', { originalPrice });
+                                    if (!result.success && result.error) {
+                                        Alert.alert('Coupon', result.error);
+                                    }
                                 }}
-                                onRemoveOffer={() => setSelectedShoe(null)}
+                                onRemoveOffer={async () => {
+                                    setSelectedShoe(null);
+                                    await removeDiscountCode('HEYKIDDO');
+                                }}
+                                appliedCouponOriginalPrice={heyKiddoOriginalPrice}
                             />
                         )}
 
@@ -1441,6 +1471,9 @@ export default function CartScreen() {
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
                             platformFee={platformFeeDisplay}
                             couponDiscount={discountAmount}
+                            hasHeyKiddo={hasHeyKiddoApplied}
+                            heyKiddoOriginalPrice={heyKiddoOriginalPrice}
+                            otherCouponDiscount={otherCouponDiscountAmount}
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}

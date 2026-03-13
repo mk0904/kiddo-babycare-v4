@@ -49,6 +49,8 @@ export interface DiscountCode {
     appliedAt: number;
     /** Max discount in currency units; cap applied discount at this amount when set. */
     maxDiscountAmount?: number | null;
+    /** Original price for display (e.g. HEYKIDDO free shoe – show struck in bill details). */
+    originalPrice?: number;
 }
 
 export interface GiftWrapping {
@@ -114,7 +116,7 @@ interface CartState {
     applyEligibleGifts: () => void;
 
     // Discount codes
-    applyDiscountCode: (code: string, options?: { preloadedCoupons?: any[] }) => Promise<{ success: boolean; error?: string }>;
+    applyDiscountCode: (code: string, options?: { preloadedCoupons?: any[]; originalPrice?: number }) => Promise<{ success: boolean; error?: string }>;
     removeDiscountCode: (code: string) => void;
     removeAllDiscountCodes: () => void;
     validateAppliedDiscountCodes: () => Promise<void>;
@@ -652,6 +654,11 @@ export const useCartStore = create<CartState>()(
                 const rawType = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
                 const discountType: 'percentage' | 'fixed' =
                     rawType === 'fixed' || rawType === 'fixed_amount' || rawType === 'fixed amount' ? 'fixed' : 'percentage';
+                const rawOrig = options?.originalPrice ?? configDiscount.originalPrice ?? (configDiscount as any).original_price;
+                const origPrice = typeof rawOrig === 'number' && Number.isFinite(rawOrig)
+                    ? rawOrig
+                    : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                const originalPriceNum = Number.isFinite(origPrice) && origPrice >= 0 ? origPrice : undefined;
                 const newDiscountCodeEntry: DiscountCode = {
                     code: normalizedCode,
                     type: discountType,
@@ -659,17 +666,26 @@ export const useCartStore = create<CartState>()(
                     applicable: true,
                     appliedAt: Date.now(),
                     maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
+                    ...(originalPriceNum != null ? { originalPrice: originalPriceNum } : {}),
                 };
 
                 let nextDiscountCodes: DiscountCode[];
                 if (configDiscount.nonCombinable) {
                     nextDiscountCodes = [newDiscountCodeEntry];
                 } else {
-                    const existingApplicable = state.discountCodes.filter((dc) => dc.applicable !== false && dc.code.toUpperCase() !== normalizedCode);
+                    const existingApplicable = state.discountCodes.filter(
+                        (dc) =>
+                            dc.applicable !== false &&
+                            dc.code.toUpperCase() !== normalizedCode &&
+                            (normalizedCode === 'HEYKIDDO' || dc.code.toUpperCase() !== 'HEYKIDDO')
+                    );
                     nextDiscountCodes = [...existingApplicable, newDiscountCodeEntry];
                 }
 
-                set({ discountCodes: nextDiscountCodes });
+                set({
+                    discountCodes: nextDiscountCodes,
+                    ...(normalizedCode !== 'HEYKIDDO' ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                });
 
                 // Get cart for subtotal/tax; discount and total are computed from backend coupon values only
                 let cartForCost: { cost?: { subtotalAmount?: { amount: string }; totalTaxAmount?: { amount: string }; totalAmount?: { amount: string; currencyCode: string } }; checkoutUrl?: string } | null = null;
@@ -793,6 +809,10 @@ export const useCartStore = create<CartState>()(
                                     console.log(`[CartStore] ⚠️ No discount value found for ${dc.code}`);
                                 }
                                 const maxCap = backendCoupon?.maxDiscountAmount != null ? Number(backendCoupon.maxDiscountAmount) : undefined;
+                                const rawOrig = backendCoupon?.originalPrice ?? (backendCoupon as any)?.original_price;
+                                const origPrice = typeof rawOrig === 'number' && Number.isFinite(rawOrig) ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                const existing = state.discountCodes.find((d) => d.code.toUpperCase() === dc.code?.toUpperCase());
+                                const originalPrice = origPrice ?? existing?.originalPrice;
                                 return {
                                     code: dc.code.toUpperCase(),
                                     type: discountType,
@@ -800,6 +820,7 @@ export const useCartStore = create<CartState>()(
                                     applicable: isApplicable,
                                     appliedAt: Date.now(),
                                     maxDiscountAmount: maxCap,
+                                    ...(originalPrice != null ? { originalPrice } : {}),
                                 };
                             });
                             
@@ -831,6 +852,8 @@ export const useCartStore = create<CartState>()(
                                 const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
                                 const backendType: 'percentage' | 'fixed' =
                                     bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount' ? 'fixed' : 'percentage';
+                                const rawBackendOrig1 = configDiscount.originalPrice ?? (configDiscount as any).original_price;
+                                const backendOrig1 = typeof rawBackendOrig1 === 'number' && Number.isFinite(rawBackendOrig1) ? rawBackendOrig1 : typeof rawBackendOrig1 === 'string' ? parseFloat(rawBackendOrig1) : undefined;
                                 const backendEntry: DiscountCode = {
                                     code: normalizedCode,
                                     type: backendType,
@@ -838,6 +861,7 @@ export const useCartStore = create<CartState>()(
                                     applicable: true,
                                     appliedAt: Date.now(),
                                     maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
+                                    ...(backendOrig1 != null ? { originalPrice: backendOrig1 } : {}),
                                 };
                                 if (!codeInResponse) {
                                     console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -1096,6 +1120,10 @@ export const useCartStore = create<CartState>()(
                             console.log(`[CartStore] ⚠️ No discount value found for ${dc.code}`);
                         }
                         const maxCap2 = backendCoupon?.maxDiscountAmount != null ? Number(backendCoupon.maxDiscountAmount) : undefined;
+                        const rawOrig2 = backendCoupon?.originalPrice ?? (backendCoupon as any)?.original_price;
+                        const origPrice2 = typeof rawOrig2 === 'number' && Number.isFinite(rawOrig2) ? rawOrig2 : typeof rawOrig2 === 'string' ? parseFloat(rawOrig2) : undefined;
+                        const existing2 = state.discountCodes.find((d) => d.code.toUpperCase() === dc.code?.toUpperCase());
+                        const originalPrice2 = origPrice2 ?? existing2?.originalPrice;
                         return {
                             code: dc.code.toUpperCase(),
                             type: discountType,
@@ -1103,6 +1131,7 @@ export const useCartStore = create<CartState>()(
                             applicable: isApplicable,
                             appliedAt: Date.now(),
                             maxDiscountAmount: maxCap2,
+                            ...(originalPrice2 != null ? { originalPrice: originalPrice2 } : {}),
                         };
                     });
                     
@@ -1117,6 +1146,8 @@ export const useCartStore = create<CartState>()(
                         const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
                         const backendType: 'percentage' | 'fixed' =
                             bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount' ? 'fixed' : 'percentage';
+                        const rawBackendOrig = configDiscount.originalPrice ?? (configDiscount as any).original_price;
+                        const backendOrig = typeof rawBackendOrig === 'number' && Number.isFinite(rawBackendOrig) ? rawBackendOrig : typeof rawBackendOrig === 'string' ? parseFloat(rawBackendOrig) : undefined;
                         const backendEntry: DiscountCode = {
                             code: normalizedCode,
                             type: backendType,
@@ -1124,6 +1155,7 @@ export const useCartStore = create<CartState>()(
                             applicable: true,
                             appliedAt: Date.now(),
                             maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
+                            ...(backendOrig != null ? { originalPrice: backendOrig } : {}),
                         };
                         if (!codeInResponse) {
                             console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -1180,7 +1212,10 @@ export const useCartStore = create<CartState>()(
                 const state = get();
                 const normalizedCode = code.toUpperCase();
                 const updatedDiscountCodes = state.discountCodes.filter((dc) => dc.code.toUpperCase() !== normalizedCode);
-                set({ discountCodes: updatedDiscountCodes });
+                set({
+                    discountCodes: updatedDiscountCodes,
+                    ...(normalizedCode === 'HEYKIDDO' ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                });
 
                 const cartId = await get().ensureCart();
                 // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes

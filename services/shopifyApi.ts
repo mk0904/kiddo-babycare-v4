@@ -508,6 +508,7 @@ const GET_ORDER_BY_ID_QUERY = `
         discountApplications(first: 10) {
           edges {
             node {
+              __typename
               ... on DiscountCodeApplication {
                 code
                 applicable
@@ -520,6 +521,10 @@ const GET_ORDER_BY_ID_QUERY = `
               }
             }
           }
+        }
+        customAttributes {
+          key
+          value
         }
       }
     }

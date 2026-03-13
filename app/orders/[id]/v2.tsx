@@ -44,6 +44,42 @@ function getGiftWrapImageSource(title: string): any {
     return match ? GIFT_WRAP_IMAGES[match[0]] ?? GIFT_WRAP_IMAGES['Wrap-1'] : (/gift wrap/i.test(title) ? GIFT_WRAP_IMAGES['Wrap-1'] : null);
 }
 
+function looksLikeTicketingDate(s: string): boolean {
+    if (!s || typeof s !== 'string') return false;
+    const month =
+        '(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)';
+    const ordinal = '(?:st|nd|rd|th)?';
+    const day = '(?:[0-3]?\\d)';
+    if (new RegExp(`\\b${day}${ordinal}\\s+${month}\\b`, 'i').test(s)) return true;
+    if (new RegExp(`\\b${month}\\s+${day}${ordinal}\\b`, 'i').test(s)) return true;
+    return false;
+}
+
+function isTicketingLineItem(node: any): boolean {
+    const itemTitle = node?.title || '';
+    const variantTitle = node?.variant?.title || '';
+    const attrs = node?.customAttributes || [];
+    if (attrs.some((a: any) => a.key === 'booking_date' || a.key === 'booking_date_display')) return true;
+    if (looksLikeTicketingDate(variantTitle)) return true;
+    if (/(event|workshop|playhouse|petting|farm|ticket|zoo)/i.test(String(itemTitle))) return true;
+    return false;
+}
+
+function isOnlyTicketingOrder(o: any): boolean {
+    const edges = o?.lineItems?.edges || [];
+    if (edges.length === 0) return false;
+    return edges.every((edge: any) => isTicketingLineItem(edge?.node));
+}
+
+function getBookingDateDisplay(node: any): string | null {
+    const attrs = node?.customAttributes || [];
+    const display = attrs.find((a: any) => a.key === 'booking_date_display')?.value;
+    const raw = attrs.find((a: any) => a.key === 'booking_date')?.value;
+    if (display) return display;
+    if (raw) return new Date(raw).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return null;
+}
+
 export default function OrderDetailV2Screen() {
     const { id, estimatedDeliveryMinutes: paramEta, from } = useLocalSearchParams<{ id: string; estimatedDeliveryMinutes?: string; from?: string }>();
     const router = useRouter();
@@ -239,12 +275,22 @@ export default function OrderDetailV2Screen() {
     const formatCurrency = (amount: number) =>
         `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
-    // Coupon/discount from Shopify order (discountApplications)
-    const orderDiscounts = (order.discountApplications?.edges ?? []) as { node: { code?: string; applicable?: boolean; value?: { amount?: string } } }[];
-    const appliedCoupon = orderDiscounts.find((e) => e.node?.applicable !== false && e.node?.code);
-    const couponCode = appliedCoupon?.node?.code ?? null;
-    const couponValue = appliedCoupon?.node?.value?.amount != null ? parseFloat(appliedCoupon.node.value.amount) : 0;
+    // Coupon/discount from Shopify order (discountApplications + customAttributes fallback)
+    const discountEdges = order.discountApplications?.edges ?? [];
+    const orderDiscounts = Array.isArray(discountEdges) ? discountEdges : [];
+    type DiscountNode = { code?: string; title?: string; applicable?: boolean; value?: { amount?: string } };
+    const discountNodes: DiscountNode[] = orderDiscounts.map((e: any) => e?.node ?? e).filter(Boolean);
+    const appliedCouponNode = discountNodes.find((n) => (n.applicable === undefined || n.applicable !== false) && (n.code ?? n.title));
+    const couponFromApi = appliedCouponNode?.code ?? appliedCouponNode?.title ?? null;
+    const customAttrs = (order.customAttributes ?? []) as { key?: string; value?: string }[];
+    const couponFromAttrs = customAttrs.find((a) => {
+        const k = (a?.key ?? '').toLowerCase();
+        return k === 'discount_code' || k === 'coupon_code' || k === 'applied_discount_code' || k === 'coupon';
+    })?.value;
+    const couponCode = (couponFromApi ?? couponFromAttrs ?? null) ? String(couponFromApi ?? couponFromAttrs).trim() : null;
+    const couponValue = appliedCouponNode?.value?.amount != null ? parseFloat(appliedCouponNode.value.amount) : 0;
 
+    // Subtotal = sum of line items' original total (before order-level discount). Matches Shopify admin "Subtotal".
     const calculatedSubtotal = (order.lineItems?.edges || []).reduce((sum: number, edge: any) => {
         const item = edge.node;
         const lineTotal = parseFloat(item.originalTotalPrice?.amount || '0');
@@ -252,10 +298,11 @@ export default function OrderDetailV2Screen() {
         const qty = item.quantity || 1;
         return sum + (lineTotal || unitPrice * qty);
     }, 0);
-    const subtotal = parseFloat(order.subtotalPrice?.amount || order.subtotalPriceV2?.amount || String(calculatedSubtotal) || '0');
     const shipping = parseFloat(order.totalShippingPrice?.amount || order.totalShippingPriceV2?.amount || order.shippingPrice?.amount || '0');
     const tax = parseFloat(order.totalTax?.amount || order.totalTaxV2?.amount || order.taxPrice?.amount || '0');
-    const total = parseFloat(order.currentTotalPrice?.amount || order.currentTotalPriceV2?.amount || order.totalPrice?.amount || order.totalPriceV2?.amount || String(subtotal + shipping + tax) || '0');
+    const total = parseFloat(order.currentTotalPrice?.amount || order.currentTotalPriceV2?.amount || order.totalPrice?.amount || order.totalPriceV2?.amount || '0');
+    // Use calculated subtotal for bill display so discount math matches Shopify (subtotal − discount = total before tax/shipping).
+    const subtotalDisplay = calculatedSubtotal > 0 ? calculatedSubtotal : parseFloat(order.subtotalPrice?.amount || order.subtotalPriceV2?.amount || '0');
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -327,15 +374,25 @@ export default function OrderDetailV2Screen() {
                                         </View>
                                         <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
                                     </View>
+                                    {(() => {
+                                        const bookingDate = getBookingDateDisplay(item);
+                                        if (!bookingDate) return null;
+                                        return (
+                                            <View style={styles.bookingDateRow}>
+                                                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                                <Text style={styles.bookingDateText}>Booked for: {bookingDate}</Text>
+                                            </View>
+                                        );
+                                    })()}
                                 </View>
                             </View>
                         );
                     })}
                 </View>
 
-                {/* Bill details */}
+                {/* Bill details – subtotal = items before discount; discount = derived or from API; total = order total */}
                 {(() => {
-                    const discountAmount = Math.max(0, subtotal + shipping + tax - total);
+                    const discountAmount = Math.max(0, subtotalDisplay + shipping + tax - total);
                     const isHeyKiddo = couponCode?.toUpperCase() === 'HEYKIDDO';
                     const displayDiscount = isHeyKiddo ? 0 : (couponValue > 0 ? couponValue : discountAmount);
                     return (
@@ -343,7 +400,7 @@ export default function OrderDetailV2Screen() {
                             <Text style={styles.billTitle}>Bill details</Text>
                             <View style={styles.billRow}>
                                 <Text style={styles.billLabel}>Subtotal</Text>
-                                <Text style={styles.billValue}>{formatCurrency(subtotal)}</Text>
+                                <Text style={styles.billValue}>{formatCurrency(subtotalDisplay)}</Text>
                             </View>
                             {(displayDiscount > 0 || couponCode) && (
                                 <View style={styles.billRow}>
@@ -369,7 +426,7 @@ export default function OrderDetailV2Screen() {
                     <Text style={styles.billTitle}>Payment method</Text>
                     <Text style={styles.paymentMethodLabel}>
                         {order?.financialStatus === 'PAID'
-                            ? 'Pay online (Card / UPI / Net banking)'
+                            ? 'Paid online'
                             : order?.financialStatus === 'PENDING'
                                 ? 'Cash on Delivery (COD)'
                                 : order?.financialStatus === 'REFUNDED'
@@ -380,8 +437,8 @@ export default function OrderDetailV2Screen() {
                     </Text>
                 </View>
 
-                {/* Delivery address */}
-                {order?.shippingAddress && (
+                {/* Delivery address – hide when order has only ticketing products */}
+                {order?.shippingAddress && !isOnlyTicketingOrder(order) && (
                     <View style={styles.addressCard}>
                         <Text style={styles.billTitle}>Order Details</Text>
 
@@ -642,6 +699,17 @@ const styles = StyleSheet.create({
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#717680',
+    },
+    bookingDateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 6,
+    },
+    bookingDateText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: Colors.primary,
     },
     footerSpacer: {
         height: 32,
