@@ -246,17 +246,19 @@ export const useCartStore = create<CartState>()(
                 const subtotalVal = state.subtotal();
                 state.discountCodes.forEach((dc) => {
                     if (dc.applicable !== false) {
+                        const val = Number(dc.value ?? 0);
+                        if (val <= 0) return;
                         let codeDiscount = 0;
                         if (dc.type === 'percentage') {
-                            codeDiscount = (subtotalVal * dc.value) / 100;
-                        } else if (dc.type === 'fixed') {
-                            codeDiscount = dc.value;
+                            codeDiscount = (subtotalVal * val) / 100;
+                        } else {
+                            codeDiscount = val;
                         }
                         if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
                             codeDiscount = Math.min(codeDiscount, dc.maxDiscountAmount);
                         }
                         if (codeDiscount > 0) {
-                            console.log(`[CartStore] Code ${dc.code}: ${dc.type} ${dc.value}${dc.type === 'percentage' ? '%' : ''} = ${codeDiscount}${dc.maxDiscountAmount != null ? ` (capped at ${dc.maxDiscountAmount})` : ''}`);
+                            console.log(`[CartStore] Code ${dc.code}: ${dc.type} ${val}${dc.type === 'percentage' ? '%' : ''} = ${codeDiscount}${dc.maxDiscountAmount != null ? ` (capped at ${dc.maxDiscountAmount})` : ''}`);
                             discount += codeDiscount;
                         }
                     } else {
@@ -645,12 +647,15 @@ export const useCartStore = create<CartState>()(
                 }
 
                 // Discount values from backend-validated coupon only (no kiddoAppConfig).
-                const discountValue = configDiscount.value ?? 0;
-                const discountType: 'percentage' | 'fixed' = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                const rawValue = configDiscount.value ?? 0;
+                const discountValue = Number(rawValue);
+                const rawType = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
+                const discountType: 'percentage' | 'fixed' =
+                    rawType === 'fixed' || rawType === 'fixed_amount' || rawType === 'fixed amount' ? 'fixed' : 'percentage';
                 const newDiscountCodeEntry: DiscountCode = {
                     code: normalizedCode,
                     type: discountType,
-                    value: Number(discountValue),
+                    value: discountValue,
                     applicable: true,
                     appliedAt: Date.now(),
                     maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
@@ -752,8 +757,9 @@ export const useCartStore = create<CartState>()(
                                 const backendCoupon = backendCouponMap.get(dc.code?.toUpperCase());
                                 if (backendCoupon) {
                                     foundInBackend = true;
-                                    discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
-                                    discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                    discountValue = Number(backendCoupon.value ?? 0);
+                                    const bt = (backendCoupon.valueType ?? 'percentage').toString().toLowerCase();
+                                    discountType = (bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount') ? 'fixed' : 'percentage';
                                     isApplicable = true;
                                     console.log(`[CartStore] ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                                 }
@@ -790,7 +796,7 @@ export const useCartStore = create<CartState>()(
                                 return {
                                     code: dc.code.toUpperCase(),
                                     type: discountType,
-                                    value: discountValue,
+                                    value: Number(discountValue),
                                     applicable: isApplicable,
                                     appliedAt: Date.now(),
                                     maxDiscountAmount: maxCap,
@@ -821,11 +827,13 @@ export const useCartStore = create<CartState>()(
                             );
                             
                             if (configDiscount) {
-                                const backendValue = configDiscount.value != null ? configDiscount.value : 0;
-                                const backendType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                const backendValue = Number(configDiscount.value ?? 0);
+                                const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
+                                const backendType: 'percentage' | 'fixed' =
+                                    bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount' ? 'fixed' : 'percentage';
                                 const backendEntry: DiscountCode = {
                                     code: normalizedCode,
-                                    type: backendType as 'percentage' | 'fixed',
+                                    type: backendType,
                                     value: backendValue,
                                     applicable: true,
                                     appliedAt: Date.now(),
@@ -844,8 +852,9 @@ export const useCartStore = create<CartState>()(
                             // Recalc payment from final discount codes so backend-only codes are reflected (with maxDiscountAmount cap)
                             let recalcDiscount = 0;
                             for (const dc of discountCodesFromCart) {
-                                if (dc.applicable !== false && dc.value > 0) {
-                                    let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                                const val = Number(dc.value ?? 0);
+                                if (dc.applicable !== false && val > 0) {
+                                    let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * val) / 100 : val;
                                     if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
                                     recalcDiscount += contrib;
                                 }
@@ -1045,8 +1054,9 @@ export const useCartStore = create<CartState>()(
                         const backendCoupon = backendCouponMap.get(dc.code?.toUpperCase());
                         if (backendCoupon) {
                             foundInBackend = true;
-                            discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
-                            discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                            discountValue = Number(backendCoupon.value ?? 0);
+                            const bt = (backendCoupon.valueType ?? 'percentage').toString().toLowerCase();
+                            discountType = (bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount') ? 'fixed' : 'percentage';
                             isApplicable = true;
                             console.log(`[CartStore] ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                         }
@@ -1103,11 +1113,13 @@ export const useCartStore = create<CartState>()(
                     );
                     
                     if (configDiscount) {
-                        const backendValue = configDiscount.value != null ? configDiscount.value : 0;
-                        const backendType = configDiscount.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                        const backendValue = Number(configDiscount.value ?? 0);
+                        const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
+                        const backendType: 'percentage' | 'fixed' =
+                            bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount' ? 'fixed' : 'percentage';
                         const backendEntry: DiscountCode = {
                             code: normalizedCode,
-                            type: backendType as 'percentage' | 'fixed',
+                            type: backendType,
                             value: backendValue,
                             applicable: true,
                             appliedAt: Date.now(),
@@ -1129,8 +1141,9 @@ export const useCartStore = create<CartState>()(
                     // Recalc payment from final discount codes so backend-only codes are reflected (with maxDiscountAmount cap)
                     let recalcDiscount = 0;
                     for (const dc of discountCodesFromCart) {
-                        if (dc.applicable !== false && dc.value > 0) {
-                            let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                        const val = Number(dc.value ?? 0);
+                        if (dc.applicable !== false && val > 0) {
+                            let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * val) / 100 : val;
                             if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
                             recalcDiscount += contrib;
                         }
@@ -1196,8 +1209,9 @@ export const useCartStore = create<CartState>()(
                 let discount = 0;
                 updatedDiscountCodes.forEach((dc) => {
                     if (dc.applicable !== false) {
-                        if (dc.type === 'percentage') discount += (subtotal * dc.value) / 100;
-                        else if (dc.type === 'fixed') discount += dc.value;
+                        const val = Number(dc.value ?? 0);
+                        if (dc.type === 'percentage') discount += (subtotal * val) / 100;
+                        else discount += val;
                     }
                 });
                 discount = Math.min(discount, subtotal);
@@ -1386,8 +1400,9 @@ export const useCartStore = create<CartState>()(
                             const backendCoupon = backendCouponMapFetch.get(dc.code?.toUpperCase());
                             if (backendCoupon) {
                                 foundInBackend = true;
-                                discountValue = backendCoupon.value != null ? backendCoupon.value : 0;
-                                discountType = backendCoupon.valueType === 'fixed_amount' ? 'fixed' : 'percentage';
+                                discountValue = Number(backendCoupon.value ?? 0);
+                                const bt = (backendCoupon.valueType ?? 'percentage').toString().toLowerCase();
+                                discountType = (bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount') ? 'fixed' : 'percentage';
                                 console.log(`[CartStore] fetchCart ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
                             }
                             
@@ -1437,7 +1452,8 @@ export const useCartStore = create<CartState>()(
                         let discount = 0;
                         discountCodesFromCart.forEach((dc: DiscountCode) => {
                             if (dc.applicable !== false) {
-                                let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * dc.value) / 100 : dc.value;
+                                const val = Number(dc.value ?? 0);
+                                let contrib = dc.type === 'percentage' ? (lineItemsSubtotal * val) / 100 : val;
                                 if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) contrib = Math.min(contrib, dc.maxDiscountAmount);
                                 discount += contrib;
                             }

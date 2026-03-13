@@ -3,9 +3,9 @@ import { Fonts } from '@/constants/theme';
 import { useCartStore } from '@/store/cartStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/508646719777';
+const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/511203115297';
 
 export function CompletePurchaseSection() {
     const router = useRouter();
@@ -68,19 +68,14 @@ const styles = StyleSheet.create({
     section: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        paddingVertical: 16,
+        paddingTop: 16,
         paddingHorizontal: 8,
-        paddingLeft: 8,
-        marginBottom: 24,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        marginBottom: 12,
     },
     title: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
         marginBottom: 12,
         textAlign: 'left',
         paddingLeft: 8,

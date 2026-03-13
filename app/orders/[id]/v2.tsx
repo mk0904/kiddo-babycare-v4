@@ -1,8 +1,8 @@
 import { NeedHelpChatCard, openSupportCall } from '@/components/orders/NeedHelpChatCard';
 import {
     calculateDistance,
-    DEFAULT_ETA_MINUTES,
     DARK_STORE_LOCATION,
+    DEFAULT_ETA_MINUTES,
     estimateDeliveryTime,
     geocodeAddress,
     getDeliveryTimeFromGoogleMaps,
@@ -32,9 +32,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
 
+// Same images as GiftWrappingModal – used for gift wrap line items on order detail
+const GIFT_WRAP_IMAGES: Record<string, any> = {
+    'Wrap-1': require('@/assets/images/giftwrap1.jpeg'),
+    'Wrap-2': require('@/assets/images/giftwrap2.jpeg'),
+    'Wrap-3': require('@/assets/images/giftwrap3.jpeg'),
+};
+function getGiftWrapImageSource(title: string): any {
+    if (!title || typeof title !== 'string') return null;
+    const match = title.match(/Wrap-[123]/);
+    return match ? GIFT_WRAP_IMAGES[match[0]] ?? GIFT_WRAP_IMAGES['Wrap-1'] : (/gift wrap/i.test(title) ? GIFT_WRAP_IMAGES['Wrap-1'] : null);
+}
+
 export default function OrderDetailV2Screen() {
-    const { id, estimatedDeliveryMinutes: paramEta } = useLocalSearchParams<{ id: string; estimatedDeliveryMinutes?: string }>();
+    const { id, estimatedDeliveryMinutes: paramEta, from } = useLocalSearchParams<{ id: string; estimatedDeliveryMinutes?: string; from?: string }>();
     const router = useRouter();
+    const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
     const { user } = useAuth();
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -208,12 +221,12 @@ export default function OrderDetailV2Screen() {
     if (error || !order) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)')} hitSlop={12}>
+                <TouchableOpacity style={styles.backBtn} onPress={goBack} hitSlop={12}>
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
                 <View style={styles.loadingWrap}>
                     <Text style={styles.errorText}>{error || 'Order not found'}</Text>
-                    <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
+                    <TouchableOpacity style={styles.primaryButton} onPress={goBack}>
                         <Text style={styles.primaryButtonText}>Go back</Text>
                     </TouchableOpacity>
                 </View>
@@ -225,6 +238,12 @@ export default function OrderDetailV2Screen() {
 
     const formatCurrency = (amount: number) =>
         `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+    // Coupon/discount from Shopify order (discountApplications)
+    const orderDiscounts = (order.discountApplications?.edges ?? []) as { node: { code?: string; applicable?: boolean; value?: { amount?: string } } }[];
+    const appliedCoupon = orderDiscounts.find((e) => e.node?.applicable !== false && e.node?.code);
+    const couponCode = appliedCoupon?.node?.code ?? null;
+    const couponValue = appliedCoupon?.node?.value?.amount != null ? parseFloat(appliedCoupon.node.value.amount) : 0;
 
     const calculatedSubtotal = (order.lineItems?.edges || []).reduce((sum: number, edge: any) => {
         const item = edge.node;
@@ -242,17 +261,15 @@ export default function OrderDetailV2Screen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header - light beige */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)')} hitSlop={12}>
+                <TouchableOpacity style={styles.backBtn} onPress={goBack} hitSlop={12}>
                     <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>{headerStatusText}</Text>
-                    <Text style={styles.headerAddress} numberOfLines={1}>{addressLine}</Text>
+                    <Text style={styles.headerTitle}>Order Summary</Text>
                 </View>
             </View>
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <NeedHelpChatCard onCallPress={openSupportCall} />
 
                 {/* Order detail banner image from app-config (orderDetail.imageUrl) */}
                 {(() => {
@@ -266,44 +283,61 @@ export default function OrderDetailV2Screen() {
                     );
                 })()}
 
-                {/* Order summary header */}
-                <View style={styles.summaryRow}>
-                    <Text style={styles.sectionTitle}>Order summary</Text>
-                    <TouchableOpacity style={styles.orderIdRow} onPress={copyOrderId}>
-                        <Text style={styles.orderIdText}>Order ID #{displayOrderId}</Text>
-                        <Ionicons name="copy-outline" size={18} color="#374151" style={styles.copyIcon} />
-                    </TouchableOpacity>
-                </View>
+                
 
-                {/* Line items */}
-                {(order.lineItems?.edges || []).map((edge: any, index: number) => {
-                    const item = edge.node;
-                    const price = parseFloat(item.originalTotalPrice?.amount || item.price?.amount || '0');
-                    const variantTitle = item.variant?.title && item.variant.title !== 'Default Title' ? item.variant.title : null;
-                    return (
-                        <View key={`${item.title}-${index}`} style={[styles.itemRow, index === (order.lineItems?.edges?.length || 0) - 1 && styles.itemRowLast]}>
-                            {item.variant?.image?.url ? (
-                                <Image source={{ uri: item.variant.image.url }} style={styles.itemImage} contentFit="cover" />
-                            ) : (
-                                <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-                                    <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                {/* Line items – single card like cart */}
+                <View style={styles.orderItemsSection}>
+                    {/* Order summary header */}
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.sectionTitle}>Order Items</Text>
+                        <TouchableOpacity style={styles.orderIdRow} onPress={copyOrderId}>
+                            <Text style={styles.orderIdText}>Order ID #{displayOrderId}</Text>
+                            <Ionicons name="copy-outline" size={18} color="#717680" style={styles.copyIcon} />
+                        </TouchableOpacity>
+                    </View>
+                    {(order.lineItems?.edges || []).map((edge: any, index: number) => {
+                        const item = edge.node;
+                        const price = parseFloat(item.originalTotalPrice?.amount || item.price?.amount || '0');
+                        const variantTitle = item.variant?.title && item.variant.title !== 'Default Title' ? item.variant.title : null;
+                        const giftWrapImage = getGiftWrapImageSource(item.title);
+                        const imageSource = item.variant?.image?.url
+                            ? { uri: item.variant.image.url }
+                            : giftWrapImage
+                                ? giftWrapImage
+                                : null;
+                        const edges = order.lineItems?.edges || [];
+                        const isLast = index === edges.length - 1;
+                        return (
+                            <View key={`${item.title}-${index}`} style={[styles.itemRow, isLast && styles.itemRowLast]}>
+                                {imageSource ? (
+                                    <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
+                                ) : (
+                                    <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                        <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                    </View>
+                                )}
+                                <View style={styles.itemInfo}>
+                                    <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                                    <View style={styles.itemMetaRow}>
+                                        <View style={styles.itemMetaWrap}>
+                                            <Text style={styles.itemMetaPrice}>
+                                                ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                            </Text>
+                                            {variantTitle ? <Text style={styles.itemMeta}>Size: {variantTitle}</Text> : null}
+                                        </View>
+                                        <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
+                                    </View>
                                 </View>
-                            )}
-                            <View style={styles.itemInfo}>
-                                <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
-                                <Text style={styles.itemMeta}>
-                                    ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                                    {variantTitle ? ` ${variantTitle}` : ''}
-                                </Text>
                             </View>
-                            <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
-                        </View>
-                    );
-                })}
+                        );
+                    })}
+                </View>
 
                 {/* Bill details */}
                 {(() => {
                     const discountAmount = Math.max(0, subtotal + shipping + tax - total);
+                    const isHeyKiddo = couponCode?.toUpperCase() === 'HEYKIDDO';
+                    const displayDiscount = isHeyKiddo ? 0 : (couponValue > 0 ? couponValue : discountAmount);
                     return (
                         <View style={styles.billCard}>
                             <Text style={styles.billTitle}>Bill details</Text>
@@ -311,12 +345,16 @@ export default function OrderDetailV2Screen() {
                                 <Text style={styles.billLabel}>Subtotal</Text>
                                 <Text style={styles.billValue}>{formatCurrency(subtotal)}</Text>
                             </View>
-                            <View style={styles.billRow}>
-                                <Text style={styles.billLabel}>Discount</Text>
-                                <Text style={[styles.billValue, discountAmount > 0 && styles.billDiscountValue]}>
-                                    {discountAmount > 0 ? `-${formatCurrency(discountAmount)}` : formatCurrency(0)}
-                                </Text>
-                            </View>
+                            {(displayDiscount > 0 || couponCode) && (
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>
+                                        {couponCode ? `Coupon (${couponCode})` : 'Discount'}
+                                    </Text>
+                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isHeyKiddo) || isHeyKiddo) && styles.billDiscountValue]}>
+                                        {isHeyKiddo ? 'Free Shoe' : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={styles.billDivider} />
                             <View style={styles.billRow}>
                                 <Text style={styles.billTotalLabel}>Total</Text>
@@ -326,7 +364,55 @@ export default function OrderDetailV2Screen() {
                     );
                 })()}
 
-                <View style={styles.footerSpacer} />
+                {/* Payment method */}
+                <View style={styles.paymentMethodCard}>
+                    <Text style={styles.billTitle}>Payment method</Text>
+                    <Text style={styles.paymentMethodLabel}>
+                        {order?.financialStatus === 'PAID'
+                            ? 'Pay online (Card / UPI / Net banking)'
+                            : order?.financialStatus === 'PENDING'
+                                ? 'Cash on Delivery (COD)'
+                                : order?.financialStatus === 'REFUNDED'
+                                    ? 'Refunded'
+                                    : order?.financialStatus
+                                        ? `Payment: ${order.financialStatus}`
+                                        : '—'}
+                    </Text>
+                </View>
+
+                {/* Delivery address */}
+                {order?.shippingAddress && (
+                    <View style={styles.addressCard}>
+                        <Text style={styles.billTitle}>Order Details</Text>
+
+                        {/* Status and address below bill details */}
+                        <View style={styles.belowBillSection}>
+                            <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
+                        </View>
+                        <Text style={styles.billTitle}>Delivery address</Text>
+                        <View style={styles.addressBlock}>
+                            {[
+                                order.shippingAddress.firstName || order.shippingAddress.lastName
+                                    ? [order.shippingAddress.firstName, order.shippingAddress.lastName].filter(Boolean).join(' ').replace(/_+$/, '')
+                                    : null,
+                                order.shippingAddress.address1,
+                                order.shippingAddress.address2,
+                                [order.shippingAddress.city, order.shippingAddress.province].filter(Boolean).join(', '),
+                                order.shippingAddress.zip,
+                                order.shippingAddress.country,
+                            ]
+                                .filter(Boolean)
+                                .map((line, i) => (
+                                    <Text key={i} style={styles.addressLine}>
+                                        {line}
+                                    </Text>
+                                ))}
+                        </View>
+                    </View>
+                )}
+
+                <NeedHelpChatCard onCallPress={openSupportCall} />
+
             </ScrollView>
         </SafeAreaView>
     );
@@ -335,14 +421,14 @@ export default function OrderDetailV2Screen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: HEADER_BG,
+        backgroundColor: '#FFFFFF',
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingVertical: 20,
         paddingTop: Platform.OS === 'ios' ? 14 : 18,
         borderBottomWidth: 1,
         borderBottomColor: '#F5F0E8',
@@ -355,8 +441,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     headerTitle: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.LargeFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#1A1A1A',
     },
     headerAddress: {
@@ -385,6 +471,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flex: 1,
+        backgroundColor: '#FDF6EC',
     },
     scrollContent: {
         paddingHorizontal: 16,
@@ -475,12 +562,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
         marginTop: 16,
     },
     sectionTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#717680',
     },
     orderIdRow: {
@@ -489,24 +575,23 @@ const styles = StyleSheet.create({
         color: '#717680',
     },
     orderIdText: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
         color: '#717680',
     },
     copyIcon: {
         marginLeft: 6,
     },
+    orderItemsSection: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        overflow: 'hidden',
+        paddingHorizontal: 12,
+    },
     itemRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: CARD_RADIUS,
-        marginBottom: 8,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2 },
-            android: { elevation: 1 },
-        }),
+        paddingVertical: 12,
     },
     itemRowLast: {
         marginBottom: 0,
@@ -524,42 +609,83 @@ const styles = StyleSheet.create({
     },
     itemInfo: {
         flex: 1,
+        minWidth: 0,
     },
-    itemTitle: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
-    },
-    itemMeta: {
-        fontSize: 13,
-        fontFamily: Fonts.Regular,
-        color: '#6B7280',
+    itemMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginTop: 4,
     },
+    itemTitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
+        lineHeight: 20,
+    },
+    itemMetaWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    itemMetaPrice: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#414651',
+    },
+    itemMeta: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
+    },
     itemQty: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#374151',
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#717680',
     },
     footerSpacer: {
         height: 32,
     },
+    belowBillSection: {
+        
+        backgroundColor: '#fff',
+        borderRadius: CARD_RADIUS,
+        marginBottom: 16,
+    },
+    belowBillTitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#1A1A1A',
+    },
+    belowBillAddress: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
+        marginTop: 4,
+    },
+    paymentMethodCard: {
+        backgroundColor: '#fff',
+        borderRadius: CARD_RADIUS,
+        marginBottom: 16,
+        padding: 12,
+    },
+    paymentMethodLabel: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
+    },
     billCard: {
         backgroundColor: '#fff',
         borderRadius: CARD_RADIUS,
-        padding: 20,
         marginBottom: 16,
         marginTop: 16,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
-            android: { elevation: 2 },
-        }),
+        padding: 12,
     },
     billTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
-        marginBottom: 16,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
+        marginBottom: 8,
     },
     billRow: {
         flexDirection: 'row',
@@ -568,17 +694,17 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     billLabel: {
-        fontSize: 14,
-        fontFamily: Fonts.Regular,
-        color: '#6B7280',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
     },
     billValue: {
-        fontSize: 14,
-        fontFamily: Fonts.Medium,
-        color: '#1A1A1A',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#181D27',
     },
     billDiscountValue: {
-        color: '#16a34a',
+        color: '#099250',
     },
     billDivider: {
         height: 1,
@@ -586,14 +712,31 @@ const styles = StyleSheet.create({
         marginVertical: 8,
     },
     billTotalLabel: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#1A1A1A',
     },
     billTotalValue: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: Colors.primary,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#1A1A1A',
+    },
+    addressCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        marginBottom: 16,
+        marginTop: 0,
+        padding: 12,
+    },
+    addressBlock: {
+        marginTop: 0,
+        fontFamily: Fonts.LexendRegular,
+    },
+    addressLine: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
+        lineHeight: 22,
     },
     primaryButton: {
         backgroundColor: Colors.primary,

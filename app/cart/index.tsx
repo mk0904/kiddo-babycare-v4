@@ -418,14 +418,15 @@ export default function CartScreen() {
             }
 
             const shouldProcess = discountCode.applicable !== false;
-            const discountValue = discountCode.value;
+            const discountValue = Number(discountCode.value ?? 0);
             const discountType = discountCode.type;
 
             if (shouldProcess && discountValue > 0) {
                 let codeDiscount = 0;
                 if (discountType === 'percentage') {
                     codeDiscount = (itemSubtotal * discountValue) / 100;
-                } else if (discountType === 'fixed') {
+                } else {
+                    // fixed, fixed_amount, or any other type: treat as fixed amount
                     codeDiscount = discountValue;
                 }
                 if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
@@ -461,7 +462,7 @@ export default function CartScreen() {
 
     // Use our calculated discount instead of Shopify's
     // Cap the discount to not exceed the subtotal (for fixed discounts)
-    const discount = Math.min(calculatedDiscount, itemSubtotal);
+    const discount = Math.min(Number(calculatedDiscount) || 0, itemSubtotal);
 
     // Debug log
     if (__DEV__) {
@@ -478,8 +479,12 @@ export default function CartScreen() {
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
 
     const deliveryFee = 0;
-    // Gift wrap fee: only for products still in cart; recalculates when items are removed from cart or from gift wrap
-    const giftWrappingFee = hasTicketingProducts ? 0 : derivedGiftWrappingFee;
+    // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
+    const giftWrappingFee = isTicketingOnly
+        ? 0
+        : (derivedGiftWrappingFee > 0
+            ? derivedGiftWrappingFee
+            : (giftWrapping != null && Number(giftWrapping?.price) > 0 && validGiftWrapIds.length > 0 ? Number(giftWrapping.price) : 0));
     // Platform fee for display only (ticket-only): shown struck + FREE, not added to total
     const PLATFORM_FEE_DISPLAY = 20;
     const platformFeeDisplay = isTicketingOnly ? PLATFORM_FEE_DISPLAY : 0;
@@ -1430,7 +1435,7 @@ export default function CartScreen() {
 
                         <BillDetails
                             mrp={mrp}
-                            itemTotal={subtotalAfterDiscount}
+                            itemTotal={itemSubtotal}
                             isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
@@ -1839,7 +1844,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendBold,
     },
     itemVariantSubtext: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.ExtraSmallFontSize,
         color: '#717680',
         fontFamily: Fonts.LexendMedium,
         marginTop: 6,

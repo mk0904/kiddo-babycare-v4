@@ -1,5 +1,4 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
     ActivityIndicator,
@@ -76,7 +75,6 @@ export function CartFooterPayment({
                         <View style={styles.payButtonContent}>
                             <Text style={styles.payButtonPrefix}>{payPrefix} </Text>
                             <Text style={styles.payButtonAmount}>{formatCurrency(toPay)}</Text>
-                            <Ionicons name="arrow-forward" size={18} color="#fff" style={styles.payButtonArrow} />
                         </View>
                     ) : (
                         <Text style={styles.payButtonText}>Login to Order</Text>
@@ -145,12 +143,12 @@ const styles = StyleSheet.create({
     },
     payButtonPrefix: {
         color: '#fff',
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.MediumFontSize,
         fontFamily: Fonts.LexendBold,
     },
     payButtonAmount: {
         color: '#fff',
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.MediumFontSize,
         fontFamily: Fonts.LexendBold,
     },
     payButtonArrow: {

@@ -7,7 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 export interface BillDetailsProps {
     /** MRP / price before item-level discount (for strikethrough) */
     mrp: number;
-    /** Subtotal after coupon (item total) */
+    /** Item total (subtotal before coupon discount); shown as "Item Total" in bill. */
     itemTotal: number;
     /** When true, hide Handling Fee and Delivery Fee (ticket-only cart). */
     isTicketingOnly?: boolean;
@@ -21,8 +21,8 @@ export interface BillDetailsProps {
     couponDiscount: number;
     /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
-    /** Gift wrapping applied (when set, show row with this price) */
-    giftWrapping?: { price: number } | null;
+    /** Gift wrapping applied (when set, show row with this price; may include productIds to detect "applied") */
+    giftWrapping?: { price: number; productIds?: string[] } | null;
     /** Whether Kiddo Cash is applied */
     kiddoCashEnabled: boolean;
     /** Kiddo Cash amount when enabled */
@@ -130,8 +130,8 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Gift Wrap - show when gift wrap is applied; price from giftWrapping or fee */}
-                    {(giftWrapping != null || giftWrappingFee > 0) && (
+                    {/* Gift Wrap - only show when there is an actual fee (hide after user removes gift-wrapped items) */}
+                    {giftWrappingFee > 0 && (
                         <View style={styles.row}>
                             <Text style={styles.label}>Gift Wrap</Text>
                             <View style={styles.valueRow}>
@@ -259,7 +259,9 @@ const styles = StyleSheet.create({
     valueRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: 8,
+        alignSelf: 'center',
     },
     value: {
         fontSize: Fonts.SmallFontSize,
@@ -273,6 +275,7 @@ const styles = StyleSheet.create({
         textDecorationLine: 'line-through',
     },
     freeText: {
+        fontSize: Fonts.SmallFontSize,
         color: '#16a34a',
         fontFamily: Fonts.SemiBold,
     },

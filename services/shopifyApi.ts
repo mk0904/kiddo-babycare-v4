@@ -470,7 +470,10 @@ const GET_ORDER_BY_ID_QUERY = `
           currencyCode
         }
         shippingAddress {
+          firstName
+          lastName
           address1
+          address2
           city
           province
           zip
@@ -497,6 +500,22 @@ const GET_ORDER_BY_ID_QUERY = `
                 price {
                   amount
                   currencyCode
+                }
+              }
+            }
+          }
+        }
+        discountApplications(first: 10) {
+          edges {
+            node {
+              ... on DiscountCodeApplication {
+                code
+                applicable
+                value {
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
                 }
               }
             }

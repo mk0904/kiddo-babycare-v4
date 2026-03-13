@@ -7,10 +7,10 @@ import { nectorApi } from '@/services/nectorApi';
 import { oneSignalService } from '@/services/oneSignalService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ActivityIndicator,
     Alert,
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.backgroundSecondary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        
         position: 'relative',
     },
     badge: {

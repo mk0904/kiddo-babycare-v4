@@ -37,9 +37,6 @@ export function StockLimitModal({ visible, maxQuantity, onClose }: StockLimitMod
         >
             <Pressable style={styles.overlay} onPress={onClose}>
                 <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-                    <View style={styles.accentTop} />
-                    <View style={styles.accentLeft} />
-                    <View style={styles.accentRight} />
                     <View style={styles.iconWrap}>
                         <Ionicons name="bag" size={36} color={BAG_ICON_COLOR} />
                     </View>
@@ -85,7 +82,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.LexendMedium,
         fontSize: Fonts.SmallFontSize,
-        color: MESSAGE_TEXT_COLOR,
+        color: '#D92D20',
         lineHeight: 22,
     },
 });

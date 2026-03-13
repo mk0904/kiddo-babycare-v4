@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: CARD_RADIUS,
+        borderRadius: 16,
         padding: 16,
         marginBottom: 12,
         ...Platform.select({
@@ -85,16 +85,16 @@ const styles = StyleSheet.create({
         minWidth: 0,
     },
     title: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
     },
     sub: {
-        fontSize: 13,
-        fontFamily: Fonts.Regular,
-        color: '#6B7280',
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
         marginTop: 2,
         lineHeight: 18,
+        color: '#414651',
     },
     chatLinkWrap: {
         paddingVertical: 4,
