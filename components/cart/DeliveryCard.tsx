@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        marginLeft: 6,
     },
     title: {
         fontSize: Fonts.SmallFontSize,
