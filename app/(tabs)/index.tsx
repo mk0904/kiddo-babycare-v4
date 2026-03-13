@@ -563,7 +563,7 @@ export default function HomeScreen() {
               {/* Loading state */}
             </View>
           ) : (
-            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} />
+            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
           )}
         </View>
       </Animated.ScrollView>

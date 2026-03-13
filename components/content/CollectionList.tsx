@@ -140,11 +140,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: Fonts.Black,
     fontWeight: '900',
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
   listContainer: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   itemContainer: {
     alignItems: 'center',

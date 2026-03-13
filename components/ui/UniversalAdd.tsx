@@ -286,21 +286,33 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         <>
             <View>
                 {count === 0 ? (
-                <TouchableOpacity
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        handleAdd();
-                    }}
-                    activeOpacity={0.7}
-                    style={isTicketing ? styles.addToCartButton : styles.addCircleButton}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    {isTicketing ? (
-                        <Text style={styles.addToCartButtonText}>Add to cart</Text>
-                    ) : (
+                (variant === 'pdp' || isTicketing) ? (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleAdd();
+                        }}
+                        activeOpacity={0.7}
+                        style={variant === 'pdp' ? [styles.pdpContainer, styles.pdpAdd] : styles.addToCartButton}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Text style={variant === 'pdp' ? styles.pdpAddText : styles.addToCartButtonText}>
+                            {variant === 'pdp' ? (addText || 'Add to Cart') : 'Add to cart'}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleAdd();
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.addCircleButton}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
                         <Ionicons name="add" size={22} color="#fff" />
-                    )}
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                )
             ) : (
                 <View style={currentStyles.counterContainer}>
                     <TouchableOpacity

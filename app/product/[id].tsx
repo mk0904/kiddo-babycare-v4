@@ -1140,6 +1140,35 @@ const ProductDetailScreen = () => {
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
+    // Essentials-only: pack size and size for PDP (same as ProductCard)
+    const essentialsMetaParts = useMemo(() => {
+        if (!hasEssentialsTag || !product) return { packSize: null, size: null };
+        const getVal = (key: string) => getMetafieldValue(product, key);
+        const variants = product?.variants?.edges ?? product?.variants ?? [];
+        const variant = selectedVariant ?? variants[0]?.node ?? variants[0];
+        const options = variant?.selectedOptions ?? [];
+
+        const packSizeRaw =
+            getVal('number_of_pieces') ?? getVal('quantity') ?? getVal('pack_size') ?? getVal('number') ??
+            (product as any).number_of_pieces ?? (product as any).pack_size;
+        const packSizeFromVariant = options.find((o: any) => {
+            const name = (o?.name ?? '').toLowerCase().replace(/\s+/g, ' ');
+            return ['pack size', 'pack_size', 'count', 'pieces', 'quantity'].some(
+                (key) => name === key || name === key.replace('_', ' '),
+            );
+        })?.value;
+        const packSizeStr = (packSizeRaw != null ? String(packSizeRaw).trim() : '') || (packSizeFromVariant ? String(packSizeFromVariant).trim() : '');
+        const packSizeLabel = packSizeStr ? `${packSizeStr}${/^\d+$/.test(packSizeStr) ? ' pcs' : ''}` : null;
+
+        const sizeRaw = getVal('size') ?? getVal('sizes') ?? (product as any).size ?? (product as any).sizes;
+        const sizeFromVariant = options.find(
+            (o: any) => ['size', 'sizes'].includes((o?.name ?? '').toLowerCase()),
+        )?.value;
+        const sizeLabel = (sizeRaw != null ? String(sizeRaw).trim() : '') || (sizeFromVariant ? String(sizeFromVariant).trim() : '') || null;
+
+        return { packSize: packSizeLabel || null, size: sizeLabel || null };
+    }, [hasEssentialsTag, product, selectedVariant]);
+
     // Show price comparison for all essential products
     // Display "0" for missing values
     const showPriceComparison = hasEssentialsTag;
@@ -1305,20 +1334,36 @@ const ProductDetailScreen = () => {
                             ...processFontStyle(productStyles.title, Fonts.Bold),
                         }
                     ]}>{product.title}</Text>
-                    {product.vendor && (
-                        <Text style={[
-                            styles.vendorText,
-                            productStyles.vendor && {
-                                fontSize: productStyles.vendor.fontSize,
-                                color: productStyles.vendor.color,
-                                paddingHorizontal: productStyles.vendor.paddingHorizontal,
-                                marginTop: productStyles.vendor.marginTop,
-                                marginBottom: productStyles.vendor.marginBottom,
-                                textTransform: productStyles.vendor.textTransform,
-                                ...processFontStyle(productStyles.vendor, Fonts.Medium),
-                            }
-                        ]}>{product.vendor}</Text>
-                    )}
+                    <View style={styles.vendorRow}>
+                        {product.vendor ? (
+                            <Text style={[
+                                styles.vendorText,
+                                productStyles.vendor && {
+                                    fontSize: productStyles.vendor.fontSize,
+                                    color: productStyles.vendor.color,
+                                    paddingHorizontal: productStyles.vendor.paddingHorizontal,
+                                    marginTop: productStyles.vendor.marginTop,
+                                    marginBottom: productStyles.vendor.marginBottom,
+                                    textTransform: productStyles.vendor.textTransform,
+                                    ...processFontStyle(productStyles.vendor, Fonts.Medium),
+                                }
+                            ]}>{product.vendor}</Text>
+                        ) : null}
+                        {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
+                            <View style={styles.essentialsMetaRow}>
+                                {essentialsMetaParts.packSize ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.packSize}</Text>
+                                    </View>
+                                ) : null}
+                                {essentialsMetaParts.size ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.size}</Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
 
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
@@ -1758,13 +1803,20 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         lineHeight: 28,
     },
+    vendorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 4,
+        paddingHorizontal: 16,
+    },
     vendorText: {
         fontSize: 14,
         fontFamily: Fonts.Medium,
         color: '#666',
-        paddingHorizontal: 16, // Reduced
-        marginTop: 8,
-        marginBottom: 4,
+        paddingHorizontal: 0,
         textTransform: 'uppercase',
     },
     variantsContainer: {
@@ -1905,6 +1957,23 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: Fonts.Medium,
         color: '#363636',
+    },
+    essentialsMetaRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    essentialsMetaBox: {
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    essentialsMetaText: {
+        fontSize: 10,
+        fontFamily: Fonts.SemiBold,
+        color: '#1565C0',
+        lineHeight: 14,
     },
     accordionContainer: {
         borderBottomWidth: 1,

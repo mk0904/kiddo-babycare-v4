@@ -371,7 +371,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
 const defaultStyles = StyleSheet.create({
     container: {
         width: '100%',
-        paddingVertical: 10,
+        paddingVertical: 4,
     },
     loadingContainer: {
         padding: 20,
@@ -383,7 +383,7 @@ const defaultStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 8,
         gap: 12,
     },
     title: {
