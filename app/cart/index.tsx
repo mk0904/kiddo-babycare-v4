@@ -2036,6 +2036,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
         color: '#717680',
         fontFamily: Fonts.LexendBold,
+        marginLeft: 6,
     },
     paymentMethodOption: {
         flexDirection: 'row',
