@@ -2,7 +2,15 @@ import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
-import { geocodeAddress, getDeliveryTimeFromGoogleMaps } from '@/config/deliveryConfig';
+import {
+  calculateDistance,
+  DARK_STORE_LOCATION,
+  estimateDeliveryTime,
+  geocodeAddress,
+  getDeliveryTimeFromGoogleMaps,
+  isWithinDeliveryRange,
+  reverseGeocode,
+} from '@/config/deliveryConfig';
 import { Colors } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
@@ -10,23 +18,23 @@ import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { defaultAddress } = useAddress();
+  const { defaultAddress, setDetectedLocation } = useAddress();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -37,10 +45,22 @@ export default function HomeScreen() {
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  // Use address from AddressContext
+  // Auto-detected location when user has no saved address (serviceable / unserviceable)
+  type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+  const [detectedLocationLabel, setDetectedLocationLabel] = useState<string | null>(null);
+  const [detectedEta, setDetectedEta] = useState<number | null>(null);
+
+  // Use address from AddressContext when set; otherwise show detected location or prompt
   const address = defaultAddress
     ? defaultAddress.address1 || 'Default Address'
-    : null;
+    : (detectedLocationLabel || (locationStatus === 'unserviceable' ? null : null));
+  const displayAddress = defaultAddress
+    ? (defaultAddress.address1 || 'Default Address')
+    : detectedLocationLabel;
+  const isUnserviceable = !defaultAddress && locationStatus === 'unserviceable';
+  const homeEstimatedTime = defaultAddress ? estimatedTime : detectedEta;
+  const homeLoadingTime = defaultAddress ? loadingTime : locationStatus === 'loading';
 
   const searchSuggestions = [
     'Search for Toys & Games',
@@ -129,10 +149,13 @@ export default function HomeScreen() {
         babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
+      const icon = (categoryDef as { icon?: string })?.icon;
+      const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
         label: categoryDef?.label || defaultLabels[key] || key,
-        iconImage: defaultIcons[key],
+        iconUrl: iconUrl || undefined,
+        iconImage: iconUrl ? undefined : defaultIcons[key],
       };
     });
   }, [configLoading]);
@@ -191,7 +214,7 @@ export default function HomeScreen() {
 
     // Check if this is a collection click
     const isCollection = (typeof link === 'string' && link.includes('/collections/')) || item?.collectionId;
-    
+
     if (isCollection) {
       let collectionId = '';
       let title = '';
@@ -211,10 +234,10 @@ export default function HomeScreen() {
 
       if (collectionId) {
         // Ensure collectionId is properly formatted (handle gid:// format)
-        const formattedId = collectionId.startsWith('gid://') 
-          ? collectionId 
+        const formattedId = collectionId.startsWith('gid://')
+          ? collectionId
           : collectionId;
-        
+
         router.push({
           pathname: '/infinity/[collectionId]',
           params: { collectionId: formattedId, title: title || '' }
@@ -251,9 +274,7 @@ export default function HomeScreen() {
   // Use the measured height if available, otherwise fallback to estimate
   // Add label height (approximately 40px) and gap (8px) to account for the delivery label only on homepage (all category)
   // Gap between label and content below remains 0px
-  const LABEL_HEIGHT = selectedCategory === 'all' ? 40 : 0;
-  const LABEL_GAP = selectedCategory === 'all' ? 8 : 0; // Gap between header and label
-  const effectiveHeaderHeight = (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + LABEL_HEIGHT + LABEL_GAP;
+  const effectiveHeaderHeight = dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight;
 
   // Scroll-to-top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -294,9 +315,19 @@ export default function HomeScreen() {
         lng = coords.longitude;
       }
 
-      const deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
+      let deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
+      // Fallback to distance-based formula (same as rest of app) when Google Maps fails
+      if (deliveryTime == null) {
+        const distanceKm = calculateDistance(
+          DARK_STORE_LOCATION.latitude,
+          DARK_STORE_LOCATION.longitude,
+          lat,
+          lng
+        );
+        deliveryTime = estimateDeliveryTime(distanceKm);
+      }
       setEstimatedTime(deliveryTime);
-      
+
       // Track delivery ETA checked
       try {
         const { trackDeliveryETAChecked } = require('@/utils/mixpanelHelpers');
@@ -316,6 +347,89 @@ export default function HomeScreen() {
     fetchEstimatedTime();
   }, [fetchEstimatedTime]);
 
+  // When user clears their address, reset so we can re-detect location
+  const hadAddressRef = useRef(!!defaultAddress);
+  useEffect(() => {
+    if (defaultAddress) {
+      hadAddressRef.current = true;
+      return;
+    }
+    if (hadAddressRef.current) {
+      hadAddressRef.current = false;
+      setLocationStatus('idle');
+      setDetectedLocationLabel(null);
+      setDetectedEta(null);
+      setDetectedLocation('idle');
+    }
+  }, [defaultAddress, setDetectedLocation]);
+
+  // Auto-detect location on home when user has no saved address (e.g. after login)
+  useEffect(() => {
+    if (defaultAddress) return;
+    if (locationStatus !== 'idle') return;
+
+    let cancelled = false;
+    setLocationStatus('loading');
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (cancelled) return;
+        if (status !== 'granted') {
+          setLocationStatus('denied');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('denied');
+          return;
+        }
+
+        let position: Location.LocationObject | null = await Location.getLastKnownPositionAsync();
+        if (!position?.coords && !cancelled) {
+          position = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+        }
+        if (cancelled || !position?.coords) {
+          setLocationStatus('error');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('error');
+          return;
+        }
+
+        const { latitude, longitude } = position.coords;
+        const range = isWithinDeliveryRange(latitude, longitude);
+        if (cancelled) return;
+
+        if (!range.isDeliverable) {
+          setLocationStatus('unserviceable');
+          setDetectedLocationLabel(null);
+          setDetectedEta(null);
+          setDetectedLocation('unserviceable');
+          return;
+        }
+
+        let eta = await getDeliveryTimeFromGoogleMaps(latitude, longitude);
+        if (eta == null) eta = range.estimatedTime;
+        if (cancelled) return;
+
+        const label = await reverseGeocode(latitude, longitude);
+        if (cancelled) return;
+
+        setLocationStatus('serviceable');
+        setDetectedLocationLabel(label || 'Current location');
+        setDetectedEta(eta);
+        setDetectedLocation('serviceable', eta);
+      } catch (e) {
+        if (!cancelled) {
+          setLocationStatus('error');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('error');
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [defaultAddress]);
+
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();
   const navigationState = useNavigationState((state) => state);
@@ -329,7 +443,7 @@ export default function HomeScreen() {
     useCallback(() => {
       // Check if we're on a detail screen (segments length > 1 means we're in a detail screen)
       const isOnDetailScreen = segments.length > 1;
-      
+
       // If we're navigating to a detail screen, save scroll position
       if (isOnDetailScreen) {
         savedScrollPosition.current = scrollYValue.current;
@@ -391,25 +505,21 @@ export default function HomeScreen() {
   const headerTopHeight = useMemo(() => {
     return insets.top + 60;
   }, [insets.top]);
-  
+
   const stickyThreshold = useMemo(() => {
     return headerTopHeight;
   }, [headerTopHeight]);
-  
-  const labelTranslateY = scrollY.interpolate({
-    inputRange: [0, stickyThreshold],
-    outputRange: [0, -stickyThreshold],
-    extrapolate: 'clamp',
-  });
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom', 'top']}>
       <StatusBar style="dark" />
       <HomeHeader
         scrollY={scrollY}
-        address={address}
-        estimatedTime={estimatedTime}
-        loadingTime={loadingTime}
+        address={displayAddress}
+        estimatedTime={homeEstimatedTime}
+        loadingTime={homeLoadingTime}
+        isUnserviceable={isUnserviceable}
+        locationStatus={locationStatus}
         headerConfig={headerConfig}
         searchSuggestions={searchSuggestions}
         onSearchPress={handleSearchPress}
@@ -420,23 +530,6 @@ export default function HomeScreen() {
         onHeaderHeightChange={setDynamicHeaderHeight}
       />
 
-      {/* Delivery Time Label - Only visible on homepage (all category) */}
-      {selectedCategory === 'all' && (
-        <Animated.View
-          style={[
-            styles.deliveryLabel,
-            {
-              transform: [{ translateY: labelTranslateY }],
-              top: (dynamicHeaderHeight > 0 ? dynamicHeaderHeight : initialHeaderHeight) + 8, // Add 8px gap between header and label
-              zIndex: 999,
-              elevation: 999, // For Android
-            },
-          ]}
-        >
-          <Text style={styles.deliveryLabelText}>Everything for kids in 30 mins ⚡️</Text>
-        </Animated.View>
-      )}
-
       <Animated.ScrollView
         ref={scrollViewRef}
         style={[
@@ -445,7 +538,7 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={[
           styles.scrollContent,
-          { 
+          {
             paddingTop: effectiveHeaderHeight,
             // Ensure minimum padding to prevent overlap
             minHeight: '100%',
@@ -470,7 +563,7 @@ export default function HomeScreen() {
               {/* Loading state */}
             </View>
           ) : (
-            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} />
+            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
           )}
         </View>
       </Animated.ScrollView>
@@ -518,24 +611,5 @@ const styles = StyleSheet.create({
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  deliveryLabel: {
-    backgroundColor: '#E84E4B',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  deliveryLabelText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
   },
 });

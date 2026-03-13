@@ -19,9 +19,17 @@ export function BaseContentBlock({
   }
 
   const blockStyles = block.styles?.container || {};
+  const styleObj = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style as ViewStyle) || {};
+  const mergedStyle: ViewStyle = {
+    ...styles.container,
+    ...blockStyles,
+    ...styleObj,
+    // Ensure backgroundColor from config is applied (merged style can drop it if overridden by undefined)
+    ...(blockStyles.backgroundColor != null && { backgroundColor: blockStyles.backgroundColor }),
+  };
 
   return (
-    <View style={[styles.container, blockStyles, style]}>
+    <View style={mergedStyle}>
       {children}
     </View>
   );

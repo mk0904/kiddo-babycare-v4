@@ -19,6 +19,17 @@ function getApiPath(path: string): string {
   return `${prefix}/${path.replace(/^\//, '')}`;
 }
 
+/** Bill breakdown for backend to persist on Shopify order. */
+export interface CheckoutBillDetails {
+  subtotal: number;
+  subtotalAfterDiscount: number;
+  deliveryFee: number;
+  giftWrappingFee: number;
+  discount: number;
+  total: number;
+  currencyCode: string;
+}
+
 // Mirrors backend CheckoutDraftRequest
 export interface CheckoutDraftRequest {
   items: Array<{
@@ -26,6 +37,9 @@ export interface CheckoutDraftRequest {
     quantity: number;
     price: number;
     title?: string;
+    variantTitle?: string;
+    image?: string;
+    compareAtPrice?: number;
     tags?: string[];
     bookingDate?: string;
   }>;
@@ -51,10 +65,23 @@ export interface CheckoutDraftRequest {
     time: string;
     day: string;
     dateFormat: string;
+    timeSlotLabel?: string;
   };
+  /** 'scheduled' | 'instant' – backend stores on order for fulfillment. */
+  deliveryType?: 'scheduled' | 'instant';
+  /** Payment method – backend stores on Shopify order. */
+  paymentMethod?: 'razorpay' | 'cod' | 'free' | 'try_and_buy';
+  /** Full bill breakdown – backend can put in order note or metafields. */
+  billDetails?: CheckoutBillDetails;
   selectedShoe?: string;
+  /** Free shoes offer: selected size (e.g. S1, S2) – backend should store in Shopify order (note_attributes or similar) */
+  selectedShoeSize?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
+  /** App version for coupon/eligibility (e.g. Constants.expoConfig?.version). */
+  appVersion?: string;
+  /** Device type for coupon/eligibility (e.g. 'ios' | 'android' from Platform.OS). */
+  deviceType?: string;
 }
 
 export interface CheckoutDraftResponse {
@@ -98,6 +125,9 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
       quantity: it.quantity,
       price: it.price,
       title: it.title,
+      variantTitle: it.variantTitle,
+      image: it.image,
+      compareAtPrice: it.compareAtPrice,
       tags: it.tags ?? [],
       bookingDate: it.bookingDate ?? '',
     })),
@@ -121,8 +151,14 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     couponCode: body.couponCode ?? '',
     discountAmount: body.discountAmount ?? 0,
     deliverySchedule: body.deliverySchedule,
+    deliveryType: body.deliveryType ?? (body.deliverySchedule?.date && body.deliverySchedule?.time ? 'scheduled' : 'instant'),
+    paymentMethod: body.paymentMethod ?? 'cod',
+    billDetails: body.billDetails,
     selectedShoe: body.selectedShoe ?? '',
+    selectedShoeSize: body.selectedShoeSize ?? '',
     isTryAndBuy: body.isTryAndBuy ?? false,
+    appVersion: body.appVersion ?? '',
+    deviceType: body.deviceType ?? '',
   };
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,

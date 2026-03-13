@@ -27,8 +27,10 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
   const rowGap = productOptions?.rowGap ?? productOptions?.gap ?? 8;
   const colGap = productOptions?.colGap ?? productOptions?.gap ?? 8;
   
-  // Calculate available width: screen width minus padding (always use screen width for consistency)
-  const availableWidth = SCREEN_WIDTH - paddingHorizontal * 2;
+  // Use contentWidth when provided (e.g. when sidebar reduces available space) so cards adapt and don't get cropped
+  const availableWidth = (contentWidth != null && contentWidth > 0)
+    ? contentWidth - paddingHorizontal * 2
+    : SCREEN_WIDTH - paddingHorizontal * 2;
   
   // Card width: (availableWidth - colGap) / 2
   // Don't floor - use exact calculation to avoid gaps
@@ -79,8 +81,8 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
     );
   }
 
-  // Simple: 8px padding, 8px gap, that's it
-  return (
+  // When contentWidth is set, wrap FlatList in a View with that width so the list is constrained and cards don't get cropped
+  const listContent = (
     <FlatList
       data={products}
       numColumns={2}
@@ -128,6 +130,11 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
         ) : null
       }
     />
+  );
+  return contentWidth != null && contentWidth > 0 ? (
+    <View style={{ width: contentWidth, flex: 1 }}>{listContent}</View>
+  ) : (
+    listContent
   );
 };
 

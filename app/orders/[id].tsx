@@ -1,3 +1,4 @@
+import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors, Fonts } from '@/constants/theme';
@@ -350,6 +351,8 @@ export default function OrderDetailScreen() {
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <ScreenHeader title={`Order #${order.orderNumber}`} showSearch={false} showBack={true} />
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+            <NeedHelpChatCard onChatPress={() => { /* TODO: open chat / support */ }} />
 
             {/* Status Section */}
             <View style={styles.statusCard}>

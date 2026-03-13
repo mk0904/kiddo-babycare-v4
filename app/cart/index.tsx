@@ -1,15 +1,30 @@
-import FreeShoesOffer from '@/components/cart/FreeShoesOffer';
+import CodIcon from '@/assets/icons/cod.svg';
+import RazorpayIcon from '@/assets/icons/razorpay.svg';
+import { BillDetails } from '@/components/cart/BillDetails';
+import { CartFooterPayment } from '@/components/cart/CartFooterPayment';
+import { CompletePurchaseSection } from '@/components/cart/CompletePurchaseSection';
+import { DeliveryCard } from '@/components/cart/DeliveryCard';
+import { FreePairShoes } from '@/components/cart/FreePairShoes';
+import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
+import { SavingsCorner } from '@/components/cart/SavingsCorner';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
-import { CheckoutRedeemCoins } from '@/components/nector';
+import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
+import {
+    calculateDistance,
+    DARK_STORE_LOCATION,
+    estimateDeliveryTime,
+    geocodeAddress,
+    getDeliveryTimeFromGoogleMaps,
+} from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
-import { couponService } from '@/services/couponService';
+import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -22,19 +37,20 @@ import {
     useIsTryAndBuy
 } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Platform,
     ScrollView,
     Share,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -43,7 +59,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    
+
     // Track cart viewed on mount
     useEffect(() => {
         const trackCartView = async () => {
@@ -61,9 +77,70 @@ export default function CartScreen() {
         }
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
-    const { defaultAddress } = useAddress();
+    const { defaultAddress, detectedLocationStatus, detectedEta } = useAddress();
+    const [appConfigRefresh, setAppConfigRefresh] = useState(0);
+    // Load app config from backend with Postman-style params (phone, customerId, appVersion, deviceType) for cart/checkout
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.phone, user?.customerId, user?.id]);
+    const cartFeatures = useMemo(
+        () => appConfigService.getCartFeatures(),
+        [appConfigRefresh]
+    );
+    const checkoutConfig = useMemo(
+        () => appConfigService.getCheckoutConfig(),
+        [appConfigRefresh]
+    );
+    const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
+        defaultAddress?.latitude,
+        defaultAddress?.longitude,
+        defaultAddress ?? undefined
+    );
+    // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
+    // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
+    const [etaFromGeocode, setEtaFromGeocode] = useState<number | null>(null);
+    const hasCoords = defaultAddress?.latitude != null && defaultAddress?.longitude != null;
+    useEffect(() => {
+        if (!defaultAddress || hasCoords) {
+            setEtaFromGeocode(null);
+            return;
+        }
+        let cancelled = false;
+        const run = async () => {
+            const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
+            if (!addressString) return;
+            const coords = await geocodeAddress(addressString);
+            if (cancelled || !coords) return;
+            let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
+            if (deliveryTime == null) {
+                const distanceKm = calculateDistance(
+                    DARK_STORE_LOCATION.latitude,
+                    DARK_STORE_LOCATION.longitude,
+                    coords.latitude,
+                    coords.longitude
+                );
+                deliveryTime = estimateDeliveryTime(distanceKm);
+            }
+            if (!cancelled) setEtaFromGeocode(deliveryTime);
+        };
+        run();
+        return () => { cancelled = true; };
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode]);
+
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
-    
+
     // Use Zustand store
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
@@ -72,23 +149,25 @@ export default function CartScreen() {
     const status = useCartStatus();
     const cartId = useCartId();
     const checkoutUrl = useCheckoutUrl();
-    
+
     // Store actions
     const updateQuantity = useCartStore(state => state.updateQuantity);
     const removeItem = useCartStore(state => state.removeItem);
     const clearCart = useCartStore(state => state.clearCart);
     const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
-    const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
     const selectedShoe = useCartStore(state => state.selectedShoe);
+    const selectedShoeSize = useCartStore(state => state.selectedShoeSize);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
+    const setSelectedShoeSize = useCartStore(state => state.setSelectedShoeSize);
     const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
     const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
+    const mrp = useCartStore(state => state.mrp());
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
-    
+
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -101,40 +180,106 @@ export default function CartScreen() {
         return cartItems.some(item => {
             // Check if item has booking date (indicates ticketing product)
             if (item.bookingDate) return true;
-            
+
             // Check tags
             const hasTicketingTag = item.tags?.some((tag: any) => {
                 const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-                return tagLower.includes('event') || 
-                       tagLower.includes('playhouse') || 
-                       tagLower.includes('petting') ||
-                       tagLower.includes('farm') ||
-                       tagLower.includes('ticket') ||
-                       tagLower.includes('pass');
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
             });
-            
+
             return hasTicketingTag;
         });
     }, [cartItems]);
+
+    // Split cart items: gift-wrapped vs regular (for separate display)
+    const giftWrapProductIds = useMemo(() => giftWrapping?.productIds ?? [], [giftWrapping?.productIds]);
+    const itemsNotGiftWrapped = useMemo(
+        () => cartItems.filter(item => !giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const itemsGiftWrapped = useMemo(
+        () => cartItems.filter(item => giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const totalCartItems = useMemo(
+        () => cartItems.reduce((s, i) => s + i.quantity, 0),
+        [cartItems]
+    );
+
+    // Gift wrap fee: only charge for products still in cart (so removing a product or deselecting from gift wrap updates the fee)
+    const validGiftWrapIds = useMemo(
+        () => (giftWrapping?.productIds ?? []).filter(id => cartItems.some(item => item.id === id)),
+        [giftWrapping?.productIds, cartItems]
+    );
+    const giftWrapPerItemPrice = useMemo(() => {
+        const ids = giftWrapping?.productIds ?? [];
+        if (ids.length === 0 || !giftWrapping?.price) return 30;
+        return giftWrapping.price / ids.length;
+    }, [giftWrapping?.productIds, giftWrapping?.price]);
+    const derivedGiftWrappingFee = useMemo(
+        () => validGiftWrapIds.length * giftWrapPerItemPrice,
+        [validGiftWrapIds.length, giftWrapPerItemPrice]
+    );
+
+    // Sync gift wrap state when cart items change (e.g. user removed a product) so stored productIds and price stay correct
+    const validGiftWrapIdsKey = useMemo(() => validGiftWrapIds.join(','), [validGiftWrapIds]);
+    useEffect(() => {
+        if (!giftWrapping || hasTicketingProducts) return;
+        const storedIds = giftWrapping.productIds ?? [];
+        if (validGiftWrapIds.length === 0) {
+            setGiftWrapping(null);
+            return;
+        }
+        if (validGiftWrapIds.length !== storedIds.length || validGiftWrapIds.some((id, i) => id !== storedIds[i])) {
+            setGiftWrapping({
+                name: giftWrapping.name,
+                description: giftWrapping.description,
+                price: validGiftWrapIds.length * giftWrapPerItemPrice,
+                productIds: validGiftWrapIds,
+            });
+        }
+    }, [validGiftWrapIdsKey, giftWrapping, giftWrapPerItemPrice, hasTicketingProducts, setGiftWrapping]);
 
     // Check if cart has only ticketing products
     const isTicketingOnly = useMemo(() => {
         return cartItems.length > 0 && cartItems.every(item => {
             // Check if item has booking date (indicates ticketing product)
             if (item.bookingDate) return true;
-            
+
             // Check tags
             const hasTicketingTag = item.tags?.some((tag: any) => {
                 const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-                return tagLower.includes('event') || 
-                       tagLower.includes('playhouse') || 
-                       tagLower.includes('petting') ||
-                       tagLower.includes('farm') ||
-                       tagLower.includes('ticket') ||
-                       tagLower.includes('pass');
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
             });
-            
+
             return hasTicketingTag;
+        });
+    }, [cartItems]);
+
+    // Show delivery card when at least one non-ticketing product exists in cart
+    const hasNonTicketingProducts = useMemo(() => {
+        return cartItems.some(item => {
+            if (item.bookingDate) return false;
+            const hasTicketingTag = item.tags?.some((tag: any) => {
+                const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                return tagLower.includes('event') ||
+                    tagLower.includes('playhouse') ||
+                    tagLower.includes('petting') ||
+                    tagLower.includes('farm') ||
+                    tagLower.includes('ticket') ||
+                    tagLower.includes('pass');
+            });
+            return !hasTicketingTag;
         });
     }, [cartItems]);
 
@@ -147,6 +292,58 @@ export default function CartScreen() {
         });
     }, [cartItems]);
 
+    // Unique category/tag strings from cart (lowercase) for backend-driven offer visibility
+    const cartCategoryTags = useMemo(
+        () => [
+            ...new Set(
+                cartItems.flatMap((item) =>
+                    (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean)
+                )
+            ),
+        ],
+        [cartItems]
+    );
+    const itemSubtotalForOffers = useMemo(
+        () => cartItems.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity), 0),
+        [cartItems]
+    );
+    // Refetch app config when cart screen is focused (with cart context so backend can return offer visibility)
+    useFocusEffect(
+        useCallback(() => {
+            const payload: AppConfigPayload = {
+                phone: user?.phone ?? undefined,
+                customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+                appVersion: Constants.expoConfig?.version ?? undefined,
+                deviceType: Platform.OS,
+                cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+                cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+            };
+            appConfigService.loadAppConfig(true, payload).then(() => setAppConfigRefresh((r) => r + 1));
+        }, [user?.phone, user?.customerId, user?.id, cartCategoryTags, itemSubtotalForOffers])
+    );
+    // Refetch app config when cart changes so backend can return updated offer visibility
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+            cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+            cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => { cancelled = true; };
+    }, [user?.phone, user?.customerId, user?.id, cartCategoryTags.join(','), itemSubtotalForOffers]);
+    const freeShoesOfferConfig = useMemo(
+        () => appConfigService.getCartConfig()?.freeShoesOffer,
+        [appConfigRefresh]
+    );
+    /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
+    const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
+
     // Computed values
     const appliedDiscountCodes = discountCodes.map(dc => dc.code);
     const appliedDiscountCode = appliedDiscountCodes[0] || null;
@@ -156,43 +353,22 @@ export default function CartScreen() {
 
     const [showBillSummary, setShowBillSummary] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('razorpay');
-    const [couponCode, setCouponCode] = useState('');
-    const [couponApplying, setCouponApplying] = useState(false);
-    const [couponMessage, setCouponMessage] = useState<string | null>(null);
     const [orderLoading, setOrderLoading] = useState(false);
+    const [couponMessage, setCouponMessage] = useState<string | null>(null); // Used by CheckoutRedeemCoins for reward coupon feedback
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
-    const [loadingCoupons, setLoadingCoupons] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
-    const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
-    const [previousDiscountCodes, setPreviousDiscountCodes] = useState<string[]>([]);
+    const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
+    const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+
     // Redirect back if cart is empty
     useEffect(() => {
         if (!loading && cartItems.length === 0) {
             router.back();
         }
     }, [loading, cartItems.length, router]);
-    
-    // Watch for discount code removals (when conditions no longer met)
-    useEffect(() => {
-        const currentCodes = discountCodes.map(dc => dc.code);
-        const removedCodes = previousDiscountCodes.filter(code => !currentCodes.includes(code));
-        
-        if (removedCodes.length > 0 && previousDiscountCodes.length > 0) {
-            // A discount code was automatically removed
-            const removedCode = removedCodes[0];
-            setCouponMessage(`${removedCode} was removed as it no longer meets the requirements.`);
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                setCouponMessage(null);
-            }, 5000);
-        }
-        
-        setPreviousDiscountCodes(currentCodes);
-    }, [discountCodes.map(dc => dc.code).join(',')]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
@@ -201,38 +377,17 @@ export default function CartScreen() {
         }
     }, [hasTicketingProducts, paymentMethod]);
 
-    // Fetch only visible coupons (isVisible !== false) for the list; hidden codes still work when entered manually
+    // When HEYKIDDO is applied from coupon list, auto-select first free shoe (vice versa of shoe → coupon)
     useEffect(() => {
-        if (!isAuthenticated) {
-            setAvailableCoupons([]);
-            return;
-        }
-        const fetchCoupons = async () => {
-            setLoadingCoupons(true);
-            try {
-                const phone = user?.phone ?? null;
-                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
-                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                const hasTicketing = hasTicketingProducts;
-                const hasClothing = hasFashionItems;
+        const hasHeyKiddo = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+        if (!hasHeyKiddo || selectedShoe || !freeShoesOfferConfig?.shoes?.length) return;
+        const firstShoe = freeShoesOfferConfig.shoes[0];
+        const firstSize = freeShoesOfferConfig.sizes?.find((s) => s.isAvailable)?.size ?? freeShoesOfferConfig.sizes?.[0]?.size;
+        setSelectedShoe(firstShoe.id);
+        if (firstSize) setSelectedShoeSize(firstSize);
+    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, setSelectedShoe, setSelectedShoeSize]);
 
-                const eligibleCoupons = await couponService.getEligibleCouponsFromBackend({
-                    phone,
-                    cartSubTotal,
-                    cartItemCount,
-                    hasTicketing,
-                    hasClothing,
-                });
-                setAvailableCoupons(eligibleCoupons ?? []);
-            } catch (error) {
-                console.error('Error fetching coupons:', error);
-                setAvailableCoupons([]);
-            } finally {
-                setLoadingCoupons(false);
-            }
-        };
-        fetchCoupons();
-    }, [isAuthenticated, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
+    // Coupon fetching is handled inside SavingsCorner.
 
     // Use address from AddressContext
     const selectedAddress = defaultAddress;
@@ -251,59 +406,60 @@ export default function CartScreen() {
 
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
-    
+
     // Calculate subtotal from lineItems (like gauntlet does in payment-details)
     let itemSubtotal = 0;
     for (const item of cartItems) {
         itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
     }
-    
+
     // Calculate discount ourselves from discountCodes (don't trust Shopify's discount value)
     let calculatedDiscount = 0;
-    
+
     // Debug: Log discountCodes to see what we have
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
-    
+
     // Use discount values from cart store (source: backend API only, not config)
+    let heyKiddoDiscountAmount = 0;
+    let otherCouponDiscountAmount = 0;
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
                 console.log('[CartScreen] Processing discount code:', discountCode);
             }
-            
+
             const shouldProcess = discountCode.applicable !== false;
-            const discountValue = discountCode.value;
+            const discountValue = Number(discountCode.value ?? 0);
             const discountType = discountCode.type;
-            
+            const isHeyKiddo = discountCode.code.toUpperCase() === 'HEYKIDDO';
+
             if (shouldProcess && discountValue > 0) {
+                let codeDiscount = 0;
                 if (discountType === 'percentage') {
-                    // Percentage discount: value is the percentage (e.g., 10 means 10%)
-                    const percentageDiscount = (itemSubtotal * discountValue) / 100;
-                    calculatedDiscount += percentageDiscount;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied percentage discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            itemSubtotal,
-                            percentageDiscount,
-                            calculatedDiscount,
-                        });
-                    }
-                } else if (discountType === 'fixed') {
-                    // Fixed amount discount: value is the fixed amount
-                    calculatedDiscount += discountValue;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied fixed discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            calculatedDiscount,
-                        });
-                    }
+                    codeDiscount = (itemSubtotal * discountValue) / 100;
+                } else {
+                    // fixed, fixed_amount, or any other type: treat as fixed amount
+                    codeDiscount = discountValue;
+                }
+                if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
+                    codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
+                }
+                calculatedDiscount += codeDiscount;
+                if (isHeyKiddo) heyKiddoDiscountAmount += codeDiscount;
+                else otherCouponDiscountAmount += codeDiscount;
+                if (__DEV__) {
+                    console.log('[CartScreen] Applied discount:', {
+                        code: discountCode.code,
+                        type: discountType,
+                        value: discountValue,
+                        itemSubtotal,
+                        codeDiscount,
+                        maxDiscountAmount: discountCode.maxDiscountAmount,
+                        calculatedDiscount,
+                    });
                 }
             } else {
                 if (__DEV__) {
@@ -320,11 +476,13 @@ export default function CartScreen() {
             console.log('[CartScreen] No discount codes found in store');
         }
     }
-    
+    const hasHeyKiddoApplied = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO' && dc.applicable !== false);
+    const heyKiddoOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
+
     // Use our calculated discount instead of Shopify's
     // Cap the discount to not exceed the subtotal (for fixed discounts)
-    const discount = Math.min(calculatedDiscount, itemSubtotal);
-    
+    const discount = Math.min(Number(calculatedDiscount) || 0, itemSubtotal);
+
     // Debug log
     if (__DEV__) {
         console.log('[CartScreen] Final discount calculation:', {
@@ -335,19 +493,35 @@ export default function CartScreen() {
             itemSubtotal,
         });
     }
-    
+
     // Subtotal after discount
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
-    
+
     const deliveryFee = 0;
-    // Don't charge gift wrapping fee for ticketing products
-    const giftWrappingFee = hasTicketingProducts ? 0 : getGiftWrappingPrice();
-    
-    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
-    // Shopify's payment.total may be based on different subtotal (cart sync issue)
-    // So we always use our calculated total to ensure accuracy
+    // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
+    const giftWrappingFee = isTicketingOnly
+        ? 0
+        : (derivedGiftWrappingFee > 0
+            ? derivedGiftWrappingFee
+            : (giftWrapping != null && Number(giftWrapping?.price) > 0 && validGiftWrapIds.length > 0 ? Number(giftWrapping.price) : 0));
+    // Platform fee for display only (ticket-only): shown struck + FREE, not added to total
+    const PLATFORM_FEE_DISPLAY = 20;
+    const platformFeeDisplay = isTicketingOnly ? PLATFORM_FEE_DISPLAY : 0;
+
+    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total (platform fee not added)
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
-    
+    const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
+
+    // Bill details display constants (for UX only; Kiddo Cash is dummy)
+    const HANDLING_FEE_ORIGINAL = 10;
+    const DELIVERY_FEE_ORIGINAL = 50;
+    const KIDDO_CASH_APPLIED = 250;
+    const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
+    const displaySavings =
+      totalSavings +
+      (isTicketingOnly ? PLATFORM_FEE_DISPLAY : HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL) +
+      (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
+
     // Debug log to verify calculation
     if (__DEV__) {
         console.log('[CartScreen] Total calculation:', {
@@ -380,94 +554,20 @@ export default function CartScreen() {
         return { isEligible: hasFashionTag, hasFashionTag };
     }, [cartItems]);
 
-    // Backend returns eligible coupons; show only visible ones in the list (hidden codes still work when entered manually)
-    const applicableCoupons = useMemo(
-        () => (availableCoupons ?? []).filter((c) => c.isVisible !== false),
-        [availableCoupons]
-    );
-
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const item = cartItems.find((li) => li.id === itemId);
+        const maxQty = item?.quantityAvailable;
+        if (typeof maxQty === 'number' && newQuantity > maxQty) {
+            setStockLimitModal({ visible: true, maxQty });
+            newQuantity = maxQty;
+        }
         await updateQuantity(itemId, newQuantity);
     };
 
     const handleRemoveItem = async (itemId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         await removeItem(itemId);
-    };
-
-    const handleApplyCoupon = async () => {
-        const code = couponCode.trim().toUpperCase();
-        console.log('[CartScreen] handleApplyCoupon called with code:', code);
-        if (!code) return;
-
-        if (appliedDiscountCodes?.includes(code)) {
-            console.log('[CartScreen] Code already applied:', code);
-            setCouponMessage(`${code} is already applied.`);
-            return;
-        }
-
-        setCouponApplying(true);
-        setCouponMessage(null);
-        try {
-            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
-            if (result.success) {
-                console.log('[CartScreen] ✅ Coupon applied successfully');
-                setCouponCode('');
-                setCouponMessage(null); // Don't show success message
-                
-                // Track coupon applied
-                try {
-                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
-                    trackCouponApplied(code, discount);
-                } catch (e) {
-                    console.warn('Mixpanel tracking error:', e);
-                }
-            } else {
-                console.log('[CartScreen] ❌ Coupon application failed:', result.error);
-                setCouponMessage(result.error || 'Failed to apply coupon');
-            }
-        } catch (error: any) {
-            console.error('[CartScreen] ❌ Error applying coupon:', error);
-            setCouponMessage(error.message || 'Failed to apply coupon');
-        } finally {
-            setCouponApplying(false);
-        }
-    };
-
-    const handleApplyCouponFromList = async (coupon: any) => {
-        const code = coupon.code?.toUpperCase();
-        if (!code) return;
-
-        if (appliedDiscountCodes?.includes(code)) {
-            setCouponMessage(`${code} is already applied.`);
-            return;
-        }
-
-        setCouponApplying(true);
-        setCouponMessage(null);
-        try {
-            const result = await applyDiscountCode(code, { preloadedCoupons: availableCoupons });
-            if (result.success) {
-                setCouponCode(''); // Clear input
-                setCouponMessage(null); // Don't show success message
-            } else {
-                setCouponMessage(result.error || 'Failed to apply coupon');
-            }
-        } catch (error: any) {
-            setCouponMessage(error.message || 'Failed to apply coupon');
-        } finally {
-            setCouponApplying(false);
-        }
-    };
-
-    const handleRemoveCoupon = async (code: string) => {
-        try {
-            await removeDiscountCode(code);
-            setCouponMessage(null); // Don't show success message
-        } catch (error: any) {
-            setCouponMessage(error.message || 'Failed to remove coupon');
-        }
     };
 
     const handlePlaceOrder = async () => {
@@ -496,7 +596,7 @@ export default function CartScreen() {
             setShowAddressModal(true);
             return;
         }
-        
+
         // For ticketing-only orders, use a default/placeholder address if none selected
         // This ensures the order creation doesn't fail due to missing address structure
         // Use a valid Indian address structure to pass Shopify validation
@@ -536,7 +636,7 @@ export default function CartScreen() {
                 const { shopifyApi } = await import('@/services/shopifyApi');
                 const variantIds = cartItems.map(item => item.variantId);
                 const variants = await shopifyApi.getVariantsByIds(variantIds);
-                
+
                 // Create a map of variant ID to variant data for easier lookup
                 const variantMap = new Map();
                 variants.forEach((variant: any) => {
@@ -544,22 +644,22 @@ export default function CartScreen() {
                         variantMap.set(variant.id, variant);
                     }
                 });
-                
+
                 // Check if any products are unavailable
                 const unavailableItems: Array<{ title: string; id: string; productId?: string }> = [];
                 const itemsToFix: Array<{ item: any; realVariant: any }> = [];
-                
+
                 // First pass: identify items with wrong variant IDs and collect fixes
                 for (const item of cartItems) {
                     let variant = variantMap.get(item.variantId);
-                    
+
                     // If variant not found, it might be a search result with wrong variant ID
                     // Try to fetch the product and get the real variant ID
                     if (!variant && item.productId) {
                         try {
                             const { shopifyApi } = await import('@/services/shopifyApi');
                             const fullProduct = await shopifyApi.getProductById(item.productId);
-                            
+
                             if (fullProduct && fullProduct.variants?.edges && fullProduct.variants.edges.length > 0) {
                                 // Find matching variant by title or use first available
                                 const matchingVariant = fullProduct.variants.edges.find((e: any) => {
@@ -577,7 +677,7 @@ export default function CartScreen() {
                                     }
                                     return false;
                                 })?.node || fullProduct.variants.edges[0]?.node;
-                                
+
                                 if (matchingVariant) {
                                     itemsToFix.push({ item, realVariant: matchingVariant });
                                     // Update variant map with the correct variant for validation
@@ -590,16 +690,16 @@ export default function CartScreen() {
                             console.error('[Cart] Error fixing variant ID for product:', item.productId, error);
                         }
                     }
-                    
+
                     // Check multiple conditions for unavailability:
                     // 1. Variant not found in Shopify (after trying to fix)
                     // 2. availableForSale is false
                     // 3. quantityAvailable is 0 or less than requested quantity
-                    const isUnavailable = !variant || 
+                    const isUnavailable = !variant ||
                         variant.availableForSale === false ||
                         (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
                         (variant.quantityAvailable === 0);
-                    
+
                     if (isUnavailable) {
                         unavailableItems.push({
                             title: item.title || `Product ${item.variantId}`,
@@ -608,12 +708,12 @@ export default function CartScreen() {
                         });
                     }
                 }
-                
+
                 // Second pass: Apply fixes if any
                 if (itemsToFix.length > 0) {
                     const { useCartStore } = await import('@/store/cartStore');
                     const cartStore = useCartStore.getState();
-                    
+
                     for (const { item, realVariant } of itemsToFix) {
                         try {
                             // Remove old item and add with correct variant ID
@@ -624,8 +724,8 @@ export default function CartScreen() {
                                 title: item.title,
                                 variantTitle: realVariant.title,
                                 price: parseFloat(realVariant.price?.amount || '0'),
-                                compareAtPrice: realVariant.compareAtPrice?.amount 
-                                    ? parseFloat(realVariant.compareAtPrice.amount) 
+                                compareAtPrice: realVariant.compareAtPrice?.amount
+                                    ? parseFloat(realVariant.compareAtPrice.amount)
                                     : undefined,
                                 currencyCode: realVariant.price?.currencyCode || 'INR',
                                 image: item.image,
@@ -644,7 +744,7 @@ export default function CartScreen() {
                             });
                         }
                     }
-                    
+
                     // If we fixed items, refresh cart items and retry validation
                     if (itemsToFix.length > 0 && unavailableItems.length === 0) {
                         // Get updated cart items
@@ -656,15 +756,15 @@ export default function CartScreen() {
                         updatedVariants.forEach((v: any) => {
                             if (v && v.id) updatedVariantMap.set(v.id, v);
                         });
-                        
+
                         // Check updated items
                         for (const item of updatedCartItems) {
                             const variant = updatedVariantMap.get(item.variantId);
-                            const isUnavailable = !variant || 
+                            const isUnavailable = !variant ||
                                 variant.availableForSale === false ||
                                 (variant.quantityAvailable !== null && variant.quantityAvailable !== undefined && variant.quantityAvailable < item.quantity) ||
                                 (variant.quantityAvailable === 0);
-                            
+
                             if (isUnavailable) {
                                 unavailableItems.push({
                                     title: item.title || `Product ${item.variantId}`,
@@ -675,7 +775,7 @@ export default function CartScreen() {
                         }
                     }
                 }
-                
+
                 if (unavailableItems.length > 0) {
                     const itemNames = unavailableItems.map(item => item.title).join(', ');
                     Alert.alert(
@@ -705,7 +805,12 @@ export default function CartScreen() {
                 // Shopify will catch it anyway, but this gives better UX
             }
 
-            // Prepare order data
+            // Effective payment method for backend (so Shopify order has correct method)
+            const isFreeOrder = toPay === 0;
+            const chosenPayment = paymentMethod === 'cod' ? 'cod' : 'razorpay';
+            const effectivePaymentMethod = isFreeOrder ? 'free' : chosenPayment;
+
+            // Prepare order data with full checkout details for backend/Shopify
             const orderData = {
                 items: cartItems.map(item => ({
                     id: item.id,
@@ -714,15 +819,18 @@ export default function CartScreen() {
                     quantity: item.quantity,
                     price: item.price,
                     title: item.title,
+                    variantTitle: item.variantTitle,
+                    image: item.image,
+                    compareAtPrice: item.compareAtPrice,
                     tags: item.tags,
-                    bookingDate: item.bookingDate, // For Events, Playhouses, Petting Farms - sent to Shopify
+                    bookingDate: item.bookingDate,
                 })),
-                totalAmount: total,
+                totalAmount: toPay,
                 currencyCode: 'INR',
                 email: user?.email || 'guest@example.com',
                 phone: user?.phone || billingAddress.phone || '',
                 name: user?.displayName || `${billingAddress.firstName} ${billingAddress.lastName}`,
-                customerId: user?.id, // Pass the raw ID, let service handle formatting if needed
+                customerId: user?.id,
                 address: {
                     name: `${billingAddress.firstName} ${billingAddress.lastName}`,
                     address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
@@ -738,19 +846,41 @@ export default function CartScreen() {
                 couponCode: appliedDiscountCode || undefined,
                 discountAmount: discount > 0 ? discount : undefined,
                 deliverySchedule: deliverySchedule || undefined,
+                deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
+                paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
+                billDetails: {
+                    subtotal: itemSubtotal,
+                    subtotalAfterDiscount,
+                    deliveryFee,
+                    giftWrappingFee,
+                    discount,
+                    total: toPay,
+                    currencyCode: 'INR',
+                },
                 selectedShoe: selectedShoe || undefined,
-                isTryAndBuy: isTryAndBuy, // Tag only: backend should create same draft (all items), use for order tagging
+                selectedShoeSize: selectedShoeSize || undefined,
+                isTryAndBuy: isTryAndBuy,
             };
 
             // Call Payment Service
             console.log('Calling PaymentService.createOrderWithPayment...');
-            // Check if total is 0 or payment method is free
-            const isFreeOrder = total === 0;
-            const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
-                            const result = await PaymentService.createOrderWithPayment(
+            // For Pay Online, sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
+            if (effectivePaymentMethod === 'razorpay') {
+                try {
+                    const cartId = await ensureCart();
+                    if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                        const { shopifyApi } = await import('@/services/shopifyApi');
+                        await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
+                    }
+                } catch (syncErr) {
+                    console.warn('[Cart] Failed to sync discount codes to Shopify before Pay Online', syncErr);
+                }
+            }
+
+            const result = await PaymentService.createOrderWithPayment(
                 orderData,
-                isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay')
+                effectivePaymentMethod
             );
             console.log('PaymentService result received:', result);
 
@@ -760,131 +890,131 @@ export default function CartScreen() {
                     console.log('Payment cancelled');
                     return;
                 }
-                
-                    if (result.orderCreationFailed && result.payment?.paymentId) {
-                        console.error('[Cart] 🚨 CRITICAL: Payment successful but order creation failed', {
-                            paymentId: result.payment.paymentId,
-                            error: result.error,
-                        });
-                        
-                        // Try to create a local order record as fallback for recovery
-                        try {
-                            const { orderService } = await import('@/services/orderService');
 
-                            // Calculate order values for local record
-                            const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                            const calculatedDiscount = discount || 0;
-                            const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
-                            const calculatedSubtotal = itemSubtotal;
-                            
-                            // Create local order record with payment info for manual recovery
-                            const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
-                            const localOrder = await orderService.createOrder({
-                                items: cartItems.map(item => ({
-                                    id: item.id,
-                                    variantId: item.variantId,
-                                    productId: item.productId,
-                                    title: item.title,
-                                    variantTitle: item.variantTitle,
-                                    price: item.price,
-                                    quantity: item.quantity,
-                                    image: item.image,
-                                })),
-                                shippingAddress: selectedAddress
-                                    ? {
-                                          name: selectedAddress.name,
-                                          address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
-                                          city: selectedAddress.city,
-                                          state: selectedAddress.province || selectedAddress.state,
-                                          pincode: selectedAddress.zip || selectedAddress.pincode,
-                                          phone: selectedAddress.phone,
-                                      }
-                                    : {
-                                          name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                                          address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                                          city: billingAddress.city,
-                                          state: billingAddress.province,
-                                          pincode: billingAddress.zip,
-                                          phone: billingAddress.phone,
-                                      },
-                                paymentMethod: paymentMethod || 'razorpay',
-                                paymentStatus: 'paid',
-                                paymentId: result.payment?.paymentId,
-                                deliveryFee: calculatedDeliveryFee,
-                                discount: calculatedDiscount,
-                                couponCode: appliedDiscountCode || undefined,
-                                note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
-                                userId: userIdForOrder ?? undefined,
-                            });
-                            
-                            console.log('[Cart] Created local recovery order:', localOrder.id);
-                            
-                            // Show alert with share payment ID option
-                            Alert.alert(
-                                'Payment Successful - Order Issue',
-                                `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
-                                [
-                                    {
-                                        text: 'Share Payment ID',
-                                        onPress: async () => {
-                                            try {
-                                                const paymentId = result.payment?.paymentId || '';
-                                                if (paymentId) {
-                                                    await Share.share({
-                                                        message: `Payment ID for support: ${paymentId}`,
-                                                        title: 'Payment ID',
-                                                    });
-                                                }
-                                            } catch (e) {
-                                                console.error('Failed to share payment ID:', e);
+                if (result.orderCreationFailed && result.payment?.paymentId) {
+                    console.error('[Cart] 🚨 CRITICAL: Payment successful but order creation failed', {
+                        paymentId: result.payment.paymentId,
+                        error: result.error,
+                    });
+
+                    // Try to create a local order record as fallback for recovery
+                    try {
+                        const { orderService } = await import('@/services/orderService');
+
+                        // Calculate order values for local record
+                        const itemSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                        const calculatedDiscount = discount || 0;
+                        const calculatedDeliveryFee = 0; // Delivery fee is typically 0 based on code
+                        const calculatedSubtotal = itemSubtotal;
+
+                        // Create local order record with payment info for manual recovery
+                        const userIdForOrder = user?.id || user?.customerId || user?.email || user?.phone || null;
+                        const localOrder = await orderService.createOrder({
+                            items: cartItems.map(item => ({
+                                id: item.id,
+                                variantId: item.variantId,
+                                productId: item.productId,
+                                title: item.title,
+                                variantTitle: item.variantTitle,
+                                price: item.price,
+                                quantity: item.quantity,
+                                image: item.image,
+                            })),
+                            shippingAddress: selectedAddress
+                                ? {
+                                    name: selectedAddress.name,
+                                    address: [selectedAddress.address1, selectedAddress.address2].filter(Boolean).join(', '),
+                                    city: selectedAddress.city,
+                                    state: selectedAddress.province || selectedAddress.state,
+                                    pincode: selectedAddress.zip || selectedAddress.pincode,
+                                    phone: selectedAddress.phone,
+                                }
+                                : {
+                                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                                    city: billingAddress.city,
+                                    state: billingAddress.province,
+                                    pincode: billingAddress.zip,
+                                    phone: billingAddress.phone,
+                                },
+                            paymentMethod: paymentMethod || 'razorpay',
+                            paymentStatus: 'paid',
+                            paymentId: result.payment?.paymentId,
+                            deliveryFee: calculatedDeliveryFee,
+                            discount: calculatedDiscount,
+                            couponCode: appliedDiscountCode || undefined,
+                            note: `⚠️ RECOVERY ORDER: Payment successful but Shopify order creation failed. Payment ID: ${result.payment?.paymentId || 'unknown'}. Error: ${result.error}`,
+                            userId: userIdForOrder ?? undefined,
+                        });
+
+                        console.log('[Cart] Created local recovery order:', localOrder.id);
+
+                        // Show alert with share payment ID option
+                        Alert.alert(
+                            'Payment Successful - Order Issue',
+                            `Your payment was processed successfully (Payment ID: ${result.payment.paymentId}), but we encountered an issue creating your order. We've saved your order details locally. Please contact support with your payment ID and we will resolve this immediately.`,
+                            [
+                                {
+                                    text: 'Share Payment ID',
+                                    onPress: async () => {
+                                        try {
+                                            const paymentId = result.payment?.paymentId || '';
+                                            if (paymentId) {
+                                                await Share.share({
+                                                    message: `Payment ID for support: ${paymentId}`,
+                                                    title: 'Payment ID',
+                                                });
                                             }
-                                        },
+                                        } catch (e) {
+                                            console.error('Failed to share payment ID:', e);
+                                        }
                                     },
-                                    {
-                                        text: 'Contact Support',
-                                        onPress: () => {
-                                            // You can navigate to support or open support URL
-                                            console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
-                                            // TODO: Navigate to support screen or open support URL
-                                        },
+                                },
+                                {
+                                    text: 'Contact Support',
+                                    onPress: () => {
+                                        // You can navigate to support or open support URL
+                                        console.log('User needs to contact support with payment ID:', result.payment?.paymentId);
+                                        // TODO: Navigate to support screen or open support URL
                                     },
-                                    { text: 'OK' },
-                                ]
-                            );
-                        } catch (recoveryError) {
-                            console.error('[Cart] Failed to create local recovery order:', recoveryError);
-                            
-                            // Fallback: Show alert without local order creation
-                            const paymentId = result.payment?.paymentId || 'unknown';
-                            Alert.alert(
-                                'Payment Successful - Order Issue',
-                                `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
-                                [
-                                    {
-                                        text: 'Share Payment ID',
-                                        onPress: async () => {
-                                            try {
-                                                const pid = result.payment?.paymentId || '';
-                                                if (pid) {
-                                                    await Share.share({
-                                                        message: `Payment ID for support: ${pid}`,
-                                                        title: 'Payment ID',
-                                                    });
-                                                }
-                                            } catch (e) {
-                                                console.error('Failed to share payment ID:', e);
+                                },
+                                { text: 'OK' },
+                            ]
+                        );
+                    } catch (recoveryError) {
+                        console.error('[Cart] Failed to create local recovery order:', recoveryError);
+
+                        // Fallback: Show alert without local order creation
+                        const paymentId = result.payment?.paymentId || 'unknown';
+                        Alert.alert(
+                            'Payment Successful - Order Issue',
+                            `Your payment was processed successfully (Payment ID: ${paymentId}), but we encountered an issue creating your order. Please contact support with your payment ID and we will resolve this immediately.`,
+                            [
+                                {
+                                    text: 'Share Payment ID',
+                                    onPress: async () => {
+                                        try {
+                                            const pid = result.payment?.paymentId || '';
+                                            if (pid) {
+                                                await Share.share({
+                                                    message: `Payment ID for support: ${pid}`,
+                                                    title: 'Payment ID',
+                                                });
                                             }
-                                        },
+                                        } catch (e) {
+                                            console.error('Failed to share payment ID:', e);
+                                        }
                                     },
-                                    { text: 'OK' },
-                                ]
-                            );
-                        }
-                        
-                        setOrderLoading(false);
-                        return;
+                                },
+                                { text: 'OK' },
+                            ]
+                        );
                     }
-                
+
+                    setOrderLoading(false);
+                    return;
+                }
+
                 // Track Payment Failed
                 try {
                     const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -897,7 +1027,7 @@ export default function CartScreen() {
                 } catch (e) {
                     console.warn('Analytics tracking error:', e);
                 }
-                
+
                 throw new Error(result.error || 'Order creation failed');
             }
 
@@ -983,26 +1113,28 @@ export default function CartScreen() {
 
             // Clear cart first
             clearCart();
-            
+
             // Navigate to order success screen
             // Use a small delay to ensure state updates complete
             requestAnimationFrame(() => {
                 try {
+                    const resolvedEta = estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null);
                     const navParams = {
-                        pathname: '/order-success' as const,
+                        pathname: '/order-success/v2' as const,
                         params: {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
+                            ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                         },
                     };
-                    
+
                     console.log('[Cart] Navigating with params:', navParams);
                     router.push(navParams);
                 } catch (error) {
                     console.error('[Cart] Navigation error:', error);
                     // Fallback: try direct path
-                    router.push('/order-success' as any);
+                    router.push('/order-success/v2' as any);
                 }
             });
 
@@ -1012,10 +1144,10 @@ export default function CartScreen() {
                 // Payment cancelled by user
                 return;
             }
-            
+
             // Parse Shopify errors for better user experience
             let errorMessage = error.description || error.message || 'Something went wrong while placing your order.';
-            
+
             // Check if error is about product availability
             if (errorMessage.includes('no longer available') || errorMessage.includes('is no longer available')) {
                 // Extract product ID from error message
@@ -1023,14 +1155,14 @@ export default function CartScreen() {
                 if (productIdMatch) {
                     const unavailableProductId = productIdMatch[1];
                     // Find the product in cart
-                    const unavailableItem = cartItems.find(item => 
-                        item.variantId.includes(unavailableProductId) || 
+                    const unavailableItem = cartItems.find(item =>
+                        item.variantId.includes(unavailableProductId) ||
                         item.productId.includes(unavailableProductId)
                     );
-                    
+
                     if (unavailableItem) {
                         errorMessage = `${unavailableItem.title || 'One or more items'} is no longer available. Please remove it from your cart and try again.`;
-                        
+
                         // Offer to remove the item
                         Alert.alert(
                             'Product Unavailable',
@@ -1051,7 +1183,18 @@ export default function CartScreen() {
                     }
                 }
             }
-            
+
+            // If order failed due to invalid/already-used coupon, remove it from cart so user can retry
+            const isCouponError = /already been used|coupon|invalid coupon|expired coupon/i.test(errorMessage);
+            if (isCouponError && appliedDiscountCodes?.length) {
+                try {
+                    const { useCartStore: getCartStore } = await import('@/store/cartStore');
+                    appliedDiscountCodes.forEach((code: string) => getCartStore.getState().removeDiscountCode(code));
+                } catch (e) {
+                    console.warn('Failed to remove invalid coupon from cart', e);
+                }
+            }
+
             Alert.alert('Order Failed', errorMessage);
         } finally {
             setOrderLoading(false);
@@ -1067,86 +1210,91 @@ export default function CartScreen() {
     };
 
 
-    // Render cart item
+    // Try & Buy badge: show when item has fashion or try-and-buy style tag
+    const hasTryAndBuyTag = (it: { tags?: string[] | string }) => {
+        const raw = it.tags;
+        const tags = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+        return tags.some((tag: string) => {
+            const t = String(tag).trim().toLowerCase();
+            if (t === 'fashion') return true;
+            if (['try and buy', 'try & buy', 'try-and-buy', 'tryandbuy'].includes(t)) return true;
+            if (t.includes('try') && t.includes('buy')) return true;
+            return false;
+        });
+    };
+
+    // Render cart item: row1 = title + quantity buttons; row2 = prices in same column as +/-
     const renderItem = (item: any) => {
-        const hasFashionTag = item.tags?.some(
-            (tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
-        );
+        const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
+        const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
+        const showTryAndBuyBadge = hasTryAndBuyTag(item);
 
         return (
             <TouchableOpacity
                 key={item.id}
-                style={styles.cartItem}
+                style={styles.cartItemRow}
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.7}
             >
-                {/* T&B Badge */}
-                {hasFashionTag && (
-                    <View style={styles.tbBadge}>
-                        <Text style={styles.tbBadgeText}>T&B</Text>
-                    </View>
-                )}
-
-                <Image
-                    source={{ uri: item.image }}
-                    style={styles.itemImage}
-                    contentFit="cover"
-                />
-                <View style={styles.itemInfo}>
-                    <View style={styles.titleRow}>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.itemTitle} numberOfLines={2}>
-                                {item.title}
-                            </Text>
-                            {item.variantTitle && item.variantTitle !== 'Default Title' && (
-                                <View style={styles.variantPillStatic}>
-                                    <Text style={styles.variantTextStatic} numberOfLines={1}>
-                                        {item.variantTitle}
-                                    </Text>
+                <View style={styles.cartItemRowInner}>
+                <View style={styles.cartItemBlock}>
+                    <View style={styles.itemImageAndTitleBlock}>
+                        <View style={styles.itemImageContainer}>
+                            {showTryAndBuyBadge && (
+                                <View style={styles.tryAndBuyBadgeCart}>
+                                    <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
                                 </View>
                             )}
+                            <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                        </View>
+                        <View style={styles.itemTitleBlock}>
+                            <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                            <Text style={styles.itemVariantSubtext} numberOfLines={1}>
+                                {item.variantTitle && item.variantTitle !== 'Default Title'
+                                    ? `${item.variantTitle} • Pack of ${item.quantity}`
+                                    : `Pack of ${item.quantity}`}
+                            </Text>
                             {item.bookingDate && (
                                 <View style={styles.bookingDateContainer}>
                                     <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
                                     <Text style={styles.bookingDateText}>
                                         {new Date(item.bookingDate).toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
+                                            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
                                         })}
                                     </Text>
                                 </View>
                             )}
                         </View>
+                    </View>
+                    <View style={styles.quantityAndPriceRow}>
                         <View style={styles.quantityContainer}>
                             <TouchableOpacity
                                 style={styles.quantityButton}
                                 onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                             >
-                                <Ionicons name="remove" size={18} color="#000" />
+                                <Ionicons name="remove" size={16} color={Colors.primary} />
                             </TouchableOpacity>
                             <Text style={styles.quantityText}>{item.quantity}</Text>
                             <TouchableOpacity
                                 style={styles.quantityButton}
                                 onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                             >
-                                <Ionicons name="add" size={18} color="#000" />
+                                <Ionicons name="add" size={16} color={Colors.primary} />
                             </TouchableOpacity>
                         </View>
+                        <View style={styles.itemPriceBlock}>
+                            <View style={styles.itemPriceInline}>
+                                {compareAt != null && (
+                                    <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
+                                )}
+                                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                            </View>
+                            {discountPct > 0 && (
+                                <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                            )}
+                        </View>
                     </View>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-                    </View>
-                    <View style={styles.itemBottomRow}>
-                        <View style={styles.spacer} />
-                        <TouchableOpacity
-                            style={styles.removeButton}
-                            onPress={() => handleRemoveItem(item.id)}
-                        >
-                            <Ionicons name="trash-outline" size={18} color="#ff4444" />
-                        </TouchableOpacity>
-                    </View>
+                </View>
                 </View>
             </TouchableOpacity>
         );
@@ -1166,487 +1314,269 @@ export default function CartScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar style="dark" />
 
-            {/* Header */}
+            {/* Header - light beige to match page */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={20} color="#717680" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Cart</Text>
+                <View style={styles.headerCenter}>
+                    {isTicketingOnly ? (
+                        <Text style={styles.headerTitle}>Cart</Text>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.headerAddressRow}
+                            onPress={handleAddressSelection}
+                            activeOpacity={0.7}
+                        >
+                            {selectedAddress ? (
+                                <View style={styles.headerAddressContent}>
+                                    <View style={styles.headerAddressTextBlock}>
+                                        <View style={styles.headerAddressTagRow}>
+                                            <Text style={styles.headerAddressTag} numberOfLines={1}>
+                                                {selectedAddress.tag ? selectedAddress.tag.charAt(0).toUpperCase() + selectedAddress.tag.slice(1) : 'Address'}
+                                                <Ionicons name="chevron-down" size={18} color="#717680" style={styles.headerAddressChevron} />
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.headerAddressLine} numberOfLines={1}>
+                                            {selectedAddress.address1}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View style={styles.headerAddressContent}>
+                                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
+                                    <Text style={styles.headerAddressLine}>Add Delivery Address</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
+                <View style={styles.headerSpacer} />
             </View>
 
             {cartItems.length > 0 && (
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Cart Items */}
-                    <View style={styles.itemsSection}>
-                        <View style={styles.itemsHeader}>
-                            <Text style={styles.itemsHeaderText}>{cartItems.length} Items</Text>
+                <>
+                    {/* Total Savings Banner - full width, lighter green, thinner */}
+                    {displaySavings > 0 && (
+                        <View style={styles.savingsBanner}>
+                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(displaySavings)}!</Text>
                         </View>
-                        {cartItems.map(item => renderItem(item))}
-                    </View>
+                    )}
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
 
-                    {/* Free Shoes Offer - Show when cart has fashion items OR HEYKIDDO coupon is available */}
-                    {(hasFashionItems || applicableCoupons.some(c => c.code?.toUpperCase() === 'HEYKIDDO')) && (
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => setShowShoesModal(true)}
-                        >
-                            <FreeShoesOffer
-                                visible={true}
-                                heykiddoCoupon={applicableCoupons.find(c => c.code?.toUpperCase() === 'HEYKIDDO') || undefined}
+                        {/* Delivery Information Card - when at least one non-ticketing product in cart */}
+                        {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
+                            <DeliveryCard
+                                deliverySchedule={deliverySchedule}
+                                onSchedulePress={() => setShowScheduleModal(true)}
+                                estimatedDeliveryMinutes={
+                                    estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
+                                }
+                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
                             />
-                        </TouchableOpacity>
-                    )}
+                        )}
 
-                    {/* Try Before You Buy Section */}
-                    {tryAndBuyEligibility.hasFashionTag && (
-                        <View style={styles.tryAndBuySection}>
-                            <View style={styles.tryAndBuyHeader}>
-                                <Text style={styles.tryAndBuyTitle}>Try Before You Buy</Text>
-                                <TouchableOpacity 
-                                    style={styles.knowMoreButton}
-                                    onPress={() => setShowTryAndBuyModal(true)}
-                                >
-                                    <Text style={styles.knowMoreText}>Know more</Text>
-                                    <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
+                        {/* Introductory Offer - Free Pair of Shoes (same logic as FreeShoesOffer modal) */}
+                        {hasNonTicketingProducts && cartFeatures.showFreePairShoes && showFreeShoesByBackend && (
+                            <FreePairShoes
+                                visible
+                                configRefreshKey={appConfigRefresh}
+                                selectedShoe={selectedShoe}
+                                selectedShoeSize={selectedShoeSize}
+                                onAddPress={() => {}}
+                                onConfirmSize={async (shoeId, size) => {
+                                    setSelectedShoeSize(size);
+                                    setSelectedShoe(shoeId);
+                                    const rawOrig = (freeShoesOfferConfig as any)?.originalPrice ?? (freeShoesOfferConfig as any)?.original_price;
+                                    const orig = typeof rawOrig === 'number' ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                    const originalPrice = orig != null && Number.isFinite(orig) && orig >= 0 ? orig : undefined;
+                                    const result = await applyDiscountCode('HEYKIDDO', { originalPrice });
+                                    if (!result.success && result.error) {
+                                        Alert.alert('Coupon', result.error);
+                                    }
+                                }}
+                                onRemoveOffer={async () => {
+                                    setSelectedShoe(null);
+                                    await removeDiscountCode('HEYKIDDO');
+                                }}
+                                appliedCouponOriginalPrice={heyKiddoOriginalPrice}
+                            />
+                        )}
+
+                        {/* Cart Items - gift-wrapped first, then regular; "X added items" shown once with total */}
+                        {itemsGiftWrapped.length > 0 && (
+                            <View style={[styles.itemsSection, styles.itemsSectionGiftWrap]}>
+                                <View style={styles.itemsHeader}>
+                                    <Text style={styles.itemsHeaderText}>
+                                        {totalCartItems} added items
+                                    </Text>
+                                </View>
+                                {itemsGiftWrapped.map(item => renderItem(item))}
+                                <View style={styles.giftWrapRibbonContainer}>
+                                    <Image
+                                        source={require('@/assets/images/ribbon.png')}
+                                        style={styles.giftWrapRibbon}
+                                        contentFit="cover"
+                                    />
+                                </View>
                             </View>
-                            <TouchableOpacity
-                                style={styles.tryAndBuyCheckbox}
-                                onPress={toggleTryAndBuy}
-                            >
-                                <View style={[styles.checkbox, isTryAndBuy && styles.checkboxChecked]}>
-                                    {isTryAndBuy && <Ionicons name="checkmark" size={16} color="#fff" />}
-                                </View>
-                                <Text style={styles.checkboxLabel}>
-                                    I'd like to Try & Buy the eligible items
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Gift Wrapping - Hide for ticketing products */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity
-                                style={styles.giftWrappingButton}
-                                onPress={() => setShowGiftModal(true)}
-                            >
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="gift-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>
-                                            {giftWrapping ? giftWrapping.name : 'Add Gift Wrapping'}
+                        )}
+                        {itemsNotGiftWrapped.length > 0 && (
+                            <View style={styles.itemsSection}>
+                                {itemsGiftWrapped.length === 0 && (
+                                    <View style={styles.itemsHeader}>
+                                        <Text style={styles.itemsHeaderText}>
+                                            {totalCartItems} added items
                                         </Text>
-                                        {giftWrapping && (
-                                            <Text style={styles.giftWrappingDescription}>
-                                                {giftWrapping.description}
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <View style={styles.giftWrappingRight}>
-                                    {giftWrapping ? (
-                                        <Text style={styles.giftWrappingPrice}>
-                                            ₹{giftWrapping.price}
-                                        </Text>
-                                    ) : (
-                                        <Ionicons name="chevron-forward" size={20} color="#666" />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    
-
-                    {/* Schedule Delivery - Hide for ticketing products */}
-                    {!hasTicketingProducts && (
-                        <View style={styles.giftWrappingSection}>
-                            <TouchableOpacity
-                                style={styles.giftWrappingButton}
-                                onPress={() => setShowScheduleModal(true)}
-                            >
-                                <View style={styles.giftWrappingLeft}>
-                                    <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.giftWrappingInfo}>
-                                        <Text style={styles.giftWrappingTitle}>
-                                            {deliverySchedule ? 'Schedule Delivery' : 'Schedule Delivery'}
-                                        </Text>
-                                        {deliverySchedule && deliverySchedule.date && deliverySchedule.time && (
-                                            <Text style={styles.giftWrappingDescription}>
-                                                {deliverySchedule.date} at {deliverySchedule.time}
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <View style={styles.giftWrappingRight}>
-                                    {deliverySchedule ? (
-                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                                    ) : (
-                                        <Ionicons name="chevron-forward" size={20} color="#666" />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
-                    {/* Coupon Code */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Coupon Code</Text>
-                        {/* Only show input when no coupon is applied */}
-                        {(!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
-                            <>
-                                {!isAuthenticated ? (
-                                    <View style={styles.couponLoginPrompt}>
-                                        <Ionicons name="lock-closed" size={20} color={Colors.primary} />
-                                        <Text style={styles.couponLoginText}>
-                                            Please login or create an account to use discount coupons
-                                        </Text>
-                                        <TouchableOpacity
-                                            style={styles.loginButton}
-                                            onPress={() => router.push('/(auth)/login')}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.loginButtonText}>Login / Sign Up</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <View style={styles.couponContainer}>
-                                        <View style={styles.couponInputWrapper}>
-                                            <Ionicons name="pricetag-outline" size={18} color="#999" style={styles.couponInputIcon} />
-                                            <TextInput
-                                                style={styles.couponInput}
-                                                placeholder="Enter coupon code"
-                                                value={couponCode}
-                                                onChangeText={setCouponCode}
-                                                placeholderTextColor="#999"
-                                                autoCapitalize="characters"
-                                            />
-                                        </View>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.applyButton,
-                                                (!couponCode.trim() || couponApplying) && styles.applyButtonDisabled
-                                            ]}
-                                            disabled={couponApplying || !couponCode.trim()}
-                                            onPress={handleApplyCoupon}
-                                            activeOpacity={0.7}
-                                        >
-                                            {couponApplying ? (
-                                                <ActivityIndicator size="small" color="#fff" />
-                                            ) : (
-                                                <Text style={styles.applyButtonText}>Apply</Text>
-                                            )}
-                                        </TouchableOpacity>
                                     </View>
                                 )}
-                            </>
-                        )}
-                        {couponMessage && (
-                            <View style={styles.couponMessageContainer}>
-                                <Ionicons
-                                    name={couponMessage.startsWith('✓') ? 'checkmark-circle' : 'alert-circle'}
-                                    size={14}
-                                    color={couponMessage.startsWith('✓') ? '#4caf50' : '#ff4444'}
-                                />
-                                <Text
-                                    style={[
-                                        styles.couponMessage,
-                                        couponMessage.startsWith('✓') && styles.couponMessageSuccess,
-                                    ]}
-                                >
-                                    {couponMessage}
-                                </Text>
-                            </View>
-                        )}
-                        {/* Applied Coupons */}
-                        {appliedDiscountCodes && appliedDiscountCodes.length > 0 && (
-                            <View style={styles.appliedCouponsContainer}>
-                                {appliedDiscountCodes.map((code, index) => (
-                                    <View key={`${code}-${index}`} style={styles.couponChip}>
-                                        <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                                        <Text style={styles.couponChipText}>{code}</Text>
-                                        <TouchableOpacity
-                                            onPress={() => handleRemoveCoupon(code)}
-                                            style={styles.couponRemove}
-                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                        >
-                                            <Ionicons name="close" size={14} color="#fff" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
+                                {itemsNotGiftWrapped.map(item => renderItem(item))}
                             </View>
                         )}
 
-                        {/* Available Coupons / Offers - Show when no coupon applied and user logged in */}
-                        {isAuthenticated && (!appliedDiscountCodes || appliedDiscountCodes.length === 0) && (
-                            <View style={styles.availableCouponsContainer}>
-                                <View style={styles.availableCouponsHeader}>
-                                    <Ionicons name="pricetag" size={16} color={Colors.primary} />
-                                    <Text style={styles.availableCouponsTitle}>Offers</Text>
-                                </View>
-                                {loadingCoupons ? (
-                                    <View style={styles.couponsLoadingContainer}>
-                                        <ActivityIndicator size="small" color={Colors.primary} />
-                                        <Text style={styles.couponsLoadingText}>Loading offers...</Text>
-                                    </View>
-                                ) : applicableCoupons.length > 0 ? (
-                                    <ScrollView
-                                        horizontal
-                                        showsHorizontalScrollIndicator={false}
-                                        contentContainerStyle={styles.couponsList}
+                        {/* Gift Wrapping - when at least one non-ticketing product in cart */}
+                        {hasNonTicketingProducts && cartFeatures.showGiftWrap && (
+                            <GiftWrappingCard
+                                giftWrapping={giftWrapping}
+                                onSelectPress={() => setShowGiftModal(true)}
+                                onRemovePress={() => setGiftWrapping(null)}
+                            />
+                        )}
+
+                        {/* Complete your purchase with - horizontal product list from collection */}
+                        {!hasTicketingProducts && cartFeatures.showCompletePurchaseSection && <CompletePurchaseSection />}
+
+                        {cartFeatures.showSavingsCorner && (
+                            <SavingsCorner
+                                itemSubtotal={itemSubtotal}
+                                isAuthenticated={isAuthenticated}
+                                hasTicketingProducts={hasTicketingProducts}
+                                hasFashionItems={hasFashionItems}
+                                kiddoCashEnabled={kiddoCashEnabled}
+                                formatCurrency={formatCurrency}
+                                onLoginPress={() => router.push('/(auth)/login')}
+                                onKiddoCashChange={setKiddoCashEnabled}
+                            />
+                        )}
+
+                        <BillDetails
+                            mrp={mrp}
+                            itemTotal={itemSubtotal}
+                            isTicketingOnly={isTicketingOnly}
+                            handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
+                            deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
+                            platformFee={platformFeeDisplay}
+                            couponDiscount={discountAmount}
+                            hasHeyKiddo={hasHeyKiddoApplied}
+                            heyKiddoOriginalPrice={heyKiddoOriginalPrice}
+                            otherCouponDiscount={otherCouponDiscountAmount}
+                            giftWrappingFee={giftWrappingFee}
+                            giftWrapping={giftWrapping}
+                            kiddoCashEnabled={kiddoCashEnabled}
+                            kiddoCashApplied={KIDDO_CASH_APPLIED}
+                            total={total}
+                            toPay={toPay}
+                            displaySavings={displaySavings}
+                            formatCurrency={formatCurrency}
+                        />
+
+                        {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
+                        {cartItems.length > 0 && total > 0 && (
+                            <View style={styles.paymentMethodSection}>
+                                <Text style={styles.paymentMethodSectionTitle}>Payment method</Text>
+                                {/* Hide COD option for ticketing products */}
+                                {!hasTicketingProducts && (
+                                    <TouchableOpacity
+                                        style={styles.paymentMethodOption}
+                                        onPress={() => {
+                                            setPaymentMethod('cod');
+                                            try {
+                                                const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
+                                                trackPaymentMethodSelected('cod');
+                                            } catch (e) {
+                                                console.warn('Mixpanel tracking error:', e);
+                                            }
+                                        }}
+                                        activeOpacity={0.7}
                                     >
-                                        {applicableCoupons.map((coupon) => {
-                                            const conditions = couponService.getCouponConditionsText(coupon);
-                                            return (
-                                                <TouchableOpacity
-                                                    key={coupon.code}
-                                                    style={[
-                                                        styles.couponCard,
-                                                        couponApplying && styles.couponCardDisabled,
-                                                    ]}
-                                                    onPress={() => !couponApplying && handleApplyCouponFromList(coupon)}
-                                                    disabled={couponApplying}
-                                                    activeOpacity={0.7}
-                                                >
-                                                    <View style={styles.couponCardContent}>
-                                                        <View style={styles.couponCodeRow}>
-                                                            <Text style={styles.couponCardCode}>{coupon.code}</Text>
-                                                            {coupon.value !== null && coupon.value !== undefined && coupon.value !== 0 && (
-                                                                <View style={styles.discountBadge}>
-                                                                    <Text style={styles.discountBadgeText}>
-                                                                        {coupon.valueType === 'percentage'
-                                                                            ? `${coupon.value}%`
-                                                                            : `₹${coupon.value}`}
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {coupon.title && (
-                                                            <Text style={styles.couponCardTitle} numberOfLines={1}>
-                                                                {coupon.title}
-                                                            </Text>
-                                                        )}
-                                                        {conditions.length > 0 && (
-                                                            <View style={styles.couponConditionsContainer}>
-                                                                {conditions.map((condition, index) => (
-                                                                    <View key={index} style={styles.couponConditionTag}>
-                                                                        <Ionicons name="information-circle" size={10} color="#666" />
-                                                                        <Text style={styles.couponConditionText}>{condition}</Text>
-                                                                    </View>
-                                                                ))}
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                ) : (
-                                    <Text style={styles.noCouponsText}>No coupons available</Text>
+                                        <View style={styles.paymentMethodIconWrap}>
+                                            <CodIcon width={22} height={22} style={styles.paymentMethodCodIcon} />
+                                        </View>
+                                        <View style={styles.paymentMethodTextBlock}>
+                                            <Text style={styles.paymentMethodOptionTitle}>Pay on delivery</Text>
+                                            <Text style={styles.paymentMethodOptionSubtext}>Pay by cash or UPI on delivery</Text>
+                                        </View>
+                                        <View style={[styles.paymentMethodRadio, paymentMethod !== 'cod' && styles.paymentMethodRadioEmpty]}>
+                                            {paymentMethod === 'cod' && <View style={styles.paymentMethodRadioInner} />}
+                                        </View>
+                                    </TouchableOpacity>
                                 )}
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Bill Summary */}
-                    <View style={styles.billSummarySection}>
-                        <TouchableOpacity
-                            style={styles.billSummaryHeader}
-                            onPress={() => setShowBillSummary(!showBillSummary)}
-                        >
-                            <View style={styles.billSummaryTitleRow}>
-                                <Ionicons name="receipt-outline" size={20} color="#000" />
-                                <Text style={styles.billSummaryTitle}>Bill Summary</Text>
-                            </View>
-                            <Ionicons
-                                name={showBillSummary ? 'chevron-up' : 'chevron-down'}
-                                size={20}
-                                color="#666"
-                            />
-                        </TouchableOpacity>
-
-                        {showBillSummary && (
-                            <View style={styles.billSummaryContent}>
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(itemSubtotal)}</Text>
-                                </View>
-                                {discount > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Total Discount</Text>
-                                        <Text style={[styles.billValue, styles.discountValue]}>
-                                            -{formatCurrency(discount)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Subtotal After Discount</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(subtotalAfterDiscount)}</Text>
-                                </View>
-                                {!hasTicketingProducts && giftWrappingFee > 0 && (
-                                    <View style={styles.billRow}>
-                                        <Text style={styles.billLabel}>Gift Wrapping</Text>
-                                        <Text style={styles.billValue}>
-                                            {formatCurrency(giftWrappingFee)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Delivery Fee</Text>
-                                    <Text style={[styles.billValue, styles.freeText]}>FREE</Text>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Payment Method - Always show when cart has items and total > 0 */}
-                    {cartItems.length > 0 && total > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Payment Method</Text>
-                            {/* Hide COD option for ticketing products */}
-                            {!hasTicketingProducts && (
                                 <TouchableOpacity
-                                    style={[
-                                        styles.paymentOption,
-                                        paymentMethod === 'cod' && styles.paymentOptionSelected,
-                                    ]}
+                                    style={styles.paymentMethodOption}
                                     onPress={() => {
-                                        setPaymentMethod('cod');
-                                        // Track payment method selected
+                                        setPaymentMethod('razorpay');
                                         try {
                                             const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
-                                            trackPaymentMethodSelected('cod');
+                                            trackPaymentMethodSelected('razorpay');
                                         } catch (e) {
                                             console.warn('Mixpanel tracking error:', e);
                                         }
                                     }}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons
-                                        name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
-                                        size={24}
-                                        color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
-                                    />
-                                    <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                    <View style={[styles.paymentMethodIconWrap, styles.paymentMethodIconWrapOnline]}>
+                                        <RazorpayIcon width={33} height={33} style={styles.paymentMethodOnlineIcon} />
+                                    </View>
+                                    <View style={styles.paymentMethodTextBlock}>
+                                        <Text style={styles.paymentMethodOptionTitle}>Pay online</Text>
+                                        <Text style={styles.paymentMethodOptionSubtext}>Pay by card/ UPI/ Netbanking</Text>
+                                    </View>
+                                    <View style={[styles.paymentMethodRadio, paymentMethod !== 'razorpay' && styles.paymentMethodRadioEmpty]}>
+                                        {paymentMethod === 'razorpay' && <View style={styles.paymentMethodRadioInner} />}
+                                    </View>
                                 </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                                style={[
-                                    styles.paymentOption,
-                                    paymentMethod === 'razorpay' && styles.paymentOptionSelected,
-                                ]}
-                                onPress={() => {
-                                    setPaymentMethod('razorpay');
-                                    // Track payment method selected
-                                    try {
-                                        const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
-                                        trackPaymentMethodSelected('razorpay');
-                                    } catch (e) {
-                                        console.warn('Mixpanel tracking error:', e);
-                                    }
+                            </View>
+                        )}
+
+                        {/* Nector Loyalty Coins Redemption */}
+                        {/* <View style={styles.section}>
+                            <CheckoutRedeemCoins
+                                cartAmount={total}
+                                onCouponApplied={(code) => {
+                                    setCouponMessage(`✓ ${code} applied from rewards!`);
                                 }}
-                            >
-                                <Ionicons
-                                    name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
-                                    size={24}
-                                    color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
-                                />
-                                <View style={styles.paymentOptionContent}>
-                                    <Text style={styles.paymentOptionText}>Pay Online</Text>
-                                    <Text style={styles.paymentOptionSubtext}>
-                                        Card, UPI, Net Banking via Razorpay
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                                onCouponRemoved={() => {
+                                    setCouponMessage(null);
+                                }}
+                            />
+                        </View> */}
 
-                    {/* Nector Loyalty Coins Redemption */}
-                    <View style={styles.section}>
-                        <CheckoutRedeemCoins
-                            cartAmount={total}
-                            onCouponApplied={(code) => {
-                                setCouponMessage(`✓ ${code} applied from rewards!`);
-                            }}
-                            onCouponRemoved={() => {
-                                setCouponMessage(null);
-                            }}
-                        />
-                    </View>
-
-                    {/* Spacer */}
-                    <View style={styles.spacerEnd} />
-                </ScrollView>
+                        {/* Spacer */}
+                        <View style={styles.spacerEnd} />
+                    </ScrollView>
+                </>
             )}
 
             {/* Footer - Only show when cart has items */}
             {cartItems.length > 0 && (
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <View style={styles.footerContent}>
-                        {/* Address Section */}
-                        {!isTicketingOnly && (
-                        <TouchableOpacity
-                            style={styles.footerAddress}
-                            onPress={handleAddressSelection}
-                        >
-                            {selectedAddress ? (
-                                <View style={styles.footerAddressContent}>
-                                    <Ionicons name="location" size={16} color={Colors.primary} />
-                                    <Text style={styles.footerAddressText} numberOfLines={1}>
-                                        {selectedAddress.address1}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={16} color="#666" />
-                                </View>
-                            ) : (
-                                <View style={styles.footerAddressContent}>
-                                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
-                                    <Text style={styles.footerAddressText}>Add Delivery Address</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                        )}
-
-                        {/* Price and Button */}
-                        <View style={styles.footerBottom}>
-                            <View style={styles.footerLeft}>
-                                <View style={styles.footerPriceRow}>
-                                    <Text style={styles.footerTotal}>{formatCurrency(total)}</Text>
-                                </View>
-                                <Text style={styles.footerLabel}>Total</Text>
-                            </View>
-                            {selectedAddress || isTicketingOnly ? (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.checkoutButton,
-                                        (orderLoading || !isAuthenticated) && styles.checkoutButtonDisabled,
-                                    ]}
-                                    onPress={handlePlaceOrder}
-                                    disabled={orderLoading || !isAuthenticated}
-                                >
-                                    {orderLoading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text style={styles.checkoutButtonText}>
-                                            {isAuthenticated ? 'Place Order' : 'Login to Order'}
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.addAddressButtonFooter}
-                                    onPress={handleAddressSelection}
-                                >
-                                    <Text style={styles.addAddressButtonText}>Add Address</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        <CartFooterPayment
+                            showPayButton={!!(selectedAddress || isTicketingOnly)}
+                            paymentMethod={paymentMethod}
+                            toPay={toPay}
+                            formatCurrency={formatCurrency}
+                            orderLoading={orderLoading}
+                            isAuthenticated={isAuthenticated}
+                            onPlaceOrder={handlePlaceOrder}
+                            onAddAddress={handleAddressSelection}
+                            onLoginPress={() => router.push('/(auth)/login')}
+                            payButtonLabel={checkoutConfig?.payButtonLabel}
+                        />
                     </View>
                 </View>
             )}
@@ -1665,18 +1595,17 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
-            {/* Free Shoes Selection Modal */}
-            <FreeShoesOfferModal
-                visible={showShoesModal}
-                onClose={() => setShowShoesModal(false)}
-                onSelect={(shoeId) => setSelectedShoe(shoeId || null)}
-                selectedShoe={selectedShoe}
-            />
-
             {/* Try And Buy Modal */}
             <TryAndBuyModal
                 visible={showTryAndBuyModal}
                 onClose={() => setShowTryAndBuyModal(false)}
+            />
+
+            {/* Stock limit (quantity) modal */}
+            <StockLimitModal
+                visible={stockLimitModal.visible}
+                maxQuantity={stockLimitModal.maxQty}
+                onClose={() => setStockLimitModal((s) => ({ ...s, visible: false }))}
             />
 
             {/* Schedule Delivery Modal */}
@@ -1684,15 +1613,13 @@ export default function CartScreen() {
                 visible={showScheduleModal}
                 onClose={() => setShowScheduleModal(false)}
                 onConfirm={(schedule) => {
-                    // If schedule is empty (removed), set to null
-                    if (!schedule.date || !schedule.time) {
-                        setDeliverySchedule(null);
-                    } else {
-                        setDeliverySchedule(schedule);
-                    }
+                    if (!schedule.date || !schedule.time) setDeliverySchedule(null);
+                    else setDeliverySchedule(schedule);
                 }}
                 initialSchedule={deliverySchedule}
+                title={checkoutConfig?.scheduleModalTitle}
             />
+
         </SafeAreaView>
     );
 }
@@ -1700,37 +1627,95 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#FFFFFF',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#FDF6EC',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
+        paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
-        marginRight: 10,
+        padding: 4,
+        marginRight: 8,
+    },
+    headerSpacer: {
+        width: 32,
+    },
+    headerCenter: {
+        flex: 1,
+        justifyContent: 'center',
+        minWidth: 0,
     },
     headerTitle: {
-        flex: 1,
         fontSize: 18,
-        color: '#000',
-        fontFamily: Fonts.SemiBold,
+        color: '#1A1A1A',
+        fontFamily: Fonts.Bold,
+        textAlign: 'center',
+    },
+    headerAddressRow: {
+        marginTop: 4,
+    },
+    headerAddressContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 0,
+    },
+    headerAddressTextBlock: {
+        flex: 1,
+        minWidth: 0,
+        marginLeft: 8,
+    },
+    headerAddressTagRow: {
+        flexDirection: 'row',
+        
+        gap: 4,
+    },
+    headerAddressTag: {
+        fontSize: 24,
+        fontFamily: Fonts.Bogart,
+        fontWeight: Fonts.MediumWeight,
+        color: '#000000',
+        flex: 1,
+        minWidth: 0,
+        gap: 4,
+    },
+    headerAddressLine: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#535862',
+        marginTop: 2,
+    },
+    savingsBanner: {
+        backgroundColor: '#3CCB7F',
+        marginTop: 0,
+       
+        paddingVertical: 8,
+        borderRadius: 0,
+        alignItems: 'center',
+    },
+    savingsBannerText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#EDFCF2',
     },
     scrollView: {
         flex: 1,
+        backgroundColor: '#FDF6EC',
     },
     scrollContent: {
-        padding: 15,
-        paddingBottom: 200,
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 100,
+        backgroundColor: '#FDF6EC',
     },
     tryAndBuySection: {
         backgroundColor: Colors.backgroundSecondary || '#F5F9FA',
@@ -1784,75 +1769,143 @@ const styles = StyleSheet.create({
     itemsSection: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
+        padding: 16,
+        marginBottom: 24,
+        overflow: 'hidden',
+    },
+    itemsSectionGiftWrap: {
+        paddingBottom: 0,
+        marginBottom: 24,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
     },
     itemsHeader: {
-        marginBottom: 15,
+        marginBottom: 12,
     },
     itemsHeaderText: {
-        fontSize: 14,
-        color: '#666',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
     },
-    cartItem: {
+    giftWrapRibbonContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    giftWrapRibbon: {
+        width: '100%',
+        height: 36,
+    },
+    cartItemRow: {
+        marginBottom: 24,
+        width: '100%',
+    },
+    cartItemRowInner: {
+        width: '100%',
+        overflow: 'hidden',
+    },
+    cartItemBlock: {
         flexDirection: 'row',
-        marginBottom: 20,
-        position: 'relative',
+        alignItems: 'center',
+        flexWrap: 'nowrap',
+        width: '100%',
     },
-    tbBadge: {
+    itemImageAndTitleBlock: {
+        flexDirection: 'row',
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'flex-start',
+        marginRight: 12,
+        maxWidth: '100%',
+    },
+    itemImageContainer: {
+        position: 'relative',
+        marginRight: 12,
+    },
+    itemImage: {
+        width: 72,
+        height: 72,
+        borderRadius: 8,
+        backgroundColor: '#F0F0F0',
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
+    },
+    tryAndBuyBadgeCart: {
         position: 'absolute',
         top: 0,
         left: 0,
-        backgroundColor: Colors.primary,
+        backgroundColor: '#FEF7C3',
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderTopLeftRadius: 8,
+        borderBottomRightRadius: 8,
         zIndex: 1,
     },
-    tbBadgeText: {
+    tryAndBuyBadgeCartText: {
+        color: '#EAAA08',
         fontSize: 10,
-        color: '#fff',
         fontFamily: Fonts.Bold,
-    },
-    itemImage: {
-        width: 90,
-        height: 90,
-        borderRadius: 8,
-        marginRight: 12,
-        backgroundColor: '#f5f5f5',
     },
     itemInfo: {
         flex: 1,
+        marginLeft: 12,
     },
-    titleRow: {
+    itemTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
+        alignItems: 'center',
     },
-    titleContainer: {
+    itemTitleBlock: {
         flex: 1,
+        minWidth: 0,
         marginRight: 12,
     },
+    quantityAndPriceRow: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+        flexShrink: 0,
+        maxWidth: 120,
+    },
     itemTitle: {
-        fontSize: 14,
-        color: '#000',
-        marginBottom: 4,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        lineHeight: 20,
+        color: '#181D27',
+        marginBottom: 2,
+        fontFamily: Fonts.LexendBold,
     },
-    variantPillStatic: {
+    itemVariantSubtext: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
         marginTop: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 10,
-        backgroundColor: '#f2f2f2',
-        alignSelf: 'flex-start',
     },
-    variantTextStatic: {
+    itemPriceBlock: {
+        alignItems: 'center',
+    },
+    itemPriceInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    itemPriceStrikethrough: {
         fontSize: 12,
-        color: '#777',
-        fontFamily: Fonts.Medium || Fonts.Regular,
+        color: '#999',
+        fontFamily: Fonts.Regular,
+        textDecorationLine: 'line-through',
+    },
+    itemPrice: {
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendBold,
+    },
+    itemDiscountPct: {
+        fontSize: 11,
+        color: '#28A745',
+        fontFamily: Fonts.SemiBold,
+        marginTop: 2,
     },
     bookingDateContainer: {
         flexDirection: 'row',
@@ -1875,18 +1928,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
-    itemPrice: {
-        fontSize: 16,
-        color: '#000',
-        marginRight: 8,
-        fontFamily: Fonts.Bold,
-    },
-    itemBottomRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        marginTop: 4,
-    },
     spacer: {
         flex: 1,
     },
@@ -1897,58 +1938,75 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: Colors.primary,
-        borderRadius: 6,
+        borderColor: '#F15E5E',
+        borderRadius: 12,
+        paddingVertical: 2,
         paddingHorizontal: 2,
+        backgroundColor: '#FEEFEF',
     },
     quantityButton: {
-        padding: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 6,
         justifyContent: 'center',
         alignItems: 'center',
-        minWidth: 28,
+        minWidth: 24,
     },
     quantityText: {
-        fontSize: 14,
+        fontSize: Fonts.SmallFontSize,
         marginHorizontal: 6,
         minWidth: 18,
         textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendBold,
+        color: '#181D27',
     },
-    removeButton: {
-        padding: 6,
-        justifyContent: 'center',
-        alignItems: 'center',
+    couponsModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
     },
-    giftWrappingSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
+    couponsModalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '70%',
+        paddingBottom: 34,
     },
-    giftWrappingButton: {
+    couponsModalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
     },
-    giftWrappingLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
+    couponsModalTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: '#1A1A1A',
     },
-    giftWrappingInfo: {
-        marginLeft: 12,
-        flex: 1,
+    couponsModalScroll: {
+        maxHeight: 400,
+        padding: 16,
     },
-    giftWrappingTitle: {
-        fontSize: 14,
-        color: '#000',
-        fontFamily: Fonts.SemiBold,
-        marginBottom: 2,
+    couponModalCard: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#e9ecef',
     },
-    giftWrappingDescription: {
-        fontSize: 12,
-        color: '#666',
-        fontFamily: Fonts.Regular,
+    couponModalCardWhite: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    couponModalCardSelected: {
+        borderColor: Colors.primary,
+        borderWidth: 1.5,
     },
     giftWrappingRight: {
         flexDirection: 'row',
@@ -1960,60 +2018,11 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.Bold,
         marginRight: 8,
     },
-    billSummarySection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
-    },
-    billSummaryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    billSummaryTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    billSummaryTitle: {
-        fontSize: 16,
-        color: '#000',
-        marginLeft: 8,
-        fontFamily: Fonts.Bold,
-    },
-    billSummaryContent: {
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
-    },
-    billRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    billLabel: {
-        fontSize: 14,
-        color: '#666',
-        fontFamily: Fonts.Regular,
-    },
-    billValue: {
-        fontSize: 14,
-        color: '#000',
-        fontFamily: Fonts.SemiBold,
-    },
-    discountValue: {
-        color: '#4caf50',
-    },
-    freeText: {
-        color: '#4caf50',
-        fontFamily: Fonts.Bold,
-    },
     section: {
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 12,
-        marginBottom: 15,
+        marginBottom: 28,
     },
     sectionTitle: {
         fontSize: 16,
@@ -2050,6 +2059,83 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         marginTop: 2,
         fontFamily: Fonts.Regular,
+    },
+    paymentMethodSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 8,
+        paddingTop: 16,
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: '#FFFFFF',
+    },
+    paymentMethodSectionTitle: {
+        fontSize: Fonts.SmallFontSize,
+        marginBottom: 14,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
+        marginLeft: 6,
+    },
+    paymentMethodOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 4,
+    },
+    paymentMethodIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    paymentMethodCodIcon: {
+        width: 22,
+        height: 22,
+    },
+    paymentMethodIconWrapOnline: {
+        width: 44,
+        height: 44,
+        
+    },
+    paymentMethodOnlineIcon: {
+        width: 44,
+        height: 44,
+    },
+    paymentMethodTextBlock: {
+        flex: 1,
+    },
+    paymentMethodOptionTitle: {
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendBold,
+    },
+    paymentMethodOptionSubtext: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#535862',
+        marginTop: 2,
+        fontFamily: Fonts.LexendMedium,
+    },
+    paymentMethodRadio: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    paymentMethodRadioEmpty: {
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#d1d5db',
+    },
+    paymentMethodRadioInner: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#fff',
     },
     couponContainer: {
         flexDirection: 'row',
@@ -2326,37 +2412,12 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        backgroundColor: '#FAF9F7',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e8e6e3',
     },
     footerContent: {
         padding: 15,
-    },
-    footerAddress: {
-        marginBottom: 12,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    footerAddressContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    footerAddressText: {
-        flex: 1,
-        fontSize: 12,
-        color: '#000',
-        fontFamily: Fonts.Regular,
-    },
-    footerBottom: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    footerLeft: {
-        flex: 1,
     },
     footerPriceRow: {
         flexDirection: 'row',
@@ -2374,36 +2435,10 @@ const styles = StyleSheet.create({
         color: '#666',
         fontFamily: Fonts.Regular,
     },
-    checkoutButton: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 8,
-        minWidth: 120,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     tryAndBuyButton: {
         backgroundColor: '#FF9800',
     },
-    checkoutButtonDisabled: {
-        opacity: 0.6,
-    },
-    checkoutButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
-    },
-    addAddressButtonFooter: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderRadius: 8,
-    },
-    addAddressButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+    headerAddressChevron: {
+        marginLeft: 16,
     },
 });

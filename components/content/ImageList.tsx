@@ -5,12 +5,12 @@ import { processFontStyle } from '@/utils/fontUtils';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity
 } from 'react-native';
 import { ProductList } from '../product/ProductList';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
@@ -198,11 +198,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: Fonts.Black,
     fontWeight: '900',
-    marginBottom: 15,
+    marginBottom: 8,
     paddingHorizontal: 20,
   },
   listContainer: {
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   listItem: {
     marginRight: 10,

@@ -1,17 +1,17 @@
 // Checkout Coin Redemption
 // Allows users to redeem coins at checkout
 
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNector } from '@/context/NectorContext';
 import { Colors, Fonts } from '@/constants/theme';
+import { useNector } from '@/context/NectorContext';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 interface CheckoutRedeemCoinsProps {
     cartAmount: number;

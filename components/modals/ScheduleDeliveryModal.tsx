@@ -1,15 +1,17 @@
-import { Colors, Fonts } from '@/constants/theme';
+import FlashIcon from '@/assets/icons/Icon.svg';
+import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
+    Dimensions,
+    Image,
     Modal,
-    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 interface ScheduleDeliveryModalProps {
@@ -17,6 +19,8 @@ interface ScheduleDeliveryModalProps {
     onClose: () => void;
     onConfirm: (schedule: DeliverySchedule) => void;
     initialSchedule?: DeliverySchedule | null;
+    /** Title from backend app config (e.g. "Schedule your delivery"). */
+    title?: string | null;
 }
 
 export interface DeliverySchedule {
@@ -24,39 +28,101 @@ export interface DeliverySchedule {
     time: string; // Format: HH:MM AM/PM
     day: string; // Day name (e.g., "Saturday")
     dateFormat: string; // Format: "dd/mm/yy"
+    timeSlotLabel?: string; // Display label e.g. "11AM - 12PM"
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const TIME_SLOTS = [
-    '10:00 AM', '11:00 AM', '12:00 PM',
-    '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM',
-    '07:00 PM', '08:00 PM', '09:00 PM', '10:00 PM'
+/** Next 3 days: today, tomorrow, day after. Each has label and date in "12 March" format. */
+function getNextThreeDays(): { label: string; date: Date; dateLabel: string }[] {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const result: { label: string; date: Date; dateLabel: string }[] = [];
+    const labels = ['Today', 'Tomorrow', 'Day after'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    for (let i = 0; i < 3; i++) {
+        const d = new Date(base);
+        d.setDate(d.getDate() + i);
+        const dateLabel = `${d.getDate()} ${monthNames[d.getMonth()]}`;
+        result.push({ label: labels[i], date: d, dateLabel });
+    }
+    return result;
+}
+
+// Design spec: vibrant red and neutrals to match the Schedule delivery mock
+const DESIGN_RED = '#E84E4E';
+const PILL_RADIUS = 999;
+
+/** Parse slot value like "10:00 AM" or "01:00 PM" to minutes since midnight (0–1439). */
+function parseSlotMinutes(value: string): number {
+    const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return 0;
+    let hour = parseInt(match[1], 10);
+    const min = parseInt(match[2], 10);
+    if ((match[3].toUpperCase()) === 'PM' && hour !== 12) hour += 12;
+    if (match[3].toUpperCase() === 'AM' && hour === 12) hour = 0;
+    return hour * 60 + min;
+}
+
+/** When date is today, return only slots whose start time is after the current time. */
+function getAvailableTimeSlots(isToday: boolean): { label: string; value: string }[] {
+    if (!isToday) return TIME_SLOT_RANGES;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    return TIME_SLOT_RANGES.filter((slot) => parseSlotMinutes(slot.value) > currentMinutes);
+}
+
+// Time slots as ranges for display; value is start time for DeliverySchedule
+const TIME_SLOT_RANGES: { label: string; value: string }[] = [
+    { label: '7AM - 8AM', value: '07:00 AM' },
+    { label: '8AM - 9AM', value: '08:00 AM' },
+    { label: '9AM - 10AM', value: '09:00 AM' },
+    { label: '10AM - 11AM', value: '10:00 AM' },
+    { label: '11AM - 12PM', value: '11:00 AM' },
+    { label: '12PM - 1PM', value: '12:00 PM' },
+    { label: '1PM - 2PM', value: '01:00 PM' },
+    { label: '2PM - 3PM', value: '02:00 PM' },
+    { label: '3PM - 4PM', value: '03:00 PM' },
+    { label: '4PM - 5PM', value: '04:00 PM' },
+    { label: '5PM - 6PM', value: '05:00 PM' },
+    { label: '6PM - 7PM', value: '06:00 PM' },
+    { label: '7PM - 8PM', value: '07:00 PM' },
+    { label: '8PM - 9PM', value: '08:00 PM' },
+    { label: '9PM - 10PM', value: '09:00 PM' },
+    { label: '10PM - 11PM', value: '10:00 PM' },
+    { label: '11PM - 11:30PM', value: '11:00 PM' },
 ];
 
-export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule }: ScheduleDeliveryModalProps) => {
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule, title }: ScheduleDeliveryModalProps) => {
+    const [selectedDayIndex, setSelectedDayIndex] = useState(0); // 0 = Today, 1 = Tomorrow, 2 = Day after
     const [selectedTime, setSelectedTime] = useState<string>('');
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [showTimePicker, setShowTimePicker] = useState(false);
+
+    const nextThreeDays = React.useMemo(() => getNextThreeDays(), [visible]);
 
     useEffect(() => {
         if (visible) {
-            if (initialSchedule) {
-                // Parse initial schedule
-                const [day, month, year] = initialSchedule.date.split('/');
-                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                setSelectedDate(date);
-                setSelectedTime(initialSchedule.time);
+            const days = getNextThreeDays();
+            if (initialSchedule?.date && initialSchedule?.time) {
+                const matchIndex = days.findIndex((opt) => formatDate(opt.date) === initialSchedule.date);
+                const idx = matchIndex >= 0 ? matchIndex : 0;
+                setSelectedDayIndex(idx);
+                const isToday = idx === 0;
+                const available = getAvailableTimeSlots(isToday);
+                const stillValid = available.some((s) => s.value === initialSchedule.time);
+                setSelectedTime(stillValid ? initialSchedule.time : '');
             } else {
-                // Default to tomorrow
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                setSelectedDate(tomorrow);
+                setSelectedDayIndex(0);
                 setSelectedTime('');
             }
         }
     }, [visible, initialSchedule]);
+
+    // When "Today" is selected, clear time if it's now in the past
+    useEffect(() => {
+        if (selectedDayIndex !== 0 || !selectedTime) return;
+        const available = getAvailableTimeSlots(true);
+        if (!available.some((s) => s.value === selectedTime)) setSelectedTime('');
+    }, [selectedDayIndex, selectedTime]);
 
     const formatDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0');
@@ -72,51 +138,28 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
         return `${day}/${month}/${year}`;
     };
 
-    const getDayName = (date: Date): string => {
-        return DAYS[date.getDay()];
-    };
+    const getDayName = (date: Date): string => DAYS[date.getDay()];
 
-    const getAvailableDates = (): Date[] => {
-        const dates: Date[] = [];
-        const today = new Date();
-        // Generate next 5 days
-        for (let i = 1; i <= 5; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            dates.push(date);
-        }
-        return dates;
-    };
-
-    const handleDateSelect = (date: Date) => {
-        setSelectedDate(date);
-        setShowDatePicker(false);
-    };
-
-    const handleTimeSelect = (time: string) => {
-        setSelectedTime(time);
-        setShowTimePicker(false);
-    };
+    const selectedDate = nextThreeDays[selectedDayIndex]?.date ?? new Date();
+    const isTodaySelected = selectedDayIndex === 0;
 
     const handleConfirm = () => {
-        if (!selectedDate || !selectedTime) {
-            return;
-        }
+        if (!selectedTime) return;
 
+        const selectedSlot = TIME_SLOT_RANGES.find(s => s.value === selectedTime);
         const schedule: DeliverySchedule = {
             date: formatDate(selectedDate),
             time: selectedTime,
             day: getDayName(selectedDate),
             dateFormat: formatDateShort(selectedDate),
+            timeSlotLabel: selectedSlot?.label,
         };
 
         onConfirm(schedule);
         onClose();
     };
 
-    const handleRemove = () => {
-        setSelectedDate(null);
-        setSelectedTime('');
+    const handleWantItNow = () => {
         onConfirm({
             date: '',
             time: '',
@@ -126,209 +169,110 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
         onClose();
     };
 
-    const availableDates = getAvailableDates();
+    const { height: screenHeight } = Dimensions.get('window');
+    const contentHeight = Math.min(screenHeight * 0.7, 560);
 
     return (
         <Modal
             animationType="slide"
-            transparent={true}
+            transparent
             visible={visible}
             onRequestClose={onClose}
         >
             <View style={styles.container}>
                 <Pressable style={styles.backdrop} onPress={onClose} />
 
-                <View style={styles.content}>
-                    {/* Header */}
+                <View style={[styles.content, { height: contentHeight }]}>
+                    {/* Header: calendar icon + title + close */}
                     <View style={styles.header}>
-                        <Text style={styles.headerTitle}>Schedule Delivery</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Ionicons name="close" size={24} color="#000" />
+                        <View style={styles.headerLeft}>
+                            <View style={styles.headerIconWrap}>
+                                <Image
+                                    source={require('@/assets/icons/schedule.png')}
+                                    style={styles.scheduleIcon}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        </View>
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={12}>
+                            <Ionicons name="close" size={24} color="#4A4A4A" />
                         </TouchableOpacity>
                     </View>
-
-                    <View style={styles.scrollContainer}>
-                        <ScrollView
-                            style={styles.scrollView}
-                            contentContainerStyle={styles.scrollContent}
-                            showsVerticalScrollIndicator={true}
-                            nestedScrollEnabled={true}
-                        >
-                        {/* Date Selection */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Select Delivery Date</Text>
-                            <TouchableOpacity
-                                style={styles.pickerButton}
-                                onPress={() => setShowDatePicker(!showDatePicker)}
-                            >
-                                <View style={styles.pickerButtonContent}>
-                                    <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.pickerButtonTextContainer}>
-                                        {selectedDate ? (
-                                            <>
-                                                <Text style={styles.pickerButtonText}>
-                                                    {formatDate(selectedDate)}
-                                                </Text>
-                                                <Text style={styles.pickerButtonSubtext}>
-                                                    {getDayName(selectedDate)}
-                                                </Text>
-                                            </>
-                                        ) : (
-                                            <Text style={[styles.pickerButtonText, styles.pickerButtonPlaceholder]}>
-                                                Select Date
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <Ionicons
-                                    name={showDatePicker ? 'chevron-up' : 'chevron-down'}
-                                    size={20}
-                                    color="#666"
-                                />
-                            </TouchableOpacity>
-
-                            {showDatePicker && (
-                                <View style={styles.pickerContainer}>
-                                    <ScrollView
-                                        style={styles.dateScrollView}
-                                        showsVerticalScrollIndicator={false}
-                                    >
-                                        {availableDates.map((date, index) => {
-                                            const isSelected = selectedDate && 
-                                                date.toDateString() === selectedDate.toDateString();
-                                            const isToday = date.toDateString() === new Date().toDateString();
-                                            
-                                            return (
-                                                <TouchableOpacity
-                                                    key={index}
-                                                    style={[
-                                                        styles.dateOption,
-                                                        isSelected && styles.dateOptionSelected,
-                                                    ]}
-                                                    onPress={() => handleDateSelect(date)}
-                                                >
-                                                    <View style={styles.dateOptionContent}>
-                                                        <Text style={styles.dateOptionDay}>
-                                                            {getDayName(date)}
-                                                        </Text>
-                                                        <Text style={styles.dateOptionDate}>
-                                                            {formatDate(date)}
-                                                        </Text>
-                                                    </View>
-                                                    {isSelected && (
-                                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                                                    )}
-                                                    {isToday && !isSelected && (
-                                                        <Text style={styles.todayBadge}>Today</Text>
-                                                    )}
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Time Selection */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Select Delivery Time</Text>
-                            <TouchableOpacity
-                                style={styles.pickerButton}
-                                onPress={() => setShowTimePicker(!showTimePicker)}
-                            >
-                                <View style={styles.pickerButtonContent}>
-                                    <Ionicons name="time-outline" size={20} color={Colors.primary} />
-                                    <View style={styles.pickerButtonTextContainer}>
-                                        {selectedTime ? (
-                                            <Text style={styles.pickerButtonText}>
-                                                {selectedTime}
-                                            </Text>
-                                        ) : (
-                                            <Text style={[styles.pickerButtonText, styles.pickerButtonPlaceholder]}>
-                                                Select Time
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <Ionicons
-                                    name={showTimePicker ? 'chevron-up' : 'chevron-down'}
-                                    size={20}
-                                    color="#666"
-                                />
-                            </TouchableOpacity>
-
-                            {showTimePicker && (
-                                <View style={styles.pickerContainer}>
-                                    <ScrollView
-                                        style={styles.timeScrollView}
-                                        showsVerticalScrollIndicator={false}
-                                    >
-                                        {TIME_SLOTS.map((time, index) => {
-                                            const isSelected = selectedTime === time;
-                                            return (
-                                                <TouchableOpacity
-                                                    key={index}
-                                                    style={[
-                                                        styles.timeOption,
-                                                        isSelected && styles.timeOptionSelected,
-                                                    ]}
-                                                    onPress={() => handleTimeSelect(time)}
-                                                >
-                                                    <Text style={[
-                                                        styles.timeOptionText,
-                                                        isSelected && styles.timeOptionTextSelected,
-                                                    ]}>
-                                                        {time}
-                                                    </Text>
-                                                    {isSelected && (
-                                                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                                                    )}
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Summary */}
-                        {selectedDate && selectedTime && (
-                            <View style={styles.summaryContainer}>
-                                <Text style={styles.summaryTitle}>Delivery Scheduled</Text>
-                                <View style={styles.summaryContent}>
-                                    <View style={styles.summaryRow}>
-                                        <Ionicons name="calendar" size={16} color={Colors.primary} />
-                                        <Text style={styles.summaryText}>
-                                            {formatDate(selectedDate)} ({getDayName(selectedDate)})
-                                        </Text>
-                                    </View>
-                                    <View style={styles.summaryRow}>
-                                        <Ionicons name="time" size={16} color={Colors.primary} />
-                                        <Text style={styles.summaryText}>{selectedTime}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        )}
-                        </ScrollView>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>{title?.trim() || 'Schedule delivery'}</Text>
+                        <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
                     </View>
 
-                    {/* Footer */}
+                    {/* Date: Today (with date); next two show date only (e.g. 13 March, 14 March) */}
+                    <View style={styles.dateTrack}>
+                        {nextThreeDays.map((opt, index) => {
+                            const isSelected = selectedDayIndex === index;
+                            const isToday = index === 0;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.dateChip, isSelected && styles.dateChipSelected]}
+                                    onPress={() => setSelectedDayIndex(index)}
+                                    activeOpacity={0.8}
+                                >
+                                    {isToday ? (
+                                        <>
+                                            <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                                Today
+                                            </Text>
+                                            
+                                        </>
+                                    ) : (
+                                        <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                            {opt.dateLabel}
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    <View style={styles.dateTimeDivider} />
+
+                    {/* Only time slots (hours) are scrollable */}
+                    <ScrollView
+                        style={styles.timeSlotsScrollView}
+                        contentContainerStyle={styles.timeSlotsScrollContent}
+                        showsVerticalScrollIndicator={true}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.timeSlotsSection}>
+                            {getAvailableTimeSlots(isTodaySelected).map((slot) => {
+                                const isSelected = selectedTime === slot.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={slot.value}
+                                        style={[styles.timeSlot, isSelected && styles.timeSlotSelected]}
+                                        onPress={() => setSelectedTime(slot.value)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={[styles.timeSlotText, isSelected && styles.timeSlotTextSelected]}>
+                                            {slot.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </ScrollView>
+
+                    {/* Confirm button + reset link */}
                     <View style={styles.footer}>
-                        {initialSchedule && (
-                            <TouchableOpacity style={styles.removeButton} onPress={handleRemove}>
-                                <Ionicons name="trash-outline" size={18} color="#FF4444" />
-                                <Text style={styles.removeButtonText}>Remove</Text>
-                            </TouchableOpacity>
-                        )}
                         <TouchableOpacity
-                            style={[
-                                styles.confirmButton,
-                                (!selectedDate || !selectedTime) && styles.confirmButtonDisabled
-                            ]}
+                            style={[styles.confirmButton, !selectedTime && styles.confirmButtonDisabled]}
                             onPress={handleConfirm}
-                            disabled={!selectedDate || !selectedTime}
+                            disabled={!selectedTime}
+                            activeOpacity={0.9}
                         >
                             <Text style={styles.confirmButtonText}>Confirm</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
+                            <FlashIcon width={44} height={44} style={styles.icon} />
+                            <Text style={styles.wantItNowText}>Changed my mind, want it now</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -341,229 +285,192 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
     },
     content: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: '90%',
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
         width: '100%',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 8,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 8,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    headerIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        backgroundColor: '#F2F2F2',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    scheduleIcon: {
+        width: 48,
+        height: 48,
+    },
+    headerTextContainer: {
+        marginTop: 12,
+        justifyContent: 'flex-start',
+        gap: 6,
+        paddingHorizontal: 20,
     },
     headerTitle: {
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
-        color: '#000',
+        fontSize: Fonts.MediumFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
     },
     closeButton: {
         padding: 4,
     },
-    scrollContainer: {
+    subtitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#535862',
+        paddingBottom: 20,
+    },
+    timeSlotsScrollView: {
         flex: 1,
         minHeight: 0,
+        maxHeight: 360,
     },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        padding: 20,
-        paddingBottom: 40,
-        flexGrow: 1,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.SemiBold,
-        color: '#000',
-        marginBottom: 12,
-    },
-    pickerButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-    },
-    pickerButtonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    pickerButtonTextContainer: {
-        marginLeft: 12,
-        flex: 1,
-    },
-    pickerButtonText: {
-        fontSize: 16,
-        fontFamily: Fonts.SemiBold,
-        color: '#000',
-    },
-    pickerButtonSubtext: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        color: '#666',
-        marginTop: 2,
-    },
-    pickerButtonPlaceholder: {
-        color: '#999',
-        fontFamily: Fonts.Regular,
-    },
-    pickerContainer: {
-        marginTop: 12,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        maxHeight: 200,
-    },
-    dateScrollView: {
-        maxHeight: 200,
-    },
-    timeScrollView: {
-        maxHeight: 200,
-    },
-    dateOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-        backgroundColor: '#fff',
-    },
-    dateOptionSelected: {
-        backgroundColor: '#fff',
-    },
-    dateOptionContent: {
-        flex: 1,
-    },
-    dateOptionDay: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#000',
-        marginBottom: 4,
-    },
-    dateOptionDate: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        color: '#666',
-    },
-    todayBadge: {
-        fontSize: 10,
-        fontFamily: Fonts.SemiBold,
-        color: Colors.primary,
-        backgroundColor: `${Colors.primary}20`,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    timeOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-        backgroundColor: '#fff',
-    },
-    timeOptionSelected: {
-        backgroundColor: '#fff',
-    },
-    timeOptionText: {
-        fontSize: 16,
-        fontFamily: Fonts.Regular,
-        color: '#000',
-    },
-    timeOptionTextSelected: {
-        fontFamily: Fonts.SemiBold,
-        color: Colors.primary,
-    },
-    summaryContainer: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        marginTop: 8,
-    },
-    summaryTitle: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#000',
-        marginBottom: 12,
-    },
-    summaryContent: {
-        gap: 8,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    summaryText: {
-        fontSize: 14,
-        fontFamily: Fonts.Regular,
-        color: '#000',
-    },
-    footer: {
-        padding: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-        flexDirection: 'row',
-        gap: 15,
-    },
-    removeButton: {
+    timeSlotsScrollContent: {
         paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#ff4444',
+        paddingBottom: 16,
+    },
+    dateTrack: {
+        width: '80%',
+        alignSelf: 'center',
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
+        backgroundColor: '#FAFAFA',
+        borderRadius: 36,
+        padding: 4,
+        marginBottom: 8,
     },
-    removeButtonText: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#ff4444',
-    },
-    confirmButton: {
+    dateChip: {
         flex: 1,
-        backgroundColor: Colors.primary,
-        paddingVertical: 14,
-        borderRadius: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
+        borderRadius: 10,
+        backgroundColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
+    },
+    dateChipSelected: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 32,
+        borderWidth: 1,
+        borderColor: '#D8D8D8',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    dateChipText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
+    },
+    dateChipTextSelected: {
+        color: '#DB5656',
+        fontFamily: Fonts.LexendBold,
+    },
+    dateChipSubtext: {
+        fontSize: 11,
+        fontFamily: Fonts.Regular,
+        color: '#6B6B6B',
+        marginTop: 2,
+    },
+    dateChipSubtextSelected: {
+        color: DESIGN_RED,
+    },
+    dateTimeDivider: {
+        height: 1,
+        backgroundColor: '#E8E8E8',
+        marginBottom: 20,
+    },
+    timeSlotsSection: {
+        gap: 10,
+    },
+    timeSlot: {
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
+    },
+    timeSlotSelected: {
+        backgroundColor: '#FEEFEF',
+        borderColor: '#F15E5E',
+        borderWidth: 1,
+        borderRadius: PILL_RADIUS
+    },
+    timeSlotText: {
+        fontSize: 15,
+        fontFamily: Fonts.LexendMedium,
+        color: '#717680',
+    },
+    timeSlotTextSelected: {
+        color: '#181D27',
+        fontFamily: Fonts.LexendBold,
+    },
+    footer: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#E0E0E0',
+    },
+    confirmButton: {
+        width: '100%',
+        backgroundColor: '#DB5656',
+        paddingVertical: 16,
+        borderRadius: PILL_RADIUS,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     confirmButtonDisabled: {
-        backgroundColor: '#ccc',
-        shadowOpacity: 0,
-        elevation: 0,
+        backgroundColor: '#D0D0D0',
     },
     confirmButtonText: {
-        fontSize: 16,
-        fontFamily: Fonts.Bold,
-        color: '#fff',
+        fontSize: 17,
+        fontFamily: Fonts.LexendBold,
+        color: '#FFFFFF',
+    },
+    wantItNowButton: {
+        alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+    },
+    wantItNowText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#F15E5E',
+    },
+    icon: {
+        marginRight: -4,
     },
 });
-

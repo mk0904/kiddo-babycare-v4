@@ -1,10 +1,11 @@
 // Payment Service - Razorpay Integration
 // Checkout (draft + complete) runs via backend; only Razorpay SDK runs on device.
 
-import { Alert } from 'react-native';
+import Constants from 'expo-constants';
+import { Alert, Platform } from 'react-native';
+import { checkoutService } from './checkoutService';
 import { configService } from './configService';
 import { OrderItem } from './orderService';
-import { checkoutService } from './checkoutService';
 
 // Helper to format phone number to E.164
 const formatPhone = (phone: string): string => {
@@ -77,6 +78,17 @@ export interface PaymentResult {
     error?: string;
 }
 
+/** Bill breakdown for backend to persist on Shopify order (note/metafields). */
+export interface OrderBillDetails {
+    subtotal: number;
+    subtotalAfterDiscount: number;
+    deliveryFee: number;
+    giftWrappingFee: number;
+    discount: number;
+    total: number;
+    currencyCode: string;
+}
+
 export interface OrderData {
     items: OrderItem[];
     totalAmount: number;
@@ -87,6 +99,8 @@ export interface OrderData {
     customerId?: string;
     orderId?: string;
     razorpayOrderId?: string;
+    /** When provided (e.g. from draft response), use this key so it matches the Razorpay order created by backend. */
+    razorpayKeyId?: string;
     address?: {
         name: string;
         address: string;
@@ -100,12 +114,22 @@ export interface OrderData {
     couponCode?: string;
     discountAmount?: number;
     selectedShoe?: string;
+    /** Free shoes offer: selected size (e.g. S1, S2) – sent to backend for Shopify */
+    selectedShoeSize?: string;
+    /** When provided, backend should persist scheduled date/time on order; otherwise treat as instant. */
     deliverySchedule?: {
-        date: string; // Format: DD/MM/YYYY
-        time: string; // Format: HH:MM AM/PM
-        day: string; // Day name (e.g., "Saturday")
-        dateFormat: string; // Format: "dd/mm/yy"
+        date: string; // DD/MM/YYYY
+        time: string; // HH:MM AM/PM
+        day: string;
+        dateFormat: string; // dd/mm/yy
+        timeSlotLabel?: string; // e.g. "11AM - 12PM"
     };
+    /** 'scheduled' = user chose a slot; 'instant' = no schedule (deliver as soon as possible). */
+    deliveryType?: 'scheduled' | 'instant';
+    /** Payment method for this order (backend stores on Shopify order). */
+    paymentMethod?: 'razorpay' | 'cod' | 'free' | 'try_and_buy';
+    /** Full bill breakdown for backend to store in Shopify order. */
+    billDetails?: OrderBillDetails;
 }
 
 export interface CreateOrderResult {
@@ -126,6 +150,9 @@ function orderDataToCheckoutDraftRequest(
         quantity: item.quantity,
         price: item.price,
         title: item.title,
+        variantTitle: item.variantTitle ?? undefined,
+        image: item.image ?? undefined,
+        compareAtPrice: item.compareAtPrice ?? undefined,
         tags: item.tags ?? [],
         bookingDate: item.bookingDate ?? '',
     }));
@@ -142,8 +169,14 @@ function orderDataToCheckoutDraftRequest(
         couponCode: orderData.couponCode ?? '',
         discountAmount: orderData.discountAmount ?? 0,
         deliverySchedule: orderData.deliverySchedule,
+        deliveryType: orderData.deliveryType ?? (orderData.deliverySchedule?.date && orderData.deliverySchedule?.time ? 'scheduled' : 'instant'),
+        paymentMethod: (orderData.paymentMethod ?? paymentMethod) as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
+        billDetails: orderData.billDetails,
         selectedShoe: orderData.selectedShoe ?? '',
+        selectedShoeSize: orderData.selectedShoeSize ?? '',
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
+        appVersion: Constants.expoConfig?.version ?? '',
+        deviceType: Platform.OS ?? '',
     };
 }
 
@@ -200,15 +233,20 @@ export const initiateRazorpayPayment = async (
             });
         }
 
-        // Get Razorpay key (live or test based on config)
-        const razorpayKeyId = getRazorpayKeyId();
-        
-        // Log which key is being used (for debugging)
+        // Use backend's key when provided so it matches the Razorpay order; otherwise fall back to config
+        const razorpayKeyId = orderData.razorpayKeyId || getRazorpayKeyId();
+        if (orderData.razorpayKeyId) {
+            console.log('[PaymentService] Using Razorpay key from backend (matches draft order)');
+        }
         if (razorpayKeyId.startsWith('rzp_test_')) {
             console.warn('[PaymentService] ⚠️ WARNING: Using TEST Razorpay key - payments will not charge real money!');
         } else if (razorpayKeyId.startsWith('rzp_live_')) {
             console.log('[PaymentService] ✓ Using LIVE Razorpay key - real payments enabled');
         }
+
+        // Razorpay requires a non-empty contact; use phone or placeholder to avoid checkout closing immediately
+        const contact = orderData.phone || orderData.address?.phone || '';
+        const contactForRazorpay = contact ? formatPhone(contact) : '+919999999999';
 
         const options: PaymentOptions = {
             description: orderData.orderId
@@ -220,9 +258,9 @@ export const initiateRazorpayPayment = async (
             amount: Math.round(amount * 100), // Convert to paise
             name: 'Kiddo',
             prefill: {
-                email: orderData.email || '',
-                contact: orderData.phone || '',
-                name: orderData.name || '',
+                email: orderData.email || 'guest@kiddo.app',
+                contact: contactForRazorpay,
+                name: orderData.name || 'Customer',
             },
             theme: { color: '#2c6975' }, // Primary color
             notes: {
@@ -231,12 +269,20 @@ export const initiateRazorpayPayment = async (
             },
         };
 
-        // Include Razorpay order ID if provided
+        // Include Razorpay order ID if provided (ensure string for SDK)
         if (orderData.razorpayOrderId) {
-            options.order_id = orderData.razorpayOrderId;
+            options.order_id = String(orderData.razorpayOrderId).trim();
+            console.log('[PaymentService] Using Razorpay order_id from backend');
+        }
+
+        // On Android, a short delay before opening can prevent the checkout from closing immediately
+        // (activity transition / WebView readiness)
+        if (Platform.OS === 'android') {
+            await new Promise((r) => setTimeout(r, 300));
         }
 
         // Open Razorpay payment gateway
+        console.log('[PaymentService] Opening Razorpay checkout...');
         const raw = await RazorpayCheckout.open(options);
         const d = raw?.data ?? raw;
         const paymentId = raw?.razorpay_payment_id ?? d?.razorpay_payment_id ?? null;
@@ -251,10 +297,17 @@ export const initiateRazorpayPayment = async (
             data: raw,
         };
     } catch (error: any) {
+        const errCode = error?.code;
+        const errDesc = error?.description || error?.message || error?.error?.description || '';
+        console.warn('[PaymentService] Razorpay checkout error:', {
+            code: errCode,
+            description: errDesc,
+            reason: error?.error?.reason,
+        });
         // Check if user cancelled payment
         const isCancelled =
-            error.code === 2 ||
-            error.code === 0 ||
+            errCode === 2 ||
+            errCode === 0 ||
             error.description === 'User cancelled the payment' ||
             error.description === 'Payment processing cancelled by user' ||
             error.error?.reason === 'payment_cancelled' ||
@@ -269,6 +322,14 @@ export const initiateRazorpayPayment = async (
                 error: 'Payment cancelled by user',
             };
         }
+
+        // Show user why checkout closed (helps debug "opens and closes" issue)
+        const userMsg = errDesc || `Error code: ${errCode}`;
+        Alert.alert(
+            'Payment could not be opened',
+            userMsg + '\n\nIf this keeps happening, try Pay on Delivery or contact support.',
+            [{ text: 'OK' }]
+        );
 
         // Handle BAD_REQUEST_ERROR
         if (
@@ -366,6 +427,7 @@ export const createOrderWithPayment = async (
                     ...sanitizedOrderData,
                     orderId: draftOrderId,
                     razorpayOrderId: draftRes.razorpay_order_id || undefined,
+                    razorpayKeyId: draftRes.razorpay_key_id || undefined,
                 }
             );
 
@@ -449,9 +511,19 @@ export const createOrderWithPayment = async (
 
     } catch (error: any) {
         console.error('[PaymentService] Error:', error);
-        
-        // Improve error message for user
+
+        // Prefer backend message for 4xx (e.g. 422 validation)
+        const status = error.response?.status;
+        const data = error.response?.data;
         let userMessage = error.message;
+        if (status === 422 || status === 400) {
+            const backendMsg = typeof data === 'string' ? data : (data?.message ?? data?.error ?? data?.details);
+            if (backendMsg) {
+                userMessage = typeof backendMsg === 'string' ? backendMsg : JSON.stringify(backendMsg);
+            } else {
+                userMessage = 'Validation failed. Please check your address, cart items, and try again.';
+            }
+        }
         if (userMessage.includes('inventory') || userMessage.includes('unavailable') || userMessage.includes('Variant')) {
             userMessage = 'Some items in your cart are no longer available. Please check your cart.';
         } else if (userMessage.includes('phone') || userMessage.includes('Phone')) {
@@ -459,7 +531,7 @@ export const createOrderWithPayment = async (
         } else if (userMessage.includes('zip') || userMessage.includes('Zip')) {
             userMessage = 'Invalid PIN code. Please check your address.';
         }
-        
+
         return {
             success: false,
             error: userMessage

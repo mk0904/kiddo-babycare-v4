@@ -5,13 +5,12 @@ import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
+import { getProductDeepLink } from '@/config/linking';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
-import { getProductDeepLink } from '@/config/linking';
-import * as FileSystem from 'expo-file-system';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
@@ -19,6 +18,8 @@ import { isVariantAvailable } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
+import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -36,6 +37,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+/** Format date as YYYY-MM-DD for ticketing cart item. */
+function bookingDateToYYYYMMDD(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
 
 // Event Date Picker Component - Shows next 7 days or available dates
 const EventDatePicker: React.FC<{
@@ -94,6 +103,16 @@ const EventDatePicker: React.FC<{
         return d1.getTime() === d2.getTime();
     };
 
+    const isTodayOrTomorrow = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime() || d.getTime() === tomorrow.getTime();
+    };
+
     const next7Days = datesToShow;
 
     return (
@@ -105,6 +124,7 @@ const EventDatePicker: React.FC<{
             >
                 {next7Days.length > 0 ? next7Days.map((date, index) => {
                     const isSelected = isDateSelected(date);
+                    const showSubLabel = isTodayOrTomorrow(date);
                     return (
                         <TouchableOpacity
                             key={`date-${index}-${date.getTime()}`}
@@ -122,16 +142,18 @@ const EventDatePicker: React.FC<{
                                 ]}>
                                     {formatDateLabel(date)}
                                 </Text>
-                                <Text style={[
-                                    datePickerStyles.dateSubLabel,
-                                    isSelected && datePickerStyles.dateSubLabelSelected
-                                ]}>
-                                    {date.toLocaleDateString('en-US', { 
-                                        month: 'long', 
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    })}
-                                </Text>
+                                {showSubLabel && (
+                                    <Text style={[
+                                        datePickerStyles.dateSubLabel,
+                                        isSelected && datePickerStyles.dateSubLabelSelected
+                                    ]}>
+                                        {date.toLocaleDateString('en-US', { 
+                                            month: 'long', 
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        })}
+                                    </Text>
+                                )}
                             </View>
                             {isSelected && (
                                 <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
@@ -236,7 +258,6 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
-    
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -529,7 +550,7 @@ const ProductDetailScreen = () => {
 
     // Accordion State
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        description: true,
+        description: false,
         material: false,
         wash_care: false,
     });
@@ -727,7 +748,8 @@ const ProductDetailScreen = () => {
                     '0'
                 );
 
-                // Create cart item
+                // Create cart item (include quantityAvailable so cart can enforce stock)
+                const quantityAvailable = selectedVariant.quantityAvailable != null ? Number(selectedVariant.quantityAvailable) : undefined;
                 const cartItem = {
                     productId: productId || '',
                     variantId: selectedVariant.id || '',
@@ -741,6 +763,7 @@ const ProductDetailScreen = () => {
                     image: imageUrl,
                     quantity: 1,
                     availableForSale: selectedVariant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
                     tags: product.tags || [],
                 };
 
@@ -760,8 +783,16 @@ const ProductDetailScreen = () => {
         } else if (product?.image) {
             extractedImages = [product.image.url || product.image];
         }
-        return extractedImages.filter(Boolean);
-    }, [product]);
+        const productUrls = extractedImages.filter(Boolean) as string[];
+
+        // When a variant is selected and has its own image, show that image first
+        const variantImageUrl = selectedVariant?.image?.url || selectedVariant?.image;
+        if (variantImageUrl && typeof variantImageUrl === 'string') {
+            const rest = productUrls.filter((url) => url !== variantImageUrl);
+            return [variantImageUrl, ...rest];
+        }
+        return productUrls;
+    }, [product, selectedVariant]);
 
     const variants = useMemo(() => {
         if (product?.variants?.edges) {
@@ -772,6 +803,70 @@ const ProductDetailScreen = () => {
         }
         return [];
     }, [product]);
+
+    // When user selects a date in ticketing, add the item to cart immediately (1 qty, with bookingDate)
+    const handleDateSelectAndAddToCart = useCallback(
+        async (date: Date) => {
+            const variant = isEventsProduct ? variantForDate(date) : (selectedVariant || variants[0]);
+            if (!variant || !product) return;
+
+            setSelectedEventDate(date);
+            setSelectedVariant(variant);
+            syncSelectedOptionsFromVariant(variant);
+            setShowDateError(false);
+
+            try {
+                const addItem = useCartStore.getState().addItem;
+                const imageUrl =
+                    variant.image?.url ||
+                    product.images?.[0]?.url ||
+                    product.featuredImage?.url ||
+                    product.images?.edges?.[0]?.node?.url ||
+                    '';
+                const price = parseFloat(
+                    variant.price?.amount ||
+                        product.priceRange?.minVariantPrice?.amount ||
+                        product.price?.amount ||
+                        '0'
+                );
+                const quantityAvailable =
+                    variant.quantityAvailable != null ? Number(variant.quantityAvailable) : undefined;
+                const cartItem = {
+                    productId: productId || '',
+                    variantId: variant.id || '',
+                    title: product.title || product.name || 'Product',
+                    variantTitle: variant.title,
+                    price,
+                    compareAtPrice: variant.compareAtPrice?.amount
+                        ? parseFloat(variant.compareAtPrice.amount)
+                        : undefined,
+                    currencyCode:
+                        variant.price?.currencyCode ||
+                        product.priceRange?.minVariantPrice?.currencyCode ||
+                        'INR',
+                    image: imageUrl,
+                    quantity: 1,
+                    availableForSale: variant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
+                    tags: product.tags || [],
+                    bookingDate: bookingDateToYYYYMMDD(date),
+                };
+                await addItem(cartItem);
+            } catch (error: any) {
+                alert(error?.message || 'Failed to add to cart. Please try again.');
+            }
+            setShowDatePicker(false);
+        },
+        [
+            isEventsProduct,
+            variantForDate,
+            selectedVariant,
+            variants,
+            product,
+            productId,
+            syncSelectedOptionsFromVariant,
+        ]
+    );
 
     const productOptions = useMemo(() => {
         if (!product?.options) return [];
@@ -806,9 +901,18 @@ const ProductDetailScreen = () => {
             const matchingVariant = findVariantByOptions(selectedOptions, variants);
             if (matchingVariant) {
                 setSelectedVariant(matchingVariant);
+                // Reset carousel to first image so variant's image is shown
+                setSelectedImageIndex(0);
             }
         }
     }, [selectedOptions, variants, productOptions, findVariantByOptions]);
+
+    // When selected variant changes, scroll image carousel to first slide
+    useEffect(() => {
+        if (selectedVariant && imageFlatListRef.current) {
+            imageFlatListRef.current.scrollToOffset({ offset: 0, animated: true });
+        }
+    }, [selectedVariant?.id]);
 
     const handleOptionSelect = (optionName: string, optionValue: string) => {
         setSelectedOptions((prev) => ({
@@ -839,30 +943,57 @@ const ProductDetailScreen = () => {
         const productId = (params as any).id || product.id;
         const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
         const productUrl = getProductDeepLink(pathSegment);
-        const message = `${product.title}\n\n${productUrl}`;
-        const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+        
+        // Share message
+        const message = `${product.title}\n\nCheck this out on Kiddo:\n${productUrl}`;
+        
         try {
-            let shareUrl: string = productUrl;
+            // Android: Share text only (native Share doesn't support file + text well)
+            // Apps like WhatsApp will generate a link preview with thumbnail if the meta tags are set on the domain.
+            if (Platform.OS === 'android') {
+                await Share.share({
+                    message,
+                    title: product.title,
+                });
+                return;
+            }
+
+            // iOS: Try to share image + text
+            const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+            let shareUrl = productUrl; // Fallback to link if no image or download fails
+
             if (imageUrl) {
                 try {
-                    const pathBeforeQuery = imageUrl.split('?')[0];
-                    const ext = pathBeforeQuery.match(/\.(jpe?g|png|webp|gif)$/i)?.[1] || 'jpg';
-                    const localUri = `${FileSystem.cacheDirectory}share_product_${Date.now()}.${ext}`;
-                    await FileSystem.downloadAsync(imageUrl, localUri);
-                    shareUrl = localUri;
-                } catch (_) {
-                    // keep productUrl if download fails
+                    // Clean URL and get extension
+                    const cleanUrl = imageUrl.split('?')[0];
+                    const extMatch = cleanUrl.match(/\.(jpe?g|png|webp|gif)$/i);
+                    const ext = extMatch ? extMatch[1] : 'jpg';
+                    
+                    const cacheDir = FileSystem.cacheDirectory;
+                    if (cacheDir) {
+                        const localUri = `${cacheDir}share_product_${Date.now()}.${ext}`;
+                        const downloadRes = await FileSystem.downloadAsync(imageUrl, localUri);
+                        if (downloadRes && downloadRes.status === 200) {
+                            shareUrl = localUri;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Image download failed for share:', e);
                 }
             }
+
             await Share.share({
-                message,
+                message, // iOS supports message + url (image)
                 url: shareUrl,
                 title: product.title,
             });
+
+            // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
                 trackProductShareClicked(product.id, product.title, 'native');
-            } catch (_e) {}
+            } catch (_) {}
+
         } catch (err: any) {
             if (err?.message !== 'User did not share') {
                 console.warn('Share error:', err);
@@ -941,6 +1072,34 @@ const ProductDetailScreen = () => {
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
 
+    // Highlights from metafields (highlight_1..4 or JSON "highlights")
+    const highlightsList = useMemo(() => {
+        const list: string[] = [];
+        const h1 = getMetafieldValue(product, 'highlight_1');
+        const h2 = getMetafieldValue(product, 'highlight_2');
+        const h3 = getMetafieldValue(product, 'highlight_3');
+        const h4 = getMetafieldValue(product, 'highlight_4');
+        [h1, h2, h3, h4].forEach((v) => {
+            if (v && String(v).trim()) list.push(String(v).trim());
+        });
+        if (list.length > 0) return list;
+        const jsonHighlights = getMetafieldValue(product, 'highlights');
+        if (jsonHighlights) {
+            try {
+                const parsed = JSON.parse(jsonHighlights);
+                const arr = Array.isArray(parsed) ? parsed : (parsed?.items ?? parsed?.list ?? []);
+                arr.forEach((item: any) => {
+                    const s = typeof item === 'string' ? item : (item?.text ?? item?.label ?? item?.value ?? '');
+                    if (s) list.push(String(s).trim());
+                });
+            } catch (_) {
+                // single string
+                if (String(jsonHighlights).trim()) list.push(String(jsonHighlights).trim());
+            }
+        }
+        return list;
+    }, [product]);
+
     // Price comparison metafields - using exact metafield keys from Shopify
     const priceOnKiddo = getMetafieldValue(product, 'price_on_kiddo');
     const priceOnAmazon = getMetafieldValue(product, 'price_on_amazon');
@@ -962,6 +1121,35 @@ const ProductDetailScreen = () => {
     const hasEssentialsTag = product?.tags?.some(
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
+
+    // Essentials-only: pack size and size for PDP (same as ProductCard)
+    const essentialsMetaParts = useMemo(() => {
+        if (!hasEssentialsTag || !product) return { packSize: null, size: null };
+        const getVal = (key: string) => getMetafieldValue(product, key);
+        const variants = product?.variants?.edges ?? product?.variants ?? [];
+        const variant = selectedVariant ?? variants[0]?.node ?? variants[0];
+        const options = variant?.selectedOptions ?? [];
+
+        const packSizeRaw =
+            getVal('number_of_pieces') ?? getVal('quantity') ?? getVal('pack_size') ?? getVal('number') ??
+            (product as any).number_of_pieces ?? (product as any).pack_size;
+        const packSizeFromVariant = options.find((o: any) => {
+            const name = (o?.name ?? '').toLowerCase().replace(/\s+/g, ' ');
+            return ['pack size', 'pack_size', 'count', 'pieces', 'quantity'].some(
+                (key) => name === key || name === key.replace('_', ' '),
+            );
+        })?.value;
+        const packSizeStr = (packSizeRaw != null ? String(packSizeRaw).trim() : '') || (packSizeFromVariant ? String(packSizeFromVariant).trim() : '');
+        const packSizeLabel = packSizeStr ? `${packSizeStr}${/^\d+$/.test(packSizeStr) ? ' pcs' : ''}` : null;
+
+        const sizeRaw = getVal('size') ?? getVal('sizes') ?? (product as any).size ?? (product as any).sizes;
+        const sizeFromVariant = options.find(
+            (o: any) => ['size', 'sizes'].includes((o?.name ?? '').toLowerCase()),
+        )?.value;
+        const sizeLabel = (sizeRaw != null ? String(sizeRaw).trim() : '') || (sizeFromVariant ? String(sizeFromVariant).trim() : '') || null;
+
+        return { packSize: packSizeLabel || null, size: sizeLabel || null };
+    }, [hasEssentialsTag, product, selectedVariant]);
 
     // Show price comparison for all essential products
     // Display "0" for missing values
@@ -1025,7 +1213,7 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
-                {/* Share icon commented out for now
+                {/* Share product – commented out for now
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={handleShare}
@@ -1089,7 +1277,64 @@ const ProductDetailScreen = () => {
                     </GestureHandlerRootView>
                 )}
 
+                {/* Highlights from metafields - rounded boxes below image; hide when user scrolls down */}
+                {highlightsList.length > 0 && (
+                    <View style={styles.highlightsSection}>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.highlightsScrollContent}
+                        >
+                            <View style={styles.highlightChipLabelWrap}>
+                                <LinearGradient
+                                    colors={[Colors.primary, '#FFFFFF']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.highlightChipLabel}
+                                >
+                                    <Text style={styles.highlightChipLabelText} numberOfLines={1}>Highlights</Text>
+                                </LinearGradient>
+                            </View>
+                            {highlightsList.map((text, index) => (
+                                <View key={`highlight-${index}`} style={styles.highlightChip}>
+                                    <Text style={styles.highlightChipText} numberOfLines={1}>{text}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
                 <View style={styles.infoContainer}>
+                    <View style={styles.vendorRow}>
+                        {product.vendor ? (
+                            <Text style={[
+                                styles.vendorText,
+                                productStyles.vendor && {
+                                    fontSize: productStyles.vendor.fontSize,
+                                    color: productStyles.vendor.color,
+                                    paddingHorizontal: productStyles.vendor.paddingHorizontal,
+                                    marginTop: productStyles.vendor.marginTop,
+                                    marginBottom: productStyles.vendor.marginBottom,
+                                    textTransform: productStyles.vendor.textTransform,
+                                    ...processFontStyle(productStyles.vendor, Fonts.Medium),
+                                }
+                            ]}>{product.vendor}</Text>
+                        ) : null}
+                        {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
+                            <View style={styles.essentialsMetaRow}>
+                                {essentialsMetaParts.packSize ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.packSize}</Text>
+                                    </View>
+                                ) : null}
+                                {essentialsMetaParts.size ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.size}</Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
                     <Text style={[
                         styles.title,
                         productStyles.title && {
@@ -1101,20 +1346,6 @@ const ProductDetailScreen = () => {
                             ...processFontStyle(productStyles.title, Fonts.Bold),
                         }
                     ]}>{product.title}</Text>
-                    {product.vendor && (
-                        <Text style={[
-                            styles.vendorText,
-                            productStyles.vendor && {
-                                fontSize: productStyles.vendor.fontSize,
-                                color: productStyles.vendor.color,
-                                paddingHorizontal: productStyles.vendor.paddingHorizontal,
-                                marginTop: productStyles.vendor.marginTop,
-                                marginBottom: productStyles.vendor.marginBottom,
-                                textTransform: productStyles.vendor.textTransform,
-                                ...processFontStyle(productStyles.vendor, Fonts.Medium),
-                            }
-                        ]}>{product.vendor}</Text>
-                    )}
 
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
@@ -1224,18 +1455,37 @@ const ProductDetailScreen = () => {
                     {/* Separator */}
                     <View style={styles.separator} />
 
-                    {/* Product Description - Display directly */}
+                    {/* Product Description - Collapsible */}
                     {product.description && (
-                        <View style={styles.descriptionContainer}>
-                            <Text style={[
-                                styles.descriptionBody,
-                                productStyles.description && {
-                                    fontSize: productStyles.description.fontSize,
-                                    color: productStyles.description.color,
-                                    lineHeight: productStyles.description.lineHeight,
-                                    ...processFontStyle(productStyles.description, Fonts.Regular),
-                                }
-                            ]}>{product.description}</Text>
+                        <View style={styles.accordionContainer}>
+                            <TouchableOpacity
+                                style={styles.accordionHeader}
+                                onPress={() => toggleSection('description')}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.accordionTitleContainer}>
+                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
+                                    <Text style={styles.accordionTitle}>Description</Text>
+                                </View>
+                                <Ionicons
+                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
+                                    size={20}
+                                    color={Colors.textSecondary}
+                                />
+                            </TouchableOpacity>
+                            {expandedSections['description'] && (
+                                <View style={[styles.accordionContent, styles.descriptionContainer]}>
+                                    <Text style={[
+                                        styles.descriptionBody,
+                                        productStyles.description && {
+                                            fontSize: productStyles.description.fontSize,
+                                            color: productStyles.description.color,
+                                            lineHeight: productStyles.description.lineHeight,
+                                            ...processFontStyle(productStyles.description, Fonts.Regular),
+                                        }
+                                    ]}>{product.description}</Text>
+                                </View>
+                            )}
                         </View>
                     )}
 
@@ -1374,7 +1624,7 @@ const ProductDetailScreen = () => {
                 {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                     isTicketingProduct && !selectedEventDate ? (
                         <TouchableOpacity
-                            style={[styles.addToCartButton, styles.disabledButton]}
+                            style={[styles.addToCartButton]}
                             onPress={() => {
                                 setShowDatePicker(true);
                                 setShowDateError(false); // Clear error when user opens date picker
@@ -1389,6 +1639,7 @@ const ProductDetailScreen = () => {
                             variant="pdp"
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                            isTicketing={isTicketingProduct}
                             onValidationError={() => {
                                 if (isTicketingProduct && !selectedEventDate) {
                                     setShowDateError(true);
@@ -1424,19 +1675,7 @@ const ProductDetailScreen = () => {
                 >
                     <EventDatePicker
                         selectedDate={selectedEventDate}
-                        onDateSelect={(date) => {
-                            setSelectedEventDate(date);
-                            // Only Events variants represent predefined dates.
-                            if (isEventsProduct) {
-                                const v = variantForDate(date);
-                                if (v) {
-                                    setSelectedVariant(v);
-                                    syncSelectedOptionsFromVariant(v);
-                                }
-                            }
-                            setShowDatePicker(false);
-                            setShowDateError(false); // Clear error when date is selected
-                        }}
+                        onDateSelect={handleDateSelectAndAddToCart}
                         // Events: pass predefined variant dates. Others: undefined → falls back to next 7 days.
                         availableDates={isEventsProduct ? (availableDates ?? []) : undefined}
                     />
@@ -1542,17 +1781,27 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontFamily: Fonts.Bold,
-        paddingHorizontal: 16, // Reduced
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        marginTop: 6,
         lineHeight: 28,
+    },
+    vendorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 4,
+        paddingHorizontal: 16,
     },
     vendorText: {
         fontSize: 14,
         fontFamily: Fonts.Medium,
         color: '#666',
-        paddingHorizontal: 16, // Reduced
-        marginTop: 8,
-        marginBottom: 4,
+        paddingHorizontal: 16,
+        marginTop: 0,
+        marginBottom: 0,
         textTransform: 'uppercase',
     },
     variantsContainer: {
@@ -1658,6 +1907,58 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9F9F9', // Light gray gap
         marginTop: 24, // Space above
         marginBottom: 8, // Space below
+    },
+    highlightsSection: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 4,
+    },
+    highlightsScrollContent: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingRight: 16,
+    },
+    highlightChipLabelWrap: {
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    highlightChipLabel: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    highlightChipLabelText: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
+        color: Colors.text,
+    },
+    highlightChip: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    highlightChipText: {
+        fontSize: 12,
+        fontFamily: Fonts.Medium,
+        color: '#363636',
+    },
+    essentialsMetaRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    essentialsMetaBox: {
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    essentialsMetaText: {
+        fontSize: 10,
+        fontFamily: Fonts.SemiBold,
+        color: '#1565C0',
+        lineHeight: 14,
     },
     accordionContainer: {
         borderBottomWidth: 1,

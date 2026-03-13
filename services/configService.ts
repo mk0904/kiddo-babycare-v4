@@ -20,6 +20,8 @@ class ConfigService {
   private listeners: Set<(config: AppConfig) => void> = new Set();
   private isLoading: boolean = false;
   private loadPromise: Promise<AppConfig> | null = null;
+  /** Set when config is successfully loaded; used to cache-bust sidebar images so they refresh each app session */
+  private configLoadedAt: number | null = null;
 
   // Load config from remote or local
   async loadConfig(remoteUrl?: string, forceReload: boolean = false): Promise<AppConfig> {
@@ -32,6 +34,7 @@ class ConfigService {
     if (forceReload) {
       this.rawConfig = null;
       this.config = defaultConfig;
+      this.configLoadedAt = null;
     }
 
     const url = remoteUrl || REMOTE_CONFIG_URL;
@@ -72,6 +75,7 @@ class ConfigService {
         console.log('[ConfigService] ✅ Loaded config from remote URL (allows updates without release)');
         console.log('[ConfigService] Config loaded at:', new Date().toISOString());
         this.rawConfig = remoteConfig;
+        this.configLoadedAt = Date.now();
       } else {
         const error = new Error(`Failed to load remote config: HTTP ${response.status} ${response.statusText}`);
         console.error('[ConfigService] ❌ Remote config fetch failed:', error);
@@ -202,10 +206,46 @@ class ConfigService {
     };
   }
 
-  // Get category screen configuration
+  // Get category screen configuration (header, blocks, styles)
   getCategoryScreenConfig() {
     if (!this.rawConfig) return {};
     return this.rawConfig.categoryScreen || {};
+  }
+
+  // Get ticketing screen configuration (header, blocks, styles)
+  getTicketingScreenConfig() {
+    if (!this.rawConfig) return {};
+    return this.rawConfig.ticketingScreen || {};
+  }
+
+  // Get ticketing screen blocks (same block types as home/category)
+  getTicketingScreenBlocks(): ContentBlock[] {
+    if (!this.rawConfig) return [];
+    const blocks = this.rawConfig.ticketingScreen?.blocks || [];
+    return blocks
+      .filter((block: ContentBlock) => block.visible !== false)
+      .sort((a: ContentBlock, b: ContentBlock) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  /**
+   * Get sidebar subcategories for a babycare collection. Used on the collection (infinity) screen
+   * when viewing a collection that has sidebar config. Returns null if no config for this collection.
+   * Visibility: set babycareSidebarEnabled to false in config to hide the sidebar everywhere.
+   * Config keys: babycareSidebarEnabled (boolean), babycareCollectionSidebar[collectionId] = { subcategories: [...] }
+   */
+  getBabycareCollectionSidebar(collectionId: string): { collectionId: string; label: string; imageUrl?: string }[] | null {
+    if (this.rawConfig?.babycareSidebarEnabled === false) return null;
+    if (!this.rawConfig?.babycareCollectionSidebar || !collectionId) return null;
+    const map = this.rawConfig.babycareCollectionSidebar as Record<string, { subcategories?: Array<{ collectionId: string; label: string; imageUrl?: string }> }>;
+    const normalized = collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0];
+    const entry = map[normalized] || map[collectionId];
+    if (!entry?.subcategories?.length) return null;
+    return entry.subcategories;
+  }
+
+  /** Timestamp when config was last loaded; use to cache-bust sidebar image URLs so they refresh each app session */
+  getConfigLoadedAt(): number | null {
+    return this.configLoadedAt;
   }
 
   // Get config
@@ -235,6 +275,12 @@ class ConfigService {
     return this.rawConfig.discounts || null;
   }
 
+  /** Product card font/label styles (fontSize, fontWeight, fontFamily, color, etc.) for listing cards */
+  getProductCardStyles(): Record<string, Record<string, any>> | null {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.productCard?.styles ?? this.rawConfig.productCard ?? null;
+  }
+
   // Get account configuration
   getAccountConfig() {
     if (!this.rawConfig) return null;
@@ -245,12 +291,6 @@ class ConfigService {
   getDeliveryConfig() {
     if (!this.rawConfig) return null;
     return this.rawConfig.delivery || null;
-  }
-
-  // Get free shoes offer configuration
-  getFreeShoesOfferConfig() {
-    if (!this.rawConfig) return null;
-    return this.rawConfig.freeShoesOffer || null;
   }
 
   // Update config

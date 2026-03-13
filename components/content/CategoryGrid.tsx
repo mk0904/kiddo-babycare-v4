@@ -108,11 +108,13 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         babygear: require('@/assets/images/Baby-Gear.png'),
       };
 
+      const icon = (categoryDef as { icon?: string })?.icon;
+      const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
         label: categoryDef?.label || defaultLabels[key] || key,
-        iconImage: defaultIcons[key],
-        iconUrl: categoryDef?.header?.backgroundImage,
+        iconImage: iconUrl ? undefined : defaultIcons[key],
+        iconUrl: iconUrl || undefined,
       };
     });
   }, []);
@@ -220,7 +222,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 
   // Title style (matching ImageGrid pattern)
   const titleStyle = {
-    marginBottom: 15,
+    marginBottom: 8,
     fontSize: 18,
     letterSpacing: 0,
     paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
@@ -230,15 +232,15 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     ...blockStyles?.title,
   };
 
-  // Text/label style (matching ImageGrid pattern)
-  // Process font style first, then apply all text styles (so custom styles override)
+  // Text/label style under each cell: configurable via styles.text (fontSize, fontWeight, fontFamily, etc.)
   const processedTextStyle = processFontStyle(blockStyles?.text);
   const textStyle = {
     color: '#666666',
     textAlign: 'center' as const,
+    fontSize: 12,
+    fontWeight: '700' as const,
     ...processedTextStyle,
-    ...blockStyles?.text, // Apply all text styles last so they override defaults
-    fontWeight: '700', // Make subcategory names bold - set last to ensure it takes precedence
+    ...blockStyles?.text, // Config overrides: fontSize, fontWeight, fontFamily, fontStyle, color, etc.
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)
@@ -276,7 +278,7 @@ const defaultStyles = StyleSheet.create({
     fontFamily: Fonts.Black,
     fontWeight: '900',
     color: Colors.text,
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
 });

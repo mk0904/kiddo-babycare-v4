@@ -1,15 +1,15 @@
-import React, { useMemo, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Dimensions,
-  Animated,
-} from 'react-native';
 import { Colors } from '@/constants/theme';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -205,7 +205,7 @@ const defaultStyles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   categoriesWrapper: {
-    paddingTop: 4,
+    paddingTop: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -223,6 +223,7 @@ const defaultStyles = StyleSheet.create({
     padding: 0,
     borderRadius: 0,
     backgroundColor: 'transparent',
+    marginBottom: -4,
   },
   selectedIconWrapper: {
     backgroundColor: 'transparent',
@@ -259,7 +260,8 @@ const defaultStyles = StyleSheet.create({
     color: '#222222',
     textAlign: 'center',
     fontWeight: '400',
-    marginVertical: 4,
+    marginTop: 0,
+    marginBottom: 4,
     minHeight: 16,
     lineHeight: 14,
   },

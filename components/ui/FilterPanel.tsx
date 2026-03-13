@@ -91,8 +91,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 
         // Special UI for Price
         if (type === 'range' || type === 'slider' || attribute === 'price' || attribute === 'price_range' || type === 'PRICE_RANGE') {
+            const SLIDER_MAX_RANGE = 5000;
             let priceMin = 0;
-            let priceMax = 10000;
+            let priceMax = SLIDER_MAX_RANGE;
             
             const buckets = activeFacet.buckets || [];
             if (buckets.length > 0) {
@@ -102,7 +103,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     const parsedFrom = parseFloat(firstBucket.from);
                     const parsedTo = parseFloat(firstBucket.to);
                     if (!isNaN(parsedFrom) && parsedFrom >= 0) priceMin = parsedFrom;
-                    if (!isNaN(parsedTo) && parsedTo > priceMin) priceMax = parsedTo;
+                    if (!isNaN(parsedTo) && parsedTo > priceMin) priceMax = Math.min(parsedTo, SLIDER_MAX_RANGE);
                 } else {
                     // Extract all min and max values from buckets
                     const allMins = buckets
@@ -125,20 +126,18 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     }
                     if (allMaxs.length > 0) {
                         const calculatedMax = Math.max(...allMaxs);
-                        if (calculatedMax > priceMin) priceMax = calculatedMax;
+                        if (calculatedMax > priceMin) priceMax = Math.min(calculatedMax, SLIDER_MAX_RANGE);
                     }
                 }
             }
             
-            // Round to nearest 10
-            priceMin = Math.floor(priceMin / 10) * 10;
-            priceMax = Math.ceil(priceMax / 10) * 10;
+            // Allow price range to start from 0; cap max at SLIDER_MAX_RANGE
+            priceMin = 0;
+            priceMax = Math.min(Math.ceil(priceMax / 10) * 10, SLIDER_MAX_RANGE);
             
-            // Ensure we have valid min/max values - if max is 0 or <= min, set reasonable defaults
-            if (priceMin < 0) priceMin = 0;
+            // Ensure we have valid max - if max is 0 or <= min, use default range
             if (priceMax <= priceMin || priceMax === 0) {
-                // If max is invalid, set it to at least 1000 or min + 1000, whichever is larger
-                priceMax = Math.max(priceMin + 1000, 10000);
+                priceMax = SLIDER_MAX_RANGE;
             }
             
             let currentValue: { min: number; max: number } | undefined;
@@ -164,6 +163,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     <PriceSlider
                         min={priceMin}
                         max={priceMax}
+                        minRange={50}
+                        step={10}
                         value={currentValue}
                         onValueChange={(val) => {
                             setLocalFilters((prev: any) => ({

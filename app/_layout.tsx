@@ -1,12 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useMemo } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -25,12 +25,13 @@ import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
-import { trackEvent } from '@/utils/mixpanelHelpers';
-import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -51,6 +52,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const user = useUserStore(state => state.user);
   const [isSplashVisible, setIsSplashVisible] = React.useState(false);
   const [appIsReady, setAppIsReady] = React.useState(false);
   const metaReadyRef = React.useRef(Platform.OS !== 'ios');
@@ -67,7 +69,22 @@ export default function RootLayout() {
     'Metropolis-Medium': require('../assets/fonts/Metropolis-Medium.otf'),
     'Metropolis-SemiBold': require('../assets/fonts/Metropolis-SemiBold.otf'),
     'Metropolis-Bold': require('../assets/fonts/Metropolis-Bold.otf'),
+    bogart: require('./assets/fonts/BOGARTREGULARTRIAL.ttf'),
+    'Bogart-SemiBold': require('../assets/fonts/Bogart-Alt-Medium-trial.ttf'),
+    // Each weight loaded as its own family so components can use fontFamily: 'Lexend-Bold'
+    // without needing fontWeight – which reliably works on both iOS and Android.
+    'Lexend': require('../assets/fonts/Lexend-Regular.ttf'),
+    'Lexend-Regular': require('../assets/fonts/Lexend-Regular.ttf'),
+    'Lexend-Medium': require('../assets/fonts/Lexend-Medium.ttf'),
+    'Lexend-SemiBold': require('../assets/fonts/Lexend-SemiBold.ttf'),
+    'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
   });
+
+  React.useEffect(() => {
+    if (fontsLoaded) console.log('[Fonts] Loaded OK:', fontsLoaded);
+    if (fontError) console.warn('[Fonts] Error:', fontError);
+  }, [fontsLoaded, fontError]);
+
 
   // Hide the native splash screen as soon as component mounts
   // This happens before the custom splash renders
@@ -84,13 +101,18 @@ export default function RootLayout() {
         fontTimeout = null;
       }
       
-      // Preload config in background (non-blocking)
-      // This ensures config is available when OTP service is called
-      configService.loadConfig().catch((error) => {
-        // Config loading failed, but OTP service will fallback to local config
-        if (__DEV__) {
-          console.warn('[RootLayout] Failed to preload config:', error);
-        }
+      // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
+      configService.loadConfig().then(() => {
+        appConfigService.loadAppConfig(false, {
+          phone: user?.phone ?? undefined,
+          customerId: user?.customerId ?? user?.id ?? undefined,
+          appVersion: Constants.expoConfig?.version ?? undefined,
+          deviceType: Platform.OS,
+        }).catch((error) => {
+          if (__DEV__) console.warn('[RootLayout] Failed to load app config from backend:', error);
+        });
+      }).catch((error) => {
+        if (__DEV__) console.warn('[RootLayout] Failed to preload config:', error);
       });
       
       setAppIsReady(true);

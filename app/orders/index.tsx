@@ -344,7 +344,7 @@ export default function OrdersScreen() {
                                     const orderId = order.isTryAndBuy 
                                         ? (order.id || order.localOrderData?.shopifyDraftOrderId || order.localOrderData?.id)
                                         : order.id;
-                                    router.push(`/orders/${encodeURIComponent(orderId)}` as any);
+                                    router.push({ pathname: '/orders/[id]/v2', params: { id: String(orderId), from: 'orders' } } as any);
                                 }}
                             >
                                 <View style={styles.orderHeader}>

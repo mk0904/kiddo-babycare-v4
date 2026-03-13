@@ -142,6 +142,18 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
                 currencyCode
               }
             }
+            metafields(identifiers: [
+              { namespace: "custom", key: "number_of_pieces" },
+              { namespace: "custom", key: "size" },
+              { namespace: "custom", key: "sizes" },
+              { namespace: "custom", key: "quantity" },
+              { namespace: "custom", key: "pack_size" }
+            ]) {
+              id
+              key
+              value
+              namespace
+            }
           }
         }
         filters {
@@ -223,7 +235,17 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "price_on_amazon"},
         {namespace: "custom", key: "price_on_firstcry"},
         {namespace: "custom", key: "price_on_blinkit"},
-        {namespace: "custom", key: "price_on_zepto"}
+        {namespace: "custom", key: "price_on_zepto"},
+        {namespace: "custom", key: "number_of_pieces"},
+        {namespace: "custom", key: "size"},
+        {namespace: "custom", key: "sizes"},
+        {namespace: "custom", key: "quantity"},
+        {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "highlight_1"},
+        {namespace: "custom", key: "highlight_2"},
+        {namespace: "custom", key: "highlight_3"},
+        {namespace: "custom", key: "highlight_4"},
+        {namespace: "custom", key: "highlights"}
       ]) {
         id
         key
@@ -298,7 +320,17 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "price_on_amazon"},
         {namespace: "custom", key: "price_on_firstcry"},
         {namespace: "custom", key: "price_on_blinkit"},
-        {namespace: "custom", key: "price_on_zepto"}
+        {namespace: "custom", key: "price_on_zepto"},
+        {namespace: "custom", key: "number_of_pieces"},
+        {namespace: "custom", key: "size"},
+        {namespace: "custom", key: "sizes"},
+        {namespace: "custom", key: "quantity"},
+        {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "highlight_1"},
+        {namespace: "custom", key: "highlight_2"},
+        {namespace: "custom", key: "highlight_3"},
+        {namespace: "custom", key: "highlight_4"},
+        {namespace: "custom", key: "highlights"}
       ]) {
         id
         key
@@ -360,6 +392,14 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
     }
   }
 
+`;
+
+const GET_CUSTOMER_ID_QUERY = `
+  query getCustomerId($customerAccessToken: String!) {
+    customer(customerAccessToken: $customerAccessToken) {
+      id
+    }
+  }
 `;
 
 const GET_CUSTOMER_ORDERS_QUERY = `
@@ -430,7 +470,10 @@ const GET_ORDER_BY_ID_QUERY = `
           currencyCode
         }
         shippingAddress {
+          firstName
+          lastName
           address1
+          address2
           city
           province
           zip
@@ -461,6 +504,27 @@ const GET_ORDER_BY_ID_QUERY = `
               }
             }
           }
+        }
+        discountApplications(first: 10) {
+          edges {
+            node {
+              __typename
+              ... on DiscountCodeApplication {
+                code
+                applicable
+                value {
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+        customAttributes {
+          key
+          value
         }
       }
     }
@@ -787,6 +851,10 @@ const GET_CART_QUERY = `
           node {
             id
             quantity
+            attributes {
+              key
+              value
+            }
             merchandise {
               ... on ProductVariant {
                 id
@@ -798,6 +866,7 @@ const GET_CART_QUERY = `
                 product {
                   id
                   title
+                  tags
                   images(first: 1) {
                     edges {
                       node {
@@ -1101,6 +1170,26 @@ export const shopifyApi = {
   },
 
   /**
+   * Get current customer ID (GID) using Storefront API. Use when backend did not return id.
+   */
+  getCurrentCustomerId: async (customerAccessToken: string): Promise<string | null> => {
+    try {
+      const response = await client.post('', {
+        query: GET_CUSTOMER_ID_QUERY,
+        variables: { customerAccessToken },
+      });
+      if (response.data.errors) {
+        console.error('[ShopifyApi] getCurrentCustomerId errors:', response.data.errors);
+        return null;
+      }
+      return response.data.data.customer?.id ?? null;
+    } catch (error) {
+      console.error('[ShopifyApi] getCurrentCustomerId error:', error);
+      return null;
+    }
+  },
+
+  /**
    * Get customer orders
    */
   getCustomerOrders: async (customerAccessToken: string, first: number = 10) => {
@@ -1231,9 +1320,13 @@ export const shopifyApi = {
   },
 
   /**
-   * Create a new Shopify cart
+   * Create a new Shopify cart.
+   * Lines may include attributes (e.g. booking_date for ticketing) so they persist when cart is fetched.
    */
-  createCart: async (lines?: Array<{ merchandiseId: string; quantity: number }>, attributes?: { key: string; value: string }[]) => {
+  createCart: async (
+    lines?: Array<{ merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }>,
+    attributes?: { key: string; value: string }[]
+  ) => {
     try {
       const variables: any = {
         input: {

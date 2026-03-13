@@ -302,12 +302,17 @@ export default function SearchScreen() {
                                     try {
                                         if (product.id) {
                                             const fullProduct = await shopifyApi.getProductById(product.id);
-                                            if (fullProduct?.tags) {
-                                                return { productId: product.id, tags: fullProduct.tags };
+                                            if (fullProduct) {
+                                                return {
+                                                    productId: product.id,
+                                                    tags: fullProduct.tags,
+                                                    metafields: fullProduct.metafields,
+                                                    variants: fullProduct.variants,
+                                                };
                                             }
                                         }
-        } catch (error) {
-                                        // Silently fail - tags are optional
+                                    } catch (error) {
+                                        // Silently fail - tags/metafields/variants are optional
                                     }
                                     return null;
                                 });
@@ -323,11 +328,14 @@ export default function SearchScreen() {
                                         return prev;
                                     }
                                     return prev.map((product: any) => {
-                                        const tagResult = tagResults.find((r: any) => r && r.productId === product.id);
-                                        if (tagResult && tagResult.tags) {
-                                            return { ...product, tags: tagResult.tags };
-                                        }
-                                        return product;
+                                        const enriched = tagResults.find((r: any) => r && r.productId === product.id);
+                                        if (!enriched) return product;
+                                        const updates: any = {};
+                                        if (enriched.tags) updates.tags = enriched.tags;
+                                        if (enriched.metafields) updates.metafields = enriched.metafields;
+                                        if (enriched.variants) updates.variants = enriched.variants;
+                                        if (Object.keys(updates).length === 0) return product;
+                                        return { ...product, ...updates };
                                     });
                                 });
                             }, batchIndex * 100);

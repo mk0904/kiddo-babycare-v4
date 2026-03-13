@@ -159,8 +159,22 @@ export const customerService = {
         await shopifyApi.updateCustomer(customerAccessToken, customerData);
       }
 
-      // Update metafields via Admin API
-      if (customerId && (metafields.baby_name || metafields.age || metafields.gender)) {
+      // Update metafields via Admin API (requires valid Shopify customer GID)
+      const hasMetafields = metafields.baby_name || metafields.age || metafields.gender;
+      if (hasMetafields) {
+        let resolvedCustomerId = customerId;
+        const isPlaceholderOrInvalid =
+          !resolvedCustomerId ||
+          resolvedCustomerId === 'gid://shopify/Customer/existing' ||
+          resolvedCustomerId.includes('existing');
+        if (isPlaceholderOrInvalid) {
+          const fetchedId = await shopifyApi.getCurrentCustomerId(customerAccessToken);
+          if (!fetchedId) {
+            throw new Error('Could not resolve customer id. Please try again.');
+          }
+          resolvedCustomerId = fetchedId;
+        }
+
         const metafieldsArray = [];
         if (metafields.baby_name) {
           metafieldsArray.push({
@@ -187,8 +201,8 @@ export const customerService = {
           });
         }
 
-        if (metafieldsArray.length > 0) {
-          await shopifyAdminApi.updateCustomerMetafields(customerId, metafieldsArray);
+        if (metafieldsArray.length > 0 && resolvedCustomerId) {
+          await shopifyAdminApi.updateCustomerMetafields(resolvedCustomerId, metafieldsArray);
         }
       }
 

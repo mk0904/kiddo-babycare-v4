@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
-import { FlashSaleBlock } from '@/types/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { Fonts } from '@/constants/theme';
+import { FlashSaleBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface FlashSaleTimerProps extends Omit<BaseContentBlockProps, 'onPress'> {
     block: FlashSaleBlock;

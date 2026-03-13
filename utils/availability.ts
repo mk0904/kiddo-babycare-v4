@@ -83,12 +83,14 @@ export function isProductAvailable(product: any): boolean {
       if (vAvail === true) return true;
       if (vAvail === undefined) sawUnknown = true;
     }
-    // If all variants were deterministically unavailable, product is unavailable.
+    // All variants were deterministically unavailable.
     if (!sawUnknown) return false;
   }
 
   // Fall back to product-level boolean if present.
   if (avail === true) return true;
+  // No availability data (e.g. wishlist item with minimal product object): assume in stock so we don't show "out of stock" incorrectly.
+  if (avail === undefined && quantityAvailable === undefined && totalInventory === undefined && variantNodes.length === 0) return true;
   return false;
 }
 

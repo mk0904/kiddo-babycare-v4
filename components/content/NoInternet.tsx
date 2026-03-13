@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
+import { Fonts } from '@/constants/theme';
 import { NoInternetBlock } from '@/types/content';
-import { Button } from '../ui/Button';
+import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
-import { Fonts } from '@/constants/theme';
-import { processFontStyle } from '@/utils/fontUtils';
+import React, { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Button } from '../ui/Button';
+import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface NoInternetProps extends BaseContentBlockProps {
   block: NoInternetBlock;
