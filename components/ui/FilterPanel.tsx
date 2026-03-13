@@ -92,7 +92,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         // Special UI for Price
         if (type === 'range' || type === 'slider' || attribute === 'price' || attribute === 'price_range' || type === 'PRICE_RANGE') {
             let priceMin = 0;
-            let priceMax = 10000;
+            let priceMax = 500;
             
             const buckets = activeFacet.buckets || [];
             if (buckets.length > 0) {
@@ -134,9 +134,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             priceMin = 0;
             priceMax = Math.ceil(priceMax / 10) * 10;
             
-            // Ensure we have valid max - if max is 0 or <= min, set reasonable default
+            // Ensure we have valid max - if max is 0 or <= min, use a small default so max can be low
             if (priceMax <= priceMin || priceMax === 0) {
-                priceMax = Math.max(1000, 10000);
+                priceMax = Math.max(priceMin + 100, 100);
             }
             
             let currentValue: { min: number; max: number } | undefined;
