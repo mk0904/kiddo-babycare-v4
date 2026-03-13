@@ -64,7 +64,7 @@ export function FreePairShoes({
     onAddPress,
     onConfirmSize,
     onRemoveOffer,
-    originalPrice = ORIGINAL_PRICE_DEFAULT,
+    originalPrice,
 }: FreePairShoesProps) {
     const [shoeOptions, setShoeOptions] = useState<ShoeOption[]>([]);
     const [sizeOptions, setSizeOptions] = useState<SizeOption[]>([]);
@@ -85,7 +85,9 @@ export function FreePairShoes({
                 setSizeOptions(config.sizes?.length ? config.sizes : DEFAULT_SHOE_SIZES);
                 setOfferEnabled(true);
                 setOfferCopy(config.copy ?? undefined);
-                setConfigOriginalPrice(config.originalPrice ?? ORIGINAL_PRICE_DEFAULT);
+                const raw = (config as any).originalPrice ?? (config as any).original_price;
+                const num = typeof raw === 'number' ? raw : (typeof raw === 'string' ? parseFloat(raw) : NaN);
+                setConfigOriginalPrice(Number.isFinite(num) && num > 0 ? num : ORIGINAL_PRICE_DEFAULT);
             } else {
                 setShoeOptions([]);
                 setSizeOptions([]);
@@ -112,7 +114,7 @@ export function FreePairShoes({
     const isApplied = !!selectedShoe;
     const firstAvailableSize = sizeOptions.find((s) => s.isAvailable)?.size ?? DEFAULT_SHOE_SIZES[0]?.size ?? '0 - 3M';
     const displaySize = selectedSize || firstAvailableSize;
-    const effectiveOriginalPrice = originalPrice ?? configOriginalPrice;
+    const effectiveOriginalPrice = originalPrice != null ? originalPrice : configOriginalPrice;
 
     const openSizeModal = () => {
         const currentSelection = selectedSize && sizeOptions.some((s) => s.size === selectedSize && s.isAvailable)
