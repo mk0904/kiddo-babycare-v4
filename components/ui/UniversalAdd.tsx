@@ -139,6 +139,29 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             }
         }
 
+        // If first/current variant is out of stock, use first available variant (e.g. from product listing)
+        const currentQty = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
+        if ((typeof currentQty === 'number' && currentQty < 1) || isVariantAvailable(finalVariant) === false) {
+            const edges = finalProduct?.variants?.edges || finalProduct?.variants || [];
+            const nodes = edges.map((e: any) => e?.node ?? e);
+            const firstAvailable = nodes.find((v: any) => isVariantAvailable(v) === true);
+            if (firstAvailable) {
+                finalVariant = firstAvailable;
+            } else if (productId) {
+                try {
+                    const { shopifyApi } = await import('@/services/shopifyApi');
+                    const fullProduct = await shopifyApi.getProductById(productId);
+                    if (fullProduct?.variants?.edges?.length) {
+                        const v = fullProduct.variants.edges.find((e: any) => isVariantAvailable(e.node) === true)?.node;
+                        if (v) {
+                            finalVariant = v;
+                            finalProduct = fullProduct;
+                        }
+                    }
+                } catch (_) {}
+            }
+        }
+
         // If listing didn't include tags (e.g. some collection responses), fetch once so cart shows Try & Buy badge
         let tagsToUse = finalProduct.tags || [];
         if (productId && (!tagsToUse || tagsToUse.length === 0)) {
