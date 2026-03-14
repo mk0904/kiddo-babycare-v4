@@ -84,18 +84,11 @@ export function HomeHeader({
     return headerTopHeight - insets.top;
   }, [headerTopHeight, insets.top]);
 
-  // Optimized interpolations
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, stickyThreshold],
-    outputRange: [0, -headerTranslateAmount],
-    extrapolate: 'clamp',
-  });
+  // Header is in document flow (no overlay), so keep it fixed — no translate on scroll
+  const headerTranslateY = useMemo(() => new Animated.Value(0), []);
 
-  const topInfoBarOpacity = scrollY.interpolate({
-    inputRange: [0, stickyThreshold * 0.7, stickyThreshold],
-    outputRange: [1, 0.3, 0],
-    extrapolate: 'clamp',
-  });
+  // Keep top info bar always visible (header is in flow, no collapse)
+  const topInfoBarOpacity = 1;
 
   // Remove white background overlay - keep original background always visible
 
@@ -154,10 +147,6 @@ export function HomeHeader({
       style={[
         {
           transform: [{ translateY: headerTranslateY }],
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
           zIndex: 1000,
         },
       ]}
@@ -178,7 +167,7 @@ export function HomeHeader({
         collapsable={false}
       >
         <View style={{ position: 'relative', zIndex: 1 }} collapsable={false}>
-          <Animated.View
+          <View
             style={[
               styles.topInfoBar,
               {
@@ -217,7 +206,7 @@ export function HomeHeader({
             >
               <Ionicons name="heart-outline" size={24} color={textColor} />
             </TouchableOpacity>
-          </Animated.View>
+          </View>
 
           <View style={styles.searchContainer}>
             <SearchBar
