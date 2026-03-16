@@ -2,6 +2,7 @@
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { Platform } from 'react-native';
 
 const PRODUCTION_COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
 
@@ -97,8 +98,8 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     if (cartCategories != null && cartCategories.length > 0) body.cartCategories = cartCategories;
     if (params.categorySubtotals != null && Object.keys(params.categorySubtotals).length > 0) body.categorySubtotals = params.categorySubtotals;
     // Always send non-empty appVersion and deviceType (e.g. in emulator when Constants.expoConfig?.version may be undefined)
-    body.appVersion = (appVersion != null && String(appVersion).trim() !== '') ? String(appVersion).trim() : '3.1.1';
-    body.deviceType = (deviceType != null && String(deviceType).trim() !== '') ? String(deviceType).trim() : 'android';
+    body.appVersion = (appVersion != null && String(appVersion).trim() !== '') ? String(appVersion).trim() : '0.0.0';
+    body.deviceType = (deviceType != null && String(deviceType).trim() !== '') ? String(deviceType).trim() : Platform.OS;
     if (returnAllVisible === true) body.returnAllVisible = true;
     const response = await fetch(url, {
       method: 'POST',
