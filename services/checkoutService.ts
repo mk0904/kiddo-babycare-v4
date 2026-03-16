@@ -3,6 +3,7 @@
  * Replaces direct Shopify Admin + Razorpay usage so changes don't require app release.
  */
 import axios from 'axios';
+import { Platform } from 'react-native';
 import { configService } from './configService';
 
 const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
@@ -78,10 +79,10 @@ export interface CheckoutDraftRequest {
   selectedShoeSize?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
-  /** App version for coupon/eligibility (e.g. Constants.expoConfig?.version). */
-  appVersion?: string;
-  /** Device type for coupon/eligibility (e.g. 'ios' | 'android' from Platform.OS). */
-  deviceType?: string;
+  /** App version for coupon/eligibility. Required for checkout/draft (same as get coupon by phone). */
+  appVersion: string;
+  /** Device type for coupon/eligibility ('ios' | 'android'). Required for checkout/draft (same as get coupon by phone). */
+  deviceType: string;
 }
 
 export interface CheckoutDraftResponse {
@@ -157,8 +158,9 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     selectedShoe: body.selectedShoe ?? '',
     selectedShoeSize: body.selectedShoeSize ?? '',
     isTryAndBuy: body.isTryAndBuy ?? false,
-    appVersion: body.appVersion ?? '',
-    deviceType: body.deviceType ?? '',
+    // Always send non-empty appVersion and deviceType (same as get coupon by phone)
+    appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
+    deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,
   };
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,

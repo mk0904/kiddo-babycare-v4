@@ -1,10 +1,10 @@
 // Try & Buy Context
 // Manages the Try & Buy cart and order lifecycle
 
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { checkoutService } from '@/services/checkoutService';
 import { Order, OrderItem, calculateETA, orderService } from '@/services/orderService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ReactNode,
@@ -301,7 +301,7 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                 selectedShoe: selectedShoe ?? '',
                 selectedShoeSize: selectedShoeSize ?? '',
                 isTryAndBuy: true,
-                appVersion: Constants.expoConfig?.version ?? '',
+                appVersion: getAppVersionForApi(),
                 deviceType: Platform.OS ?? '',
             });
             const draftOrderId = draftRes.draft_order_id;
