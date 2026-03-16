@@ -4,8 +4,26 @@
  * Set MIN_APP_VERSION to the lowest app version that may use the app (older builds see "Update required").
  */
 
+import Constants from 'expo-constants';
+
 /** Bump this to force re-login and clear auth/checkout/cart for all users once. */
 export const AUTH_SCHEMA_VERSION = 3;
+
+/**
+ * App version for API calls (coupons, etc.). Uses native version per platform when available
+ * (iOS: CFBundleShortVersionString, Android: versionName) so TestFlight/iOS reports the actual iOS version.
+ */
+export function getAppVersionForApi(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Application = require('expo-application') as { nativeApplicationVersion: string | null };
+    const native = Application?.nativeApplicationVersion;
+    if (native != null && String(native).trim() !== '') return String(native).trim();
+  } catch (_) {
+    // expo-application not available (e.g. web)
+  }
+  return Constants.expoConfig?.version ?? '0.0.0';
+}
 
 /** Minimum app version required. Older builds will see "Update required" and be sent to the store. */
 export const MIN_APP_VERSION = '1.8.3';

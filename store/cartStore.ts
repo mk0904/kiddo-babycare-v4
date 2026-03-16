@@ -2,10 +2,10 @@
 // Enhanced cart state management with gift items, multiple discounts, and sync
 // Coupon values come from backend API only (not config)
 
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -603,7 +603,7 @@ export const useCartStore = create<CartState>()(
                         hasClothing: hasClothingItems,
                         ...(cartCategoriesForApi.length > 0 ? { cartCategories: cartCategoriesForApi } : {}),
                         ...(Object.keys(categorySubtotalsForApi).length > 0 ? { categorySubtotals: categorySubtotalsForApi } : {}),
-                        appVersion: Constants.expoConfig?.version ?? '',
+                        appVersion: getAppVersionForApi(),
                         deviceType: Platform.OS ?? '',
                     };
                     configDiscount = await couponService.validateCouponCode(normalizedCode, couponParams, { useVisibleCoupons: true });
@@ -682,7 +682,7 @@ export const useCartStore = create<CartState>()(
                             hasClothing: hasClothingItems,
                             ...(cartCategoriesForApi.length > 0 ? { cartCategories: cartCategoriesForApi } : {}),
                             ...(Object.keys(categorySubtotalsForApi).length > 0 ? { categorySubtotals: categorySubtotalsForApi } : {}),
-                            appVersion: Constants.expoConfig?.version ?? '',
+                            appVersion: getAppVersionForApi(),
                             deviceType: Platform.OS ?? '',
                         };
                         for (const existingCode of existingNonCombinableCodes) {
@@ -814,7 +814,7 @@ export const useCartStore = create<CartState>()(
                                 hasTicketing: hasTicketingProducts,
                                 hasClothing: hasClothingItems,
                                 cartCategories: getCartCategoriesFromLineItems(lineItemsForCoupons),
-                                appVersion: Constants.expoConfig?.version ?? '',
+                                appVersion: getAppVersionForApi(),
                                 deviceType: Platform.OS ?? '',
                             });
                             const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
@@ -1137,7 +1137,7 @@ export const useCartStore = create<CartState>()(
                         hasTicketing: hasTicketingProducts,
                         hasClothing: hasClothingItems,
                         cartCategories: getCartCategoriesFromLineItems(lineItemsForCoupons),
-                        appVersion: Constants.expoConfig?.version ?? '',
+                        appVersion: getAppVersionForApi(),
                         deviceType: Platform.OS ?? '',
                     });
                     const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
@@ -1516,7 +1516,7 @@ export const useCartStore = create<CartState>()(
                             hasTicketing: fetchHasTicketing,
                             hasClothing: fetchHasClothing,
                             cartCategories: getCartCategoriesFromLineItems(lineItems),
-                            appVersion: Constants.expoConfig?.version ?? '',
+                            appVersion: getAppVersionForApi(),
                             deviceType: Platform.OS ?? '',
                         });
                         const backendCouponMapFetch = new Map(eligibleForFetch.map((c: any) => [c.code?.toUpperCase(), c]));

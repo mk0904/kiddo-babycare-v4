@@ -1,4 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
 import { couponService, type CouponCode } from '@/services/couponService';
@@ -174,7 +175,7 @@ export function SavingsCorner({
                     hasClothing: hasFashionItems,
                     cartCategories: cartCategories.length > 0 ? cartCategories : undefined,
                     categorySubtotals: Object.keys(categorySubtotalsForFetch).length > 0 ? categorySubtotalsForFetch : undefined,
-                    appVersion: Constants.expoConfig?.version ?? '',
+                    appVersion: getAppVersionForApi(),
                     deviceType: Platform.OS ?? '',
                 });
                 const normalized: SavingsCornerCoupon[] = (visibleCoupons ?? []).map((c: CouponCode) => ({
