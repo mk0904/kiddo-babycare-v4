@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.8.6",
+    "version": "1.8.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
@@ -74,6 +74,25 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Lexend-Regular.ttf",
+            "./assets/fonts/Lexend-Medium.ttf",
+            "./assets/fonts/Lexend-SemiBold.ttf",
+            "./assets/fonts/Lexend-Bold.ttf"
+          ],
+          "ios": {
+            "fonts": [
+              "./assets/fonts/Lexend-Regular.ttf",
+              "./assets/fonts/Lexend-Medium.ttf",
+              "./assets/fonts/Lexend-SemiBold.ttf",
+              "./assets/fonts/Lexend-Bold.ttf"
+            ]
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {

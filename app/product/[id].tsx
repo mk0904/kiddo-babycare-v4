@@ -38,6 +38,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+/** Format date as YYYY-MM-DD for ticketing cart item. */
+function bookingDateToYYYYMMDD(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 // Event Date Picker Component - Shows next 7 days or available dates
 const EventDatePicker: React.FC<{
     selectedDate: Date | null;
@@ -250,9 +258,6 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
-    // Hide highlights section when user scrolls down the page
-    const [highlightsSectionVisible, setHighlightsSectionVisible] = useState(true);
-    
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -743,7 +748,8 @@ const ProductDetailScreen = () => {
                     '0'
                 );
 
-                // Create cart item
+                // Create cart item (include quantityAvailable so cart can enforce stock)
+                const quantityAvailable = selectedVariant.quantityAvailable != null ? Number(selectedVariant.quantityAvailable) : undefined;
                 const cartItem = {
                     productId: productId || '',
                     variantId: selectedVariant.id || '',
@@ -757,6 +763,7 @@ const ProductDetailScreen = () => {
                     image: imageUrl,
                     quantity: 1,
                     availableForSale: selectedVariant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
                     tags: product.tags || [],
                 };
 
@@ -796,6 +803,70 @@ const ProductDetailScreen = () => {
         }
         return [];
     }, [product]);
+
+    // When user selects a date in ticketing, add the item to cart immediately (1 qty, with bookingDate)
+    const handleDateSelectAndAddToCart = useCallback(
+        async (date: Date) => {
+            const variant = isEventsProduct ? variantForDate(date) : (selectedVariant || variants[0]);
+            if (!variant || !product) return;
+
+            setSelectedEventDate(date);
+            setSelectedVariant(variant);
+            syncSelectedOptionsFromVariant(variant);
+            setShowDateError(false);
+
+            try {
+                const addItem = useCartStore.getState().addItem;
+                const imageUrl =
+                    variant.image?.url ||
+                    product.images?.[0]?.url ||
+                    product.featuredImage?.url ||
+                    product.images?.edges?.[0]?.node?.url ||
+                    '';
+                const price = parseFloat(
+                    variant.price?.amount ||
+                        product.priceRange?.minVariantPrice?.amount ||
+                        product.price?.amount ||
+                        '0'
+                );
+                const quantityAvailable =
+                    variant.quantityAvailable != null ? Number(variant.quantityAvailable) : undefined;
+                const cartItem = {
+                    productId: productId || '',
+                    variantId: variant.id || '',
+                    title: product.title || product.name || 'Product',
+                    variantTitle: variant.title,
+                    price,
+                    compareAtPrice: variant.compareAtPrice?.amount
+                        ? parseFloat(variant.compareAtPrice.amount)
+                        : undefined,
+                    currencyCode:
+                        variant.price?.currencyCode ||
+                        product.priceRange?.minVariantPrice?.currencyCode ||
+                        'INR',
+                    image: imageUrl,
+                    quantity: 1,
+                    availableForSale: variant.availableForSale !== false,
+                    quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
+                    tags: product.tags || [],
+                    bookingDate: bookingDateToYYYYMMDD(date),
+                };
+                await addItem(cartItem);
+            } catch (error: any) {
+                alert(error?.message || 'Failed to add to cart. Please try again.');
+            }
+            setShowDatePicker(false);
+        },
+        [
+            isEventsProduct,
+            variantForDate,
+            selectedVariant,
+            variants,
+            product,
+            productId,
+            syncSelectedOptionsFromVariant,
+        ]
+    );
 
     const productOptions = useMemo(() => {
         if (!product?.options) return [];
@@ -866,51 +937,63 @@ const ProductDetailScreen = () => {
         }
     };
 
-    const HIDE_HIGHLIGHTS_THRESHOLD = 100;
-    const SHOW_HIGHLIGHTS_THRESHOLD = 80;
-    const onPDPScroll = useCallback(
-        (event: any) => {
-            handleScroll(event);
-            const offsetY = event.nativeEvent?.contentOffset?.y ?? 0;
-            setHighlightsSectionVisible((prev) => {
-                if (offsetY > HIDE_HIGHLIGHTS_THRESHOLD) return false;
-                if (offsetY <= SHOW_HIGHLIGHTS_THRESHOLD) return true;
-                return prev;
-            });
-        },
-        [handleScroll]
-    );
-
     const handleShare = useCallback(async () => {
         if (!product) return;
         const handle = product.handle || (params as any).handle;
         const productId = (params as any).id || product.id;
         const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
         const productUrl = getProductDeepLink(pathSegment);
-        const message = `${product.title}\n\n${productUrl}`;
-        const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+        
+        // Share message
+        const message = `${product.title}\n\nCheck this out on Kiddo:\n${productUrl}`;
+        
         try {
-            let shareUrl: string = productUrl;
+            // Android: Share text only (native Share doesn't support file + text well)
+            // Apps like WhatsApp will generate a link preview with thumbnail if the meta tags are set on the domain.
+            if (Platform.OS === 'android') {
+                await Share.share({
+                    message,
+                    title: product.title,
+                });
+                return;
+            }
+
+            // iOS: Try to share image + text
+            const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
+            let shareUrl = productUrl; // Fallback to link if no image or download fails
+
             if (imageUrl) {
                 try {
-                    const pathBeforeQuery = imageUrl.split('?')[0];
-                    const ext = pathBeforeQuery.match(/\.(jpe?g|png|webp|gif)$/i)?.[1] || 'jpg';
-                    const localUri = `${FileSystem.cacheDirectory}share_product_${Date.now()}.${ext}`;
-                    await FileSystem.downloadAsync(imageUrl, localUri);
-                    shareUrl = localUri;
-                } catch (_) {
-                    // keep productUrl if download fails
+                    // Clean URL and get extension
+                    const cleanUrl = imageUrl.split('?')[0];
+                    const extMatch = cleanUrl.match(/\.(jpe?g|png|webp|gif)$/i);
+                    const ext = extMatch ? extMatch[1] : 'jpg';
+                    
+                    const cacheDir = FileSystem.cacheDirectory;
+                    if (cacheDir) {
+                        const localUri = `${cacheDir}share_product_${Date.now()}.${ext}`;
+                        const downloadRes = await FileSystem.downloadAsync(imageUrl, localUri);
+                        if (downloadRes && downloadRes.status === 200) {
+                            shareUrl = localUri;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Image download failed for share:', e);
                 }
             }
+
             await Share.share({
-                message,
+                message, // iOS supports message + url (image)
                 url: shareUrl,
                 title: product.title,
             });
+
+            // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
                 trackProductShareClicked(product.id, product.title, 'native');
-            } catch (_e) {}
+            } catch (_) {}
+
         } catch (err: any) {
             if (err?.message !== 'User did not share') {
                 console.warn('Share error:', err);
@@ -1039,6 +1122,35 @@ const ProductDetailScreen = () => {
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
+    // Essentials-only: pack size and size for PDP (same as ProductCard)
+    const essentialsMetaParts = useMemo(() => {
+        if (!hasEssentialsTag || !product) return { packSize: null, size: null };
+        const getVal = (key: string) => getMetafieldValue(product, key);
+        const variants = product?.variants?.edges ?? product?.variants ?? [];
+        const variant = selectedVariant ?? variants[0]?.node ?? variants[0];
+        const options = variant?.selectedOptions ?? [];
+
+        const packSizeRaw =
+            getVal('number_of_pieces') ?? getVal('quantity') ?? getVal('pack_size') ?? getVal('number') ??
+            (product as any).number_of_pieces ?? (product as any).pack_size;
+        const packSizeFromVariant = options.find((o: any) => {
+            const name = (o?.name ?? '').toLowerCase().replace(/\s+/g, ' ');
+            return ['pack size', 'pack_size', 'count', 'pieces', 'quantity'].some(
+                (key) => name === key || name === key.replace('_', ' '),
+            );
+        })?.value;
+        const packSizeStr = (packSizeRaw != null ? String(packSizeRaw).trim() : '') || (packSizeFromVariant ? String(packSizeFromVariant).trim() : '');
+        const packSizeLabel = packSizeStr ? `${packSizeStr}${/^\d+$/.test(packSizeStr) ? ' pcs' : ''}` : null;
+
+        const sizeRaw = getVal('size') ?? getVal('sizes') ?? (product as any).size ?? (product as any).sizes;
+        const sizeFromVariant = options.find(
+            (o: any) => ['size', 'sizes'].includes((o?.name ?? '').toLowerCase()),
+        )?.value;
+        const sizeLabel = (sizeRaw != null ? String(sizeRaw).trim() : '') || (sizeFromVariant ? String(sizeFromVariant).trim() : '') || null;
+
+        return { packSize: packSizeLabel || null, size: sizeLabel || null };
+    }, [hasEssentialsTag, product, selectedVariant]);
+
     // Show price comparison for all essential products
     // Display "0" for missing values
     const showPriceComparison = hasEssentialsTag;
@@ -1101,7 +1213,7 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
-                {/* Share icon commented out for now
+                {/* Share product – commented out for now
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={handleShare}
@@ -1120,7 +1232,7 @@ const ProductDetailScreen = () => {
             </View>
 
             <ScrollView
-                onScroll={onPDPScroll}
+                onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -1166,7 +1278,7 @@ const ProductDetailScreen = () => {
                 )}
 
                 {/* Highlights from metafields - rounded boxes below image; hide when user scrolls down */}
-                {highlightsList.length > 0 && highlightsSectionVisible && (
+                {highlightsList.length > 0 && (
                     <View style={styles.highlightsSection}>
                         <ScrollView
                             horizontal
@@ -1193,20 +1305,36 @@ const ProductDetailScreen = () => {
                 )}
 
                 <View style={styles.infoContainer}>
-                    {product.vendor && (
-                        <Text style={[
-                            styles.vendorText,
-                            productStyles.vendor && {
-                                fontSize: productStyles.vendor.fontSize,
-                                color: productStyles.vendor.color,
-                                paddingHorizontal: productStyles.vendor.paddingHorizontal,
-                                marginTop: productStyles.vendor.marginTop,
-                                marginBottom: productStyles.vendor.marginBottom,
-                                textTransform: productStyles.vendor.textTransform,
-                                ...processFontStyle(productStyles.vendor, Fonts.Medium),
-                            }
-                        ]}>{product.vendor}</Text>
-                    )}
+                    <View style={styles.vendorRow}>
+                        {product.vendor ? (
+                            <Text style={[
+                                styles.vendorText,
+                                productStyles.vendor && {
+                                    fontSize: productStyles.vendor.fontSize,
+                                    color: productStyles.vendor.color,
+                                    paddingHorizontal: productStyles.vendor.paddingHorizontal,
+                                    marginTop: productStyles.vendor.marginTop,
+                                    marginBottom: productStyles.vendor.marginBottom,
+                                    textTransform: productStyles.vendor.textTransform,
+                                    ...processFontStyle(productStyles.vendor, Fonts.Medium),
+                                }
+                            ]}>{product.vendor}</Text>
+                        ) : null}
+                        {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
+                            <View style={styles.essentialsMetaRow}>
+                                {essentialsMetaParts.packSize ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.packSize}</Text>
+                                    </View>
+                                ) : null}
+                                {essentialsMetaParts.size ? (
+                                    <View style={styles.essentialsMetaBox}>
+                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.size}</Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
                     <Text style={[
                         styles.title,
                         productStyles.title && {
@@ -1496,7 +1624,7 @@ const ProductDetailScreen = () => {
                 {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                     isTicketingProduct && !selectedEventDate ? (
                         <TouchableOpacity
-                            style={[styles.addToCartButton, styles.disabledButton]}
+                            style={[styles.addToCartButton]}
                             onPress={() => {
                                 setShowDatePicker(true);
                                 setShowDateError(false); // Clear error when user opens date picker
@@ -1511,6 +1639,7 @@ const ProductDetailScreen = () => {
                             variant="pdp"
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                            isTicketing={isTicketingProduct}
                             onValidationError={() => {
                                 if (isTicketingProduct && !selectedEventDate) {
                                     setShowDateError(true);
@@ -1546,19 +1675,7 @@ const ProductDetailScreen = () => {
                 >
                     <EventDatePicker
                         selectedDate={selectedEventDate}
-                        onDateSelect={(date) => {
-                            setSelectedEventDate(date);
-                            // Only Events variants represent predefined dates.
-                            if (isEventsProduct) {
-                                const v = variantForDate(date);
-                                if (v) {
-                                    setSelectedVariant(v);
-                                    syncSelectedOptionsFromVariant(v);
-                                }
-                            }
-                            setShowDatePicker(false);
-                            setShowDateError(false); // Clear error when date is selected
-                        }}
+                        onDateSelect={handleDateSelectAndAddToCart}
                         // Events: pass predefined variant dates. Others: undefined → falls back to next 7 days.
                         availableDates={isEventsProduct ? (availableDates ?? []) : undefined}
                     />
@@ -1668,6 +1785,15 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         marginTop: 6,
         lineHeight: 28,
+    },
+    vendorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 4,
+        paddingHorizontal: 16,
     },
     vendorText: {
         fontSize: 14,
@@ -1816,6 +1942,23 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: Fonts.Medium,
         color: '#363636',
+    },
+    essentialsMetaRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    essentialsMetaBox: {
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    essentialsMetaText: {
+        fontSize: 10,
+        fontFamily: Fonts.SemiBold,
+        color: '#1565C0',
+        lineHeight: 14,
     },
     accordionContainer: {
         borderBottomWidth: 1,

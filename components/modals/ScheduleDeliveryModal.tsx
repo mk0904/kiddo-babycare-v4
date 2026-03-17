@@ -1,16 +1,17 @@
+import FlashIcon from '@/assets/icons/Icon.svg';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
+    Image,
     Modal,
-    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 interface ScheduleDeliveryModalProps {
@@ -18,6 +19,8 @@ interface ScheduleDeliveryModalProps {
     onClose: () => void;
     onConfirm: (schedule: DeliverySchedule) => void;
     initialSchedule?: DeliverySchedule | null;
+    /** Title from backend app config (e.g. "Schedule your delivery"). */
+    title?: string | null;
 }
 
 export interface DeliverySchedule {
@@ -29,6 +32,22 @@ export interface DeliverySchedule {
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Next 3 days: today, tomorrow, day after. Each has label and date in "12 March" format. */
+function getNextThreeDays(): { label: string; date: Date; dateLabel: string }[] {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const result: { label: string; date: Date; dateLabel: string }[] = [];
+    const labels = ['Today', 'Tomorrow', 'Day after'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    for (let i = 0; i < 3; i++) {
+        const d = new Date(base);
+        d.setDate(d.getDate() + i);
+        const dateLabel = `${d.getDate()} ${monthNames[d.getMonth()]}`;
+        result.push({ label: labels[i], date: d, dateLabel });
+    }
+    return result;
+}
 
 // Design spec: vibrant red and neutrals to match the Schedule delivery mock
 const DESIGN_RED = '#E84E4E';
@@ -55,6 +74,9 @@ function getAvailableTimeSlots(isToday: boolean): { label: string; value: string
 
 // Time slots as ranges for display; value is start time for DeliverySchedule
 const TIME_SLOT_RANGES: { label: string; value: string }[] = [
+    { label: '7AM - 8AM', value: '07:00 AM' },
+    { label: '8AM - 9AM', value: '08:00 AM' },
+    { label: '9AM - 10AM', value: '09:00 AM' },
     { label: '10AM - 11AM', value: '10:00 AM' },
     { label: '11AM - 12PM', value: '11:00 AM' },
     { label: '12PM - 1PM', value: '12:00 PM' },
@@ -67,27 +89,29 @@ const TIME_SLOT_RANGES: { label: string; value: string }[] = [
     { label: '7PM - 8PM', value: '07:00 PM' },
     { label: '8PM - 9PM', value: '08:00 PM' },
     { label: '9PM - 10PM', value: '09:00 PM' },
+    { label: '10PM - 11PM', value: '10:00 PM' },
+    { label: '11PM - 11:30PM', value: '11:00 PM' },
 ];
 
-export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule }: ScheduleDeliveryModalProps) => {
-    const [isToday, setIsToday] = useState(true); // true = Today, false = Tomorrow
+export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSchedule, title }: ScheduleDeliveryModalProps) => {
+    const [selectedDayIndex, setSelectedDayIndex] = useState(0); // 0 = Today, 1 = Tomorrow, 2 = Day after
     const [selectedTime, setSelectedTime] = useState<string>('');
+
+    const nextThreeDays = React.useMemo(() => getNextThreeDays(), [visible]);
 
     useEffect(() => {
         if (visible) {
+            const days = getNextThreeDays();
             if (initialSchedule?.date && initialSchedule?.time) {
-                const today = new Date();
-                const todayStr = formatDate(today);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = formatDate(tomorrow);
-                const initialIsToday = initialSchedule.date === todayStr;
-                setIsToday(initialIsToday);
-                const available = getAvailableTimeSlots(initialIsToday);
+                const matchIndex = days.findIndex((opt) => formatDate(opt.date) === initialSchedule.date);
+                const idx = matchIndex >= 0 ? matchIndex : 0;
+                setSelectedDayIndex(idx);
+                const isToday = idx === 0;
+                const available = getAvailableTimeSlots(isToday);
                 const stillValid = available.some((s) => s.value === initialSchedule.time);
                 setSelectedTime(stillValid ? initialSchedule.time : '');
             } else {
-                setIsToday(true);
+                setSelectedDayIndex(0);
                 setSelectedTime('');
             }
         }
@@ -95,10 +119,10 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
 
     // When "Today" is selected, clear time if it's now in the past
     useEffect(() => {
-        if (!isToday || !selectedTime) return;
+        if (selectedDayIndex !== 0 || !selectedTime) return;
         const available = getAvailableTimeSlots(true);
         if (!available.some((s) => s.value === selectedTime)) setSelectedTime('');
-    }, [isToday, selectedTime]);
+    }, [selectedDayIndex, selectedTime]);
 
     const formatDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0');
@@ -116,11 +140,8 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
 
     const getDayName = (date: Date): string => DAYS[date.getDay()];
 
-    const selectedDate = (() => {
-        const d = new Date();
-        if (!isToday) d.setDate(d.getDate() + 1);
-        return d;
-    })();
+    const selectedDate = nextThreeDays[selectedDayIndex]?.date ?? new Date();
+    const isTodaySelected = selectedDayIndex === 0;
 
     const handleConfirm = () => {
         if (!selectedTime) return;
@@ -166,37 +187,49 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
                             <View style={styles.headerIconWrap}>
-                                <Ionicons name="calendar-outline" size={22} color="#5C5C5C" />
+                                <Image
+                                    source={require('@/assets/icons/schedule.png')}
+                                    style={styles.scheduleIcon}
+                                    resizeMode="contain"
+                                />
                             </View>
-                            <Text style={styles.headerTitle}>Schedule delivery</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#4A4A4A" />
                         </TouchableOpacity>
                     </View>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>{title?.trim() || 'Schedule delivery'}</Text>
+                        <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
+                    </View>
 
-                    <Text style={styles.subtitle}>Get your order delivered at your chosen time</Text>
-
-                    {/* Date: Today / Tomorrow – single track, selected chip with subtle outline */}
+                    {/* Date: Today (with date); next two show date only (e.g. 13 March, 14 March) */}
                     <View style={styles.dateTrack}>
-                        <TouchableOpacity
-                            style={[styles.dateChip, isToday && styles.dateChipSelected]}
-                            onPress={() => setIsToday(true)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.dateChipText, isToday && styles.dateChipTextSelected]}>
-                                Today
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.dateChip, !isToday && styles.dateChipSelected]}
-                            onPress={() => setIsToday(false)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.dateChipText, !isToday && styles.dateChipTextSelected]}>
-                                Tomorrow
-                            </Text>
-                        </TouchableOpacity>
+                        {nextThreeDays.map((opt, index) => {
+                            const isSelected = selectedDayIndex === index;
+                            const isToday = index === 0;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.dateChip, isSelected && styles.dateChipSelected]}
+                                    onPress={() => setSelectedDayIndex(index)}
+                                    activeOpacity={0.8}
+                                >
+                                    {isToday ? (
+                                        <>
+                                            <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                                Today
+                                            </Text>
+                                            
+                                        </>
+                                    ) : (
+                                        <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
+                                            {opt.dateLabel}
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
 
                     <View style={styles.dateTimeDivider} />
@@ -209,7 +242,7 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                         keyboardShouldPersistTaps="handled"
                     >
                         <View style={styles.timeSlotsSection}>
-                            {getAvailableTimeSlots(isToday).map((slot) => {
+                            {getAvailableTimeSlots(isTodaySelected).map((slot) => {
                                 const isSelected = selectedTime === slot.value;
                                 return (
                                     <TouchableOpacity
@@ -238,7 +271,8 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                             <Text style={styles.confirmButtonText}>Confirm</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={handleWantItNow} style={styles.wantItNowButton} activeOpacity={0.7}>
-                            <Text style={styles.wantItNowText}>No, I want it now</Text>
+                            <FlashIcon width={44} height={44} style={styles.icon} />
+                            <Text style={styles.wantItNowText}>Changed my mind, want it now</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -289,19 +323,28 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    scheduleIcon: {
+        width: 48,
+        height: 48,
+    },
+    headerTextContainer: {
+        marginTop: 12,
+        justifyContent: 'flex-start',
+        gap: 6,
+        paddingHorizontal: 20,
+    },
     headerTitle: {
-        fontSize: 20,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
+        fontSize: Fonts.MediumFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#181D27',
     },
     closeButton: {
         padding: 4,
     },
     subtitle: {
-        fontSize: 14,
-        fontFamily: Fonts.Regular,
-        color: '#888888',
-        paddingHorizontal: 20,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#535862',
         paddingBottom: 20,
     },
     timeSlotsScrollView: {
@@ -314,18 +357,18 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     dateTrack: {
-        width: '60%',
+        width: '80%',
         alignSelf: 'center',
         flexDirection: 'row',
-        backgroundColor: '#E8E8E8',
+        backgroundColor: '#FAFAFA',
         borderRadius: 36,
         padding: 4,
-        marginBottom: 16,
+        marginBottom: 8,
     },
     dateChip: {
         flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
         borderRadius: 10,
         backgroundColor: 'transparent',
         alignItems: 'center',
@@ -343,13 +386,22 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     dateChipText: {
-        fontSize: 15,
-        fontFamily: Fonts.SemiBold,
-        color: '#6B6B6B',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
     },
     dateChipTextSelected: {
+        color: '#DB5656',
+        fontFamily: Fonts.LexendBold,
+    },
+    dateChipSubtext: {
+        fontSize: 11,
+        fontFamily: Fonts.Regular,
+        color: '#6B6B6B',
+        marginTop: 2,
+    },
+    dateChipSubtextSelected: {
         color: DESIGN_RED,
-        fontFamily: Fonts.Bold,
     },
     dateTimeDivider: {
         height: 1,
@@ -365,32 +417,34 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
     },
     timeSlotSelected: {
         backgroundColor: '#FEEFEF',
-        borderColor: DESIGN_RED,
+        borderColor: '#F15E5E',
         borderWidth: 1,
         borderRadius: PILL_RADIUS
     },
     timeSlotText: {
         fontSize: 15,
-        fontFamily: Fonts.Medium,
-        color: '#181D27',
+        fontFamily: Fonts.LexendMedium,
+        color: '#717680',
     },
     timeSlotTextSelected: {
         color: '#181D27',
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
     },
     footer: {
         paddingHorizontal: 20,
         paddingTop: 20,
-        paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+        paddingBottom: 12,
         borderTopWidth: 1,
         borderTopColor: '#E0E0E0',
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: DESIGN_RED,
+        backgroundColor: '#DB5656',
         paddingVertical: 16,
         borderRadius: PILL_RADIUS,
         alignItems: 'center',
@@ -401,18 +455,22 @@ const styles = StyleSheet.create({
     },
     confirmButtonText: {
         fontSize: 17,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: '#FFFFFF',
     },
     wantItNowButton: {
         alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingVertical: 14,
         paddingHorizontal: 8,
     },
     wantItNowText: {
-        fontSize: 15,
-        fontFamily: Fonts.Bold,
-        color: '#1A1A1A',
-        textDecorationLine: 'underline',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#F15E5E',
+    },
+    icon: {
+        marginRight: -4,
     },
 });

@@ -109,13 +109,13 @@ export default function OTPScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otpInput, otpPinCount]);
 
-  // Navigate after OTP verification
+  // Navigate after OTP verification – skip kiddo-details, go to homepage
   useEffect(() => {
     const isGuest = user?.isGuest === true;
 
     if (isAuthenticated && !loading && otpVerified && !isGuest) {
       const navigationTimer = setTimeout(() => {
-        router.replace('/(auth)/kiddo-details');
+        router.replace('/(tabs)');
       }, 600);
 
       return () => clearTimeout(navigationTimer);

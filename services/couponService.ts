@@ -2,12 +2,20 @@
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-const COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+const PRODUCTION_COUPONS_API_BASE = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+
+/** Resolve coupons API base. Always use production for get coupon by phone; env override only if set. */
+function getCouponsApiBase(): string {
+  const envBase = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_COUPONS_API_BASE;
+  if (envBase && String(envBase).trim()) return String(envBase).trim();
+  return PRODUCTION_COUPONS_API_BASE;
+}
 
 /** Coupons by phone: POST {COUPONS_API_BASE}/coupons/by-phone
- *  Body: { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing }
- *  Backend looks up customer by phone in Shopify and returns eligible coupons; if not found, treats as 0 orders.
+ *  Body: { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing, cartCategories?, returnAllVisible? }
+ *  Backend looks up customer by phone and returns eligible (or all visible when returnAllVisible: true) coupons.
  */
 const adminClient = axios.create({
   baseURL: SHOPIFY_ADMIN_API_URL,
@@ -37,6 +45,14 @@ export interface CouponCode {
   nonCombinable?: boolean; // If true, this coupon cannot be combined with other coupons
   /** If false, coupon is hidden from UI (not in getAvailableCouponCodes); manual entry still applies it via validateCouponCode */
   isVisible?: boolean;
+  /** Max discount in currency units (e.g. INR). Applied when valueType is percentage (or fixed) to cap the discount. */
+  maxDiscountAmount?: number | null;
+  /** Original price for display (e.g. HEYKIDDO free shoe – show struck in bill details). */
+  originalPrice?: number | null;
+  /** When set, min purchase and discount apply to this category's subtotal only (single category). */
+  applicableCategory?: string | null;
+  /** When set, min purchase and discount apply to combined cart value of products in any of these categories (e.g. ["fashion", "apparel", "clothing"]). Each item counted once. */
+  allowedCategories?: string[] | null;
 }
 
 export interface GetEligibleCouponsParams {
@@ -46,6 +62,16 @@ export interface GetEligibleCouponsParams {
   cartItemCount: number;
   hasTicketing: boolean;
   hasClothing: boolean;
+  /** Category/tag strings from cart (e.g. from line item tags) for category-specific coupons. */
+  cartCategories?: string[];
+  /** Per-category subtotals (e.g. { toys: 600, fashion: 300 }) so min purchase and discount apply to category value only. */
+  categorySubtotals?: Record<string, number>;
+  /** App version for version-gated coupons (e.g. from Constants.expoConfig?.version). Required for by-phone API. */
+  appVersion: string;
+  /** Device type for device-gated coupons (e.g. 'ios' | 'android' from Platform.OS). Required for by-phone API. */
+  deviceType: string;
+  /** When true, backend returns all visible coupons (not only eligible). Frontend then shows disabled + reason for ineligible. */
+  returnAllVisible?: boolean;
 }
 
 /**
@@ -54,23 +80,31 @@ export interface GetEligibleCouponsParams {
  * Returns [] when coupons is null or on error.
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
-  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing } = params;
+  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing, cartCategories, appVersion, deviceType, returnAllVisible } = params;
 
   try {
-    const url = `${COUPONS_API_BASE.replace(/\/+$/, '')}/coupons/by-phone`;
-    if (__DEV__) console.log('[CouponService] Fetching coupons by-phone');
+    const base = getCouponsApiBase();
+    const url = `${base.replace(/\/+$/, '')}/coupons/by-phone`;
+    if (__DEV__) console.log('[CouponService] Fetching coupons by-phone', url, returnAllVisible ? '(all visible)' : '(eligible only)');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const body: Record<string, unknown> = {
+      phone: phone ?? '',
+      cartSubTotal,
+      cartItemCount,
+      hasTicketing,
+      hasClothing,
+    };
+    if (cartCategories != null && cartCategories.length > 0) body.cartCategories = cartCategories;
+    if (params.categorySubtotals != null && Object.keys(params.categorySubtotals).length > 0) body.categorySubtotals = params.categorySubtotals;
+    // Always send non-empty appVersion and deviceType (e.g. in emulator when Constants.expoConfig?.version may be undefined)
+    body.appVersion = (appVersion != null && String(appVersion).trim() !== '') ? String(appVersion).trim() : '0.0.0';
+    body.deviceType = (deviceType != null && String(deviceType).trim() !== '') ? String(deviceType).trim() : Platform.OS;
+    if (returnAllVisible === true) body.returnAllVisible = true;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: phone ?? '',
-        cartSubTotal,
-        cartItemCount,
-        hasTicketing,
-        hasClothing,
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -85,11 +119,18 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
 
     const data = await response.json();
     const looksLikeCoupon = (c: any) => c && typeof c === 'object' && (c.code != null || c.couponCode != null || c.value != null);
-    let coupons: any[] | undefined = data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
+    // When requesting all visible, prefer visibleCoupons so we get non-eligible too (for disabled state in UI)
+    let coupons: any[] | undefined = returnAllVisible
+      ? (data?.visibleCoupons ?? data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible)
+      : (data?.coupons ?? data?.visibleCoupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible);
     if (!Array.isArray(coupons) && data?.coupon != null) coupons = [data.coupon];
     if (!Array.isArray(coupons) && data?.data != null) {
       const d = data.data;
-      coupons = Array.isArray(d) ? d : d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined);
+      coupons = Array.isArray(d)
+        ? d
+        : returnAllVisible
+          ? (d?.visibleCoupons ?? d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined))
+          : (d?.coupons ?? d?.visibleCoupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined));
     }
     if (!Array.isArray(coupons) && data?.result?.coupons != null) coupons = data.result.coupons;
     if (!Array.isArray(coupons) && Array.isArray(data)) {
@@ -109,13 +150,15 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       return [];
     }
 
-    // Normalize coupon objects: ensure each has a `code` field (backend may use `couponCode`)
+    // Normalize coupon objects: ensure code, and camelCase category fields (backend may use snake_case)
     const normalized = coupons.map((c: any) => ({
       ...c,
       code: (c.code ?? c.couponCode ?? '').toString().trim(),
+      applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
+      allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
     })) as CouponCode[];
 
-    if (__DEV__) console.log('[CouponService] Loaded', normalized.length, 'eligible coupons from backend');
+    if (__DEV__) console.log('[CouponService] Loaded', normalized.length, returnAllVisible ? 'visible' : 'eligible', 'coupons from backend');
     return normalized;
   } catch (error: any) {
     if (__DEV__) console.warn('[CouponService] Backend unavailable:', error?.message || error);
@@ -148,6 +191,14 @@ export const getAvailableCouponCodes = async (params?: GetEligibleCouponsParams)
 };
 
 /**
+ * Fetch all visible coupon codes from backend (not only eligible).
+ * Use for listing in UI; then use getCouponApplicabilityForDisplay to show disabled + reason for ineligible.
+ */
+export const getVisibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
+  return getEligibleCouponsFromBackend({ ...params, returnAllVisible: true });
+};
+
+/**
  * Fetch eligible coupon codes from backend API.
  * Same as getAvailableCouponCodes - backend returns only eligible coupons.
  */
@@ -161,9 +212,35 @@ export interface CouponApplicability {
   reason?: string;
 }
 
+/** Line item shape needed for category subtotal. */
+export interface LineItemForCategory {
+  tags?: string[];
+  price?: number;
+  quantity?: number;
+}
+
+/**
+ * Combined subtotal for items that have at least one tag in allowedCategories (each item counted once).
+ * Used for allowedCategories coupons: min purchase and discount apply to this value.
+ */
+export function getSubtotalForAllowedCategories(
+  items: LineItemForCategory[],
+  allowedCategories: string[] | null | undefined
+): number {
+  if (!allowedCategories?.length) return 0;
+  const allowedSet = new Set(allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean));
+  let sum = 0;
+  for (const item of items) {
+    const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+    const hasAllowed = tags.some((t) => allowedSet.has(t));
+    if (hasAllowed) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+  }
+  return sum;
+}
+
 /**
  * Check if a coupon is applicable for display purposes.
- * Accepts optional userOrderCount and couponUsageCount for firstOrderOnly and usageLimitPerUser checks.
+ * For allowedCategories: min purchase and discount use combined cart value of products in any of those categories.
  */
 export const getCouponApplicabilityForDisplay = (
   coupon: CouponCode,
@@ -174,6 +251,10 @@ export const getCouponApplicabilityForDisplay = (
     cartItemCount?: number;
     userOrderCount?: number;
     couponUsageCount?: number;
+    /** Per-category subtotals (for single applicableCategory). */
+    categorySubtotals?: Record<string, number>;
+    /** Line items for allowedCategories: combined subtotal computed without double-counting. */
+    lineItems?: LineItemForCategory[];
   }
 ): CouponApplicability => {
   const {
@@ -183,6 +264,8 @@ export const getCouponApplicabilityForDisplay = (
     cartItemCount = 0,
     userOrderCount = 0,
     couponUsageCount = 0,
+    categorySubtotals = {},
+    lineItems = [],
   } = options;
 
   if (coupon.clothingOnly && !hasFashionItems) {
@@ -194,18 +277,37 @@ export const getCouponApplicabilityForDisplay = (
   if (!coupon.ticketingOnly && !coupon.clothingOnly && hasTicketingProducts && !hasFashionItems) {
     return { applicable: false, reason: 'Valid for apparel only' };
   }
+
+  const allowed = coupon.allowedCategories?.length ? coupon.allowedCategories : null;
+  const singleCategory = coupon.applicableCategory?.trim().toLowerCase();
+  let effectiveSubtotal = cartSubtotal;
+  let categoryLabel = '';
+  if (allowed?.length) {
+    effectiveSubtotal = Array.isArray(lineItems)
+      ? getSubtotalForAllowedCategories(lineItems, allowed)
+      : 0;
+    categoryLabel = allowed.join(', ');
+  } else if (singleCategory) {
+    effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
+    categoryLabel = singleCategory;
+  }
+
   if (coupon.minimumPurchaseAmount) {
     const minAmount = typeof coupon.minimumPurchaseAmount === 'string'
       ? parseFloat(coupon.minimumPurchaseAmount)
       : coupon.minimumPurchaseAmount;
-    if (!isNaN(minAmount) && minAmount > 0 && cartSubtotal < minAmount) {
-      const remaining = minAmount - cartSubtotal;
-      return { applicable: false, reason: `Add ₹${Math.ceil(remaining)} more` };
+    if (!isNaN(minAmount) && minAmount > 0 && effectiveSubtotal < minAmount) {
+      const remaining = Math.ceil(minAmount - effectiveSubtotal);
+      const inLabel = categoryLabel ? ` in ${categoryLabel}` : '';
+      if (effectiveSubtotal === 0 && categoryLabel) {
+        return { applicable: false, reason: `Add ${categoryLabel} products to avail this coupon` };
+      }
+      return { applicable: false, reason: `Add products worth ₹${remaining} more${inLabel} to avail this coupon` };
     }
   }
   if (coupon.minimumItemCount && cartItemCount < coupon.minimumItemCount) {
     const remaining = coupon.minimumItemCount - cartItemCount;
-    return { applicable: false, reason: `Add ${remaining} more item${remaining > 1 ? 's' : ''}` };
+    return { applicable: false, reason: `Add ${remaining} more item${remaining > 1 ? 's' : ''} to avail this coupon` };
   }
   // First order only - user has already placed orders
   if (coupon.firstOrderOnly && userOrderCount > 0) {
@@ -219,15 +321,15 @@ export const getCouponApplicabilityForDisplay = (
 };
 
 /**
- * Validate a coupon code - checks if it exists in backend's eligible coupons.
- * Backend must return all eligible codes (including isVisible: false) so hidden codes
- * can be applied when user types them manually.
+ * Validate a coupon code - checks if it exists in backend's coupons list.
  * @param code - The coupon code to validate
  * @param params - Optional cart context for backend validation (phone, cartSubTotal, etc.)
+ * @param options - useVisibleCoupons: when true, fetches all visible coupons so visible-but-not-eligible codes are found (caller should then validate conditions and show error)
  */
 export const validateCouponCode = async (
   code: string,
-  params?: GetEligibleCouponsParams
+  params?: GetEligibleCouponsParams,
+  options?: { useVisibleCoupons?: boolean }
 ): Promise<CouponCode | null> => {
   try {
     const upperCode = (code ?? '').trim().toUpperCase();
@@ -238,7 +340,8 @@ export const validateCouponCode = async (
       return null;
     }
 
-    const eligibleCoupons = await getEligibleCouponsFromBackend(params);
+    const fetchParams = options?.useVisibleCoupons ? { ...params, returnAllVisible: true } : params;
+    const eligibleCoupons = await getEligibleCouponsFromBackend(fetchParams);
     const normalize = (s: string | null | undefined) =>
       (s ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
     const upperCodeNorm = upperCode.replace(/\s+/g, '');
@@ -398,20 +501,32 @@ export const incrementCouponUsage = async (
 
 /**
  * Validate coupon code conditions (minimum purchase, dates, usage limits, etc.)
- * @param coupon - The coupon code to validate
- * @param cartSubtotal - Current cart subtotal
- * @param userId - User ID for checking usage limits (optional)
- * @param cartItemCount - Number of items in cart (for minimumItemCount validation)
- * @returns Object with isValid flag and error message if invalid
+ * For allowedCategories: min purchase uses combined subtotal of items in those categories.
  */
 export const validateCouponConditions = async (
   coupon: CouponCode,
   cartSubtotal: number,
   userId?: string | null,
   cartItemCount?: number,
-  userOrderCount?: number
+  userOrderCount?: number,
+  categorySubtotals?: Record<string, number>,
+  lineItems?: LineItemForCategory[]
 ): Promise<{ isValid: boolean; error?: string }> => {
   try {
+    const allowed = coupon.allowedCategories?.length ? coupon.allowedCategories : null;
+    const singleCategory = coupon.applicableCategory?.trim().toLowerCase();
+    let effectiveSubtotal = cartSubtotal;
+    let categoryLabel = '';
+    if (allowed?.length) {
+      effectiveSubtotal = Array.isArray(lineItems)
+        ? getSubtotalForAllowedCategories(lineItems, allowed)
+        : 0;
+      categoryLabel = allowed.join(', ');
+    } else if (singleCategory && categorySubtotals) {
+      effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
+      categoryLabel = singleCategory;
+    }
+
     // Check if coupon is active (date range)
     const now = new Date();
     
@@ -437,17 +552,24 @@ export const validateCouponConditions = async (
       }
     }
     
-    // Check minimum purchase amount
+    // Check minimum purchase amount (for category coupons, applies to allowed/effective subtotal)
     if (coupon.minimumPurchaseAmount) {
       const minAmount = typeof coupon.minimumPurchaseAmount === 'string' 
         ? parseFloat(coupon.minimumPurchaseAmount)
         : coupon.minimumPurchaseAmount;
       if (!isNaN(minAmount) && minAmount > 0) {
-        if (cartSubtotal < minAmount) {
-          const remaining = minAmount - cartSubtotal;
+        if (effectiveSubtotal < minAmount) {
+          const remaining = minAmount - effectiveSubtotal;
+          const inLabel = categoryLabel ? ` in ${categoryLabel}` : '';
+          if (effectiveSubtotal === 0 && categoryLabel) {
+            return {
+              isValid: false,
+              error: `Add ${categoryLabel} products to avail this coupon.`,
+            };
+          }
           return {
             isValid: false,
-            error: `This coupon requires a minimum purchase of ₹${minAmount.toFixed(0)}. Add ₹${remaining.toFixed(0)} more to your cart.`,
+            error: `This coupon requires a minimum purchase of ₹${minAmount.toFixed(0)}${inLabel}. Add ₹${remaining.toFixed(0)} more to avail.`,
           };
         }
       }
@@ -568,14 +690,26 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
   if (coupon.clothingOnly) {
     conditions.push('Only for apparel');
   }
+
+  const allowedLabel = coupon.allowedCategories?.length ? coupon.allowedCategories.join(', ') : '';
+  const singleLabel = coupon.applicableCategory?.trim() ?? '';
+
+  if (allowedLabel) {
+    conditions.push(`Discount on ${allowedLabel}`);
+  } else if (singleLabel) {
+    conditions.push(`Discount on ${singleLabel} only`);
+  }
   
-  // For regular coupons, show essential conditions
   if (coupon.minimumPurchaseAmount) {
     const minAmount = typeof coupon.minimumPurchaseAmount === 'string' 
       ? parseFloat(coupon.minimumPurchaseAmount)
       : coupon.minimumPurchaseAmount;
     if (!isNaN(minAmount) && minAmount > 0) {
-      conditions.push(`Min. purchase: ₹${minAmount.toFixed(0)}`);
+      conditions.push(allowedLabel
+        ? `Min. purchase in ${allowedLabel}: ₹${minAmount.toFixed(0)}`
+        : singleLabel
+          ? `Min. purchase in ${singleLabel}: ₹${minAmount.toFixed(0)}`
+          : `Min. purchase: ₹${minAmount.toFixed(0)}`);
     }
   }
   
@@ -605,6 +739,7 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
 
 export const couponService = {
   getEligibleCouponsFromBackend,
+  getVisibleCouponsFromBackend,
   getAvailableCouponCodes,
   getAllCouponCodes,
   getCouponApplicabilityForDisplay,

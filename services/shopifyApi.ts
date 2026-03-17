@@ -470,7 +470,10 @@ const GET_ORDER_BY_ID_QUERY = `
           currencyCode
         }
         shippingAddress {
+          firstName
+          lastName
           address1
+          address2
           city
           province
           zip
@@ -501,6 +504,27 @@ const GET_ORDER_BY_ID_QUERY = `
               }
             }
           }
+        }
+        discountApplications(first: 10) {
+          edges {
+            node {
+              __typename
+              ... on DiscountCodeApplication {
+                code
+                applicable
+                value {
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+        customAttributes {
+          key
+          value
         }
       }
     }
@@ -827,6 +851,10 @@ const GET_CART_QUERY = `
           node {
             id
             quantity
+            attributes {
+              key
+              value
+            }
             merchandise {
               ... on ProductVariant {
                 id
@@ -838,6 +866,7 @@ const GET_CART_QUERY = `
                 product {
                   id
                   title
+                  tags
                   images(first: 1) {
                     edges {
                       node {
@@ -1291,9 +1320,13 @@ export const shopifyApi = {
   },
 
   /**
-   * Create a new Shopify cart
+   * Create a new Shopify cart.
+   * Lines may include attributes (e.g. booking_date for ticketing) so they persist when cart is fetched.
    */
-  createCart: async (lines?: Array<{ merchandiseId: string; quantity: number }>, attributes?: { key: string; value: string }[]) => {
+  createCart: async (
+    lines?: Array<{ merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }>,
+    attributes?: { key: string; value: string }[]
+  ) => {
     try {
       const variables: any = {
         input: {

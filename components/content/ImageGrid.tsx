@@ -137,7 +137,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
     };
     // Title should use container padding if set, otherwise 0
     const titleStyle = {
-      marginBottom: 15,
+      marginBottom: 8,
       fontSize: 18,
       letterSpacing: 0,
       fontWeight: '900',
@@ -620,7 +620,7 @@ const defaultStyles = StyleSheet.create({
     fontSize: 18,
     fontFamily: Fonts.Black,
     fontWeight: '900',
-    marginBottom: 15,
+    marginBottom: 8,
     letterSpacing: 0,
     color: Colors.text,
   },

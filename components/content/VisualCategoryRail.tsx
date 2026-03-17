@@ -146,7 +146,7 @@ export function VisualCategoryRail({ block, onPress }: VisualCategoryRailProps) 
             : 20);
     
     const titleStyle = {
-        marginBottom: 15,
+        marginBottom: 8,
         fontSize: 18,
         letterSpacing: 0,
         // Apply container padding to title if not explicitly set in blockStyles.title
@@ -292,10 +292,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: Fonts.Black,
         letterSpacing: 0,
-        marginBottom: 15,
+        marginBottom: 8,
     },
     container: {
-        paddingVertical: 15,
+        paddingVertical: 8,
         alignItems: 'flex-start',
     },
     item: {

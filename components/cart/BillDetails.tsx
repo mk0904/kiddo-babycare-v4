@@ -7,16 +7,28 @@ import Svg, { Path } from 'react-native-svg';
 export interface BillDetailsProps {
     /** MRP / price before item-level discount (for strikethrough) */
     mrp: number;
-    /** Subtotal after coupon (item total) */
+    /** Item total (subtotal before coupon discount); shown as "Item Total" in bill. */
     itemTotal: number;
-    /** Original handling fee shown struck; actual is FREE */
-    handlingFeeOriginal: number;
-    /** Original delivery fee shown struck; actual is FREE */
-    deliveryFeeOriginal: number;
-    /** Coupon discount amount (positive number; show as -₹X when > 0) */
+    /** When true, hide Handling Fee and Delivery Fee (ticket-only cart). */
+    isTicketingOnly?: boolean;
+    /** Original handling fee shown struck + FREE (only when !isTicketingOnly). */
+    handlingFeeOriginal?: number;
+    /** Original delivery fee shown struck + FREE (only when !isTicketingOnly). */
+    deliveryFeeOriginal?: number;
+    /** Platform fee when cart has only ticket products (e.g. 20); 0 = hide row. Shown like handling fee. */
+    platformFee?: number;
+    /** Coupon discount amount (positive number; total of all coupon discounts) */
     couponDiscount: number;
-    /** Gift wrap fee (0 = show FREE) */
+    /** When true, show a "Free Shoes" row with FREE Shoes instead of amount (HEYKIDDO) */
+    hasHeyKiddo?: boolean;
+    /** Original price for HEYKIDDO row (shown struck when present) */
+    heyKiddoOriginalPrice?: number;
+    /** Discount from other coupons (non-HEYKIDDO); show as "Coupon Discount" -₹X when > 0 */
+    otherCouponDiscount?: number;
+    /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
+    /** Gift wrapping applied (when set, show row with this price; may include productIds to detect "applied") */
+    giftWrapping?: { price: number; productIds?: string[] } | null;
     /** Whether Kiddo Cash is applied */
     kiddoCashEnabled: boolean;
     /** Kiddo Cash amount when enabled */
@@ -33,10 +45,16 @@ export interface BillDetailsProps {
 export function BillDetails({
     mrp,
     itemTotal,
-    handlingFeeOriginal,
-    deliveryFeeOriginal,
+    isTicketingOnly = false,
+    handlingFeeOriginal = 0,
+    deliveryFeeOriginal = 0,
+    platformFee = 0,
     couponDiscount,
+    hasHeyKiddo = false,
+    heyKiddoOriginalPrice,
+    otherCouponDiscount = 0,
     giftWrappingFee,
+    giftWrapping = null,
     kiddoCashEnabled,
     kiddoCashApplied,
     total,
@@ -50,21 +68,22 @@ export function BillDetails({
 
     return (
         <View style={styles.wrapper}>
-            <TouchableOpacity
-                style={styles.headerRow}
-                onPress={() => setExpanded((e) => !e)}
-                activeOpacity={0.7}
-            >
-                <Text style={styles.title}>Bill details</Text>
-                <Ionicons
-                    name={expanded ? 'chevron-up' : 'chevron-down'}
-                    size={22}
-                    color="#6B7280"
-                />
-            </TouchableOpacity>
-            {expanded && (
-                <View style={styles.section} collapsable={false}>
-                    <View style={styles.sectionBg} pointerEvents="none" />
+            <View style={styles.section} collapsable={false}>
+                <View style={[styles.sectionBg, !expanded && styles.sectionBgCollapsed]} pointerEvents="none" />
+                <TouchableOpacity
+                    style={styles.headerRow}
+                    onPress={() => setExpanded((e) => !e)}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.title}>Bill details</Text>
+                    <Ionicons
+                        name={expanded ? 'chevron-up' : 'chevron-down'}
+                        size={18}
+                        color="#717680"
+                    />
+                </TouchableOpacity>
+                {expanded && (
+                    <>
                     <View style={styles.content}>
                     {/* Item Total */}
                     <View style={styles.row}>
@@ -77,45 +96,76 @@ export function BillDetails({
                         </View>
                     </View>
 
-                    {/* Handling Fee */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Handling Fee</Text>
-                        <View style={styles.valueRow}>
-                            <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
-                            <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                    {/* Handling Fee - only when not ticket-only */}
+                    {!isTicketingOnly && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Handling Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
 
-                    {/* Delivery Fee */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Delivery Fee</Text>
-                        <View style={styles.valueRow}>
-                            <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
-                            <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                    {/* Delivery Fee - only when not ticket-only */}
+                    {!isTicketingOnly && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Delivery Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
 
-                    {/* Coupon Discount */}
-                    {couponDiscount > 0 && (
+                    {/* Platform Fee (ticket-only, display only: struck + FREE, not added to bill) */}
+                    {platformFee > 0 && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Platform Fee</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.valueStruck}>{formatCurrency(platformFee)}</Text>
+                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Free Shoes (HEYKIDDO) – show original price struck + FREE Shoes */}
+                    {hasHeyKiddo && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Free Shoes</Text>
+                            <View style={styles.valueRow}>
+                                {heyKiddoOriginalPrice != null && heyKiddoOriginalPrice > 0 && (
+                                    <Text style={styles.valueStruck}>{formatCurrency(heyKiddoOriginalPrice)}</Text>
+                                )}
+                                <Text style={[styles.value, styles.freeShoesText]}>FREE SHOES</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Coupon Discount (other coupons; when only HEYKIDDO applied, otherCouponDiscount is 0) */}
+                    {otherCouponDiscount > 0 && (
                         <View style={styles.row}>
                             <Text style={styles.label}>Coupon Discount</Text>
                             <Text style={[styles.value, styles.discountText]}>
-                                -{formatCurrency(couponDiscount)}
+                                -{formatCurrency(otherCouponDiscount)}
                             </Text>
                         </View>
                     )}
 
-                    {/* Gift Wrap */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Gift Wrap</Text>
-                        <View style={styles.valueRow}>
-                            {giftWrappingFee > 0 ? (
-                                <Text style={styles.value}>{formatCurrency(giftWrappingFee)}</Text>
-                            ) : (
-                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
-                            )}
+                    {/* Gift Wrap - only show when there is an actual fee (hide after user removes gift-wrapped items) */}
+                    {giftWrappingFee > 0 && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Gift Wrap</Text>
+                            <View style={styles.valueRow}>
+                                <Text style={styles.value}>
+                                    {(() => {
+                                        const price = Number(giftWrapping?.price) || giftWrappingFee || 0;
+                                        return price > 0 ? formatCurrency(price) : 'FREE';
+                                    })()}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
 
                     {/* Kiddo Cash */}
                     {kiddoCashEnabled && (
@@ -156,32 +206,26 @@ export function BillDetails({
                             />
                         </Svg>
                     </View>
-                </View>
-            )}
+                    </>
+                )}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     wrapper: {
-        marginBottom: 15,
+        marginBottom: 28,
         position: 'relative',
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-        paddingVertical: 4,
-        marginTop: 12,
     },
     section: {
         backgroundColor: 'transparent',
         borderRadius: 12,
         padding: 15,
-        paddingBottom: 40,
+        
         overflow: 'visible',
         position: 'relative',
+        marginTop: 0,
     },
     sectionBg: {
         position: 'absolute',
@@ -193,10 +237,23 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
     },
+    sectionBgCollapsed: {
+        bottom: 0,
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 4,
+        marginBottom: 4,
+    },
     title: {
-        fontSize: 16,
-        color: '#6B7280',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
+        marginBottom: 10,
     },
     waveOuter: {
         position: 'absolute',
@@ -217,27 +274,35 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     label: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendMedium,
     },
     valueRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: 8,
+        alignSelf: 'center',
     },
     value: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendMedium,
     },
     valueStruck: {
-        fontSize: 14,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        color: '#878F9E',
+        fontFamily: Fonts.LexendMedium,
         textDecorationLine: 'line-through',
     },
     freeText: {
+        fontSize: Fonts.SmallFontSize,
+        color: '#16a34a',
+        fontFamily: Fonts.SemiBold,
+    },
+    freeShoesText: {
+        fontSize: Fonts.SmallFontSize,
         color: '#16a34a',
         fontFamily: Fonts.SemiBold,
     },
@@ -254,25 +319,25 @@ const styles = StyleSheet.create({
         marginVertical: 12,
     },
     labelToPay: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendMedium,
     },
     valueToPay: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendMedium,
     },
     savingsBannerWrap: {
-        marginTop: 12,
+        marginTop: 0,
         paddingVertical: 14,
         paddingHorizontal: 16,
         alignItems: 'center',
     },
     savingsBanner: {
-        fontSize: 14,
-        color: '#16a34a',
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#099250',
+        fontFamily: Fonts.LexendBold,
         textAlign: 'center',
     },
 });

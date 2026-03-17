@@ -1,18 +1,31 @@
+import CodIcon from '@/assets/icons/cod.svg';
+import RazorpayIcon from '@/assets/icons/razorpay.svg';
 import { BillDetails } from '@/components/cart/BillDetails';
+import { CartFooterPayment } from '@/components/cart/CartFooterPayment';
+import { CompletePurchaseSection } from '@/components/cart/CompletePurchaseSection';
 import { DeliveryCard } from '@/components/cart/DeliveryCard';
+import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
-import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { FreeShoesOffer as FreeShoesOfferModal } from '@/components/modals/FreeShoesOffer';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
-import { CheckoutRedeemCoins } from '@/components/nector';
+import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
+import {
+    calculateDistance,
+    DARK_STORE_LOCATION,
+    estimateDeliveryTime,
+    geocodeAddress,
+    getDeliveryTimeFromGoogleMaps,
+} from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
+import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
+import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -25,11 +38,12 @@ import {
     useIsTryAndBuy
 } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -64,7 +78,68 @@ export default function CartScreen() {
         }
     }, []); // Only track once on mount
     const { user, isAuthenticated } = useAuth();
-    const { defaultAddress } = useAddress();
+    const { defaultAddress, detectedLocationStatus, detectedEta } = useAddress();
+    const [appConfigRefresh, setAppConfigRefresh] = useState(0);
+    // Load app config from backend with Postman-style params (phone, customerId, appVersion, deviceType) for cart/checkout
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.phone, user?.customerId, user?.id]);
+    const cartFeatures = useMemo(
+        () => appConfigService.getCartFeatures(),
+        [appConfigRefresh]
+    );
+    const checkoutConfig = useMemo(
+        () => appConfigService.getCheckoutConfig(),
+        [appConfigRefresh]
+    );
+    const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
+        defaultAddress?.latitude,
+        defaultAddress?.longitude,
+        defaultAddress ?? undefined
+    );
+    // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
+    // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
+    const [etaFromGeocode, setEtaFromGeocode] = useState<number | null>(null);
+    const hasCoords = defaultAddress?.latitude != null && defaultAddress?.longitude != null;
+    useEffect(() => {
+        if (!defaultAddress || hasCoords) {
+            setEtaFromGeocode(null);
+            return;
+        }
+        let cancelled = false;
+        const run = async () => {
+            const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
+            if (!addressString) return;
+            const coords = await geocodeAddress(addressString);
+            if (cancelled || !coords) return;
+            let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
+            if (deliveryTime == null) {
+                const distanceKm = calculateDistance(
+                    DARK_STORE_LOCATION.latitude,
+                    DARK_STORE_LOCATION.longitude,
+                    coords.latitude,
+                    coords.longitude
+                );
+                deliveryTime = estimateDeliveryTime(distanceKm);
+            }
+            if (!cancelled) setEtaFromGeocode(deliveryTime);
+        };
+        run();
+        return () => { cancelled = true; };
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode]);
+
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
     // Use Zustand store
@@ -82,9 +157,12 @@ export default function CartScreen() {
     const clearCart = useCartStore(state => state.clearCart);
     const toggleTryAndBuy = useCartStore(state => state.toggleTryAndBuy);
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
-    const getGiftWrappingPrice = useCartStore(state => state.getGiftWrappingPrice);
     const selectedShoe = useCartStore(state => state.selectedShoe);
+    const selectedShoeSize = useCartStore(state => state.selectedShoeSize);
     const setSelectedShoe = useCartStore(state => state.setSelectedShoe);
+    const setSelectedShoeSize = useCartStore(state => state.setSelectedShoeSize);
+    const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
+    const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
     const discountCodes = useCartStore(state => state.discountCodes);
     const discountAmount = useCartStore(state => state.discountAmount());
     const mrp = useCartStore(state => state.mrp());
@@ -118,6 +196,55 @@ export default function CartScreen() {
             return hasTicketingTag;
         });
     }, [cartItems]);
+
+    // Split cart items: gift-wrapped vs regular (for separate display)
+    const giftWrapProductIds = useMemo(() => giftWrapping?.productIds ?? [], [giftWrapping?.productIds]);
+    const itemsNotGiftWrapped = useMemo(
+        () => cartItems.filter(item => !giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const itemsGiftWrapped = useMemo(
+        () => cartItems.filter(item => giftWrapProductIds.includes(item.id)),
+        [cartItems, giftWrapProductIds]
+    );
+    const totalCartItems = useMemo(
+        () => cartItems.reduce((s, i) => s + i.quantity, 0),
+        [cartItems]
+    );
+
+    // Gift wrap fee: only charge for products still in cart (so removing a product or deselecting from gift wrap updates the fee)
+    const validGiftWrapIds = useMemo(
+        () => (giftWrapping?.productIds ?? []).filter(id => cartItems.some(item => item.id === id)),
+        [giftWrapping?.productIds, cartItems]
+    );
+    const giftWrapPerItemPrice = useMemo(() => {
+        const ids = giftWrapping?.productIds ?? [];
+        if (ids.length === 0 || !giftWrapping?.price) return 30;
+        return giftWrapping.price / ids.length;
+    }, [giftWrapping?.productIds, giftWrapping?.price]);
+    const derivedGiftWrappingFee = useMemo(
+        () => validGiftWrapIds.length * giftWrapPerItemPrice,
+        [validGiftWrapIds.length, giftWrapPerItemPrice]
+    );
+
+    // Sync gift wrap state when cart items change (e.g. user removed a product) so stored productIds and price stay correct
+    const validGiftWrapIdsKey = useMemo(() => validGiftWrapIds.join(','), [validGiftWrapIds]);
+    useEffect(() => {
+        if (!giftWrapping || hasTicketingProducts) return;
+        const storedIds = giftWrapping.productIds ?? [];
+        if (validGiftWrapIds.length === 0) {
+            setGiftWrapping(null);
+            return;
+        }
+        if (validGiftWrapIds.length !== storedIds.length || validGiftWrapIds.some((id, i) => id !== storedIds[i])) {
+            setGiftWrapping({
+                name: giftWrapping.name,
+                description: giftWrapping.description,
+                price: validGiftWrapIds.length * giftWrapPerItemPrice,
+                productIds: validGiftWrapIds,
+            });
+        }
+    }, [validGiftWrapIdsKey, giftWrapping, giftWrapPerItemPrice, hasTicketingProducts, setGiftWrapping]);
 
     // Check if cart has only ticketing products
     const isTicketingOnly = useMemo(() => {
@@ -166,6 +293,58 @@ export default function CartScreen() {
         });
     }, [cartItems]);
 
+    // Unique category/tag strings from cart (lowercase) for backend-driven offer visibility
+    const cartCategoryTags = useMemo(
+        () => [
+            ...new Set(
+                cartItems.flatMap((item) =>
+                    (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean)
+                )
+            ),
+        ],
+        [cartItems]
+    );
+    const itemSubtotalForOffers = useMemo(
+        () => cartItems.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity), 0),
+        [cartItems]
+    );
+    // Refetch app config when cart screen is focused (with cart context so backend can return offer visibility)
+    useFocusEffect(
+        useCallback(() => {
+            const payload: AppConfigPayload = {
+                phone: user?.phone ?? undefined,
+                customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+                appVersion: Constants.expoConfig?.version ?? undefined,
+                deviceType: Platform.OS,
+                cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+                cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+            };
+            appConfigService.loadAppConfig(true, payload).then(() => setAppConfigRefresh((r) => r + 1));
+        }, [user?.phone, user?.customerId, user?.id, cartCategoryTags, itemSubtotalForOffers])
+    );
+    // Refetch app config when cart changes so backend can return updated offer visibility
+    useEffect(() => {
+        let cancelled = false;
+        const payload: AppConfigPayload = {
+            phone: user?.phone ?? undefined,
+            customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: Constants.expoConfig?.version ?? undefined,
+            deviceType: Platform.OS,
+            cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
+            cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
+        };
+        appConfigService.loadAppConfig(true, payload).then(() => {
+            if (!cancelled) setAppConfigRefresh((r) => r + 1);
+        });
+        return () => { cancelled = true; };
+    }, [user?.phone, user?.customerId, user?.id, cartCategoryTags.join(','), itemSubtotalForOffers]);
+    const freeShoesOfferConfig = useMemo(
+        () => appConfigService.getCartConfig()?.freeShoesOffer,
+        [appConfigRefresh]
+    );
+    /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
+    const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
+
     // Computed values
     const appliedDiscountCodes = discountCodes.map(dc => dc.code);
     const appliedDiscountCode = appliedDiscountCodes[0] || null;
@@ -179,13 +358,11 @@ export default function CartScreen() {
     const [couponMessage, setCouponMessage] = useState<string | null>(null); // Used by CheckoutRedeemCoins for reward coupon feedback
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
-    const [showShoesModal, setShowShoesModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
-    // Collection for "Complete your purchase with" - use first category or a suggestions collection if present in config
-    const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/508646719777';
+    const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -200,6 +377,16 @@ export default function CartScreen() {
             setPaymentMethod('razorpay');
         }
     }, [hasTicketingProducts, paymentMethod]);
+
+    // When HEYKIDDO is applied from coupon list, auto-select first free shoe (vice versa of shoe → coupon)
+    useEffect(() => {
+        const hasHeyKiddo = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+        if (!hasHeyKiddo || selectedShoe || !freeShoesOfferConfig?.shoes?.length) return;
+        const firstShoe = freeShoesOfferConfig.shoes[0];
+        const firstSize = freeShoesOfferConfig.sizes?.find((s) => s.isAvailable)?.size ?? freeShoesOfferConfig.sizes?.[0]?.size;
+        setSelectedShoe(firstShoe.id);
+        if (firstSize) setSelectedShoeSize(firstSize);
+    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, setSelectedShoe, setSelectedShoeSize]);
 
     // Coupon fetching is handled inside SavingsCorner.
 
@@ -227,16 +414,27 @@ export default function CartScreen() {
         itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
     }
 
-    // Calculate discount ourselves from discountCodes (don't trust Shopify's discount value)
+    // Category subtotals for category-based coupons (same logic as cart store)
+    const categorySubtotalsCart = useMemo(() => {
+        const out: Record<string, number> = {};
+        for (const item of cartItems) {
+            const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
+            const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+            for (const tag of tags) out[tag] = (out[tag] ?? 0) + amount;
+        }
+        return out;
+    }, [cartItems]);
+
+    // Calculate discount from discountCodes using same category-aware logic as cart store (so Bill details matches Savings Corner)
     let calculatedDiscount = 0;
 
-    // Debug: Log discountCodes to see what we have
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
-    // Use discount values from cart store (source: backend API only, not config)
+    let heyKiddoDiscountAmount = 0;
+    let otherCouponDiscountAmount = 0;
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
@@ -244,35 +442,40 @@ export default function CartScreen() {
             }
 
             const shouldProcess = discountCode.applicable !== false;
-            const discountValue = discountCode.value;
+            const discountValue = Number(discountCode.value ?? 0);
             const discountType = discountCode.type;
+            const isHeyKiddo = discountCode.code.toUpperCase() === 'HEYKIDDO';
 
             if (shouldProcess && discountValue > 0) {
+                const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
+                const baseAmount = discountCode.allowedCategories?.length
+                    ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
+                    : categoryKey
+                        ? (categorySubtotalsCart[categoryKey] ?? 0)
+                        : itemSubtotal;
+
+                let codeDiscount = 0;
                 if (discountType === 'percentage') {
-                    // Percentage discount: value is the percentage (e.g., 10 means 10%)
-                    const percentageDiscount = (itemSubtotal * discountValue) / 100;
-                    calculatedDiscount += percentageDiscount;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied percentage discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            itemSubtotal,
-                            percentageDiscount,
-                            calculatedDiscount,
-                        });
-                    }
-                } else if (discountType === 'fixed') {
-                    // Fixed amount discount: value is the fixed amount
-                    calculatedDiscount += discountValue;
-                    if (__DEV__) {
-                        console.log('[CartScreen] Applied fixed discount:', {
-                            code: discountCode.code,
-                            type: discountType,
-                            value: discountValue,
-                            calculatedDiscount,
-                        });
-                    }
+                    codeDiscount = (baseAmount * discountValue) / 100;
+                } else {
+                    codeDiscount = Math.min(discountValue, baseAmount);
+                }
+                if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
+                    codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
+                }
+                calculatedDiscount += codeDiscount;
+                if (isHeyKiddo) heyKiddoDiscountAmount += codeDiscount;
+                else otherCouponDiscountAmount += codeDiscount;
+                if (__DEV__) {
+                    console.log('[CartScreen] Applied discount:', {
+                        code: discountCode.code,
+                        type: discountType,
+                        value: discountValue,
+                        baseAmount,
+                        codeDiscount,
+                        maxDiscountAmount: discountCode.maxDiscountAmount,
+                        calculatedDiscount,
+                    });
                 }
             } else {
                 if (__DEV__) {
@@ -289,10 +492,12 @@ export default function CartScreen() {
             console.log('[CartScreen] No discount codes found in store');
         }
     }
+    const hasHeyKiddoApplied = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO' && dc.applicable !== false);
+    const heyKiddoOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
 
     // Use our calculated discount instead of Shopify's
     // Cap the discount to not exceed the subtotal (for fixed discounts)
-    const discount = Math.min(calculatedDiscount, itemSubtotal);
+    const discount = Math.min(Number(calculatedDiscount) || 0, itemSubtotal);
 
     // Debug log
     if (__DEV__) {
@@ -309,10 +514,17 @@ export default function CartScreen() {
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
 
     const deliveryFee = 0;
-    // Don't charge gift wrapping fee for ticketing products
-    const giftWrappingFee = hasTicketingProducts ? 0 : getGiftWrappingPrice();
+    // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
+    const giftWrappingFee = isTicketingOnly
+        ? 0
+        : (derivedGiftWrappingFee > 0
+            ? derivedGiftWrappingFee
+            : (giftWrapping != null && Number(giftWrapping?.price) > 0 && validGiftWrapIds.length > 0 ? Number(giftWrapping.price) : 0));
+    // Platform fee for display only (ticket-only): shown struck + FREE, not added to total
+    const PLATFORM_FEE_DISPLAY = 20;
+    const platformFeeDisplay = isTicketingOnly ? PLATFORM_FEE_DISPLAY : 0;
 
-    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total
+    // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total (platform fee not added)
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
 
@@ -321,7 +533,10 @@ export default function CartScreen() {
     const DELIVERY_FEE_ORIGINAL = 50;
     const KIDDO_CASH_APPLIED = 250;
     const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
-    const displaySavings = totalSavings + HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL + (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
+    const displaySavings =
+      totalSavings +
+      (isTicketingOnly ? PLATFORM_FEE_DISPLAY : HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL) +
+      (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
 
     // Debug log to verify calculation
     if (__DEV__) {
@@ -357,6 +572,12 @@ export default function CartScreen() {
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const item = cartItems.find((li) => li.id === itemId);
+        const maxQty = item?.quantityAvailable;
+        if (typeof maxQty === 'number' && newQuantity > maxQty) {
+            setStockLimitModal({ visible: true, maxQty });
+            newQuantity = maxQty;
+        }
         await updateQuantity(itemId, newQuantity);
     };
 
@@ -653,6 +874,7 @@ export default function CartScreen() {
                     currencyCode: 'INR',
                 },
                 selectedShoe: selectedShoe || undefined,
+                selectedShoeSize: selectedShoeSize || undefined,
                 isTryAndBuy: isTryAndBuy,
             };
 
@@ -912,12 +1134,14 @@ export default function CartScreen() {
             // Use a small delay to ensure state updates complete
             requestAnimationFrame(() => {
                 try {
+                    const resolvedEta = estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null);
                     const navParams = {
-                        pathname: '/order-success' as const,
+                        pathname: '/order-success/v2' as const,
                         params: {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
+                            ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                         },
                     };
 
@@ -926,7 +1150,7 @@ export default function CartScreen() {
                 } catch (error) {
                     console.error('[Cart] Navigation error:', error);
                     // Fallback: try direct path
-                    router.push('/order-success' as any);
+                    router.push('/order-success/v2' as any);
                 }
             });
 
@@ -1002,10 +1226,24 @@ export default function CartScreen() {
     };
 
 
+    // Try & Buy badge: show when item has fashion or try-and-buy style tag
+    const hasTryAndBuyTag = (it: { tags?: string[] | string }) => {
+        const raw = it.tags;
+        const tags = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+        return tags.some((tag: string) => {
+            const t = String(tag).trim().toLowerCase();
+            if (t === 'fashion') return true;
+            if (['try and buy', 'try & buy', 'try-and-buy', 'tryandbuy'].includes(t)) return true;
+            if (t.includes('try') && t.includes('buy')) return true;
+            return false;
+        });
+    };
+
     // Render cart item: row1 = title + quantity buttons; row2 = prices in same column as +/-
     const renderItem = (item: any) => {
         const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
         const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
+        const showTryAndBuyBadge = hasTryAndBuyTag(item);
 
         return (
             <TouchableOpacity
@@ -1014,10 +1252,17 @@ export default function CartScreen() {
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.7}
             >
-                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
-                <View style={styles.itemInfo}>
-                    {/* Row 1: Title + variant on left; quantity +/- and prices (same row, vertically centered) on right */}
-                    <View style={styles.itemTopRow}>
+                <View style={styles.cartItemRowInner}>
+                <View style={styles.cartItemBlock}>
+                    <View style={styles.itemImageAndTitleBlock}>
+                        <View style={styles.itemImageContainer}>
+                            {showTryAndBuyBadge && (
+                                <View style={styles.tryAndBuyBadgeCart}>
+                                    <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                                </View>
+                            )}
+                            <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                        </View>
                         <View style={styles.itemTitleBlock}>
                             <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
                             <Text style={styles.itemVariantSubtext} numberOfLines={1}>
@@ -1036,35 +1281,36 @@ export default function CartScreen() {
                                 </View>
                             )}
                         </View>
-                        <View style={styles.quantityAndPriceRow}>
-                            <View style={styles.quantityContainer}>
-                                <TouchableOpacity
-                                    style={styles.quantityButton}
-                                    onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                >
-                                    <Ionicons name="remove" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
-                                <Text style={styles.quantityText}>{item.quantity}</Text>
-                                <TouchableOpacity
-                                    style={styles.quantityButton}
-                                    onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                                >
-                                    <Ionicons name="add" size={16} color={Colors.primary} />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.itemPriceBlock}>
-                                <View style={styles.itemPriceInline}>
-                                    {compareAt != null && (
-                                        <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
-                                    )}
-                                    <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-                                </View>
-                                {discountPct > 0 && (
-                                    <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                    </View>
+                    <View style={styles.quantityAndPriceRow}>
+                        <View style={styles.quantityContainer}>
+                            <TouchableOpacity
+                                style={styles.quantityButton}
+                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                            >
+                                <Ionicons name="remove" size={16} color={Colors.primary} />
+                            </TouchableOpacity>
+                            <Text style={styles.quantityText}>{item.quantity}</Text>
+                            <TouchableOpacity
+                                style={styles.quantityButton}
+                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                            >
+                                <Ionicons name="add" size={16} color={Colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.itemPriceBlock}>
+                            <View style={styles.itemPriceInline}>
+                                {compareAt != null && (
+                                    <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
                                 )}
+                                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
                             </View>
+                            {discountPct > 0 && (
+                                <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
+                            )}
                         </View>
                     </View>
+                </View>
                 </View>
             </TouchableOpacity>
         );
@@ -1087,18 +1333,49 @@ export default function CartScreen() {
             {/* Header - light beige to match page */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+                    <Ionicons name="arrow-back" size={20} color="#717680" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Your Cart</Text>
+                <View style={styles.headerCenter}>
+                    {isTicketingOnly ? (
+                        <Text style={styles.headerTitle}>Cart</Text>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.headerAddressRow}
+                            onPress={handleAddressSelection}
+                            activeOpacity={0.7}
+                        >
+                            {selectedAddress ? (
+                                <View style={styles.headerAddressContent}>
+                                    <View style={styles.headerAddressTextBlock}>
+                                        <View style={styles.headerAddressTagRow}>
+                                            <Text style={styles.headerAddressTag} numberOfLines={1}>
+                                                {selectedAddress.tag ? selectedAddress.tag.charAt(0).toUpperCase() + selectedAddress.tag.slice(1) : 'Address'}
+                                                <Ionicons name="chevron-down" size={18} color="#717680" style={styles.headerAddressChevron} />
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.headerAddressLine} numberOfLines={1}>
+                                            {selectedAddress.address1}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View style={styles.headerAddressContent}>
+                                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
+                                    <Text style={styles.headerAddressLine}>Add Delivery Address</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
                 <View style={styles.headerSpacer} />
             </View>
 
             {cartItems.length > 0 && (
                 <>
                     {/* Total Savings Banner - full width, lighter green, thinner */}
-                    {totalSavings > 0 && (
+                    {displaySavings > 0 && (
                         <View style={styles.savingsBanner}>
-                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(totalSavings)}!</Text>
+                            <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(displaySavings)}!</Text>
                         </View>
                     )}
                     <ScrollView
@@ -1108,77 +1385,113 @@ export default function CartScreen() {
                     >
 
                         {/* Delivery Information Card - when at least one non-ticketing product in cart */}
-                        {hasNonTicketingProducts && (
+                        {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
                             <DeliveryCard
                                 deliverySchedule={deliverySchedule}
                                 onSchedulePress={() => setShowScheduleModal(true)}
+                                estimatedDeliveryMinutes={
+                                    estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
+                                }
+                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
                             />
                         )}
 
-                        {/* Cart Items - one card with "X added items" header and all items inside */}
-                        <View style={styles.itemsSection}>
-                            <View style={styles.itemsHeader}>
-                                <Text style={styles.itemsHeaderText}>
-                                    {cartItems.reduce((s, i) => s + i.quantity, 0)} added items
-                                </Text>
+                        {/* Introductory Offer - Free Pair of Shoes (same logic as FreeShoesOffer modal) */}
+                        {hasNonTicketingProducts && cartFeatures.showFreePairShoes && showFreeShoesByBackend && (
+                            <FreePairShoes
+                                visible
+                                configRefreshKey={appConfigRefresh}
+                                selectedShoe={selectedShoe}
+                                selectedShoeSize={selectedShoeSize}
+                                onAddPress={() => {}}
+                                onConfirmSize={async (shoeId, size) => {
+                                    setSelectedShoeSize(size);
+                                    setSelectedShoe(shoeId);
+                                    const rawOrig = (freeShoesOfferConfig as any)?.originalPrice ?? (freeShoesOfferConfig as any)?.original_price;
+                                    const orig = typeof rawOrig === 'number' ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                    const originalPrice = orig != null && Number.isFinite(orig) && orig >= 0 ? orig : undefined;
+                                    const result = await applyDiscountCode('HEYKIDDO', { originalPrice });
+                                    if (!result.success && result.error) {
+                                        Alert.alert('Coupon', result.error);
+                                    }
+                                }}
+                                onRemoveOffer={async () => {
+                                    setSelectedShoe(null);
+                                    await removeDiscountCode('HEYKIDDO');
+                                }}
+                                appliedCouponOriginalPrice={heyKiddoOriginalPrice}
+                            />
+                        )}
+
+                        {/* Cart Items - gift-wrapped first, then regular; "X added items" shown once with total */}
+                        {itemsGiftWrapped.length > 0 && (
+                            <View style={[styles.itemsSection, styles.itemsSectionGiftWrap]}>
+                                <View style={styles.itemsHeader}>
+                                    <Text style={styles.itemsHeaderText}>
+                                        {totalCartItems} added items
+                                    </Text>
+                                </View>
+                                {itemsGiftWrapped.map(item => renderItem(item))}
+                                <View style={styles.giftWrapRibbonContainer}>
+                                    <Image
+                                        source={require('@/assets/images/ribbon.png')}
+                                        style={styles.giftWrapRibbon}
+                                        contentFit="cover"
+                                    />
+                                </View>
                             </View>
-                            {cartItems.map(item => renderItem(item))}
-                        </View>
+                        )}
+                        {itemsNotGiftWrapped.length > 0 && (
+                            <View style={styles.itemsSection}>
+                                {itemsGiftWrapped.length === 0 && (
+                                    <View style={styles.itemsHeader}>
+                                        <Text style={styles.itemsHeaderText}>
+                                            {totalCartItems} added items
+                                        </Text>
+                                    </View>
+                                )}
+                                {itemsNotGiftWrapped.map(item => renderItem(item))}
+                            </View>
+                        )}
 
                         {/* Gift Wrapping - when at least one non-ticketing product in cart */}
-                        {hasNonTicketingProducts && (
-                            <GiftWrappingCard onSelectPress={() => setShowGiftModal(true)} />
+                        {hasNonTicketingProducts && cartFeatures.showGiftWrap && (
+                            <GiftWrappingCard
+                                giftWrapping={giftWrapping}
+                                onSelectPress={() => setShowGiftModal(true)}
+                                onRemovePress={() => setGiftWrapping(null)}
+                            />
                         )}
 
                         {/* Complete your purchase with - horizontal product list from collection */}
-                        {!hasTicketingProducts && (
-                            <View style={styles.completePurchaseSection}>
-                                <Text style={styles.completePurchaseTitle}>Complete your purchase with</Text>
-                                <HorizontalProductList
-                                    collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
-                                    config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
-                                    title=""
-                                    onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
-                                    onAddToCart={(p) => {
-                                        if (p?.variants?.edges?.[0]?.node) {
-                                            const v = p.variants.edges[0].node;
-                                            useCartStore.getState().addItem({
-                                                productId: p.id,
-                                                variantId: v.id,
-                                                title: p.title,
-                                                variantTitle: v.title,
-                                                price: parseFloat(v.price?.amount || '0'),
-                                                compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
-                                                currencyCode: v.price?.currencyCode || 'INR',
-                                                image: p.featuredImage?.url || v.image?.url || '',
-                                                quantity: 1,
-                                                availableForSale: v.availableForSale !== false,
-                                                tags: p.tags || [],
-                                            });
-                                        }
-                                    }}
-                                />
-                            </View>
-                        )}
+                        {!hasTicketingProducts && cartFeatures.showCompletePurchaseSection && <CompletePurchaseSection />}
 
-                        <SavingsCorner
-                            itemSubtotal={itemSubtotal}
-                            isAuthenticated={isAuthenticated}
-                            hasTicketingProducts={hasTicketingProducts}
-                            hasFashionItems={hasFashionItems}
-                            kiddoCashEnabled={kiddoCashEnabled}
-                            formatCurrency={formatCurrency}
-                            onLoginPress={() => router.push('/(auth)/login')}
-                            onKiddoCashChange={setKiddoCashEnabled}
-                        />
+                        {cartFeatures.showSavingsCorner && (
+                            <SavingsCorner
+                                itemSubtotal={itemSubtotal}
+                                isAuthenticated={isAuthenticated}
+                                hasTicketingProducts={hasTicketingProducts}
+                                hasFashionItems={hasFashionItems}
+                                kiddoCashEnabled={kiddoCashEnabled}
+                                formatCurrency={formatCurrency}
+                                onLoginPress={() => router.push('/(auth)/login')}
+                                onKiddoCashChange={setKiddoCashEnabled}
+                            />
+                        )}
 
                         <BillDetails
                             mrp={mrp}
-                            itemTotal={subtotalAfterDiscount}
+                            itemTotal={itemSubtotal}
+                            isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
+                            platformFee={platformFeeDisplay}
                             couponDiscount={discountAmount}
+                            hasHeyKiddo={hasHeyKiddoApplied}
+                            heyKiddoOriginalPrice={heyKiddoOriginalPrice}
+                            otherCouponDiscount={otherCouponDiscountAmount}
                             giftWrappingFee={giftWrappingFee}
+                            giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}
                             kiddoCashApplied={KIDDO_CASH_APPLIED}
                             total={total}
@@ -1189,18 +1502,14 @@ export default function CartScreen() {
 
                         {/* Payment Method - show when cart has items (also selectable via footer "Pay using" modal) */}
                         {cartItems.length > 0 && total > 0 && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Payment Method</Text>
+                            <View style={styles.paymentMethodSection}>
+                                <Text style={styles.paymentMethodSectionTitle}>Payment method</Text>
                                 {/* Hide COD option for ticketing products */}
                                 {!hasTicketingProducts && (
                                     <TouchableOpacity
-                                        style={[
-                                            styles.paymentOption,
-                                            paymentMethod === 'cod' && styles.paymentOptionSelected,
-                                        ]}
+                                        style={styles.paymentMethodOption}
                                         onPress={() => {
                                             setPaymentMethod('cod');
-                                            // Track payment method selected
                                             try {
                                                 const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
                                                 trackPaymentMethodSelected('cod');
@@ -1208,23 +1517,24 @@ export default function CartScreen() {
                                                 console.warn('Mixpanel tracking error:', e);
                                             }
                                         }}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons
-                                            name={paymentMethod === 'cod' ? 'radio-button-on' : 'radio-button-off'}
-                                            size={24}
-                                            color={paymentMethod === 'cod' ? Colors.primary : '#ccc'}
-                                        />
-                                        <Text style={styles.paymentOptionText}>Cash on Delivery (COD)</Text>
+                                        <View style={styles.paymentMethodIconWrap}>
+                                            <CodIcon width={22} height={22} style={styles.paymentMethodCodIcon} />
+                                        </View>
+                                        <View style={styles.paymentMethodTextBlock}>
+                                            <Text style={styles.paymentMethodOptionTitle}>Pay on delivery</Text>
+                                            <Text style={styles.paymentMethodOptionSubtext}>Pay by cash or UPI on delivery</Text>
+                                        </View>
+                                        <View style={[styles.paymentMethodRadio, paymentMethod !== 'cod' && styles.paymentMethodRadioEmpty]}>
+                                            {paymentMethod === 'cod' && <View style={styles.paymentMethodRadioInner} />}
+                                        </View>
                                     </TouchableOpacity>
                                 )}
                                 <TouchableOpacity
-                                    style={[
-                                        styles.paymentOption,
-                                        paymentMethod === 'razorpay' && styles.paymentOptionSelected,
-                                    ]}
+                                    style={styles.paymentMethodOption}
                                     onPress={() => {
                                         setPaymentMethod('razorpay');
-                                        // Track payment method selected
                                         try {
                                             const { trackPaymentMethodSelected } = require('@/utils/mixpanelHelpers');
                                             trackPaymentMethodSelected('razorpay');
@@ -1232,24 +1542,24 @@ export default function CartScreen() {
                                             console.warn('Mixpanel tracking error:', e);
                                         }
                                     }}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons
-                                        name={paymentMethod === 'razorpay' ? 'radio-button-on' : 'radio-button-off'}
-                                        size={24}
-                                        color={paymentMethod === 'razorpay' ? Colors.primary : '#ccc'}
-                                    />
-                                    <View style={styles.paymentOptionContent}>
-                                        <Text style={styles.paymentOptionText}>Pay Online</Text>
-                                        <Text style={styles.paymentOptionSubtext}>
-                                            Card, UPI, Net Banking via Razorpay
-                                        </Text>
+                                    <View style={[styles.paymentMethodIconWrap, styles.paymentMethodIconWrapOnline]}>
+                                        <RazorpayIcon width={33} height={33} style={styles.paymentMethodOnlineIcon} />
+                                    </View>
+                                    <View style={styles.paymentMethodTextBlock}>
+                                        <Text style={styles.paymentMethodOptionTitle}>Pay online</Text>
+                                        <Text style={styles.paymentMethodOptionSubtext}>Pay by card/ UPI/ Netbanking</Text>
+                                    </View>
+                                    <View style={[styles.paymentMethodRadio, paymentMethod !== 'razorpay' && styles.paymentMethodRadioEmpty]}>
+                                        {paymentMethod === 'razorpay' && <View style={styles.paymentMethodRadioInner} />}
                                     </View>
                                 </TouchableOpacity>
                             </View>
                         )}
 
                         {/* Nector Loyalty Coins Redemption */}
-                        <View style={styles.section}>
+                        {/* <View style={styles.section}>
                             <CheckoutRedeemCoins
                                 cartAmount={total}
                                 onCouponApplied={(code) => {
@@ -1259,7 +1569,7 @@ export default function CartScreen() {
                                     setCouponMessage(null);
                                 }}
                             />
-                        </View>
+                        </View> */}
 
                         {/* Spacer */}
                         <View style={styles.spacerEnd} />
@@ -1271,66 +1581,18 @@ export default function CartScreen() {
             {cartItems.length > 0 && (
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <View style={styles.footerContent}>
-                        {/* Address Section */}
-                        {!isTicketingOnly && (
-                            <TouchableOpacity
-                                style={styles.footerAddress}
-                                onPress={handleAddressSelection}
-                            >
-                                {selectedAddress ? (
-                                    <View style={styles.footerAddressContent}>
-                                        <Ionicons name="location" size={16} color={Colors.primary} />
-                                        <Text style={styles.footerAddressText} numberOfLines={1}>
-                                            {selectedAddress.address1}
-                                        </Text>
-                                        <Ionicons name="chevron-down" size={16} color="#666" />
-                                    </View>
-                                ) : (
-                                    <View style={styles.footerAddressContent}>
-                                        <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
-                                        <Text style={styles.footerAddressText}>Add Delivery Address</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Payment row: Pay using + method, Pay button */}
-                        <View style={styles.footerBottom}>
-                            <View style={styles.footerLeft}>
-                                <View style={styles.footerPayUsingRow}>
-                                    <Text style={styles.footerPayUsingLabel}>Pay using</Text>
-                                    <Ionicons name="chevron-down" size={18} color="#666" />
-                                </View>
-                                <Text style={styles.footerPaymentMethod}>
-                                    {paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Pay Online - Card, UPI, Net Banking'}
-                                </Text>
-                            </View>
-                            {selectedAddress || isTicketingOnly ? (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.checkoutButton,
-                                        (orderLoading || !isAuthenticated) && styles.checkoutButtonDisabled,
-                                    ]}
-                                    onPress={handlePlaceOrder}
-                                    disabled={orderLoading || !isAuthenticated}
-                                >
-                                    {orderLoading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text style={styles.checkoutButtonText}>
-                                            {isAuthenticated ? `Pay ${formatCurrency(toPay)}` : 'Login to Order'}
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.addAddressButtonFooter}
-                                    onPress={handleAddressSelection}
-                                >
-                                    <Text style={styles.addAddressButtonText}>Add Address</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        <CartFooterPayment
+                            showPayButton={!!(selectedAddress || isTicketingOnly)}
+                            paymentMethod={paymentMethod}
+                            toPay={toPay}
+                            formatCurrency={formatCurrency}
+                            orderLoading={orderLoading}
+                            isAuthenticated={isAuthenticated}
+                            onPlaceOrder={handlePlaceOrder}
+                            onAddAddress={handleAddressSelection}
+                            onLoginPress={() => router.push('/(auth)/login')}
+                            payButtonLabel={checkoutConfig?.payButtonLabel}
+                        />
                     </View>
                 </View>
             )}
@@ -1349,18 +1611,17 @@ export default function CartScreen() {
                 onClose={() => setShowGiftModal(false)}
             />
 
-            {/* Free Shoes Selection Modal */}
-            <FreeShoesOfferModal
-                visible={showShoesModal}
-                onClose={() => setShowShoesModal(false)}
-                onSelect={(shoeId) => setSelectedShoe(shoeId || null)}
-                selectedShoe={selectedShoe}
-            />
-
             {/* Try And Buy Modal */}
             <TryAndBuyModal
                 visible={showTryAndBuyModal}
                 onClose={() => setShowTryAndBuyModal(false)}
+            />
+
+            {/* Stock limit (quantity) modal */}
+            <StockLimitModal
+                visible={stockLimitModal.visible}
+                maxQuantity={stockLimitModal.maxQty}
+                onClose={() => setStockLimitModal((s) => ({ ...s, visible: false }))}
             />
 
             {/* Schedule Delivery Modal */}
@@ -1372,7 +1633,9 @@ export default function CartScreen() {
                     else setDeliverySchedule(schedule);
                 }}
                 initialSchedule={deliverySchedule}
+                title={checkoutConfig?.scheduleModalTitle}
             />
+
         </SafeAreaView>
     );
 }
@@ -1380,7 +1643,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#FFFFFF',
     },
     loadingContainer: {
         flex: 1,
@@ -1393,34 +1656,72 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#FFFFFF',
     },
     backButton: {
         padding: 4,
+        marginRight: 8,
     },
     headerSpacer: {
         width: 32,
     },
-    headerTitle: {
+    headerCenter: {
         flex: 1,
+        justifyContent: 'center',
+        minWidth: 0,
+    },
+    headerTitle: {
         fontSize: 18,
         color: '#1A1A1A',
         fontFamily: Fonts.Bold,
         textAlign: 'center',
     },
+    headerAddressRow: {
+        marginTop: 4,
+    },
+    headerAddressContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 0,
+    },
+    headerAddressTextBlock: {
+        flex: 1,
+        minWidth: 0,
+        marginLeft: 8,
+    },
+    headerAddressTagRow: {
+        flexDirection: 'row',
+        
+        gap: 4,
+    },
+    headerAddressTag: {
+        fontSize: 24,
+        fontFamily: Fonts.Bogart,
+        fontWeight: Fonts.MediumWeight,
+        color: '#000000',
+        flex: 1,
+        minWidth: 0,
+        gap: 4,
+    },
+    headerAddressLine: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#535862',
+        marginTop: 2,
+    },
     savingsBanner: {
-        backgroundColor: '#6BCB77',
-        marginHorizontal: -16,
+        backgroundColor: '#3CCB7F',
         marginTop: 0,
-        marginBottom: 12,
+       
         paddingVertical: 8,
         borderRadius: 0,
         alignItems: 'center',
     },
     savingsBannerText: {
-        fontSize: 15,
-        fontFamily: Fonts.Bold,
-        color: '#fff',
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#EDFCF2',
     },
     scrollView: {
         flex: 1,
@@ -1428,8 +1729,8 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingTop: 0,
-        paddingBottom: 200,
+        paddingTop: 20,
+        paddingBottom: 100,
         backgroundColor: '#FDF6EC',
     },
     tryAndBuySection: {
@@ -1485,32 +1786,83 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 16,
-        marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
+        marginBottom: 24,
+        overflow: 'hidden',
+    },
+    itemsSectionGiftWrap: {
+        paddingBottom: 0,
+        marginBottom: 24,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
     },
     itemsHeader: {
         marginBottom: 12,
     },
     itemsHeaderText: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.SmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
+    },
+    giftWrapRibbonContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    giftWrapRibbon: {
+        width: '100%',
+        height: 36,
     },
     cartItemRow: {
+        marginBottom: 24,
+        width: '100%',
+    },
+    cartItemRowInner: {
+        width: '100%',
+        overflow: 'hidden',
+    },
+    cartItemBlock: {
         flexDirection: 'row',
-        marginBottom: 16,
+        alignItems: 'center',
+        flexWrap: 'nowrap',
+        width: '100%',
+    },
+    itemImageAndTitleBlock: {
+        flexDirection: 'row',
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'flex-start',
+        marginRight: 12,
+        maxWidth: '100%',
+    },
+    itemImageContainer: {
+        position: 'relative',
+        marginRight: 12,
     },
     itemImage: {
-        width: 80,
-        height: 80,
+        width: 72,
+        height: 72,
         borderRadius: 8,
-        marginRight: 12,
         backgroundColor: '#F0F0F0',
         borderWidth: 1,
         borderColor: '#E5E5E5',
+    },
+    tryAndBuyBadgeCart: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: '#FEF7C3',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderTopLeftRadius: 8,
+        borderBottomRightRadius: 8,
+        zIndex: 1,
+    },
+    tryAndBuyBadgeCartText: {
+        color: '#EAAA08',
+        fontSize: 10,
+        fontFamily: Fonts.Bold,
     },
     itemInfo: {
         flex: 1,
@@ -1523,23 +1875,28 @@ const styles = StyleSheet.create({
     },
     itemTitleBlock: {
         flex: 1,
+        minWidth: 0,
         marginRight: 12,
     },
     quantityAndPriceRow: {
         flexDirection: 'column',
         alignItems: 'center',
         gap: 8,
+        flexShrink: 0,
+        maxWidth: 120,
     },
     itemTitle: {
-        fontSize: 14,
-        color: '#1A1A1A',
+        fontSize: Fonts.SmallFontSize,
+        lineHeight: 20,
+        color: '#181D27',
         marginBottom: 2,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendBold,
     },
     itemVariantSubtext: {
-        fontSize: 12,
-        color: '#666',
-        fontFamily: Fonts.Regular,
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
+        marginTop: 6,
     },
     itemPriceBlock: {
         alignItems: 'center',
@@ -1556,9 +1913,9 @@ const styles = StyleSheet.create({
         textDecorationLine: 'line-through',
     },
     itemPrice: {
-        fontSize: 14,
-        color: '#1A1A1A',
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendBold,
     },
     itemDiscountPct: {
         fontSize: 11,
@@ -1596,12 +1953,12 @@ const styles = StyleSheet.create({
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: Colors.primary,
-        borderRadius: 16,
-        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: '#F15E5E',
+        borderRadius: 12,
+        paddingVertical: 2,
         paddingHorizontal: 2,
-        backgroundColor: '#fff',
+        backgroundColor: '#FEEFEF',
     },
     quantityButton: {
         paddingVertical: 4,
@@ -1611,32 +1968,12 @@ const styles = StyleSheet.create({
         minWidth: 24,
     },
     quantityText: {
-        fontSize: 13,
+        fontSize: Fonts.SmallFontSize,
         marginHorizontal: 6,
         minWidth: 18,
         textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
-    },
-    completePurchaseSection: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        paddingVertical: 16,
-        paddingHorizontal: 8,
-        paddingLeft: 8,
-        marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
-            android: { elevation: 3 },
-        }),
-    },
-    completePurchaseTitle: {
-        fontSize: 15,
-        color: '#2D2D2D',
-        fontFamily: Fonts.Bold,
-        marginBottom: 12,
-        textAlign: 'left',
-        paddingLeft: 8,
+        fontFamily: Fonts.LexendBold,
+        color: '#181D27',
     },
     couponsModalOverlay: {
         flex: 1,
@@ -1701,7 +2038,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 12,
-        marginBottom: 15,
+        marginBottom: 28,
     },
     sectionTitle: {
         fontSize: 16,
@@ -1738,6 +2075,83 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         marginTop: 2,
         fontFamily: Fonts.Regular,
+    },
+    paymentMethodSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 8,
+        paddingTop: 16,
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: '#FFFFFF',
+    },
+    paymentMethodSectionTitle: {
+        fontSize: Fonts.SmallFontSize,
+        marginBottom: 14,
+        color: '#717680',
+        fontFamily: Fonts.LexendBold,
+        marginLeft: 6,
+    },
+    paymentMethodOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 4,
+    },
+    paymentMethodIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    paymentMethodCodIcon: {
+        width: 22,
+        height: 22,
+    },
+    paymentMethodIconWrapOnline: {
+        width: 44,
+        height: 44,
+        
+    },
+    paymentMethodOnlineIcon: {
+        width: 44,
+        height: 44,
+    },
+    paymentMethodTextBlock: {
+        flex: 1,
+    },
+    paymentMethodOptionTitle: {
+        fontSize: Fonts.SmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendBold,
+    },
+    paymentMethodOptionSubtext: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#535862',
+        marginTop: 2,
+        fontFamily: Fonts.LexendMedium,
+    },
+    paymentMethodRadio: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    paymentMethodRadioEmpty: {
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#d1d5db',
+    },
+    paymentMethodRadioInner: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#fff',
     },
     couponContainer: {
         flexDirection: 'row',
@@ -2021,47 +2435,6 @@ const styles = StyleSheet.create({
     footerContent: {
         padding: 15,
     },
-    footerPayUsingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginBottom: 4,
-    },
-    footerPayUsingLabel: {
-        fontSize: 13,
-        color: '#666',
-        fontFamily: Fonts.Regular,
-    },
-    footerPaymentMethod: {
-        fontSize: 14,
-        color: '#2D2D2D',
-        fontFamily: Fonts.SemiBold,
-    },
-    footerAddress: {
-        marginBottom: 12,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    footerAddressContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    footerAddressText: {
-        flex: 1,
-        fontSize: 12,
-        color: '#000',
-        fontFamily: Fonts.Regular,
-    },
-    footerBottom: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    footerLeft: {
-        flex: 1,
-    },
     footerPriceRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -2078,36 +2451,10 @@ const styles = StyleSheet.create({
         color: '#666',
         fontFamily: Fonts.Regular,
     },
-    checkoutButton: {
-        backgroundColor: '#E07A5F',
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 10,
-        minWidth: 120,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     tryAndBuyButton: {
         backgroundColor: '#FF9800',
     },
-    checkoutButtonDisabled: {
-        opacity: 0.6,
-    },
-    checkoutButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        textAlign: 'center',
-        fontFamily: Fonts.SemiBold,
-    },
-    addAddressButtonFooter: {
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderRadius: 8,
-    },
-    addAddressButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+    headerAddressChevron: {
+        marginLeft: 16,
     },
 });

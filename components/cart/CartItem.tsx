@@ -36,10 +36,15 @@ export const CartItem: React.FC<CartItemProps> = ({
     onRemove,
     onPress,
 }) => {
-    // Check if item has fashion tag (for Try & Buy badge)
-    const hasFashionTag = item.tags?.some(
-        tag => typeof tag === 'string' && tag.toLowerCase() === 'fashion'
-    );
+    // Show Try & Buy badge when product has "fashion" or any try-and-buy style tag
+    const hasTryAndBuyTag = item.tags?.some((tag) => {
+        if (typeof tag !== 'string') return false;
+        const t = tag.trim().toLowerCase();
+        if (t === 'fashion') return true;
+        if (t === 'try and buy' || t === 'try & buy' || t === 'try-and-buy' || t === 'tryandbuy') return true;
+        if (t.includes('try') && t.includes('buy')) return true;
+        return false;
+    });
 
     const formattedPrice = new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -71,9 +76,9 @@ export const CartItem: React.FC<CartItemProps> = ({
         >
             {/* Product Image */}
             <View style={styles.imageContainer}>
-                {hasFashionTag && (
+                {hasTryAndBuyTag && (
                     <View style={styles.tbBadge}>
-                        <Text style={styles.tbBadgeText}>T&B</Text>
+                        <Text style={styles.tbBadgeText}>Try & Buy</Text>
                     </View>
                 )}
                 <Image
@@ -195,14 +200,14 @@ const styles = StyleSheet.create({
         top: 6,
         left: 6,
         backgroundColor: Colors.primary,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
         zIndex: 1,
     },
     tbBadgeText: {
         color: '#FFFFFF',
-        fontSize: 10,
+        fontSize: 11,
         fontFamily: Fonts.Bold,
     },
     infoContainer: {

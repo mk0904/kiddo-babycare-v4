@@ -3,9 +3,11 @@ const { getDefaultConfig } = require('expo/metro-config');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Enable source maps for better error reporting
+const { transformer, resolver } = config;
+
 config.transformer = {
-  ...config.transformer,
+  ...transformer,
+  babelTransformerPath: require.resolve('react-native-svg-transformer/expo'),
   getTransformOptions: async () => ({
     transform: {
       experimentalImportSupport: false,
@@ -14,11 +16,10 @@ config.transformer = {
   }),
 };
 
+config.resolver = {
+  ...resolver,
+  assetExts: resolver.assetExts.filter((ext) => ext !== 'svg'),
+  sourceExts: [...resolver.sourceExts, 'svg'],
+};
+
 module.exports = config;
-
-
-
-
-
-
-

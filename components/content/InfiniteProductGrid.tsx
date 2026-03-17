@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: Fonts.Black,
     fontWeight: '900',
-    marginBottom: 15,
+    marginBottom: 8,
     paddingHorizontal: 20,
     letterSpacing: 0,
   },

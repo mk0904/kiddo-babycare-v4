@@ -1,6 +1,7 @@
 // Order Service
 // Manages local order state, tracking, and ETA calculations
 
+import { estimateDeliveryTime } from '@/config/deliveryConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Constants
@@ -131,13 +132,10 @@ const generateOrderId = (): string => {
 };
 
 /**
- * Calculate ETA based on distance
- * Formula: 10 minutes base + (distance_km * 2 minutes)
+ * Calculate ETA based on distance. Uses same formula as deliveryConfig: 5 mins packing + 2 mins per km.
  */
 export const calculateETA = (distanceKm: number): number => {
-    const baseTime = 10; // 10 minutes base
-    const timePerKm = 2; // 2 minutes per km
-    return Math.round(baseTime + distanceKm * timePerKm);
+    return estimateDeliveryTime(distanceKm);
 };
 
 /**

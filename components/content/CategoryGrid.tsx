@@ -222,7 +222,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 
   // Title style (matching ImageGrid pattern)
   const titleStyle = {
-    marginBottom: 15,
+    marginBottom: 8,
     fontSize: 18,
     letterSpacing: 0,
     paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
@@ -278,7 +278,7 @@ const defaultStyles = StyleSheet.create({
     fontFamily: Fonts.Black,
     fontWeight: '900',
     color: Colors.text,
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
 });

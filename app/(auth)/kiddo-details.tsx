@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -35,7 +35,7 @@ interface KiddoData {
 
 export default function KiddoDetailsScreen() {
   const router = useRouter();
-  const { user, login } = useAuth();
+  const { user, login, isAuthenticated } = useAuth();
   const [kiddos, setKiddos] = useState<KiddoData[]>([
     { name: '', month: '', year: '', gender: null }
   ]);
@@ -45,6 +45,13 @@ export default function KiddoDetailsScreen() {
   const [saving, setSaving] = useState(false);
 
   const currentKiddo = kiddos[currentKiddoIndex];
+
+  // If user is already logged in (e.g. returning), skip this screen and go to homepage
+  useEffect(() => {
+    if (isAuthenticated && user?.isGuest !== true) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, user?.isGuest, router]);
 
   const updateCurrentKiddo = (updates: Partial<KiddoData>) => {
     const updatedKiddos = [...kiddos];

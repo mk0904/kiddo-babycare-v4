@@ -3,7 +3,25 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { Platform } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
+
+/** Font weight values typed for React Native TextStyle so they can be used in fontWeight. */
+const fontWeight = {
+  Regular: '400',
+  Medium: '500',
+  SemiBold: '600',
+  Bold: '700',
+} as const satisfies Record<string, TextStyle['fontWeight']>;
+
+export const FontSizes = {
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 18,
+  xl: 20,
+  xxl: 22,
+  xxxxl: 24,
+} as const satisfies Record<string, number>;
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
@@ -46,6 +64,22 @@ export const Fonts = {
   Bold: 'Metropolis-Bold',
   ExtraBold: 'Metropolis-ExtraBold',
   Black: 'Metropolis-Black',
+  Bogart: 'Bogart-SemiBold',
+  Lexend: 'Lexend-SemiBold',
+  LexendRegular: 'Lexend-Regular',
+  LexendMedium: 'Lexend-Medium',
+  LexendSemiBold: 'Lexend-SemiBold',
+  LexendBold: 'Lexend-Bold',
+  RegularWeight: fontWeight.Regular,
+  MediumWeight: fontWeight.Medium,
+  SemiBoldWeight: fontWeight.SemiBold,
+  BoldWeight: fontWeight.Bold,
+  ExtraSmallFontSize: FontSizes.xs,
+  SmallFontSize: FontSizes.sm,
+  MediumFontSize: FontSizes.md,
+  LargeFontSize: FontSizes.lg,
+  XLargeFontSize: FontSizes.xl,
+  XXLargeFontSize: FontSizes.xxl,
   // Keep original platform select for backward compatibility if needed, but the above are what Kiddo uses
   ...Platform.select({
     ios: {
