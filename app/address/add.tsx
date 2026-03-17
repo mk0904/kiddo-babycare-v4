@@ -111,7 +111,10 @@ export default function MapAddressScreen() {
                     return;
                 }
 
-                let { status } = await Location.requestForegroundPermissionsAsync();
+                let { status } = await Location.getForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    status = (await Location.requestForegroundPermissionsAsync()).status;
+                }
                 if (status !== 'granted') {
                     console.log('Location permission not granted');
                     setMapError('Location permission is required to use this feature');
@@ -302,8 +305,11 @@ export default function MapAddressScreen() {
             setLoadingAddress(true);
             setMapError(null);
 
-            // Request location permission
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            // Check permission first; only request if not already granted
+            let { status } = await Location.getForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                status = (await Location.requestForegroundPermissionsAsync()).status;
+            }
             if (status !== 'granted') {
                 Alert.alert('Permission Required', 'Please grant location permission to use this feature.');
                 setLoadingAddress(false);

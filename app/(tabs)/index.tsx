@@ -373,8 +373,13 @@ export default function HomeScreen() {
 
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        // Check current permission first; only request if not already granted (avoids asking every app open on Android)
+        let { status } = await Location.getForegroundPermissionsAsync();
         if (cancelled) return;
+        if (status !== 'granted') {
+          status = (await Location.requestForegroundPermissionsAsync()).status;
+          if (cancelled) return;
+        }
         if (status !== 'granted') {
           setLocationStatus('denied');
           setDetectedLocationLabel('Tap to add delivery address');
