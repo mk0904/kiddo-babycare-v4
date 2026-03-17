@@ -1,4 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
 import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
@@ -97,6 +98,8 @@ export function ProductCollection({
   genderFilter,
   ageFilter,
 }: ProductCollectionProps) {
+  const { width: windowWidth } = useDeviceDimensions();
+
   // Determine which collection ID to use (must be before hooks)
   const collectionIdToUse = React.useMemo(() => {
     if (providedProducts) return null; // Don't fetch if products are provided
@@ -533,8 +536,8 @@ export function ProductCollection({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Memoize default values
-  const defaultContentWidth = React.useMemo(() => contentWidth || 400, [contentWidth]);
+  // Memoize default values: use window width when contentWidth not provided so layout is correct on all devices
+  const defaultContentWidth = React.useMemo(() => contentWidth ?? windowWidth, [contentWidth, windowWidth]);
   const defaultProductStyle = React.useMemo(() => productStyle || {}, [productStyle]);
 
   // If products are provided directly, use them without fetching
