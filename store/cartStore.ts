@@ -384,6 +384,9 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
+                        discountCodes: [],
+                        selectedShoe: null,
+                        selectedShoeSize: null,
                     });
 
                     try {
@@ -434,6 +437,9 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
+                        discountCodes: [],
+                        selectedShoe: null,
+                        selectedShoeSize: null,
                     });
 
                     // Re-check gift eligibility
@@ -467,6 +473,9 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
+                        discountCodes: [],
+                        selectedShoe: null,
+                        selectedShoeSize: null,
                     });
 
                     // Re-check gift eligibility
