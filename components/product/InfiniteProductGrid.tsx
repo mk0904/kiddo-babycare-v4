@@ -1,10 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, View, FlatList, Dimensions } from 'react-native';
+import { ActivityIndicator, RefreshControl, StyleSheet, View, FlatList } from 'react-native';
 import { ProductCard } from './ProductCard';
 import { CollectionComponentProps, ProductCollection, ProductCollectionProps } from './ProductCollection';
 import { EmptyState } from '@/components/ui/EmptyState';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 
 const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }> = ({
   products,
@@ -21,16 +20,19 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
   isRefetching,
   refetch,
 }) => {
+  const { width: windowWidth } = useDeviceDimensions();
+
   // Get configurable values from productOptions, with defaults
   const paddingHorizontal = productOptions?.paddingHorizontal ?? productOptions?.horizontalPadding ?? 8;
   const gap = productOptions?.gap ?? 8;
   const rowGap = productOptions?.rowGap ?? productOptions?.gap ?? 8;
   const colGap = productOptions?.colGap ?? productOptions?.gap ?? 8;
   
-  // Use contentWidth when provided (e.g. when sidebar reduces available space) so cards adapt and don't get cropped
+  // Use contentWidth when provided (e.g. when sidebar reduces available space) so cards adapt and don't get cropped.
+  // Otherwise use current window width so layout is correct on all devices and on rotation.
   const availableWidth = (contentWidth != null && contentWidth > 0)
     ? contentWidth - paddingHorizontal * 2
-    : SCREEN_WIDTH - paddingHorizontal * 2;
+    : windowWidth - paddingHorizontal * 2;
   
   // Card width: (availableWidth - colGap) / 2
   // Don't floor - use exact calculation to avoid gaps

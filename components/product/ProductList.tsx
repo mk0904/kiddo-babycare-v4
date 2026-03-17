@@ -1,12 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { ProductCollection, CollectionComponentProps } from './ProductCollection';
 import { ProductCard } from './ProductCard';
 import { ProductCollectionProps } from './ProductCollection';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const List: React.FC<CollectionComponentProps> = ({
   products,
