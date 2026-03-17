@@ -301,9 +301,110 @@ export const useCartStore = create<CartState>()(
                 return finalDiscount;
             },
             
-            // Coupons are removed only manually by the user, not automatically
+            // Revalidate applied coupons when cart changes; remove any that are no longer eligible.
             validateAppliedDiscountCodes: async () => {
-                // No-op: do not auto-remove coupons based on eligibility
+                const state = get();
+                const applied = state.discountCodes.filter((dc) => dc.applicable !== false);
+                if (applied.length === 0) return;
+
+                const cartSubtotal = state.subtotal();
+                const cartItemCount = state.itemCount();
+                const hasTicketingProducts = state.lineItems.some((item: CartItem) => {
+                    if (item.bookingDate) return true;
+                    const hasTicketingTag = item.tags?.some((tag: any) => {
+                        const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                        return tagLower.includes('event') || tagLower.includes('playhouse') || tagLower.includes('petting') || tagLower.includes('farm');
+                    });
+                    return !!hasTicketingTag;
+                });
+                const hasClothingItems = state.lineItems.some((item: CartItem) =>
+                    item.tags?.some((tag: string) => typeof tag === 'string' && tag.toLowerCase() === 'fashion')
+                );
+                const categorySubtotalsForApi = getCartCategorySubtotalsFromLineItems(state.lineItems);
+                const cartCategoriesForApi = Object.keys(categorySubtotalsForApi).filter(Boolean);
+
+                let userId: string | null = null;
+                let userOrderCount = 0;
+                let phone: string | null = null;
+                try {
+                    const { useUserStore } = await import('@/store/userStore');
+                    const userStore = useUserStore.getState();
+                    const user = userStore.user;
+                    if (userStore.status !== 'authenticated' || !user) {
+                        set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null });
+                        return;
+                    }
+                    userId = user.id ?? (user as any).customerId ?? (user as any).phone ?? null;
+                    userOrderCount = (user as { numberOfOrders?: number })?.numberOfOrders ?? 0;
+                    phone = (user as any).phone ?? null;
+                } catch {
+                    set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null });
+                    return;
+                }
+
+                const couponParams = {
+                    phone,
+                    cartSubTotal: Math.round(Number(cartSubtotal)) || 0,
+                    cartItemCount: Math.max(0, Math.floor(Number(cartItemCount))) || 0,
+                    hasTicketing: hasTicketingProducts,
+                    hasClothing: hasClothingItems,
+                    ...(cartCategoriesForApi.length > 0 ? { cartCategories: cartCategoriesForApi } : {}),
+                    ...(Object.keys(categorySubtotalsForApi).length > 0 ? { categorySubtotals: categorySubtotalsForApi } : {}),
+                    appVersion: getAppVersionForApi(),
+                    deviceType: Platform.OS ?? '',
+                };
+
+                const { couponService } = await import('@/services/couponService');
+                const stillValid: DiscountCode[] = [];
+                for (const dc of applied) {
+                    try {
+                        const configDiscount = await couponService.validateCouponCode(dc.code, couponParams, { useVisibleCoupons: true });
+                        if (!configDiscount) continue;
+                        // Same ticketing/clothing/apparel rules as UI (e.g. "Valid for apparel only" when cart has only ticketing)
+                        const applicability = couponService.getCouponApplicabilityForDisplay(
+                            { ...configDiscount, code: configDiscount.code ?? dc.code, valueType: (configDiscount.valueType === 'fixed_amount' || (configDiscount as any).valueType === 'fixed') ? 'fixed_amount' : (configDiscount.valueType ?? 'percentage') } as import('@/services/couponService').CouponCode,
+                            {
+                                hasTicketingProducts,
+                                hasFashionItems: hasClothingItems,
+                                cartSubtotal,
+                                cartItemCount,
+                                userOrderCount,
+                                couponUsageCount: 0,
+                                categorySubtotals: categorySubtotalsForApi,
+                                lineItems: state.lineItems,
+                            }
+                        );
+                        if (!applicability.applicable) continue;
+                        const conditionsResult = await couponService.validateCouponConditions(
+                            configDiscount,
+                            cartSubtotal,
+                            userId,
+                            Math.max(0, Math.floor(Number(cartItemCount))) || 0,
+                            userOrderCount,
+                            categorySubtotalsForApi,
+                            state.lineItems
+                        );
+                        if (conditionsResult.isValid) stillValid.push(dc);
+                    } catch (_) {
+                        // validation failed or network error -> drop this code
+                    }
+                }
+
+                const hadHeyKiddo = applied.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+                const hasHeyKiddo = stillValid.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+                set({
+                    discountCodes: stillValid,
+                    ...(hadHeyKiddo && !hasHeyKiddo ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                });
+
+                const cartId = state.id;
+                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                    try {
+                        await shopifyApi.applyDiscountCodes(cartId, stillValid.map((dc) => dc.code));
+                    } catch (e) {
+                        console.warn('[CartStore] Failed to sync discount codes to Shopify after revalidation', e);
+                    }
+                }
             },
 
             total: () => {
@@ -384,10 +485,8 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
-                        discountCodes: [],
-                        selectedShoe: null,
-                        selectedShoeSize: null,
                     });
+                    get().validateAppliedDiscountCodes();
 
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -437,10 +536,8 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
-                        discountCodes: [],
-                        selectedShoe: null,
-                        selectedShoeSize: null,
                     });
+                    get().validateAppliedDiscountCodes();
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -473,10 +570,8 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         status: 'idle',
                         error: null,
-                        discountCodes: [],
-                        selectedShoe: null,
-                        selectedShoeSize: null,
                     });
+                    get().validateAppliedDiscountCodes();
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -727,7 +822,7 @@ export const useCartStore = create<CartState>()(
                 const origPrice = typeof rawOrig === 'number' && Number.isFinite(rawOrig)
                     ? rawOrig
                     : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
-                const originalPriceNum = Number.isFinite(origPrice) && origPrice >= 0 ? origPrice : undefined;
+                const originalPriceNum = (typeof origPrice === 'number' && Number.isFinite(origPrice) && origPrice >= 0) ? origPrice : undefined;
                 const newDiscountCodeEntry: DiscountCode = {
                     code: normalizedCode,
                     type: discountType,
