@@ -25,6 +25,7 @@ import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
+import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import {
     useCartId,
@@ -413,16 +414,25 @@ export default function CartScreen() {
         itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
     }
 
-    // Calculate discount ourselves from discountCodes (don't trust Shopify's discount value)
+    // Category subtotals for category-based coupons (same logic as cart store)
+    const categorySubtotalsCart = useMemo(() => {
+        const out: Record<string, number> = {};
+        for (const item of cartItems) {
+            const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
+            const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+            for (const tag of tags) out[tag] = (out[tag] ?? 0) + amount;
+        }
+        return out;
+    }, [cartItems]);
+
+    // Calculate discount from discountCodes using same category-aware logic as cart store (so Bill details matches Savings Corner)
     let calculatedDiscount = 0;
 
-    // Debug: Log discountCodes to see what we have
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
-    // Use discount values from cart store (source: backend API only, not config)
     let heyKiddoDiscountAmount = 0;
     let otherCouponDiscountAmount = 0;
     if (discountCodes && discountCodes.length > 0) {
@@ -437,12 +447,18 @@ export default function CartScreen() {
             const isHeyKiddo = discountCode.code.toUpperCase() === 'HEYKIDDO';
 
             if (shouldProcess && discountValue > 0) {
+                const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
+                const baseAmount = discountCode.allowedCategories?.length
+                    ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
+                    : categoryKey
+                        ? (categorySubtotalsCart[categoryKey] ?? 0)
+                        : itemSubtotal;
+
                 let codeDiscount = 0;
                 if (discountType === 'percentage') {
-                    codeDiscount = (itemSubtotal * discountValue) / 100;
+                    codeDiscount = (baseAmount * discountValue) / 100;
                 } else {
-                    // fixed, fixed_amount, or any other type: treat as fixed amount
-                    codeDiscount = discountValue;
+                    codeDiscount = Math.min(discountValue, baseAmount);
                 }
                 if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
                     codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
@@ -455,7 +471,7 @@ export default function CartScreen() {
                         code: discountCode.code,
                         type: discountType,
                         value: discountValue,
-                        itemSubtotal,
+                        baseAmount,
                         codeDiscount,
                         maxDiscountAmount: discountCode.maxDiscountAmount,
                         calculatedDiscount,

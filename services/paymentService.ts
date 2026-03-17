@@ -1,7 +1,7 @@
 // Payment Service - Razorpay Integration
 // Checkout (draft + complete) runs via backend; only Razorpay SDK runs on device.
 
-import Constants from 'expo-constants';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { Alert, Platform } from 'react-native';
 import { checkoutService } from './checkoutService';
 import { configService } from './configService';
@@ -175,7 +175,7 @@ function orderDataToCheckoutDraftRequest(
         selectedShoe: orderData.selectedShoe ?? '',
         selectedShoeSize: orderData.selectedShoeSize ?? '',
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
-        appVersion: Constants.expoConfig?.version ?? '',
+        appVersion: getAppVersionForApi(),
         deviceType: Platform.OS ?? '',
     };
 }
