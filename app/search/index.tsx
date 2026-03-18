@@ -17,7 +17,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    Dimensions,
     FlatList,
     InteractionManager,
     KeyboardAvoidingView,
@@ -30,8 +29,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 
 const DEFAULT_SORT_OPTIONS = [
     { value: 'relevance', label: 'Relevance', order: 'asc' },
@@ -439,13 +437,14 @@ export default function SearchScreen() {
         return option?.label || 'Relevance';
     };
 
-    // Calculate card width with proper spacing
+    // Calculate card width from current window width so layout is correct on all devices and rotation
+    const { width: screenWidth } = useDeviceDimensions();
     const cardWidth = useMemo(() => {
         const totalPadding = HORIZONTAL_PADDING * 2;
         const totalGap = GAP;
-        const availableWidth = SCREEN_WIDTH - totalPadding - totalGap;
+        const availableWidth = screenWidth - totalPadding - totalGap;
         return availableWidth / 2;
-    }, [GAP, HORIZONTAL_PADDING]);
+    }, [GAP, HORIZONTAL_PADDING, screenWidth]);
 
 
     const keyExtractor = useCallback((item: any) => {

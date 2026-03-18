@@ -6,7 +6,6 @@ import { sortInStockFirst } from '@/utils/availability';
 import { FlashList } from '@shopify/flash-list';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Dimensions,
     ImageBackground,
     InteractionManager,
     StyleSheet,
@@ -14,8 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 
 interface HorizontalProductListProps {
     collectionIds?: string[];
@@ -66,15 +64,16 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
         showSeeAll = false, // Default to false, can be enabled via config
     } = config;
 
+    const { width: screenWidth } = useDeviceDimensions();
     const paddingLeft = sidePadding > 0 ? sidePadding : 20;
 
     const itemWidth = useMemo(() => {
         const paddingRight = sidePadding > 0 ? sidePadding : 20;
         const totalPadding = paddingLeft + paddingRight;
         const totalSpacing = itemSpacing * (Math.ceil(itemsPerView) - 1);
-        const availableWidth = SCREEN_WIDTH - totalPadding - totalSpacing;
+        const availableWidth = screenWidth - totalPadding - totalSpacing;
         return availableWidth / itemsPerView;
-    }, [itemsPerView, itemSpacing, paddingLeft, sidePadding]);
+    }, [itemsPerView, itemSpacing, paddingLeft, sidePadding, screenWidth]);
 
     const collectionIdsKey = useMemo(() => {
         return JSON.stringify(collectionIds?.sort() || []);

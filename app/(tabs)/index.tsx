@@ -373,8 +373,13 @@ export default function HomeScreen() {
 
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        // Check current permission first; only request if not already granted (avoids asking every app open on Android)
+        let { status } = await Location.getForegroundPermissionsAsync();
         if (cancelled) return;
+        if (status !== 'granted') {
+          status = (await Location.requestForegroundPermissionsAsync()).status;
+          if (cancelled) return;
+        }
         if (status !== 'granted') {
           setLocationStatus('denied');
           setDetectedLocationLabel('Tap to add delivery address');
@@ -511,40 +516,40 @@ export default function HomeScreen() {
   }, [headerTopHeight]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom', 'top']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <StatusBar style="dark" />
-      <HomeHeader
-        scrollY={scrollY}
-        address={displayAddress}
-        estimatedTime={homeEstimatedTime}
-        loadingTime={homeLoadingTime}
-        isUnserviceable={isUnserviceable}
-        locationStatus={locationStatus}
-        headerConfig={headerConfig}
-        searchSuggestions={searchSuggestions}
-        onSearchPress={handleSearchPress}
-        onLocationPress={handleLocationPress}
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onCategorySelect={handleCategorySelect}
-        onHeaderHeightChange={setDynamicHeaderHeight}
-      />
+      <View style={styles.mainColumn}>
+        <HomeHeader
+          scrollY={scrollY}
+          address={displayAddress}
+          estimatedTime={homeEstimatedTime}
+          loadingTime={homeLoadingTime}
+          isUnserviceable={isUnserviceable}
+          locationStatus={locationStatus}
+          headerConfig={headerConfig}
+          searchSuggestions={searchSuggestions}
+          onSearchPress={handleSearchPress}
+          onLocationPress={handleLocationPress}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategorySelect={handleCategorySelect}
+          onHeaderHeightChange={setDynamicHeaderHeight}
+        />
 
-      <Animated.ScrollView
-        ref={scrollViewRef}
-        style={[
-          styles.scrollView,
-          Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
-        ]}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: effectiveHeaderHeight,
-            // Ensure minimum padding to prevent overlap
-            minHeight: '100%',
-          },
-          Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
-        ]}
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          style={[
+            styles.scrollView,
+            Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
+          ]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: 0,
+              minHeight: '100%',
+            },
+            Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
+          ]}
         showsVerticalScrollIndicator={false}
         bounces={true}
         removeClippedSubviews={Platform.OS === 'android'}
@@ -567,6 +572,7 @@ export default function HomeScreen() {
           )}
         </View>
       </Animated.ScrollView>
+      </View>
 
       {/* Scroll to Top Button */}
       <ScrollToTopButton
@@ -589,6 +595,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  mainColumn: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

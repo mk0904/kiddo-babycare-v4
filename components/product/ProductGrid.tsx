@@ -14,7 +14,9 @@ const Grid: React.FC<CollectionComponentProps> = ({
   productLayout,
 }) => {
   const itemGap = listStyle?.itemGap ?? 8;
-  const productCardWidth = Math.floor((contentWidth - itemGap) / 2);
+  const rowPaddingHorizontal = listStyle?.root?.paddingHorizontal ?? 16;
+  // Card width must account for row padding so two cards + gap fit within contentWidth
+  const productCardWidth = Math.floor((contentWidth - rowPaddingHorizontal * 2 - itemGap) / 2);
 
   const productCardStyle = React.useMemo(() => {
     return {
@@ -34,8 +36,8 @@ const Grid: React.FC<CollectionComponentProps> = ({
 
   // Calculate estimated item size for FlashList
   const estimatedItemSize = React.useMemo(() => {
-    return productCardWidth + 8; // card width + margin
-  }, [productCardWidth]);
+    return productCardWidth + itemGap;
+  }, [productCardWidth, itemGap]);
 
   return (
     <FlashList
@@ -63,7 +65,7 @@ const Grid: React.FC<CollectionComponentProps> = ({
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              paddingHorizontal: listStyle?.root?.paddingHorizontal || 16,
+              paddingHorizontal: rowPaddingHorizontal,
               marginBottom: itemGap,
             }}
           >
