@@ -91,9 +91,21 @@ Each element of `items[]` now includes full product info:
 
 ---
 
-### 5. Existing fields (unchanged)
+### 5. Address – Save as (Home/Work/Other/Events)
 
-- `totalAmount`, `currencyCode`, `email`, `phone`, `name`, `customerId`, `address`
+When the app sends `address`, it may include:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `addressType` | string (optional) | User’s “Save as” choice: `"Home"`, `"Work"`, `"Other"`, or `"Events"`. |
+
+**Backend requirement:** When creating the Shopify draft order, set the draft’s shipping address from `address.addressType` (if present). The backend uses only `addressType`; when calling Shopify, map it to the field Shopify expects so the placed order shows the address type (e.g. Events) on the order’s shipping address.
+
+---
+
+### 6. Other existing fields (unchanged)
+
+- `totalAmount`, `currencyCode`, `email`, `phone`, `name`, `customerId`, `address` (with optional `addressType` above)
 - `giftWrapping`, `couponCode`, `discountAmount`, `deliverySchedule` (legacy shape; prefer `deliveryType` + `deliverySchedule` for delivery)
 - `selectedShoe`, `isTryAndBuy`
 

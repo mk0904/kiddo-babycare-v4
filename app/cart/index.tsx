@@ -21,7 +21,7 @@ import {
     getDeliveryTimeFromGoogleMaps,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
-import { useAddress } from '@/context/AddressContext';
+import { tagToAddressType, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
@@ -847,14 +847,18 @@ export default function CartScreen() {
                 phone: user?.phone || billingAddress.phone || '',
                 name: user?.displayName || `${billingAddress.firstName} ${billingAddress.lastName}`,
                 customerId: user?.id,
-                address: {
-                    name: `${billingAddress.firstName} ${billingAddress.lastName}`,
-                    address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
-                    city: billingAddress.city,
-                    state: billingAddress.province,
-                    pincode: billingAddress.zip,
-                    phone: billingAddress.phone,
-                },
+                address: (() => {
+                    const base = {
+                        name: `${billingAddress.firstName} ${billingAddress.lastName}`,
+                        address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(', '),
+                        city: billingAddress.city,
+                        state: billingAddress.province,
+                        pincode: billingAddress.zip,
+                        phone: billingAddress.phone,
+                    };
+                    const addressType = selectedAddress?.tag != null ? tagToAddressType(selectedAddress.tag) : undefined;
+                    return addressType ? { ...base, addressType } : base;
+                })(),
                 giftWrapping: giftWrapping ? {
                     name: giftWrapping.name,
                     price: giftWrapping.price

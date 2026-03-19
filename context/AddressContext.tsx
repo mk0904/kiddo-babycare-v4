@@ -20,11 +20,31 @@ export interface Address {
     zip: string;
     pincode: string;
     country: string;
-    tag: 'home' | 'work' | 'other';
+    tag: 'home' | 'work' | 'other' | 'events';
     isDefault: boolean;
     latitude?: number;
     longitude?: number;
 }
+
+export type AddressTag = Address['tag'];
+
+/** Map our tag to addressType value (Home/Work/Other/Events) for backend and for Shopify. */
+export function tagToAddressType(tag: AddressTag): string {
+  const m: Record<AddressTag, string> = { home: 'Home', work: 'Work', other: 'Other', events: 'Events' };
+  return m[tag] ?? 'Home';
+}
+
+/** Map addressType value from Shopify response back to our tag when loading addresses. */
+function addressTypeToTag(value: string | null | undefined): AddressTag {
+  const s = (value ?? '').trim().toLowerCase();
+  if (s === 'work') return 'work';
+  if (s === 'other') return 'other';
+  if (s === 'events') return 'events';
+  return 'home';
+}
+
+/** Shopify Customer Address API uses this key for address type; we send our addressType value here. */
+const SHOPIFY_ADDRESS_TYPE_KEY = 'company' as const;
 
 export type DetectedLocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
 
@@ -97,7 +117,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                             zip: addr.zip || '',
                             pincode: addr.zip || '',
                             country: addr.country || 'India',
-                            tag: 'home', // Default tag as Shopify doesn't store this
+                            tag: addressTypeToTag((addr as any)[SHOPIFY_ADDRESS_TYPE_KEY]),
                             phone: addr.phone || '',
                             isDefault: result.defaultAddress?.id === addr.id,
                             latitude: undefined,
@@ -176,8 +196,8 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 // Set as default if this is the first address
                 const setAsDefault = addresses.length === 0;
                 
-                // Format address data for Shopify (ensure all required fields are present)
-                const shopifyAddressData = {
+                // Format address data for Shopify (addressType sent on Shopify's required key)
+                const shopifyAddressData: Record<string, string> = {
                     firstName: addressData.firstName || '',
                     lastName: addressData.lastName || addressData.name?.split(' ')[1] || '',
                     address1: addressData.address1 || '',
@@ -188,6 +208,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                     zip: addressData.zip || addressData.pincode || '',
                     phone: addressData.phone || '',
                 };
+                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = tagToAddressType(addressData.tag || 'home');
 
                 console.log('[AddressContext] Creating address in Shopify:', shopifyAddressData);
                 
@@ -259,8 +280,8 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
 
         if (customerAccessToken && shopifyId && shopifyId.startsWith('gid://')) {
             try {
-                // Format address data for Shopify
-                const shopifyAddressData = {
+                // Format address data for Shopify (addressType sent on Shopify's required key)
+                const shopifyAddressData: Record<string, string> = {
                     firstName: addressData.firstName ?? address?.firstName ?? '',
                     lastName: addressData.lastName ?? address?.lastName ?? '',
                     address1: addressData.address1 ?? address?.address1 ?? '',
@@ -271,6 +292,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                     zip: addressData.zip ?? addressData.pincode ?? address?.zip ?? address?.pincode ?? '',
                     phone: addressData.phone ?? address?.phone ?? '',
                 };
+                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = tagToAddressType(addressData.tag ?? address?.tag ?? 'home');
 
                 console.log('[AddressContext] Updating address in Shopify:', shopifyId, shopifyAddressData);
                 

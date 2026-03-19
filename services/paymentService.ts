@@ -108,6 +108,8 @@ export interface OrderData {
         state: string;
         pincode: string;
         phone: string;
+        /** Save as: Home/Work/Other/Events – backend sets on Shopify order shipping address */
+        addressType?: string;
     };
     isTryAndBuy?: boolean;
     giftWrapping?: { name: string; price: number };

@@ -18,12 +18,22 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAddress, Address } from '@/context/AddressContext';
 import { Colors, Fonts } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 
-const ADDRESS_TAGS = [
-    { id: 'home', label: 'Home', icon: 'home' as const },
-    { id: 'work', label: 'Work', icon: 'briefcase' as const },
-    { id: 'other', label: 'Other', icon: 'location' as const },
+const BASE_ADDRESS_TAGS = [
+    { id: 'home' as const, label: 'Home', icon: 'home' as const },
+    { id: 'work' as const, label: 'Work', icon: 'briefcase' as const },
+    { id: 'other' as const, label: 'Other', icon: 'location' as const },
 ];
+const EVENTS_TAG = { id: 'events' as const, label: 'Events', icon: 'calendar' as const };
+
+function getAddressTags(includeEvents: boolean) {
+    return includeEvents ? [...BASE_ADDRESS_TAGS, EVENTS_TAG] : BASE_ADDRESS_TAGS;
+}
+
+function tagToName(tag: 'home' | 'work' | 'other' | 'events'): string {
+    return tag === 'home' ? 'Home' : tag === 'work' ? 'Work' : tag === 'other' ? 'Other' : 'Events';
+}
 
 export default function EditAddressScreen() {
     const router = useRouter();
@@ -38,7 +48,9 @@ export default function EditAddressScreen() {
     const [city, setCity] = useState('');
     const [state, setState] = useState('');
     const [pincode, setPincode] = useState('');
-    const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other'>('home');
+    const isEventEnabled = appConfigService.isEventEnabled();
+    const addressTags = React.useMemo(() => getAddressTags(isEventEnabled), [isEventEnabled]);
+    const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other' | 'events'>('home');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -53,7 +65,7 @@ export default function EditAddressScreen() {
             setCity(address.city || '');
             setState(address.state || address.province || '');
             setPincode(address.pincode || address.zip || '');
-            setSelectedTag(address.tag || 'home');
+            setSelectedTag((address.tag === 'events' ? 'events' : address.tag) || 'home');
         }
     }, [addressId, addresses]);
 
@@ -89,7 +101,7 @@ export default function EditAddressScreen() {
 
         try {
             const addressData = {
-                name: selectedTag === 'home' ? 'Home' : selectedTag === 'work' ? 'Work' : 'Other',
+                name: tagToName(selectedTag),
                 firstName: fullName.trim(),
                 lastName: '_',
                 phone: phone.trim(),
@@ -283,14 +295,14 @@ export default function EditAddressScreen() {
                 <View style={styles.inputContainer}>
                     <Text style={styles.label}>Save as</Text>
                     <View style={styles.tagContainer}>
-                        {ADDRESS_TAGS.map((tag) => (
+                        {addressTags.map((tag) => (
                             <TouchableOpacity
                                 key={tag.id}
                                 style={[
                                     styles.tagButton,
                                     selectedTag === tag.id && styles.tagButtonActive,
                                 ]}
-                                onPress={() => setSelectedTag(tag.id as 'home' | 'work' | 'other')}
+                                onPress={() => setSelectedTag(tag.id)}
                             >
                                 <Ionicons
                                     name={tag.icon}

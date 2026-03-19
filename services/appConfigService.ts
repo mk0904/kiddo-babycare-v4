@@ -116,6 +116,11 @@ class AppConfigService {
   getOrderDetailConfig(): OrderDetailConfig | null {
     return this.config?.orderDetail ?? null;
   }
+
+  /** When true, show "Events" in address Save as and sync addressType to Shopify. */
+  isEventEnabled(): boolean {
+    return this.config?.isEvent === true;
+  }
 }
 
 export const appConfigService = new AppConfigService();
