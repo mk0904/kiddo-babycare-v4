@@ -1,31 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Colors, Fonts } from '@/constants/theme';
+import { Address, useAddress } from '@/context/AddressContext';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useAddress, Address } from '@/context/AddressContext';
-import { Colors, Fonts } from '@/constants/theme';
-import { appConfigService } from '@/services/appConfigService';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const BASE_ADDRESS_TAGS = [
     { id: 'home' as const, label: 'Home', icon: 'home' as const },
     { id: 'work' as const, label: 'Work', icon: 'briefcase' as const },
     { id: 'other' as const, label: 'Other', icon: 'location' as const },
 ];
-const EVENTS_TAG = { id: 'events' as const, label: 'Events', icon: 'calendar' as const };
+const EVENTS_TAG = { id: 'events' as const, label: 'Event', icon: 'calendar' as const };
 
 function getAddressTags(includeEvents: boolean) {
     return includeEvents ? [...BASE_ADDRESS_TAGS, EVENTS_TAG] : BASE_ADDRESS_TAGS;
