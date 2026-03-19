@@ -31,7 +31,7 @@ import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
 import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
-import { trackEvent } from '@/utils/mixpanelHelpers';
+import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -117,6 +117,12 @@ export default function RootLayout() {
       
       setAppIsReady(true);
       try {
+        // Identify user on app open so CleverTap attributes App Launched to profile (DAU/WAU/MAU)
+        const u = useUserStore.getState().user;
+        if (u) {
+          const uid = u.id || u.customerId || u.email || u.phone;
+          if (uid) identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+        }
         trackEvent('App Opened');
       } catch (e) {
         console.warn('Analytics tracking error:', e);

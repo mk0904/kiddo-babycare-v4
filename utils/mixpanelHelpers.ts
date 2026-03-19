@@ -1,5 +1,6 @@
 import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
+import { clevertapService } from '@/services/clevertapService';
 import { logMetaEvent } from '@/utils/metaSDK';
 
 /**
@@ -24,6 +25,9 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
     const props = properties ?? {};
     analyticsService.track(eventName, props, getDistinctId());
     logMetaEvent(eventName, props, props.event_id ?? props.orderId);
+    // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
+    const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
+    clevertapService.recordEvent(ctEventName, props);
   } catch (error) {
     console.error('Analytics tracking error:', error);
   }
@@ -39,6 +43,14 @@ export const identifyUser = (userId: string, userProperties?: {
 }) => {
   try {
     analyticsService.identify(userId, userProperties ?? {});
+    const profile: Record<string, any> = {
+      Identity: userId,
+      ...(userProperties ?? {}),
+    };
+    if (userProperties?.email) profile.Email = userProperties.email;
+    if (userProperties?.name) profile.Name = userProperties.name;
+    if (userProperties?.phone) profile.Phone = userProperties.phone;
+    clevertapService.onUserLogin(profile);
   } catch (error) {
     console.error('Analytics identify error:', error);
   }
@@ -49,7 +61,9 @@ export const identifyUser = (userId: string, userProperties?: {
  */
 export const trackScreenView = (screenName: string, additionalProperties?: Record<string, any>) => {
   try {
-    analyticsService.track('Screen View', { screen: screenName, ...additionalProperties }, getDistinctId());
+    const props = { screen: screenName, ...additionalProperties };
+    analyticsService.track('Screen View', props, getDistinctId());
+    clevertapService.recordEvent('Screen View', props);
   } catch (error) {
     console.error('Analytics screen tracking error:', error);
   }
@@ -61,6 +75,7 @@ export const trackScreenView = (screenName: string, additionalProperties?: Recor
 export const resetUser = () => {
   try {
     analyticsService.reset();
+    clevertapService.logout();
   } catch (error) {
     console.error('Analytics reset error:', error);
   }
@@ -276,6 +291,7 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     value: amount,
     currency: 'INR',
   });
+  clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
 };
 
 export const trackOrderConfirmed = (orderId: string, amount: number) => {
