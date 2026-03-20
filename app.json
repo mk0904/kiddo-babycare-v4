@@ -113,13 +113,13 @@
           "advertiserIDCollectionEnabled": true,
           "autoLogAppEventsEnabled": false,
           "isAutoInitEnabled": false,
-          "iosUserTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+          "iosUserTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
         }
       ],
       [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+          "userTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
         }
       ],
       [

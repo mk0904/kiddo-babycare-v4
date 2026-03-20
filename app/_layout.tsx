@@ -163,12 +163,11 @@ export default function RootLayout() {
       trySetReady();
     }, 5000); // 5 second timeout
 
-    // Initialize OneSignal in background with delay (non-blocking)
-    // Delay to ensure app loads first, then initialize OneSignal
-    setTimeout(() => {
+    // Initialize OneSignal in background with delay (non-blocking).
+    // On iOS, wait for ATT to finish (metaReadyRef) so dialogs don't stack.
+    const startOneSignalInit = () => {
       const initOneSignal = async () => {
         try {
-          // 1️⃣ Initialize OneSignal with timeout protection
           const initPromise = new Promise<boolean>((resolve) => {
             try {
               const initialized = oneSignalService.initialize();
@@ -178,7 +177,6 @@ export default function RootLayout() {
             }
           });
 
-          // Add timeout to prevent hanging
           const timeoutPromise = new Promise<boolean>((resolve) => {
             setTimeout(() => resolve(false), 5000);
           });
@@ -187,7 +185,6 @@ export default function RootLayout() {
           if (!initialized) {
             if (Platform.OS === 'ios') {
               console.warn('📱 [OneSignal] On iOS Simulator OneSignal is unavailable. Showing notification permission via expo-notifications so you see the same prompt as on device.');
-              // On iOS Simulator, still show the system notification permission dialog (expo-notifications fallback)
               const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
               try {
                 const alreadyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
@@ -202,7 +199,6 @@ export default function RootLayout() {
                 console.warn('📱 [OneSignal] expo-notifications fallback failed:', e);
               }
             }
-            // Register native push token with CleverTap when OneSignal init fails (token is independent per provider)
             void clevertapService.syncNativePushTokenWithCleverTap();
             try {
               const userStore = useUserStore.getState();
@@ -219,29 +215,37 @@ export default function RootLayout() {
             return;
           }
 
-          // When permission is off, always try the system prompt. On iOS, after user has denied or disabled in Settings, the system won't show "Allow" again – so we offer Settings.
           try {
+            const ONESIGNAL_ASKED_KEY = 'onesignal_permission_asked';
+            const previouslyAsked = await AsyncStorage.getItem(ONESIGNAL_ASKED_KEY);
             const hasPermission = await oneSignalService.getPermissionStatus();
             if (!hasPermission) {
               await oneSignalService.requestPermission(false);
-              await AsyncStorage.setItem('onesignal_permission_asked', 'true');
-              const stillOff = await oneSignalService.getPermissionStatus();
-              if (Platform.OS === 'ios' && !stillOff) {
-                Alert.alert(
-                  'Notifications off',
-                  'To get order updates and offers, enable notifications in Settings.',
-                  [
-                    { text: 'Later', style: 'cancel' },
-                    { text: 'Open Settings', onPress: () => Linking.openSettings() },
-                  ]
-                );
+              await AsyncStorage.setItem(ONESIGNAL_ASKED_KEY, 'true');
+
+              // Only show "Notifications off → Open Settings" for users who previously
+              // denied. On first ask the system dialog just appeared; a stale
+              // getPermissionStatus() would wrongly trigger this alert (race condition).
+              if (Platform.OS === 'ios' && previouslyAsked === 'true') {
+                await new Promise(r => setTimeout(r, 500));
+                const stillOff = await oneSignalService.getPermissionStatus();
+                if (!stillOff) {
+                  Alert.alert(
+                    'Notifications off',
+                    'To get order updates and offers, enable notifications in Settings.',
+                    [
+                      { text: 'Later', style: 'cancel' },
+                      { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                    ]
+                  );
+                }
               }
             }
           } catch (error) {
             if (__DEV__) console.warn('[OneSignal] permission error:', error);
           }
 
-          // Check status in background and register with backend when we have subscription id + user
+          // Check status in background and register with backend
           setTimeout(async () => {
             try {
               const subStatus = await oneSignalService.checkSubscriptionStatus();
@@ -265,17 +269,30 @@ export default function RootLayout() {
             } catch (error) {
               if (__DEV__) console.warn('[OneSignal] status check error:', error);
             }
-            // CleverTap: explicit native token (FCM / APNs) — see clevertapService.syncNativePushTokenWithCleverTap
             void clevertapService.syncNativePushTokenWithCleverTap();
-          }, 3000); // Wait 3 seconds before checking (gives OneSignal time to subscribe)
+          }, 3000);
         } catch (error) {
           if (__DEV__) console.warn('[OneSignal] init error:', error);
         }
       };
 
-      // Run OneSignal initialization in background (non-blocking)
       initOneSignal().catch(() => {});
-    }, 1000); // Short delay so app mounts first, then init OneSignal (was 5s – reduced so push subscribes sooner)
+    };
+
+    // On iOS, wait for ATT dialog to resolve before showing notification permission.
+    // This prevents permission dialogs from stacking on top of each other.
+    if (Platform.OS === 'ios') {
+      const waitForATT = () => {
+        if (metaReadyRef.current) {
+          setTimeout(startOneSignalInit, 300);
+        } else {
+          setTimeout(waitForATT, 200);
+        }
+      };
+      setTimeout(waitForATT, 500);
+    } else {
+      setTimeout(startOneSignalInit, 1000);
+    }
     
     // Hide native splash immediately
     const hideNativeSplash = async () => {

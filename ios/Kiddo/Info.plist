@@ -96,7 +96,7 @@
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
     <key>NSUserTrackingUsageDescription</key>
-    <string>This identifier will be used to deliver personalized content and measure ad performance.</string>
+    <string>Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>SKAdNetworkItems</key>
