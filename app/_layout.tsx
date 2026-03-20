@@ -48,6 +48,17 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
+// Show push notifications when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 

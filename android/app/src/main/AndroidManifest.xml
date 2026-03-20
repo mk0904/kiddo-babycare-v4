@@ -62,6 +62,11 @@
     <meta-data android:name="CLEVERTAP_DEFAULT_CHANNEL_ID" android:value="default_channel"/>
     <meta-data android:name="CLEVERTAP_IDENTIFIER" android:value="Email,Phone"/>
 
+    <service android:name=".KiddoPushRouter" android:exported="false">
+      <intent-filter>
+        <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+      </intent-filter>
+    </service>
     <service android:name="com.clevertap.android.sdk.pushnotification.CTNotificationIntentService" android:exported="false">
       <intent-filter>
         <action android:name="com.clevertap.PUSH_EVENT"/>

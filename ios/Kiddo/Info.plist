@@ -141,7 +141,8 @@
     <string>eu1</string>
     <key>CleverTapIdentifiers</key>
     <array>
-      <string>Email,Phone</string>
+      <string>Email</string>
+      <string>Phone</string>
     </array>
     <key>CTExpoLogLevel</key>
     <integer>-1</integer>
