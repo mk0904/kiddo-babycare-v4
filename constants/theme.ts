@@ -70,6 +70,8 @@ export const Fonts = {
   LexendMedium: 'Lexend-Medium',
   LexendSemiBold: 'Lexend-SemiBold',
   LexendBold: 'Lexend-Bold',
+  /** Fredoka SemiBold (600) — loaded in app/_layout via @expo-google-fonts/fredoka */
+  FredokaSemiBold: 'Fredoka_600SemiBold',
   RegularWeight: fontWeight.Regular,
   MediumWeight: fontWeight.Medium,
   SemiBoldWeight: fontWeight.SemiBold,

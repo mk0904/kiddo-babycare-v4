@@ -248,57 +248,32 @@
         {
           "collectionId": "gid://shopify/Collection/510566334753",
           "label": "All",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510566367521",
           "label": "Cough & Cold",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566400289",
-          "label": "Stomach Care",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566433057",
-          "label": "Medical Devices (Thermometers, nebulizer, etc)",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566465825",
-          "label": "Medicines and First Aid",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons.png?v=1773742152"
         },
         {
           "collectionId": "gid://shopify/Collection/510566498593",
           "label": "Mosquito repellents and patches",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566531361",
-          "label": "Handwash and sanitizers",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_06e09083-b395-4893-88a2-83ca48617cbd.png?v=1773744258"
         },
         {
           "collectionId": "gid://shopify/Collection/510566564129",
           "label": "Kids Detergents & Cleaners",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_1.png?v=1773742583"
         },
         {
           "collectionId": "gid://shopify/Collection/510566596897",
           "label": "Safety Bed Rails",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566629665",
-          "label": "Cotton Balls and Swab",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_efd7f59d-d549-4256-8670-ab985b0f35c6.png?v=1773743206"
         },
         {
           "collectionId": "gid://shopify/Collection/510566662433",
           "label": "Teethers",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_13.png?v=1773132254"
         }
       ]
     },
@@ -333,8 +308,7 @@
           "collectionId": "gid://shopify/Collection/510565777697",
           "label": "Milk Storage Bags",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_4.png?v=1773132254"
-        }
-        ,
+        },
         {
           "collectionId": "gid://shopify/Collection/510565810465",
           "label": "Bottle Sterilizers & Warmers",
@@ -374,8 +348,7 @@
           "collectionId": "gid://shopify/Collection/510566170913",
           "label": "Pacifiers & Feeders",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_12.png?v=1773132254"
-        }
-        ,
+        },
         {
           "collectionId": "gid://shopify/Collection/510566203681",
           "label": "Burp Clothes",
@@ -391,7 +364,6 @@
           "label": "Teethers",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_13.png?v=1773132254"
         }
-        
       ]
     },
     "511117197601": {
@@ -399,7 +371,7 @@
         {
           "collectionId": "gid://shopify/Collection/508173123873",
           "label": "All",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_tv2rnttv2rnttv2r.png?v=1773225460"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510563975457",
@@ -463,12 +435,12 @@
         }
       ]
     },
-    "511117263137":{
+    "511117263137": {
       "subcategories": [
         {
           "collectionId": "gid://shopify/Collection/508371206433",
           "label": "All",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510564532513",
@@ -537,12 +509,12 @@
         }
       ]
     },
-    "511117295905":{
+    "511117295905": {
       "subcategories": [
         {
           "collectionId": "gid://shopify/Collection/510565417249",
           "label": "All",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510565286177",
@@ -586,12 +558,12 @@
         }
       ]
     },
-    "511117328673":{
+    "511117328673": {
       "subcategories": [
         {
           "collectionId": "gid://shopify/Collection/508371239201",
           "label": "All",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510565548321",
@@ -617,8 +589,7 @@
           "collectionId": "gid://shopify/Collection/510565777697",
           "label": "Milk Storage Bags",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_4.png?v=1773132254"
-        }
-        ,
+        },
         {
           "collectionId": "gid://shopify/Collection/510565810465",
           "label": "Bottle Sterilizers & Warmers",
@@ -658,8 +629,7 @@
           "collectionId": "gid://shopify/Collection/510566170913",
           "label": "Pacifiers & Feeders",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_12.png?v=1773132254"
-        }
-        ,
+        },
         {
           "collectionId": "gid://shopify/Collection/510566203681",
           "label": "Burp Clothes",
@@ -675,60 +645,66 @@
           "label": "Teethers",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_13.png?v=1773132254"
         }
-        
       ]
     },
-    "511117361441":{
+    "511117361441": {
       "subcategories": [
         {
-          "collectionId": "gid://shopify/Collection/510566334753",
+          "collectionId": "gid://shopify/Collection/511117361441",
           "label": "All",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
         },
         {
           "collectionId": "gid://shopify/Collection/510566367521",
           "label": "Cough & Cold",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons.png?v=1773742152"
         },
-        {
-          "collectionId": "gid://shopify/Collection/510566400289",
-          "label": "Stomach Care",
-          "imageUrl": ""
-        },
-        
         {
           "collectionId": "gid://shopify/Collection/510566498593",
           "label": "Mosquito repellents and patches",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566531361",
-          "label": "Handwash and sanitizers",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_06e09083-b395-4893-88a2-83ca48617cbd.png?v=1773744258"
         },
         {
           "collectionId": "gid://shopify/Collection/510566564129",
           "label": "Kids Detergents & Cleaners",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_1.png?v=1773742583"
         },
         {
           "collectionId": "gid://shopify/Collection/510566596897",
           "label": "Safety Bed Rails",
-          "imageUrl": ""
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510566629665",
-          "label": "Cotton Balls and Swab",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Safety_Health_greyed_icons_efd7f59d-d549-4256-8670-ab985b0f35c6.png?v=1773743206"
         },
         {
           "collectionId": "gid://shopify/Collection/510566662433",
           "label": "Teethers",
-          "imageUrl": ""
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/feeding_and_nursing_subcat_grey_13.png?v=1773132254"
+        }
+      ]
+    },
+    "510769824033": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/510769824033",
+          "label": "Lunch Boxes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_2.jpg?v=1773931584"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769791265",
+          "label": "School Bags",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_1.jpg?v=1773931358"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769889569",
+          "label": "Water Bottles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.00.36_PM.jpg?v=1773931215"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769955105",
+          "label": "Stationery",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.03_PM.jpg?v=1773931525"
         }
       ]
     }
-
   },
   "productGridDefaults": {
     "gap": 16,
@@ -782,34 +758,45 @@
         "type": "grid",
         "collectionIds": [
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/jackets_sweaters_150x.png",
-            "id": "gid://shopify/Collection/508646719777",
-            "name": "Jacket and Sweaters"
+            "id": "gid://shopify/Collection/510879269153",
+            "name": "Onesies"
           },
           {
-            "id": "gid://shopify/Collection/508646785313",
-            "name": "Thermals"
+            "id": "gid://shopify/Collection/510861345057",
+            "name": "Top Wears"
           },
           {
-            "id": "gid://shopify/Collection/508646818081",
+            "id": "gid://shopify/Collection/510861476129",
             "name": "Bottom Wear"
           },
           {
-            "id": "gid://shopify/Collection/508646850849",
-            "name": "Everyday"
+            "id": "gid://shopify/Collection/510861508897",
+            "name": "Dresses & Coord Sets"
           },
           {
-            "id": "gid://shopify/Collection/508646916385",
-            "name": "Occasion Wear"
+            "id": "gid://shopify/Collection/510861771041",
+            "name": "Nightsuits & Inner Wear"
           },
           {
-            "id": "gid://shopify/Collection/508169322785",
+            "id": "gid://shopify/Collection/510861836577",
+            "name": "Ethnic Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510861967649",
+            "name": "Party Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510862065953",
+            "name": "Footwear & Socks"
+          },
+          {
+            "id": "gid://shopify/Collection/510862131489",
             "name": "Accessories"
           }
         ],
-        "title": "Shop by Category",
+        "title": "Boys Fashion",
         "gridConfig": {
-          "numColumns": 3,
+          "numColumns": 4,
           "colGap": 12,
           "rowGap": 12,
           "limit": 0,
@@ -837,7 +824,83 @@
           },
           "text": {
             "marginTop": 12,
-            "display": "none",
+            "color": "#666666",
+            "textAlign": "center"
+          }
+        },
+        "order": 4
+      },
+      {
+        "id": "all-grid-shop-by-category",
+        "type": "grid",
+        "collectionIds": [
+          {
+            "id": "gid://shopify/Collection/510879301921",
+            "name": "Onesies"
+          },
+          {
+            "id": "gid://shopify/Collection/510860001569",
+            "name": "Top Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510860067105",
+            "name": "Bottom Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510860198177",
+            "name": "Dresses & Coord Sets"
+          },
+          {
+            "id": "gid://shopify/Collection/510860525857",
+            "name": "Nightsuits & Inner Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510860689697",
+            "name": "Ethnic Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510860788001",
+            "name": "Party Wear"
+          },
+          {
+            "id": "gid://shopify/Collection/510860984609",
+            "name": "Footwear & Socks"
+          },
+          {
+            "id": "gid://shopify/Collection/510861017377",
+            "name": "Accessories"
+          }
+        ],
+        "title": "Girls Fashion",
+        "gridConfig": {
+          "numColumns": 4,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 0,
+          "resizeMode": "contain"
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingVertical": 16
+          },
+          "title": {
+            "marginBottom": 0,
+            "fontSize": 16,
+            "fontWeight": "600",
+            "color": "#363636"
+          },
+          "image": {
+            "width": "100%",
+            "borderRadius": 20
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "backgroundColor": "#FFFFFF",
+            "overflow": "visible"
+          },
+          "text": {
+            "marginTop": 12,
             "color": "#666666",
             "textAlign": "center"
           }
@@ -849,47 +912,55 @@
         "type": "grid",
         "collectionIds": [
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-3m_gender_neutral.png",
-            "id": "gid://shopify/Collection/508645802273",
-            "name": "0-3 M"
+            "id": "gid://shopify/Collection/508372615457",
+            "name": "STEM Learning"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-6m_gender_neutral.png",
-            "id": "gid://shopify/Collection/508645998881",
-            "name": "3-6 M"
+            "id": "gid://shopify/Collection/507747369249",
+            "name": "Dolls & Play Sets"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6-12m_gender_neutral.png",
-            "id": "gid://shopify/Collection/508646162721",
-            "name": "6-12 M"
+            "id": "gid://shopify/Collection/507747303713",
+            "name": "Cars & RC Toys"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1-2y_gender_neutral.png",
-            "id": "gid://shopify/Collection/508646228257",
-            "name": "1-2 Y"
+            "id": "gid://shopify/Collection/507747238177",
+            "name": "Soft Toys"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2-3y_gender_neutral.png",
-            "id": "gid://shopify/Collection/508646261025",
-            "name": "2-3 Y"
+            "id": "gid://shopify/Collection/507748483361",
+            "name": "Puzzles"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-4y_gender_neutral.png",
-            "id": "gid://shopify/Collection/508646293793",
-            "name": "3-4 Y"
+            "id": "gid://shopify/Collection/507747402017",
+            "name": "Building Blocks"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4-5y_gender_neutral.png",
-            "id": "gid://shopify/Collection/508646326561",
-            "name": "4-5 Y"
+            "id": "gid://shopify/Collection/507747172641",
+            "name": "Art and Crafts"
           },
           {
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5__gender_neutral.png",
-            "id": "gid://shopify/Collection/508646359329",
-            "name": "5+ Y"
+            "id": "gid://shopify/Collection/509519757601",
+            "name": "Pretend Play"
+          },
+          {
+            "id": "gid://shopify/Collection/509548265761",
+            "name": "Infant Toys"
+          },
+          {
+            "id": "gid://shopify/Collection/509519921441",
+            "name": "Ride Ons & Outdoor Games"
+          },
+          {
+            "id": "gid://shopify/Collection/509520085281",
+            "name": "Books"
+          },
+          {
+            "id": "gid://shopify/Collection/509520675105",
+            "name": "Board & Card Games"
           }
         ],
-        "title": "Shop by Age",
+        "title": "Toys",
         "gridConfig": {
           "numColumns": 4,
           "colGap": 12,
@@ -915,7 +986,6 @@
             "backgroundColor": "#FFFFFF"
           },
           "text": {
-            "display": "none",
             "marginTop": 12,
             "color": "#666666",
             "textAlign": "center"
@@ -928,45 +998,25 @@
         "type": "grid",
         "collectionIds": [
           {
-            "id": "gid://shopify/Collection/507748548897",
-            "name": ""
+            "id": "gid://shopify/Collection/510769987873",
+            "name": "Strollers and Accessories"
           },
           {
-            "id": "gid://shopify/Collection/507765424417",
-            "name": ""
+            "id": "gid://shopify/Collection/509560324385",
+            "name": "Car Seat & Carrier"
           },
           {
-            "id": "gid://shopify/Collection/507741176097",
-            "name": ""
+            "id": "gid://shopify/Collection/510770118945",
+            "name": "Diaper Bin & Diaper Bag"
           },
           {
-            "id": "gid://shopify/Collection/507746058529",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507764408609",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507774861601",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507775549729",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507788427553",
-            "name": ""
-          },
-          {
-            "id": "gid://shopify/Collection/507762704673",
-            "name": ""
+            "id": "gid://shopify/Collection/510770151713",
+            "name": "Bouncers and Rockers"
           }
         ],
-        "title": "Shop by Brand",
+        "title": "Baby Gear",
         "gridConfig": {
-          "numColumns": 3,
+          "numColumns": 4,
           "colGap": 16,
           "rowGap": 16,
           "limit": 0,
@@ -1002,13 +1052,72 @@
             "elevation": 2
           },
           "text": {
-            "display": "none",
             "marginTop": 12,
             "color": "#666666",
             "textAlign": "center"
           }
         },
         "order": 12
+      },
+      {
+        "id": "babycare-grid-2-3",
+        "type": "grid",
+        "title": "Daily Essentials",
+        "collectionIds": [
+          {
+            "id": "gid://shopify/Collection/511117197601"
+          },
+          {
+            "id": "gid://shopify/Collection/511117263137"
+          },
+          {
+            "id": "gid://shopify/Collection/511117295905"
+          },
+          {
+            "id": "gid://shopify/Collection/511117328673"
+          },
+          {
+            "id": "gid://shopify/Collection/511117361441"
+          }
+        ],
+        "gridConfig": {
+          "columnsPerRow": [
+            2,
+            3
+          ],
+          "colGap": 12,
+          "rowGap": 6,
+          "limit": 0,
+          "resizeMode": "cover",
+          "aspectRatio": 1.25
+        },
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingVertical": 16
+          },
+          "title": {
+            "fontSize": 18,
+            "fontWeight": "700",
+            "color": "#363636",
+            "marginBottom": 12
+          },
+          "imageContainer": {
+            "borderRadius": 20,
+            "borderWidth": 1,
+            "borderColor": "#E5E7EB",
+            "backgroundColor": "#E8F4FD",
+            "overflow": "hidden"
+          },
+          "text": {
+            "marginTop": 6,
+            "color": "#363636",
+            "textAlign": "center",
+            "fontSize": 14,
+            "fontWeight": "500"
+          }
+        },
+        "visible": true
       }
     ]
   },
@@ -1044,7 +1153,7 @@
         "container": {
           "paddingHorizontal": 20,
           "paddingVertical": 16,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "text": {
           "display": "none"
@@ -1058,11 +1167,11 @@
       "type": "carousel",
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/tryandbuybanner.jpg?v=1768113449",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/image_1dd962ed-6a71-4aea-b4ab-e85d71a4bc4d.jpg?v=1773990190",
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/507797111073"
+              "id": "gid://shopify/Collection/510769824033"
             }
           }
         }
@@ -1077,7 +1186,7 @@
       "styles": {
         "container": {
           "marginTop": -15,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "imageContainer": {},
         "image": {
@@ -1123,26 +1232,31 @@
         },
         {
           "id": "gid://shopify/Collection/509514514721",
-          "name": "Giftings"
+          "name": "Gifting"
         }
       ],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 18,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "bogart",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "400",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1185,18 +1299,47 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-banner-below-frequently-bought",
+      "type": "imageBanner",
+      "order": 4.55,
+      "visible": true,
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Welcome_Offer_Banners.png?v=1773923290",
+        "height": 100,
+        "borderRadius": 12,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 0,
+          "paddingTop": -15,
+          "paddingBottom": 0,
+          "backgroundColor": "#F5F5F5"
+        },
+        "wrapper": {
+          "marginHorizontal": 0
         }
       }
     },
@@ -1239,18 +1382,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1309,18 +1458,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1395,18 +1550,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1449,19 +1610,73 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
+      }
+    },
+    {
+      "id": "all-banner-before-baby-care",
+      "type": "carousel",
+      "order": 6,
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ONYC_Shoes_Banner.png?v=1773945802",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/511451529505"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Puzzles_Banner.png?v=1773949178",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/511451660577"
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": true,
+        "autoPlayInterval": 3500,
+        "loop": true,
+        "height": 0.52,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 0,
+          "paddingBottom": 10,
+          "backgroundColor": "#F5F5F5"
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 12
+        },
+        "img": {}
       }
     },
     {
@@ -1503,18 +1718,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1557,18 +1778,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1594,14 +1821,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1627,14 +1864,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1660,14 +1907,24 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1688,13 +1945,16 @@
         "container": {
           "paddingTop": 10,
           "paddingHorizontal": 16,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1720,13 +1980,16 @@
       "styles": {
         "container": {
           "paddingTop": 10,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1754,13 +2017,16 @@
         "container": {
           "paddingTop": 10,
           "paddingBottom": 20,
-          "backgroundColor": "#FDF6EC"
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "fontFamily": "bogart"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       },
       "order": 21
@@ -1776,7 +2042,7 @@
         "link": {
           "type": "collection",
           "collection": {
-            "id": "gid://shopify/Collection/508366258465"
+            "id": "gid://shopify/Collection/510860198177"
           }
         },
         "height": 250,
@@ -1848,15 +2114,18 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 30,
-          "marginBottom": 20
+          "paddingTop": 10,
+          "marginBottom": 20,
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "marginBottom": 10,
-          "marginTop": 10,
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "image": {
           "width": "100%",
@@ -1869,11 +2138,12 @@
         },
         "text": {
           "marginTop": 12,
-          "color": "#363636",
-          "textAlign": "center",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
           "fontSize": 12,
-          "fontWeight": "600",
-          "fontFamily": "medium"
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -1897,9 +2167,13 @@
           "marginBottom": 10
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1926,9 +2200,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": ""
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -1958,9 +2236,13 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": ""
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     }
@@ -1971,11 +2253,11 @@
       "type": "carousel",
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2025-12-27_at_12.43.26_AM.png?v=1766779972",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Boys_Main_Banner.png?v=1773997491",
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/508364620065"
+              "id": "gid://shopify/Collection/510861508897"
             }
           }
         }
@@ -2054,14 +2336,17 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "marginBottom": 20
+          "marginBottom": 20,
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "marginBottom": 10,
+          "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 18,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": ""
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "image": {
           "width": "100%",
@@ -2074,11 +2359,12 @@
         },
         "text": {
           "marginTop": 12,
-          "color": "#363636",
-          "textAlign": "center",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
           "fontSize": 12,
-          "fontWeight": "600",
-          "fontFamily": "medium"
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -2102,9 +2388,13 @@
           "marginBottom": 10
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -2131,9 +2421,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": ""
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -2163,9 +2457,13 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": ""
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     },
@@ -2191,9 +2489,13 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 16,
-          "fontWeight": "600",
-          "color": ""
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     }
@@ -2260,13 +2562,19 @@
         "title": {
           "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 18,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -2311,13 +2619,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -2394,13 +2709,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -2426,9 +2748,13 @@
           "paddingBottom": 20
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     }
@@ -2514,6 +2840,7 @@
     ]
   },
   "categories": {
+    "defaultPageBackgroundColor": "#F5F5F5",
     "order": [
       "all",
       "girls",
@@ -2525,9 +2852,10 @@
     "items": {
       "all": {
         "label": "All",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-header.png",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-20_at_11.57.51_AM.jpg?v=1773989205",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2536,6 +2864,7 @@
       },
       "girls": {
         "label": "Girls",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
         "header": {
           "textColor": "#363636",
@@ -2549,11 +2878,12 @@
       },
       "boys": {
         "label": "Boys",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys-fashion-selected_1180e57b-cf0a-4647-9e8d-78864b002f09.png?v=1772801263",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#4169E1",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-boys-header.png",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Boys_Header.png?v=1773997490",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2562,11 +2892,12 @@
       },
       "babycare": {
         "label": "Baby Care",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare-selected_e686a7e3-ec46-412b-a563-289532e32bc6.png?v=1772801243",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-babycare-header.png",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm_34a6c8fe-683e-4b34-aebf-9c04f4b9d7b0.png?v=1773980641",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2575,6 +2906,7 @@
       },
       "toys": {
         "label": "Toys & Craft",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys-selected.png?v=1772801403",
         "header": {
           "textColor": "#363636",
@@ -2588,11 +2920,12 @@
       },
       "babygear": {
         "label": "Baby Gear",
+        "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby-Gear_e445edf2-9527-4924-9755-6578e63ef39e.png?v=1773208150",
         "header": {
           "textColor": "#363636",
-          "backgroundColor": "#90EE90",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Feb_6_2026_10_43_55_AM.png?v=1770355421",
+          "backgroundColor": "#F5F5F5",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Gear_Header.png?v=1773995483",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2740,7 +3073,7 @@
       "title": "Featured",
       "visible": true,
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-01-06_at_3.24.03_PM.jpg?v=1767705794",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm_1_cd17998f-1e9b-4120-af77-eb2bd1a59b8a.png?v=1773980640",
         "height": 250,
         "borderRadius": 0,
         "borderBottomLeftRadius": 20,
@@ -2759,7 +3092,7 @@
     {
       "id": "babycare-grid-2-3",
       "type": "grid",
-      "title": "Shop By Category",
+      "title": "Shop by Category",
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/511117197601"
@@ -2783,7 +3116,7 @@
           3
         ],
         "colGap": 12,
-        "rowGap": 12,
+        "rowGap": 6,
         "limit": 0,
         "resizeMode": "cover",
         "aspectRatio": 1.25
@@ -2791,13 +3124,17 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingVertical": 16
+          "paddingTop": 10,
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "fontSize": 18,
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636",
-          "marginBottom": 12
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "imageContainer": {
           "borderRadius": 20,
@@ -2808,12 +3145,15 @@
         },
         "text": {
           "marginTop": 12,
-          "color": "#363636",
-          "textAlign": "center",
-          "fontSize": 14
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       },
-      "visible": false
+      "visible": true
     },
     {
       "id": "babycare-grid-brands",
@@ -2863,14 +3203,17 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 20
+          "paddingTop": 10,
+          "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "marginBottom": 10,
+          "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 18,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "imageContainer": {
           "borderRadius": 20,
@@ -2881,9 +3224,12 @@
         "text": {
           "display": "none",
           "marginTop": 12,
-          "color": "#666666",
-          "textAlign": "center",
-          "fontWeight": "500"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -2944,13 +3290,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3011,13 +3364,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3062,13 +3422,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3125,13 +3492,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3176,13 +3550,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "500",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3205,9 +3586,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -3223,7 +3608,7 @@
       "title": "Featured",
       "visible": true,
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/RFR_Baby_Products_Banner.jpg?v=1770056652",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Gear_Main_Banner.png?v=1773995486",
         "height": 250,
         "borderRadius": 0,
         "borderBottomLeftRadius": 20,
@@ -3232,7 +3617,7 @@
       },
       "styles": {
         "container": {
-          "marginTop": -31,
+          "marginTop": 0,
           "marginBottom": 0
         },
         "wrapper": {
@@ -3282,13 +3667,19 @@
         "title": {
           "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 18,
+          "fontSize": 15,
+          "lineHeight": 20,
           "fontWeight": "700",
-          "color": "#363636"
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "700",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3341,13 +3732,20 @@
         },
         "title": {
           "marginBottom": 0,
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "fontWeight": "700",
-          "color": "#000000"
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -3370,9 +3768,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -3399,9 +3801,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -3428,9 +3834,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -3457,9 +3867,13 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "fontSize": 18,
-          "fontWeight": "600",
-          "color": "#363636"
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
           "marginBottom": 0

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Constants from 'expo-constants';
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
@@ -78,6 +79,7 @@ export default function RootLayout() {
     'Lexend-Medium': require('../assets/fonts/Lexend-Medium.ttf'),
     'Lexend-SemiBold': require('../assets/fonts/Lexend-SemiBold.ttf'),
     'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
+    Fredoka_600SemiBold,
   });
 
   React.useEffect(() => {
