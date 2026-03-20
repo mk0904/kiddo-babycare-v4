@@ -1837,7 +1837,7 @@
       "type": "collectionImageCarousel",
       "visible": true,
       "order": 7.55,
-      "title": "",
+      "title": "Featured",
       "data": [
         {
           "id": "gid://shopify/Collection/510756978977",
@@ -1874,7 +1874,7 @@
         "itemWidth": 130,
         "itemHeight": 205,
         "imageContentFit": "contain",
-        "gap": 4,
+        "gap": 12,
         "borderRadius": 14,
         "paddingHorizontal": 16
       },
@@ -1882,6 +1882,15 @@
         "container": {
           "paddingVertical": 8,
           "backgroundColor": "#F5F5F5"
+        },
+        "title": {
+          "fontFamily": "fredoka-semibold",
+          "fontWeight": "600",
+          "fontSize": 24,
+          "lineHeight": 32,
+          "color": "#E8B2CB",
+          "textAlign": "center",
+          "width": "100%"
         }
       }
     },
@@ -3640,7 +3649,7 @@
         },
         {
           "id": "gid://shopify/Collection/510566498593",
-          "name": "Mosquito repellents and patches"
+          "name": "Mosquito patches"
         },
         {
           "id": "gid://shopify/Collection/510566564129",
@@ -3861,7 +3870,7 @@
       "id": "babygear-collection-image-carousel-gear-vertical",
       "type": "collectionImageCarousel",
       "visible": true,
-      "title": "",
+      "title": "Featured",
       "data": [
         {
           "id": "gid://shopify/Collection/510756978977",
@@ -3898,7 +3907,7 @@
         "itemWidth": 130,
         "itemHeight": 205,
         "imageContentFit": "contain",
-        "gap": 4,
+        "gap": 8,
         "borderRadius": 14,
         "paddingHorizontal": 16
       },
@@ -3906,6 +3915,15 @@
         "container": {
           "paddingVertical": 8,
           "backgroundColor": "#F5F5F5"
+        },
+        "title": {
+          "fontFamily": "fredoka-semibold",
+          "fontWeight": "600",
+          "fontSize": 24,
+          "lineHeight": 32,
+          "color": "#E8B2CB",
+          "textAlign": "center",
+          "width": "100%"
         }
       }
     },
