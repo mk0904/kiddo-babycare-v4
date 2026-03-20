@@ -204,6 +204,18 @@ export default function RootLayout() {
             }
             // Register native push token with CleverTap when OneSignal init fails (token is independent per provider)
             void clevertapService.syncNativePushTokenWithCleverTap();
+            try {
+              const userStore = useUserStore.getState();
+              const userId =
+                userStore.user?.id ||
+                userStore.user?.customerId ||
+                userStore.user?.email ||
+                userStore.user?.phone ||
+                null;
+              if (userId) await pushRegistrationService.registerWithBackend(userId, null);
+            } catch (e) {
+              if (__DEV__) console.warn('[Push] Backend registration failed:', e);
+            }
             return;
           }
 
@@ -233,16 +245,22 @@ export default function RootLayout() {
           setTimeout(async () => {
             try {
               const subStatus = await oneSignalService.checkSubscriptionStatus();
-              if (subStatus.isSubscribed && subStatus.id) {
-                try {
-                  const userStore = useUserStore.getState();
-                  const userId = userStore.user?.id || userStore.user?.customerId || userStore.user?.email || userStore.user?.phone || null;
-                  if (userId && subStatus.id) {
-                    await pushRegistrationService.registerWithBackend(userId, subStatus.id);
-                  }
-                } catch (e) {
-                  if (__DEV__) console.warn('[Push] Backend registration failed:', e);
+              try {
+                const userStore = useUserStore.getState();
+                const userId =
+                  userStore.user?.id ||
+                  userStore.user?.customerId ||
+                  userStore.user?.email ||
+                  userStore.user?.phone ||
+                  null;
+                if (userId) {
+                  await pushRegistrationService.registerWithBackend(
+                    userId,
+                    subStatus.isSubscribed && subStatus.id ? subStatus.id : null
+                  );
                 }
+              } catch (e) {
+                if (__DEV__) console.warn('[Push] Backend registration failed:', e);
               }
             } catch (error) {
               if (__DEV__) console.warn('[OneSignal] status check error:', error);

@@ -129,5 +129,28 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>remote-notification</string>
+    </array>
+    <key>CleverTapAccountID</key>
+    <string>69R-748-Z77Z</string>
+    <key>CleverTapToken</key>
+    <string>b4a-2c6</string>
+    <key>CleverTapRegion</key>
+    <string>eu1</string>
+    <key>CleverTapIdentifiers</key>
+    <array>
+      <string>Email,Phone</string>
+    </array>
+    <key>CTExpoLogLevel</key>
+    <integer>-1</integer>
+    <key>CTExpoNotificationProps</key>
+    <dict>
+      <key>EnablePushInForeground</key>
+      <true/>
+    </dict>
+    <key>CTExpoPushAppGroup</key>
+    <string>group.com.kiddo.ak</string>
   </dict>
 </plist>

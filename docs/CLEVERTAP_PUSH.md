@@ -17,6 +17,19 @@
 - After **OneSignal** init (~3s), or when OneSignal fails to init (still try CleverTap token).
 - On **login / identify** (`identifyUser` → `onUserLogin`).
 
+## Backend (same endpoint as OneSignal)
+
+`POST /api/v1/push/register` also receives CleverTap-oriented fields when the user has granted notifications and a native token exists:
+
+| Field | Role |
+|--------|------|
+| `user_id` | Same stable id as OneSignal registration |
+| `subscription_id` | OneSignal player / subscription id (empty if unavailable) |
+| `native_push_token` | FCM (Android) or APNs (iOS) string from `expo-notifications` |
+| `platform` | `android` or `ios` |
+
+The service layer (`pushRegistrationService.registerWithBackend`) sends `native_push_token` + `platform` whenever permission is granted; your **kiddo-service** should map these to CleverTap’s [Upload User Profiles](https://developer.clevertap.com/docs/upload-user-profiles-api) (or your chosen server API) using Account Id / Passcode on the server only.
+
 ---
 
 ## Android checklist
