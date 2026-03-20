@@ -51,6 +51,8 @@ export const identifyUser = (userId: string, userProperties?: {
     if (userProperties?.name) profile.Name = userProperties.name;
     if (userProperties?.phone) profile.Phone = userProperties.phone;
     clevertapService.onUserLogin(profile);
+    // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
+    void clevertapService.syncNativePushTokenWithCleverTap();
   } catch (error) {
     console.error('Analytics identify error:', error);
   }

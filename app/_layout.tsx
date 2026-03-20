@@ -31,6 +31,7 @@ import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
 import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
@@ -201,6 +202,8 @@ export default function RootLayout() {
                 console.warn('📱 [OneSignal] expo-notifications fallback failed:', e);
               }
             }
+            // Register native push token with CleverTap when OneSignal init fails (token is independent per provider)
+            void clevertapService.syncNativePushTokenWithCleverTap();
             return;
           }
 
@@ -244,6 +247,8 @@ export default function RootLayout() {
             } catch (error) {
               if (__DEV__) console.warn('[OneSignal] status check error:', error);
             }
+            // CleverTap: explicit native token (FCM / APNs) — see clevertapService.syncNativePushTokenWithCleverTap
+            void clevertapService.syncNativePushTokenWithCleverTap();
           }, 3000); // Wait 3 seconds before checking (gives OneSignal time to subscribe)
         } catch (error) {
           if (__DEV__) console.warn('[OneSignal] init error:', error);
