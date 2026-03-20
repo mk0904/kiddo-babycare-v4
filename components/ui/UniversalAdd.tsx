@@ -4,7 +4,7 @@ import { useCartItems, useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UniversalAddProps {
     item: any;
@@ -323,6 +323,18 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                             {variant === 'pdp' ? (addText || 'Add to Cart') : 'Add to cart'}
                         </Text>
                     </TouchableOpacity>
+                ) : variant === 'prominent' ? (
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleAdd();
+                        }}
+                        activeOpacity={0.85}
+                        style={styles.prominentAddButton}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                        <Text style={styles.addPlusGlyph}>+</Text>
+                    </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
                         onPress={(e) => {
@@ -333,7 +345,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                         style={styles.addCircleButton}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                        <Ionicons name="add" size={22} color="#fff" />
+                        <Text style={styles.addPlusGlyph}>+</Text>
                     </TouchableOpacity>
                 )
             ) : (
@@ -376,6 +388,39 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 };
 
 const styles = StyleSheet.create({
+    /** Heavier than Ionicons “add” — typographic + with max Metropolis weight */
+    addPlusGlyph: {
+        color: '#FFFFFF',
+        fontSize: 26,
+        fontFamily: Fonts.Black,
+        lineHeight: 28,
+        textAlign: 'center',
+        includeFontPadding: false,
+        ...Platform.select({
+            android: { marginTop: -2 },
+            default: { marginTop: -1 },
+        }),
+    },
+    /** Product cards: rounded square + control, bottom-right on image (see reference) */
+    prominentAddButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.18,
+                shadowRadius: 2.5,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
+    },
     addCircleButton: {
         width: 36,
         height: 36,
@@ -470,17 +515,27 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'center',
-        maxWidth: 90,
+        maxWidth: 96,
         paddingHorizontal: 6,
         paddingVertical: 4,
         justifyContent: 'space-between',
         gap: 4,
-        minWidth: 70,
-        height: 38,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: Colors.primary,
+        minWidth: 72,
+        height: 36,
+        borderRadius: 10,
+        borderWidth: 0,
         backgroundColor: Colors.primary,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.12,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     prominentCounterText: {
         color: '#FFFFFF',

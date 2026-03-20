@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         color: Colors.text,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         flex: 1,
     },
     closeButton: {

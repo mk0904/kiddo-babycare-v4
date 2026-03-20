@@ -75,10 +75,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       const base = StyleSheet.flatten(baseStyle as any) || {};
       const fromConfig = config?.[key];
       if (!fromConfig) return base;
+      // Do not spread raw fromConfig — it would overwrite resolved fontFamily (e.g. "semibold" string).
       return {
         ...base,
         ...processFontStyle(fromConfig),
-        ...fromConfig,
       };
     };
     return {
@@ -556,7 +556,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#fff',
     marginBottom: 8,
   },
@@ -567,14 +567,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 0,
     overflow: 'visible',
-    borderRadius: 12,
+    borderRadius: 14,
     position: 'relative',
     backgroundColor: Colors.backgroundSecondary,
   },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: 14,
   },
   content: {
     paddingHorizontal: 8,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 13,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     marginBottom: 2,
     color: Colors.text,
     lineHeight: 18,
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   essentialsMetaText: {
     fontSize: 10,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     color: '#1565C0',
     lineHeight: 14,
   },
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
   mainPrice: {
     color: '#2c6975',
     fontSize: 12,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.LexendBold,
     lineHeight: 16,
     flexShrink: 0,
   },
@@ -658,13 +658,13 @@ const styles = StyleSheet.create({
     color: '#888888',
     textDecorationLine: 'line-through',
     fontSize: 11,
-    fontFamily: Fonts.Medium,
+    fontFamily: Fonts.LexendMedium,
     flexShrink: 0,
   },
   discountPercentage: {
     color: '#2c6975',
     fontSize: 11,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     lineHeight: 16,
     flexShrink: 0,
   },
@@ -680,20 +680,20 @@ const styles = StyleSheet.create({
   essentialsLabel: {
     color: '#666666',
     fontSize: 10,
-    fontFamily: Fonts.Medium,
+    fontFamily: Fonts.LexendMedium,
     lineHeight: 14,
   },
   essentialsMarketPrice: {
     color: '#888888',
     textDecorationLine: 'line-through',
     fontSize: 10,
-    fontFamily: Fonts.Medium,
+    fontFamily: Fonts.LexendMedium,
     lineHeight: 14,
   },
   essentialsOurPrice: {
     color: '#2c6975',
     fontSize: 12,
-    fontFamily: Fonts.Bold,
+    fontFamily: Fonts.LexendBold,
     lineHeight: 16,
   },
   vendorBadge: {
@@ -703,13 +703,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 8,
     zIndex: 10,
   },
   vendorBadgeText: {
     color: '#000',
     fontSize: 10,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
   },
   wishlistButton: {
     position: 'absolute',
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   tbTagText: {
     color: '#fff',
     fontSize: 10,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     flexShrink: 0,
     lineHeight: 12,
   },
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     zIndex: 6,
   },
   outOfStockBadge: {
@@ -748,13 +748,13 @@ const styles = StyleSheet.create({
   outOfStockText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     letterSpacing: 0.5,
   },
   addButtonContainer: {
     position: 'absolute',
-    bottom: -6,
     right: -6,
+    bottom: -6,
     zIndex: 10,
   },
 });

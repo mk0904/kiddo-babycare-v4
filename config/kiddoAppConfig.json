@@ -717,31 +717,31 @@
       "productName": {
         "fontSize": 13,
         "fontWeight": "600",
-        "fontFamily": "semibold",
+        "fontFamily": "lexend-semibold",
         "color": "#363636"
       },
       "vendorBadgeText": {
         "fontSize": 10,
         "fontWeight": "600",
-        "fontFamily": "semibold",
+        "fontFamily": "lexend-semibold",
         "color": "#000000"
       },
       "mainPrice": {
         "fontSize": 14,
         "fontWeight": "700",
-        "fontFamily": "bold",
+        "fontFamily": "lexend-bold",
         "color": "#000000"
       },
       "comparePrice": {
         "fontSize": 12,
         "fontWeight": "500",
-        "fontFamily": "medium",
+        "fontFamily": "lexend-medium",
         "color": "#666666"
       },
       "discountPercentage": {
         "fontSize": 12,
         "fontWeight": "600",
-        "fontFamily": "semibold",
+        "fontFamily": "lexend-semibold",
         "color": "#2c6975"
       }
     }
@@ -809,9 +809,12 @@
           },
           "title": {
             "marginBottom": 0,
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
+            "marginTop": 20,
+            "fontSize": 15,
+            "lineHeight": 20,
+            "fontWeight": "700",
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           },
           "image": {
             "width": "100%",
@@ -824,7 +827,11 @@
           },
           "text": {
             "marginTop": 12,
-            "color": "#666666",
+            "fontFamily": "lexend-regular",
+            "color": "#414651",
+            "fontSize": 12,
+            "lineHeight": 16,
+            "letterSpacing": 0,
             "textAlign": "center"
           }
         },
@@ -886,9 +893,12 @@
           },
           "title": {
             "marginBottom": 0,
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
+            "marginTop": 20,
+            "fontSize": 15,
+            "lineHeight": 20,
+            "fontWeight": "700",
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           },
           "image": {
             "width": "100%",
@@ -901,7 +911,11 @@
           },
           "text": {
             "marginTop": 12,
-            "color": "#666666",
+            "fontFamily": "lexend-regular",
+            "color": "#414651",
+            "fontSize": 12,
+            "lineHeight": 16,
+            "letterSpacing": 0,
             "textAlign": "center"
           }
         },
@@ -975,19 +989,25 @@
           },
           "title": {
             "marginBottom": 0,
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
+            "marginTop": 20,
+            "fontSize": 15,
+            "lineHeight": 20,
+            "fontWeight": "700",
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           },
           "imageContainer": {
             "borderRadius": 20,
-            "borderColor": "#97612f",
-            "borderWidth": 0.2,
-            "backgroundColor": "#FFFFFF"
+            "backgroundColor": "#FFFFFF",
+            "overflow": "visible"
           },
           "text": {
             "marginTop": 12,
-            "color": "#666666",
+            "fontFamily": "lexend-regular",
+            "color": "#414651",
+            "fontSize": 12,
+            "lineHeight": 16,
+            "letterSpacing": 0,
             "textAlign": "center"
           }
         },
@@ -1029,9 +1049,13 @@
             "paddingBottom": 128
           },
           "title": {
-            "fontSize": 16,
-            "fontWeight": "600",
-            "color": "#363636"
+            "marginBottom": 0,
+            "marginTop": 20,
+            "fontSize": 15,
+            "lineHeight": 20,
+            "fontWeight": "700",
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           },
           "image": {
             "width": "100%",
@@ -1053,7 +1077,11 @@
           },
           "text": {
             "marginTop": 12,
-            "color": "#666666",
+            "fontFamily": "lexend-regular",
+            "color": "#414651",
+            "fontSize": 12,
+            "lineHeight": 16,
+            "letterSpacing": 0,
             "textAlign": "center"
           }
         },
@@ -1097,10 +1125,13 @@
             "paddingVertical": 16
           },
           "title": {
-            "fontSize": 18,
+            "marginBottom": 0,
+            "marginTop": 20,
+            "fontSize": 15,
+            "lineHeight": 20,
             "fontWeight": "700",
-            "color": "#363636",
-            "marginBottom": 12
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           },
           "imageContainer": {
             "borderRadius": 20,
@@ -1111,10 +1142,12 @@
           },
           "text": {
             "marginTop": 6,
-            "color": "#363636",
-            "textAlign": "center",
-            "fontSize": 14,
-            "fontWeight": "500"
+            "fontFamily": "lexend-regular",
+            "color": "#414651",
+            "fontSize": 12,
+            "lineHeight": 16,
+            "letterSpacing": 0,
+            "textAlign": "center"
           }
         },
         "visible": true
@@ -1167,7 +1200,7 @@
       "type": "carousel",
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/image_1dd962ed-6a71-4aea-b4ab-e85d71a4bc4d.jpg?v=1773990190",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_New_Banner_1.png?v=1774001165",
           "link": {
             "type": "collection",
             "collection": {
@@ -1185,7 +1218,7 @@
       },
       "styles": {
         "container": {
-          "marginTop": -15,
+          "marginTop": -10,
           "backgroundColor": "#F5F5F5"
         },
         "imageContainer": {},
@@ -1220,15 +1253,15 @@
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/507797111073",
-          "name": "Spring Collection"
+          "name": "Summer Collection"
         },
         {
           "id": "gid://shopify/Collection/510756815137",
           "name": "Mosquito repellents and patches"
         },
         {
-          "id": "gid://shopify/Collection/509534372129",
-          "name": "Learning Toys"
+          "id": "gid://shopify/Collection/511480693025",
+          "name": "Kanjak"
         },
         {
           "id": "gid://shopify/Collection/509514514721",
@@ -1800,6 +1833,59 @@
       }
     },
     {
+      "id": "collection-image-carousel-gear-vertical",
+      "type": "collectionImageCarousel",
+      "visible": true,
+      "order": 7.55,
+      "title": "",
+      "data": [
+        {
+          "id": "gid://shopify/Collection/510756978977",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_1.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/510756978977",
+          "title": "Kids Snacks"
+        },
+        {
+          "id": "gid://shopify/Collection/510566564129",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_4.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/510566564129",
+          "title": "Kids Detergents & Cleaners"
+        },
+        {
+          "id": "gid://shopify/Collection/507746582817",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_2.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/507746582817",
+          "title": "All Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/510757175585",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_3.png?v=1774024373",
+          "collectionId": "gid://shopify/Collection/510757175585",
+          "title": "School & Stationary"
+        },
+        {
+          "id": "gid://shopify/Collection/507747172641",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_5.png?v=1774024907",
+          "collectionId": "gid://shopify/Collection/507747172641",
+          "title": "Art and Crafts"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 130,
+        "itemHeight": 205,
+        "imageContentFit": "contain",
+        "gap": 4,
+        "borderRadius": 14,
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 8,
+          "backgroundColor": "#F5F5F5"
+        }
+      }
+    },
+    {
       "id": "category-grid-school",
       "type": "categoryGrid",
       "order": 7,
@@ -2038,7 +2124,7 @@
       "type": "imageBanner",
       "title": "Featured",
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girlswinterbannerfinal.png?v=1767425909",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Main_Banner.png?v=1774001067",
         "link": {
           "type": "collection",
           "collection": {
@@ -2053,7 +2139,7 @@
       },
       "styles": {
         "container": {
-          "marginTop": -15,
+          "marginTop": -8,
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -2115,8 +2201,7 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "marginBottom": 20,
-          "backgroundColor": "#F5F5F5"
+          "marginBottom": 20
         },
         "title": {
           "marginBottom": 0,
@@ -2336,8 +2421,7 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "marginBottom": 20,
-          "backgroundColor": "#F5F5F5"
+          "marginBottom": 20
         },
         "title": {
           "marginBottom": 0,
@@ -2506,7 +2590,13 @@
       "type": "imageBanner",
       "title": "Featured",
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toysbannerkiddo.png?v=1767598678",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toys_Main_Banner.png?v=1774002463",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/508372615457"
+          }
+        },
         "height": 250,
         "borderRadius": 12,
         "resizeMode": "cover"
@@ -2855,7 +2945,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-20_at_11.57.51_AM.jpg?v=1773989205",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_New_Header.png?v=1774001167",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2864,12 +2954,12 @@
       },
       "girls": {
         "label": "Girls",
-        "pageBackgroundColor": "#F5F5F5",
+        "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-girls-header.png",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Header.png?v=1774001066",
           "labelColors": {
             "selected": "#FF1493",
             "unselected": "#363636"
@@ -2878,7 +2968,7 @@
       },
       "boys": {
         "label": "Boys",
-        "pageBackgroundColor": "#F5F5F5",
+        "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys-fashion-selected_1180e57b-cf0a-4647-9e8d-78864b002f09.png?v=1772801263",
         "header": {
           "textColor": "#363636",
@@ -2892,7 +2982,7 @@
       },
       "babycare": {
         "label": "Baby Care",
-        "pageBackgroundColor": "#F5F5F5",
+        "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare-selected_e686a7e3-ec46-412b-a563-289532e32bc6.png?v=1772801243",
         "header": {
           "textColor": "#363636",
@@ -2906,12 +2996,12 @@
       },
       "toys": {
         "label": "Toys & Craft",
-        "pageBackgroundColor": "#F5F5F5",
+        "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys-selected.png?v=1772801403",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-toys-header.png",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toys_Main_Header.png?v=1774002462",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -2964,40 +3054,41 @@
     "styles": {
       "title": {
         "fontSize": 20,
-        "fontWeight": "700",
+        "fontFamily": "fredoka-semibold",
         "color": "#363636",
         "paddingHorizontal": 16,
-        "paddingTop": 10,
+        "paddingTop": 0,
         "lineHeight": 28
       },
       "vendor": {
         "fontSize": 14,
-        "fontWeight": "500",
+        "fontFamily": "lexend-medium",
         "color": "#666666",
-        "paddingHorizontal": 16,
+        "paddingHorizontal": 0,
         "marginTop": 8,
         "marginBottom": 0,
-        "textTransform": "uppercase"
+        "textTransform": "uppercase",
+        "letterSpacing": -0.6
       },
       "description": {
         "fontSize": 14,
-        "fontWeight": "400",
+        "fontFamily": "fredoka-semibold",
         "color": "#333333",
         "lineHeight": 20
       },
       "material": {
         "fontSize": 14,
-        "fontWeight": "400",
+        "fontFamily": "fredoka-semibold",
         "color": "#333333"
       },
       "washCare": {
         "fontSize": 14,
-        "fontWeight": "400",
+        "fontFamily": "fredoka-semibold",
         "color": "#333333"
       },
       "accordionTitle": {
         "fontSize": 16,
-        "fontWeight": "600",
+        "fontFamily": "fredoka-semibold",
         "color": "#363636"
       },
       "variantLabel": {
@@ -3007,7 +3098,7 @@
       },
       "variantButton": {
         "fontSize": 14,
-        "fontWeight": "500",
+        "fontFamily": "lexend-semibold",
         "color": "#363636"
       }
     },
@@ -3019,23 +3110,32 @@
         "limit": 10,
         "showViewAll": false,
         "config": {
-          "itemsPerView": 1.8,
+          "itemsPerView": 2.5,
+          "itemSpacing": 10,
+          "sidePadding": 16,
           "horizontal": true
         },
         "styles": {
           "container": {
             "paddingHorizontal": 0
           },
+          "titleContainer": {
+            "marginBottom": 18
+          },
           "title": {
-            "fontSize": 20,
+            "marginBottom": 0,
+            "marginTop": 0,
+            "fontSize": 15,
+            "lineHeight": 20,
             "fontWeight": "700",
-            "color": "#363636"
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           }
         },
         "gap": {
-          "height": 8,
-          "backgroundColor": "#f5f5f5",
-          "marginTop": 20
+          "height": 0,
+          "backgroundColor": "transparent",
+          "marginTop": 8
         }
       },
       "recentlyViewed": {
@@ -3045,23 +3145,32 @@
         "limit": 10,
         "showViewAll": false,
         "config": {
-          "itemsPerView": 1.8,
+          "itemsPerView": 2.5,
+          "itemSpacing": 10,
+          "sidePadding": 16,
           "horizontal": true
         },
         "styles": {
           "container": {
             "paddingHorizontal": 0
           },
+          "titleContainer": {
+            "marginBottom": 18
+          },
           "title": {
-            "fontSize": 20,
+            "marginBottom": 0,
+            "marginTop": 0,
+            "fontSize": 15,
+            "lineHeight": 20,
             "fontWeight": "700",
-            "color": "#363636"
+            "fontFamily": "lexend",
+            "color": "rgba(0, 0, 0, 0.3)"
           }
         },
         "gap": {
-          "height": 8,
-          "backgroundColor": "#f5f5f5",
-          "marginTop": 20
+          "height": 0,
+          "backgroundColor": "transparent",
+          "marginTop": 8
         }
       }
     }
@@ -3125,8 +3234,7 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
-          "paddingBottom": 28,
-          "backgroundColor": "#F5F5F5"
+          "paddingBottom": 28
         },
         "title": {
           "marginBottom": 0,
@@ -3204,8 +3312,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "backgroundColor": "#F5F5F5"
+          "paddingTop": 10
         },
         "title": {
           "marginBottom": 0,
@@ -3747,6 +3854,58 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "babygear-collection-image-carousel-gear-vertical",
+      "type": "collectionImageCarousel",
+      "visible": true,
+      "title": "",
+      "data": [
+        {
+          "id": "gid://shopify/Collection/510756978977",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_1.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/510756978977",
+          "title": "Kids Snacks"
+        },
+        {
+          "id": "gid://shopify/Collection/510566564129",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_4.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/510566564129",
+          "title": "Kids Detergents & Cleaners"
+        },
+        {
+          "id": "gid://shopify/Collection/507746582817",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_2.png?v=1774024374",
+          "collectionId": "gid://shopify/Collection/507746582817",
+          "title": "All Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/510757175585",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_3.png?v=1774024373",
+          "collectionId": "gid://shopify/Collection/510757175585",
+          "title": "School & Stationary"
+        },
+        {
+          "id": "gid://shopify/Collection/507747172641",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_5.png?v=1774024907",
+          "collectionId": "gid://shopify/Collection/507747172641",
+          "title": "Art and Crafts"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 130,
+        "itemHeight": 205,
+        "imageContentFit": "contain",
+        "gap": 4,
+        "borderRadius": 14,
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 8,
+          "backgroundColor": "#F5F5F5"
         }
       }
     },

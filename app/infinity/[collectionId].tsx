@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#000',
     },
     headerRightPlaceholder: {
@@ -964,12 +964,12 @@ const styles = StyleSheet.create({
     },
     sidebarItemLabel: {
         fontSize: 9,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: '#363636',
         textAlign: 'center',
     },
     sidebarItemLabelSelected: {
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.primary,
     },
     gridContainer: {
@@ -999,13 +999,13 @@ const styles = StyleSheet.create({
     sortListItemText: {
         fontSize: 16,
         color: Colors.text,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         flex: 1,
         marginRight: 12,
     },
     sortListItemTextSelected: {
         color: Colors.primary,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
     },
     radioOuter: {
         width: 22,

@@ -16,6 +16,8 @@ const FONT_FAMILY_ALIASES: Record<string, string> = {
   'lexend-medium': Fonts.LexendMedium,
   'lexend-semibold': Fonts.LexendSemiBold,
   'lexend-bold': Fonts.LexendBold,
+  fredoka: Fonts.FredokaSemiBold,
+  'fredoka-semibold': Fonts.FredokaSemiBold,
   // Exact names (so config can use "Metropolis-Bold" etc.)
   [Fonts.Regular]: Fonts.Regular,
   [Fonts.Medium]: Fonts.Medium,
@@ -27,6 +29,7 @@ const FONT_FAMILY_ALIASES: Record<string, string> = {
   [Fonts.LexendMedium]: Fonts.LexendMedium,
   [Fonts.LexendSemiBold]: Fonts.LexendSemiBold,
   [Fonts.LexendBold]: Fonts.LexendBold,
+  [Fonts.FredokaSemiBold]: Fonts.FredokaSemiBold,
 };
 
 /**

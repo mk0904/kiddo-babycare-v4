@@ -55,6 +55,8 @@ export const Colors = {
   backgroundSecondary: '#fff5f4',
   backgroundWhite: '#FFFFFF',
   success: '#28A745',
+  /** Selected size/variant chip: border + label text (same hex) */
+  variantSelection: '#DB5656',
 };
 
 export const Fonts = {

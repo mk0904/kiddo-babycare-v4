@@ -274,11 +274,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 </View>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity style={styles.clearBtn} onPress={handleClear}>
+                    <TouchableOpacity
+                        style={styles.clearBtn}
+                        onPress={handleClear}
+                        activeOpacity={0.8}
+                    >
                         <Text style={styles.clearBtnText}>Clear All</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.applyBtn} onPress={handleApply}>
-                        <Text style={styles.applyBtnText}>
+                    <TouchableOpacity
+                        style={styles.applyBtn}
+                        onPress={handleApply}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.applyBtnText} numberOfLines={1}>
                             {totalResults ? `Show ${totalResults} Results` : 'Apply Filters'}
                         </Text>
                     </TouchableOpacity>
@@ -322,13 +330,13 @@ const styles = StyleSheet.create({
     },
     catText: {
         fontSize: 13,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.textSecondary,
         flex: 1,
     },
     catTextSelected: {
         color: Colors.primary,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
     },
     dot: {
         width: 6,
@@ -348,7 +356,7 @@ const styles = StyleSheet.create({
     },
     rightPaneTitle: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
         marginBottom: 12,
     },
@@ -364,7 +372,7 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 8,
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.text,
         padding: 0,
     },
@@ -393,23 +401,24 @@ const styles = StyleSheet.create({
     optionLabel: {
         flex: 1,
         fontSize: 15,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.textSecondary,
     },
     optionLabelSelected: {
         color: Colors.text,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
     },
     optionCount: {
         fontSize: 12,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: '#ADB5BD',
     },
     priceContainer: { padding: 20 },
 
-    // Footer
+    // Footer — same row height; labels centered in each control
     footer: {
         flexDirection: 'row',
+        alignItems: 'stretch',
         padding: 20,
         borderTopWidth: 1,
         borderTopColor: '#E9ECEF',
@@ -417,6 +426,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     clearBtn: {
+        justifyContent: 'center',
+        alignItems: 'center',
         paddingVertical: 14,
         paddingHorizontal: 20,
         borderRadius: 12,
@@ -425,19 +436,24 @@ const styles = StyleSheet.create({
     },
     clearBtnText: {
         fontSize: 15,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.textSecondary,
+        textAlign: 'center',
     },
     applyBtn: {
         flex: 1,
+        minHeight: 48,
         backgroundColor: Colors.primary,
         paddingVertical: 14,
+        paddingHorizontal: 12,
         borderRadius: 12,
+        justifyContent: 'center',
         alignItems: 'center',
     },
     applyBtnText: {
         fontSize: 15,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: '#FFF',
+        textAlign: 'center',
     },
 });

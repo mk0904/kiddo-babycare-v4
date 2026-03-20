@@ -17,6 +17,7 @@ import { NoInternet } from './NoInternet';
 import { PromoCarousel } from './PromoCarousel';
 import { SearchProductList } from './SearchProductList';
 import { VideoBanner } from './VideoBanner';
+import { CollectionImageCarousel } from './CollectionImageCarousel';
 import { VisualCategoryRail } from './VisualCategoryRail';
 
 interface BlockRendererProps {
@@ -48,6 +49,7 @@ const blockComponentMap: Record<
   searchProductList: SearchProductList,
   noInternet: NoInternet,
   rail: VisualCategoryRail,
+  collectionImageCarousel: CollectionImageCarousel,
   flashSale: FlashSaleTimer,
   featureStrip: FeatureStrip,
   videoBanner: VideoBanner,

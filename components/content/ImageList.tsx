@@ -89,6 +89,18 @@ export function ImageList({ block, onPress }: ImageListProps) {
       ...(blockStyles?.titleContainer as object),
     };
 
+    // Config often sets titleContainer.marginBottom: 0 — restore gap below title + View All (matches category grid ~16px)
+    const hasViewAllRow = !!title && !!productListConfig.showSeeAll;
+    if (hasViewAllRow) {
+      const mb = headerFromTitle.marginBottom as number | undefined;
+      const MIN_BELOW_TITLE = 16;
+      if (mb === undefined || mb === 0) {
+        headerFromTitle.marginBottom = MIN_BELOW_TITLE;
+      } else if (typeof mb === 'number' && mb > 0 && mb < MIN_BELOW_TITLE) {
+        headerFromTitle.marginBottom = MIN_BELOW_TITLE;
+      }
+    }
+
     return (
       <BaseContentBlock
         block={block}

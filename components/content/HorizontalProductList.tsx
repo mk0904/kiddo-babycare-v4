@@ -3,6 +3,7 @@ import { HorizontalProductListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
 import { sortInStockFirst } from '@/utils/availability';
+import { processFontStyle } from '@/utils/fontUtils';
 import { FlashList } from '@shopify/flash-list';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -151,7 +152,9 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
 
     const titleStyle = useMemo(() => [
         defaultStyles.title,
-        customStyles.title,
+        customStyles.title
+            ? processFontStyle(customStyles.title, Fonts.FredokaSemiBold)
+            : {},
     ], [customStyles.title]);
 
     const titleContainerStyle = useMemo(() => [
@@ -382,14 +385,14 @@ const defaultStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 16,
         gap: 12,
     },
     title: {
         fontSize: 18,
         letterSpacing: 0,
         color: Colors.text,
-        fontFamily: Fonts.Black,
+        fontFamily: Fonts.FredokaSemiBold,
         flex: 1,
         flexShrink: 1,
         marginRight: 8,
