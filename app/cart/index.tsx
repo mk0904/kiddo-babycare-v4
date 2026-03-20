@@ -1701,12 +1701,13 @@ const styles = StyleSheet.create({
     },
     headerAddressTag: {
         fontSize: 24,
-        fontFamily: Fonts.Bogart,
-        fontWeight: Fonts.MediumWeight,
+        fontFamily: Fonts.FredokaSemiBold,
+        fontWeight: 600,
         color: '#000000',
         flex: 1,
         minWidth: 0,
         gap: 4,
+        lineHeight: 32,
     },
     headerAddressLine: {
         fontSize: Fonts.SmallFontSize,
