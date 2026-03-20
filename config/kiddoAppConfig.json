@@ -3125,6 +3125,7 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
+          "paddingBottom": 28,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
@@ -3777,7 +3778,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
-          "marginBottom": 0
+          "marginBottom": 16
         },
         "content": {}
       }
@@ -3810,7 +3811,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
-          "marginBottom": 0
+          "marginBottom": 16
         },
         "content": {}
       }
@@ -3843,7 +3844,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
-          "marginBottom": 0
+          "marginBottom": 16
         },
         "content": {}
       }
@@ -3876,7 +3877,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "titleContainer": {
-          "marginBottom": 0
+          "marginBottom": 16
         },
         "content": {}
       }

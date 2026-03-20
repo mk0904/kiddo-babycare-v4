@@ -726,6 +726,7 @@ const styles = StyleSheet.create({
   },
   viewAll: {
     fontSize: 14,
+    lineHeight: 20,
     fontFamily: Fonts.Medium,
     color: Colors.primary,
   },
