@@ -10,8 +10,6 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface CarouselItem {
@@ -267,7 +265,7 @@ export function Carousel({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={handleScroll}
         scrollEventThrottle={16}
-        style={[{ backgroundColor: Colors.backgroundWhite }, scrollViewStyle]}
+        style={[{ backgroundColor: 'transparent' }, scrollViewStyle]}
         nestedScrollEnabled={true}
         scrollEnabled={true}
         bounces={false}
@@ -342,7 +340,8 @@ export function Carousel({
 const defaultStyles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: Colors.backgroundWhite,
+    // Transparent so block/config container background shows; avoids white strips during swipe
+    backgroundColor: 'transparent',
   },
   scrollView: {
     width: '100%',

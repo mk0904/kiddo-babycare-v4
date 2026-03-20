@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
@@ -259,7 +259,7 @@ const defaultStyles = StyleSheet.create({
     fontSize: 11,
     color: '#222222',
     textAlign: 'center',
-    fontWeight: '400',
+    fontFamily: Fonts.LexendSemiBold,
     marginTop: 0,
     marginBottom: 4,
     minHeight: 16,
@@ -268,7 +268,7 @@ const defaultStyles = StyleSheet.create({
   selectedCategoryLabel: {
     color: '#222222',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Fonts.LexendSemiBold,
     lineHeight: 14,
   },
   selectedBottomBorder: {

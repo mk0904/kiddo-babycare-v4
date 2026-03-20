@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface VariantOption {
     name: string;
@@ -93,8 +93,8 @@ const styles = StyleSheet.create({
     },
     valueChip: {
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 12,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: '#E5E7EB',
         backgroundColor: '#fff',
@@ -103,15 +103,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     valueChipSelected: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.primary,
+        borderColor: Colors.variantSelection,
+        backgroundColor: '#FEEFEF',
     },
     valueText: {
         fontSize: 14,
         color: Colors.text,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendSemiBold,
     },
     valueTextSelected: {
-        color: '#fff',
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
     },
 });

@@ -75,6 +75,32 @@ export function ImageList({ block, onPress }: ImageListProps) {
 
     const sidePadding = containerStyle.paddingHorizontal ?? 20;
 
+    // marginTop/paddingTop on `title` only shifted the label, not "View All" — move to the whole header row
+    const rawTitle = blockStyles?.title || {};
+    const {
+      marginTop: titleMarginTop,
+      paddingTop: titlePaddingTop,
+      ...titleRest
+    } = rawTitle;
+    const titleStyle = processFontStyle(titleRest, Fonts.Black);
+    const headerFromTitle: Record<string, unknown> = {
+      ...(titleMarginTop !== undefined && { marginTop: titleMarginTop }),
+      ...(titlePaddingTop !== undefined && { paddingTop: titlePaddingTop }),
+      ...(blockStyles?.titleContainer as object),
+    };
+
+    // Config often sets titleContainer.marginBottom: 0 — restore gap below title + View All (matches category grid ~16px)
+    const hasViewAllRow = !!title && !!productListConfig.showSeeAll;
+    if (hasViewAllRow) {
+      const mb = headerFromTitle.marginBottom as number | undefined;
+      const MIN_BELOW_TITLE = 16;
+      if (mb === undefined || mb === 0) {
+        headerFromTitle.marginBottom = MIN_BELOW_TITLE;
+      } else if (typeof mb === 'number' && mb > 0 && mb < MIN_BELOW_TITLE) {
+        headerFromTitle.marginBottom = MIN_BELOW_TITLE;
+      }
+    }
+
     return (
       <BaseContentBlock
         block={block}
@@ -107,7 +133,8 @@ export function ImageList({ block, onPress }: ImageListProps) {
           } : undefined}
           style={{
             root: containerStylesNoPadding, // Pass margins but no padding
-            title: processFontStyle(blockStyles?.title, Fonts.Black),
+            header: headerFromTitle,
+            title: titleStyle,
             list: blockStyles?.list,
           }}
           contentWidth={width - (sidePadding * 2)}

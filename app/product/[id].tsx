@@ -26,6 +26,7 @@ import {
     ActivityIndicator,
     Dimensions,
     Image,
+    Platform,
     ScrollView,
     Share,
     StyleSheet,
@@ -679,7 +680,7 @@ const ProductDetailScreen = () => {
 
         const sectionType = config.type || 'horizontalProductList';
         const title = config.title || defaultTitle;
-        const gapStyle = config.gap || { height: 8, backgroundColor: '#f5f5f5', marginTop: 20 };
+        const gapStyle = config.gap || { height: 0, backgroundColor: 'transparent', marginTop: 8 };
 
         const handleProductPress = (p: any) => {
             // Track recommendation clicked
@@ -699,26 +700,31 @@ const ProductDetailScreen = () => {
             <>
                 <View style={[styles.recommendationsGap, gapStyle]} />
                 {sectionType === 'infiniteProductGrid' ? (
-                    <InfiniteProductGridComponent
-                        products={products}
-                        title={title}
-                        showHeading={!!title}
-                        style={{
-                            root: config.styles?.container,
-                            title: config.styles?.title,
-                            list: config.styles?.list,
-                        }}
-                        contentWidth={SCREEN_WIDTH}
-                        productOptions={config.config || {}}
-                        scrollable={false}
-                    />
+                    <View style={[styles.sectionCard, styles.sectionCardEmbedList]}>
+                        <InfiniteProductGridComponent
+                            products={products}
+                            title={title}
+                            showHeading={!!title}
+                            style={{
+                                root: config.styles?.container,
+                                title: config.styles?.title,
+                                list: config.styles?.list,
+                            }}
+                            contentWidth={SCREEN_WIDTH}
+                            productOptions={config.config || {}}
+                            scrollable={false}
+                        />
+                    </View>
                 ) : (
-                    <HorizontalProductList
-                        products={products}
-                        title={title}
-                        onProductPress={handleProductPress}
-                        config={config.config || {}}
-                    />
+                    <View style={[styles.sectionCard, styles.sectionCardEmbedList]}>
+                        <HorizontalProductList
+                            products={products}
+                            title={title}
+                            onProductPress={handleProductPress}
+                            config={config.config || {}}
+                            styles={config.styles || {}}
+                        />
+                    </View>
                 )}
             </>
         );
@@ -1235,6 +1241,7 @@ const ProductDetailScreen = () => {
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
+                style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
             >
                 {images.length > 0 && (
@@ -1305,6 +1312,7 @@ const ProductDetailScreen = () => {
                 )}
 
                 <View style={styles.infoContainer}>
+                    <View style={styles.sectionCard}>
                     <View style={styles.vendorRow}>
                         {product.vendor ? (
                             <Text style={[
@@ -1316,7 +1324,7 @@ const ProductDetailScreen = () => {
                                     marginTop: productStyles.vendor.marginTop,
                                     marginBottom: productStyles.vendor.marginBottom,
                                     textTransform: productStyles.vendor.textTransform,
-                                    ...processFontStyle(productStyles.vendor, Fonts.Medium),
+                                    ...processFontStyle(productStyles.vendor, Fonts.LexendMedium),
                                 }
                             ]}>{product.vendor}</Text>
                         ) : null}
@@ -1343,7 +1351,7 @@ const ProductDetailScreen = () => {
                             paddingHorizontal: productStyles.title.paddingHorizontal,
                             paddingTop: productStyles.title.paddingTop,
                             lineHeight: productStyles.title.lineHeight,
-                            ...processFontStyle(productStyles.title, Fonts.Bold),
+                            ...processFontStyle(productStyles.title, Fonts.FredokaSemiBold),
                         }
                     ]}>{product.title}</Text>
 
@@ -1451,13 +1459,11 @@ const ProductDetailScreen = () => {
                             </TouchableOpacity>
                         </View>
                     )}
-
-                    {/* Separator */}
-                    <View style={styles.separator} />
+                    </View>
 
                     {/* Product Description - Collapsible */}
                     {product.description && (
-                        <View style={styles.accordionContainer}>
+                        <View style={[styles.accordionContainer, styles.sectionCard]}>
                             <TouchableOpacity
                                 style={styles.accordionHeader}
                                 onPress={() => toggleSection('description')}
@@ -1465,7 +1471,14 @@ const ProductDetailScreen = () => {
                             >
                                 <View style={styles.accordionTitleContainer}>
                                     <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={styles.accordionTitle}>Description</Text>
+                                    <Text style={[
+                                        styles.accordionTitle,
+                                        productStyles.accordionTitle && {
+                                            fontSize: productStyles.accordionTitle.fontSize,
+                                            color: productStyles.accordionTitle.color,
+                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
+                                        }
+                                    ]}>Description</Text>
                                 </View>
                                 <Ionicons
                                     name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
@@ -1481,7 +1494,7 @@ const ProductDetailScreen = () => {
                                             fontSize: productStyles.description.fontSize,
                                             color: productStyles.description.color,
                                             lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.Regular),
+                                            ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
                                         }
                                     ]}>{product.description}</Text>
                                 </View>
@@ -1491,7 +1504,7 @@ const ProductDetailScreen = () => {
 
                     {/* Price Comparison Chart - Display right after description */}
                     {showPriceComparison && (
-                        <View style={styles.priceComparisonContainer}>
+                        <View style={[styles.sectionCard, styles.priceComparisonContainer]}>
                             <Text style={styles.priceComparisonTitle}>Best Prices Guaranteed</Text>
                             <View style={styles.priceComparisonTable}>
                                 {/* Header Row */}
@@ -1531,7 +1544,7 @@ const ProductDetailScreen = () => {
 
                     {/* Material Accordion */}
                     {fabric && (
-                        <View style={styles.accordionContainer}>
+                        <View style={[styles.accordionContainer, styles.sectionCard]}>
                             <TouchableOpacity
                                 style={styles.accordionHeader}
                                 onPress={() => toggleSection('material')}
@@ -1539,7 +1552,14 @@ const ProductDetailScreen = () => {
                             >
                                 <View style={styles.accordionTitleContainer}>
                                     <Ionicons name="shirt-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={styles.accordionTitle}>Material</Text>
+                                    <Text style={[
+                                        styles.accordionTitle,
+                                        productStyles.accordionTitle && {
+                                            fontSize: productStyles.accordionTitle.fontSize,
+                                            color: productStyles.accordionTitle.color,
+                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
+                                        }
+                                    ]}>Material</Text>
                                 </View>
                                 <Ionicons
                                     name={expandedSections['material'] ? "chevron-up" : "chevron-down"}
@@ -1554,7 +1574,7 @@ const ProductDetailScreen = () => {
                                         productStyles.material && {
                                             fontSize: productStyles.material.fontSize,
                                             color: productStyles.material.color,
-                                            ...processFontStyle(productStyles.material, Fonts.Regular),
+                                            ...processFontStyle(productStyles.material, Fonts.FredokaSemiBold),
                                         }
                                     ]}>{fabric}</Text>
                                 </View>
@@ -1564,7 +1584,7 @@ const ProductDetailScreen = () => {
 
                     {/* Wash Care Accordion */}
                     {washCare && (
-                        <View style={styles.accordionContainer}>
+                        <View style={[styles.accordionContainer, styles.sectionCard]}>
                             <TouchableOpacity
                                 style={styles.accordionHeader}
                                 onPress={() => toggleSection('wash_care')}
@@ -1572,7 +1592,14 @@ const ProductDetailScreen = () => {
                             >
                                 <View style={styles.accordionTitleContainer}>
                                     <Ionicons name="water-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={styles.accordionTitle}>Wash Care</Text>
+                                    <Text style={[
+                                        styles.accordionTitle,
+                                        productStyles.accordionTitle && {
+                                            fontSize: productStyles.accordionTitle.fontSize,
+                                            color: productStyles.accordionTitle.color,
+                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
+                                        }
+                                    ]}>Wash Care</Text>
                                 </View>
                                 <Ionicons
                                     name={expandedSections['wash_care'] ? "chevron-up" : "chevron-down"}
@@ -1587,7 +1614,7 @@ const ProductDetailScreen = () => {
                                         productStyles.washCare && {
                                             fontSize: productStyles.washCare.fontSize,
                                             color: productStyles.washCare.color,
-                                            ...processFontStyle(productStyles.washCare, Fonts.Regular),
+                                            ...processFontStyle(productStyles.washCare, Fonts.FredokaSemiBold),
                                         }
                                     ]}>{washCare}</Text>
                                 </View>
@@ -1690,7 +1717,7 @@ const ProductDetailScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f5f5f5',
     },
     loadingContainer: {
         flex: 1,
@@ -1716,7 +1743,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#000',
     },
     shareButton: {
@@ -1725,8 +1752,42 @@ const styles = StyleSheet.create({
     wishlistButton: {
         padding: 8,
     },
+    scrollView: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
     scrollContent: {
         paddingBottom: 100,
+        backgroundColor: '#f5f5f5',
+    },
+    /** White elevated card on soft background (PDP sections) */
+    sectionCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 8,
+        paddingTop: 16,
+        paddingBottom: 16,
+        overflow: 'hidden',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
+    },
+    /** Horizontal lists / grids set their own horizontal padding — avoid double inset */
+    sectionCardEmbedList: {
+        paddingHorizontal: 0,
+        /** Match vertical padding above title and below list inside the white card */
+        paddingTop: 16,
+        paddingBottom: 16,
     },
     imageContainer: {
         width: SCREEN_WIDTH,
@@ -1780,10 +1841,10 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 20,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.FredokaSemiBold,
         paddingHorizontal: 16,
         paddingTop: 0,
-        marginTop: 6,
+        marginTop: 0,
         lineHeight: 28,
     },
     vendorRow: {
@@ -1792,25 +1853,28 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 8,
         marginTop: 8,
-        marginBottom: 4,
+        marginBottom: 0,
         paddingHorizontal: 16,
     },
     vendorText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: '#666',
-        paddingHorizontal: 16,
+        /** Align with product title: inset comes from `vendorRow` only (avoid double padding) */
+        paddingHorizontal: 0,
         marginTop: 0,
         marginBottom: 0,
         textTransform: 'uppercase',
+        /** Tighten uppercase brand (e.g. SNUGBUG) — Lexend can look wide */
+        letterSpacing: -0.6,
     },
     variantsContainer: {
         paddingHorizontal: 16, // Reduced padding
         marginTop: 20,
-        marginBottom: 4,
+        marginBottom: 0,
     },
     optionContainer: {
-        marginBottom: 24,
+        marginBottom: 12,
     },
     optionLabel: {
         fontSize: 16,
@@ -1825,8 +1889,8 @@ const styles = StyleSheet.create({
     },
     variantButton: {
         paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
+        paddingVertical: 14,
+        borderRadius: 14,
         borderWidth: 1.5,
         borderColor: '#E5E7EB',
         backgroundColor: '#fff',
@@ -1835,8 +1899,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     variantButtonActive: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.primary,
+        borderColor: Colors.variantSelection,
+        backgroundColor: '#FEEFEF',
     },
     variantButtonDisabled: {
         borderColor: '#E5E7EB',
@@ -1845,12 +1909,12 @@ const styles = StyleSheet.create({
     },
     variantText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
     },
     variantTextActive: {
-        color: '#fff',
-        fontFamily: Fonts.SemiBold,
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
     },
     variantTextDisabled: {
         color: '#9CA3AF',
@@ -1907,7 +1971,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9F9F9', // Light gray gap
         marginTop: 24, // Space above
         marginBottom: 8, // Space below
-    },
+    }, // Kept for reuse; main PDP uses sectionCard spacing instead
     highlightsSection: {
         paddingHorizontal: 16,
         paddingTop: 12,
@@ -1960,18 +2024,17 @@ const styles = StyleSheet.create({
         color: '#1565C0',
         lineHeight: 14,
     },
+    /** Layout only — must not set backgroundColor (would override sectionCard white) */
     accordionContainer: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        backgroundColor: '#fff',
-        marginHorizontal: 16, // Inset container
+        borderBottomWidth: 0,
+        marginHorizontal: 0,
     },
     accordionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: 16,
-        paddingHorizontal: 0, // Remove internal padding to align with edge of container (which is already inset 16)
+        paddingHorizontal: 16,
     },
     accordionTitleContainer: {
         flexDirection: 'row',
@@ -1983,29 +2046,28 @@ const styles = StyleSheet.create({
     },
     accordionTitle: {
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#1a1a1a',
     },
     accordionContent: {
-        paddingHorizontal: 0,
-        paddingBottom: 24,
-        paddingLeft: 0, // Align text with icon (start flush left)
+        paddingHorizontal: 16,
+        paddingBottom: 16,
     },
     descriptionContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 16,
     },
     descriptionBody: {
         fontSize: 14,
         color: '#4a4a4a',
         lineHeight: 24,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
     },
     specValue: {
         fontSize: 14,
         color: '#4a4a4a',
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
         lineHeight: 24,
         textAlign: 'left',
     },
@@ -2032,18 +2094,18 @@ const styles = StyleSheet.create({
     },
     priceText: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: Colors.text,
     },
     mrpText: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     savingsText: {
         fontSize: 12,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#4CAF50',
     },
     productPriceContainer: {
@@ -2058,23 +2120,23 @@ const styles = StyleSheet.create({
     },
     productPriceText: {
         fontSize: 24,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: Colors.text,
     },
     productMrpText: {
         fontSize: 18,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     productSavingsText: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.FredokaSemiBold,
         color: '#4CAF50',
     },
     priceComparisonContainer: {
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: 0,
+        marginBottom: 0,
         paddingHorizontal: 16,
         paddingTop: 0,
     },
@@ -2177,8 +2239,8 @@ const styles = StyleSheet.create({
     },
     recommendationsGap: {
         height: 0,
-        backgroundColor: '#f5f5f5',
-        marginTop: 20,
+        backgroundColor: 'transparent',
+        marginTop: 0,
     },
 });
 

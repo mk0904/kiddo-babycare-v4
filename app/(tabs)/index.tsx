@@ -16,6 +16,7 @@ import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
+import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { ContentBlock } from '@/types/content';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
@@ -58,6 +59,11 @@ export default function HomeScreen() {
   const displayAddress = defaultAddress
     ? (defaultAddress.address1 || 'Default Address')
     : detectedLocationLabel;
+
+  const addressCategoryLabel = useMemo(() => {
+    if (!defaultAddress) return null;
+    return getAddressTitleLabel(defaultAddress);
+  }, [defaultAddress]);
   const isUnserviceable = !defaultAddress && locationStatus === 'unserviceable';
   const homeEstimatedTime = defaultAddress ? estimatedTime : detectedEta;
   const homeLoadingTime = defaultAddress ? loadingTime : locationStatus === 'loading';
@@ -86,6 +92,12 @@ export default function HomeScreen() {
       hasImage: !!backgroundImage, // Automatically set based on backgroundImage existence
     };
   }, [selectedCategory, configLoading]);
+
+  /** Main scroll area fill — from kiddo config (categories.defaultPageBackgroundColor / items.*.pageBackgroundColor) */
+  const pageBackgroundColor = useMemo(
+    () => configService.getCategoryPageBackgroundColor(selectedCategory),
+    [selectedCategory, configLoading]
+  );
 
   const categories = useMemo(() => {
     const configCategories = configService.getCategories();
@@ -522,6 +534,7 @@ export default function HomeScreen() {
         <HomeHeader
           scrollY={scrollY}
           address={displayAddress}
+          addressCategoryLabel={addressCategoryLabel}
           estimatedTime={homeEstimatedTime}
           loadingTime={homeLoadingTime}
           isUnserviceable={isUnserviceable}
@@ -538,17 +551,14 @@ export default function HomeScreen() {
 
         <Animated.ScrollView
           ref={scrollViewRef}
-          style={[
-            styles.scrollView,
-            Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
-          ]}
+          style={[styles.scrollView, { backgroundColor: pageBackgroundColor }]}
           contentContainerStyle={[
             styles.scrollContent,
             {
               paddingTop: 0,
               minHeight: '100%',
+              backgroundColor: pageBackgroundColor,
             },
-            Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite },
           ]}
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -562,7 +572,7 @@ export default function HomeScreen() {
         scrollEnabled={true}
         directionalLockEnabled={false}
       >
-        <View style={styles.scrollViewContent}>
+        <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
           {configLoading ? (
             <View style={styles.loadingContainer}>
               {/* Loading state */}
@@ -601,17 +611,14 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: Colors.backgroundWhite,
   },
   scrollContent: {
     paddingBottom: 80,
     paddingTop: 0,
     flexGrow: 1,
-    backgroundColor: Colors.backgroundWhite,
   },
   scrollViewContent: {
     flex: 1,
-    backgroundColor: Colors.backgroundWhite,
     minHeight: '100%',
     width: '100%',
   },

@@ -301,6 +301,47 @@ export interface CategoryRailBlock extends BaseBlock {
   };
 }
 
+/** Horizontal image-only carousel; each slide links to a collection (or custom `link`). */
+export interface CollectionImageCarouselBlock extends BaseBlock {
+  type: 'collectionImageCarousel';
+  title?: string;
+  data: Array<{
+    id: string;
+    /** Image URL shown in the carousel */
+    imageUrl: string;
+    /** Shopify collection GID or numeric id — used with home `onBlockPress` → `/infinity/[collectionId]` */
+    collectionId: string;
+    /** Shown as listing screen title when navigating */
+    title?: string;
+    /**
+     * Optional explicit route (Expo Router path), e.g. `/infinity/[collectionId]` params handled elsewhere.
+     * If set, passed to `router.push` when provided; otherwise navigation uses `collectionId`.
+     */
+    link?: string;
+  }>;
+  carouselConfig?: {
+    /** Fixed width per slide in px (default ~148) */
+    itemWidth?: number;
+    /** width / height (default 1.25). Use a lower value for portrait/tall images (e.g. 0.65 ≈ 2:3). Ignored if `itemHeight` is set. */
+    aspectRatio?: number;
+    /** Fixed slide height in px; when set, overrides `aspectRatio` for height. */
+    itemHeight?: number;
+    /** expo-image contentFit — use `contain` for tall assets to avoid top/bottom crop (default cover) */
+    imageContentFit?: 'cover' | 'contain' | 'fill';
+    gap?: number;
+    borderRadius?: number;
+    paddingHorizontal?: number;
+    /** Left inset for first item / right for last (default matches paddingHorizontal) */
+    contentPaddingHorizontal?: number;
+  };
+  styles?: {
+    container?: any;
+    title?: any;
+    item?: any;
+    image?: any;
+  };
+}
+
 export interface FeatureStripBlock extends BaseBlock {
   type: 'featureStrip';
   data: Array<{
@@ -355,6 +396,7 @@ export type ContentBlock =
   | CollectionListBlock
   | FlashSaleBlock
   | CategoryRailBlock
+  | CollectionImageCarouselBlock
   | FeatureStripBlock
   | VideoBannerBlock
   | NoInternetBlock

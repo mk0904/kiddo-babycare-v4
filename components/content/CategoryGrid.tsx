@@ -228,19 +228,22 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
       ? blockStyles.title.paddingHorizontal
       : (containerStyle.paddingHorizontal || containerPaddingHorizontal),
+    // Do not spread raw blockStyles.title after processFontStyle — that re-applies
+    // fontWeight and can break custom fonts (e.g. bogart) on section titles.
     ...processFontStyle(blockStyles?.title, Fonts.Black),
-    ...blockStyles?.title,
   };
 
   // Text/label style under each cell: configurable via styles.text (fontSize, fontWeight, fontFamily, etc.)
-  const processedTextStyle = processFontStyle(blockStyles?.text);
+  // Do not spread raw blockStyles.text after processFontStyle — that re-applies fontWeight and can
+  // break custom fonts (e.g. lexend-medium) on cell labels.
+  const { fontWeight: _labelFw, fontFamily: _labelFf, ...textStyleRest } = blockStyles?.text || {};
+  const processedTextStyle = processFontStyle(blockStyles?.text, Fonts.Bold);
   const textStyle = {
     color: '#666666',
     textAlign: 'center' as const,
     fontSize: 12,
-    fontWeight: '700' as const,
     ...processedTextStyle,
-    ...blockStyles?.text, // Config overrides: fontSize, fontWeight, fontFamily, fontStyle, color, etc.
+    ...textStyleRest,
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)

@@ -6,18 +6,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
-    Animated,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
   address?: string | null;
+  /** Saved address title (Home / Work / custom name) — shown before street line */
+  addressCategoryLabel?: string | null;
   estimatedTime?: number | null;
   loadingTime?: boolean;
   /** When true, show "Area unserviceable" instead of ETA (detected location outside delivery range). */
@@ -48,6 +51,7 @@ interface HomeHeaderProps {
 export function HomeHeader({
   scrollY,
   address,
+  addressCategoryLabel,
   estimatedTime,
   loadingTime = false,
   isUnserviceable = false,
@@ -185,7 +189,7 @@ export function HomeHeader({
             <View style={styles.leftInfoContainer}>
               <View style={styles.kiddoRow}>
                 <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
-                  The best for your kiddo 
+                  The best for kids in 
                 </Text>
                 {(address || isUnserviceable || locationStatus === 'loading') && (estimatedTime !== null || loadingTime || isUnserviceable) && (
                   <View style={styles.estimatedTimeWrapper}>
@@ -196,18 +200,29 @@ export function HomeHeader({
                         Area unserviceable
                       </Text>
                     ) : estimatedTime !== null ? (
-                      <Text style={[styles.estimatedTimeText, { color: textColor }]}>
-                        in ⚡️{estimatedTime} mins
-                      </Text>
+                      <View style={styles.estimatedTimeContent}>
+                        <Text style={[styles.estimatedTimeText, { color: textColor }]}>
+                          {estimatedTime} mins
+                        </Text>
+                        <Image
+                          source={require('@/assets/fonts/lightningsymbol.png')}
+                          style={styles.lightningIcon}
+                          resizeMode="contain"
+                          accessibilityIgnoresInvertColors
+                        />
+                      </View>
                     ) : null}
                   </View>
                 )}
               </View>
-              <LocationButton
-                address={address}
-                textColor={textColor}
-                onPress={onLocationPress}
-              />
+              <View style={styles.addressRow}>
+                <LocationButton
+                  address={address}
+                  categoryLabel={addressCategoryLabel}
+                  textColor={textColor}
+                  onPress={onLocationPress}
+                />
+              </View>
             </View>
             <TouchableOpacity
               onPress={() => router.push('/wishlist')}
@@ -272,24 +287,37 @@ const styles = StyleSheet.create({
   kiddoRow: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 2,
-    marginBottom: 4,
+    gap: 0,
+    marginBottom: 2,
+  },
+  addressRow: {
+    marginTop: -5,
   },
   kiddoHeaderText: {
     fontSize: 15,
-    fontFamily: Fonts.Black,
-    fontWeight: '900',
+    lineHeight: 16,
+    fontFamily: Fonts.LexendBold,
     letterSpacing: 0,
   },
   estimatedTimeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: -6,
+  },
+  estimatedTimeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+  },
+  lightningIcon: {
+    width: 54,
+    height: 54,
+    marginLeft: 0,
   },
   estimatedTimeText: {
-    fontSize: 19,
-    fontFamily: Fonts.Bold,
-    fontWeight: '700',
+    fontSize: 23,
+    lineHeight: 28,
+    fontFamily: Fonts.FredokaSemiBold,
     letterSpacing: 0.3,
   },
   unserviceableText: {

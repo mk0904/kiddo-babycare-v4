@@ -177,6 +177,27 @@ class ConfigService {
     return categories.items[category]?.header || null;
   }
 
+  /**
+   * Scroll/page background for the home tab content area (below the category header).
+   * Remote-configurable: `categories.defaultPageBackgroundColor` and per-tab
+   * `categories.items.<key>.pageBackgroundColor`.
+   */
+  getCategoryPageBackgroundColor(category: string = 'all'): string {
+    const fallback = '#F5F5F5';
+    const cats = this.rawConfig?.categories;
+    if (!cats) return fallback;
+
+    const perItem = cats.items?.[category]?.pageBackgroundColor;
+    if (typeof perItem === 'string' && perItem.trim().length > 0) {
+      return perItem.trim();
+    }
+    const globalDefault = cats.defaultPageBackgroundColor;
+    if (typeof globalDefault === 'string' && globalDefault.trim().length > 0) {
+      return globalDefault.trim();
+    }
+    return fallback;
+  }
+
   // Get all categories
   getCategories() {
     return this.config.categories;
