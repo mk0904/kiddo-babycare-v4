@@ -4,13 +4,13 @@ import { CollectionImageCarouselBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import React, { useCallback } from 'react';
 import {
-  Dimensions,
-  FlatList,
-  ListRenderItem,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    FlatList,
+    ListRenderItem,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 

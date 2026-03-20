@@ -1811,6 +1811,7 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingTop": 10,
+          "paddingBottom": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
@@ -1858,10 +1859,10 @@
           "title": "All Toys"
         },
         {
-          "id": "gid://shopify/Collection/510757175585",
+          "id": "gid://shopify/Collection/510758224161",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Vertical_Card_3.png?v=1774024373",
-          "collectionId": "gid://shopify/Collection/510757175585",
-          "title": "School & Stationary"
+          "collectionId": "gid://shopify/Collection/510758224161",
+          "title": "Hot Wheels"
         },
         {
           "id": "gid://shopify/Collection/507747172641",
@@ -1871,12 +1872,12 @@
         }
       ],
       "carouselConfig": {
-        "itemWidth": 130,
-        "itemHeight": 205,
+        "itemWidth": 195,
+        "itemHeight": 308,
         "imageContentFit": "contain",
-        "gap": 12,
-        "borderRadius": 14,
-        "paddingHorizontal": 16
+        "gap": -18,
+        "borderRadius": 21,
+        "paddingHorizontal": 8
       },
       "styles": {
         "container": {
@@ -3869,7 +3870,7 @@
     {
       "id": "babygear-collection-image-carousel-gear-vertical",
       "type": "collectionImageCarousel",
-      "visible": true,
+      "visible": false,
       "title": "Featured",
       "data": [
         {
