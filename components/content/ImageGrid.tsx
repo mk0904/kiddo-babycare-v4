@@ -136,11 +136,10 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
       ...blockStyles?.container,
     };
     // Title should use container padding if set, otherwise 0
+    // Do not set fontSize/fontWeight before processFontStyle — it can leave wrong fontWeight on custom fonts.
     const titleStyle = {
       marginBottom: 8,
-      fontSize: 18,
       letterSpacing: 0,
-      fontWeight: '900',
       // Apply container padding to title if not explicitly set in blockStyles.title
       paddingHorizontal: blockStyles?.title?.paddingHorizontal !== undefined
         ? blockStyles.title.paddingHorizontal
@@ -160,14 +159,14 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
       borderRadius: 20,
       ...blockStyles?.image,
     };
-    const processedTextStyle = processFontStyle(blockStyles?.text);
+    const { fontWeight: _cellFw, fontFamily: _cellFf, ...textStyleRest } = blockStyles?.text || {};
+    const processedTextStyle = processFontStyle(blockStyles?.text, Fonts.Bold);
     const textStyle = {
       color: '#666666',
       textAlign: 'center' as const,
       fontSize: 12,
-      fontWeight: '700' as const,
       ...processedTextStyle,
-      ...blockStyles?.text, // Config overrides: fontSize, fontWeight, fontFamily, fontStyle, color, etc.
+      ...textStyleRest,
     };
 
     // Calculate available width accounting for container margins and padding (Kiddo pattern)
@@ -222,6 +221,10 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
       containerStylesClean,
       { paddingHorizontal: 0 } // Override horizontal padding on wrapper
     ];
+
+    // Match section background from config (inner list/content used to force white and hid #F5F5F5)
+    const gridSurfaceBackgroundColor =
+      blockStyles?.container?.backgroundColor ?? Colors.backgroundWhite;
 
     // Get list content style
     const listContentStyle = [
@@ -381,7 +384,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                   paddingHorizontal: containerPaddingHorizontal > 0 ? containerPaddingHorizontal : 0,
                   paddingTop: 8,
                   paddingBottom: 8,
-                  backgroundColor: Colors.backgroundWhite,
+                  backgroundColor: gridSurfaceBackgroundColor,
                 },
                 listContentStyle,
               ]}
@@ -513,7 +516,7 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                 paddingHorizontal: containerPaddingHorizontal > 0 ? containerPaddingHorizontal : 0,
                 paddingTop: 8, // Add top padding to prevent shadow clipping
                 paddingBottom: 8, // Add bottom padding to prevent shadow clipping
-                backgroundColor: Colors.backgroundWhite,
+                backgroundColor: gridSurfaceBackgroundColor,
               },
               listContentStyle,
             ]}

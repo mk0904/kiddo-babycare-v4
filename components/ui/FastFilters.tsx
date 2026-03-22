@@ -151,28 +151,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 32,
     },
+    /** Match PDP variant chips */
     filterChip: {
         paddingHorizontal: 12,
         paddingVertical: 5,
-        borderRadius: 16,
-        backgroundColor: '#F1F3F5',
-        borderWidth: 1,
-        borderColor: '#E9ECEF',
+        borderRadius: 14,
+        backgroundColor: '#fff',
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
         height: 28,
         justifyContent: 'center',
     },
     filterChipActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: '#FEEFEF',
+        borderWidth: 1.5,
+        borderColor: Colors.variantSelection,
     },
     filterText: {
         fontSize: 13,
-        fontFamily: Fonts.Medium,
-        color: Colors.textSecondary,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.text,
     },
     filterTextActive: {
-        color: '#FFF',
-        fontFamily: Fonts.SemiBold,
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
     },
 });
 

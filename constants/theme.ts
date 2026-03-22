@@ -55,6 +55,8 @@ export const Colors = {
   backgroundSecondary: '#fff5f4',
   backgroundWhite: '#FFFFFF',
   success: '#28A745',
+  /** Selected size/variant chip: border + label text (same hex) */
+  variantSelection: '#DB5656',
 };
 
 export const Fonts = {
@@ -70,6 +72,8 @@ export const Fonts = {
   LexendMedium: 'Lexend-Medium',
   LexendSemiBold: 'Lexend-SemiBold',
   LexendBold: 'Lexend-Bold',
+  /** Fredoka SemiBold (600) — loaded in app/_layout via @expo-google-fonts/fredoka */
+  FredokaSemiBold: 'Fredoka_600SemiBold',
   RegularWeight: fontWeight.Regular,
   MediumWeight: fontWeight.Medium,
   SemiBoldWeight: fontWeight.SemiBold,

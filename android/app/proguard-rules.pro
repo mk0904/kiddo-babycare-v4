@@ -15,4 +15,12 @@
 -keep class com.onesignal.** { *; }
 -dontwarn com.onesignal.**
 
+# CleverTap
+-keep class com.clevertap.** { *; }
+-dontwarn com.clevertap.**
+
+# Firebase Messaging
+-keep class com.google.firebase.messaging.** { *; }
+-dontwarn com.google.firebase.messaging.**
+
 # Add any project specific keep options here:

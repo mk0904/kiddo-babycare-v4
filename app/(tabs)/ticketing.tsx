@@ -94,6 +94,8 @@ export default function TicketingScreen() {
         title={headerConfig.title ?? DEFAULT_HEADER.title}
         showSearch={headerConfig.showSearch ?? DEFAULT_HEADER.showSearch}
         showWishlist={headerConfig.showWishlist ?? DEFAULT_HEADER.showWishlist}
+        showBack
+        onBackPress={() => router.replace('/(tabs)')}
       />
       <ScrollView
         style={styles.scrollView}

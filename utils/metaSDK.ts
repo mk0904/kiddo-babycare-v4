@@ -41,11 +41,13 @@ export function initMetaSDK(): void {
     
     Settings.setAppID('1494379925573507');
     Settings.setClientToken('04a657781e5dd2df8704fd3292d74e3d');
-    Settings.initializeSDK();
     Settings.setAutoLogAppEventsEnabled(true);
-    Settings.setAdvertiserIDCollectionEnabled(true);
     if (__DEV__) Settings.setAppEventsDebugLogEnabled(true);
-    if (Platform.OS === 'android') Settings.setAdvertiserTrackingEnabled(true);
+    if (Platform.OS === 'android') {
+      Settings.setAdvertiserTrackingEnabled(true);
+      Settings.setAdvertiserIDCollectionEnabled(true);
+    }
+    Settings.initializeSDK();
     
     initialized = true;
     if (__DEV__) console.log('[Meta SDK] Initialized successfully');
@@ -78,7 +80,15 @@ export async function requestMetaTrackingPermission(): Promise<void> {
 
   try {
     if (__DEV__) console.log('[Meta SDK] Requesting ATT permission...');
-    const { requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
+    const { getTrackingPermissionsAsync, requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
+
+    const current = await getTrackingPermissionsAsync();
+    if (current.status === 'granted' || current.status === 'denied') {
+      if (__DEV__) console.log('[Meta SDK] ATT already determined:', current.status);
+      Settings.setAdvertiserTrackingEnabled(current.status === 'granted');
+      return;
+    }
+
     const attPromise = requestTrackingPermissionsAsync();
     const timeoutPromise = new Promise<{ status: string }>((_, reject) =>
       setTimeout(() => reject(new Error('ATT request timeout')), ATT_REQUEST_TIMEOUT_MS)

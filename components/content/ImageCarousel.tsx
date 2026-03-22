@@ -48,6 +48,25 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
     };
   });
 
+  // Horizontal padding on `styles.container` is consumed by Carousel for slide insets.
+  // BaseContentBlock also applies `styles.container`, which would double the inset — strip
+  // horizontal padding from the outer wrapper only.
+  const container = blockStyles?.container || {};
+  const {
+    paddingHorizontal: _outerPh,
+    paddingLeft: _outerPl,
+    paddingRight: _outerPr,
+    ...containerForOuter
+  } = container;
+
+  const outerBlock: ImageCarouselBlock = {
+    ...block,
+    styles: {
+      ...block.styles,
+      container: containerForOuter,
+    },
+  };
+
   const handleItemPress = (link?: string | any) => {
     if (link) {
       // Handle object format links (e.g., { type: "collection", collection: { id: "..." } })
@@ -72,7 +91,7 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
 
   return (
     <BaseContentBlock 
-      block={block}
+      block={outerBlock}
       style={adjustedMarginTop !== originalMarginTop ? { marginTop: adjustedMarginTop } : undefined}
     >
       <Carousel

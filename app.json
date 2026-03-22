@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.8.9",
+    "version": "1.9.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
@@ -59,8 +59,10 @@
       ],
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
       ],
+      "googleServicesFile": "./android/app/google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
@@ -111,13 +113,37 @@
           "advertiserIDCollectionEnabled": true,
           "autoLogAppEventsEnabled": false,
           "isAutoInitEnabled": false,
-          "iosUserTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+          "iosUserTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
         }
       ],
       [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "This identifier will be used to deliver personalized content and measure ad performance."
+          "userTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
+        }
+      ],
+      [
+        "@clevertap/clevertap-expo-plugin",
+        {
+          "accountId": "69R-748-Z77Z",
+          "accountToken": "b4a-2c6",
+          "accountRegion": "eu1",
+          "customIdentifiers": "Email,Phone",
+          "android": {
+            "features": {
+              "enablePush": true,
+              "enableInApp": true,
+              "enableInbox": true
+            },
+            "defaultNotificationChannelId": "default_channel"
+          },
+          "ios": {
+            "mode": "production",
+            "notifications": {
+              "enablePushInForeground": true,
+              "iosPushAppGroup": "group.com.kiddo.ak"
+            }
+          }
         }
       ]
     ],

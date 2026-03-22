@@ -1,16 +1,19 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 interface LocationButtonProps {
   address?: string | null;
+  /** Shown before the address (e.g. Home / Work / custom name) — same as saved address card title */
+  categoryLabel?: string | null;
   textColor?: string;
   onPress?: () => void;
 }
 
 export function LocationButton({
   address,
+  categoryLabel,
   textColor = Colors.text,
   onPress,
 }: LocationButtonProps) {
@@ -58,11 +61,26 @@ export function LocationButton({
               style={styles.locationIcon}
             />
             <Text
-              style={[styles.locationText, { color: textColor }]}
+              style={[
+                categoryLabel ? styles.locationTextOuter : styles.locationText,
+                { color: textColor },
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {address}
+              {categoryLabel ? (
+                <>
+                  <Text style={[styles.categoryLabel, { color: textColor }]}>
+                    {categoryLabel}
+                  </Text>
+                  <Text style={[styles.addressLineDetail, { color: textColor }]}>
+                    {' · '}
+                    {address}
+                  </Text>
+                </>
+              ) : (
+                address
+              )}
             </Text>
           </>
         ) : (
@@ -93,7 +111,7 @@ const styles = StyleSheet.create({
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 0,
     maxWidth: '85%',
   },
   locationIcon: {
@@ -104,6 +122,19 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginRight: 2,
     fontWeight: '700',
+  },
+  /** Parent row when showing category + address (no default bold on whole line) */
+  locationTextOuter: {
+    fontSize: 12,
+    color: Colors.text,
+    marginRight: 2,
+  },
+  categoryLabel: {
+    fontFamily: Fonts.LexendSemiBold,
+  },
+  addressLineDetail: {
+    fontFamily: Fonts.Regular,
+    fontWeight: '400',
   },
   addAddressText: {
     fontSize: 12,

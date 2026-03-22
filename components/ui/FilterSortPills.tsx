@@ -153,6 +153,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                 <Animated.View
                     style={[
                         styles.actionButton,
+                        activeFiltersCount > 0 && styles.actionButtonActive,
                         {
                             width: buttonWidth,
                             paddingHorizontal: paddingHorizontal,
@@ -171,7 +172,11 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                     alignItems: 'center',
                                 }}
                             >
-                                <Ionicons name="filter-outline" size={16} color={Colors.text} />
+                                <Ionicons
+                                    name="filter-outline"
+                                    size={16}
+                                    color={activeFiltersCount > 0 ? Colors.variantSelection : Colors.text}
+                                />
                             </Animated.View>
                         <Animated.View
                             style={{
@@ -183,7 +188,14 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 marginLeft: textMarginLeft,
                             }}
                         >
-                            <Text style={styles.actionButtonText}>Filters</Text>
+                            <Text
+                                style={[
+                                    styles.actionButtonText,
+                                    activeFiltersCount > 0 && styles.actionButtonTextActive,
+                                ]}
+                            >
+                                Filters
+                            </Text>
                         </Animated.View>
                         {activeFiltersCount > 0 && (
                             <View style={styles.badge}>
@@ -257,7 +269,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 <Ionicons 
                                     name="people-outline" 
                                     size={16} 
-                                    color={selectedGender ? Colors.primary : Colors.text} 
+                                    color={selectedGender ? Colors.variantSelection : Colors.text} 
                                 />
                             </Animated.View>
                             <Animated.View
@@ -307,7 +319,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 <Ionicons 
                                     name="calendar-outline" 
                                     size={16} 
-                                    color={selectedAge ? Colors.primary : Colors.text} 
+                                    color={selectedAge ? Colors.variantSelection : Colors.text} 
                                 />
                             </Animated.View>
                             <Animated.View
@@ -363,9 +375,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexShrink: 0,
     },
+    /** Match PDP variant chips: default + selected */
     actionButton: {
-        backgroundColor: '#F3F4F6',
-        borderRadius: 20,
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
         paddingVertical: 6,
         height: 32,
         position: 'relative',
@@ -374,13 +389,13 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     actionButtonActive: {
-        backgroundColor: '#E8F4FD',
-        borderWidth: 1,
-        borderColor: Colors.primary,
+        backgroundColor: '#FEEFEF',
+        borderWidth: 1.5,
+        borderColor: Colors.variantSelection,
     },
     actionButtonTextActive: {
-        color: Colors.primary,
-        fontFamily: Fonts.SemiBold,
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
     },
     actionButtonInner: {
         flexDirection: 'row',
@@ -400,7 +415,7 @@ const styles = StyleSheet.create({
     actionButtonText: {
         fontSize: 13,
         color: Colors.text,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendSemiBold,
     },
     fastFiltersContainer: {
         flex: 1,
@@ -410,7 +425,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -2,
         right: -2,
-        backgroundColor: Colors.primary,
+        backgroundColor: Colors.variantSelection,
         borderRadius: 10,
         minWidth: 18,
         height: 18,
@@ -423,6 +438,6 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         color: Colors.backgroundWhite,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
     },
 });

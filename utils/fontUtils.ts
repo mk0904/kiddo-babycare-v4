@@ -11,6 +11,13 @@ const FONT_FAMILY_ALIASES: Record<string, string> = {
   'extra-bold': Fonts.ExtraBold,
   black: Fonts.Black,
   bogart: 'bogart', // Bogart (loaded in app _layout)
+  lexend: Fonts.LexendBold,
+  'lexend-regular': Fonts.LexendRegular,
+  'lexend-medium': Fonts.LexendMedium,
+  'lexend-semibold': Fonts.LexendSemiBold,
+  'lexend-bold': Fonts.LexendBold,
+  fredoka: Fonts.FredokaSemiBold,
+  'fredoka-semibold': Fonts.FredokaSemiBold,
   // Exact names (so config can use "Metropolis-Bold" etc.)
   [Fonts.Regular]: Fonts.Regular,
   [Fonts.Medium]: Fonts.Medium,
@@ -18,6 +25,11 @@ const FONT_FAMILY_ALIASES: Record<string, string> = {
   [Fonts.Bold]: Fonts.Bold,
   [Fonts.ExtraBold]: Fonts.ExtraBold,
   [Fonts.Black]: Fonts.Black,
+  [Fonts.LexendRegular]: Fonts.LexendRegular,
+  [Fonts.LexendMedium]: Fonts.LexendMedium,
+  [Fonts.LexendSemiBold]: Fonts.LexendSemiBold,
+  [Fonts.LexendBold]: Fonts.LexendBold,
+  [Fonts.FredokaSemiBold]: Fonts.FredokaSemiBold,
 };
 
 /**

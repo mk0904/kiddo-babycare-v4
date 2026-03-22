@@ -93,6 +93,8 @@ export interface OrderDetailConfig {
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
+  /** When true, show "Events" in address Save as (Home/Work/Other/Events) and persist in Shopify. */
+  isEvent?: boolean;
   features?: {
     cart?: CartFeatures;
     checkout?: Record<string, boolean>;
