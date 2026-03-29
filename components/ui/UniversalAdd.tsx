@@ -1,10 +1,11 @@
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useCartItems, useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UniversalAddProps {
     item: any;
@@ -40,6 +41,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const removeItem = useCartStore(state => state.removeItem);
     const updateQuantity = useCartStore(state => state.updateQuantity);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+    const [variantModalVisible, setVariantModalVisible] = useState(false);
+    const [fullProductData, setFullProductData] = useState<any>(null);
+    const [isFetchingFullProduct, setIsFetchingFullProduct] = useState(false);
 
     // Get variant to create the correct cart item ID
     const variants = item.variants?.edges || item.variants || [];
@@ -55,7 +59,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         let cartItem = cartItems.find(
             (ci) => ci.variantId === variantId
         );
-        
+
         // If not found and we have a productId, try matching by productId
         // This handles search results where variant IDs might not match exactly
         if (!cartItem && productId) {
@@ -63,22 +67,78 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 (ci) => ci.productId === productId
             );
         }
-        
+
         return cartItem ? cartItem.quantity : 0;
     };
 
     const count = getItemCount();
 
-    const handleAdd = async () => {
-        if (!activeVariant) return;
-        
-        // Validate date selection for ticketing products
-        // If bookingDate prop is passed (even if null), it means date selection is required
-        if (bookingDate !== undefined && !bookingDate) {
-            // Call validation error callback if provided
-            if (onValidationError) {
-                onValidationError();
+    const handleAdd = async (variantToUse?: any) => {
+        let currentItem = item;
+        let finalVariant = variantToUse || activeVariant;
+
+        const productIdStr = String(productId || '');
+        const variantIdStr = String(variantId || '');
+        const productIdMatch = productIdStr.match(/Product\/(\d+)/);
+        const variantIdMatch = variantIdStr.match(/ProductVariant\/(\d+)/);
+
+        // Check if this looks like a search result variant (constructed from product ID)
+        // or a product with incomplete variant data
+        const isSearchResultVariant = (productIdMatch && variantIdMatch &&
+            productIdMatch[1] === variantIdMatch[1] &&
+            variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
+            (!item.variants?.edges || (Array.isArray(item.variants) && item.variants.length === 0)) ||
+            (item.variants?.edges?.length === 1 && item.variants.edges[0]?.node?.title === 'Default');
+
+        // If it's a search result, we MUST fetch full product data to check for variants and availability
+        if (isSearchResultVariant && productId && !variantToUse && !fullProductData) {
+            try {
+                setIsFetchingFullProduct(true);
+                const { shopifyApi } = await import('@/services/shopifyApi');
+                const fullProduct = await shopifyApi.getProductById(productId);
+                if (fullProduct) {
+                    setFullProductData(fullProduct);
+                    currentItem = fullProduct;
+
+                    // After fetching, check if it has multiple variants
+                    const fullVariants = Array.isArray(fullProduct.variants?.edges)
+                        ? fullProduct.variants.edges
+                        : (Array.isArray(fullProduct.variants) ? fullProduct.variants : []);
+
+                    if (fullVariants.length > 1 && variant !== 'pdp') {
+                        setVariantModalVisible(true);
+                        setIsFetchingFullProduct(false);
+                        return;
+                    }
+
+                    if (!variantToUse && fullVariants.length > 0) {
+                        const first = fullVariants[0];
+                        finalVariant = first?.node || first;
+                    }
+                }
+            } catch (error) {
+                console.error('[UniversalAdd] Error fetching full product:', error);
+            } finally {
+                setIsFetchingFullProduct(false);
             }
+        } else if (fullProductData) {
+            currentItem = fullProductData;
+        }
+
+        // Now check if we should show the variant selection modal
+        const variantsArr = currentItem.variants?.edges || currentItem.variants || [];
+        const hasMultipleVariants = variantsArr.length > 1;
+
+        if (hasMultipleVariants && !selectedVariant && !variantToUse && variant !== 'pdp') {
+            setVariantModalVisible(true);
+            return;
+        }
+
+        if (!finalVariant) return;
+
+        // Validate date selection for ticketing products
+        if (bookingDate !== undefined && !bookingDate) {
+            if (onValidationError) onValidationError();
             Alert.alert(
                 'Date Selection Required',
                 'Please select a date before adding this item to cart.',
@@ -86,128 +146,59 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             );
             return;
         }
-        
-        // Check if variant ID looks like it's from search results (constructed from product_id)
-        // Search results use: gid://shopify/ProductVariant/{product_id}
-        // Real variant IDs are different. Extract numeric IDs to compare
-        const variantIdStr = String(variantId || '');
-        const productIdStr = String(productId || '');
-        
-        // Extract numeric IDs from GID format
-        const productIdMatch = productIdStr.match(/Product\/(\d+)/);
-        const variantIdMatch = variantIdStr.match(/ProductVariant\/(\d+)/);
-        
-        // If variant ID numeric part matches product ID numeric part, it's likely from search
-        // Also check if product doesn't have proper variant structure (search results have simplified variants)
-        const isSearchResultVariant = (productIdMatch && variantIdMatch && 
-                                      productIdMatch[1] === variantIdMatch[1] &&
-                                      variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
-                                     (!item.variants?.edges || item.variants.edges.length === 0) ||
-                                     (item.variants.edges.length === 1 && item.variants.edges[0]?.node?.title === 'Default');
-        
-        let finalVariant = activeVariant;
-        let finalProduct = item;
-        
-        // If this looks like a search result, ALWAYS fetch the real product data from Shopify
-        if (isSearchResultVariant && productId) {
-            try {
-                console.log('[UniversalAdd] Detected search result product, fetching real data for:', productId);
-                const { shopifyApi } = await import('@/services/shopifyApi');
-                const fullProduct = await shopifyApi.getProductById(productId);
-                
-                if (fullProduct && fullProduct.variants?.edges && fullProduct.variants.edges.length > 0) {
-                    // Use the first available variant, or first variant if none available
-                    const realVariant = fullProduct.variants.edges.find((e: any) => {
-                        const v = e.node;
-                        return isVariantAvailable(v) === true;
-                    })?.node || fullProduct.variants.edges[0]?.node;
-                    
-                    if (realVariant) {
-                        console.log('[UniversalAdd] Using real variant ID:', realVariant.id, 'instead of search variant:', variantId);
-                        finalVariant = realVariant;
-                        finalProduct = fullProduct;
-                    } else {
-                        console.warn('[UniversalAdd] No valid variant found in fetched product');
-                    }
-                } else {
-                    console.warn('[UniversalAdd] Fetched product has no variants');
+
+        // Final check for out of stock - if adding first variant and it's OOS, find first available
+        if (!variantToUse) {
+            const currentQty = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
+            if ((typeof currentQty === 'number' && currentQty < 1) || isVariantAvailable(finalVariant) === false) {
+                const nodes = variantsArr.map((e: any) => e?.node ?? e);
+                const firstAvailable = nodes.find((v: any) => isVariantAvailable(v) === true);
+                if (firstAvailable) {
+                    finalVariant = firstAvailable;
                 }
-            } catch (error) {
-                console.error('[UniversalAdd] Error fetching real product data:', error);
-                // Don't add to cart if we can't get real variant ID - this prevents checkout errors
-                throw new Error('Unable to verify product availability. Please try again.');
             }
         }
 
-        // If first/current variant is out of stock, use first available variant (e.g. from product listing)
-        const currentQty = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
-        if ((typeof currentQty === 'number' && currentQty < 1) || isVariantAvailable(finalVariant) === false) {
-            const edges = finalProduct?.variants?.edges || finalProduct?.variants || [];
-            const nodes = edges.map((e: any) => e?.node ?? e);
-            const firstAvailable = nodes.find((v: any) => isVariantAvailable(v) === true);
-            if (firstAvailable) {
-                finalVariant = firstAvailable;
-            } else if (productId) {
-                try {
-                    const { shopifyApi } = await import('@/services/shopifyApi');
-                    const fullProduct = await shopifyApi.getProductById(productId);
-                    if (fullProduct?.variants?.edges?.length) {
-                        const v = fullProduct.variants.edges.find((e: any) => isVariantAvailable(e.node) === true)?.node;
-                        if (v) {
-                            finalVariant = v;
-                            finalProduct = fullProduct;
-                        }
-                    }
-                } catch (_) {}
-            }
-        }
-
-        // If listing didn't include tags (e.g. some collection responses), fetch once so cart shows Try & Buy badge
-        let tagsToUse = finalProduct.tags || [];
+        // Get tags
+        let tagsToUse = currentItem.tags || [];
         if (productId && (!tagsToUse || tagsToUse.length === 0)) {
             try {
                 const { shopifyApi } = await import('@/services/shopifyApi');
                 const fullProduct = await shopifyApi.getProductById(productId);
-                if (fullProduct?.tags?.length) {
-                    tagsToUse = fullProduct.tags;
-                }
-            } catch {
-                // Non-blocking; cart item still added, just without tags for badge
-            }
+                if (fullProduct?.tags?.length) tagsToUse = fullProduct.tags;
+            } catch { }
         }
 
-        // Get image URL
-        const imageUrl = finalVariant.image?.url || 
-                        finalProduct.images?.[0]?.url || 
-                        finalProduct.featuredImage?.url || 
-                        finalProduct.images?.edges?.[0]?.node?.url || 
-                        '';
+        // Get image and price
+        const imageUrl = finalVariant.image?.url ||
+            currentItem.images?.[0]?.url ||
+            currentItem.featuredImage?.url ||
+            currentItem.images?.edges?.[0]?.node?.url ||
+            '';
 
-        // Get price
         const price = parseFloat(
-            finalVariant.price?.amount || 
-            finalProduct.priceRange?.minVariantPrice?.amount || 
-            finalProduct.price?.amount || 
+            finalVariant.price?.amount ||
+            currentItem.priceRange?.minVariantPrice?.amount ||
+            currentItem.price?.amount ||
             '0'
         );
 
-        // Create cart item with real variant ID (include quantityAvailable so cart can enforce stock)
-        // Applies to all products including ticketing: limit add/increment to variant stock
         const quantityAvailable = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
         if (typeof quantityAvailable === 'number' && quantityAvailable < 1) {
             setStockLimitModal({ visible: true, maxQty: 0 });
             return;
         }
+
         const cartItem = {
             productId: productId || '',
             variantId: finalVariant.id || variantId || '',
-            title: finalProduct.title || finalProduct.name || 'Product',
+            title: currentItem.title || currentItem.name || 'Product',
             variantTitle: finalVariant.title,
             price,
-            compareAtPrice: finalVariant.compareAtPrice?.amount 
-                ? parseFloat(finalVariant.compareAtPrice.amount) 
+            compareAtPrice: finalVariant.compareAtPrice?.amount
+                ? parseFloat(finalVariant.compareAtPrice.amount)
                 : undefined,
-            currencyCode: finalVariant.price?.currencyCode || finalProduct.priceRange?.minVariantPrice?.currencyCode || 'INR',
+            currencyCode: finalVariant.price?.currencyCode || currentItem.priceRange?.minVariantPrice?.currencyCode || 'INR',
             image: imageUrl,
             quantity: 1,
             availableForSale: isVariantAvailable(finalVariant) !== false,
@@ -309,79 +300,93 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         <>
             <View>
                 {count === 0 ? (
-                (variant === 'pdp' || isTicketing) ? (
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleAdd();
-                        }}
-                        activeOpacity={0.7}
-                        style={variant === 'pdp' ? [styles.pdpContainer, styles.pdpAdd] : styles.addToCartButton}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                        <Text style={variant === 'pdp' ? styles.pdpAddText : styles.addToCartButtonText}>
-                            {variant === 'pdp' ? (addText || 'Add to Cart') : 'Add to cart'}
-                        </Text>
-                    </TouchableOpacity>
-                ) : variant === 'prominent' ? (
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleAdd();
-                        }}
-                        activeOpacity={0.85}
-                        style={styles.prominentAddButton}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                        <Text style={styles.addPlusGlyph}>+</Text>
-                    </TouchableOpacity>
+                    (variant === 'pdp' || isTicketing) ? (
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleAdd();
+                            }}
+                            activeOpacity={0.7}
+                            style={variant === 'pdp' ? [styles.pdpContainer, styles.pdpAdd] : styles.addToCartButton}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Text style={variant === 'pdp' ? styles.pdpAddText : styles.addToCartButtonText}>
+                                {variant === 'pdp' ? (addText || 'Add to Cart') : 'Add to cart'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : variant === 'prominent' ? (
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleAdd();
+                            }}
+                            activeOpacity={0.85}
+                            style={styles.prominentAddButton}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        >
+                            {isFetchingFullProduct ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.addPlusGlyph}>+</Text>
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleAdd();
+                            }}
+                            activeOpacity={0.7}
+                            style={styles.addCircleButton}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            {isFetchingFullProduct ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.addPlusGlyph}>+</Text>
+                            )}
+                        </TouchableOpacity>
+                    )
                 ) : (
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleAdd();
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.addCircleButton}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                        <Text style={styles.addPlusGlyph}>+</Text>
-                    </TouchableOpacity>
-                )
-            ) : (
-                <View style={currentStyles.counterContainer}>
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleDecrement();
-                        }}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        style={styles.buttonWrapper}
-                    >
-                        <Ionicons name="remove" color={currentStyles.iconColor} size={currentStyles.iconSize} />
-                    </TouchableOpacity>
-                    <Text style={currentStyles.counterText}>
-                        {count}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleIncrement();
-                        }}
-                        activeOpacity={0.7}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        style={styles.buttonWrapper}
-                    >
-                        <Ionicons name="add" color={currentStyles.iconColor} size={currentStyles.iconSize} />
-                    </TouchableOpacity>
-                </View>
-            )}
+                    <View style={currentStyles.counterContainer}>
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleDecrement();
+                            }}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={styles.buttonWrapper}
+                        >
+                            <Ionicons name="remove" color={currentStyles.iconColor} size={currentStyles.iconSize} />
+                        </TouchableOpacity>
+                        <Text style={currentStyles.counterText}>
+                            {count}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleIncrement();
+                            }}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={styles.buttonWrapper}
+                        >
+                            <Ionicons name="add" color={currentStyles.iconColor} size={currentStyles.iconSize} />
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
             <StockLimitModal
                 visible={stockLimitModal.visible}
                 maxQuantity={stockLimitModal.maxQty}
                 onClose={() => setStockLimitModal((s) => ({ ...s, visible: false }))}
+            />
+            <VariantSelectionModal
+                visible={variantModalVisible}
+                product={fullProductData || item}
+                onClose={() => setVariantModalVisible(false)}
+                onAddToCart={(v) => handleAdd(v)}
             />
         </>
     );

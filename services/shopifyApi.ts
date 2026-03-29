@@ -55,6 +55,11 @@ const GET_PRODUCTS_QUERY = `
               }
             }
           }
+          options {
+            id
+            name
+            values
+          }
         }
       }
     }
@@ -136,8 +141,13 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
                 }
               }
             }
+            options {
+                id
+                name
+                values
+            }
             compareAtPriceRange {
-              minVariantPrice {
+                minVariantPrice {
                 amount
                 currencyCode
               }
@@ -388,6 +398,11 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
             }
           }
         }
+      }
+      options {
+        id
+        name
+        values
       }
     }
   }
@@ -1072,7 +1087,7 @@ export const shopifyApi = {
         reverse,
         filters: queryFilters,
       };
-      
+
       // Only include sortKey if provided (allows Shopify to use collection's default sort)
       if (sortKey) {
         variables.sortKey = sortKey;
