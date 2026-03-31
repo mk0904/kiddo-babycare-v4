@@ -1,17 +1,20 @@
 import {
+    DARK_STORE_LOCATION,
     DEFAULT_ETA_MINUTES,
+    geocodeAddress,
+    getDeliveryEta,
     getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
-import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
+import { getDeliveryPartnerOrderStatus, subscribeToDeliveryTracking, type DeliveryTrackingMessage } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -24,10 +27,35 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import MapView, { AnimatedRegion, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
+
+function shippingAddressString(address: any): string {
+    if (!address) return '';
+    return [
+        address.address1,
+        address.address2,
+        address.city,
+        address.province,
+        address.zip,
+        address.country,
+    ]
+        .filter(Boolean)
+        .join(', ')
+        .trim();
+}
+
+function trackingTimestampMs(value: string | number | null | undefined): number | null {
+    if (value == null) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value > 1_000_000_000_000 ? value : value * 1000;
+    }
+    const parsed = new Date(String(value)).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
+}
 
 // Same images as GiftWrappingModal – used for gift wrap line items on order detail
 const GIFT_WRAP_IMAGES: Record<string, any> = {
@@ -112,11 +140,28 @@ export default function OrderDetailV2Screen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [fetchedEtaMinutes, setFetchedEtaMinutes] = useState<number | null>(null);
+    const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(null);
     const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<{
         shopifyOrderId: string;
         status: string;
         deliveryPartner: { name: string | null; contact: string | null };
     } | null>(null);
+    const [destinationCoords, setDestinationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [trackingConnected, setTrackingConnected] = useState(false);
+    const [riderOnline, setRiderOnline] = useState(false);
+    const [trackingNote, setTrackingNote] = useState<string | null>(null);
+    const [trackingUpdatedAt, setTrackingUpdatedAt] = useState<number | null>(null);
+    const riderAnimatedCoord = useRef(
+        new AnimatedRegion({
+            latitude: DARK_STORE_LOCATION.latitude,
+            longitude: DARK_STORE_LOCATION.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+        }),
+    ).current;
+    const liveEtaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const liveEtaLastRunRef = useRef<number>(0);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -226,6 +271,66 @@ export default function OrderDetailV2Screen() {
     }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.city, order?.shippingAddress?.zip]);
 
     useEffect(() => {
+        const address = shippingAddressString(order?.shippingAddress);
+        if (!address) {
+            setDestinationCoords(null);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const coords = await geocodeAddress(address);
+                if (!cancelled) setDestinationCoords(coords);
+            } catch {
+                if (!cancelled) setDestinationCoords(null);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [order?.shippingAddress?.address1, order?.shippingAddress?.address2, order?.shippingAddress?.city, order?.shippingAddress?.province, order?.shippingAddress?.zip, order?.shippingAddress?.country]);
+
+    useEffect(() => {
+        if (deliveryPartnerStatus?.status !== 'out_for_delivery' || !destinationCoords || !riderCoords) {
+            setLiveEtaMinutes(null);
+            if (liveEtaTimerRef.current) {
+                clearTimeout(liveEtaTimerRef.current);
+                liveEtaTimerRef.current = null;
+            }
+            return;
+        }
+
+        let cancelled = false;
+        const now = Date.now();
+        const elapsed = now - liveEtaLastRunRef.current;
+        const waitMs = Math.max(0, 8000 - elapsed);
+
+        if (liveEtaTimerRef.current) {
+            clearTimeout(liveEtaTimerRef.current);
+        }
+
+        liveEtaTimerRef.current = setTimeout(() => {
+            void (async () => {
+                const eta = await getDeliveryEta(destinationCoords.latitude, destinationCoords.longitude, {
+                    originLatitude: riderCoords.latitude,
+                    originLongitude: riderCoords.longitude,
+                });
+                if (cancelled) return;
+                liveEtaLastRunRef.current = Date.now();
+                setLiveEtaMinutes(eta?.etaMinutes ?? null);
+            })();
+        }, waitMs);
+
+        return () => {
+            cancelled = true;
+            if (liveEtaTimerRef.current) {
+                clearTimeout(liveEtaTimerRef.current);
+                liveEtaTimerRef.current = null;
+            }
+        };
+    }, [deliveryPartnerStatus?.status, destinationCoords, riderCoords]);
+
+    useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
         if (!rawOrderId || !rawOrderId.includes('/Order/')) {
             setDeliveryPartnerStatus(null);
@@ -263,6 +368,95 @@ export default function OrderDetailV2Screen() {
         };
     }, [order?.id]);
 
+    useEffect(() => {
+        const rawOrderId = String(order?.id ?? '').trim();
+        const shopifyOrderId = rawOrderId.includes('/Order/')
+            ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
+            : '';
+        const token = String(user?.customerAccessToken ?? user?.accessToken ?? '').trim();
+        const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        const shouldTrack = !!shopifyOrderId && !!token && ['rider_assigned', 'out_for_delivery'].includes(statusKey);
+
+        if (!shouldTrack) {
+            setTrackingConnected(false);
+            return;
+        }
+
+        let cancelled = false;
+        let reconnectDelay = 1000;
+        let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+        let unsubscribe: (() => void) | null = null;
+
+        const applyTrackingMessage = (message: DeliveryTrackingMessage) => {
+            if (cancelled) return;
+            switch (message.type) {
+                case 'location':
+                case 'rider_online': {
+                    const lat = typeof message.lat === 'number' ? message.lat : null;
+                    const lng = typeof message.lng === 'number' ? message.lng : null;
+                    const ts = trackingTimestampMs(message.timestamp);
+                    setRiderOnline(message.type === 'location' ? message.riderOnline !== false : true);
+                    if (lat != null && lng != null) {
+                        setRiderCoords({ latitude: lat, longitude: lng });
+                        (riderAnimatedCoord as any).timing({
+                            latitude: lat,
+                            longitude: lng,
+                            duration: 2000,
+                            useNativeDriver: false,
+                        }).start();
+                    }
+                    if (ts != null) setTrackingUpdatedAt(ts);
+                    setTrackingNote(null);
+                    return;
+                }
+                case 'rider_offline':
+                    setRiderOnline(false);
+                    setTrackingNote('Locating rider...');
+                    return;
+                case 'order_delivered':
+                    setRiderOnline(false);
+                    setTrackingConnected(false);
+                    setTrackingNote('Order delivered');
+                    return;
+                case 'rider_assigned':
+                    setTrackingNote('Rider assigned. Waiting for live location...');
+                    return;
+                default:
+                    return;
+            }
+        };
+
+        const connect = () => {
+            if (cancelled) return;
+            unsubscribe = subscribeToDeliveryTracking(shopifyOrderId, token, {
+                onOpen: () => {
+                    if (cancelled) return;
+                    reconnectDelay = 1000;
+                    setTrackingConnected(true);
+                },
+                onClose: () => {
+                    if (cancelled) return;
+                    setTrackingConnected(false);
+                    reconnectTimer = setTimeout(connect, reconnectDelay);
+                    reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+                },
+                onError: () => {
+                    if (cancelled) return;
+                    setTrackingConnected(false);
+                },
+                onMessage: applyTrackingMessage,
+            });
+        };
+
+        connect();
+
+        return () => {
+            cancelled = true;
+            if (unsubscribe) unsubscribe();
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+        };
+    }, [order?.id, user?.customerAccessToken, user?.accessToken, deliveryPartnerStatus?.status, riderAnimatedCoord]);
+
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
         try {
@@ -276,7 +470,7 @@ export default function OrderDetailV2Screen() {
         ? [order.shippingAddress.address1, order.shippingAddress.address2].filter(Boolean).join(', ') || 'Address'
         : '—';
 
-    const etaMinutes = fetchedEtaMinutes ?? (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
+    const etaMinutes = liveEtaMinutes ?? fetchedEtaMinutes ?? (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
     const orderPlacedAt = order?.processedAt || order?.createdAt;
     const baseTime = orderPlacedAt ? new Date(orderPlacedAt) : new Date();
     const deliveryByDate = new Date(baseTime.getTime() + etaMinutes * 60 * 1000);
@@ -289,6 +483,7 @@ export default function OrderDetailV2Screen() {
     const deliveryByTimeStr = `${timeStr}, ${dateStr}`;
     const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
     const hasArrivalTimePassed = deliveryByDate.getTime() < Date.now();
+    const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
 
     const headerStatusText = (() => {
         if (hasArrivalTimePassed) {
@@ -296,9 +491,11 @@ export default function OrderDetailV2Screen() {
             return `Arrived at ${timeStr}, ${arrivedDateStr}`;
         }
         if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
+        if (liveEtaMinutes != null && deliveryStatusKey === 'out_for_delivery') {
+            return `Live ETA ${Math.max(1, liveEtaMinutes)} min`;
+        }
         return `Arriving by ${deliveryByTimeStr}`;
     })();
-    const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
     const deliveryStatusLabel = DELIVERY_STATUS_LABELS[deliveryStatusKey] ?? (deliveryPartnerStatus?.status ? String(deliveryPartnerStatus.status).replace(/_/g, ' ') : '');
     const deliveryStatusColors = DELIVERY_STATUS_COLORS[deliveryStatusKey] ?? { bg: '#F3F4F6', text: '#374151' };
     const shouldShowAssignSoonMessage = ['placed', 'confirmed', 'packing', 'packed'].includes(deliveryStatusKey);
@@ -315,6 +512,24 @@ export default function OrderDetailV2Screen() {
             Alert.alert('Contact', phone);
         }
     };
+    const shouldShowTrackingMap =
+        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
+        !!destinationCoords;
+    const mapRegion: Region | null = useMemo(() => {
+        if (!destinationCoords) return null;
+        const riderLat = riderCoords?.latitude ?? DARK_STORE_LOCATION.latitude;
+        const riderLng = riderCoords?.longitude ?? DARK_STORE_LOCATION.longitude;
+        const minLat = Math.min(destinationCoords.latitude, riderLat);
+        const maxLat = Math.max(destinationCoords.latitude, riderLat);
+        const minLng = Math.min(destinationCoords.longitude, riderLng);
+        const maxLng = Math.max(destinationCoords.longitude, riderLng);
+        return {
+            latitude: (minLat + maxLat) / 2,
+            longitude: (minLng + maxLng) / 2,
+            latitudeDelta: Math.max(0.02, (maxLat - minLat) * 1.8),
+            longitudeDelta: Math.max(0.02, (maxLng - minLng) * 1.8),
+        };
+    }, [destinationCoords, riderCoords]);
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -590,6 +805,49 @@ export default function OrderDetailV2Screen() {
                                     </Text>
                                 ))}
                         </View>
+                        {shouldShowTrackingMap && mapRegion ? (
+                            <View style={styles.trackingWrap}>
+                                <View style={styles.trackingHeaderRow}>
+                                    <Text style={styles.trackingTitle}>Live rider tracking</Text>
+                                    <View style={[
+                                        styles.trackingStatusPill,
+                                        { backgroundColor: riderOnline ? '#DCFCE7' : '#F3F4F6' },
+                                    ]}>
+                                        <Text style={[
+                                            styles.trackingStatusText,
+                                            { color: riderOnline ? '#15803D' : '#6B7280' },
+                                        ]}>
+                                            {riderOnline ? 'Live' : trackingConnected ? 'Locating rider...' : 'Reconnecting...'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <MapView
+                                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                                    style={styles.trackingMap}
+                                    initialRegion={mapRegion}
+                                    scrollEnabled={false}
+                                    zoomEnabled={false}
+                                    rotateEnabled={false}
+                                    pitchEnabled={false}
+                                >
+                                    <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" pinColor="#111827" />
+                                    <Marker coordinate={destinationCoords!} title="Delivery address" pinColor="#F59E0B" />
+                                    {riderCoords ? (
+                                        <Marker.Animated coordinate={riderAnimatedCoord as any} title="Rider" pinColor="#0EA5E9" />
+                                    ) : null}
+                                </MapView>
+                                <Text style={styles.trackingCaption}>
+                                    {trackingNote
+                                        ? trackingNote
+                                        : trackingUpdatedAt
+                                            ? `Updated ${new Date(trackingUpdatedAt).toLocaleTimeString('en-IN', {
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                            })}`
+                                            : 'Waiting for the rider location'}
+                                </Text>
+                            </View>
+                        ) : null}
                     </View>
                 )}
 
@@ -946,6 +1204,47 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendMedium,
         color: '#181D27',
         lineHeight: 22,
+    },
+    trackingWrap: {
+        marginTop: 16,
+        borderRadius: 14,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    trackingHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingTop: 12,
+        paddingBottom: 8,
+    },
+    trackingTitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#111827',
+    },
+    trackingStatusPill: {
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    trackingStatusText: {
+        fontSize: 11,
+        fontFamily: Fonts.SemiBold,
+    },
+    trackingMap: {
+        width: '100%',
+        height: 220,
+    },
+    trackingCaption: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
     },
     deliveryPartnerCard: {
         backgroundColor: '#fff',

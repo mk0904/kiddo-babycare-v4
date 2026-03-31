@@ -40,6 +40,8 @@ export const DEFAULT_ETA_MINUTES = 30;
 
 interface EtaOptions {
   hasGiftWrap?: boolean;
+  originLatitude?: number;
+  originLongitude?: number;
 }
 
 export interface EtaResponse {
@@ -80,6 +82,8 @@ export const getDeliveryEta = async (
   return postJSON<EtaResponse>('eta', {
     lat: latitude,
     lng: longitude,
+    originLat: typeof options.originLatitude === 'number' ? options.originLatitude : undefined,
+    originLng: typeof options.originLongitude === 'number' ? options.originLongitude : undefined,
     hasGiftWrap: options.hasGiftWrap === true,
   });
 };
