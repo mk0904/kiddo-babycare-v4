@@ -114,6 +114,8 @@ export default function EditAddressScreen() {
                 pincode: pincode.trim(),
                 country: 'India',
                 tag: selectedTag,
+                latitude: existingAddress.latitude,
+                longitude: existingAddress.longitude,
             };
 
             await updateAddress(addressId, addressData);

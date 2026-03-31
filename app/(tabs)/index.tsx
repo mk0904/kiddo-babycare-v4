@@ -3,12 +3,8 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
-  calculateDistance,
-  DARK_STORE_LOCATION,
-  estimateDeliveryTime,
-  geocodeAddress,
-  getDeliveryTimeFromGoogleMaps,
-  isWithinDeliveryRange,
+  getDeliveryEta,
+  getDeliveryEtaForAddress,
   reverseGeocode,
 } from '@/config/deliveryConfig';
 import { Colors } from '@/constants/theme';
@@ -311,32 +307,18 @@ export default function HomeScreen() {
 
     setLoadingTime(true);
     try {
-      let lat = defaultAddress.latitude;
-      let lng = defaultAddress.longitude;
-
-      if (!lat || !lng) {
-        // Geocode address to get coordinates
+      let deliveryTime: number | null = null;
+      if (defaultAddress.latitude && defaultAddress.longitude) {
+        const eta = await getDeliveryEta(defaultAddress.latitude, defaultAddress.longitude);
+        deliveryTime = eta?.etaMinutes ?? null;
+      } else {
         const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
-        const coords = await geocodeAddress(addressString);
-        if (!coords) {
+        if (!addressString) {
           setEstimatedTime(null);
           setLoadingTime(false);
           return;
         }
-        lat = coords.latitude;
-        lng = coords.longitude;
-      }
-
-      let deliveryTime = await getDeliveryTimeFromGoogleMaps(lat, lng);
-      // Fallback to distance-based formula (same as rest of app) when Google Maps fails
-      if (deliveryTime == null) {
-        const distanceKm = calculateDistance(
-          DARK_STORE_LOCATION.latitude,
-          DARK_STORE_LOCATION.longitude,
-          lat,
-          lng
-        );
-        deliveryTime = estimateDeliveryTime(distanceKm);
+        deliveryTime = await getDeliveryEtaForAddress(addressString);
       }
       setEstimatedTime(deliveryTime);
 
@@ -413,10 +395,17 @@ export default function HomeScreen() {
         }
 
         const { latitude, longitude } = position.coords;
-        const range = isWithinDeliveryRange(latitude, longitude);
+        const eta = await getDeliveryEta(latitude, longitude);
         if (cancelled) return;
 
-        if (!range.isDeliverable) {
+        if (!eta) {
+          setLocationStatus('error');
+          setDetectedLocationLabel('Tap to add delivery address');
+          setDetectedLocation('error');
+          return;
+        }
+
+        if (!eta.isServiceable) {
           setLocationStatus('unserviceable');
           setDetectedLocationLabel(null);
           setDetectedEta(null);
@@ -424,17 +413,13 @@ export default function HomeScreen() {
           return;
         }
 
-        let eta = await getDeliveryTimeFromGoogleMaps(latitude, longitude);
-        if (eta == null) eta = range.estimatedTime;
-        if (cancelled) return;
-
         const label = await reverseGeocode(latitude, longitude);
         if (cancelled) return;
 
         setLocationStatus('serviceable');
         setDetectedLocationLabel(label || 'Current location');
-        setDetectedEta(eta);
-        setDetectedLocation('serviceable', eta);
+        setDetectedEta(eta.etaMinutes);
+        setDetectedLocation('serviceable', eta.etaMinutes);
       } catch (e) {
         if (!cancelled) {
           setLocationStatus('error');

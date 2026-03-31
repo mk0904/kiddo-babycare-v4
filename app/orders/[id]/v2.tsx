@@ -1,15 +1,11 @@
-import { NeedHelpChatCard, openSupportCall } from '@/components/orders/NeedHelpChatCard';
 import {
-    calculateDistance,
-    DARK_STORE_LOCATION,
     DEFAULT_ETA_MINUTES,
-    estimateDeliveryTime,
-    geocodeAddress,
-    getDeliveryTimeFromGoogleMaps,
+    getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
+import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +15,7 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Linking,
     Platform,
     ScrollView,
     Share,
@@ -80,6 +77,32 @@ function getBookingDateDisplay(node: any): string | null {
     return null;
 }
 
+const DELIVERY_STATUS_LABELS: Record<string, string> = {
+    placed: 'Placed',
+    confirmed: 'Confirmed',
+    packing: 'Packing',
+    packed: 'Packed',
+    rider_assigned: 'Rider Assigned',
+    out_for_delivery: 'Out for Delivery',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
+    return_requested: 'Return Requested',
+    returned: 'Returned',
+};
+
+const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+    placed: { bg: '#FFF4E5', text: '#B45309' },
+    confirmed: { bg: '#E8F1FF', text: '#1D4ED8' },
+    packing: { bg: '#F3E8FF', text: '#7E22CE' },
+    packed: { bg: '#EDE9FE', text: '#6D28D9' },
+    rider_assigned: { bg: '#ECFEFF', text: '#0F766E' },
+    out_for_delivery: { bg: '#E0F2FE', text: '#0369A1' },
+    delivered: { bg: '#ECFDF3', text: '#15803D' },
+    cancelled: { bg: '#FEF2F2', text: '#B91C1C' },
+    return_requested: { bg: '#FFF7ED', text: '#C2410C' },
+    returned: { bg: '#F5F3FF', text: '#6B21A8' },
+};
+
 export default function OrderDetailV2Screen() {
     const { id, estimatedDeliveryMinutes: paramEta, from } = useLocalSearchParams<{ id: string; estimatedDeliveryMinutes?: string; from?: string }>();
     const router = useRouter();
@@ -89,6 +112,11 @@ export default function OrderDetailV2Screen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [fetchedEtaMinutes, setFetchedEtaMinutes] = useState<number | null>(null);
+    const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<{
+        shopifyOrderId: string;
+        status: string;
+        deliveryPartner: { name: string | null; contact: string | null };
+    } | null>(null);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -113,7 +141,7 @@ export default function OrderDetailV2Screen() {
                             return n === numericId || o.id === orderId;
                         });
                         if (found) orderId = found.id;
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 if (isDraftOrder || orderId.startsWith('gid://shopify/DraftOrder/')) {
@@ -182,20 +210,10 @@ export default function OrderDetailV2Screen() {
         let cancelled = false;
         (async () => {
             try {
-                const coords = await geocodeAddress(addressString);
-                if (cancelled || !coords) {
+                const deliveryTime = await getDeliveryEtaForAddress(addressString);
+                if (cancelled || deliveryTime == null) {
                     setFetchedEtaMinutes(null);
                     return;
-                }
-                let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
-                if (deliveryTime == null) {
-                    const distanceKm = calculateDistance(
-                        DARK_STORE_LOCATION.latitude,
-                        DARK_STORE_LOCATION.longitude,
-                        coords.latitude,
-                        coords.longitude
-                    );
-                    deliveryTime = estimateDeliveryTime(distanceKm);
                 }
                 if (!cancelled) setFetchedEtaMinutes(deliveryTime);
             } catch (e) {
@@ -206,6 +224,44 @@ export default function OrderDetailV2Screen() {
             cancelled = true;
         };
     }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.city, order?.shippingAddress?.zip]);
+
+    useEffect(() => {
+        const rawOrderId = String(order?.id ?? '').trim();
+        if (!rawOrderId || !rawOrderId.includes('/Order/')) {
+            setDeliveryPartnerStatus(null);
+            return;
+        }
+
+        const shopifyOrderId = rawOrderId.split('/').pop()?.split('?')[0]?.trim() || '';
+        if (!shopifyOrderId) {
+            setDeliveryPartnerStatus(null);
+            return;
+        }
+
+        let cancelled = false;
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const pollDeliveryStatus = async () => {
+            const result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+            if (cancelled) return;
+
+            setDeliveryPartnerStatus(result);
+
+            const statusKey = String(result?.status ?? '').trim().toLowerCase();
+            if (statusKey === 'out_for_delivery' && intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+
+        pollDeliveryStatus();
+        intervalId = setInterval(pollDeliveryStatus, 60 * 1000);
+
+        return () => {
+            cancelled = true;
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [order?.id]);
 
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
@@ -242,7 +298,23 @@ export default function OrderDetailV2Screen() {
         if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
         return `Arriving by ${deliveryByTimeStr}`;
     })();
-
+    const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+    const deliveryStatusLabel = DELIVERY_STATUS_LABELS[deliveryStatusKey] ?? (deliveryPartnerStatus?.status ? String(deliveryPartnerStatus.status).replace(/_/g, ' ') : '');
+    const deliveryStatusColors = DELIVERY_STATUS_COLORS[deliveryStatusKey] ?? { bg: '#F3F4F6', text: '#374151' };
+    const shouldShowAssignSoonMessage = ['placed', 'confirmed', 'packing', 'packed'].includes(deliveryStatusKey);
+    const shouldShowDeliveryPartnerDetails =
+        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
+        !!deliveryPartnerStatus?.deliveryPartner &&
+        !!(deliveryPartnerStatus.deliveryPartner.name || deliveryPartnerStatus.deliveryPartner.contact);
+    const handleDeliveryPartnerCall = async () => {
+        const phone = String(deliveryPartnerStatus?.deliveryPartner?.contact ?? '').trim();
+        if (!phone) return;
+        try {
+            await Linking.openURL(`tel:${phone}`);
+        } catch (_) {
+            Alert.alert('Contact', phone);
+        }
+    };
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -314,6 +386,13 @@ export default function OrderDetailV2Screen() {
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle}>Order Summary</Text>
                 </View>
+                {!!deliveryStatusLabel && (
+                    <View style={[styles.headerStatusPill, { backgroundColor: deliveryStatusColors.bg }]}>
+                        <Text style={[styles.headerStatusText, { color: deliveryStatusColors.text }]}>
+                            {deliveryStatusLabel}
+                        </Text>
+                    </View>
+                )}
             </View>
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -330,7 +409,53 @@ export default function OrderDetailV2Screen() {
                     );
                 })()}
 
-                
+                {shouldShowAssignSoonMessage && (
+                    <View style={styles.deliveryPartnerCard}>
+                        <View style={styles.deliveryPartnerContent}>
+                            <View style={styles.deliveryPartnerAvatar}>
+                                <Ionicons name="time-outline" size={26} color="#8B5E00" />
+                            </View>
+                            <View style={styles.deliveryPartnerTextWrap}>
+                                <Text style={styles.deliveryPartnerIntro}>Your delivery partner will be assigned soon</Text>
+                                <Text style={styles.deliveryPartnerPendingText}>We will share the rider details here shortly</Text>
+                            </View>
+                            <View style={styles.deliveryPartnerPendingBadge}>
+                                <Ionicons name="hourglass-outline" size={18} color="#9CA3AF" />
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {shouldShowDeliveryPartnerDetails && (
+                    <View style={styles.deliveryPartnerCard}>
+                        <View style={styles.deliveryPartnerContent}>
+                            <View style={styles.deliveryPartnerAvatar}>
+                                <View style={styles.deliveryPartnerAvatarInner}>
+                                    <Ionicons name="person" size={30} color="#8B5E00" />
+                                </View>
+                            </View>
+                            <View style={styles.deliveryPartnerTextWrap}>
+                                <Text style={styles.deliveryPartnerIntro}>
+                                    {`I'm ${deliveryPartnerStatus.deliveryPartner.name || 'your delivery partner'}, your delivery partner`}
+                                </Text>
+                                <Text style={styles.deliveryPartnerContactText}>
+                                    I have picked up your order, and I am on the way
+                                </Text>
+                            </View>
+                            {!!deliveryPartnerStatus.deliveryPartner.contact && (
+                                <TouchableOpacity
+                                    style={styles.deliveryPartnerCallButton}
+                                    onPress={handleDeliveryPartnerCall}
+                                    activeOpacity={0.8}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Call ${deliveryPartnerStatus.deliveryPartner.name || 'delivery partner'}`}
+                                >
+                                    <Ionicons name="call" size={20} color="#16A34A" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                )}
 
                 {/* Line items – single card like cart */}
                 <View style={styles.orderItemsSection}>
@@ -468,7 +593,9 @@ export default function OrderDetailV2Screen() {
                     </View>
                 )}
 
-                <NeedHelpChatCard onCallPress={openSupportCall} />
+
+
+                {/* <NeedHelpChatCard onCallPress={openSupportCall} /> */}
 
             </ScrollView>
         </SafeAreaView>
@@ -501,6 +628,20 @@ const styles = StyleSheet.create({
         fontSize: Fonts.LargeFontSize,
         fontFamily: Fonts.LexendBold,
         color: '#1A1A1A',
+    },
+    headerStatusPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        marginLeft: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        maxWidth: 150,
+    },
+    headerStatusText: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
+        textAlign: 'center',
     },
     headerAddress: {
         fontSize: 13,
@@ -715,7 +856,7 @@ const styles = StyleSheet.create({
         height: 32,
     },
     belowBillSection: {
-        
+
         backgroundColor: '#fff',
         borderRadius: CARD_RADIUS,
         marginBottom: 16,
@@ -805,6 +946,79 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendMedium,
         color: '#181D27',
         lineHeight: 22,
+    },
+    deliveryPartnerCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        marginBottom: 16,
+        padding: 14,
+    },
+    deliveryPartnerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    deliveryPartnerAvatar: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#FDE68A',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    deliveryPartnerAvatarInner: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: '#FDEFC7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#F5C96A',
+    },
+    deliveryPartnerTextWrap: {
+        flex: 1,
+        minWidth: 0,
+    },
+    deliveryPartnerIntro: {
+        fontSize: Fonts.SmallFontSize,
+        lineHeight: 20,
+        fontFamily: Fonts.LexendBold,
+        color: '#414651',
+    },
+    deliveryPartnerContactText: {
+        marginTop: 4,
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#717680',
+    },
+    deliveryPartnerCallButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+        marginLeft: 12,
+    },
+    deliveryPartnerPendingBadge: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+        marginLeft: 12,
+    },
+    deliveryPartnerPendingText: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#4B5563',
+        marginTop: 4,
     },
     primaryButton: {
         backgroundColor: Colors.primary,

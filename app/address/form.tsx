@@ -126,6 +126,8 @@ export default function AddressFormScreen() {
                 pincode: locationData?.pincode || '',
                 country: 'India',
                 tag: selectedTag,
+                latitude: locationData?.latitude,
+                longitude: locationData?.longitude,
             };
 
             await addAddress(addressData);

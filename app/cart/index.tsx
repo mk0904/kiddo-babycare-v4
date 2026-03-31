@@ -14,11 +14,7 @@ import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
-    calculateDistance,
-    DARK_STORE_LOCATION,
-    estimateDeliveryTime,
-    geocodeAddress,
-    getDeliveryTimeFromGoogleMaps,
+    getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
@@ -104,10 +100,12 @@ export default function CartScreen() {
         () => appConfigService.getCheckoutConfig(),
         [appConfigRefresh]
     );
+    const giftWrapping = useGiftWrapping();
     const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
         defaultAddress?.latitude,
         defaultAddress?.longitude,
-        defaultAddress ?? undefined
+        defaultAddress ?? undefined,
+        { hasGiftWrap: !!giftWrapping }
     );
     // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
     // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
@@ -122,23 +120,13 @@ export default function CartScreen() {
         const run = async () => {
             const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
             if (!addressString) return;
-            const coords = await geocodeAddress(addressString);
-            if (cancelled || !coords) return;
-            let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
-            if (deliveryTime == null) {
-                const distanceKm = calculateDistance(
-                    DARK_STORE_LOCATION.latitude,
-                    DARK_STORE_LOCATION.longitude,
-                    coords.latitude,
-                    coords.longitude
-                );
-                deliveryTime = estimateDeliveryTime(distanceKm);
-            }
+            const deliveryTime = await getDeliveryEtaForAddress(addressString, { hasGiftWrap: !!giftWrapping });
+            if (cancelled || deliveryTime == null) return;
             if (!cancelled) setEtaFromGeocode(deliveryTime);
         };
         run();
         return () => { cancelled = true; };
-    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode]);
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping]);
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
@@ -146,7 +134,6 @@ export default function CartScreen() {
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
-    const giftWrapping = useGiftWrapping();
     const status = useCartStatus();
     const cartId = useCartId();
     const checkoutUrl = useCheckoutUrl();

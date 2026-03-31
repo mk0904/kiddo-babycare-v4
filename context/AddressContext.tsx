@@ -45,6 +45,29 @@ function addressTypeToTag(value: string | null | undefined): AddressTag {
 
 /** Shopify Customer Address API uses this key for address type; we send our addressType value here. */
 const SHOPIFY_ADDRESS_TYPE_KEY = 'company' as const;
+const SHOPIFY_ADDRESS_GEO_PREFIX = 'kiddo_geo:';
+
+function encodeShopifyAddressType(tag: AddressTag, latitude?: number, longitude?: number): string {
+    const base = tagToAddressType(tag);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return base;
+    return `${base} | ${SHOPIFY_ADDRESS_GEO_PREFIX}${latitude},${longitude}`;
+}
+
+function parseShopifyAddressType(value: string | null | undefined): { tag: AddressTag; latitude?: number; longitude?: number } {
+    const raw = (value ?? '').trim();
+    if (!raw) return { tag: 'home' };
+
+    const [tagPart, ...rest] = raw.split('|').map((part) => part.trim()).filter(Boolean);
+    const tag = addressTypeToTag(tagPart || raw);
+    const geoPart = rest.find((part) => part.startsWith(SHOPIFY_ADDRESS_GEO_PREFIX));
+    if (!geoPart) return { tag };
+
+    const coords = geoPart.slice(SHOPIFY_ADDRESS_GEO_PREFIX.length).split(',').map((part) => Number(part.trim()));
+    const [latitude, longitude] = coords;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return { tag };
+
+    return { tag, latitude, longitude };
+}
 
 export type DetectedLocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
 
@@ -103,26 +126,29 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
 
                     if (result && result.addresses && result.addresses.length > 0) {
                         // Transform Shopify addresses to our format
-                        const formattedAddresses: Address[] = result.addresses.map((addr: any) => ({
-                            id: addr.id,
-                            shopifyId: addr.id,
-                            firstName: addr.firstName || '',
-                            lastName: addr.lastName || '',
-                            name: [addr.firstName, addr.lastName].filter((p) => p && p.trim() !== '_').join(' ').trim() || 'Address',
-                            address1: addr.address1 || '',
-                            address2: addr.address2 || '',
-                            city: addr.city || '',
-                            province: addr.province || '',
-                            state: addr.province || '',
-                            zip: addr.zip || '',
-                            pincode: addr.zip || '',
-                            country: addr.country || 'India',
-                            tag: addressTypeToTag((addr as any)[SHOPIFY_ADDRESS_TYPE_KEY]),
-                            phone: addr.phone || '',
-                            isDefault: result.defaultAddress?.id === addr.id,
-                            latitude: undefined,
-                            longitude: undefined,
-                        }));
+                        const formattedAddresses: Address[] = result.addresses.map((addr: any) => {
+                            const parsedMeta = parseShopifyAddressType((addr as any)[SHOPIFY_ADDRESS_TYPE_KEY]);
+                            return {
+                                id: addr.id,
+                                shopifyId: addr.id,
+                                firstName: addr.firstName || '',
+                                lastName: addr.lastName || '',
+                                name: [addr.firstName, addr.lastName].filter((p) => p && p.trim() !== '_').join(' ').trim() || 'Address',
+                                address1: addr.address1 || '',
+                                address2: addr.address2 || '',
+                                city: addr.city || '',
+                                province: addr.province || '',
+                                state: addr.province || '',
+                                zip: addr.zip || '',
+                                pincode: addr.zip || '',
+                                country: addr.country || 'India',
+                                tag: parsedMeta.tag,
+                                phone: addr.phone || '',
+                                isDefault: result.defaultAddress?.id === addr.id,
+                                latitude: parsedMeta.latitude,
+                                longitude: parsedMeta.longitude,
+                            };
+                        });
 
                         // Save to AsyncStorage for offline access
                         await AsyncStorage.setItem('user_addresses', JSON.stringify(formattedAddresses));
@@ -208,7 +234,11 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                     zip: addressData.zip || addressData.pincode || '',
                     phone: addressData.phone || '',
                 };
-                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = tagToAddressType(addressData.tag || 'home');
+                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = encodeShopifyAddressType(
+                    addressData.tag || 'home',
+                    addressData.latitude,
+                    addressData.longitude
+                );
 
                 console.log('[AddressContext] Creating address in Shopify:', shopifyAddressData);
                 
@@ -292,7 +322,11 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                     zip: addressData.zip ?? addressData.pincode ?? address?.zip ?? address?.pincode ?? '',
                     phone: addressData.phone ?? address?.phone ?? '',
                 };
-                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = tagToAddressType(addressData.tag ?? address?.tag ?? 'home');
+                shopifyAddressData[SHOPIFY_ADDRESS_TYPE_KEY] = encodeShopifyAddressType(
+                    addressData.tag ?? address?.tag ?? 'home',
+                    addressData.latitude ?? address?.latitude,
+                    addressData.longitude ?? address?.longitude
+                );
 
                 console.log('[AddressContext] Updating address in Shopify:', shopifyId, shopifyAddressData);
                 
