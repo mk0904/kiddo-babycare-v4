@@ -14,6 +14,22 @@ export interface FreeShoesOfferShoe {
   imageUrl: string;
 }
 
+export interface FreeShoesPickerSizeOption {
+  size: string;
+  isAvailable: boolean;
+  shoeIds?: string[];
+}
+
+export interface FreeShoesPickerConfig {
+  enabled: boolean;
+  shoes: FreeShoesOfferShoe[];
+  sizes: FreeShoesPickerSizeOption[];
+  copy?: {
+    sizeTitle?: string;
+    shoeTitle?: string;
+  };
+}
+
 export interface FreeShoesOfferConfig {
   enabled: boolean;
   /** When false, offer is hidden. When true or undefined, offer is shown (if enabled). Computed by backend from cart context (cartSubtotal, cartCategories). */
@@ -71,6 +87,7 @@ export interface CartConfig {
   };
   giftWrap?: GiftWrapConfig;
   freeShoesOffer?: FreeShoesOfferConfig;
+  freeShoesPicker?: FreeShoesPickerConfig;
   savingsCorner?: { title?: string; applyCta?: string };
   billDetails?: {
     subtotalLabel?: string;

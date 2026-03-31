@@ -329,6 +329,10 @@ export default function CartScreen() {
         () => appConfigService.getCartConfig()?.freeShoesOffer,
         [appConfigRefresh]
     );
+    const freeShoesPickerConfig = useMemo(
+        () => appConfigService.getCartConfig()?.freeShoesPicker,
+        [appConfigRefresh]
+    );
     /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
     const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
 
@@ -369,11 +373,20 @@ export default function CartScreen() {
     useEffect(() => {
         const hasHeyKiddo = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
         if (!hasHeyKiddo || selectedShoe || !freeShoesOfferConfig?.shoes?.length) return;
-        const firstShoe = freeShoesOfferConfig.shoes[0];
-        const firstSize = freeShoesOfferConfig.sizes?.find((s) => s.isAvailable)?.size ?? freeShoesOfferConfig.sizes?.[0]?.size;
+        const configuredShoes = freeShoesPickerConfig?.enabled && freeShoesPickerConfig.shoes?.length
+            ? freeShoesPickerConfig.shoes
+            : freeShoesOfferConfig.shoes;
+        const configuredSizes = freeShoesPickerConfig?.enabled && freeShoesPickerConfig.sizes?.length
+            ? freeShoesPickerConfig.sizes
+            : freeShoesOfferConfig.sizes?.map((s) => ({ ...s, shoeIds: configuredShoes.map((shoe) => shoe.id) }));
+        const firstAvailableSize = configuredSizes?.find((s) => s.isAvailable) ?? configuredSizes?.[0];
+        const firstSize = firstAvailableSize?.size;
+        const allowedIds = firstAvailableSize?.shoeIds?.length ? firstAvailableSize.shoeIds : configuredShoes.map((shoe) => shoe.id);
+        const firstShoe = configuredShoes.find((shoe) => allowedIds.includes(shoe.id)) ?? configuredShoes[0];
+        if (!firstShoe) return;
         setSelectedShoe(firstShoe.id);
         if (firstSize) setSelectedShoeSize(firstSize);
-    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, setSelectedShoe, setSelectedShoeSize]);
+    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, freeShoesPickerConfig, setSelectedShoe, setSelectedShoeSize]);
 
     // Coupon fetching is handled inside SavingsCorner.
 

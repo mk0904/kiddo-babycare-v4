@@ -1,9 +1,7 @@
 // Delivery Configuration
 // Calculate delivery time based on distance: 2 mins per km + 5 mins
 
-import { configService } from '@/services/configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+import { getBackendApiPath } from '@/services/backendBase';
 export const DARK_STORE_LOCATION = {
   latitude: 28.540546501290788,
   longitude: 77.37018854503113,
@@ -57,21 +55,9 @@ export interface EtaResponse {
   fallbackUsed: boolean;
 }
 
-function getBackendBase(): string {
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return String(base).replace(/\/+$/, '');
-}
-
-function getApiPath(path: string): string {
-  const base = getBackendBase();
-  const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-  return `${prefix}/${path.replace(/^\//, '')}`;
-}
-
 async function postJSON<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
   try {
-    const response = await fetch(getApiPath(path), {
+    const response = await fetch(getBackendApiPath(path), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

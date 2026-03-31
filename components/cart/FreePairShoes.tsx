@@ -1,6 +1,6 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
-import type { FreeShoesOfferConfig, SizeOption } from '@/types/appConfig';
+import type { FreeShoesOfferConfig, FreeShoesPickerSizeOption, SizeOption } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ const FREE_GREEN = '#16A34A';
 const ORIGINAL_PRICE_DEFAULT = 4999;
 
 /** Default shoe size options (baby/kids) when backend config does not provide sizes. */
-const DEFAULT_SHOE_SIZES: SizeOption[] = [
+const DEFAULT_SHOE_SIZES: FreeShoesPickerSizeOption[] = [
     { size: '0 - 3M', isAvailable: true },
     { size: '3 - 6M', isAvailable: true },
     { size: '6 - 9M', isAvailable: true },
@@ -70,7 +70,7 @@ export function FreePairShoes({
     appliedCouponOriginalPrice,
 }: FreePairShoesProps) {
     const [shoeOptions, setShoeOptions] = useState<ShoeOption[]>([]);
-    const [sizeOptions, setSizeOptions] = useState<SizeOption[]>([]);
+    const [sizeOptions, setSizeOptions] = useState<FreeShoesPickerSizeOption[]>([]);
     const [offerEnabled, setOfferEnabled] = useState(false);
     const [showSizeModal, setShowSizeModal] = useState(false);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -83,9 +83,31 @@ export function FreePairShoes({
     useEffect(() => {
         try {
             const config = appConfigService.getFreeShoesOfferConfig();
-            if (config && config.enabled && config.shoes && config.shoes.length > 0) {
-                setShoeOptions(config.shoes);
-                setSizeOptions(config.sizes?.length ? config.sizes : DEFAULT_SHOE_SIZES);
+            const pickerConfig = appConfigService.getFreeShoesPickerConfig();
+            const configuredShoes = pickerConfig?.enabled && pickerConfig.shoes?.length
+                ? pickerConfig.shoes
+                : (config?.shoes ?? []);
+            const allShoeIds = configuredShoes.map((shoe) => shoe.id);
+            const configuredSizes = pickerConfig?.enabled && pickerConfig.sizes?.length
+                ? pickerConfig.sizes.map((size) => ({
+                    size: size.size,
+                    isAvailable: size.isAvailable,
+                    shoeIds: size.shoeIds?.length ? size.shoeIds : allShoeIds,
+                }))
+                : (config?.sizes?.length
+                    ? config.sizes.map((size) => ({
+                        size: size.size,
+                        isAvailable: size.isAvailable,
+                        shoeIds: allShoeIds,
+                    }))
+                    : DEFAULT_SHOE_SIZES.map((size) => ({
+                        ...size,
+                        shoeIds: allShoeIds,
+                    })));
+
+            if (config && config.enabled && configuredShoes.length > 0) {
+                setShoeOptions(configuredShoes);
+                setSizeOptions(configuredSizes);
                 setOfferEnabled(true);
                 setOfferCopy(config.copy ?? undefined);
                 const raw = (config as any).originalPrice ?? (config as any).original_price;
@@ -121,12 +143,28 @@ export function FreePairShoes({
         ? appliedCouponOriginalPrice
         : (originalPrice != null ? originalPrice : configOriginalPrice);
 
+    const getShoesForSize = (size: string | null) => {
+        if (!size) return shoeOptions;
+        const sizeOption = sizeOptions.find((option) => option.size === size);
+        const allowedIds = sizeOption?.shoeIds?.length ? sizeOption.shoeIds : shoeOptions.map((shoe) => shoe.id);
+        return shoeOptions.filter((shoe) => allowedIds.includes(shoe.id));
+    };
+
+    const getPreferredShoeForSize = (size: string | null, preferredShoeId?: string | null) => {
+        const availableShoes = getShoesForSize(size);
+        if (availableShoes.length === 0) return null;
+        if (preferredShoeId && availableShoes.some((shoe) => shoe.id === preferredShoeId)) return preferredShoeId;
+        return availableShoes[0]?.id ?? null;
+    };
+
+    const modalShoes = getShoesForSize(sizeModalSelection);
+
     const openSizeModal = () => {
         const currentSelection = selectedSize && sizeOptions.some((s) => s.size === selectedSize && s.isAvailable)
             ? selectedSize
             : firstAvailableSize;
         setSizeModalSelection(currentSelection);
-        setSizeModalShoeSelection(selectedShoe ?? shoeOptions[0]?.id ?? null);
+        setSizeModalShoeSelection(getPreferredShoeForSize(currentSelection, selectedShoe ?? shoeOptions[0]?.id ?? null));
         setShowSizeModal(true);
     };
     const closeSizeModal = () => {
@@ -135,7 +173,7 @@ export function FreePairShoes({
         setSizeModalShoeSelection(null);
     };
     const confirmSize = () => {
-        const shoeId = sizeModalShoeSelection ?? displayShoe.id;
+        const shoeId = sizeModalShoeSelection ?? getPreferredShoeForSize(sizeModalSelection, displayShoe.id);
         if (sizeModalSelection && shoeId) {
             setSelectedSize(sizeModalSelection);
             setShowSizeModal(false);
@@ -239,7 +277,7 @@ export function FreePairShoes({
                     <Pressable style={styles.sizeModalBackdrop} onPress={closeSizeModal} />
                     <View style={styles.sizeModalCard}>
                     <View style={styles.sizeModalTitleRow}>
-                        <Text style={styles.sizeModalTitle}>Select Shoe</Text>
+                        <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
                         <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
                             <Ionicons name="close" size={24} color="#717680" />
                         </TouchableOpacity>
@@ -250,28 +288,6 @@ export function FreePairShoes({
                         contentContainerStyle={styles.sizeModalScrollContent}
                         showsVerticalScrollIndicator={true}
                     >
-                        {/* Shoe selection grid - all 4 from backend config */}
-                        <View style={styles.shoeGrid}>
-                            {shoeOptions.map((shoe) => {
-                                const isSelected = sizeModalShoeSelection === shoe.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={shoe.id}
-                                        style={[styles.shoeOption, isSelected && styles.shoeOptionSelected]}
-                                        onPress={() => setSizeModalShoeSelection(shoe.id)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Image
-                                            source={{ uri: shoe.imageUrl }}
-                                            style={styles.shoeOptionImage}
-                                            contentFit="cover"
-                                            placeholder={{ blurhash: BLURHASH }}
-                                            placeholderContentFit="cover"
-                                        />
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
                         <Text style={styles.sizeModalSubtitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
                         <View style={styles.sizeGrid}>
                             {sizeOptions.map((sizeOption) => {
@@ -285,7 +301,11 @@ export function FreePairShoes({
                                             disabled && styles.sizeButtonDisabled,
                                             isSelected && styles.sizeButtonSelected,
                                         ]}
-                                        onPress={() => !disabled && setSizeModalSelection(sizeOption.size)}
+                                        onPress={() => {
+                                            if (disabled) return;
+                                            setSizeModalSelection(sizeOption.size);
+                                            setSizeModalShoeSelection(getPreferredShoeForSize(sizeOption.size, sizeModalShoeSelection));
+                                        }}
                                         disabled={disabled}
                                         activeOpacity={0.7}
                                     >
@@ -296,19 +316,45 @@ export function FreePairShoes({
                                 );
                             })}
                         </View>
+                        <Text style={styles.sizeModalSubtitle}>Select Shoe</Text>
+                        {modalShoes.length > 0 ? (
+                            <View style={styles.shoeGrid}>
+                                {modalShoes.map((shoe) => {
+                                    const isSelected = sizeModalShoeSelection === shoe.id;
+                                    return (
+                                        <TouchableOpacity
+                                            key={shoe.id}
+                                            style={[styles.shoeOption, isSelected && styles.shoeOptionSelected]}
+                                            onPress={() => setSizeModalShoeSelection(shoe.id)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Image
+                                                source={{ uri: shoe.imageUrl }}
+                                                style={styles.shoeOptionImage}
+                                                contentFit="cover"
+                                                placeholder={{ blurhash: BLURHASH }}
+                                                placeholderContentFit="cover"
+                                            />
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        ) : (
+                            <Text style={styles.noShoeText}>No shoe style is available for this size right now.</Text>
+                        )}
                         <TouchableOpacity
                             style={[
                                 styles.sizeConfirmButton,
-                                (!sizeModalShoeSelection || !sizeModalSelection) && styles.sizeConfirmButtonDisabled,
+                                (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmButtonDisabled,
                             ]}
                             onPress={confirmSize}
-                            disabled={!sizeModalShoeSelection || !sizeModalSelection}
+                            disabled={!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0}
                             activeOpacity={0.8}
                         >
                             <Text
                                 style={[
                                     styles.sizeConfirmText,
-                                    (!sizeModalShoeSelection || !sizeModalSelection) && styles.sizeConfirmTextDisabled,
+                                    (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmTextDisabled,
                                 ]}
                             >
                                 {offerCopy?.confirmLabel ?? 'Confirm'}
@@ -535,6 +581,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 6,
+        marginTop: 4,
         marginBottom: 20,
     },
     shoeOption: {
@@ -562,6 +609,12 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendBold,
         color: '#181D27',
         marginBottom: 12,
+    },
+    noShoeText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#717680',
+        marginBottom: 20,
     },
     sizeGrid: {
         flexDirection: 'row',

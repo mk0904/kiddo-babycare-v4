@@ -1,18 +1,4 @@
-import { configService } from './configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-
-function getBackendBase(): string {
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return String(base).replace(/\/+$/, '');
-}
-
-function getApiPath(path: string): string {
-  const base = getBackendBase();
-  const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-  return `${prefix}/${path.replace(/^\//, '')}`;
-}
+import { getBackendApiPath } from './backendBase';
 
 export interface AssignedDeliveryPartner {
   name: string | null;
@@ -32,7 +18,7 @@ export async function getDeliveryPartnerOrderStatus(
   if (!normalized) return null;
 
   try {
-    const response = await fetch(getApiPath(`orders/${encodeURIComponent(normalized)}/delivery-status`));
+    const response = await fetch(getBackendApiPath(`orders/${encodeURIComponent(normalized)}/delivery-status`));
     if (!response.ok) {
       return null;
     }

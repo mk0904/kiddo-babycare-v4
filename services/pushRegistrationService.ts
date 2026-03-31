@@ -7,20 +7,10 @@
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { configService } from './configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-
-function getBackendBase(): string {
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return (base as string).replace(/\/+$/, '');
-}
+import { getBackendApiPath } from './backendBase';
 
 function getPushRegisterUrl(): string {
-  const base = getBackendBase();
-  const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-  return `${prefix}/push/register`;
+  return getBackendApiPath('push/register');
 }
 
 export type NativePushForBackend = { token: string; platform: 'ios' | 'android' };
