@@ -25,11 +25,13 @@ export type DeliveryTrackingHandlers = {
   onError?: (error: unknown) => void;
 };
 
-function getDeliveryTrackingWsUrl(shopifyOrderId: string, accessToken: string): string {
+function getDeliveryTrackingWsUrl(shopifyOrderId: string, accessToken?: string | null): string {
   const base = getBackendBase().replace(/\/+$/, '');
   const wsBase = base.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
   const prefix = wsBase.endsWith('/api/v1') ? wsBase : `${wsBase}/api/v1`;
-  return `${prefix}/orders/${encodeURIComponent(shopifyOrderId)}/live-location/ws?access_token=${encodeURIComponent(accessToken)}`;
+  const token = String(accessToken ?? '').trim();
+  const qs = token ? `?access_token=${encodeURIComponent(token)}` : '';
+  return `${prefix}/orders/${encodeURIComponent(shopifyOrderId)}/live-location/ws${qs}`;
 }
 
 export type DeliveryRouteCoordinate = { latitude: number; longitude: number };
@@ -67,12 +69,10 @@ function normalizeRouteCoordinates(raw: unknown): DeliveryRouteCoordinate[] {
  */
 export async function getDeliveryRouteForOrder(
   shopifyOrderId: string,
-  accessToken: string,
   rider: DeliveryRouteCoordinate | null,
 ): Promise<DeliveryRouteResponse | null> {
   const oid = String(shopifyOrderId || '').trim();
-  const token = String(accessToken || '').trim();
-  if (!oid || !token) return null;
+  if (!oid) return null;
 
   try {
     const base = getBackendApiPath(`orders/${encodeURIComponent(oid)}/delivery-route`);
@@ -89,10 +89,7 @@ export async function getDeliveryRouteForOrder(
     const sep = base.includes('?') ? '&' : '?';
     const url = qs ? `${base}${sep}${qs}` : base;
     const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Accept: 'application/json' },
     });
     if (!response.ok) {
       if (__DEV__) {
@@ -136,12 +133,12 @@ export async function getDeliveryPartnerOrderStatus(
 
 export function subscribeToDeliveryTracking(
   shopifyOrderId: string,
-  accessToken: string,
+  accessToken: string | null | undefined,
   handlers: DeliveryTrackingHandlers,
 ): () => void {
   const normalizedOrderId = String(shopifyOrderId || '').trim();
   const normalizedToken = String(accessToken || '').trim();
-  if (!normalizedOrderId || !normalizedToken) {
+  if (!normalizedOrderId) {
     return () => {};
   }
 

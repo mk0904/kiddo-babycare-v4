@@ -7,6 +7,7 @@ import {
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserStore } from '@/store/userStore';
 import {
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
@@ -150,6 +151,12 @@ export default function OrderDetailV2Screen() {
     const router = useRouter();
     const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
     const { user } = useAuth();
+    /** Shopify Storefront customer token (order + tracking APIs). Prefer user.*, fall back to persisted store (same as login). */
+    const persistedAccessToken = useUserStore((s) => s.accessToken);
+    const shopifyCustomerToken = useMemo(
+        () => String(user?.customerAccessToken ?? user?.accessToken ?? persistedAccessToken ?? '').trim(),
+        [user?.customerAccessToken, user?.accessToken, persistedAccessToken],
+    );
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -194,9 +201,9 @@ export default function OrderDetailV2Screen() {
                 const isDraftOrder = baseId.startsWith('gid://shopify/DraftOrder/');
 
                 let fetchedOrder: any = null;
-                if (user?.customerAccessToken && !isDraftOrder) {
+                if (shopifyCustomerToken && !isDraftOrder) {
                     try {
-                        const customerOrders = await shopifyApi.getCustomerOrders(user.customerAccessToken, 50);
+                        const customerOrders = await shopifyApi.getCustomerOrders(shopifyCustomerToken, 50);
                         const numericId = baseId.split('/').pop()?.split('?')[0];
                         const found = customerOrders?.edges?.map((e: any) => e.node).find((o: any) => {
                             const n = (o.id || '').split('/').pop()?.split('?')[0];
@@ -252,7 +259,7 @@ export default function OrderDetailV2Screen() {
             setLoading(false);
         };
         fetchOrder();
-    }, [id, user?.customerAccessToken]);
+    }, [id, shopifyCustomerToken]);
 
     // Fetch delivery duration (minutes) to shipping address; "Arriving by" = order placed time + this duration
     useEffect(() => {
@@ -395,9 +402,9 @@ export default function OrderDetailV2Screen() {
         const shopifyOrderId = rawOrderId.includes('/Order/')
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
-        const token = String(user?.customerAccessToken ?? user?.accessToken ?? '').trim();
+        const token = shopifyCustomerToken;
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-        const shouldTrack = !!shopifyOrderId && !!token && ['rider_assigned', 'out_for_delivery'].includes(statusKey);
+        const shouldTrack = !!shopifyOrderId && ['rider_assigned', 'out_for_delivery'].includes(statusKey);
 
         if (!shouldTrack) {
             setTrackingConnected(false);
@@ -477,16 +484,15 @@ export default function OrderDetailV2Screen() {
             if (unsubscribe) unsubscribe();
             if (reconnectTimer) clearTimeout(reconnectTimer);
         };
-    }, [order?.id, user?.customerAccessToken, user?.accessToken, deliveryPartnerStatus?.status, riderAnimatedCoord]);
+    }, [order?.id, shopifyCustomerToken, deliveryPartnerStatus?.status, riderAnimatedCoord]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
         const shopifyOrderId = rawOrderId.includes('/Order/')
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
-        const token = String(user?.customerAccessToken ?? user?.accessToken ?? '').trim();
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-        if (!shopifyOrderId || !token || !['rider_assigned', 'out_for_delivery'].includes(statusKey)) {
+        if (!shopifyOrderId || !['rider_assigned', 'out_for_delivery'].includes(statusKey)) {
             setRouteCoordinates(null);
             return;
         }
@@ -497,7 +503,6 @@ export default function OrderDetailV2Screen() {
             void (async () => {
                 const res = await getDeliveryRouteForOrder(
                     shopifyOrderId,
-                    token,
                     riderCoords
                         ? { latitude: riderCoords.latitude, longitude: riderCoords.longitude }
                         : null,
@@ -515,7 +520,7 @@ export default function OrderDetailV2Screen() {
             cancelled = true;
             clearTimeout(timer);
         };
-    }, [order?.id, user?.customerAccessToken, user?.accessToken, deliveryPartnerStatus?.status, riderCoords?.latitude, riderCoords?.longitude]);
+    }, [order?.id, deliveryPartnerStatus?.status, riderCoords?.latitude, riderCoords?.longitude]);
 
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
