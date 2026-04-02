@@ -7,7 +7,6 @@ import {
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { appConfigService } from '@/services/appConfigService';
 import { getDeliveryPartnerOrderStatus, subscribeToDeliveryTracking, type DeliveryTrackingMessage } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -27,11 +26,21 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import MapView, { AnimatedRegion, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { AnimatedRegion, Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
+const TRACKING_MAP_STYLE = [
+    { elementType: 'geometry', stylers: [{ color: '#ECEFF3' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#6B7280' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#ECEFF3' }] },
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#FFFFFF' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9CA3AF' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#DDE3EA' }] },
+];
 
 function shippingAddressString(address: any): string {
     if (!address) return '';
@@ -530,6 +539,12 @@ export default function OrderDetailV2Screen() {
             longitudeDelta: Math.max(0.02, (maxLng - minLng) * 1.8),
         };
     }, [destinationCoords, riderCoords]);
+    const trackingPath = useMemo(() => {
+        if (!destinationCoords) return [];
+        return riderCoords
+            ? [DARK_STORE_LOCATION, riderCoords, destinationCoords]
+            : [DARK_STORE_LOCATION, destinationCoords];
+    }, [destinationCoords, riderCoords]);
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -613,7 +628,7 @@ export default function OrderDetailV2Screen() {
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
                 {/* Order detail banner image from app-config (orderDetail.imageUrl) */}
-                {(() => {
+                {/* {(() => {
                     const orderDetailConfig = appConfigService.getOrderDetailConfig();
                     const imageUrl = orderDetailConfig?.imageUrl;
                     if (!imageUrl) return null;
@@ -622,7 +637,61 @@ export default function OrderDetailV2Screen() {
                             <Image source={{ uri: imageUrl }} style={styles.orderDetailImage} contentFit="cover" />
                         </View>
                     );
-                })()}
+                })()} */}
+
+                {shouldShowTrackingMap && mapRegion ? (
+                    <View style={styles.trackingWrap}>
+                        <View style={styles.trackingMapFrame}>
+                            <MapView
+                                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                                style={styles.trackingMap}
+                                initialRegion={mapRegion}
+                                customMapStyle={TRACKING_MAP_STYLE}
+                                scrollEnabled={false}
+                                zoomEnabled={false}
+                                rotateEnabled={false}
+                                pitchEnabled={false}
+                                showsCompass={false}
+                                showsBuildings={false}
+                                showsTraffic={false}
+                                toolbarEnabled={false}
+                            >
+                                {trackingPath.length >= 2 ? (
+                                    <Polyline
+                                        coordinates={trackingPath}
+                                        strokeColor="#2563EB"
+                                        strokeWidth={5}
+                                        lineCap="round"
+                                        lineJoin="round"
+                                    />
+                                ) : null}
+                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }}>
+                                    <View style={styles.storeMarker}>
+                                        <View style={styles.storeMarkerInner}>
+                                            <Ionicons name="home" size={16} color="#B45309" />
+                                        </View>
+                                    </View>
+                                </Marker>
+                                <Marker coordinate={destinationCoords!} title="Delivery address" anchor={{ x: 0.5, y: 1 }}>
+                                    <View style={styles.destinationMarker}>
+                                        <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                    </View>
+                                </Marker>
+                                {riderCoords ? (
+                                    <Marker.Animated coordinate={riderAnimatedCoord as any} title="Rider" anchor={{ x: 0.5, y: 0.5 }}>
+                                        <View style={styles.riderMarker}>
+                                            <Ionicons name="bicycle" size={18} color="#111827" />
+                                        </View>
+                                    </Marker.Animated>
+                                ) : null}
+                            </MapView>
+                            <TouchableOpacity style={styles.mapFloatingButton} activeOpacity={0.85}>
+                                <Ionicons name="expand-outline" size={18} color="#111827" />
+                            </TouchableOpacity>
+                        </View>
+                       
+                    </View>
+                ) : null}
 
                 {shouldShowAssignSoonMessage && (
                     <View style={styles.deliveryPartnerCard}>
@@ -645,9 +714,12 @@ export default function OrderDetailV2Screen() {
                     <View style={styles.deliveryPartnerCard}>
                         <View style={styles.deliveryPartnerContent}>
                             <View style={styles.deliveryPartnerAvatar}>
-                                <View style={styles.deliveryPartnerAvatarInner}>
-                                    <Ionicons name="person" size={30} color="#8B5E00" />
-                                </View>
+                                    <Image
+                                        source={require('@/assets/icons/partnerIcon.png')}
+                                        style={styles.deliveryPartnerAvatarImage}
+                                        contentFit="cover"
+                                    />
+                                
                             </View>
                             <View style={styles.deliveryPartnerTextWrap}>
                                 <Text style={styles.deliveryPartnerIntro}>
@@ -805,49 +877,7 @@ export default function OrderDetailV2Screen() {
                                     </Text>
                                 ))}
                         </View>
-                        {shouldShowTrackingMap && mapRegion ? (
-                            <View style={styles.trackingWrap}>
-                                <View style={styles.trackingHeaderRow}>
-                                    <Text style={styles.trackingTitle}>Live rider tracking</Text>
-                                    <View style={[
-                                        styles.trackingStatusPill,
-                                        { backgroundColor: riderOnline ? '#DCFCE7' : '#F3F4F6' },
-                                    ]}>
-                                        <Text style={[
-                                            styles.trackingStatusText,
-                                            { color: riderOnline ? '#15803D' : '#6B7280' },
-                                        ]}>
-                                            {riderOnline ? 'Live' : trackingConnected ? 'Locating rider...' : 'Reconnecting...'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <MapView
-                                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-                                    style={styles.trackingMap}
-                                    initialRegion={mapRegion}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                    rotateEnabled={false}
-                                    pitchEnabled={false}
-                                >
-                                    <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" pinColor="#111827" />
-                                    <Marker coordinate={destinationCoords!} title="Delivery address" pinColor="#F59E0B" />
-                                    {riderCoords ? (
-                                        <Marker.Animated coordinate={riderAnimatedCoord as any} title="Rider" pinColor="#0EA5E9" />
-                                    ) : null}
-                                </MapView>
-                                <Text style={styles.trackingCaption}>
-                                    {trackingNote
-                                        ? trackingNote
-                                        : trackingUpdatedAt
-                                            ? `Updated ${new Date(trackingUpdatedAt).toLocaleTimeString('en-IN', {
-                                                hour: 'numeric',
-                                                minute: '2-digit',
-                                            })}`
-                                            : 'Waiting for the rider location'}
-                                </Text>
-                            </View>
-                        ) : null}
+                        
                     </View>
                 )}
 
@@ -1206,8 +1236,9 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     trackingWrap: {
-        marginTop: 16,
+        marginTop: 0,
         borderRadius: 14,
+        marginBottom: 16,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#E5E7EB',
@@ -1239,6 +1270,63 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 220,
     },
+    trackingMapFrame: {
+        position: 'relative',
+    },
+    mapFloatingButton: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000000',
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 4,
+    },
+    storeMarker: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#D1D5DB',
+    },
+    storeMarkerInner: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#FEF3C7',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    destinationMarker: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: '#0F172A',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
+    riderMarker: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#FACC15',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
     trackingCaption: {
         paddingHorizontal: 12,
         paddingVertical: 10,
@@ -1257,23 +1345,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     deliveryPartnerAvatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#FDE68A',
+        width: 68,
+        height: 68,
+        borderRadius: 34,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
-    deliveryPartnerAvatarInner: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: '#FDEFC7',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#F5C96A',
+    
+    deliveryPartnerAvatarImage: {
+        width: '100%',
+        height: '100%',
     },
     deliveryPartnerTextWrap: {
         flex: 1,
