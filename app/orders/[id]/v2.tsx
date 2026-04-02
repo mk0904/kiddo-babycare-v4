@@ -7,7 +7,12 @@ import {
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { getDeliveryPartnerOrderStatus, subscribeToDeliveryTracking, type DeliveryTrackingMessage } from '@/services/deliveryPartnerService';
+import {
+    getDeliveryPartnerOrderStatus,
+    getDeliveryRouteForOrder,
+    subscribeToDeliveryTracking,
+    type DeliveryTrackingMessage,
+} from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,6 +166,9 @@ export default function OrderDetailV2Screen() {
     const [riderOnline, setRiderOnline] = useState(false);
     const [trackingNote, setTrackingNote] = useState<string | null>(null);
     const [trackingUpdatedAt, setTrackingUpdatedAt] = useState<number | null>(null);
+    const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[] | null>(null);
+    const trackingMapRef = useRef<MapView | null>(null);
+    const deliveryRouteFetchGen = useRef(0);
     const riderAnimatedCoord = useRef(
         new AnimatedRegion({
             latitude: DARK_STORE_LOCATION.latitude,
@@ -300,7 +308,10 @@ export default function OrderDetailV2Screen() {
     }, [order?.shippingAddress?.address1, order?.shippingAddress?.address2, order?.shippingAddress?.city, order?.shippingAddress?.province, order?.shippingAddress?.zip, order?.shippingAddress?.country]);
 
     useEffect(() => {
-        if (deliveryPartnerStatus?.status !== 'out_for_delivery' || !destinationCoords || !riderCoords) {
+        const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        const canUseLiveEta =
+            ['rider_assigned', 'out_for_delivery'].includes(statusKey) && !!destinationCoords && !!riderCoords;
+        if (!canUseLiveEta) {
             setLiveEtaMinutes(null);
             if (liveEtaTimerRef.current) {
                 clearTimeout(liveEtaTimerRef.current);
@@ -337,7 +348,7 @@ export default function OrderDetailV2Screen() {
                 liveEtaTimerRef.current = null;
             }
         };
-    }, [deliveryPartnerStatus?.status, destinationCoords, riderCoords]);
+    }, [deliveryPartnerStatus?.status, destinationCoords, riderCoords?.latitude, riderCoords?.longitude]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
@@ -355,6 +366,8 @@ export default function OrderDetailV2Screen() {
         let cancelled = false;
         let intervalId: ReturnType<typeof setInterval> | null = null;
 
+        const TERMINAL_DELIVERY_POLL_STATUSES = new Set(['delivered', 'cancelled', 'returned']);
+
         const pollDeliveryStatus = async () => {
             const result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
             if (cancelled) return;
@@ -362,7 +375,7 @@ export default function OrderDetailV2Screen() {
             setDeliveryPartnerStatus(result);
 
             const statusKey = String(result?.status ?? '').trim().toLowerCase();
-            if (statusKey === 'out_for_delivery' && intervalId) {
+            if (TERMINAL_DELIVERY_POLL_STATUSES.has(statusKey) && intervalId) {
                 clearInterval(intervalId);
                 intervalId = null;
             }
@@ -466,6 +479,44 @@ export default function OrderDetailV2Screen() {
         };
     }, [order?.id, user?.customerAccessToken, user?.accessToken, deliveryPartnerStatus?.status, riderAnimatedCoord]);
 
+    useEffect(() => {
+        const rawOrderId = String(order?.id ?? '').trim();
+        const shopifyOrderId = rawOrderId.includes('/Order/')
+            ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
+            : '';
+        const token = String(user?.customerAccessToken ?? user?.accessToken ?? '').trim();
+        const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        if (!shopifyOrderId || !token || !['rider_assigned', 'out_for_delivery'].includes(statusKey)) {
+            setRouteCoordinates(null);
+            return;
+        }
+
+        const fetchGen = ++deliveryRouteFetchGen.current;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            void (async () => {
+                const res = await getDeliveryRouteForOrder(
+                    shopifyOrderId,
+                    token,
+                    riderCoords
+                        ? { latitude: riderCoords.latitude, longitude: riderCoords.longitude }
+                        : null,
+                );
+                if (cancelled || fetchGen !== deliveryRouteFetchGen.current) return;
+                if (res?.coordinates && res.coordinates.length >= 2) {
+                    setRouteCoordinates(res.coordinates);
+                } else {
+                    setRouteCoordinates(null);
+                }
+            })();
+        }, 500);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [order?.id, user?.customerAccessToken, user?.accessToken, deliveryPartnerStatus?.status, riderCoords?.latitude, riderCoords?.longitude]);
+
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
         try {
@@ -500,8 +551,20 @@ export default function OrderDetailV2Screen() {
             return `Arrived at ${timeStr}, ${arrivedDateStr}`;
         }
         if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
-        if (liveEtaMinutes != null && deliveryStatusKey === 'out_for_delivery') {
-            return `Live ETA ${Math.max(1, liveEtaMinutes)} min`;
+        if (
+            liveEtaMinutes != null &&
+            riderCoords &&
+            ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey)
+        ) {
+            const mins = Math.max(1, Math.round(liveEtaMinutes));
+            const liveArrival = new Date(Date.now() + mins * 60 * 1000);
+            const lh = liveArrival.getHours();
+            const lm = liveArrival.getMinutes();
+            const liveHour12 = lh % 12 || 12;
+            const liveAmpm = lh < 12 ? 'AM' : 'PM';
+            const liveClock = `${liveHour12}:${lm.toString().padStart(2, '0')}${liveAmpm}`;
+            const liveDateShort = liveArrival.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+            return `Arriving by ${liveClock}, ${liveDateShort} · ${mins} min (live)`;
         }
         return `Arriving by ${deliveryByTimeStr}`;
     })();
@@ -539,12 +602,30 @@ export default function OrderDetailV2Screen() {
             longitudeDelta: Math.max(0.02, (maxLng - minLng) * 1.8),
         };
     }, [destinationCoords, riderCoords]);
-    const trackingPath = useMemo(() => {
+    const trackingPathFallback = useMemo(() => {
         if (!destinationCoords) return [];
         return riderCoords
             ? [DARK_STORE_LOCATION, riderCoords, destinationCoords]
             : [DARK_STORE_LOCATION, destinationCoords];
     }, [destinationCoords, riderCoords]);
+
+    const trackingPolylineCoordinates = useMemo(() => {
+        if (routeCoordinates && routeCoordinates.length >= 2) return routeCoordinates;
+        return trackingPathFallback;
+    }, [routeCoordinates, trackingPathFallback]);
+
+    useEffect(() => {
+        if (trackingPolylineCoordinates.length < 2) return;
+        const map = trackingMapRef.current;
+        if (!map) return;
+        requestAnimationFrame(() => {
+            map.fitToCoordinates(trackingPolylineCoordinates, {
+                edgePadding: { top: 28, right: 28, bottom: 28, left: 28 },
+                animated: true,
+            });
+        });
+    }, [trackingPolylineCoordinates]);
+
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -643,6 +724,7 @@ export default function OrderDetailV2Screen() {
                     <View style={styles.trackingWrap}>
                         <View style={styles.trackingMapFrame}>
                             <MapView
+                                ref={trackingMapRef}
                                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                                 style={styles.trackingMap}
                                 initialRegion={mapRegion}
@@ -656,9 +738,9 @@ export default function OrderDetailV2Screen() {
                                 showsTraffic={false}
                                 toolbarEnabled={false}
                             >
-                                {trackingPath.length >= 2 ? (
+                                {trackingPolylineCoordinates.length >= 2 ? (
                                     <Polyline
-                                        coordinates={trackingPath}
+                                        coordinates={trackingPolylineCoordinates}
                                         strokeColor="#2563EB"
                                         strokeWidth={5}
                                         lineCap="round"

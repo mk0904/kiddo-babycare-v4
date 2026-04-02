@@ -32,6 +32,90 @@ function getDeliveryTrackingWsUrl(shopifyOrderId: string, accessToken: string): 
   return `${prefix}/orders/${encodeURIComponent(shopifyOrderId)}/live-location/ws?access_token=${encodeURIComponent(accessToken)}`;
 }
 
+export type DeliveryRouteCoordinate = { latitude: number; longitude: number };
+
+export interface DeliveryRouteResponse {
+  coordinates: DeliveryRouteCoordinate[];
+}
+
+function numCoord(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function normalizeRouteCoordinates(raw: unknown): DeliveryRouteCoordinate[] {
+  if (!Array.isArray(raw)) return [];
+  const out: DeliveryRouteCoordinate[] = [];
+  for (const p of raw) {
+    if (!p || typeof p !== 'object') continue;
+    const o = p as Record<string, unknown>;
+    const lat = numCoord(o.latitude) ?? numCoord(o.lat);
+    const lng = numCoord(o.longitude) ?? numCoord(o.lng);
+    if (lat == null || lng == null) continue;
+    out.push({ latitude: lat, longitude: lng });
+  }
+  return out;
+}
+
+/**
+ * Road-snapped route from kiddo-service (Directions API on server only).
+ * @param rider Live GPS; pass null to route from server dark-store → destination until live location arrives.
+ */
+export async function getDeliveryRouteForOrder(
+  shopifyOrderId: string,
+  accessToken: string,
+  rider: DeliveryRouteCoordinate | null,
+): Promise<DeliveryRouteResponse | null> {
+  const oid = String(shopifyOrderId || '').trim();
+  const token = String(accessToken || '').trim();
+  if (!oid || !token) return null;
+
+  try {
+    const base = getBackendApiPath(`orders/${encodeURIComponent(oid)}/delivery-route`);
+    const params = new URLSearchParams();
+    if (
+      rider &&
+      Number.isFinite(rider.latitude) &&
+      Number.isFinite(rider.longitude)
+    ) {
+      params.set('rider_lat', String(rider.latitude));
+      params.set('rider_lng', String(rider.longitude));
+    }
+    const qs = params.toString();
+    const sep = base.includes('?') ? '&' : '?';
+    const url = qs ? `${base}${sep}${qs}` : base;
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      if (__DEV__) {
+        let detail = '';
+        try {
+          detail = (await response.text()).slice(0, 200);
+        } catch (_) {}
+        console.warn(
+          `[delivery-route] ${response.status} ${url}`,
+          detail || '',
+        );
+      }
+      return null;
+    }
+    const body = (await response.json()) as { coordinates?: unknown };
+    const coordinates = normalizeRouteCoordinates(body?.coordinates);
+    return coordinates.length >= 2 ? { coordinates } : null;
+  } catch (error) {
+    console.error('Error fetching delivery route:', error);
+    return null;
+  }
+}
+
 export async function getDeliveryPartnerOrderStatus(
   shopifyOrderId: string,
 ): Promise<DeliveryPartnerOrderStatus | null> {
