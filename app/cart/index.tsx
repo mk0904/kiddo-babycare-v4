@@ -1146,6 +1146,14 @@ export default function CartScreen() {
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
+                            ...(selectedAddress &&
+                                typeof selectedAddress.latitude === 'number' &&
+                                typeof selectedAddress.longitude === 'number' &&
+                                Number.isFinite(selectedAddress.latitude) &&
+                                Number.isFinite(selectedAddress.longitude) && {
+                                    destinationLat: String(selectedAddress.latitude),
+                                    destinationLng: String(selectedAddress.longitude),
+                                }),
                         },
                     };
 

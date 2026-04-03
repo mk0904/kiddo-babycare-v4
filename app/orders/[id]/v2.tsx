@@ -9,9 +9,12 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useUserStore } from '@/store/userStore';
 import {
+    extractLatLngDeep,
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
+    parseTrackingCoordinates,
     subscribeToDeliveryTracking,
+    type DeliveryPartnerOrderStatus,
     type DeliveryTrackingMessage,
 } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
@@ -32,7 +35,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import MapView, { AnimatedRegion, Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HEADER_BG = '#FFFFFF';
@@ -47,6 +50,20 @@ const TRACKING_MAP_STYLE = [
     { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9CA3AF' }] },
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#DDE3EA' }] },
 ];
+
+/** Storefront `node(id:)` expects a Shopify GID; checkout sometimes returns numeric id only. */
+function normalizeStorefrontOrderGid(rawId: string): string {
+    const id = rawId.trim();
+    if (!id) return id;
+    const base = id.includes('?') ? id.split('?')[0] : id;
+    if (base.startsWith('gid://shopify/Order/')) return id;
+    if (base.startsWith('gid://')) return id;
+    if (/^\d+$/.test(base)) {
+        const q = id.includes('?') ? `?${id.split('?')[1]}` : '';
+        return `gid://shopify/Order/${base}${q}`;
+    }
+    return id;
+}
 
 function shippingAddressString(address: any): string {
     if (!address) return '';
@@ -105,6 +122,49 @@ function isTicketingLineItem(node: any): boolean {
     return false;
 }
 
+/** Meters between two WGS84 points (haversine). */
+function distanceMetersLatLng(
+    a: { latitude: number; longitude: number },
+    b: { latitude: number; longitude: number },
+): number {
+    const R = 6371000;
+    const dLat = ((b.latitude - a.latitude) * Math.PI) / 180;
+    const dLon = ((b.longitude - a.longitude) * Math.PI) / 180;
+    const lat1 = (a.latitude * Math.PI) / 180;
+    const lat2 = (b.latitude * Math.PI) / 180;
+    const x =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+/** Backend may send these when the rider is at the drop-off (before Shopify shows delivered). */
+const ARRIVED_AT_CUSTOMER_STATUSES = new Set([
+    'arrived',
+    'arrived_at_location',
+    'at_destination',
+    'at_delivery_location',
+    'rider_arrived',
+    'reached_destination',
+    'reached_customer',
+    'reached_location',
+]);
+
+function coordsFromDeliveryStatusApi(result: {
+    rider_lat?: number | string | null;
+    rider_lng?: number | string | null;
+    riderLatitude?: number | string | null;
+    riderLongitude?: number | string | null;
+} | null): { latitude: number; longitude: number } | null {
+    if (!result) return null;
+    const latRaw = result.rider_lat ?? result.riderLatitude;
+    const lngRaw = result.rider_lng ?? result.riderLongitude;
+    const lat = typeof latRaw === 'number' ? latRaw : parseFloat(String(latRaw ?? ''));
+    const lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(String(lngRaw ?? ''));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { latitude: lat, longitude: lng };
+}
+
 function isOnlyTicketingOrder(o: any): boolean {
     const edges = o?.lineItems?.edges || [];
     if (edges.length === 0) return false;
@@ -120,6 +180,9 @@ function getBookingDateDisplay(node: any): string | null {
     return null;
 }
 
+/** Refetch road-snapped rider → customer route on this interval while tracking (ms). */
+const DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 10_000;
+
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
     placed: 'Placed',
     confirmed: 'Confirmed',
@@ -127,6 +190,10 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
     packed: 'Packed',
     rider_assigned: 'Rider Assigned',
     out_for_delivery: 'Out for Delivery',
+    arrived: 'Arrived',
+    at_destination: 'Arrived',
+    rider_arrived: 'Arrived',
+    reached_destination: 'Arrived',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
     return_requested: 'Return Requested',
@@ -140,6 +207,10 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
     packed: { bg: '#EDE9FE', text: '#6D28D9' },
     rider_assigned: { bg: '#ECFEFF', text: '#0F766E' },
     out_for_delivery: { bg: '#E0F2FE', text: '#0369A1' },
+    arrived: { bg: '#DCFCE7', text: '#15803D' },
+    at_destination: { bg: '#DCFCE7', text: '#15803D' },
+    rider_arrived: { bg: '#DCFCE7', text: '#15803D' },
+    reached_destination: { bg: '#DCFCE7', text: '#15803D' },
     delivered: { bg: '#ECFDF3', text: '#15803D' },
     cancelled: { bg: '#FEF2F2', text: '#B91C1C' },
     return_requested: { bg: '#FFF7ED', text: '#C2410C' },
@@ -147,7 +218,20 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function OrderDetailV2Screen() {
-    const { id, estimatedDeliveryMinutes: paramEta, from } = useLocalSearchParams<{ id: string; estimatedDeliveryMinutes?: string; from?: string }>();
+    const {
+        id,
+        estimatedDeliveryMinutes: paramEta,
+        from,
+        destinationLat: paramDestinationLat,
+        destinationLng: paramDestinationLng,
+    } = useLocalSearchParams<{
+        id: string;
+        estimatedDeliveryMinutes?: string;
+        from?: string;
+        /** Forwarded from checkout so the map can render before Shopify returns the order */
+        destinationLat?: string;
+        destinationLng?: string;
+    }>();
     const router = useRouter();
     const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
     const { user } = useAuth();
@@ -169,33 +253,54 @@ export default function OrderDetailV2Screen() {
     } | null>(null);
     const [destinationCoords, setDestinationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    /** Google Maps on Android often needs brief tracksViewChanges so custom rider marker bitmap renders. */
+    const [riderMarkerTracksView, setRiderMarkerTracksView] = useState(true);
     const [trackingConnected, setTrackingConnected] = useState(false);
     const [riderOnline, setRiderOnline] = useState(false);
     const [trackingNote, setTrackingNote] = useState<string | null>(null);
     const [trackingUpdatedAt, setTrackingUpdatedAt] = useState<number | null>(null);
     const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[] | null>(null);
     const trackingMapRef = useRef<MapView | null>(null);
+    const orderRef = useRef(order);
+    orderRef.current = order;
+    const deliveryPartnerStatusRef = useRef(deliveryPartnerStatus);
+    deliveryPartnerStatusRef.current = deliveryPartnerStatus;
+    const destinationCoordsRef = useRef(destinationCoords);
+    destinationCoordsRef.current = destinationCoords;
+    const riderCoordsRef = useRef(riderCoords);
+    riderCoordsRef.current = riderCoords;
     const deliveryRouteFetchGen = useRef(0);
-    const riderAnimatedCoord = useRef(
-        new AnimatedRegion({
-            latitude: DARK_STORE_LOCATION.latitude,
-            longitude: DARK_STORE_LOCATION.longitude,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
-        }),
-    ).current;
     const liveEtaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const liveEtaLastRunRef = useRef<number>(0);
 
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    // Map destination from checkout (available before Storefront returns the order)
     useEffect(() => {
+        const lat = parseFloat(String(paramDestinationLat ?? '').trim());
+        const lng = parseFloat(String(paramDestinationLng ?? '').trim());
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        setDestinationCoords((prev) => prev ?? { latitude: lat, longitude: lng });
+    }, [paramDestinationLat, paramDestinationLng]);
+
+    useEffect(() => {
+        if (!riderCoords) return;
+        setRiderMarkerTracksView(true);
+        const t = setTimeout(() => setRiderMarkerTracksView(false), 2500);
+        return () => clearTimeout(t);
+    }, [riderCoords?.latitude, riderCoords?.longitude]);
+
+    useEffect(() => {
+        let cancelled = false;
         const fetchOrder = async () => {
             if (!id || typeof id !== 'string') {
                 setLoading(false);
                 setError('Invalid order ID');
                 return;
             }
+            setLoading(true);
             try {
-                let orderId = decodeURIComponent(id).trim();
+                let orderId = normalizeStorefrontOrderGid(decodeURIComponent(id).trim());
                 const baseId = orderId.includes('?') ? orderId.split('?')[0] : orderId;
                 const queryPart = orderId.includes('?') ? orderId.split('?')[1] : '';
                 const isDraftOrder = baseId.startsWith('gid://shopify/DraftOrder/');
@@ -241,12 +346,20 @@ export default function OrderDetailV2Screen() {
                         };
                     }
                 } else {
-                    fetchedOrder = await shopifyApi.getOrderById(orderId);
-                    if (!fetchedOrder && queryPart) {
-                        fetchedOrder = await shopifyApi.getOrderById(orderId.split('?')[0]);
+                    const postCheckoutRetries = 10;
+                    const retryDelayMs = 1200;
+                    for (let attempt = 0; attempt < postCheckoutRetries; attempt++) {
+                        if (cancelled) return;
+                        fetchedOrder = await shopifyApi.getOrderById(orderId);
+                        if (!fetchedOrder && queryPart) {
+                            fetchedOrder = await shopifyApi.getOrderById(orderId.split('?')[0]);
+                        }
+                        if (fetchedOrder) break;
+                        if (attempt < postCheckoutRetries - 1) await sleep(retryDelayMs);
                     }
                 }
 
+                if (cancelled) return;
                 if (fetchedOrder) {
                     setOrder(fetchedOrder);
                     setError(null);
@@ -254,11 +367,14 @@ export default function OrderDetailV2Screen() {
                     setError('Order not found');
                 }
             } catch (err: any) {
-                setError(err.message || 'Failed to load order');
+                if (!cancelled) setError(err.message || 'Failed to load order');
             }
-            setLoading(false);
+            if (!cancelled) setLoading(false);
         };
         fetchOrder();
+        return () => {
+            cancelled = true;
+        };
     }, [id, shopifyCustomerToken]);
 
     // Fetch delivery duration (minutes) to shipping address; "Arriving by" = order placed time + this duration
@@ -295,6 +411,10 @@ export default function OrderDetailV2Screen() {
     }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.city, order?.shippingAddress?.zip]);
 
     useEffect(() => {
+        // Do not clear coords while order is still loading — that broke post-checkout map
+        // (checkout forwards destinationLat/Lng until Storefront returns shippingAddress).
+        if (!order) return;
+
         const address = shippingAddressString(order?.shippingAddress);
         if (!address) {
             setDestinationCoords(null);
@@ -312,12 +432,21 @@ export default function OrderDetailV2Screen() {
         return () => {
             cancelled = true;
         };
-    }, [order?.shippingAddress?.address1, order?.shippingAddress?.address2, order?.shippingAddress?.city, order?.shippingAddress?.province, order?.shippingAddress?.zip, order?.shippingAddress?.country]);
+    }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.address2, order?.shippingAddress?.city, order?.shippingAddress?.province, order?.shippingAddress?.zip, order?.shippingAddress?.country]);
 
     useEffect(() => {
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        const nearDrop =
+            !!destinationCoords &&
+            !!riderCoords &&
+            ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+            distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
         const canUseLiveEta =
-            ['rider_assigned', 'out_for_delivery'].includes(statusKey) && !!destinationCoords && !!riderCoords;
+            ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+            !!destinationCoords &&
+            !!riderCoords &&
+            !nearDrop &&
+            !ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey);
         if (!canUseLiveEta) {
             setLiveEtaMinutes(null);
             if (liveEtaTimerRef.current) {
@@ -381,6 +510,18 @@ export default function OrderDetailV2Screen() {
 
             setDeliveryPartnerStatus(result);
 
+            const r = result as DeliveryPartnerOrderStatus | null;
+            const hasRiderOnPoll =
+                !!r &&
+                (r.rider_lat != null ||
+                    r.rider_lng != null ||
+                    r.riderLatitude != null ||
+                    r.riderLongitude != null);
+            const polled = coordsFromDeliveryStatusApi(r);
+            if (hasRiderOnPoll && polled) {
+                setRiderCoords(polled);
+            }
+
             const statusKey = String(result?.status ?? '').trim().toLowerCase();
             if (TERMINAL_DELIVERY_POLL_STATUSES.has(statusKey) && intervalId) {
                 clearInterval(intervalId);
@@ -389,7 +530,7 @@ export default function OrderDetailV2Screen() {
         };
 
         pollDeliveryStatus();
-        intervalId = setInterval(pollDeliveryStatus, 60 * 1000);
+        intervalId = setInterval(pollDeliveryStatus, 25 * 1000);
 
         return () => {
             cancelled = true;
@@ -421,18 +562,12 @@ export default function OrderDetailV2Screen() {
             switch (message.type) {
                 case 'location':
                 case 'rider_online': {
-                    const lat = typeof message.lat === 'number' ? message.lat : null;
-                    const lng = typeof message.lng === 'number' ? message.lng : null;
+                    const coords =
+                        parseTrackingCoordinates(message) ?? extractLatLngDeep(message as unknown);
                     const ts = trackingTimestampMs(message.timestamp);
                     setRiderOnline(message.type === 'location' ? message.riderOnline !== false : true);
-                    if (lat != null && lng != null) {
-                        setRiderCoords({ latitude: lat, longitude: lng });
-                        (riderAnimatedCoord as any).timing({
-                            latitude: lat,
-                            longitude: lng,
-                            duration: 2000,
-                            useNativeDriver: false,
-                        }).start();
+                    if (coords) {
+                        setRiderCoords(coords);
                     }
                     if (ts != null) setTrackingUpdatedAt(ts);
                     setTrackingNote(null);
@@ -450,8 +585,15 @@ export default function OrderDetailV2Screen() {
                 case 'rider_assigned':
                     setTrackingNote('Rider assigned. Waiting for live location...');
                     return;
-                default:
+                default: {
+                    const coords = extractLatLngDeep(message as unknown);
+                    if (coords) {
+                        setRiderOnline(true);
+                        setRiderCoords(coords);
+                        setTrackingNote(null);
+                    }
                     return;
+                }
             }
         };
 
@@ -484,43 +626,90 @@ export default function OrderDetailV2Screen() {
             if (unsubscribe) unsubscribe();
             if (reconnectTimer) clearTimeout(reconnectTimer);
         };
-    }, [order?.id, shopifyCustomerToken, deliveryPartnerStatus?.status, riderAnimatedCoord]);
+    }, [order?.id, shopifyCustomerToken, deliveryPartnerStatus?.status]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
         const shopifyOrderId = rawOrderId.includes('/Order/')
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
-        const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-        if (!shopifyOrderId || !['rider_assigned', 'out_for_delivery'].includes(statusKey)) {
+
+        const shouldFetchRoute = (): boolean => {
+            const o = orderRef.current;
+            const dps = deliveryPartnerStatusRef.current;
+            const dest = destinationCoordsRef.current;
+            const rc = riderCoordsRef.current;
+            const statusKey = String(dps?.status ?? '').trim().toLowerCase();
+            const terminalStatus = ['delivered', 'cancelled', 'returned'].includes(statusKey);
+            const fulfilled = o?.fulfillmentStatus === 'FULFILLED';
+            const ticketingOnly = o ? isOnlyTicketingOrder(o) : true;
+            const nearDrop =
+                !!rc &&
+                !!dest &&
+                ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+                distanceMetersLatLng(rc, dest) <= 110;
+            const riderArrivedUi =
+                ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey) || (!!nearDrop && !fulfilled);
+            return (
+                !!shopifyOrderId &&
+                !terminalStatus &&
+                !fulfilled &&
+                !ticketingOnly &&
+                !riderArrivedUi
+            );
+        };
+
+        if (!shopifyOrderId) {
             setRouteCoordinates(null);
             return;
         }
 
-        const fetchGen = ++deliveryRouteFetchGen.current;
+        if (!shouldFetchRoute()) {
+            setRouteCoordinates(null);
+            return;
+        }
+
         let cancelled = false;
-        const timer = setTimeout(() => {
-            void (async () => {
-                const res = await getDeliveryRouteForOrder(
-                    shopifyOrderId,
-                    riderCoords
-                        ? { latitude: riderCoords.latitude, longitude: riderCoords.longitude }
-                        : null,
-                );
-                if (cancelled || fetchGen !== deliveryRouteFetchGen.current) return;
-                if (res?.coordinates && res.coordinates.length >= 2) {
-                    setRouteCoordinates(res.coordinates);
-                } else {
-                    setRouteCoordinates(null);
-                }
-            })();
-        }, 500);
+
+        const runFetch = async () => {
+            if (cancelled || !shouldFetchRoute()) {
+                if (!cancelled) setRouteCoordinates(null);
+                return;
+            }
+            const fetchGen = ++deliveryRouteFetchGen.current;
+            const rc = riderCoordsRef.current;
+            const res = await getDeliveryRouteForOrder(
+                shopifyOrderId,
+                rc ? { latitude: rc.latitude, longitude: rc.longitude } : null,
+            );
+            if (cancelled || fetchGen !== deliveryRouteFetchGen.current) return;
+            if (!shouldFetchRoute()) {
+                setRouteCoordinates(null);
+                return;
+            }
+            if (res?.coordinates && res.coordinates.length >= 2) {
+                setRouteCoordinates(res.coordinates);
+            } else {
+                setRouteCoordinates(null);
+            }
+        };
+
+        void runFetch();
+        const intervalId = setInterval(() => {
+            void runFetch();
+        }, DELIVERY_ROUTE_REFRESH_INTERVAL_MS);
 
         return () => {
             cancelled = true;
-            clearTimeout(timer);
+            clearInterval(intervalId);
         };
-    }, [order?.id, deliveryPartnerStatus?.status, riderCoords?.latitude, riderCoords?.longitude]);
+    }, [
+        order?.id,
+        order?.fulfillmentStatus,
+        deliveryPartnerStatus?.status,
+        destinationCoords?.latitude,
+        destinationCoords?.longitude,
+    ]);
 
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
@@ -550,10 +739,22 @@ export default function OrderDetailV2Screen() {
     const hasArrivalTimePassed = deliveryByDate.getTime() < Date.now();
     const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
 
+    const isRiderNearDropoff =
+        !!riderCoords &&
+        !!destinationCoords &&
+        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
+        distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
+    const isRiderAtCustomer =
+        !isDelivered &&
+        (ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) || isRiderNearDropoff);
+
     const headerStatusText = (() => {
         if (hasArrivalTimePassed) {
             const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
             return `Arrived at ${timeStr}, ${arrivedDateStr}`;
+        }
+        if (isRiderAtCustomer && !isDelivered) {
+            return 'Your rider has arrived at your address';
         }
         if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
         if (
@@ -573,11 +774,42 @@ export default function OrderDetailV2Screen() {
         }
         return `Arriving by ${deliveryByTimeStr}`;
     })();
-    const deliveryStatusLabel = DELIVERY_STATUS_LABELS[deliveryStatusKey] ?? (deliveryPartnerStatus?.status ? String(deliveryPartnerStatus.status).replace(/_/g, ' ') : '');
-    const deliveryStatusColors = DELIVERY_STATUS_COLORS[deliveryStatusKey] ?? { bg: '#F3F4F6', text: '#374151' };
-    const shouldShowAssignSoonMessage = ['placed', 'confirmed', 'packing', 'packed'].includes(deliveryStatusKey);
+    const isPhysicalDeliveryOrder = !!order && !isOnlyTicketingOrder(order);
+    const statusKeyForHeaderPill =
+        isRiderAtCustomer && !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey)
+            ? 'arrived'
+            : deliveryStatusKey
+              ? deliveryStatusKey
+              : isPhysicalDeliveryOrder
+                ? 'placed'
+                : '';
+    const deliveryStatusLabel = !statusKeyForHeaderPill
+        ? ''
+        : (DELIVERY_STATUS_LABELS[statusKeyForHeaderPill] ??
+              (deliveryPartnerStatus?.status
+                  ? String(deliveryPartnerStatus.status).replace(/_/g, ' ')
+                  : '')) || 'Placed';
+    const deliveryStatusColors: { bg: string; text: string } = statusKeyForHeaderPill
+        ? (DELIVERY_STATUS_COLORS[statusKeyForHeaderPill] ?? { bg: '#F3F4F6', text: '#374151' })
+        : { bg: '#F3F4F6', text: '#374151' };
+    const RIDER_LIVE_OR_DONE_STATUSES = new Set([
+        'rider_assigned',
+        'out_for_delivery',
+        'delivered',
+        'cancelled',
+        'returned',
+        'return_requested',
+        ...ARRIVED_AT_CUSTOMER_STATUSES,
+    ]);
+    /** Includes first paint after checkout when GET delivery-status has not returned yet (empty key). */
+    const shouldShowAssignSoonMessage =
+        isPhysicalDeliveryOrder &&
+        !isDelivered &&
+        !RIDER_LIVE_OR_DONE_STATUSES.has(deliveryStatusKey);
     const shouldShowDeliveryPartnerDetails =
-        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
+        (['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) ||
+            ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) ||
+            isRiderNearDropoff) &&
         !!deliveryPartnerStatus?.deliveryPartner &&
         !!(deliveryPartnerStatus.deliveryPartner.name || deliveryPartnerStatus.deliveryPartner.contact);
     const handleDeliveryPartnerCall = async () => {
@@ -589,9 +821,15 @@ export default function OrderDetailV2Screen() {
             Alert.alert('Contact', phone);
         }
     };
+    /** From order placed through packing: straight line dark store → customer; live route/rider once assigned. */
+    const hideTrackingMapStatuses = new Set(['delivered', 'cancelled', 'returned']);
+    const orderBlocksTrackingMap =
+        !!order && (isOnlyTicketingOrder(order) || order?.fulfillmentStatus === 'FULFILLED');
     const shouldShowTrackingMap =
-        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
-        !!destinationCoords;
+        !!destinationCoords &&
+        !orderBlocksTrackingMap &&
+        !hideTrackingMapStatuses.has(deliveryStatusKey) &&
+        !isRiderAtCustomer;
     const mapRegion: Region | null = useMemo(() => {
         if (!destinationCoords) return null;
         const riderLat = riderCoords?.latitude ?? DARK_STORE_LOCATION.latitude;
@@ -632,8 +870,99 @@ export default function OrderDetailV2Screen() {
     }, [trackingPolylineCoordinates]);
 
     if (loading) {
+        const mapWhileLoading = shouldShowTrackingMap && mapRegion;
+        const showPostCheckoutChrome = !!destinationCoords && !!id;
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={goBack} hitSlop={12}>
+                        <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+                    </TouchableOpacity>
+                    <View style={styles.headerCenter}>
+                        <Text style={styles.headerTitle}>Order Summary</Text>
+                    </View>
+                    {showPostCheckoutChrome ? (
+                        <View
+                            style={[
+                                styles.headerStatusPill,
+                                { backgroundColor: DELIVERY_STATUS_COLORS.placed.bg },
+                            ]}
+                        >
+                            <Text
+                                style={[styles.headerStatusText, { color: DELIVERY_STATUS_COLORS.placed.text }]}
+                            >
+                                {DELIVERY_STATUS_LABELS.placed}
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={{ minWidth: 8 }} />
+                    )}
+                </View>
+                {mapWhileLoading ? (
+                    <View style={[styles.trackingWrap, { marginTop: 8, marginHorizontal: 16 }]}>
+                        <View style={styles.trackingMapFrame}>
+                            <MapView
+                                ref={trackingMapRef}
+                                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                                style={styles.trackingMap}
+                                initialRegion={mapRegion}
+                                customMapStyle={TRACKING_MAP_STYLE}
+                                scrollEnabled={false}
+                                zoomEnabled={false}
+                                rotateEnabled={false}
+                                pitchEnabled={false}
+                                showsCompass={false}
+                                showsBuildings={false}
+                                showsTraffic={false}
+                                toolbarEnabled={false}
+                            >
+                                {trackingPolylineCoordinates.length >= 2 ? (
+                                    <Polyline
+                                        coordinates={trackingPolylineCoordinates}
+                                        strokeColor="#2563EB"
+                                        strokeWidth={5}
+                                        lineCap="round"
+                                        lineJoin="round"
+                                    />
+                                ) : null}
+                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }}>
+                                    <View style={styles.storeMarker}>
+                                        <View style={styles.storeMarkerInner}>
+                                            <Ionicons name="home" size={16} color="#B45309" />
+                                        </View>
+                                    </View>
+                                </Marker>
+                                <Marker coordinate={destinationCoords!} title="Delivery address" anchor={{ x: 0.5, y: 1 }}>
+                                    <View style={styles.destinationMarker}>
+                                        <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                    </View>
+                                </Marker>
+                            </MapView>
+                        </View>
+                    </View>
+                ) : null}
+                {showPostCheckoutChrome ? (
+                    <View style={{ paddingHorizontal: 16, marginTop: 12, marginBottom: 8 }}>
+                        <View style={styles.deliveryPartnerCard}>
+                            <View style={styles.deliveryPartnerContent}>
+                                <View style={styles.deliveryPartnerAvatar}>
+                                    <Ionicons name="time-outline" size={26} color="#8B5E00" />
+                                </View>
+                                <View style={styles.deliveryPartnerTextWrap}>
+                                    <Text style={styles.deliveryPartnerIntro}>
+                                        Your delivery partner will be assigned soon
+                                    </Text>
+                                    <Text style={styles.deliveryPartnerPendingText}>
+                                        We will share the rider details here shortly
+                                    </Text>
+                                </View>
+                                <View style={styles.deliveryPartnerPendingBadge}>
+                                    <Ionicons name="hourglass-outline" size={18} color="#9CA3AF" />
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                ) : null}
                 <View style={styles.loadingWrap}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                     <Text style={styles.loadingText}>Loading order...</Text>
@@ -765,11 +1094,20 @@ export default function OrderDetailV2Screen() {
                                     </View>
                                 </Marker>
                                 {riderCoords ? (
-                                    <Marker.Animated coordinate={riderAnimatedCoord as any} title="Rider" anchor={{ x: 0.5, y: 0.5 }}>
+                                    <Marker
+                                        key={`rider-${riderCoords.latitude.toFixed(5)}-${riderCoords.longitude.toFixed(5)}`}
+                                        coordinate={riderCoords}
+                                        title="Rider"
+                                        anchor={{ x: 0.5, y: 0.5 }}
+                                        zIndex={1000}
+                                        tracksViewChanges={
+                                            Platform.OS === 'android' ? riderMarkerTracksView : false
+                                        }
+                                    >
                                         <View style={styles.riderMarker}>
                                             <Ionicons name="bicycle" size={18} color="#111827" />
                                         </View>
-                                    </Marker.Animated>
+                                    </Marker>
                                 ) : null}
                             </MapView>
                             <TouchableOpacity style={styles.mapFloatingButton} activeOpacity={0.85}>
@@ -777,6 +1115,20 @@ export default function OrderDetailV2Screen() {
                             </TouchableOpacity>
                         </View>
                        
+                    </View>
+                ) : null}
+
+                {isRiderAtCustomer && destinationCoords ? (
+                    <View style={styles.arrivedAtCard}>
+                        <View style={styles.arrivedAtIconWrap}>
+                            <Ionicons name="checkmark-circle" size={28} color="#15803D" />
+                        </View>
+                        <View style={styles.arrivedAtTextWrap}>
+                            <Text style={styles.arrivedAtTitle}>Rider has arrived</Text>
+                            <Text style={styles.arrivedAtSubtitle}>
+                                Your delivery partner is at your location. Please collect your order.
+                            </Text>
+                        </View>
                     </View>
                 ) : null}
 
@@ -813,7 +1165,9 @@ export default function OrderDetailV2Screen() {
                                     {`I'm ${deliveryPartnerStatus.deliveryPartner.name || 'your delivery partner'}, your delivery partner`}
                                 </Text>
                                 <Text style={styles.deliveryPartnerContactText}>
-                                    I have picked up your order, and I am on the way
+                                    {isRiderAtCustomer
+                                        ? "I've arrived at your location. Please meet me for your delivery."
+                                        : 'I have picked up your order, and I am on the way'}
                                 </Text>
                             </View>
                             {!!deliveryPartnerStatus.deliveryPartner.contact && (
@@ -1321,6 +1675,40 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendMedium,
         color: '#181D27',
         lineHeight: 22,
+    },
+    arrivedAtCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ECFDF3',
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#BBF7D0',
+        padding: 14,
+        marginBottom: 16,
+    },
+    arrivedAtIconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    arrivedAtTextWrap: {
+        flex: 1,
+    },
+    arrivedAtTitle: {
+        fontSize: 16,
+        fontFamily: Fonts.LexendBold,
+        color: '#14532D',
+        marginBottom: 4,
+    },
+    arrivedAtSubtitle: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#166534',
+        lineHeight: 18,
     },
     trackingWrap: {
         marginTop: 0,
