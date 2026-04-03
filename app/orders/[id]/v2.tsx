@@ -150,6 +150,24 @@ const ARRIVED_AT_CUSTOMER_STATUSES = new Set([
     'reached_location',
 ]);
 
+/**
+ * All statuses where the rider is actively en-route — used to gate WebSocket connection,
+ * near-dropoff detection, and live ETA. Broader than the 2-string hardcoded list so that
+ * backends using dispatched / on_the_way / in_transit etc. still work.
+ */
+const DELIVERY_ACTIVE_STATUSES = new Set([
+    'rider_assigned',
+    'out_for_delivery',
+    'dispatched',
+    'on_the_way',
+    'in_transit',
+    'transit',
+    'picking_up',
+    'picked_up',
+    'delivery_started',
+    'en_route',
+]);
+
 function coordsFromDeliveryStatusApi(result: {
     rider_lat?: number | string | null;
     rider_lng?: number | string | null;
@@ -272,6 +290,9 @@ export default function OrderDetailV2Screen() {
     const deliveryRouteFetchGen = useRef(0);
     const liveEtaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const liveEtaLastRunRef = useRef<number>(0);
+    /** For immediate route re-fetch when rider coords first arrive per order. */
+    const didFirstRiderRouteFetchRef = useRef(false);
+    const firstRiderRouteOrderIdRef = useRef('');
 
     const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -439,10 +460,10 @@ export default function OrderDetailV2Screen() {
         const nearDrop =
             !!destinationCoords &&
             !!riderCoords &&
-            ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+            DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
             distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
         const canUseLiveEta =
-            ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+            DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
             !!destinationCoords &&
             !!riderCoords &&
             !nearDrop &&
@@ -545,7 +566,11 @@ export default function OrderDetailV2Screen() {
             : '';
         const token = shopifyCustomerToken;
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-        const shouldTrack = !!shopifyOrderId && ['rider_assigned', 'out_for_delivery'].includes(statusKey);
+        // Connect WS for any active en-route status, not just the 2 hardcoded ones.
+        // Backends often use dispatched / on_the_way / in_transit / transit etc.
+        const shouldTrack =
+            !!shopifyOrderId &&
+            (DELIVERY_ACTIVE_STATUSES.has(statusKey) || ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey));
 
         if (!shouldTrack) {
             setTrackingConnected(false);
@@ -646,7 +671,7 @@ export default function OrderDetailV2Screen() {
             const nearDrop =
                 !!rc &&
                 !!dest &&
-                ['rider_assigned', 'out_for_delivery'].includes(statusKey) &&
+                DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
                 distanceMetersLatLng(rc, dest) <= 110;
             const riderArrivedUi =
                 ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey) || (!!nearDrop && !fulfilled);
@@ -711,6 +736,31 @@ export default function OrderDetailV2Screen() {
         destinationCoords?.longitude,
     ]);
 
+    /**
+     * Immediately re-fetch the route the first time rider coords arrive for this order.
+     * Without this, the first rider-based route waits up to 10 s (the interval tick).
+     */
+    useEffect(() => {
+        if (!riderCoords) return;
+        const rawOrderId = String(orderRef.current?.id ?? '').trim();
+        const shopifyOrderId = rawOrderId.includes('/Order/')
+            ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
+            : '';
+        if (!shopifyOrderId) return;
+        // Reset per order
+        if (firstRiderRouteOrderIdRef.current !== shopifyOrderId) {
+            didFirstRiderRouteFetchRef.current = false;
+            firstRiderRouteOrderIdRef.current = shopifyOrderId;
+        }
+        if (didFirstRiderRouteFetchRef.current) return;
+        didFirstRiderRouteFetchRef.current = true;
+        void getDeliveryRouteForOrder(shopifyOrderId, riderCoords).then((res) => {
+            if (res?.coordinates && res.coordinates.length >= 2) {
+                setRouteCoordinates(res.coordinates);
+            }
+        });
+    }, [riderCoords?.latitude, riderCoords?.longitude]);
+
     const copyOrderId = async () => {
         const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
         try {
@@ -742,7 +792,7 @@ export default function OrderDetailV2Screen() {
     const isRiderNearDropoff =
         !!riderCoords &&
         !!destinationCoords &&
-        ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) &&
+        DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
         distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
     const isRiderAtCustomer =
         !isDelivered &&
@@ -915,9 +965,18 @@ export default function OrderDetailV2Screen() {
                                 showsBuildings={false}
                                 showsTraffic={false}
                                 toolbarEnabled={false}
+                                onMapReady={() => {
+                                    if (trackingPolylineCoordinates.length >= 2) {
+                                        trackingMapRef.current?.fitToCoordinates(
+                                            trackingPolylineCoordinates,
+                                            { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated: false },
+                                        );
+                                    }
+                                }}
                             >
                                 {trackingPolylineCoordinates.length >= 2 ? (
                                     <Polyline
+                                        key={`polyline-loading-${trackingPolylineCoordinates.length}-${(trackingPolylineCoordinates[0]?.latitude ?? 0).toFixed(4)}`}
                                         coordinates={trackingPolylineCoordinates}
                                         strokeColor="#2563EB"
                                         strokeWidth={5}
@@ -1071,9 +1130,18 @@ export default function OrderDetailV2Screen() {
                                 showsBuildings={false}
                                 showsTraffic={false}
                                 toolbarEnabled={false}
+                                onMapReady={() => {
+                                    if (trackingPolylineCoordinates.length >= 2) {
+                                        trackingMapRef.current?.fitToCoordinates(
+                                            trackingPolylineCoordinates,
+                                            { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated: false },
+                                        );
+                                    }
+                                }}
                             >
                                 {trackingPolylineCoordinates.length >= 2 ? (
                                     <Polyline
+                                        key={`polyline-main-${trackingPolylineCoordinates.length}-${(trackingPolylineCoordinates[0]?.latitude ?? 0).toFixed(4)}-${(trackingPolylineCoordinates[trackingPolylineCoordinates.length - 1]?.latitude ?? 0).toFixed(4)}`}
                                         coordinates={trackingPolylineCoordinates}
                                         strokeColor="#2563EB"
                                         strokeWidth={5}
@@ -1095,7 +1163,7 @@ export default function OrderDetailV2Screen() {
                                 </Marker>
                                 {riderCoords ? (
                                     <Marker
-                                        key={`rider-${riderCoords.latitude.toFixed(5)}-${riderCoords.longitude.toFixed(5)}`}
+                                        key="rider-marker"
                                         coordinate={riderCoords}
                                         title="Rider"
                                         anchor={{ x: 0.5, y: 0.5 }}
