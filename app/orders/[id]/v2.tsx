@@ -9,13 +9,9 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useUserStore } from '@/store/userStore';
 import {
-    extractLatLngDeep,
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
-    parseTrackingCoordinates,
-    subscribeToDeliveryTracking,
     type DeliveryPartnerOrderStatus,
-    type DeliveryTrackingMessage,
 } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -78,15 +74,6 @@ function shippingAddressString(address: any): string {
         .filter(Boolean)
         .join(', ')
         .trim();
-}
-
-function trackingTimestampMs(value: string | number | null | undefined): number | null {
-    if (value == null) return null;
-    if (typeof value === 'number' && Number.isFinite(value)) {
-        return value > 1_000_000_000_000 ? value : value * 1000;
-    }
-    const parsed = new Date(String(value)).getTime();
-    return Number.isNaN(parsed) ? null : parsed;
 }
 
 // Same images as GiftWrappingModal – used for gift wrap line items on order detail
@@ -201,6 +188,13 @@ function getBookingDateDisplay(node: any): string | null {
 /** Refetch road-snapped rider → customer route on this interval while tracking (ms). */
 const DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 10_000;
 
+/**
+ * How often to poll the backend for the rider's current GPS position.
+ * Polling is more reliable than WebSocket for continuous path updates —
+ * WS reconnections cause brief gaps where riderCoords becomes stale.
+ */
+const RIDER_LOCATION_POLL_MS = 4_000;
+
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
     placed: 'Placed',
     confirmed: 'Confirmed',
@@ -273,11 +267,9 @@ export default function OrderDetailV2Screen() {
     const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     /** Google Maps on Android often needs brief tracksViewChanges so custom rider marker bitmap renders. */
     const [riderMarkerTracksView, setRiderMarkerTracksView] = useState(true);
-    const [trackingConnected, setTrackingConnected] = useState(false);
-    const [riderOnline, setRiderOnline] = useState(false);
-    const [trackingNote, setTrackingNote] = useState<string | null>(null);
-    const [trackingUpdatedAt, setTrackingUpdatedAt] = useState<number | null>(null);
     const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[] | null>(null);
+    /** Incremented each time a new server route is received; drives Polyline key so Android redraws cleanly. */
+    const [routeVersion, setRouteVersion] = useState(0);
     const trackingMapRef = useRef<MapView | null>(null);
     const orderRef = useRef(order);
     orderRef.current = order;
@@ -559,99 +551,47 @@ export default function OrderDetailV2Screen() {
         };
     }, [order?.id]);
 
+    /**
+     * Poll the backend every RIDER_LOCATION_POLL_MS for the rider's live GPS position.
+     * This replaces the WebSocket approach — WS reconnections created brief gaps where
+     * riderCoords became stale and the polyline jumped back to the dark-store fallback.
+     * Polling is simpler, more reliable, and produces a smooth, consistent path on both
+     * Android and iOS.
+     */
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
         const shopifyOrderId = rawOrderId.includes('/Order/')
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
-        const token = shopifyCustomerToken;
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-        // Connect WS for any active en-route status, not just the 2 hardcoded ones.
-        // Backends often use dispatched / on_the_way / in_transit / transit etc.
-        const shouldTrack =
+        const isActive =
             !!shopifyOrderId &&
             (DELIVERY_ACTIVE_STATUSES.has(statusKey) || ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey));
 
-        if (!shouldTrack) {
-            setTrackingConnected(false);
-            return;
-        }
+        if (!isActive) return;
 
         let cancelled = false;
-        let reconnectDelay = 1000;
-        let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-        let unsubscribe: (() => void) | null = null;
 
-        const applyTrackingMessage = (message: DeliveryTrackingMessage) => {
+        const fetchRiderLocation = async () => {
             if (cancelled) return;
-            switch (message.type) {
-                case 'location':
-                case 'rider_online': {
-                    const coords =
-                        parseTrackingCoordinates(message) ?? extractLatLngDeep(message as unknown);
-                    const ts = trackingTimestampMs(message.timestamp);
-                    setRiderOnline(message.type === 'location' ? message.riderOnline !== false : true);
-                    if (coords) {
-                        setRiderCoords(coords);
-                    }
-                    if (ts != null) setTrackingUpdatedAt(ts);
-                    setTrackingNote(null);
-                    return;
-                }
-                case 'rider_offline':
-                    setRiderOnline(false);
-                    setTrackingNote('Locating rider...');
-                    return;
-                case 'order_delivered':
-                    setRiderOnline(false);
-                    setTrackingConnected(false);
-                    setTrackingNote('Order delivered');
-                    return;
-                case 'rider_assigned':
-                    setTrackingNote('Rider assigned. Waiting for live location...');
-                    return;
-                default: {
-                    const coords = extractLatLngDeep(message as unknown);
-                    if (coords) {
-                        setRiderOnline(true);
-                        setRiderCoords(coords);
-                        setTrackingNote(null);
-                    }
-                    return;
-                }
+            try {
+                const result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+                if (cancelled) return;
+                const coords = coordsFromDeliveryStatusApi(result);
+                if (coords) setRiderCoords(coords);
+            } catch (_) {
+                // keep last known position on transient network errors
             }
         };
 
-        const connect = () => {
-            if (cancelled) return;
-            unsubscribe = subscribeToDeliveryTracking(shopifyOrderId, token, {
-                onOpen: () => {
-                    if (cancelled) return;
-                    reconnectDelay = 1000;
-                    setTrackingConnected(true);
-                },
-                onClose: () => {
-                    if (cancelled) return;
-                    setTrackingConnected(false);
-                    reconnectTimer = setTimeout(connect, reconnectDelay);
-                    reconnectDelay = Math.min(reconnectDelay * 2, 30000);
-                },
-                onError: () => {
-                    if (cancelled) return;
-                    setTrackingConnected(false);
-                },
-                onMessage: applyTrackingMessage,
-            });
-        };
-
-        connect();
+        void fetchRiderLocation();
+        const intervalId = setInterval(fetchRiderLocation, RIDER_LOCATION_POLL_MS);
 
         return () => {
             cancelled = true;
-            if (unsubscribe) unsubscribe();
-            if (reconnectTimer) clearTimeout(reconnectTimer);
+            clearInterval(intervalId);
         };
-    }, [order?.id, shopifyCustomerToken, deliveryPartnerStatus?.status]);
+    }, [order?.id, deliveryPartnerStatus?.status]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
@@ -689,16 +629,26 @@ export default function OrderDetailV2Screen() {
             return;
         }
 
+        const isTerminalStatus = () => {
+            const sk = String(deliveryPartnerStatusRef.current?.status ?? '').trim().toLowerCase();
+            return ['delivered', 'cancelled', 'returned'].includes(sk);
+        };
+
         if (!shouldFetchRoute()) {
-            setRouteCoordinates(null);
+            // Only wipe the route for terminal orders — keep it visible during all other transitions
+            // (e.g. status change from rider_assigned → out_for_delivery, near-drop check, etc.)
+            if (isTerminalStatus()) setRouteCoordinates(null);
             return;
         }
 
         let cancelled = false;
 
         const runFetch = async () => {
-            if (cancelled || !shouldFetchRoute()) {
-                if (!cancelled) setRouteCoordinates(null);
+            if (cancelled) return;
+            if (!shouldFetchRoute()) {
+                // Don't wipe the polyline mid-delivery — a momentary shouldFetchRoute=false
+                // (near-drop check, status transitioning) would make the path disappear.
+                if (!cancelled && isTerminalStatus()) setRouteCoordinates(null);
                 return;
             }
             const fetchGen = ++deliveryRouteFetchGen.current;
@@ -708,15 +658,14 @@ export default function OrderDetailV2Screen() {
                 rc ? { latitude: rc.latitude, longitude: rc.longitude } : null,
             );
             if (cancelled || fetchGen !== deliveryRouteFetchGen.current) return;
-            if (!shouldFetchRoute()) {
-                setRouteCoordinates(null);
-                return;
-            }
             if (res?.coordinates && res.coordinates.length >= 2) {
                 setRouteCoordinates(res.coordinates);
-            } else {
-                setRouteCoordinates(null);
+                // Bump the version so Android redraws the Polyline with the new path.
+                // We do NOT wipe the old polyline first — the new one replaces it atomically.
+                setRouteVersion((v) => v + 1);
             }
+            // On fetch failure / empty response: keep the last good route visible.
+            // The next interval tick will retry automatically.
         };
 
         void runFetch();
@@ -757,6 +706,7 @@ export default function OrderDetailV2Screen() {
         void getDeliveryRouteForOrder(shopifyOrderId, riderCoords).then((res) => {
             if (res?.coordinates && res.coordinates.length >= 2) {
                 setRouteCoordinates(res.coordinates);
+                setRouteVersion((v) => v + 1);
             }
         });
     }, [riderCoords?.latitude, riderCoords?.longitude]);
@@ -976,7 +926,7 @@ export default function OrderDetailV2Screen() {
                             >
                                 {trackingPolylineCoordinates.length >= 2 ? (
                                     <Polyline
-                                        key={`polyline-loading-${trackingPolylineCoordinates.length}-${(trackingPolylineCoordinates[0]?.latitude ?? 0).toFixed(4)}`}
+                                        key={`polyline-loading-${routeVersion}`}
                                         coordinates={trackingPolylineCoordinates}
                                         strokeColor="#2563EB"
                                         strokeWidth={5}
@@ -1141,7 +1091,7 @@ export default function OrderDetailV2Screen() {
                             >
                                 {trackingPolylineCoordinates.length >= 2 ? (
                                     <Polyline
-                                        key={`polyline-main-${trackingPolylineCoordinates.length}-${(trackingPolylineCoordinates[0]?.latitude ?? 0).toFixed(4)}-${(trackingPolylineCoordinates[trackingPolylineCoordinates.length - 1]?.latitude ?? 0).toFixed(4)}`}
+                                        key={`polyline-main-${routeVersion}`}
                                         coordinates={trackingPolylineCoordinates}
                                         strokeColor="#2563EB"
                                         strokeWidth={5}
