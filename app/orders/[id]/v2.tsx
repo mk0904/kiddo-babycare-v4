@@ -653,9 +653,11 @@ export default function OrderDetailV2Screen() {
             }
             const fetchGen = ++deliveryRouteFetchGen.current;
             const rc = riderCoordsRef.current;
+            const dest = destinationCoordsRef.current;
             const res = await getDeliveryRouteForOrder(
                 shopifyOrderId,
                 rc ? { latitude: rc.latitude, longitude: rc.longitude } : null,
+                dest ? { latitude: dest.latitude, longitude: dest.longitude } : null,
             );
             if (cancelled || fetchGen !== deliveryRouteFetchGen.current) return;
             if (res?.coordinates && res.coordinates.length >= 2) {
@@ -703,7 +705,12 @@ export default function OrderDetailV2Screen() {
         }
         if (didFirstRiderRouteFetchRef.current) return;
         didFirstRiderRouteFetchRef.current = true;
-        void getDeliveryRouteForOrder(shopifyOrderId, riderCoords).then((res) => {
+        const destForRoute = destinationCoordsRef.current;
+        void getDeliveryRouteForOrder(
+            shopifyOrderId,
+            riderCoords,
+            destForRoute ? { latitude: destForRoute.latitude, longitude: destForRoute.longitude } : null,
+        ).then((res) => {
             if (res?.coordinates && res.coordinates.length >= 2) {
                 setRouteCoordinates(res.coordinates);
                 setRouteVersion((v) => v + 1);

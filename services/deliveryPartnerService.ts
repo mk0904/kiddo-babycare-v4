@@ -251,11 +251,13 @@ function normalizeRouteCoordinates(raw: unknown): DeliveryRouteCoordinate[] {
 
 /**
  * Road-snapped route from kiddo-service (Directions API on server only).
- * @param rider Live GPS; pass null to route from server dark-store → destination until live location arrives.
+ * @param rider  Live GPS of the rider; pass null to route from server dark-store → destination.
+ * @param destination  Customer delivery coords; required for a meaningful route.
  */
 export async function getDeliveryRouteForOrder(
   shopifyOrderId: string,
   rider: DeliveryRouteCoordinate | null,
+  destination?: DeliveryRouteCoordinate | null,
 ): Promise<DeliveryRouteResponse | null> {
   const oid = String(shopifyOrderId || '').trim();
   if (!oid) return null;
@@ -263,13 +265,13 @@ export async function getDeliveryRouteForOrder(
   try {
     const base = getBackendApiPath(`orders/${encodeURIComponent(oid)}/delivery-route`);
     const params = new URLSearchParams();
-    if (
-      rider &&
-      Number.isFinite(rider.latitude) &&
-      Number.isFinite(rider.longitude)
-    ) {
+    if (rider && Number.isFinite(rider.latitude) && Number.isFinite(rider.longitude)) {
       params.set('rider_lat', String(rider.latitude));
       params.set('rider_lng', String(rider.longitude));
+    }
+    if (destination && Number.isFinite(destination.latitude) && Number.isFinite(destination.longitude)) {
+      params.set('dest_lat', String(destination.latitude));
+      params.set('dest_lng', String(destination.longitude));
     }
     const qs = params.toString();
     const sep = base.includes('?') ? '&' : '?';
@@ -280,13 +282,8 @@ export async function getDeliveryRouteForOrder(
     if (!response.ok) {
       if (__DEV__) {
         let detail = '';
-        try {
-          detail = (await response.text()).slice(0, 200);
-        } catch (_) {}
-        console.warn(
-          `[delivery-route] ${response.status} ${url}`,
-          detail || '',
-        );
+        try { detail = (await response.text()).slice(0, 200); } catch (_) {}
+        console.warn(`[delivery-route] ${response.status} ${url}`, detail || '');
       }
       return null;
     }
