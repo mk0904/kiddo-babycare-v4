@@ -265,8 +265,8 @@ export default function OrderDetailV2Screen() {
     } | null>(null);
     const [destinationCoords, setDestinationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-    /** Google Maps on Android often needs brief tracksViewChanges so custom rider marker bitmap renders. */
-    const [riderMarkerTracksView, setRiderMarkerTracksView] = useState(true);
+    /** Google Maps on Android needs tracksViewChanges=true briefly so custom marker bitmaps are captured after layout. */
+    const [androidMarkersTracksView, setAndroidMarkersTracksView] = useState(Platform.OS === 'android');
     const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[] | null>(null);
     /** Incremented each time a new server route is received; drives Polyline key so Android redraws cleanly. */
     const [routeVersion, setRouteVersion] = useState(0);
@@ -296,10 +296,18 @@ export default function OrderDetailV2Screen() {
         setDestinationCoords((prev) => prev ?? { latitude: lat, longitude: lng });
     }, [paramDestinationLat, paramDestinationLng]);
 
+    // On mount (Android): let all custom markers render with tracksViewChanges=true, then freeze.
     useEffect(() => {
-        if (!riderCoords) return;
-        setRiderMarkerTracksView(true);
-        const t = setTimeout(() => setRiderMarkerTracksView(false), 2500);
+        if (Platform.OS !== 'android') return;
+        const t = setTimeout(() => setAndroidMarkersTracksView(false), 2500);
+        return () => clearTimeout(t);
+    }, []);
+
+    // Each time the rider moves (Android): re-enable tracking briefly so the bitmap refreshes.
+    useEffect(() => {
+        if (!riderCoords || Platform.OS !== 'android') return;
+        setAndroidMarkersTracksView(true);
+        const t = setTimeout(() => setAndroidMarkersTracksView(false), 2500);
         return () => clearTimeout(t);
     }, [riderCoords?.latitude, riderCoords?.longitude]);
 
@@ -854,14 +862,24 @@ export default function OrderDetailV2Screen() {
     }, [destinationCoords, riderCoords]);
     const trackingPathFallback = useMemo(() => {
         if (!destinationCoords) return [];
-        return riderCoords
+        const pts = riderCoords
             ? [DARK_STORE_LOCATION, riderCoords, destinationCoords]
             : [DARK_STORE_LOCATION, destinationCoords];
+        return pts.filter(
+            (c): c is { latitude: number; longitude: number } =>
+                !!c && isFinite(c.latitude) && isFinite(c.longitude),
+        );
     }, [destinationCoords, riderCoords]);
 
     const trackingPolylineCoordinates = useMemo(() => {
-        if (routeCoordinates && routeCoordinates.length >= 2) return routeCoordinates;
-        return trackingPathFallback;
+        const raw =
+            routeCoordinates && routeCoordinates.length >= 2
+                ? routeCoordinates
+                : trackingPathFallback;
+        return raw.filter(
+            (c): c is { latitude: number; longitude: number } =>
+                !!c && isFinite(c.latitude) && isFinite(c.longitude),
+        );
     }, [routeCoordinates, trackingPathFallback]);
 
     useEffect(() => {
@@ -931,28 +949,45 @@ export default function OrderDetailV2Screen() {
                                     }
                                 }}
                             >
-                                {trackingPolylineCoordinates.length >= 2 ? (
-                                    <Polyline
-                                        key={`polyline-loading-${routeVersion}`}
-                                        coordinates={trackingPolylineCoordinates}
-                                        strokeColor="#2563EB"
-                                        strokeWidth={5}
-                                        lineCap="round"
-                                        lineJoin="round"
-                                    />
-                                ) : null}
-                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }}>
-                                    <View style={styles.storeMarker}>
-                                        <View style={styles.storeMarkerInner}>
+                                <Polyline
+                                    coordinates={trackingPolylineCoordinates.length >= 2 ? trackingPolylineCoordinates : [DARK_STORE_LOCATION, DARK_STORE_LOCATION]}
+                                    strokeColor={trackingPolylineCoordinates.length >= 2 ? "#2563EB" : "transparent"}
+                                    strokeWidth={5}
+                                    lineCap="round"
+                                    lineJoin="round"
+                                />
+                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }} tracksViewChanges={Platform.OS === 'android' ? androidMarkersTracksView : false}>
+                                    <View collapsable={false} style={styles.storeMarker}>
+                                        <View collapsable={false} style={styles.storeMarkerInner}>
                                             <Ionicons name="home" size={16} color="#B45309" />
                                         </View>
                                     </View>
                                 </Marker>
-                                <Marker coordinate={destinationCoords!} title="Delivery address" anchor={{ x: 0.5, y: 1 }}>
-                                    <View style={styles.destinationMarker}>
-                                        <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
-                                    </View>
-                                </Marker>
+                                {Platform.OS === 'ios' ? (
+                                    <Marker
+                                        coordinate={destinationCoords ?? DARK_STORE_LOCATION}
+                                        title="Delivery address"
+                                        anchor={{ x: 0.5, y: 1 }}
+                                        tracksViewChanges={false}
+                                        zIndex={destinationCoords ? 500 : 0}
+                                    >
+                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
+                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                        </View>
+                                    </Marker>
+                                ) : destinationCoords ? (
+                                    <Marker
+                                        coordinate={destinationCoords}
+                                        title="Delivery address"
+                                        anchor={{ x: 0.5, y: 1 }}
+                                        tracksViewChanges={androidMarkersTracksView}
+                                        zIndex={500}
+                                    >
+                                        <View collapsable={false} style={styles.destinationMarker}>
+                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                        </View>
+                                    </Marker>
+                                ) : null}
                             </MapView>
                         </View>
                     </View>
@@ -1096,40 +1131,68 @@ export default function OrderDetailV2Screen() {
                                     }
                                 }}
                             >
-                                {trackingPolylineCoordinates.length >= 2 ? (
-                                    <Polyline
-                                        key={`polyline-main-${routeVersion}`}
-                                        coordinates={trackingPolylineCoordinates}
-                                        strokeColor="#2563EB"
-                                        strokeWidth={5}
-                                        lineCap="round"
-                                        lineJoin="round"
-                                    />
-                                ) : null}
-                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }}>
-                                    <View style={styles.storeMarker}>
-                                        <View style={styles.storeMarkerInner}>
+                                <Polyline
+                                    coordinates={trackingPolylineCoordinates.length >= 2 ? trackingPolylineCoordinates : [DARK_STORE_LOCATION, DARK_STORE_LOCATION]}
+                                    strokeColor={trackingPolylineCoordinates.length >= 2 ? "#2563EB" : "transparent"}
+                                    strokeWidth={5}
+                                    lineCap="round"
+                                    lineJoin="round"
+                                />
+                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }} tracksViewChanges={Platform.OS === 'android' ? androidMarkersTracksView : false}>
+                                    <View collapsable={false} style={styles.storeMarker}>
+                                        <View collapsable={false} style={styles.storeMarkerInner}>
                                             <Ionicons name="home" size={16} color="#B45309" />
                                         </View>
                                     </View>
                                 </Marker>
-                                <Marker coordinate={destinationCoords!} title="Delivery address" anchor={{ x: 0.5, y: 1 }}>
-                                    <View style={styles.destinationMarker}>
-                                        <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
-                                    </View>
-                                </Marker>
-                                {riderCoords ? (
+                                {Platform.OS === 'ios' ? (
+                                    <Marker
+                                        coordinate={destinationCoords ?? DARK_STORE_LOCATION}
+                                        title="Delivery address"
+                                        anchor={{ x: 0.5, y: 1 }}
+                                        tracksViewChanges={false}
+                                        zIndex={destinationCoords ? 500 : 0}
+                                    >
+                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
+                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                        </View>
+                                    </Marker>
+                                ) : destinationCoords ? (
+                                    <Marker
+                                        coordinate={destinationCoords}
+                                        title="Delivery address"
+                                        anchor={{ x: 0.5, y: 1 }}
+                                        tracksViewChanges={androidMarkersTracksView}
+                                        zIndex={500}
+                                    >
+                                        <View collapsable={false} style={styles.destinationMarker}>
+                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                        </View>
+                                    </Marker>
+                                ) : null}
+                                {Platform.OS === 'ios' ? (
+                                    <Marker
+                                        key="rider-marker"
+                                        coordinate={riderCoords ?? DARK_STORE_LOCATION}
+                                        title="Rider"
+                                        anchor={{ x: 0.5, y: 0.5 }}
+                                        zIndex={riderCoords ? 1000 : 0}
+                                        tracksViewChanges={false}
+                                    >
+                                        <View collapsable={false} style={[styles.riderMarker, !riderCoords && { opacity: 0 }]}>
+                                            <Ionicons name="bicycle" size={18} color="#111827" />
+                                        </View>
+                                    </Marker>
+                                ) : riderCoords ? (
                                     <Marker
                                         key="rider-marker"
                                         coordinate={riderCoords}
                                         title="Rider"
                                         anchor={{ x: 0.5, y: 0.5 }}
                                         zIndex={1000}
-                                        tracksViewChanges={
-                                            Platform.OS === 'android' ? riderMarkerTracksView : false
-                                        }
+                                        tracksViewChanges={androidMarkersTracksView}
                                     >
-                                        <View style={styles.riderMarker}>
+                                        <View collapsable={false} style={styles.riderMarker}>
                                             <Ionicons name="bicycle" size={18} color="#111827" />
                                         </View>
                                     </Marker>
