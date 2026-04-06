@@ -14,6 +14,10 @@ export interface DeliveryPartnerOrderStatus {
   rider_lng?: number | string | null;
   riderLatitude?: number | string | null;
   riderLongitude?: number | string | null;
+  /** ISO 8601 milestones from delivery-partner-service (via kiddo-service). */
+  assignedAt?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
 }
 
 export type DeliveryTrackingMessage =

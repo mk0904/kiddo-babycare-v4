@@ -3,7 +3,6 @@ import {
     DEFAULT_ETA_MINUTES,
     geocodeAddress,
     getDeliveryEta,
-    getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -125,6 +124,24 @@ function distanceMetersLatLng(
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
 }
 
+function parsePartnerIsoToMs(iso: string | null | undefined): number | null {
+    if (iso == null || !String(iso).trim()) return null;
+    const t = Date.parse(String(iso));
+    return Number.isFinite(t) ? t : null;
+}
+
+function formatClockEnIN(d: Date): string {
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const hour12 = h % 12 || 12;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    return `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
+function formatShortDateEnIN(d: Date): string {
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 /** Backend may send these when the rider is at the drop-off (before Shopify shows delivered). */
 const ARRIVED_AT_CUSTOMER_STATUSES = new Set([
     'arrived',
@@ -151,6 +168,18 @@ const DELIVERY_ACTIVE_STATUSES = new Set([
     'transit',
     'picking_up',
     'picked_up',
+    'delivery_started',
+    'en_route',
+]);
+
+/** After rider has picked up — show pickedUpAt milestone from delivery-partner-service. */
+const POST_PICKUP_DELIVERY_STATUSES = new Set([
+    'out_for_delivery',
+    'picked_up',
+    'dispatched',
+    'on_the_way',
+    'in_transit',
+    'transit',
     'delivery_started',
     'en_route',
 ]);
@@ -256,13 +285,8 @@ export default function OrderDetailV2Screen() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [fetchedEtaMinutes, setFetchedEtaMinutes] = useState<number | null>(null);
     const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(null);
-    const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<{
-        shopifyOrderId: string;
-        status: string;
-        deliveryPartner: { name: string | null; contact: string | null };
-    } | null>(null);
+    const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<DeliveryPartnerOrderStatus | null>(null);
     const [destinationCoords, setDestinationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     /** Google Maps on Android needs tracksViewChanges=true briefly so custom marker bitmaps are captured after layout. */
@@ -282,6 +306,13 @@ export default function OrderDetailV2Screen() {
     const deliveryRouteFetchGen = useRef(0);
     const liveEtaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const liveEtaLastRunRef = useRef<number>(0);
+    /** Last rider+dest used for live ETA — when either changes, refetch right away (map / address update). */
+    const liveEtaGeoRef = useRef<{
+        rl: number;
+        rm: number;
+        dl: number;
+        dm: number;
+    } | null>(null);
     /** For immediate route re-fetch when rider coords first arrive per order. */
     const didFirstRiderRouteFetchRef = useRef(false);
     const firstRiderRouteOrderIdRef = useRef('');
@@ -398,39 +429,6 @@ export default function OrderDetailV2Screen() {
         };
     }, [id, shopifyCustomerToken]);
 
-    // Fetch delivery duration (minutes) to shipping address; "Arriving by" = order placed time + this duration
-    useEffect(() => {
-        if (!order?.shippingAddress) {
-            setFetchedEtaMinutes(null);
-            return;
-        }
-        const addr = order.shippingAddress;
-        const addressString = [addr.address1, addr.address2, addr.city, addr.province, addr.zip, addr.country]
-            .filter(Boolean)
-            .join(', ')
-            .trim();
-        if (!addressString) {
-            setFetchedEtaMinutes(null);
-            return;
-        }
-        let cancelled = false;
-        (async () => {
-            try {
-                const deliveryTime = await getDeliveryEtaForAddress(addressString);
-                if (cancelled || deliveryTime == null) {
-                    setFetchedEtaMinutes(null);
-                    return;
-                }
-                if (!cancelled) setFetchedEtaMinutes(deliveryTime);
-            } catch (e) {
-                if (!cancelled) setFetchedEtaMinutes(null);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [order?.id, order?.shippingAddress?.address1, order?.shippingAddress?.city, order?.shippingAddress?.zip]);
-
     useEffect(() => {
         // Do not clear coords while order is still loading — that broke post-checkout map
         // (checkout forwards destinationLat/Lng until Storefront returns shippingAddress).
@@ -470,6 +468,7 @@ export default function OrderDetailV2Screen() {
             !ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey);
         if (!canUseLiveEta) {
             setLiveEtaMinutes(null);
+            liveEtaGeoRef.current = null;
             if (liveEtaTimerRef.current) {
                 clearTimeout(liveEtaTimerRef.current);
                 liveEtaTimerRef.current = null;
@@ -477,10 +476,25 @@ export default function OrderDetailV2Screen() {
             return;
         }
 
+        const currentGeo = {
+            rl: riderCoords.latitude,
+            rm: riderCoords.longitude,
+            dl: destinationCoords.latitude,
+            dm: destinationCoords.longitude,
+        };
+        const prevGeo = liveEtaGeoRef.current;
+        const geoChanged =
+            !prevGeo ||
+            prevGeo.rl !== currentGeo.rl ||
+            prevGeo.rm !== currentGeo.rm ||
+            prevGeo.dl !== currentGeo.dl ||
+            prevGeo.dm !== currentGeo.dm;
+
         let cancelled = false;
         const now = Date.now();
         const elapsed = now - liveEtaLastRunRef.current;
-        const waitMs = Math.max(0, 8000 - elapsed);
+        // Rider/destination moved → refresh ETA for header + map context; else throttle status-only churn.
+        const waitMs = geoChanged ? 200 : Math.max(0, 8000 - elapsed);
 
         if (liveEtaTimerRef.current) {
             clearTimeout(liveEtaTimerRef.current);
@@ -494,6 +508,7 @@ export default function OrderDetailV2Screen() {
                 });
                 if (cancelled) return;
                 liveEtaLastRunRef.current = Date.now();
+                liveEtaGeoRef.current = currentGeo;
                 setLiveEtaMinutes(eta?.etaMinutes ?? null);
             })();
         }, waitMs);
@@ -739,10 +754,37 @@ export default function OrderDetailV2Screen() {
         ? [order.shippingAddress.address1, order.shippingAddress.address2].filter(Boolean).join(', ') || 'Address'
         : '—';
 
-    const etaMinutes = liveEtaMinutes ?? fetchedEtaMinutes ?? (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
+    const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+    const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
+
+    /** Shopify / checkout param only — not kiddo geocoded ETA (live rider ETA uses getDeliveryEta with GPS). */
+    const staticEtaMinutes =
+        (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
+
+    const partnerDeliveredAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.deliveredAt);
+    const partnerPickedUpAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.pickedUpAt);
+    const partnerAssignedAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.assignedAt);
+
+    const isRiderNearDropoff =
+        !!riderCoords &&
+        !!destinationCoords &&
+        DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
+        distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
+
+    /** Same gates as live ETA fetch — updates when rider/dest moves and kiddo returns new minutes. */
+    const showLiveEtaInHeader =
+        liveEtaMinutes != null &&
+        !!riderCoords &&
+        !!destinationCoords &&
+        DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
+        !isRiderNearDropoff &&
+        !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey);
+
     const orderPlacedAt = order?.processedAt || order?.createdAt;
     const baseTime = orderPlacedAt ? new Date(orderPlacedAt) : new Date();
-    const deliveryByDate = new Date(baseTime.getTime() + etaMinutes * 60 * 1000);
+    const deliveryByDate = showLiveEtaInHeader
+        ? new Date(Date.now() + Math.max(1, Math.round(liveEtaMinutes!)) * 60 * 1000)
+        : new Date(baseTime.getTime() + staticEtaMinutes * 60 * 1000);
     const h = deliveryByDate.getHours();
     const m = deliveryByDate.getMinutes();
     const hour12 = h % 12 || 12;
@@ -750,44 +792,48 @@ export default function OrderDetailV2Screen() {
     const timeStr = `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
     const dateStr = deliveryByDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     const deliveryByTimeStr = `${timeStr}, ${dateStr}`;
-    const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
     const hasArrivalTimePassed = deliveryByDate.getTime() < Date.now();
-    const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
 
-    const isRiderNearDropoff =
-        !!riderCoords &&
-        !!destinationCoords &&
-        DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
-        distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
     const isRiderAtCustomer =
         !isDelivered &&
         (ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) || isRiderNearDropoff);
 
     const headerStatusText = (() => {
         if (hasArrivalTimePassed) {
-            const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+            const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            });
             return `Arrived at ${timeStr}, ${arrivedDateStr}`;
         }
         if (isRiderAtCustomer && !isDelivered) {
             return 'Your rider has arrived at your address';
         }
-        if (isDelivered) return `Delivered by ${deliveryByTimeStr}`;
-        if (
-            liveEtaMinutes != null &&
-            riderCoords &&
-            ['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey)
-        ) {
-            const mins = Math.max(1, Math.round(liveEtaMinutes));
-            const liveArrival = new Date(Date.now() + mins * 60 * 1000);
-            const lh = liveArrival.getHours();
-            const lm = liveArrival.getMinutes();
-            const liveHour12 = lh % 12 || 12;
-            const liveAmpm = lh < 12 ? 'AM' : 'PM';
-            const liveClock = `${liveHour12}:${lm.toString().padStart(2, '0')}${liveAmpm}`;
-            const liveDateShort = liveArrival.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-            return `Arriving by ${liveClock}, ${liveDateShort} · ${mins} min (live)`;
+        if (isDelivered) {
+            if (partnerDeliveredAtMs != null) {
+                const dd = new Date(partnerDeliveredAtMs);
+                return `Delivered at ${formatClockEnIN(dd)}, ${formatShortDateEnIN(dd)}`;
+            }
+            return `Delivered by ${deliveryByTimeStr}`;
         }
-        return `Arriving by ${deliveryByTimeStr}`;
+        if (showLiveEtaInHeader) {
+            const mins = Math.max(1, Math.round(liveEtaMinutes!));
+            const liveArrival = new Date(Date.now() + mins * 60 * 1000);
+            return `Arriving by ${formatClockEnIN(liveArrival)}, ${formatShortDateEnIN(liveArrival)} · ${mins} min (live)`;
+        }
+        const milestoneParts: string[] = [];
+        if (deliveryStatusKey === 'rider_assigned' && partnerAssignedAtMs != null) {
+            const d = new Date(partnerAssignedAtMs);
+            milestoneParts.push(`Rider assigned ${formatClockEnIN(d)}, ${formatShortDateEnIN(d)}`);
+        }
+        if (partnerPickedUpAtMs != null && POST_PICKUP_DELIVERY_STATUSES.has(deliveryStatusKey)) {
+            const d = new Date(partnerPickedUpAtMs);
+            milestoneParts.push(`Picked up ${formatClockEnIN(d)}, ${formatShortDateEnIN(d)}`);
+        }
+        const arrivalLine = `Arriving by ${deliveryByTimeStr}`;
+        if (milestoneParts.length) return `${milestoneParts.join(' · ')} · ${arrivalLine}`;
+        return arrivalLine;
     })();
     const isPhysicalDeliveryOrder = !!order && !isOnlyTicketingOrder(order);
     const statusKeyForHeaderPill =
@@ -928,7 +974,7 @@ export default function OrderDetailV2Screen() {
                         <View style={styles.trackingMapFrame}>
                             <MapView
                                 ref={trackingMapRef}
-                                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                                provider={PROVIDER_GOOGLE}
                                 style={styles.trackingMap}
                                 initialRegion={mapRegion}
                                 customMapStyle={TRACKING_MAP_STYLE}
@@ -1110,7 +1156,7 @@ export default function OrderDetailV2Screen() {
                         <View style={styles.trackingMapFrame}>
                             <MapView
                                 ref={trackingMapRef}
-                                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                                provider={PROVIDER_GOOGLE}
                                 style={styles.trackingMap}
                                 initialRegion={mapRegion}
                                 customMapStyle={TRACKING_MAP_STYLE}

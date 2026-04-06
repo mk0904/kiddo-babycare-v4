@@ -488,7 +488,7 @@ export default function MapAddressScreen() {
                 <MapView
                     ref={mapRef}
                     style={styles.map}
-                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                    provider={PROVIDER_GOOGLE}
                     initialRegion={initialRegion}
                     onRegionChangeComplete={onRegionChangeComplete}
                     showsUserLocation={false}

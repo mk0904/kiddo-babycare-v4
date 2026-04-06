@@ -1,6 +1,7 @@
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
 import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,6 +59,114 @@ const getStatusColor = (status: string) => {
     }
 };
 
+/** Aligns with delivery-partner-service / order detail (v2); unknown keys humanized. */
+const PARTNER_STATUS_LABELS: Record<string, string> = {
+    placed: 'Placed',
+    confirmed: 'Confirmed',
+    packing: 'Packing',
+    packed: 'Packed',
+    rider_assigned: 'Rider Assigned',
+    out_for_delivery: 'Out for Delivery',
+    picked_up: 'Picked Up',
+    picking_up: 'Picking Up',
+    dispatched: 'Dispatched',
+    on_the_way: 'On the way',
+    in_transit: 'In transit',
+    transit: 'In transit',
+    delivery_started: 'Out for Delivery',
+    en_route: 'On the way',
+    arrived: 'Arrived',
+    at_destination: 'Arrived',
+    rider_arrived: 'Arrived',
+    reached_destination: 'Arrived',
+    reached_customer: 'Arrived',
+    reached_location: 'Arrived',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
+    return_requested: 'Return Requested',
+    returned: 'Returned',
+};
+
+const PARTNER_STATUS_COLORS: Record<string, string> = {
+    placed: '#B45309',
+    confirmed: '#1D4ED8',
+    packing: '#7E22CE',
+    packed: '#6D28D9',
+    rider_assigned: '#0F766E',
+    out_for_delivery: '#0369A1',
+    picked_up: '#0369A1',
+    picking_up: '#7C3AED',
+    dispatched: '#0369A1',
+    on_the_way: '#0369A1',
+    in_transit: '#0369A1',
+    transit: '#0369A1',
+    delivery_started: '#0369A1',
+    en_route: '#0369A1',
+    arrived: '#15803D',
+    at_destination: '#15803D',
+    rider_arrived: '#15803D',
+    reached_destination: '#15803D',
+    reached_customer: '#15803D',
+    reached_location: '#15803D',
+    delivered: '#15803D',
+    cancelled: '#B91C1C',
+    return_requested: '#C2410C',
+    returned: '#6B21A8',
+};
+
+function extractShopifyOrderNumericId(orderId: unknown): string | null {
+    if (orderId == null) return null;
+    const s = String(orderId).trim();
+    const gidMatch = s.match(/\/Order\/(\d+)/i);
+    if (gidMatch) return gidMatch[1];
+    if (/^\d+$/.test(s)) return s;
+    return null;
+}
+
+function humanizePartnerStatusKey(key: string): string {
+    return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function partnerListStatusLabel(raw: string): string {
+    const k = String(raw ?? '').trim().toLowerCase();
+    if (!k) return '';
+    return PARTNER_STATUS_LABELS[k] ?? humanizePartnerStatusKey(k);
+}
+
+function partnerListStatusColor(raw: string): string {
+    const k = String(raw ?? '').trim().toLowerCase();
+    if (!k) return Colors.textSecondary;
+    if (PARTNER_STATUS_COLORS[k]) return PARTNER_STATUS_COLORS[k];
+    if (k === 'delivered' || k.includes('arrived') || k.includes('reached')) return Colors.success;
+    if (k === 'cancelled' || k === 'returned') return '#B91C1C';
+    return '#0369A1';
+}
+
+async function fetchDeliveryPartnerStatusesForOrders(orderIds: string[]): Promise<Record<string, string>> {
+    const unique = [...new Set(orderIds.filter(Boolean))];
+    const out: Record<string, string> = {};
+    const chunkSize = 8;
+    for (let i = 0; i < unique.length; i += chunkSize) {
+        const chunk = unique.slice(i, i + chunkSize);
+        const results = await Promise.all(
+            chunk.map(async (oid) => {
+                try {
+                    const st = await getDeliveryPartnerOrderStatus(oid);
+                    return st?.status ? ([oid, String(st.status).trim()] as const) : null;
+                } catch {
+                    return null;
+                }
+            }),
+        );
+        for (const row of results) {
+            if (row) out[row[0]] = row[1];
+        }
+    }
+    return out;
+}
+
 const looksLikeTicketingDate = (value: string) => {
     const s = String(value || '').trim();
     if (!s) return false;
@@ -110,6 +219,10 @@ export default function OrdersScreen() {
     const { user, isAuthenticated } = useAuth();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    /** shopifyOrderId (numeric) → delivery-partner status; missing key → use Shopify fulfillment. */
+    const [deliveryPartnerStatusByShopifyId, setDeliveryPartnerStatusByShopifyId] = useState<Record<string, string>>(
+        {},
+    );
 
     const loadOrders = async () => {
         try {
@@ -233,11 +346,18 @@ export default function OrdersScreen() {
                 const dateB = new Date(b.processedAt || b.localOrderData?.createdAt || 0).getTime();
                 return dateB - dateA;
             });
-            
+
+            const shopifyNumericIds = deduplicatedOrders
+                .map((o: any) => extractShopifyOrderNumericId(o.id))
+                .filter((id): id is string => !!id);
+            const partnerMap = await fetchDeliveryPartnerStatusesForOrders(shopifyNumericIds);
+
+            setDeliveryPartnerStatusByShopifyId(partnerMap);
             setOrders(deduplicatedOrders);
         } catch (error) {
             console.error('Error fetching orders:', error);
             setOrders([]);
+            setDeliveryPartnerStatusByShopifyId({});
         } finally {
             setLoading(false);
         }
@@ -331,8 +451,21 @@ export default function OrdersScreen() {
                         const statusKey = order.fulfillmentStatus || order.financialStatus;
                         // For Events, Playhouses, Petting Farms - always show "Booked"
                         const showBooked = ticketing;
-                        const statusText = showBooked ? 'Booked' : getStatusText(statusKey);
-                        const statusColor = showBooked ? Colors.success : getStatusColor(statusKey);
+                        const numericShopifyId = extractShopifyOrderNumericId(order.id);
+                        const partnerRaw =
+                            numericShopifyId && deliveryPartnerStatusByShopifyId[numericShopifyId]
+                                ? deliveryPartnerStatusByShopifyId[numericShopifyId]
+                                : null;
+                        const statusText = showBooked
+                            ? 'Booked'
+                            : partnerRaw
+                              ? partnerListStatusLabel(partnerRaw)
+                              : getStatusText(statusKey);
+                        const statusColor = showBooked
+                            ? Colors.success
+                            : partnerRaw
+                              ? partnerListStatusColor(partnerRaw)
+                              : getStatusColor(statusKey);
                         
                         return (
                             <TouchableOpacity
