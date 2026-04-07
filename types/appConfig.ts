@@ -104,7 +104,16 @@ export interface CheckoutConfig {
 }
 
 export interface OrderDetailConfig {
+  /** Banner image above order content (JPEG/PNG). */
   imageUrl?: string;
+  /** Dark store / pickup hub marker on tracking map (SVG or raster URL). */
+  darkStoreIconUrl?: string;
+  /** Customer / delivery location marker on tracking map (SVG or raster URL). */
+  cusLocUrl?: string;
+  /** Rider / partner position on map (SVG or raster). */
+  partnerIconUrl?: string;
+  /** Partner avatar in delivery card (PNG preferred). */
+  partnerImageUrl?: string;
 }
 
 export interface AppConfigResponse {

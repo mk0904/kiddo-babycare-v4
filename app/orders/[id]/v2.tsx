@@ -6,7 +6,7 @@ import {
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useUserStore } from '@/store/userStore';
+import { appConfigService } from '@/services/appConfigService';
 import {
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
@@ -14,10 +14,12 @@ import {
 } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
+import { useUserStore } from '@/store/userStore';
+import type { OrderDetailConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -32,6 +34,23 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const PARTNER_AVATAR_FALLBACK = require('@/assets/icons/partnerIcon.png');
+
+function orderDetailPartnerAvatarSource(cfg: OrderDetailConfig | null | undefined) {
+    const png = cfg?.partnerImageUrl?.trim();
+    if (png) return { uri: png };
+    const icon = cfg?.partnerIconUrl?.trim();
+    if (icon) return { uri: icon };
+    return PARTNER_AVATAR_FALLBACK;
+}
+
+function orderDetailRiderMarkerUri(cfg: OrderDetailConfig | null | undefined): string | null {
+    const icon = cfg?.partnerIconUrl?.trim();
+    if (icon) return icon;
+    const img = cfg?.partnerImageUrl?.trim();
+    return img || null;
+}
 
 const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
@@ -259,6 +278,19 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function OrderDetailV2Screen() {
+    /** Re-read app-config icons when screen is focused (config may load after first paint). */
+    const [orderDetailCfgRev, setOrderDetailCfgRev] = useState(0);
+    useFocusEffect(
+        useCallback(() => {
+            setOrderDetailCfgRev((n) => n + 1);
+        }, []),
+    );
+    const orderDetailCfg = useMemo(() => appConfigService.getOrderDetailConfig(), [orderDetailCfgRev]);
+    const cusLocUrl = orderDetailCfg?.cusLocUrl?.trim() || '';
+    const darkStoreIconUrl = orderDetailCfg?.darkStoreIconUrl?.trim() || '';
+    const riderMapIconUri = orderDetailRiderMarkerUri(orderDetailCfg);
+    const partnerAvatarSrc = orderDetailPartnerAvatarSource(orderDetailCfg);
+
     const {
         id,
         estimatedDeliveryMinutes: paramEta,
@@ -1002,10 +1034,31 @@ export default function OrderDetailV2Screen() {
                                     lineCap="round"
                                     lineJoin="round"
                                 />
-                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }} tracksViewChanges={Platform.OS === 'android' ? androidMarkersTracksView : false}>
+                                <Marker
+                                    coordinate={DARK_STORE_LOCATION}
+                                    title="Dark store"
+                                    anchor={{ x: 0.5, y: 1 }}
+                                    tracksViewChanges={
+                                        Platform.OS === 'android' ? androidMarkersTracksView : !!darkStoreIconUrl
+                                    }
+                                >
                                     <View collapsable={false} style={styles.storeMarker}>
-                                        <View collapsable={false} style={styles.storeMarkerInner}>
-                                            <Ionicons name="home" size={16} color="#B45309" />
+                                        <View
+                                            collapsable={false}
+                                            style={[
+                                                styles.storeMarkerInner,
+                                                darkStoreIconUrl ? { backgroundColor: 'transparent' } : null,
+                                            ]}
+                                        >
+                                            {darkStoreIconUrl ? (
+                                                <Image
+                                                    source={{ uri: darkStoreIconUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="home" size={16} color="#B45309" />
+                                            )}
                                         </View>
                                     </View>
                                 </Marker>
@@ -1014,11 +1067,19 @@ export default function OrderDetailV2Screen() {
                                         coordinate={destinationCoords ?? DARK_STORE_LOCATION}
                                         title="Delivery address"
                                         anchor={{ x: 0.5, y: 1 }}
-                                        tracksViewChanges={false}
+                                        tracksViewChanges={!!cusLocUrl}
                                         zIndex={destinationCoords ? 500 : 0}
                                     >
                                         <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
-                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            {cusLocUrl ? (
+                                                <Image
+                                                    source={{ uri: cusLocUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : destinationCoords ? (
@@ -1030,7 +1091,15 @@ export default function OrderDetailV2Screen() {
                                         zIndex={500}
                                     >
                                         <View collapsable={false} style={styles.destinationMarker}>
-                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            {cusLocUrl ? (
+                                                <Image
+                                                    source={{ uri: cusLocUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : null}
@@ -1139,17 +1208,15 @@ export default function OrderDetailV2Screen() {
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                {/* Order detail banner image from app-config (orderDetail.imageUrl) */}
-                {/* {(() => {
-                    const orderDetailConfig = appConfigService.getOrderDetailConfig();
-                    const imageUrl = orderDetailConfig?.imageUrl;
-                    if (!imageUrl) return null;
-                    return (
-                        <View style={styles.orderDetailImageWrap}>
-                            <Image source={{ uri: imageUrl }} style={styles.orderDetailImage} contentFit="cover" />
-                        </View>
-                    );
-                })()} */}
+                {isDelivered && orderDetailCfg?.imageUrl?.trim() ? (
+                    <View style={styles.orderDetailImageWrap}>
+                        <Image
+                            source={{ uri: orderDetailCfg.imageUrl.trim() }}
+                            style={styles.orderDetailImage}
+                            contentFit="cover"
+                        />
+                    </View>
+                ) : null}
 
                 {shouldShowTrackingMap && mapRegion ? (
                     <View style={styles.trackingWrap}>
@@ -1184,10 +1251,31 @@ export default function OrderDetailV2Screen() {
                                     lineCap="round"
                                     lineJoin="round"
                                 />
-                                <Marker coordinate={DARK_STORE_LOCATION} title="Dark store" anchor={{ x: 0.5, y: 1 }} tracksViewChanges={Platform.OS === 'android' ? androidMarkersTracksView : false}>
+                                <Marker
+                                    coordinate={DARK_STORE_LOCATION}
+                                    title="Dark store"
+                                    anchor={{ x: 0.5, y: 1 }}
+                                    tracksViewChanges={
+                                        Platform.OS === 'android' ? androidMarkersTracksView : !!darkStoreIconUrl
+                                    }
+                                >
                                     <View collapsable={false} style={styles.storeMarker}>
-                                        <View collapsable={false} style={styles.storeMarkerInner}>
-                                            <Ionicons name="home" size={16} color="#B45309" />
+                                        <View
+                                            collapsable={false}
+                                            style={[
+                                                styles.storeMarkerInner,
+                                                darkStoreIconUrl ? { backgroundColor: 'transparent' } : null,
+                                            ]}
+                                        >
+                                            {darkStoreIconUrl ? (
+                                                <Image
+                                                    source={{ uri: darkStoreIconUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="home" size={16} color="#B45309" />
+                                            )}
                                         </View>
                                     </View>
                                 </Marker>
@@ -1196,11 +1284,19 @@ export default function OrderDetailV2Screen() {
                                         coordinate={destinationCoords ?? DARK_STORE_LOCATION}
                                         title="Delivery address"
                                         anchor={{ x: 0.5, y: 1 }}
-                                        tracksViewChanges={false}
+                                        tracksViewChanges={!!cusLocUrl}
                                         zIndex={destinationCoords ? 500 : 0}
                                     >
                                         <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
-                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            {cusLocUrl ? (
+                                                <Image
+                                                    source={{ uri: cusLocUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : destinationCoords ? (
@@ -1212,7 +1308,15 @@ export default function OrderDetailV2Screen() {
                                         zIndex={500}
                                     >
                                         <View collapsable={false} style={styles.destinationMarker}>
-                                            <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            {cusLocUrl ? (
+                                                <Image
+                                                    source={{ uri: cusLocUrl }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bag-handle" size={17} color="#FFFFFF" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : null}
@@ -1223,10 +1327,18 @@ export default function OrderDetailV2Screen() {
                                         title="Rider"
                                         anchor={{ x: 0.5, y: 0.5 }}
                                         zIndex={riderCoords ? 1000 : 0}
-                                        tracksViewChanges={false}
+                                        tracksViewChanges={!!riderMapIconUri}
                                     >
                                         <View collapsable={false} style={[styles.riderMarker, !riderCoords && { opacity: 0 }]}>
-                                            <Ionicons name="bicycle" size={18} color="#111827" />
+                                            {riderMapIconUri ? (
+                                                <Image
+                                                    source={{ uri: riderMapIconUri }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bicycle" size={18} color="#111827" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : riderCoords ? (
@@ -1239,7 +1351,15 @@ export default function OrderDetailV2Screen() {
                                         tracksViewChanges={androidMarkersTracksView}
                                     >
                                         <View collapsable={false} style={styles.riderMarker}>
-                                            <Ionicons name="bicycle" size={18} color="#111827" />
+                                            {riderMapIconUri ? (
+                                                <Image
+                                                    source={{ uri: riderMapIconUri }}
+                                                    style={styles.orderMapRemoteIcon}
+                                                    contentFit="contain"
+                                                />
+                                            ) : (
+                                                <Ionicons name="bicycle" size={18} color="#111827" />
+                                            )}
                                         </View>
                                     </Marker>
                                 ) : null}
@@ -1287,12 +1407,11 @@ export default function OrderDetailV2Screen() {
                     <View style={styles.deliveryPartnerCard}>
                         <View style={styles.deliveryPartnerContent}>
                             <View style={styles.deliveryPartnerAvatar}>
-                                    <Image
-                                        source={require('@/assets/icons/partnerIcon.png')}
-                                        style={styles.deliveryPartnerAvatarImage}
-                                        contentFit="cover"
-                                    />
-                                
+                                <Image
+                                    source={partnerAvatarSrc}
+                                    style={styles.deliveryPartnerAvatarImage}
+                                    contentFit="cover"
+                                />
                             </View>
                             <View style={styles.deliveryPartnerTextWrap}>
                                 <Text style={styles.deliveryPartnerIntro}>
@@ -1935,6 +2054,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 2,
         borderColor: '#FFFFFF',
+    },
+    orderMapRemoteIcon: {
+        width: 44,
+        height: 44,
     },
     trackingCaption: {
         paddingHorizontal: 12,
