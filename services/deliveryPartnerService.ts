@@ -61,6 +61,67 @@ export function isDeliveryStatusDelivered(st: DeliveryPartnerOrderStatus | null 
   return false;
 }
 
+export type LiveTabBannerPhase = 'packing' | 'tracking' | 'delivered';
+
+const TAB_BANNER_TERMINAL_HIDE = new Set([
+  'cancelled',
+  'canceled',
+  'returned',
+  'return_requested',
+  'refunded',
+]);
+
+/**
+ * At or after `out_for_delivery` — tab pill uses {@link computeDeliveryHeaderStatusText} like order details.
+ * `rider_assigned` and earlier stay on the "getting packed" pill.
+ */
+const TAB_BANNER_FROM_OUT_FOR_DELIVERY = new Set([
+  'out_for_delivery',
+  'dispatched',
+  'on_the_way',
+  'in_transit',
+  'transit',
+  'picking_up',
+  'picked_up',
+  'delivery_started',
+  'en_route',
+  'arrived',
+  'arrived_at_location',
+  'at_destination',
+  'at_delivery_location',
+  'rider_arrived',
+  'reached_destination',
+  'reached_customer',
+  'reached_location',
+]);
+
+export function riderCoordsFromDeliveryStatus(
+  st: DeliveryPartnerOrderStatus | null | undefined,
+): { latitude: number; longitude: number } | null {
+  if (!st) return null;
+  const latRaw = st.rider_lat ?? st.riderLatitude;
+  const lngRaw = st.rider_lng ?? st.riderLongitude;
+  const lat = typeof latRaw === 'number' ? latRaw : parseFloat(String(latRaw ?? ''));
+  const lng = typeof lngRaw === 'number' ? lngRaw : parseFloat(String(lngRaw ?? ''));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { latitude: lat, longitude: lng };
+}
+
+/**
+ * Latest-order tab pill only: pre-`out_for_delivery` → packing; from OFD until delivered → tracking; delivered → delivered.
+ */
+export function liveTabBannerPhaseFromPartnerStatus(
+  st: DeliveryPartnerOrderStatus | null | undefined,
+): LiveTabBannerPhase | null {
+  if (!st) return null;
+  const s = String(st.status ?? '').trim().toLowerCase();
+  if (TAB_BANNER_TERMINAL_HIDE.has(s)) return null;
+  if (isDeliveryStatusDelivered(st) || s === 'completed') return 'delivered';
+  if (!s) return 'packing';
+  if (TAB_BANNER_FROM_OUT_FOR_DELIVERY.has(s)) return 'tracking';
+  return 'packing';
+}
+
 /** True when DPS sent a real outcome (kept size and/or returned both), not an empty stub. */
 export function hasTryBuyPostDeliveryResolution(
   line: DeliveryPartnerTryBuyPostDeliveryLine | null | undefined,

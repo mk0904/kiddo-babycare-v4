@@ -10,6 +10,15 @@ const client = axios.create({
   },
 });
 
+/** Offline / DNS / TLS failures — avoid console.error spam from background polls (e.g. live delivery tab). */
+function isLikelyAxiosNetworkError(error: unknown): boolean {
+  if (error == null || typeof error !== 'object') return false;
+  const e = error as { message?: unknown; code?: unknown };
+  if (e.message === 'Network Error') return true;
+  if (e.code === 'ERR_NETWORK' || e.code === 'ECONNABORTED') return true;
+  return false;
+}
+
 // GraphQL Queries
 const GET_PRODUCTS_QUERY = `
   query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
@@ -1247,7 +1256,9 @@ export const shopifyApi = {
 
       return response.data.data.customer?.orders;
     } catch (error) {
-      console.error('Error fetching customer orders:', error);
+      if (!isLikelyAxiosNetworkError(error)) {
+        console.error('Error fetching customer orders:', error);
+      }
       return null;
     }
   },

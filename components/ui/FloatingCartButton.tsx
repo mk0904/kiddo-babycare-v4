@@ -22,9 +22,14 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FloatingCartButtonProps {
     showTabBar?: boolean;
+    /** Extra space reserved above the tab bar (e.g. live delivery pill). */
+    anchorExtraOffset?: number;
 }
 
-const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({ showTabBar = false }) => {
+const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
+    showTabBar = false,
+    anchorExtraOffset = 0,
+}) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
     const itemCount = useCartItemCount();
@@ -53,7 +58,8 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({ showTabBar = fa
 
     // On PDP, position above the bottom bar with some spacing
     const pdpBottomOffset = PDP_BOTTOM_BAR_HEIGHT + 12;
-    const baseBottomOffset = (showTabBar ? TAB_BAR_HEIGHT + bottomInset : bottomInset) + 18;
+    const baseBottomOffset =
+        (showTabBar ? TAB_BAR_HEIGHT + bottomInset : bottomInset) + 18 + (anchorExtraOffset || 0);
     const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
 
     // Entrance animation (native driver)
@@ -83,7 +89,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({ showTabBar = fa
             tension: 40,
             friction: 8,
         }).start();
-    }, [isTabBarVisible, showTabBar, baseBottomOffset, hiddenBottomOffset]);
+    }, [isTabBarVisible, showTabBar, baseBottomOffset, hiddenBottomOffset, anchorExtraOffset]);
 
     // Format currency
     const formatCurrency = (amount: number) => {
