@@ -10,12 +10,16 @@ import { appConfigService } from '@/services/appConfigService';
 import {
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
+    hasTryBuyPostDeliveryResolution,
+    isDeliveryStatusDelivered,
+    resolveTryBuyPostDeliveryLineForKeys,
     type DeliveryPartnerOrderStatus,
 } from '@/services/deliveryPartnerService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
 import type { OrderDetailConfig } from '@/types/appConfig';
+import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { sizeLabelFromVariantTitle } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -192,18 +196,6 @@ const DELIVERY_ACTIVE_STATUSES = new Set([
     'en_route',
 ]);
 
-/** After rider has picked up — show pickedUpAt milestone from delivery-partner-service. */
-const POST_PICKUP_DELIVERY_STATUSES = new Set([
-    'out_for_delivery',
-    'picked_up',
-    'dispatched',
-    'on_the_way',
-    'in_transit',
-    'transit',
-    'delivery_started',
-    'en_route',
-]);
-
 function coordsFromDeliveryStatusApi(result: {
     rider_lat?: number | string | null;
     rider_lng?: number | string | null;
@@ -257,6 +249,28 @@ function orderLineTryBuyTrialDisplay(attrRec: Record<string, string>): string {
     if (fromKey) return fromKey;
     const raw = attrRec.try_buy_trial_variant_title;
     return sizeLabelFromVariantTitle(raw) || (raw ? String(raw).trim() : '');
+}
+
+/** Match delivery-status `tryBuyPostDelivery` keys (line item or variant id from DPS / Shopify). */
+function lineItemShopifyIdKeys(node: any): string[] {
+    const keys = new Set<string>();
+    const pushKeyShape = (raw: unknown) => {
+        if (raw == null) return;
+        const s = String(raw).trim();
+        if (!s) return;
+        keys.add(s);
+        const lineM = s.match(/LineItem\/(\d+)/i);
+        if (lineM?.[1]) keys.add(lineM[1]);
+        const varM = s.match(/ProductVariant\/(\d+)/i);
+        if (varM?.[1]) keys.add(varM[1]);
+        const digits = s.replace(/\D/g, '');
+        if (digits && /^\d+$/.test(digits) && !keys.has(digits)) keys.add(digits);
+    };
+    /** SKU first: `tryBuyPostDelivery` often keys by sku from `tryBuyLines`; variant id may still reflect purchased size pre-merge. */
+    pushKeyShape(node?.variant?.sku);
+    pushKeyShape(node?.variant?.id);
+    pushKeyShape(node?.id);
+    return [...keys];
 }
 
 /** Refetch road-snapped rider → customer route on this interval while tracking (ms). */
@@ -445,7 +459,13 @@ export default function OrderDetailV2Screen() {
                                         customAttributes: e.node.customAttributes || [],
                                         originalTotalPrice: { amount: (parseFloat(e.node.originalUnitPrice) * e.node.quantity).toString() },
                                         price: { amount: e.node.originalUnitPrice },
-                                        variant: { title: e.node.variant?.title || 'Default Title', image: e.node.variant?.image },
+                                        variant: {
+                                            id: e.node.variant?.id,
+                                            sku: e.node.variant?.sku,
+                                            title: e.node.variant?.title || 'Default Title',
+                                            image: e.node.variant?.image,
+                                            product: e.node.variant?.product,
+                                        },
                                     },
                                 })),
                             },
@@ -814,15 +834,17 @@ export default function OrderDetailV2Screen() {
         : '—';
 
     const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
-    const isDelivered = order?.fulfillmentStatus === 'FULFILLED';
+    /** Pill may show Delivered from DPS before Shopify fulfillment flips — align body copy with partner. */
+    const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
+    const partnerSaysDelivered =
+        deliveryStatusKey === 'delivered' || isDeliveryStatusDelivered(deliveryPartnerStatus);
+    const isDelivered = shopifyFulfilled || partnerSaysDelivered;
 
     /** Shopify / checkout param only — not kiddo geocoded ETA (live rider ETA uses getDeliveryEta with GPS). */
     const staticEtaMinutes =
         (Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES);
 
     const partnerDeliveredAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.deliveredAt);
-    const partnerPickedUpAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.pickedUpAt);
-    const partnerAssignedAtMs = parsePartnerIsoToMs(deliveryPartnerStatus?.assignedAt);
 
     const isRiderNearDropoff =
         !!riderCoords &&
@@ -858,6 +880,13 @@ export default function OrderDetailV2Screen() {
         (ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) || isRiderNearDropoff);
 
     const headerStatusText = (() => {
+        if (isDelivered) {
+            if (partnerDeliveredAtMs != null) {
+                const dd = new Date(partnerDeliveredAtMs);
+                return `Delivered at ${formatClockEnIN(dd)}, ${formatShortDateEnIN(dd)}`;
+            }
+            return `Delivered by ${deliveryByTimeStr}`;
+        }
         if (hasArrivalTimePassed) {
             const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', {
                 day: 'numeric',
@@ -869,30 +898,13 @@ export default function OrderDetailV2Screen() {
         if (isRiderAtCustomer && !isDelivered) {
             return 'Your rider has arrived at your address';
         }
-        if (isDelivered) {
-            if (partnerDeliveredAtMs != null) {
-                const dd = new Date(partnerDeliveredAtMs);
-                return `Delivered at ${formatClockEnIN(dd)}, ${formatShortDateEnIN(dd)}`;
-            }
-            return `Delivered by ${deliveryByTimeStr}`;
-        }
         if (showLiveEtaInHeader) {
             const mins = Math.max(1, Math.round(liveEtaMinutes!));
             const liveArrival = new Date(Date.now() + mins * 60 * 1000);
-            return `Arriving by ${formatClockEnIN(liveArrival)}, ${formatShortDateEnIN(liveArrival)} · ${mins} min (live)`;
+            return `Arriving by ${formatClockEnIN(liveArrival)}, ${formatShortDateEnIN(liveArrival)}`;
         }
-        const milestoneParts: string[] = [];
-        if (deliveryStatusKey === 'rider_assigned' && partnerAssignedAtMs != null) {
-            const d = new Date(partnerAssignedAtMs);
-            milestoneParts.push(`Rider assigned ${formatClockEnIN(d)}, ${formatShortDateEnIN(d)}`);
-        }
-        if (partnerPickedUpAtMs != null && POST_PICKUP_DELIVERY_STATUSES.has(deliveryStatusKey)) {
-            const d = new Date(partnerPickedUpAtMs);
-            milestoneParts.push(`Picked up ${formatClockEnIN(d)}, ${formatShortDateEnIN(d)}`);
-        }
-        const arrivalLine = `Arriving by ${deliveryByTimeStr}`;
-        if (milestoneParts.length) return `${milestoneParts.join(' · ')} · ${arrivalLine}`;
-        return arrivalLine;
+        /** Before delivered, Order Details shows only the ETA line (no rider-assigned / picked-up prefixes). */
+        return `Arriving by ${deliveryByTimeStr}`;
     })();
     const isPhysicalDeliveryOrder = !!order && !isOnlyTicketingOrder(order);
     const statusKeyForHeaderPill =
@@ -1485,10 +1497,47 @@ export default function OrderDetailV2Screen() {
                             primarySize || (variantTitle ? String(variantTitle).trim() : '');
                         const tryBuyTrialId = lineAttrs.try_buy_trial_variant_id?.trim();
                         const tryBuyTrialSize = tryBuyTrialId ? orderLineTryBuyTrialDisplay(lineAttrs) : '';
-                        const showTryBuyBadge = !!tryBuyTrialId;
+                        const lineIdKeys = lineItemShopifyIdKeys(item);
+                        const tryBuyPostLine = resolveTryBuyPostDeliveryLineForKeys(
+                            deliveryPartnerStatus,
+                            lineIdKeys,
+                            { tryBuyTrialVariantId: tryBuyTrialId, lineTitle: item.title },
+                        );
+                        /** DPS packing `items` can appear before delivery; only replace sizes with rider outcome after delivered. */
+                        const partnerDelivered = isDeliveryStatusDelivered(deliveryPartnerStatus);
+                        /** After delivery, trust DPS resolution (`isCustomerSelected` → size / returned) even if trial line attrs are missing. */
+                        const useResolvedTryBuySummary =
+                            partnerDelivered && hasTryBuyPostDeliveryResolution(tryBuyPostLine);
+
+                        let showSizeLine = !!(sizeLineLabel && String(sizeLineLabel).trim());
+                        let sizeDisplay = showSizeLine ? String(sizeLineLabel).trim() : '';
+                        let showTryBuyReturnedLine = false;
+                        if (useResolvedTryBuySummary && tryBuyPostLine) {
+                            const kept = tryBuyPostLine.finalSizeLabel?.trim();
+                            if (tryBuyPostLine.returnedAll && !kept) {
+                                showSizeLine = false;
+                                sizeDisplay = '';
+                                showTryBuyReturnedLine = true;
+                            } else if (kept) {
+                                sizeDisplay = kept;
+                                showSizeLine = true;
+                                showTryBuyReturnedLine = false;
+                            }
+                        }
+
+                        const showTryBuyBadge =
+                            (!!tryBuyTrialId || tryBuyPostLine?.isTryAndBuyLine === true) &&
+                            !useResolvedTryBuySummary;
+                        const showTryBuyTrialSubtitle =
+                            !!tryBuyTrialId && !!tryBuyTrialSize && !useResolvedTryBuySummary;
                         const giftWrapImage = getGiftWrapImageSource(item.title);
-                        const imageSource = item.variant?.image?.url
-                            ? { uri: item.variant.image.url }
+                        const dpsLineImage =
+                            tryBuyPostLine?.imageUrl != null && String(tryBuyPostLine.imageUrl).trim() !== ''
+                                ? String(tryBuyPostLine.imageUrl).trim()
+                                : null;
+                        const lineImageUri = dpsLineImage || storefrontVariantImageUrl(item.variant);
+                        const imageSource = lineImageUri
+                            ? { uri: lineImageUri }
                             : giftWrapImage
                                 ? giftWrapImage
                                 : null;
@@ -1520,10 +1569,13 @@ export default function OrderDetailV2Screen() {
                                         </View>
                                         <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
                                     </View>
-                                    {sizeLineLabel ? (
-                                        <Text style={styles.itemSizeLineOrder}>Size: {sizeLineLabel}</Text>
+                                    {showTryBuyReturnedLine ? (
+                                        <Text style={styles.itemReturnedOrder}>Returned</Text>
                                     ) : null}
-                                    {tryBuyTrialId && tryBuyTrialSize ? (
+                                    {showSizeLine && sizeDisplay && !showTryBuyReturnedLine ? (
+                                        <Text style={styles.itemSizeLineOrder}>Size: {sizeDisplay}</Text>
+                                    ) : null}
+                                    {showTryBuyTrialSubtitle ? (
                                         <Text style={styles.itemTryBuySizeOrder}>Try & Buy size: {tryBuyTrialSize}</Text>
                                     ) : null}
                                     {(() => {
@@ -1889,6 +1941,12 @@ const styles = StyleSheet.create({
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#374151',
+        marginTop: 6,
+    },
+    itemReturnedOrder: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
         marginTop: 6,
     },
     itemTryBuySizeOrder: {

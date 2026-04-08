@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
 import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
+import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -510,13 +511,18 @@ export default function OrdersScreen() {
                                     </View>
                                 </View>
                                 <View style={styles.orderItems}>
-                                    {order.lineItems?.edges?.slice(0, 3).map((edge: any, index: number) => (
-                                        <Image
-                                            key={index}
-                                            source={{ uri: edge.node.variant?.image?.url || 'https://via.placeholder.com/60' }}
-                                            style={styles.orderItemImage}
-                                        />
-                                    ))}
+                                    {order.lineItems?.edges?.slice(0, 3).map((edge: any, index: number) => {
+                                        const thumb = storefrontVariantImageUrl(edge.node.variant);
+                                        return (
+                                            <Image
+                                                key={index}
+                                                source={{
+                                                    uri: thumb || 'https://via.placeholder.com/60',
+                                                }}
+                                                style={styles.orderItemImage}
+                                            />
+                                        );
+                                    })}
                                     {order.lineItems?.edges?.length > 3 && (
                                         <View style={styles.moreItemsContainer}>
                                             <Text style={styles.moreItemsText}>+{order.lineItems.edges.length - 3}</Text>

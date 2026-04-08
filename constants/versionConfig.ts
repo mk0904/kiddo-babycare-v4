@@ -28,6 +28,7 @@ export function getAppVersionForApi(): string {
 /** Minimum app version required. Older builds will see "Update required" and be sent to the store. */
 export const MIN_APP_VERSION = '1.8.3';
 
+
 /** Play Store URL (Android). Uses app package from app.json. */
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
 
@@ -52,4 +53,8 @@ export function isAppUpdateRequired(currentVersion: string): boolean {
     if (c > m) return false;
   }
   return false;
+}
+
+export function supportsTryBuyPostDeliveryOrderSummary(): boolean {
+  return true;
 }

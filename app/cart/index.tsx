@@ -432,7 +432,17 @@ export default function CartScreen() {
             const price = parseFloat(k?.price?.amount || '0');
             const compareAtRaw = k?.compareAtPrice?.amount ? parseFloat(k.compareAtPrice.amount) : NaN;
             const compareAtPrice = Number.isFinite(compareAtRaw) ? compareAtRaw : undefined;
-            const imageUrl = k?.image?.url || tryBuyEditLine.image;
+            const imageUrl =
+                k?.image?.url ||
+                k?.product?.images?.edges?.[0]?.node?.url ||
+                k?.product?.images?.[0]?.url ||
+                k?.product?.featuredImage?.url ||
+                tryBuyEditProduct?.images?.[0]?.url ||
+                tryBuyEditProduct?.featuredImage?.url ||
+                tryBuyEditProduct?.images?.edges?.[0]?.node?.url ||
+                tryBuyEditLine.image ||
+                '';
+
             const qtyAvail = k?.quantityAvailable != null ? Number(k.quantityAvailable) : undefined;
 
             const patch: {
@@ -440,7 +450,7 @@ export default function CartScreen() {
                 variantTitle?: string;
                 price: number;
                 compareAtPrice?: number;
-                image: string;
+                image?: string;
                 availableForSale: boolean;
                 quantityAvailable?: number;
                 customAttributes?: Record<string, string>;
@@ -449,9 +459,9 @@ export default function CartScreen() {
                 variantTitle: k?.title,
                 price,
                 compareAtPrice,
-                image: imageUrl,
                 availableForSale: isVariantAvailable(k) !== false,
                 ...(Number.isFinite(qtyAvail) ? { quantityAvailable: qtyAvail } : {}),
+                ...(imageUrl ? { image: imageUrl } : {}),
             };
 
             if (result.tryVariant) {
@@ -466,7 +476,7 @@ export default function CartScreen() {
 
             await updateCartItem(tryBuyEditLine.id, patch);
         },
-        [tryBuyEditLine, updateCartItem],
+        [tryBuyEditLine, tryBuyEditProduct, updateCartItem],
     );
 
     const handleTryBuyRemoveTrial = useCallback(() => {
@@ -1380,6 +1390,8 @@ export default function CartScreen() {
         const showTryAndBuyBadge = hasTryAndBuyTag(item);
         const trialVariantId = item.customAttributes?.try_buy_trial_variant_id;
         const showTryBuyDetail = !!trialVariantId;
+        /** Show sizes + Edit for any Try & Buy line, including before a try size is chosen */
+        const showTryBuyUi = showTryAndBuyBadge || showTryBuyDetail;
         const primarySize = sizeLabelFromVariantTitle(item.variantTitle);
         const trialSize =
             item.customAttributes?.try_buy_trial_option_value ||
@@ -1403,13 +1415,19 @@ export default function CartScreen() {
                                         <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
                                     </View>
                                 )}
-                                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                                {item.image ? (
+                                    <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                                ) : (
+                                    <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                        <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                    </View>
+                                )}
                             </View>
                             <View style={styles.itemTitleBlock}>
                                 <Text style={styles.itemTitle} numberOfLines={2}>
                                     {item.title}
                                 </Text>
-                                {showTryBuyDetail ? (
+                                {showTryBuyUi ? (
                                     <View style={styles.tryBuyDetailBlock}>
                                         {primarySize ? (
                                             <Text style={styles.itemSizeLine}>Size: {primarySize}</Text>
@@ -1470,7 +1488,7 @@ export default function CartScreen() {
                                         </Text>
                                     )}
                                     <Text style={styles.itemPrice}>
-                                        {formatCurrency(showTryBuyDetail ? unitTotal : item.price)}
+                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price)}
                                     </Text>
                                 </View>
                                 {discountPct > 0 && (
@@ -2036,6 +2054,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F0F0',
         borderWidth: 1,
         borderColor: '#E5E5E5',
+    },
+    itemImagePlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     tryAndBuyBadgeCart: {
         position: 'absolute',

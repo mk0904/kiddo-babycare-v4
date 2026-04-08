@@ -448,6 +448,18 @@ const GET_CUSTOMER_ORDERS_QUERY = `
                     image {
                       url
                     }
+                    product {
+                      featuredImage {
+                        url
+                      }
+                      images(first: 1) {
+                        edges {
+                          node {
+                            url
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -508,9 +520,23 @@ const GET_ORDER_BY_ID_QUERY = `
                 value
               }
               variant {
+                id
+                sku
                 title
                 image {
                   url
+                }
+                product {
+                  featuredImage {
+                    url
+                  }
+                  images(first: 1) {
+                    edges {
+                      node {
+                        url
+                      }
+                    }
+                  }
                 }
                 price {
                   amount

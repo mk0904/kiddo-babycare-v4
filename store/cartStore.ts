@@ -613,11 +613,14 @@ export const useCartStore = create<CartState>()(
                 set({ status: 'loading' });
                 try {
                     const state = get();
+                    const patchSansUndefined = Object.fromEntries(
+                        Object.entries(patch as Record<string, unknown>).filter(([, v]) => v !== undefined),
+                    ) as Partial<CartItem>;
                     const newLineItems = state.lineItems.map((li) => {
                         if (li.id !== itemId) return li;
-                        const next: CartItem = { ...li, ...patch };
-                        if (Object.prototype.hasOwnProperty.call(patch, 'customAttributes')) {
-                            const ca = patch.customAttributes;
+                        const next: CartItem = { ...li, ...patchSansUndefined };
+                        if (Object.prototype.hasOwnProperty.call(patchSansUndefined, 'customAttributes')) {
+                            const ca = patchSansUndefined.customAttributes;
                             if (!ca || Object.keys(ca).length === 0) {
                                 delete next.customAttributes;
                             } else {
@@ -1653,7 +1656,10 @@ export const useCartStore = create<CartState>()(
                                 variantTitle: node.merchandise?.title,
                                 price: parseFloat(node.cost?.amountPerQuantity?.amount || '0'),
                                 currencyCode: node.cost?.amountPerQuantity?.currencyCode || 'INR',
-                                image: node.merchandise?.image?.url || '',
+                                image:
+                                    node.merchandise?.image?.url ||
+                                    node.merchandise?.product?.images?.edges?.[0]?.node?.url ||
+                                    '',
                                 quantity: node.quantity,
                                 availableForSale: node.merchandise?.availableForSale ?? true,
                                 quantityAvailable: typeof qtyAvail === 'number' ? qtyAvail : undefined,
