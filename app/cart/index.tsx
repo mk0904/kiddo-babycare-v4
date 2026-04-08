@@ -11,6 +11,8 @@ import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
+import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
@@ -23,6 +25,7 @@ import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
+import { shopifyApi } from '@/services/shopifyApi';
 import {
     useCartId,
     useCartItems,
@@ -31,8 +34,14 @@ import {
     useCartTotal,
     useCheckoutUrl,
     useGiftWrapping,
-    useIsTryAndBuy
+    useIsTryAndBuy,
 } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
+import {
+    sizeLabelFromVariantTitle,
+    tryBuyTrialOptionValueFromVariant,
+    variantIdsEqual,
+} from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
@@ -52,6 +61,28 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function findVariantInProductById(product: any, variantId: string | undefined): any | null {
+    if (!product || !variantId) return null;
+    const edges = product?.variants?.edges;
+    const list: any[] = edges
+        ? edges.map((e: any) => e?.node).filter(Boolean)
+        : Array.isArray(product?.variants)
+          ? product.variants.filter(Boolean)
+          : [];
+    return list.find((v: any) => variantIdsEqual(v?.id, variantId)) || null;
+}
+
+/** First meaningful option value for the variant row (matches VariantSelectionModal main option). */
+function primaryOptionLabelFromLine(product: any, line: any): string | null {
+    const v = findVariantInProductById(product, line?.variantId);
+    if (!v) return sizeLabelFromVariantTitle(line?.variantTitle) || null;
+    const so = Array.isArray(v.selectedOptions) ? v.selectedOptions : [];
+    const nonTitle = so.find((o: any) => o?.name && o.name !== 'Title');
+    const fromOpt = nonTitle?.value != null ? String(nonTitle.value).trim() : '';
+    if (fromOpt) return fromOpt;
+    return sizeLabelFromVariantTitle(v.title) || null;
+}
 
 export default function CartScreen() {
     const router = useRouter();
@@ -155,6 +186,7 @@ export default function CartScreen() {
     const mrp = useCartStore(state => state.mrp());
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
+    const updateCartItem = useCartStore(state => state.updateCartItem);
 
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
@@ -354,6 +386,93 @@ export default function CartScreen() {
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+    const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
+    const [tryBuyEditProduct, setTryBuyEditProduct] = useState<any>(null);
+
+    const closeTryBuyEdit = useCallback(() => {
+        setTryBuyEditLine(null);
+        setTryBuyEditProduct(null);
+    }, []);
+
+    const openTryBuyEdit = useCallback(
+        async (line: any) => {
+            const pid = line?.productId;
+            if (!pid) {
+                Alert.alert('Edit', 'Missing product information.');
+                return;
+            }
+            setTryBuyEditLine(line);
+            setTryBuyEditProduct(null);
+            try {
+                const product = await shopifyApi.getProductById(pid);
+                if (!product) {
+                    Alert.alert('Edit', 'Could not load product.');
+                    setTryBuyEditLine(null);
+                    return;
+                }
+                const v = findVariantInProductById(product, line.variantId);
+                if (!v) {
+                    Alert.alert('Edit', 'Could not find this item variant.');
+                    setTryBuyEditLine(null);
+                    return;
+                }
+                setTryBuyEditProduct(product);
+            } catch {
+                Alert.alert('Edit', 'Could not load product.');
+                setTryBuyEditLine(null);
+            }
+        },
+        [],
+    );
+
+    const handleTryBuyEditConfirm = useCallback(
+        async (result: TryAndBuyVariantSelectionResult) => {
+            if (!tryBuyEditLine?.id) return;
+            const k = result.keepVariant;
+            const price = parseFloat(k?.price?.amount || '0');
+            const compareAtRaw = k?.compareAtPrice?.amount ? parseFloat(k.compareAtPrice.amount) : NaN;
+            const compareAtPrice = Number.isFinite(compareAtRaw) ? compareAtRaw : undefined;
+            const imageUrl = k?.image?.url || tryBuyEditLine.image;
+            const qtyAvail = k?.quantityAvailable != null ? Number(k.quantityAvailable) : undefined;
+
+            const patch: {
+                variantId: string;
+                variantTitle?: string;
+                price: number;
+                compareAtPrice?: number;
+                image: string;
+                availableForSale: boolean;
+                quantityAvailable?: number;
+                customAttributes?: Record<string, string>;
+            } = {
+                variantId: String(k?.id || ''),
+                variantTitle: k?.title,
+                price,
+                compareAtPrice,
+                image: imageUrl,
+                availableForSale: isVariantAvailable(k) !== false,
+                ...(Number.isFinite(qtyAvail) ? { quantityAvailable: qtyAvail } : {}),
+            };
+
+            if (result.tryVariant) {
+                patch.customAttributes = {
+                    try_buy_trial_variant_id: String(result.tryVariant.id || ''),
+                    try_buy_trial_variant_title: String(result.tryVariant.title || ''),
+                    try_buy_trial_option_value: tryBuyTrialOptionValueFromVariant(result.tryVariant),
+                };
+            } else {
+                patch.customAttributes = {};
+            }
+
+            await updateCartItem(tryBuyEditLine.id, patch);
+        },
+        [tryBuyEditLine, updateCartItem],
+    );
+
+    const handleTryBuyRemoveTrial = useCallback(() => {
+        if (!tryBuyEditLine?.id) return;
+        void updateCartItem(tryBuyEditLine.id, { customAttributes: {} });
+    }, [tryBuyEditLine, updateCartItem]);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -840,6 +959,9 @@ export default function CartScreen() {
                     compareAtPrice: item.compareAtPrice,
                     tags: item.tags,
                     bookingDate: item.bookingDate,
+                    ...(item.customAttributes && Object.keys(item.customAttributes).length > 0
+                        ? { customAttributes: item.customAttributes }
+                        : {}),
                 })),
                 totalAmount: toPay,
                 currencyCode: 'INR',
@@ -1256,75 +1378,109 @@ export default function CartScreen() {
         const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
         const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
         const showTryAndBuyBadge = hasTryAndBuyTag(item);
+        const trialVariantId = item.customAttributes?.try_buy_trial_variant_id;
+        const showTryBuyDetail = !!trialVariantId;
+        const primarySize = sizeLabelFromVariantTitle(item.variantTitle);
+        const trialSize =
+            item.customAttributes?.try_buy_trial_option_value ||
+            sizeLabelFromVariantTitle(item.customAttributes?.try_buy_trial_variant_title);
+        const showTbBadge = showTryAndBuyBadge || showTryBuyDetail;
+        const unitTotal = item.price * (item.quantity || 1);
+        const compareLineTotal = compareAt != null ? compareAt * (item.quantity || 1) : null;
 
         return (
-            <TouchableOpacity
-                key={item.id}
-                style={styles.cartItemRow}
-                onPress={() => handleProductPress(item)}
-                activeOpacity={0.7}
-            >
+            <View key={item.id} style={styles.cartItemRow}>
                 <View style={styles.cartItemRowInner}>
-                <View style={styles.cartItemBlock}>
-                    <View style={styles.itemImageAndTitleBlock}>
-                        <View style={styles.itemImageContainer}>
-                            {showTryAndBuyBadge && (
-                                <View style={styles.tryAndBuyBadgeCart}>
-                                    <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
-                                </View>
-                            )}
-                            <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
-                        </View>
-                        <View style={styles.itemTitleBlock}>
-                            <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
-                            <Text style={styles.itemVariantSubtext} numberOfLines={1}>
-                                {item.variantTitle && item.variantTitle !== 'Default Title'
-                                    ? `${item.variantTitle} • Pack of ${item.quantity}`
-                                    : `Pack of ${item.quantity}`}
-                            </Text>
-                            {item.bookingDate && (
-                                <View style={styles.bookingDateContainer}>
-                                    <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
-                                    <Text style={styles.bookingDateText}>
-                                        {new Date(item.bookingDate).toLocaleDateString('en-US', {
-                                            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-                                        })}
+                    <View style={styles.cartItemBlock}>
+                        <TouchableOpacity
+                            style={styles.itemImageAndTitleBlock}
+                            onPress={() => handleProductPress(item)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.itemImageContainer}>
+                                {showTbBadge && (
+                                    <View style={styles.tryAndBuyBadgeCart}>
+                                        <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                                    </View>
+                                )}
+                                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                            </View>
+                            <View style={styles.itemTitleBlock}>
+                                <Text style={styles.itemTitle} numberOfLines={2}>
+                                    {item.title}
+                                </Text>
+                                {showTryBuyDetail ? (
+                                    <View style={styles.tryBuyDetailBlock}>
+                                        {primarySize ? (
+                                            <Text style={styles.itemSizeLine}>Size: {primarySize}</Text>
+                                        ) : null}
+                                        {trialSize ? (
+                                            <Text style={styles.itemTryBuySizeLine}>Try & Buy Size: {trialSize}</Text>
+                                        ) : null}
+                                        <TouchableOpacity
+                                            onPress={() => openTryBuyEdit(item)}
+                                            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                                        >
+                                            <Text style={styles.itemEditTryBuy}>Edit</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.itemVariantSubtext} numberOfLines={1}>
+                                        {item.variantTitle && item.variantTitle !== 'Default Title'
+                                            ? `${item.variantTitle} • Pack of ${item.quantity}`
+                                            : `Pack of ${item.quantity}`}
+                                    </Text>
+                                )}
+                                {item.bookingDate && (
+                                    <View style={styles.bookingDateContainer}>
+                                        <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                        <Text style={styles.bookingDateText}>
+                                            {new Date(item.bookingDate).toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                            })}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <View style={styles.quantityAndPriceRow}>
+                            <View style={styles.quantityContainer}>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                >
+                                    <Ionicons name="remove" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                                <Text style={styles.quantityText}>{item.quantity}</Text>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                >
+                                    <Ionicons name="add" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.itemPriceBlock}>
+                                <View style={styles.itemPriceInline}>
+                                    {compareLineTotal != null && (
+                                        <Text style={styles.itemPriceStrikethrough}>
+                                            {formatCurrency(compareLineTotal)}
+                                        </Text>
+                                    )}
+                                    <Text style={styles.itemPrice}>
+                                        {formatCurrency(showTryBuyDetail ? unitTotal : item.price)}
                                     </Text>
                                 </View>
-                            )}
-                        </View>
-                    </View>
-                    <View style={styles.quantityAndPriceRow}>
-                        <View style={styles.quantityContainer}>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                            >
-                                <Ionicons name="remove" size={16} color={Colors.primary} />
-                            </TouchableOpacity>
-                            <Text style={styles.quantityText}>{item.quantity}</Text>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            >
-                                <Ionicons name="add" size={16} color={Colors.primary} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.itemPriceBlock}>
-                            <View style={styles.itemPriceInline}>
-                                {compareAt != null && (
-                                    <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
+                                {discountPct > 0 && (
+                                    <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
                                 )}
-                                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
                             </View>
-                            {discountPct > 0 && (
-                                <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
-                            )}
                         </View>
                     </View>
                 </View>
-                </View>
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -1629,6 +1785,26 @@ export default function CartScreen() {
                 onClose={() => setShowTryAndBuyModal(false)}
             />
 
+            <VariantSelectionModal
+                visible={!!tryBuyEditProduct && !!tryBuyEditLine}
+                product={tryBuyEditProduct}
+                layout="sheet"
+                mode="edit"
+                initialPrimaryOptionValue={
+                    tryBuyEditLine && tryBuyEditProduct
+                        ? primaryOptionLabelFromLine(tryBuyEditProduct, tryBuyEditLine)
+                        : null
+                }
+                initialTryOptionValue={
+                    tryBuyEditLine?.customAttributes?.try_buy_trial_option_value ||
+                    sizeLabelFromVariantTitle(tryBuyEditLine?.customAttributes?.try_buy_trial_variant_title) ||
+                    null
+                }
+                onClose={closeTryBuyEdit}
+                onAddToCart={handleTryBuyEditConfirm}
+                onRemoveTryBuy={handleTryBuyRemoveTrial}
+            />
+
             {/* Stock limit (quantity) modal */}
             <StockLimitModal
                 visible={stockLimitModal.visible}
@@ -1910,6 +2086,28 @@ const styles = StyleSheet.create({
         color: '#717680',
         fontFamily: Fonts.LexendMedium,
         marginTop: 6,
+    },
+    tryBuyDetailBlock: {
+        marginTop: 6,
+        gap: 4,
+    },
+    itemSizeLine: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendSemiBold,
+    },
+    itemTryBuySizeLine: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
+    },
+    itemEditTryBuy: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
+        textDecorationLine: 'underline',
+        marginTop: 4,
+        alignSelf: 'flex-start',
     },
     itemPriceBlock: {
         alignItems: 'center',

@@ -85,9 +85,11 @@ Each element of `items[]` now includes full product info:
 | `compareAtPrice` | number (optional) | Compare-at price (MRP) if applicable. |
 | `tags` | string[] | Product tags. |
 | `bookingDate` | string (optional) | For ticketing/events – booking date. |
+| `customAttributes` | `{ key, value }[]` (optional) | When the app sends `customAttributes` on a line (object map), the payload uses an array of `{ key, value }`. **Must be forwarded** when creating the Shopify draft as each line’s `customAttributes` so fields like Try & Buy (`try_buy_trial_variant_id`, `try_buy_trial_variant_title`, `try_buy_trial_option_value`) appear on draft and completed orders. |
 
 **Backend recommendation:**  
 - Draft/order line items already get variant and title from Shopify. Use `variantTitle`, `image`, `compareAtPrice` for order note or metafields if you want to preserve exact snapshot (e.g. “Pack of 2”, image URL, MRP) for each line.
+- **Required for Try & Buy:** Pass through per-line `customAttributes` into Shopify Admin `draftOrderCreate` / `draftOrderUpdate` `lineItems[].customAttributes`. Without this, draft order detail in the app cannot show primary + trial sizes.
 
 ---
 

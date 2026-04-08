@@ -113,6 +113,8 @@ interface CartState {
     addItem: (item: Omit<CartItem, 'id'>) => Promise<void>;
     removeItem: (itemId: string) => Promise<void>;
     updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+    /** Merge fields into a line (e.g. Try & Buy trial attributes). Pass `customAttributes: {}` to clear attributes. */
+    updateCartItem: (itemId: string, patch: Partial<CartItem>) => Promise<void>;
     clearCart: () => void;
 
     // Gift items
@@ -201,6 +203,33 @@ function getCartCategorySubtotalsFromLineItems(items: { tags?: string[]; price?:
 function lineItemMatchesVariant(item: CartItem, variantIdNumeric: string): boolean {
     const id = item.variantId;
     return id === variantIdNumeric || id.endsWith(variantIdNumeric) || id === `gid://shopify/ProductVariant/${variantIdNumeric}`;
+}
+
+/** Shopify cart line input: booking_date + customAttributes (e.g. Try & Buy trial variant). */
+function shopifyLineFromCartItem(item: CartItem): {
+    merchandiseId: string;
+    quantity: number;
+    attributes?: { key: string; value: string }[];
+} {
+    const attributes: { key: string; value: string }[] = [];
+    if (item.bookingDate) {
+        attributes.push({ key: 'booking_date', value: item.bookingDate });
+    }
+    if (item.customAttributes) {
+        for (const [key, value] of Object.entries(item.customAttributes)) {
+            if (value != null && String(value).length > 0) {
+                attributes.push({ key, value: String(value) });
+            }
+        }
+    }
+    const line: { merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] } = {
+        merchandiseId: item.variantId,
+        quantity: item.quantity,
+    };
+    if (attributes.length > 0) {
+        line.attributes = attributes;
+    }
+    return line;
 }
 
 // Create store
@@ -580,6 +609,35 @@ export const useCartStore = create<CartState>()(
                 }
             },
 
+            updateCartItem: async (itemId, patch) => {
+                set({ status: 'loading' });
+                try {
+                    const state = get();
+                    const newLineItems = state.lineItems.map((li) => {
+                        if (li.id !== itemId) return li;
+                        const next: CartItem = { ...li, ...patch };
+                        if (Object.prototype.hasOwnProperty.call(patch, 'customAttributes')) {
+                            const ca = patch.customAttributes;
+                            if (!ca || Object.keys(ca).length === 0) {
+                                delete next.customAttributes;
+                            } else {
+                                next.customAttributes = { ...ca };
+                            }
+                        }
+                        return next;
+                    });
+                    set({
+                        lineItems: newLineItems,
+                        status: 'idle',
+                        error: null,
+                    });
+                    get().validateAppliedDiscountCodes();
+                    get().applyEligibleGifts();
+                } catch (error: any) {
+                    set({ status: 'error', error: error.message });
+                }
+            },
+
             // Clear cart
             clearCart: () => {
                 set({
@@ -857,7 +915,7 @@ export const useCartStore = create<CartState>()(
                 let cartForCost: { cost?: { subtotalAmount?: { amount: string }; totalTaxAmount?: { amount: string }; totalAmount?: { amount: string; currencyCode: string } }; checkoutUrl?: string } | null = null;
                 const isShopifyCartId = cartId.startsWith('gid://shopify/Cart/');
                 if (!isShopifyCartId && state.lineItems.length > 0) {
-                    const lines = state.lineItems.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
+                    const lines = state.lineItems.map(shopifyLineFromCartItem);
                     const newCart = await shopifyApi.createCart(lines);
                     if (newCart?.id) {
                         set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
@@ -865,11 +923,8 @@ export const useCartStore = create<CartState>()(
                     }
                 } else if (isShopifyCartId) {
                     try {
-                        const lines = state.lineItems.map(item => ({
-                            merchandiseId: item.variantId,
-                            quantity: item.quantity,
-                        }));
-                        
+                        const lines = state.lineItems.map(shopifyLineFromCartItem);
+
                         const newCart = await shopifyApi.createCart(lines);
                         if (newCart && newCart.id) {
                             set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
@@ -1144,7 +1199,7 @@ export const useCartStore = create<CartState>()(
                         // If cart fetch fails, it might be expired or invalid
                         // Try to recreate the cart if we have items
                         if (state.lineItems.length > 0) {
-                            let lines = state.lineItems.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
+                            let lines = state.lineItems.map(shopifyLineFromCartItem);
                             let newCart = null;
                             try {
                                 newCart = await shopifyApi.createCart(lines);
@@ -1154,7 +1209,7 @@ export const useCartStore = create<CartState>()(
                                     const kept = state.lineItems.filter((item) => !lineItemMatchesVariant(item, invalidVariantId));
                                     if (kept.length < state.lineItems.length) {
                                         set({ lineItems: kept });
-                                        lines = kept.map((item) => ({ merchandiseId: item.variantId, quantity: item.quantity }));
+                                        lines = kept.map(shopifyLineFromCartItem);
                                         if (lines.length > 0) newCart = await shopifyApi.createCart(lines);
                                     }
                                 }
@@ -1582,6 +1637,14 @@ export const useCartStore = create<CartState>()(
                         const lineItems: CartItem[] = cart.lines?.edges?.map((edge: any) => {
                             const node = edge.node;
                             const qtyAvail = node.merchandise?.quantityAvailable;
+                            const attrList = node.attributes || node.merchandise?.customAttributes || [];
+                            const bookingDateAttr = attrList.find((a: any) => a.key === 'booking_date')?.value;
+                            const customAttributes: Record<string, string> = {};
+                            for (const a of attrList) {
+                                if (a?.key && a.key !== 'booking_date' && a.value != null) {
+                                    customAttributes[a.key] = String(a.value);
+                                }
+                            }
                             return {
                                 id: node.id,
                                 productId: node.merchandise?.product?.id,
@@ -1595,7 +1658,8 @@ export const useCartStore = create<CartState>()(
                                 availableForSale: node.merchandise?.availableForSale ?? true,
                                 quantityAvailable: typeof qtyAvail === 'number' ? qtyAvail : undefined,
                                 tags: node.merchandise?.product?.tags || [],
-                                bookingDate: (node.attributes || node.merchandise?.customAttributes)?.find((a: any) => a.key === 'booking_date')?.value,
+                                bookingDate: bookingDateAttr,
+                                ...(Object.keys(customAttributes).length > 0 ? { customAttributes } : {}),
                             };
                         }) || [];
 
@@ -1773,16 +1837,7 @@ export const useCartStore = create<CartState>()(
                 // Create a Shopify cart if we have items (include booking_date for ticketing lines)
                 if (state.lineItems.length > 0) {
                     try {
-                        const lines = state.lineItems.map(item => {
-                            const line: { merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] } = {
-                                merchandiseId: item.variantId,
-                                quantity: item.quantity,
-                            };
-                            if (item.bookingDate) {
-                                line.attributes = [{ key: 'booking_date', value: item.bookingDate }];
-                            }
-                            return line;
-                        });
+                        const lines = state.lineItems.map(shopifyLineFromCartItem);
 
                         const cart = await shopifyApi.createCart(lines);
                         if (cart && cart.id) {

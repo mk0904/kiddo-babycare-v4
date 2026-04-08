@@ -16,6 +16,7 @@ import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
 import type { OrderDetailConfig } from '@/types/appConfig';
+import { sizeLabelFromVariantTitle } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -233,6 +234,31 @@ function getBookingDateDisplay(node: any): string | null {
     return null;
 }
 
+function lineItemCustomAttributesRecord(node: any): Record<string, string> {
+    const attrs = node?.customAttributes;
+    if (!Array.isArray(attrs)) return {};
+    const out: Record<string, string> = {};
+    attrs.forEach((a: any) => {
+        if (a?.key != null && a.value != null) out[String(a.key)] = String(a.value);
+    });
+    return out;
+}
+
+/** Primary option label (e.g. size) from the purchased variant — matches cart display. */
+function orderLinePrimarySizeLabel(variant: any): string {
+    const t = variant?.title;
+    if (!t || t === 'Default Title') return '';
+    const fromTitle = sizeLabelFromVariantTitle(t);
+    return fromTitle || String(t).trim();
+}
+
+function orderLineTryBuyTrialDisplay(attrRec: Record<string, string>): string {
+    const fromKey = attrRec.try_buy_trial_option_value?.trim();
+    if (fromKey) return fromKey;
+    const raw = attrRec.try_buy_trial_variant_title;
+    return sizeLabelFromVariantTitle(raw) || (raw ? String(raw).trim() : '');
+}
+
 /** Refetch road-snapped rider → customer route on this interval while tracking (ms). */
 const DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 10_000;
 
@@ -416,6 +442,7 @@ export default function OrderDetailV2Screen() {
                                     node: {
                                         title: e.node.title,
                                         quantity: e.node.quantity,
+                                        customAttributes: e.node.customAttributes || [],
                                         originalTotalPrice: { amount: (parseFloat(e.node.originalUnitPrice) * e.node.quantity).toString() },
                                         price: { amount: e.node.originalUnitPrice },
                                         variant: { title: e.node.variant?.title || 'Default Title', image: e.node.variant?.image },
@@ -1452,6 +1479,13 @@ export default function OrderDetailV2Screen() {
                         const item = edge.node;
                         const price = parseFloat(item.originalTotalPrice?.amount || item.price?.amount || '0');
                         const variantTitle = item.variant?.title && item.variant.title !== 'Default Title' ? item.variant.title : null;
+                        const lineAttrs = lineItemCustomAttributesRecord(item);
+                        const primarySize = orderLinePrimarySizeLabel(item.variant);
+                        const sizeLineLabel =
+                            primarySize || (variantTitle ? String(variantTitle).trim() : '');
+                        const tryBuyTrialId = lineAttrs.try_buy_trial_variant_id?.trim();
+                        const tryBuyTrialSize = tryBuyTrialId ? orderLineTryBuyTrialDisplay(lineAttrs) : '';
+                        const showTryBuyBadge = !!tryBuyTrialId;
                         const giftWrapImage = getGiftWrapImageSource(item.title);
                         const imageSource = item.variant?.image?.url
                             ? { uri: item.variant.image.url }
@@ -1462,13 +1496,20 @@ export default function OrderDetailV2Screen() {
                         const isLast = index === edges.length - 1;
                         return (
                             <View key={`${item.title}-${index}`} style={[styles.itemRow, isLast && styles.itemRowLast]}>
-                                {imageSource ? (
-                                    <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
-                                ) : (
-                                    <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-                                        <Ionicons name="image-outline" size={28} color="#9CA3AF" />
-                                    </View>
-                                )}
+                                <View>
+                                    {imageSource ? (
+                                        <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
+                                    ) : (
+                                        <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                            <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                        </View>
+                                    )}
+                                    {showTryBuyBadge ? (
+                                        <View style={styles.tryAndBuyBadgeOrder} pointerEvents="none">
+                                            <Text style={styles.tryAndBuyBadgeOrderText}>Try & Buy</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
                                 <View style={styles.itemInfo}>
                                     <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
                                     <View style={styles.itemMetaRow}>
@@ -1476,10 +1517,15 @@ export default function OrderDetailV2Screen() {
                                             <Text style={styles.itemMetaPrice}>
                                                 ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                                             </Text>
-                                            {variantTitle ? <Text style={styles.itemMeta}>Size: {variantTitle}</Text> : null}
                                         </View>
                                         <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
                                     </View>
+                                    {sizeLineLabel ? (
+                                        <Text style={styles.itemSizeLineOrder}>Size: {sizeLineLabel}</Text>
+                                    ) : null}
+                                    {tryBuyTrialId && tryBuyTrialSize ? (
+                                        <Text style={styles.itemTryBuySizeOrder}>Try & Buy size: {tryBuyTrialSize}</Text>
+                                    ) : null}
                                     {(() => {
                                         const bookingDate = getBookingDateDisplay(item);
                                         if (!bookingDate) return null;
@@ -1822,6 +1868,34 @@ const styles = StyleSheet.create({
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#717680',
+    },
+    tryAndBuyBadgeOrder: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: '#FEF7C3',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderTopLeftRadius: 8,
+        borderBottomRightRadius: 8,
+        zIndex: 1,
+    },
+    tryAndBuyBadgeOrderText: {
+        color: '#EAAA08',
+        fontSize: 10,
+        fontFamily: Fonts.Bold,
+    },
+    itemSizeLineOrder: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#374151',
+        marginTop: 6,
+    },
+    itemTryBuySizeOrder: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#6B7280',
+        marginTop: 2,
     },
     bookingDateRow: {
         flexDirection: 'row',

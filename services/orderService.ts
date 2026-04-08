@@ -40,6 +40,8 @@ export interface OrderItem {
     image?: string;
     // For Events, Playhouses, Petting Farms - when user booked
     bookingDate?: string;
+    /** Mirrored from cart / checkout — Try & Buy trial line attrs, etc. */
+    customAttributes?: Record<string, string>;
     // For Try & Buy
     isKept?: boolean;
     isReturned?: boolean;

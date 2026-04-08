@@ -29,6 +29,11 @@ export interface CheckoutDraftRequest {
     compareAtPrice?: number;
     tags?: string[];
     bookingDate?: string;
+    /**
+     * Per Shopify draft line item. Backend should map to Admin API `lineItems[].customAttributes`
+     * (e.g. Try & Buy: try_buy_trial_variant_id, try_buy_trial_variant_title, try_buy_trial_option_value).
+     */
+    customAttributes?: Record<string, string>;
   }>;
   totalAmount: number;
   currencyCode?: string;
@@ -109,17 +114,26 @@ export interface CheckoutCompleteResponse {
 export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutDraftResponse> {
   const url = getBackendApiPath('checkout/draft');
   const payload = {
-    items: body.items.map((it) => ({
-      variantId: it.variantId,
-      quantity: it.quantity,
-      price: it.price,
-      title: it.title,
-      variantTitle: it.variantTitle,
-      image: it.image,
-      compareAtPrice: it.compareAtPrice,
-      tags: it.tags ?? [],
-      bookingDate: it.bookingDate ?? '',
-    })),
+    items: body.items.map((it) => {
+      const row: Record<string, unknown> = {
+        variantId: it.variantId,
+        quantity: it.quantity,
+        price: it.price,
+        title: it.title,
+        variantTitle: it.variantTitle,
+        image: it.image,
+        compareAtPrice: it.compareAtPrice,
+        tags: it.tags ?? [],
+        bookingDate: it.bookingDate ?? '',
+      };
+      if (it.customAttributes && Object.keys(it.customAttributes).length > 0) {
+        row.customAttributes = Object.entries(it.customAttributes).map(([key, value]) => ({
+          key,
+          value: String(value),
+        }));
+      }
+      return row;
+    }),
     totalAmount: body.totalAmount,
     currencyCode: body.currencyCode ?? 'INR',
     email: body.email ?? '',

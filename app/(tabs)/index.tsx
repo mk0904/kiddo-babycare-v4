@@ -76,9 +76,9 @@ export default function HomeScreen() {
     const categoryHeader = configService.getCategoryHeaderConfig(selectedCategory);
     const globalHeader = configService.getConfig().header;
 
-    // Priority: category header > global header
+    // Background image / copy can follow category; backgroundColor stays global so it does not shift per tab.
     const backgroundImage = categoryHeader?.backgroundImage || globalHeader?.backgroundImage;
-    const backgroundColor = categoryHeader?.backgroundColor || globalHeader?.backgroundColor || 'transparent';
+    const backgroundColor = globalHeader?.backgroundColor || 'transparent';
 
     return {
       backgroundColor,

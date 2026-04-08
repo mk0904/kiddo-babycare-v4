@@ -1,5 +1,6 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
+import { TryBuyPdpVariantSection } from '@/components/product/TryBuyPdpVariantSection';
 import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
@@ -15,6 +16,8 @@ import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
+import { hasTryAndBuyProduct } from '@/utils/tryAndBuyProduct';
+import { findTryVariantForPrimary, getTryBuyPdpMainOptionNameForDefer } from '@/utils/tryBuyVariantSelection';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -248,6 +251,8 @@ const ProductDetailScreen = () => {
     const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<any[]>([]);
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [tryAndBuyModalVisible, setTryAndBuyModalVisible] = useState(false);
+    /** PDP inline Try & Buy: optional second size (first option row is primary). */
+    const [pdpTrySizeValue, setPdpTrySizeValue] = useState<string | null>(null);
     const imageFlatListRef = useRef<any>(null);
     const { user, isAuthenticated } = useAuth();
     const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
@@ -540,14 +545,46 @@ const ProductDetailScreen = () => {
         if (firstVariant) {
             setSelectedVariant(firstVariant);
             if (firstVariant.selectedOptions) {
+                const collectionId = params.collectionId as string | undefined;
+                const fromTicketing =
+                    !!collectionId &&
+                    TICKETING_COLLECTION_IDS.some(
+                        (id) => collectionId === id || collectionId.includes(id.split('/').pop() || ''),
+                    );
+                const hasTicketingTag = productData?.tags?.some((tag: any) => {
+                    const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                    return (
+                        tagLower.includes('event') ||
+                        tagLower.includes('playhouse') ||
+                        tagLower.includes('petting') ||
+                        tagLower.includes('farm')
+                    );
+                });
+                const belongsToTicketing = productData?.collections?.some((col: any) => {
+                    const colId = col?.id || col?.node?.id || '';
+                    return TICKETING_COLLECTION_IDS.some(
+                        (ticketingId) =>
+                            colId === ticketingId || colId.includes(ticketingId.split('/').pop() || ''),
+                    );
+                });
+                const isTicketingForInit = !!(fromTicketing || hasTicketingTag || belongsToTicketing);
+
                 const initialOptions: Record<string, string> = {};
                 firstVariant.selectedOptions.forEach((opt: any) => {
                     initialOptions[opt.name] = opt.value;
                 });
+                const deferMainName = getTryBuyPdpMainOptionNameForDefer(
+                    productData,
+                    variants.length,
+                    isTicketingForInit,
+                );
+                if (deferMainName && initialOptions[deferMainName] !== undefined) {
+                    delete initialOptions[deferMainName];
+                }
                 setSelectedOptions(initialOptions);
             }
         }
-    }, []);
+    }, [params.collectionId]);
 
     // Accordion State
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -888,6 +925,49 @@ const ProductDetailScreen = () => {
             : options;
         return filtered.filter((option: any) => (option.values || []).length > 1);
     }, [product, variants.length, isTicketingProduct]);
+
+    const tryBuyPdpEligible = useMemo(
+        () =>
+            !!product &&
+            hasTryAndBuyProduct(product) &&
+            !isTicketingProduct &&
+            productOptions.length > 0,
+        [product, isTicketingProduct, productOptions.length],
+    );
+
+    const pdpMainTryBuyOption = tryBuyPdpEligible ? productOptions[0] : null;
+    const pdpRestProductOptions = useMemo(
+        () => (tryBuyPdpEligible ? productOptions.slice(1) : productOptions),
+        [tryBuyPdpEligible, productOptions],
+    );
+
+    const pdpResolvedTryVariant = useMemo(() => {
+        if (!tryBuyPdpEligible || !pdpMainTryBuyOption || !selectedVariant || !pdpTrySizeValue) {
+            return undefined;
+        }
+        const pv = selectedOptions[pdpMainTryBuyOption.name];
+        if (!pv || pdpTrySizeValue === pv) return undefined;
+        return findTryVariantForPrimary(variants, selectedVariant, pdpMainTryBuyOption.name, pdpTrySizeValue) || undefined;
+    }, [
+        tryBuyPdpEligible,
+        pdpMainTryBuyOption,
+        selectedVariant,
+        pdpTrySizeValue,
+        selectedOptions,
+        variants,
+    ]);
+
+    useEffect(() => {
+        setPdpTrySizeValue(null);
+    }, [product?.id]);
+
+    useEffect(() => {
+        if (!pdpMainTryBuyOption || pdpTrySizeValue == null) return;
+        const pv = selectedOptions[pdpMainTryBuyOption.name];
+        if (pv === pdpTrySizeValue) {
+            setPdpTrySizeValue(null);
+        }
+    }, [selectedOptions, pdpMainTryBuyOption?.name, pdpTrySizeValue]);
 
     const findVariantByOptions = useCallback((options: Record<string, string>, variantsList: any[]) => {
         if (!variantsList || variantsList.length === 0) return null;
@@ -1355,6 +1435,17 @@ const ProductDetailScreen = () => {
                         }
                     ]}>{product.title}</Text>
 
+                    {tryBuyPdpEligible && pdpMainTryBuyOption ? (
+                        <TryBuyPdpVariantSection
+                            productVariants={variants}
+                            mainOption={pdpMainTryBuyOption}
+                            primaryValue={selectedOptions[pdpMainTryBuyOption.name]}
+                            onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
+                            tryValue={pdpTrySizeValue}
+                            onTryValueChange={setPdpTrySizeValue}
+                        />
+                    ) : null}
+
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
                         <View style={styles.productPriceRow}>
@@ -1370,7 +1461,7 @@ const ProductDetailScreen = () => {
 
                     {productOptions.length > 0 && (
                         <View style={styles.variantsContainer}>
-                            {productOptions.map((option: any) => (
+                            {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
                                 <View key={option.name} style={styles.optionContainer}>
                                     <Text style={[
                                         styles.optionLabel,
@@ -1667,6 +1758,12 @@ const ProductDetailScreen = () => {
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
                             isTicketing={isTicketingProduct}
+                            tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
+                            pdpAddBlocked={
+                                tryBuyPdpEligible &&
+                                !!pdpMainTryBuyOption &&
+                                !selectedOptions[pdpMainTryBuyOption.name]
+                            }
                             onValidationError={() => {
                                 if (isTicketingProduct && !selectedEventDate) {
                                     setShowDateError(true);

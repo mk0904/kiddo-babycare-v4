@@ -10,7 +10,7 @@ import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { configService } from '@/services/configService';
 import { searchaniseApi } from '@/services/searchaniseApi';
 import { shopifyApi } from '@/services/shopifyApi';
-import { sortInStockFirst } from '@/utils/availability';
+import { isProductAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -243,29 +243,30 @@ export default function SearchScreen() {
 
             if (result) {
                 // Save to search history if search was successful and not loading more
+                // Filter out invalid products, then hide out-of-stock (search screen only)
+                const nodesFromApi = result.products.edges
+                    .map((edge: any) => edge.node)
+                    .filter((p: any) => p && p.id);
+                const paginationBatchSize = nodesFromApi.length;
+                let newProducts = nodesFromApi.filter((p: any) => isProductAvailable(p));
+
                 if (!loadMore && searchQuery.trim()) {
                     saveToSearchHistory(searchQuery.trim());
                     
-                    // Track search performed
+                    // Track search performed (count of in-stock results shown)
                     try {
                         const { trackSearchPerformed } = require('@/utils/mixpanelHelpers');
-                        trackSearchPerformed(searchQuery.trim(), result.products?.length || 0);
+                        trackSearchPerformed(searchQuery.trim(), newProducts.length);
                     } catch (e) {
                         console.warn('Mixpanel tracking error:', e);
                     }
                 }
 
-                // Filter out invalid products first
-                let newProducts = result.products.edges
-                    .map((edge: any) => edge.node)
-                    .filter((p: any) => p && p.id);
-
                 // Update products immediately (without tags) to prevent UI freeze
-                // Sort in-stock first, out-of-stock at end
                 if (loadMore) {
-                    setProducts((prev) => sortInStockFirst([...prev.filter((p: any) => p && p.id), ...newProducts]));
+                    setProducts((prev) => [...prev.filter((p: any) => p && p.id), ...newProducts]);
                 } else {
-                    setProducts(sortInStockFirst(newProducts));
+                    setProducts(newProducts);
                     const facetsData = result.facets || [];
                     // Debug: Log facets structure
                     if (__DEV__ && facetsData.length > 0) {
@@ -345,7 +346,8 @@ export default function SearchScreen() {
 
                 setTotalItems(result.totalItems || 0);
                 setHasMore(result.products.pageInfo?.hasNextPage || false);
-                setStartIndex(currentIndex + newProducts.length);
+                // Advance by API batch size so pagination stays aligned with Searchanise (client-side OOS filter does not change offset)
+                setStartIndex(currentIndex + paginationBatchSize);
             }
         } catch (error: any) {
             if (error.name === 'AbortError' || error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {

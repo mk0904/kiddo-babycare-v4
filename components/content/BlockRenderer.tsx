@@ -91,9 +91,10 @@ export function BlockRenderer({ blocks, onBlockPress, searchQuery, blockSpacing 
         const isLastBlock = index === visibleBlocks.length - 1;
         const blockWrapperStyle = !isLastBlock ? { marginBottom: blockSpacing } : undefined;
 
-        // Key must be passed directly, not through spread
+        // Keys must be unique; config sometimes repeats block.id — index disambiguates.
+        const blockKey = block.id != null && String(block.id) !== '' ? `${block.id}-${index}` : `block-${index}`;
         return (
-          <View key={block.id} style={blockWrapperStyle}>
+          <View key={blockKey} style={blockWrapperStyle}>
             <Component {...props} />
           </View>
         );
