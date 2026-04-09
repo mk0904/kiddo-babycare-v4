@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        borderRadius: 26,
+        borderRadius: 12,
         backgroundColor: '#FFFFFF',
         paddingLeft: 18,
         paddingRight: 6,
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     applyCouponPillApplyText: {
-        fontSize: 13,
+        fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendBold,
         color: '#9CA3AF',
         letterSpacing: 0.5,

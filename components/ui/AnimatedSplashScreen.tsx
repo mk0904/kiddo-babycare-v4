@@ -16,6 +16,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 const REMOTE_VIDEO_TIMEOUT = 6000;
 const MIN_SPLASH_DURATION = 1200;
 const FADE_OUT_DURATION = 400;
+const SPLASH_BG = '#F4EEE5';
 
 interface AnimatedSplashScreenProps {
     onFinish?: () => void;
@@ -83,24 +84,39 @@ export const AnimatedSplashScreen = ({ onFinish }: AnimatedSplashScreenProps) =>
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-            <Video
-                source={require('../../assets/images/splash-screen.mp4')}
-                style={styles.splashImage}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping={false}
-                onError={handleVideoError}
-                onPlaybackStatusUpdate={(status) => {
-                    if (!status.isLoaded) return;
-                    if (videoLoadTimeoutRef.current) {
-                        clearTimeout(videoLoadTimeoutRef.current);
-                        videoLoadTimeoutRef.current = null;
-                    }
-                    if (status.didJustFinish) {
+            {Platform.OS === 'android' ? (
+                <Image
+                    source={require('../../assets/images/new-splash-screen.png')}
+                    style={styles.splashImage}
+                    resizeMode="cover"
+                    onLoadEnd={() => {
+                        if (videoLoadTimeoutRef.current) {
+                            clearTimeout(videoLoadTimeoutRef.current);
+                            videoLoadTimeoutRef.current = null;
+                        }
                         finishSplash();
-                    }
-                }}
-            />
+                    }}
+                />
+            ) : (
+                <Video
+                    source={require('../../assets/images/splash-screen.mp4')}
+                    style={styles.splashImage}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping={false}
+                    onError={handleVideoError}
+                    onPlaybackStatusUpdate={(status) => {
+                        if (!status.isLoaded) return;
+                        if (videoLoadTimeoutRef.current) {
+                            clearTimeout(videoLoadTimeoutRef.current);
+                            videoLoadTimeoutRef.current = null;
+                        }
+                        if (status.didJustFinish) {
+                            finishSplash();
+                        }
+                    }}
+                />
+            )}
         </Animated.View>
     );
 };
@@ -110,7 +126,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         height: SCREEN_HEIGHT,
         width: SCREEN_WIDTH,
-        backgroundColor: '#ffffff',
+        backgroundColor: SPLASH_BG,
         zIndex: 99999,
     },
     splashImage: {

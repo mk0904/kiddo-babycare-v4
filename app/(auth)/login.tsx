@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/Button';
-import { Carousel } from '@/components/ui/Carousel';
 import { ErrorText } from '@/components/ui/ErrorText';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Colors, Fonts } from '@/constants/theme';
@@ -10,18 +9,18 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -191,6 +190,7 @@ export default function LoginScreen() {
         )}
 
         <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={[
             styles.content,
             isKeyboardVisible && { justifyContent: 'flex-end' }
@@ -199,7 +199,7 @@ export default function LoginScreen() {
           scrollEnabled={true}
         >
           {/* Top Section - Carousel */}
-          <View style={[styles.topSection, { flex: isKeyboardVisible ? 0 : 1 }]}>
+          {/* <View style={[styles.topSection, { flex: isKeyboardVisible ? 0 : 1 }]}>
             <View style={[styles.carouselContainer, isKeyboardVisible && { marginBottom: 0 }]}>
               <Carousel
                 data={carouselData}
@@ -225,7 +225,6 @@ export default function LoginScreen() {
                 }}
                 onIndexChange={setCurrentCarouselIndex}
               />
-              {/* Carousel Text Below Image */}
               {carouselData[currentCarouselIndex] && (
                 <View style={[styles.carouselTextContainer, { marginTop: isKeyboardVisible ? 0 : 16 }]}>
                   {carouselData[currentCarouselIndex].title && (
@@ -241,10 +240,14 @@ export default function LoginScreen() {
                 </View>
               )}
             </View>
+          </View> */}
+          <View style={styles.topSection}>
+            <Text style={styles.loginHeading}>Login</Text>
           </View>
-
+            
           {/* Bottom Section - Phone Input */}
-          <View style={[styles.bottomSection, { flex: 0 }]}>
+
+          <View style={styles.bottomSection}>
             <PhoneInput
               value={phoneNumber}
               onChangeText={(text) => {
@@ -305,11 +308,31 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    justifyContent: 'center',
+  },
+  scrollView: {
+    flex: 1,
   },
   topSection: {
     justifyContent: 'center',
     width: '100%',
     alignItems: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 24,
+  },
+  loginHeading: {
+    fontSize: 40,
+    fontFamily: 'Fredoka_600SemiBold',
+    color: Colors.primary,
+    letterSpacing: 0.3,
+  },
+  loginSubheading: {
+    marginTop: 6,
+    fontSize: 14,
+    fontFamily: Fonts.Regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   carouselContainer: {
     width: '100%',

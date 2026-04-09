@@ -46,6 +46,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+const ANDROID_SPLASH_BG = '#F4EEE5';
+const ENTRY_SCREENS_SEEN_KEY = 'entry_screens_seen_v1';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -111,6 +113,12 @@ export default function RootLayout() {
     if (entryPrefetchStartedRef.current) return;
     entryPrefetchStartedRef.current = true;
     try {
+      const alreadySeenEntryScreens = await AsyncStorage.getItem(ENTRY_SCREENS_SEEN_KEY);
+      if (alreadySeenEntryScreens === 'true') {
+        resolveEntryScreensDecision([]);
+        return;
+      }
+
       let screens = appConfigService.getEntryScreens();
       if (screens.length === 0) {
         await Promise.race([
@@ -409,6 +417,9 @@ export default function RootLayout() {
   }, [isSplashVisible, isEntryScreensDecisionPending, isEntryScreensVisible, entryScreens.length]);
 
   const handleEntryScreensDone = useCallback(() => {
+    AsyncStorage.setItem(ENTRY_SCREENS_SEEN_KEY, 'true').catch((error) => {
+      if (__DEV__) console.warn('[RootLayout] Failed to persist entry-screen completion:', error);
+    });
     setIsEntryScreensVisible(false);
     setEntryScreens([]);
     bootExperienceCompletedForSession = true;
@@ -436,7 +447,7 @@ export default function RootLayout() {
             />
           )}
           {shouldHoldForEntryScreens && (
-            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFFFF', zIndex: 99999 }} />
+            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: ANDROID_SPLASH_BG, zIndex: 99999 }} />
           )}
           {(!fontsLoaded || !appIsReady || !isStartupGateOpen || shouldHoldForEntryScreens) ? (
             null

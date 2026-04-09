@@ -25,7 +25,7 @@ export interface SavingsCornerCouponItem {
 }
 
 /** Fixed height so carousel cards line up; reason is capped here (full text in details modal). */
-const TICKET_CARD_HEIGHT = 122;
+const TICKET_CARD_HEIGHT = 182;
 
 export interface SavingsCornerCouponCarouselProps {
     /** When false, renders nothing. */
@@ -153,8 +153,6 @@ export function SavingsCornerCouponCarousel({
 
                     return (
                         <View key={coupon.code || `carousel-${index}`} style={[styles.ticketSlot, { width: ticketWidth }]}>
-                            <View style={[styles.ticketNotch, styles.ticketNotchLeft]} />
-                            <View style={[styles.ticketNotch, styles.ticketNotchRight]} />
                             <View
                                 style={[
                                     styles.ticketCard,
@@ -172,7 +170,7 @@ export function SavingsCornerCouponCarousel({
                                         </Text>
                                     </View>
                                     {isDisabled ? (
-                                        <Text style={styles.ticketApplyDisabled}>APPLY</Text>
+                                        <Text style={styles.ticketApplyDisabled}>Apply</Text>
                                     ) : (
                                         <TouchableOpacity
                                             onPress={() => {
@@ -186,7 +184,7 @@ export function SavingsCornerCouponCarousel({
                                             {couponApplying ? (
                                                 <ActivityIndicator size="small" color={Colors.primary} />
                                             ) : (
-                                                <Text style={styles.ticketApplyActive}>APPLY</Text>
+                                                <Text style={styles.ticketApplyActive}>Apply</Text>
                                             )}
                                         </TouchableOpacity>
                                     )}
@@ -197,23 +195,21 @@ export function SavingsCornerCouponCarousel({
                                 <View style={styles.ticketBottomRow}>
                                     <Text
                                         style={[styles.ticketDescText, isDisabled && styles.ticketTextMuted]}
-                                        numberOfLines={2}
+                                        numberOfLines={1}
                                     >
                                         {offerTitle}
                                     </Text>
-                                    <TouchableOpacity
-                                        onPress={() =>
-                                            setDetails(buildCouponDetailsContent(coupon, applicability, conditions))
-                                        }
-                                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                        accessibilityLabel="Coupon details"
-                                    >
-                                        <Ionicons
-                                            name="information-circle-outline"
-                                            size={18}
-                                            color={isDisabled ? '#9CA3AF' : '#6B7280'}
-                                        />
-                                    </TouchableOpacity>
+                                    {!isDisabled ? (
+                                        <TouchableOpacity
+                                            onPress={() =>
+                                                setDetails(buildCouponDetailsContent(coupon, applicability, conditions))
+                                            }
+                                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                            accessibilityLabel="Coupon details"
+                                        >
+                                            <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
+                                        </TouchableOpacity>
+                                    ) : null}
                                 </View>
                                 <View style={styles.ticketReasonSlot}>
                                     {isDisabled && String(applicability.reason ?? '').trim() ? (
@@ -255,41 +251,25 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingTop: 14,
-        paddingBottom: 6,
+        paddingBottom: 8,
         paddingRight: 8,
     },
     ticketSlot: {
         position: 'relative',
         marginRight: 12,
     },
-    ticketNotch: {
-        position: 'absolute',
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: '#FFFFFF',
-        top: '50%',
-        marginTop: -7,
-        zIndex: 2,
-    },
-    ticketNotchLeft: {
-        left: -7,
-    },
-    ticketNotchRight: {
-        right: -7,
-    },
     ticketCard: {
-        borderRadius: 14,
-        paddingHorizontal: 14,
-        paddingTop: 12,
-        paddingBottom: 10,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 14,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: '#FAFAFA',
         backgroundColor: '#FAFAFA',
         overflow: 'hidden',
     },
     ticketCardMuted: {
-        opacity: 0.72,
+        opacity: 1,
     },
     ticketTopRow: {
         flexDirection: 'row',
@@ -300,63 +280,67 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: 0,
         marginRight: 10,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#CBD0D7',
         borderStyle: 'dashed',
-        borderRadius: 8,
+        borderRadius: 20,
+        backgroundColor: '#F5F6F8',
     },
     ticketCodeText: {
         fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.LexendBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#181D27',
-        letterSpacing: 0.4,
+        letterSpacing: 0.2,
     },
     ticketTextMuted: {
-        color: '#9CA3AF',
+        color: '#181D27',
     },
     ticketApplyActive: {
-        fontSize: 13,
-        fontFamily: Fonts.LexendBold,
-        color: Colors.primary,
-        letterSpacing: 0.5,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#F15E5E',
+        letterSpacing: 0,
     },
     ticketApplyDisabled: {
-        fontSize: 13,
+        fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendBold,
-        color: '#C4C4C4',
-        letterSpacing: 0.5,
+        color: '#A4A7AE',
+        letterSpacing: 0,
     },
     ticketDividerWrap: {
-        marginVertical: 8,
+        marginTop: 14,
+        marginBottom: 14,
     },
     ticketDividerDashed: {
         borderTopWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: 'rgba(55, 65, 81, 0.18)',
+        borderColor: '#D4D6DB',
         width: '100%',
     },
     ticketBottomRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        marginBottom: 12,
     },
     ticketReasonSlot: {
-       
         justifyContent: 'flex-start',
     },
     ticketDescText: {
         flex: 1,
-        fontSize: 11,
+        fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
-        color: '#4B5563',
-        lineHeight: 15,
+        color: '#181D27',
         marginRight: 6,
     },
     ticketReasonText: {
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
-        color: '#F15E5E',
-        lineHeight: 16,
+        color: '#D92D20',
+        lineHeight: 18,
+        backgroundColor: '#FEE4E2',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
     },
 });
