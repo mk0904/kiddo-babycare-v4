@@ -2,13 +2,10 @@ import { Colors, Fonts } from '@/constants/theme';
 import {
     valueAvailableForTryBuyOption,
 } from '@/utils/tryBuyVariantSelection';
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const ACCENT = Colors.variantSelection;
-const TRY_BADGE_BG = '#FEF9C3';
-const TRY_BADGE_BORDER = '#FDE047';
 
 type OptionShape = { name: string; values: string[] };
 
@@ -37,11 +34,6 @@ export function TryBuyPdpVariantSection({
 
     return (
         <View style={styles.wrap}>
-            <View style={styles.cardBadge}>
-                <Ionicons name="shirt-outline" size={14} color="#854D0E" />
-                <Text style={[styles.cardBadgeText, { marginLeft: 4 }]}>Try & Buy</Text>
-            </View>
-
             <Text style={styles.sectionLabel}>Select {optionName}</Text>
             <ScrollView
                 horizontal
@@ -132,29 +124,12 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         paddingHorizontal: 16,
     },
-    cardBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'flex-start',
-        backgroundColor: TRY_BADGE_BG,
-        borderWidth: 1,
-        borderColor: TRY_BADGE_BORDER,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-        marginBottom: 12,
-        marginTop: 12,
-    },
-    cardBadgeText: {
-        fontSize: 12,
-        fontFamily: Fonts.LexendSemiBold,
-        color: '#854D0E',
-    },
     sectionLabel: {
         fontSize: 14,
         fontFamily: Fonts.LexendSemiBold,
-        color: '#181D27',
+        color: '#717680',
         marginBottom: 10,
+        marginTop: 12,
     },
     chipRow: {
         flexDirection: 'row',

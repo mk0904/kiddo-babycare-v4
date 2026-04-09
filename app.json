@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "app",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "icon": "./assets/images/icon.png",
       "supportsTablet": false,
@@ -98,10 +98,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
           "backgroundColor": "#ffffff",
-          "resizeMode": "cover",
-          "imageWidth": 200
+          "resizeMode": "cover"
         }
       ],
       [
@@ -148,7 +146,6 @@
       ]
     ],
     "splash": {
-      "image": "./assets/images/icon.png",
       "backgroundColor": "#ffffff",
       "resizeMode": "cover"
     },

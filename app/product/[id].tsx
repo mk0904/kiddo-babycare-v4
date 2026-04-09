@@ -1,7 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
-import { TryBuyPdpVariantSection } from '@/components/product/TryBuyPdpVariantSection';
 import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
+import { TryBuyPdpVariantSection } from '@/components/product/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
@@ -16,9 +16,9 @@ import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
+import { processFontStyle } from '@/utils/fontUtils';
 import { hasTryAndBuyProduct } from '@/utils/tryAndBuyProduct';
 import { findTryVariantForPrimary, getTryBuyPdpMainOptionNameForDefer } from '@/utils/tryBuyVariantSelection';
-import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import * as FileSystem from 'expo-file-system';
@@ -1355,9 +1355,9 @@ const ProductDetailScreen = () => {
                                 ))}
                             </View>
                         )}
-                        {product.tags?.includes('fashion') && (
+                        {tryBuyPdpEligible && (
                             <TouchableOpacity style={styles.tryAndBuyTag} onPress={() => setTryAndBuyModalVisible(true)}>
-                                <Ionicons name="shirt-outline" size={14} color="#fff" />
+                                <Ionicons name="shirt-outline" size={14} color="#854D0E" />
                                 <Text style={styles.tryAndBuyTagText}>Try & Buy</Text>
                             </TouchableOpacity>
                         )}
@@ -1922,15 +1922,17 @@ const styles = StyleSheet.create({
         left: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 8,
-        paddingVertical: 5,
+        backgroundColor: '#FEF9C3',
+        borderWidth: 1,
+        borderColor: '#FDE047',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 10,
     },
     tryAndBuyTagText: {
-        color: '#fff',
+        color: '#854D0E',
         fontSize: 12,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendSemiBold,
         marginLeft: 4,
     },
     infoContainer: {
@@ -1967,7 +1969,7 @@ const styles = StyleSheet.create({
     },
     variantsContainer: {
         paddingHorizontal: 16, // Reduced padding
-        marginTop: 20,
+        marginTop: 28,
         marginBottom: 0,
     },
     optionContainer: {

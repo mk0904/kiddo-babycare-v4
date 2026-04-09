@@ -1280,7 +1280,9 @@ export const shopifyApi = {
 
       return response.data.data.node;
     } catch (error) {
-      console.error('Error fetching order by ID:', error);
+      if (!isLikelyAxiosNetworkError(error)) {
+        console.error('Error fetching order by ID:', error);
+      }
       return null;
     }
   },

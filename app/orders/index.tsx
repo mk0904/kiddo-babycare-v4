@@ -66,7 +66,7 @@ const PARTNER_STATUS_LABELS: Record<string, string> = {
     confirmed: 'Confirmed',
     packing: 'Packing',
     packed: 'Packed',
-    rider_assigned: 'Rider Assigned',
+    rider_assigned: 'Out for Delivery',
     out_for_delivery: 'Out for Delivery',
     picked_up: 'Picked Up',
     picking_up: 'Picking Up',

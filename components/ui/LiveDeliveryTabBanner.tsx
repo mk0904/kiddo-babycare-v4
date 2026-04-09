@@ -1,4 +1,4 @@
-import { geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
+import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -253,24 +253,31 @@ export function LiveDeliveryTabBanner({
       }
       const riderCoords = riderCoordsFromDeliveryStatus(st);
       const dk = String(st.status ?? '').trim().toLowerCase();
+      const isOutForDelivery = dk === 'out_for_delivery';
       const nearDrop =
+        isOutForDelivery &&
         !!riderCoords &&
         !!destinationCoords &&
-        DELIVERY_ACTIVE_STATUSES.has(dk) &&
         distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
+      const etaOrigin =
+        isOutForDelivery && riderCoords
+          ? riderCoords
+          : !!destinationCoords
+            ? DARK_STORE_LOCATION
+            : null;
       const canUseLiveEta =
         DELIVERY_ACTIVE_STATUSES.has(dk) &&
         !!destinationCoords &&
-        !!riderCoords &&
+        !!etaOrigin &&
         !nearDrop &&
         !ARRIVED_AT_CUSTOMER_STATUSES.has(dk);
 
       let liveEtaMinutes: number | null = null;
-      if (canUseLiveEta && destinationCoords && riderCoords) {
+      if (canUseLiveEta && destinationCoords && etaOrigin) {
         try {
           const eta = await getDeliveryEta(destinationCoords.latitude, destinationCoords.longitude, {
-            originLatitude: riderCoords.latitude,
-            originLongitude: riderCoords.longitude,
+            originLatitude: etaOrigin.latitude,
+            originLongitude: etaOrigin.longitude,
           });
           liveEtaMinutes = eta?.etaMinutes ?? null;
         } catch {
@@ -430,16 +437,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    borderRadius: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     gap: 12,
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#111827',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 5,
   },
   leftIcon: {
-    width: 48,
-    height: 48,
-    
+    width: 36,
+    height: 36,
     overflow: 'hidden',
     backgroundColor: '#FFF',
     justifyContent: 'center',
@@ -459,14 +471,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Fonts.SmallFontSize,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendMedium,
     color: Colors.light.text,
     lineHeight: 20,
   },
   sub: {
     marginTop: 2,
     fontSize: Fonts.ExtraSmallFontSize,
-    fontFamily: Fonts.Regular,
+    fontFamily: Fonts.LexendMedium,
     color: '#6B7280',
   },
   viewBtn: {
@@ -485,6 +497,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: '#FFF1F2',
     justifyContent: 'center',
     alignItems: 'center',
   },

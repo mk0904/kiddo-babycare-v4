@@ -116,6 +116,13 @@ export interface OrderDetailConfig {
   partnerImageUrl?: string;
 }
 
+export interface EntryScreenItem {
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
@@ -128,4 +135,5 @@ export interface AppConfigResponse {
   cart?: CartConfig;
   checkout?: CheckoutConfig;
   orderDetail?: OrderDetailConfig;
+  entryScreens?: EntryScreenItem[];
 }

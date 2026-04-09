@@ -1433,7 +1433,9 @@ export default function CartScreen() {
                                             <Text style={styles.itemSizeLine}>Size: {primarySize}</Text>
                                         ) : null}
                                         {trialSize ? (
-                                            <Text style={styles.itemTryBuySizeLine}>Try & Buy Size: {trialSize}</Text>
+                                            <Text style={styles.itemTryBuySizeLine}  ellipsizeMode="tail">
+                                                Try & Buy Size: {trialSize}
+                                            </Text>
                                         ) : null}
                                         <TouchableOpacity
                                             onPress={() => openTryBuyEdit(item)}
@@ -2119,7 +2121,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendSemiBold,
     },
     itemTryBuySizeLine: {
-        fontSize: Fonts.ExtraSmallFontSize,
+        fontSize: 11,
         color: '#717680',
         fontFamily: Fonts.LexendMedium,
     },

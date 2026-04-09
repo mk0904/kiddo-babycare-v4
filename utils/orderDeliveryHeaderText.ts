@@ -96,6 +96,7 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     input;
 
   const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+  const hasPartnerStatus = deliveryStatusKey.length > 0;
   const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
   const partnerSaysDelivered =
     deliveryStatusKey === 'delivered' || isDeliveryStatusDelivered(deliveryPartnerStatus);
@@ -120,8 +121,18 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     !isRiderNearDropoff &&
     !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey);
 
+  const shouldUseNowBasedFallbackEta =
+    hasPartnerStatus &&
+    DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
+    !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) &&
+    !showLiveEtaInHeader;
+
   const orderPlacedAt = order?.processedAt || order?.createdAt;
-  const baseTime = orderPlacedAt ? new Date(orderPlacedAt) : new Date();
+  const baseTime = shouldUseNowBasedFallbackEta
+    ? new Date()
+    : orderPlacedAt
+      ? new Date(orderPlacedAt)
+      : new Date();
   const deliveryByDate = showLiveEtaInHeader
     ? new Date(Date.now() + Math.max(1, Math.round(liveEtaMinutes!)) * 60 * 1000)
     : new Date(baseTime.getTime() + staticEtaMinutes * 60 * 1000);
@@ -145,14 +156,6 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     }
     return `Delivered by ${deliveryByTimeStr}`;
   }
-  if (hasArrivalTimePassed) {
-    const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    return `Arrived at ${timeStr}, ${arrivedDateStr}`;
-  }
   if (isRiderAtCustomer && !isDelivered) {
     return 'Your rider has arrived at your address';
   }
@@ -160,6 +163,15 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     const mins = Math.max(1, Math.round(liveEtaMinutes!));
     const liveArrival = new Date(Date.now() + mins * 60 * 1000);
     return `Arriving by ${formatClockEnIN(liveArrival)}, ${formatShortDateEnIN(liveArrival)}`;
+  }
+  // Fallback only when delivery-partner status is unavailable; otherwise DPS status remains source of truth.
+  if (hasArrivalTimePassed && !hasPartnerStatus) {
+    const arrivedDateStr = deliveryByDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    return `Arrived at ${timeStr}, ${arrivedDateStr}`;
   }
   return `Arriving by ${deliveryByTimeStr}`;
 }

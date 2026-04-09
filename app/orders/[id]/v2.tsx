@@ -62,6 +62,7 @@ function orderDetailRiderMarkerUri(cfg: OrderDetailConfig | null | undefined): s
 
 const HEADER_BG = '#FFFFFF';
 const CARD_RADIUS = 12;
+const FAR_DISTANCE_ZOOM_OUT_THRESHOLD_METERS = 15_000;
 const TRACKING_MAP_STYLE = [
     { elementType: 'geometry', stylers: [{ color: '#ECEFF3' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#6B7280' }] },
@@ -197,7 +198,7 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
     confirmed: 'Confirmed',
     packing: 'Packing',
     packed: 'Packed',
-    rider_assigned: 'Rider Assigned',
+    rider_assigned: 'Out for Delivery',
     out_for_delivery: 'Out for Delivery',
     arrived: 'Arrived',
     at_destination: 'Arrived',
@@ -275,6 +276,7 @@ export default function OrderDetailV2Screen() {
     const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[] | null>(null);
     /** Incremented each time a new server route is received; drives Polyline key so Android redraws cleanly. */
     const [routeVersion, setRouteVersion] = useState(0);
+    const [isTrackingMapUserControlled, setIsTrackingMapUserControlled] = useState(false);
     const trackingMapRef = useRef<MapView | null>(null);
     const orderRef = useRef(order);
     orderRef.current = order;
@@ -443,18 +445,19 @@ export default function OrderDetailV2Screen() {
 
     useEffect(() => {
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        const isOutForDelivery = statusKey === 'out_for_delivery';
         const nearDrop =
+            isOutForDelivery &&
             !!destinationCoords &&
             !!riderCoords &&
-            DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
             distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
-        const canUseLiveEta =
+        const shouldComputeEta =
             DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
             !!destinationCoords &&
-            !!riderCoords &&
-            !nearDrop &&
-            !ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey);
-        if (!canUseLiveEta) {
+            !ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey) &&
+            (isOutForDelivery ? !!riderCoords : true) &&
+            !nearDrop;
+        if (!shouldComputeEta) {
             setLiveEtaMinutes(null);
             liveEtaGeoRef.current = null;
             if (liveEtaTimerRef.current) {
@@ -464,9 +467,12 @@ export default function OrderDetailV2Screen() {
             return;
         }
 
+        const etaOrigin = isOutForDelivery && riderCoords
+            ? riderCoords
+            : DARK_STORE_LOCATION;
         const currentGeo = {
-            rl: riderCoords.latitude,
-            rm: riderCoords.longitude,
+            rl: etaOrigin.latitude,
+            rm: etaOrigin.longitude,
             dl: destinationCoords.latitude,
             dm: destinationCoords.longitude,
         };
@@ -491,8 +497,8 @@ export default function OrderDetailV2Screen() {
         liveEtaTimerRef.current = setTimeout(() => {
             void (async () => {
                 const eta = await getDeliveryEta(destinationCoords.latitude, destinationCoords.longitude, {
-                    originLatitude: riderCoords.latitude,
-                    originLongitude: riderCoords.longitude,
+                    originLatitude: etaOrigin.latitude,
+                    originLongitude: etaOrigin.longitude,
                 });
                 if (cancelled) return;
                 liveEtaLastRunRef.current = Date.now();
@@ -860,17 +866,59 @@ export default function OrderDetailV2Screen() {
         );
     }, [routeCoordinates, trackingPathFallback]);
 
-    useEffect(() => {
-        if (trackingPolylineCoordinates.length < 2) return;
-        const map = trackingMapRef.current;
-        if (!map) return;
-        requestAnimationFrame(() => {
-            map.fitToCoordinates(trackingPolylineCoordinates, {
-                edgePadding: { top: 28, right: 28, bottom: 28, left: 28 },
-                animated: true,
+    const trackingViewportPoints = useMemo(() => {
+        if (!destinationCoords) return [] as { latitude: number; longitude: number }[];
+        const pts = [DARK_STORE_LOCATION, destinationCoords, ...(riderCoords ? [riderCoords] : [])];
+        return pts.filter(
+            (c): c is { latitude: number; longitude: number } =>
+                !!c && isFinite(c.latitude) && isFinite(c.longitude),
+        );
+    }, [destinationCoords, riderCoords]);
+
+    const endpointDistanceMeters = useMemo(() => {
+        if (!destinationCoords) return 0;
+        const from = riderCoords ?? DARK_STORE_LOCATION;
+        return distanceMetersLatLng(from, destinationCoords);
+    }, [destinationCoords, riderCoords]);
+
+    const trackingEdgePadding = useMemo(
+        () =>
+            endpointDistanceMeters >= FAR_DISTANCE_ZOOM_OUT_THRESHOLD_METERS
+                ? { top: 72, right: 72, bottom: 72, left: 72 }
+                : { top: 28, right: 28, bottom: 28, left: 28 },
+        [endpointDistanceMeters],
+    );
+
+    const fitTrackingBounds = useCallback(
+        (animated: boolean, opts?: { force?: boolean }) => {
+            if (!opts?.force && isTrackingMapUserControlled) return;
+            const map = trackingMapRef.current;
+            if (!map) return;
+            const fitPoints = trackingViewportPoints;
+            requestAnimationFrame(() => {
+                try {
+                    if (fitPoints.length >= 2) {
+                        map.fitToCoordinates(fitPoints, {
+                            edgePadding: trackingEdgePadding,
+                            animated,
+                        });
+                        return;
+                    }
+                } catch {
+                    // Fall back to region animation if fitToCoordinates fails on extreme spans.
+                }
+                if (mapRegion) {
+                    map.animateToRegion(mapRegion, animated ? 420 : 0);
+                }
             });
-        });
-    }, [trackingPolylineCoordinates]);
+        },
+        [trackingViewportPoints, trackingEdgePadding, mapRegion, isTrackingMapUserControlled],
+    );
+
+    useEffect(() => {
+        if (!shouldShowTrackingMap) return;
+        fitTrackingBounds(true, { force: false });
+    }, [trackingPolylineCoordinates, shouldShowTrackingMap, fitTrackingBounds]);
 
     if (loading) {
         const mapWhileLoading = shouldShowTrackingMap && mapRegion;
@@ -910,22 +958,16 @@ export default function OrderDetailV2Screen() {
                                 style={styles.trackingMap}
                                 initialRegion={mapRegion}
                                 customMapStyle={TRACKING_MAP_STYLE}
-                                scrollEnabled={false}
-                                zoomEnabled={false}
+                                scrollEnabled={true}
+                                zoomEnabled={true}
                                 rotateEnabled={false}
                                 pitchEnabled={false}
                                 showsCompass={false}
                                 showsBuildings={false}
                                 showsTraffic={false}
                                 toolbarEnabled={false}
-                                onMapReady={() => {
-                                    if (trackingPolylineCoordinates.length >= 2) {
-                                        trackingMapRef.current?.fitToCoordinates(
-                                            trackingPolylineCoordinates,
-                                            { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated: false },
-                                        );
-                                    }
-                                }}
+                                onPanDrag={() => setIsTrackingMapUserControlled(true)}
+                                onMapReady={() => fitTrackingBounds(false, { force: false })}
                             >
                                 <Polyline
                                     coordinates={trackingPolylineCoordinates.length >= 2 ? trackingPolylineCoordinates : [DARK_STORE_LOCATION, DARK_STORE_LOCATION]}
@@ -1004,6 +1046,18 @@ export default function OrderDetailV2Screen() {
                                     </Marker>
                                 ) : null}
                             </MapView>
+                            <TouchableOpacity
+                                style={styles.mapFloatingButton}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setIsTrackingMapUserControlled(false);
+                                    fitTrackingBounds(true, { force: true });
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Recenter tracking map"
+                            >
+                                <Ionicons name="expand-outline" size={18} color="#111827" />
+                            </TouchableOpacity>
                         </View>
                     </View>
                 ) : null}
@@ -1056,7 +1110,7 @@ export default function OrderDetailV2Screen() {
     const displayOrderId = order.orderNumber || order.id?.split('/').pop() || id;
 
     const formatCurrency = (amount: number) =>
-        `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+        `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
     // Coupon/discount from Shopify order (discountApplications + customAttributes fallback)
     const discountEdges = order.discountApplications?.edges ?? [];
@@ -1127,22 +1181,16 @@ export default function OrderDetailV2Screen() {
                                 style={styles.trackingMap}
                                 initialRegion={mapRegion}
                                 customMapStyle={TRACKING_MAP_STYLE}
-                                scrollEnabled={false}
-                                zoomEnabled={false}
+                                scrollEnabled={true}
+                                zoomEnabled={true}
                                 rotateEnabled={false}
                                 pitchEnabled={false}
                                 showsCompass={false}
                                 showsBuildings={false}
                                 showsTraffic={false}
                                 toolbarEnabled={false}
-                                onMapReady={() => {
-                                    if (trackingPolylineCoordinates.length >= 2) {
-                                        trackingMapRef.current?.fitToCoordinates(
-                                            trackingPolylineCoordinates,
-                                            { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated: false },
-                                        );
-                                    }
-                                }}
+                                onPanDrag={() => setIsTrackingMapUserControlled(true)}
+                                onMapReady={() => fitTrackingBounds(false, { force: false })}
                             >
                                 <Polyline
                                     coordinates={trackingPolylineCoordinates.length >= 2 ? trackingPolylineCoordinates : [DARK_STORE_LOCATION, DARK_STORE_LOCATION]}
@@ -1264,7 +1312,16 @@ export default function OrderDetailV2Screen() {
                                     </Marker>
                                 ) : null}
                             </MapView>
-                            <TouchableOpacity style={styles.mapFloatingButton} activeOpacity={0.85}>
+                            <TouchableOpacity
+                                style={styles.mapFloatingButton}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setIsTrackingMapUserControlled(false);
+                                    fitTrackingBounds(true, { force: true });
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Recenter tracking map"
+                            >
                                 <Ionicons name="expand-outline" size={18} color="#111827" />
                             </TouchableOpacity>
                         </View>
@@ -1425,7 +1482,7 @@ export default function OrderDetailV2Screen() {
                                     <View style={styles.itemMetaRow}>
                                         <View style={styles.itemMetaWrap}>
                                             <Text style={styles.itemMetaPrice}>
-                                                ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                             </Text>
                                         </View>
                                         <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
@@ -1490,15 +1547,9 @@ export default function OrderDetailV2Screen() {
                 <View style={styles.paymentMethodCard}>
                     <Text style={styles.billTitle}>Payment method</Text>
                     <Text style={styles.paymentMethodLabel}>
-                        {order?.financialStatus === 'PAID'
-                            ? 'Paid online'
-                            : order?.financialStatus === 'PENDING'
-                                ? 'Cash on Delivery (COD)'
-                                : order?.financialStatus === 'REFUNDED'
-                                    ? 'Refunded'
-                                    : order?.financialStatus
-                                        ? `Payment: ${order.financialStatus}`
-                                        : '—'}
+                        {order?.financialStatus === 'PENDING'
+                            ? 'Cash on Delivery (COD)'
+                            : 'Paid online'}
                     </Text>
                 </View>
 
