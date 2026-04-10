@@ -1,8 +1,7 @@
 // OTP Service - Handles OTP generation, sending, and verification via backend API
 import axios from 'axios';
 import { configService } from './configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+import { getBackendApiPath, getBackendBase } from './backendBase';
 
 
 interface OTPResponse {
@@ -57,15 +56,11 @@ class OTPService {
   }
 
   private getBackendUrl(): string {
-    const rawConfig = configService.getRawConfig();
-    const base = rawConfig?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-    return (base as string).replace(/\/+$/, '');
+    return getBackendBase();
   }
 
   private getApiPath(path: string): string {
-    const base = this.getBackendUrl();
-    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-    return `${prefix}/${path.replace(/^\//, '')}`;
+    return getBackendApiPath(path);
   }
 
   private getVerifyAndLoginUrl(): string {

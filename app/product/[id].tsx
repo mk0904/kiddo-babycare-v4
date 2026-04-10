@@ -1,6 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
 import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
+import { TryBuyPdpVariantSection } from '@/components/product/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
@@ -16,6 +17,8 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
+import { hasTryAndBuyProduct } from '@/utils/tryAndBuyProduct';
+import { findTryVariantForPrimary, getTryBuyPdpMainOptionNameForDefer } from '@/utils/tryBuyVariantSelection';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import * as FileSystem from 'expo-file-system';
@@ -248,6 +251,8 @@ const ProductDetailScreen = () => {
     const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<any[]>([]);
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [tryAndBuyModalVisible, setTryAndBuyModalVisible] = useState(false);
+    /** PDP inline Try & Buy: optional second size (first option row is primary). */
+    const [pdpTrySizeValue, setPdpTrySizeValue] = useState<string | null>(null);
     const imageFlatListRef = useRef<any>(null);
     const { user, isAuthenticated } = useAuth();
     const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
@@ -540,14 +545,46 @@ const ProductDetailScreen = () => {
         if (firstVariant) {
             setSelectedVariant(firstVariant);
             if (firstVariant.selectedOptions) {
+                const collectionId = params.collectionId as string | undefined;
+                const fromTicketing =
+                    !!collectionId &&
+                    TICKETING_COLLECTION_IDS.some(
+                        (id) => collectionId === id || collectionId.includes(id.split('/').pop() || ''),
+                    );
+                const hasTicketingTag = productData?.tags?.some((tag: any) => {
+                    const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
+                    return (
+                        tagLower.includes('event') ||
+                        tagLower.includes('playhouse') ||
+                        tagLower.includes('petting') ||
+                        tagLower.includes('farm')
+                    );
+                });
+                const belongsToTicketing = productData?.collections?.some((col: any) => {
+                    const colId = col?.id || col?.node?.id || '';
+                    return TICKETING_COLLECTION_IDS.some(
+                        (ticketingId) =>
+                            colId === ticketingId || colId.includes(ticketingId.split('/').pop() || ''),
+                    );
+                });
+                const isTicketingForInit = !!(fromTicketing || hasTicketingTag || belongsToTicketing);
+
                 const initialOptions: Record<string, string> = {};
                 firstVariant.selectedOptions.forEach((opt: any) => {
                     initialOptions[opt.name] = opt.value;
                 });
+                const deferMainName = getTryBuyPdpMainOptionNameForDefer(
+                    productData,
+                    variants.length,
+                    isTicketingForInit,
+                );
+                if (deferMainName && initialOptions[deferMainName] !== undefined) {
+                    delete initialOptions[deferMainName];
+                }
                 setSelectedOptions(initialOptions);
             }
         }
-    }, []);
+    }, [params.collectionId]);
 
     // Accordion State
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -888,6 +925,49 @@ const ProductDetailScreen = () => {
             : options;
         return filtered.filter((option: any) => (option.values || []).length > 1);
     }, [product, variants.length, isTicketingProduct]);
+
+    const tryBuyPdpEligible = useMemo(
+        () =>
+            !!product &&
+            hasTryAndBuyProduct(product) &&
+            !isTicketingProduct &&
+            productOptions.length > 0,
+        [product, isTicketingProduct, productOptions.length],
+    );
+
+    const pdpMainTryBuyOption = tryBuyPdpEligible ? productOptions[0] : null;
+    const pdpRestProductOptions = useMemo(
+        () => (tryBuyPdpEligible ? productOptions.slice(1) : productOptions),
+        [tryBuyPdpEligible, productOptions],
+    );
+
+    const pdpResolvedTryVariant = useMemo(() => {
+        if (!tryBuyPdpEligible || !pdpMainTryBuyOption || !selectedVariant || !pdpTrySizeValue) {
+            return undefined;
+        }
+        const pv = selectedOptions[pdpMainTryBuyOption.name];
+        if (!pv || pdpTrySizeValue === pv) return undefined;
+        return findTryVariantForPrimary(variants, selectedVariant, pdpMainTryBuyOption.name, pdpTrySizeValue) || undefined;
+    }, [
+        tryBuyPdpEligible,
+        pdpMainTryBuyOption,
+        selectedVariant,
+        pdpTrySizeValue,
+        selectedOptions,
+        variants,
+    ]);
+
+    useEffect(() => {
+        setPdpTrySizeValue(null);
+    }, [product?.id]);
+
+    useEffect(() => {
+        if (!pdpMainTryBuyOption || pdpTrySizeValue == null) return;
+        const pv = selectedOptions[pdpMainTryBuyOption.name];
+        if (pv === pdpTrySizeValue) {
+            setPdpTrySizeValue(null);
+        }
+    }, [selectedOptions, pdpMainTryBuyOption?.name, pdpTrySizeValue]);
 
     const findVariantByOptions = useCallback((options: Record<string, string>, variantsList: any[]) => {
         if (!variantsList || variantsList.length === 0) return null;
@@ -1275,9 +1355,9 @@ const ProductDetailScreen = () => {
                                 ))}
                             </View>
                         )}
-                        {product.tags?.includes('fashion') && (
+                        {tryBuyPdpEligible && (
                             <TouchableOpacity style={styles.tryAndBuyTag} onPress={() => setTryAndBuyModalVisible(true)}>
-                                <Ionicons name="shirt-outline" size={14} color="#fff" />
+                                <Ionicons name="shirt-outline" size={14} color="#854D0E" />
                                 <Text style={styles.tryAndBuyTagText}>Try & Buy</Text>
                             </TouchableOpacity>
                         )}
@@ -1355,6 +1435,17 @@ const ProductDetailScreen = () => {
                         }
                     ]}>{product.title}</Text>
 
+                    {tryBuyPdpEligible && pdpMainTryBuyOption ? (
+                        <TryBuyPdpVariantSection
+                            productVariants={variants}
+                            mainOption={pdpMainTryBuyOption}
+                            primaryValue={selectedOptions[pdpMainTryBuyOption.name]}
+                            onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
+                            tryValue={pdpTrySizeValue}
+                            onTryValueChange={setPdpTrySizeValue}
+                        />
+                    ) : null}
+
                     {/* Price Section */}
                     <View style={styles.productPriceContainer}>
                         <View style={styles.productPriceRow}>
@@ -1370,7 +1461,7 @@ const ProductDetailScreen = () => {
 
                     {productOptions.length > 0 && (
                         <View style={styles.variantsContainer}>
-                            {productOptions.map((option: any) => (
+                            {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
                                 <View key={option.name} style={styles.optionContainer}>
                                     <Text style={[
                                         styles.optionLabel,
@@ -1667,6 +1758,12 @@ const ProductDetailScreen = () => {
                             addText="Add to Cart"
                             bookingDate={isTicketingProduct ? selectedEventDate : undefined}
                             isTicketing={isTicketingProduct}
+                            tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
+                            pdpAddBlocked={
+                                tryBuyPdpEligible &&
+                                !!pdpMainTryBuyOption &&
+                                !selectedOptions[pdpMainTryBuyOption.name]
+                            }
                             onValidationError={() => {
                                 if (isTicketingProduct && !selectedEventDate) {
                                     setShowDateError(true);
@@ -1825,15 +1922,17 @@ const styles = StyleSheet.create({
         left: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 8,
-        paddingVertical: 5,
+        backgroundColor: '#FEF9C3',
+        borderWidth: 1,
+        borderColor: '#FDE047',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 10,
     },
     tryAndBuyTagText: {
-        color: '#fff',
+        color: '#854D0E',
         fontSize: 12,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendSemiBold,
         marginLeft: 4,
     },
     infoContainer: {
@@ -1870,7 +1969,7 @@ const styles = StyleSheet.create({
     },
     variantsContainer: {
         paddingHorizontal: 16, // Reduced padding
-        marginTop: 20,
+        marginTop: 28,
         marginBottom: 0,
     },
     optionContainer: {

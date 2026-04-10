@@ -5,6 +5,7 @@ import HomeInactive from '@/assets/icons/home-inactive-fill.svg';
 import ProfileActive from '@/assets/icons/profile-active-fill.svg';
 import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
+import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
 import { Colors, Fonts } from '@/constants/theme';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
@@ -63,6 +64,8 @@ export const TabBar = (props: BottomTabBarProps) => {
 
     const bottomInset = Math.max(insets.bottom, 0);
     const totalHeight = tabBarHeight + bottomInset;
+
+    const [liveDeliveryStackExtra, setLiveDeliveryStackExtra] = React.useState(0);
 
     useEffect(() => {
         Animated.spring(translateY, {
@@ -132,7 +135,15 @@ export const TabBar = (props: BottomTabBarProps) => {
 
     return (
         <View style={styles.wrapper} pointerEvents="box-none">
-            <FloatingCartButton showTabBar={shouldShowTabBar} />
+            <LiveDeliveryTabBanner
+                showTabBar={shouldShowTabBar}
+                tabStackHeight={totalHeight}
+                onStackOffsetChange={setLiveDeliveryStackExtra}
+            />
+            <FloatingCartButton
+                showTabBar={shouldShowTabBar}
+                anchorExtraOffset={liveDeliveryStackExtra}
+            />
 
             {shouldShowTabBar && (
                 <Animated.View

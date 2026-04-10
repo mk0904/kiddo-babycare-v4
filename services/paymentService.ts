@@ -157,6 +157,9 @@ function orderDataToCheckoutDraftRequest(
         compareAtPrice: item.compareAtPrice ?? undefined,
         tags: item.tags ?? [],
         bookingDate: item.bookingDate ?? '',
+        ...(item.customAttributes && Object.keys(item.customAttributes).length > 0
+            ? { customAttributes: item.customAttributes as Record<string, string> }
+            : {}),
     }));
     return {
         items,

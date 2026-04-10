@@ -5,6 +5,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
+import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -171,7 +172,8 @@ export default function OrderDetailScreen() {
                                         customAttributes: edge.node.customAttributes || [],
                                         variant: {
                                             title: edge.node.variant?.title || 'Default Title',
-                                            image: edge.node.variant?.image
+                                            image: edge.node.variant?.image,
+                                            product: edge.node.variant?.product,
                                         }
                                     }
                                 }))
@@ -391,11 +393,12 @@ export default function OrderDetailScreen() {
                 <Text style={styles.sectionTitle}>Order Items</Text>
                 {order.lineItems?.edges?.map((edge: any, index: number) => {
                     const item = edge.node;
+                    const lineImg = storefrontVariantImageUrl(item.variant);
                     return (
                         <View key={item.title + item.variant?.title} style={[styles.itemCard, index === (order.lineItems?.edges?.length || 1) - 1 && styles.lastItem]}>
                             <View style={styles.imageContainer}>
-                                {item.variant?.image?.url ? (
-                                    <Image source={{ uri: item.variant.image.url }} style={styles.itemImage} />
+                                {lineImg ? (
+                                    <Image source={{ uri: lineImg }} style={styles.itemImage} />
                                 ) : (
                                     <View style={styles.placeholderImage}>
                                         <Ionicons name="image-outline" size={24} color={Colors.textSecondary} />

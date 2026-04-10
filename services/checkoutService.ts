@@ -4,21 +4,7 @@
  */
 import axios from 'axios';
 import { Platform } from 'react-native';
-import { configService } from './configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-
-function getBackendBase(): string {
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return (base as string).replace(/\/+$/, '');
-}
-
-function getApiPath(path: string): string {
-  const base = getBackendBase();
-  const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-  return `${prefix}/${path.replace(/^\//, '')}`;
-}
+import { getBackendApiPath } from './backendBase';
 
 /** Bill breakdown for backend to persist on Shopify order. */
 export interface CheckoutBillDetails {
@@ -43,6 +29,11 @@ export interface CheckoutDraftRequest {
     compareAtPrice?: number;
     tags?: string[];
     bookingDate?: string;
+    /**
+     * Per Shopify draft line item. Backend should map to Admin API `lineItems[].customAttributes`
+     * (e.g. Try & Buy: try_buy_trial_variant_id, try_buy_trial_variant_title, try_buy_trial_option_value).
+     */
+    customAttributes?: Record<string, string>;
   }>;
   totalAmount: number;
   currencyCode?: string;
@@ -121,19 +112,28 @@ export interface CheckoutCompleteResponse {
  * Create a draft order on the backend. Returns draft id, total, and Razorpay key for client SDK.
  */
 export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutDraftResponse> {
-  const url = getApiPath('checkout/draft');
+  const url = getBackendApiPath('checkout/draft');
   const payload = {
-    items: body.items.map((it) => ({
-      variantId: it.variantId,
-      quantity: it.quantity,
-      price: it.price,
-      title: it.title,
-      variantTitle: it.variantTitle,
-      image: it.image,
-      compareAtPrice: it.compareAtPrice,
-      tags: it.tags ?? [],
-      bookingDate: it.bookingDate ?? '',
-    })),
+    items: body.items.map((it) => {
+      const row: Record<string, unknown> = {
+        variantId: it.variantId,
+        quantity: it.quantity,
+        price: it.price,
+        title: it.title,
+        variantTitle: it.variantTitle,
+        image: it.image,
+        compareAtPrice: it.compareAtPrice,
+        tags: it.tags ?? [],
+        bookingDate: it.bookingDate ?? '',
+      };
+      if (it.customAttributes && Object.keys(it.customAttributes).length > 0) {
+        row.customAttributes = Object.entries(it.customAttributes).map(([key, value]) => ({
+          key,
+          value: String(value),
+        }));
+      }
+      return row;
+    }),
     totalAmount: body.totalAmount,
     currencyCode: body.currencyCode ?? 'INR',
     email: body.email ?? '',
@@ -177,7 +177,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
  * On 4xx/5xx, throws with the backend error message when available.
  */
 export async function completeDraft(body: CheckoutCompleteRequest): Promise<CheckoutCompleteResponse> {
-  const url = getApiPath('checkout/complete');
+  const url = getBackendApiPath('checkout/complete');
   try {
     const { data } = await axios.post<CheckoutCompleteResponse>(url, body, {
       timeout: 30000,

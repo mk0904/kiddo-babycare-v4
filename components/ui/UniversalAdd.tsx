@@ -1,8 +1,10 @@
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useCartItems, useCartStore } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
+import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -16,6 +18,14 @@ interface UniversalAddProps {
     /** When true and count is 0, show "Add to cart" instead of + icon */
     isTicketing?: boolean;
     onValidationError?: () => void; // Callback when validation fails
+    /**
+     * PDP inline Try & Buy: optional second variant from page (no modal).
+     * Ignored when not on PDP / not try-and-buy.
+     */
+    tryBuyTrialVariant?: any;
+    /** PDP: when true, block add until shopper picks required options (e.g. Try & Buy size row). */
+    pdpAddBlocked?: boolean;
+    pdpAddBlockedMessage?: string;
 }
 
 /** Format date as YYYY-MM-DD in local time so the calendar date is preserved (no UTC shift). */
@@ -33,7 +43,10 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     addText = 'ADD',
     bookingDate,
     isTicketing = false,
-    onValidationError
+    onValidationError,
+    tryBuyTrialVariant,
+    pdpAddBlocked = false,
+    pdpAddBlockedMessage = 'Please choose your size above before adding to cart.',
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -73,7 +86,95 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
     const count = getItemCount();
 
+    const completeAddToCart = async (currentItem: any, finalVariant: any, tryVariant?: any) => {
+        const pid = currentItem.id || currentItem._id || productId;
+
+        // Validate date selection for ticketing products
+        if (bookingDate !== undefined && !bookingDate) {
+            if (onValidationError) onValidationError();
+            Alert.alert(
+                'Date Selection Required',
+                'Please select a date before adding this item to cart.',
+                [{ text: 'OK' }],
+            );
+            return;
+        }
+
+        // Get tags
+        let tagsToUse = currentItem.tags || [];
+        if (pid && (!tagsToUse || tagsToUse.length === 0)) {
+            try {
+                const { shopifyApi } = await import('@/services/shopifyApi');
+                const fullProduct = await shopifyApi.getProductById(pid);
+                if (fullProduct?.tags?.length) tagsToUse = fullProduct.tags;
+            } catch {
+                /* ignore */
+            }
+        }
+
+        const imageUrl =
+            finalVariant.image?.url ||
+            currentItem.images?.[0]?.url ||
+            currentItem.featuredImage?.url ||
+            currentItem.images?.edges?.[0]?.node?.url ||
+            '';
+
+        const price = parseFloat(
+            finalVariant.price?.amount ||
+                currentItem.priceRange?.minVariantPrice?.amount ||
+                currentItem.price?.amount ||
+                '0',
+        );
+
+        const quantityAvailable =
+            finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
+        if (typeof quantityAvailable === 'number' && quantityAvailable < 1) {
+            setStockLimitModal({ visible: true, maxQty: 0 });
+            return;
+        }
+
+        const cartItem = {
+            productId: pid || '',
+            variantId: finalVariant.id || variantId || '',
+            title: currentItem.title || currentItem.name || 'Product',
+            variantTitle: finalVariant.title,
+            price,
+            compareAtPrice: finalVariant.compareAtPrice?.amount
+                ? parseFloat(finalVariant.compareAtPrice.amount)
+                : undefined,
+            currencyCode:
+                finalVariant.price?.currencyCode ||
+                currentItem.priceRange?.minVariantPrice?.currencyCode ||
+                'INR',
+            image: imageUrl,
+            quantity: 1,
+            availableForSale: isVariantAvailable(finalVariant) !== false,
+            quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
+            tags: tagsToUse,
+            bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
+            ...(tryVariant
+                ? {
+                      customAttributes: {
+                          try_buy_trial_variant_id: String(tryVariant.id || ''),
+                          try_buy_trial_variant_title: String(tryVariant.title || ''),
+                          try_buy_trial_option_value: tryBuyTrialOptionValueFromVariant(tryVariant),
+                      },
+                  }
+                : {}),
+        };
+
+        try {
+            await addItem(cartItem);
+        } catch (err: any) {
+            Alert.alert('Cannot add to cart', err?.message || 'This item is not available in the requested quantity.');
+        }
+    };
+
     const handleAdd = async (variantToUse?: any) => {
+        if (variant === 'pdp' && pdpAddBlocked) {
+            Alert.alert('Select size', pdpAddBlockedMessage, [{ text: 'OK' }]);
+            return;
+        }
         let currentItem = item;
         let finalVariant = variantToUse || activeVariant;
 
@@ -84,9 +185,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         // Check if this looks like a search result variant (constructed from product ID)
         // or a product with incomplete variant data
-        const isSearchResultVariant = (productIdMatch && variantIdMatch &&
-            productIdMatch[1] === variantIdMatch[1] &&
-            variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
+        const isSearchResultVariant =
+            (productIdMatch &&
+                variantIdMatch &&
+                productIdMatch[1] === variantIdMatch[1] &&
+                variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
             (!item.variants?.edges || (Array.isArray(item.variants) && item.variants.length === 0)) ||
             (item.variants?.edges?.length === 1 && item.variants.edges[0]?.node?.title === 'Default');
 
@@ -100,18 +203,27 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     setFullProductData(fullProduct);
                     currentItem = fullProduct;
 
-                    // After fetching, check if it has multiple variants
                     const fullVariants = Array.isArray(fullProduct.variants?.edges)
                         ? fullProduct.variants.edges
-                        : (Array.isArray(fullProduct.variants) ? fullProduct.variants : []);
+                        : Array.isArray(fullProduct.variants)
+                          ? fullProduct.variants
+                          : [];
+
+                    const tryBuy = hasTryAndBuyProduct(fullProduct);
 
                     if (fullVariants.length > 1 && variant !== 'pdp') {
-                        setVariantModalVisible(true);
-                        setIsFetchingFullProduct(false);
-                        return;
-                    }
-
-                    if (!variantToUse && fullVariants.length > 0) {
+                        if (tryBuy) {
+                            setVariantModalVisible(true);
+                            setIsFetchingFullProduct(false);
+                            return;
+                        }
+                        const nodes = fullVariants.map((e: any) => e?.node ?? e);
+                        const firstAvail =
+                            nodes.find((v: any) => isVariantAvailable(v) !== false) || nodes[0];
+                        if (!variantToUse && firstAvail) {
+                            finalVariant = firstAvail;
+                        }
+                    } else if (!variantToUse && fullVariants.length > 0) {
                         const first = fullVariants[0];
                         finalVariant = first?.node || first;
                     }
@@ -125,32 +237,36 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             currentItem = fullProductData;
         }
 
-        // Now check if we should show the variant selection modal
         const variantsArr = currentItem.variants?.edges || currentItem.variants || [];
         const hasMultipleVariants = variantsArr.length > 1;
+        const tryBuy = hasTryAndBuyProduct(currentItem);
 
-        if (hasMultipleVariants && !selectedVariant && !variantToUse && variant !== 'pdp') {
-            setVariantModalVisible(true);
-            return;
+        if (hasMultipleVariants && !variantToUse) {
+            if (tryBuy) {
+                /** PDP uses inline Try & Buy picker; modal only for cards/search. */
+                if (variant !== 'pdp') {
+                    setVariantModalVisible(true);
+                    return;
+                }
+            } else if (variant !== 'pdp') {
+                const nodes = variantsArr.map((e: any) => e?.node ?? e);
+                const firstAvail = nodes.find((v: any) => isVariantAvailable(v) !== false) || nodes[0];
+                if (firstAvail) {
+                    finalVariant = firstAvail;
+                }
+            }
         }
 
         if (!finalVariant) return;
 
-        // Validate date selection for ticketing products
-        if (bookingDate !== undefined && !bookingDate) {
-            if (onValidationError) onValidationError();
-            Alert.alert(
-                'Date Selection Required',
-                'Please select a date before adding this item to cart.',
-                [{ text: 'OK' }]
-            );
-            return;
-        }
-
         // Final check for out of stock - if adding first variant and it's OOS, find first available
         if (!variantToUse) {
-            const currentQty = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
-            if ((typeof currentQty === 'number' && currentQty < 1) || isVariantAvailable(finalVariant) === false) {
+            const currentQty =
+                finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
+            if (
+                (typeof currentQty === 'number' && currentQty < 1) ||
+                isVariantAvailable(finalVariant) === false
+            ) {
                 const nodes = variantsArr.map((e: any) => e?.node ?? e);
                 const firstAvailable = nodes.find((v: any) => isVariantAvailable(v) === true);
                 if (firstAvailable) {
@@ -159,59 +275,14 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             }
         }
 
-        // Get tags
-        let tagsToUse = currentItem.tags || [];
-        if (productId && (!tagsToUse || tagsToUse.length === 0)) {
-            try {
-                const { shopifyApi } = await import('@/services/shopifyApi');
-                const fullProduct = await shopifyApi.getProductById(productId);
-                if (fullProduct?.tags?.length) tagsToUse = fullProduct.tags;
-            } catch { }
-        }
+        const trialExtra =
+            variant === 'pdp' && tryBuy && tryBuyTrialVariant ? tryBuyTrialVariant : undefined;
+        await completeAddToCart(currentItem, finalVariant, trialExtra);
+    };
 
-        // Get image and price
-        const imageUrl = finalVariant.image?.url ||
-            currentItem.images?.[0]?.url ||
-            currentItem.featuredImage?.url ||
-            currentItem.images?.edges?.[0]?.node?.url ||
-            '';
-
-        const price = parseFloat(
-            finalVariant.price?.amount ||
-            currentItem.priceRange?.minVariantPrice?.amount ||
-            currentItem.price?.amount ||
-            '0'
-        );
-
-        const quantityAvailable = finalVariant.quantityAvailable != null ? Number(finalVariant.quantityAvailable) : undefined;
-        if (typeof quantityAvailable === 'number' && quantityAvailable < 1) {
-            setStockLimitModal({ visible: true, maxQty: 0 });
-            return;
-        }
-
-        const cartItem = {
-            productId: productId || '',
-            variantId: finalVariant.id || variantId || '',
-            title: currentItem.title || currentItem.name || 'Product',
-            variantTitle: finalVariant.title,
-            price,
-            compareAtPrice: finalVariant.compareAtPrice?.amount
-                ? parseFloat(finalVariant.compareAtPrice.amount)
-                : undefined,
-            currencyCode: finalVariant.price?.currencyCode || currentItem.priceRange?.minVariantPrice?.currencyCode || 'INR',
-            image: imageUrl,
-            quantity: 1,
-            availableForSale: isVariantAvailable(finalVariant) !== false,
-            quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
-            tags: tagsToUse,
-            bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
-        };
-
-        try {
-            await addItem(cartItem);
-        } catch (err: any) {
-            Alert.alert('Cannot add to cart', err?.message || 'This item is not available in the requested quantity.');
-        }
+    const handleTryBuyModalConfirm = async (result: TryAndBuyVariantSelectionResult) => {
+        const currentItem = fullProductData || item;
+        await completeAddToCart(currentItem, result.keepVariant, result.tryVariant);
     };
 
     const getCartItem = () => {
@@ -385,8 +456,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             <VariantSelectionModal
                 visible={variantModalVisible}
                 product={fullProductData || item}
+                layout="sheet"
                 onClose={() => setVariantModalVisible(false)}
-                onAddToCart={(v) => handleAdd(v)}
+                onAddToCart={handleTryBuyModalConfirm}
             />
         </>
     );

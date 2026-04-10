@@ -249,9 +249,22 @@ const GET_DRAFT_ORDER_QUERY = `
             }
             variant {
               id
+              sku
               title
               image {
                 url
+              }
+              product {
+                featuredImage {
+                  url
+                }
+                images(first: 1) {
+                  edges {
+                    node {
+                      url
+                    }
+                  }
+                }
               }
             }
           }

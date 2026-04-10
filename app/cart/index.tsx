@@ -11,14 +11,12 @@ import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
+import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
+import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
-    calculateDistance,
-    DARK_STORE_LOCATION,
-    estimateDeliveryTime,
-    geocodeAddress,
-    getDeliveryTimeFromGoogleMaps,
+    getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
@@ -27,6 +25,7 @@ import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
+import { shopifyApi } from '@/services/shopifyApi';
 import {
     useCartId,
     useCartItems,
@@ -35,8 +34,14 @@ import {
     useCartTotal,
     useCheckoutUrl,
     useGiftWrapping,
-    useIsTryAndBuy
+    useIsTryAndBuy,
 } from '@/store/cartStore';
+import { isVariantAvailable } from '@/utils/availability';
+import {
+    sizeLabelFromVariantTitle,
+    tryBuyTrialOptionValueFromVariant,
+    variantIdsEqual,
+} from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
@@ -56,6 +61,28 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function findVariantInProductById(product: any, variantId: string | undefined): any | null {
+    if (!product || !variantId) return null;
+    const edges = product?.variants?.edges;
+    const list: any[] = edges
+        ? edges.map((e: any) => e?.node).filter(Boolean)
+        : Array.isArray(product?.variants)
+          ? product.variants.filter(Boolean)
+          : [];
+    return list.find((v: any) => variantIdsEqual(v?.id, variantId)) || null;
+}
+
+/** First meaningful option value for the variant row (matches VariantSelectionModal main option). */
+function primaryOptionLabelFromLine(product: any, line: any): string | null {
+    const v = findVariantInProductById(product, line?.variantId);
+    if (!v) return sizeLabelFromVariantTitle(line?.variantTitle) || null;
+    const so = Array.isArray(v.selectedOptions) ? v.selectedOptions : [];
+    const nonTitle = so.find((o: any) => o?.name && o.name !== 'Title');
+    const fromOpt = nonTitle?.value != null ? String(nonTitle.value).trim() : '';
+    if (fromOpt) return fromOpt;
+    return sizeLabelFromVariantTitle(v.title) || null;
+}
 
 export default function CartScreen() {
     const router = useRouter();
@@ -104,10 +131,12 @@ export default function CartScreen() {
         () => appConfigService.getCheckoutConfig(),
         [appConfigRefresh]
     );
+    const giftWrapping = useGiftWrapping();
     const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
         defaultAddress?.latitude,
         defaultAddress?.longitude,
-        defaultAddress ?? undefined
+        defaultAddress ?? undefined,
+        { hasGiftWrap: !!giftWrapping }
     );
     // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
     // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
@@ -122,23 +151,13 @@ export default function CartScreen() {
         const run = async () => {
             const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
             if (!addressString) return;
-            const coords = await geocodeAddress(addressString);
-            if (cancelled || !coords) return;
-            let deliveryTime = await getDeliveryTimeFromGoogleMaps(coords.latitude, coords.longitude);
-            if (deliveryTime == null) {
-                const distanceKm = calculateDistance(
-                    DARK_STORE_LOCATION.latitude,
-                    DARK_STORE_LOCATION.longitude,
-                    coords.latitude,
-                    coords.longitude
-                );
-                deliveryTime = estimateDeliveryTime(distanceKm);
-            }
+            const deliveryTime = await getDeliveryEtaForAddress(addressString, { hasGiftWrap: !!giftWrapping });
+            if (cancelled || deliveryTime == null) return;
             if (!cancelled) setEtaFromGeocode(deliveryTime);
         };
         run();
         return () => { cancelled = true; };
-    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode]);
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping]);
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
@@ -146,7 +165,6 @@ export default function CartScreen() {
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
-    const giftWrapping = useGiftWrapping();
     const status = useCartStatus();
     const cartId = useCartId();
     const checkoutUrl = useCheckoutUrl();
@@ -168,6 +186,7 @@ export default function CartScreen() {
     const mrp = useCartStore(state => state.mrp());
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
+    const updateCartItem = useCartStore(state => state.updateCartItem);
 
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
@@ -342,6 +361,10 @@ export default function CartScreen() {
         () => appConfigService.getCartConfig()?.freeShoesOffer,
         [appConfigRefresh]
     );
+    const freeShoesPickerConfig = useMemo(
+        () => appConfigService.getCartConfig()?.freeShoesPicker,
+        [appConfigRefresh]
+    );
     /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
     const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
 
@@ -363,6 +386,103 @@ export default function CartScreen() {
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+    const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
+    const [tryBuyEditProduct, setTryBuyEditProduct] = useState<any>(null);
+
+    const closeTryBuyEdit = useCallback(() => {
+        setTryBuyEditLine(null);
+        setTryBuyEditProduct(null);
+    }, []);
+
+    const openTryBuyEdit = useCallback(
+        async (line: any) => {
+            const pid = line?.productId;
+            if (!pid) {
+                Alert.alert('Edit', 'Missing product information.');
+                return;
+            }
+            setTryBuyEditLine(line);
+            setTryBuyEditProduct(null);
+            try {
+                const product = await shopifyApi.getProductById(pid);
+                if (!product) {
+                    Alert.alert('Edit', 'Could not load product.');
+                    setTryBuyEditLine(null);
+                    return;
+                }
+                const v = findVariantInProductById(product, line.variantId);
+                if (!v) {
+                    Alert.alert('Edit', 'Could not find this item variant.');
+                    setTryBuyEditLine(null);
+                    return;
+                }
+                setTryBuyEditProduct(product);
+            } catch {
+                Alert.alert('Edit', 'Could not load product.');
+                setTryBuyEditLine(null);
+            }
+        },
+        [],
+    );
+
+    const handleTryBuyEditConfirm = useCallback(
+        async (result: TryAndBuyVariantSelectionResult) => {
+            if (!tryBuyEditLine?.id) return;
+            const k = result.keepVariant;
+            const price = parseFloat(k?.price?.amount || '0');
+            const compareAtRaw = k?.compareAtPrice?.amount ? parseFloat(k.compareAtPrice.amount) : NaN;
+            const compareAtPrice = Number.isFinite(compareAtRaw) ? compareAtRaw : undefined;
+            const imageUrl =
+                k?.image?.url ||
+                k?.product?.images?.edges?.[0]?.node?.url ||
+                k?.product?.images?.[0]?.url ||
+                k?.product?.featuredImage?.url ||
+                tryBuyEditProduct?.images?.[0]?.url ||
+                tryBuyEditProduct?.featuredImage?.url ||
+                tryBuyEditProduct?.images?.edges?.[0]?.node?.url ||
+                tryBuyEditLine.image ||
+                '';
+
+            const qtyAvail = k?.quantityAvailable != null ? Number(k.quantityAvailable) : undefined;
+
+            const patch: {
+                variantId: string;
+                variantTitle?: string;
+                price: number;
+                compareAtPrice?: number;
+                image?: string;
+                availableForSale: boolean;
+                quantityAvailable?: number;
+                customAttributes?: Record<string, string>;
+            } = {
+                variantId: String(k?.id || ''),
+                variantTitle: k?.title,
+                price,
+                compareAtPrice,
+                availableForSale: isVariantAvailable(k) !== false,
+                ...(Number.isFinite(qtyAvail) ? { quantityAvailable: qtyAvail } : {}),
+                ...(imageUrl ? { image: imageUrl } : {}),
+            };
+
+            if (result.tryVariant) {
+                patch.customAttributes = {
+                    try_buy_trial_variant_id: String(result.tryVariant.id || ''),
+                    try_buy_trial_variant_title: String(result.tryVariant.title || ''),
+                    try_buy_trial_option_value: tryBuyTrialOptionValueFromVariant(result.tryVariant),
+                };
+            } else {
+                patch.customAttributes = {};
+            }
+
+            await updateCartItem(tryBuyEditLine.id, patch);
+        },
+        [tryBuyEditLine, tryBuyEditProduct, updateCartItem],
+    );
+
+    const handleTryBuyRemoveTrial = useCallback(() => {
+        if (!tryBuyEditLine?.id) return;
+        void updateCartItem(tryBuyEditLine.id, { customAttributes: {} });
+    }, [tryBuyEditLine, updateCartItem]);
 
     // Redirect back if cart is empty
     useEffect(() => {
@@ -382,11 +502,20 @@ export default function CartScreen() {
     useEffect(() => {
         const hasHeyKiddo = discountCodes.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
         if (!hasHeyKiddo || selectedShoe || !freeShoesOfferConfig?.shoes?.length) return;
-        const firstShoe = freeShoesOfferConfig.shoes[0];
-        const firstSize = freeShoesOfferConfig.sizes?.find((s) => s.isAvailable)?.size ?? freeShoesOfferConfig.sizes?.[0]?.size;
+        const configuredShoes = freeShoesPickerConfig?.enabled && freeShoesPickerConfig.shoes?.length
+            ? freeShoesPickerConfig.shoes
+            : freeShoesOfferConfig.shoes;
+        const configuredSizes = freeShoesPickerConfig?.enabled && freeShoesPickerConfig.sizes?.length
+            ? freeShoesPickerConfig.sizes
+            : freeShoesOfferConfig.sizes?.map((s) => ({ ...s, shoeIds: configuredShoes.map((shoe) => shoe.id) }));
+        const firstAvailableSize = configuredSizes?.find((s) => s.isAvailable) ?? configuredSizes?.[0];
+        const firstSize = firstAvailableSize?.size;
+        const allowedIds = firstAvailableSize?.shoeIds?.length ? firstAvailableSize.shoeIds : configuredShoes.map((shoe) => shoe.id);
+        const firstShoe = configuredShoes.find((shoe) => allowedIds.includes(shoe.id)) ?? configuredShoes[0];
+        if (!firstShoe) return;
         setSelectedShoe(firstShoe.id);
         if (firstSize) setSelectedShoeSize(firstSize);
-    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, setSelectedShoe, setSelectedShoeSize]);
+    }, [discountCodes, selectedShoe, freeShoesOfferConfig?.shoes, freeShoesOfferConfig?.sizes, freeShoesPickerConfig, setSelectedShoe, setSelectedShoeSize]);
 
     // Coupon fetching is handled inside SavingsCorner.
 
@@ -840,6 +969,9 @@ export default function CartScreen() {
                     compareAtPrice: item.compareAtPrice,
                     tags: item.tags,
                     bookingDate: item.bookingDate,
+                    ...(item.customAttributes && Object.keys(item.customAttributes).length > 0
+                        ? { customAttributes: item.customAttributes }
+                        : {}),
                 })),
                 totalAmount: toPay,
                 currencyCode: 'INR',
@@ -1146,6 +1278,14 @@ export default function CartScreen() {
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
+                            ...(selectedAddress &&
+                                typeof selectedAddress.latitude === 'number' &&
+                                typeof selectedAddress.longitude === 'number' &&
+                                Number.isFinite(selectedAddress.latitude) &&
+                                Number.isFinite(selectedAddress.longitude) && {
+                                    destinationLat: String(selectedAddress.latitude),
+                                    destinationLng: String(selectedAddress.longitude),
+                                }),
                         },
                     };
 
@@ -1248,75 +1388,119 @@ export default function CartScreen() {
         const compareAt = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
         const discountPct = compareAt ? Math.round(((compareAt - item.price) / compareAt) * 100) : 0;
         const showTryAndBuyBadge = hasTryAndBuyTag(item);
+        const trialVariantId = item.customAttributes?.try_buy_trial_variant_id;
+        const showTryBuyDetail = !!trialVariantId;
+        /** Show sizes + Edit for any Try & Buy line, including before a try size is chosen */
+        const showTryBuyUi = showTryAndBuyBadge || showTryBuyDetail;
+        const primarySize = sizeLabelFromVariantTitle(item.variantTitle);
+        const trialSize =
+            item.customAttributes?.try_buy_trial_option_value ||
+            sizeLabelFromVariantTitle(item.customAttributes?.try_buy_trial_variant_title);
+        const showTbBadge = showTryAndBuyBadge || showTryBuyDetail;
+        const unitTotal = item.price * (item.quantity || 1);
+        const compareLineTotal = compareAt != null ? compareAt * (item.quantity || 1) : null;
 
         return (
-            <TouchableOpacity
-                key={item.id}
-                style={styles.cartItemRow}
-                onPress={() => handleProductPress(item)}
-                activeOpacity={0.7}
-            >
+            <View key={item.id} style={styles.cartItemRow}>
                 <View style={styles.cartItemRowInner}>
-                <View style={styles.cartItemBlock}>
-                    <View style={styles.itemImageAndTitleBlock}>
-                        <View style={styles.itemImageContainer}>
-                            {showTryAndBuyBadge && (
-                                <View style={styles.tryAndBuyBadgeCart}>
-                                    <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
-                                </View>
-                            )}
-                            <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
-                        </View>
-                        <View style={styles.itemTitleBlock}>
-                            <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
-                            <Text style={styles.itemVariantSubtext} numberOfLines={1}>
-                                {item.variantTitle && item.variantTitle !== 'Default Title'
-                                    ? `${item.variantTitle} • Pack of ${item.quantity}`
-                                    : `Pack of ${item.quantity}`}
-                            </Text>
-                            {item.bookingDate && (
-                                <View style={styles.bookingDateContainer}>
-                                    <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
-                                    <Text style={styles.bookingDateText}>
-                                        {new Date(item.bookingDate).toLocaleDateString('en-US', {
-                                            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-                                        })}
+                    <View style={styles.cartItemBlock}>
+                        <TouchableOpacity
+                            style={styles.itemImageAndTitleBlock}
+                            onPress={() => handleProductPress(item)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.itemImageContainer}>
+                                {showTbBadge && (
+                                    <View style={styles.tryAndBuyBadgeCart}>
+                                        <Text style={styles.tryAndBuyBadgeCartText}>Try & Buy</Text>
+                                    </View>
+                                )}
+                                {item.image ? (
+                                    <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="cover" />
+                                ) : (
+                                    <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                        <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                    </View>
+                                )}
+                            </View>
+                            <View style={styles.itemTitleBlock}>
+                                <Text style={styles.itemTitle} numberOfLines={2}>
+                                    {item.title}
+                                </Text>
+                                {showTryBuyUi ? (
+                                    <View style={styles.tryBuyDetailBlock}>
+                                        {primarySize ? (
+                                            <Text style={styles.itemSizeLine}>Size: {primarySize}</Text>
+                                        ) : null}
+                                        {trialSize ? (
+                                            <Text style={styles.itemTryBuySizeLine}  ellipsizeMode="tail">
+                                                Try & Buy Size: {trialSize}
+                                            </Text>
+                                        ) : null}
+                                        <TouchableOpacity
+                                            onPress={() => openTryBuyEdit(item)}
+                                            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                                        >
+                                            <Text style={styles.itemEditTryBuy}>Edit</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.itemVariantSubtext} numberOfLines={1}>
+                                        {item.variantTitle && item.variantTitle !== 'Default Title'
+                                            ? `${item.variantTitle} • Pack of ${item.quantity}`
+                                            : `Pack of ${item.quantity}`}
+                                    </Text>
+                                )}
+                                {item.bookingDate && (
+                                    <View style={styles.bookingDateContainer}>
+                                        <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                        <Text style={styles.bookingDateText}>
+                                            {new Date(item.bookingDate).toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                            })}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <View style={styles.quantityAndPriceRow}>
+                            <View style={styles.quantityContainer}>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                >
+                                    <Ionicons name="remove" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                                <Text style={styles.quantityText}>{item.quantity}</Text>
+                                <TouchableOpacity
+                                    style={styles.quantityButton}
+                                    onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                >
+                                    <Ionicons name="add" size={16} color={Colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.itemPriceBlock}>
+                                <View style={styles.itemPriceInline}>
+                                    {compareLineTotal != null && (
+                                        <Text style={styles.itemPriceStrikethrough}>
+                                            {formatCurrency(compareLineTotal)}
+                                        </Text>
+                                    )}
+                                    <Text style={styles.itemPrice}>
+                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price)}
                                     </Text>
                                 </View>
-                            )}
-                        </View>
-                    </View>
-                    <View style={styles.quantityAndPriceRow}>
-                        <View style={styles.quantityContainer}>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                            >
-                                <Ionicons name="remove" size={16} color={Colors.primary} />
-                            </TouchableOpacity>
-                            <Text style={styles.quantityText}>{item.quantity}</Text>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                            >
-                                <Ionicons name="add" size={16} color={Colors.primary} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.itemPriceBlock}>
-                            <View style={styles.itemPriceInline}>
-                                {compareAt != null && (
-                                    <Text style={styles.itemPriceStrikethrough}>{formatCurrency(compareAt)}</Text>
+                                {discountPct > 0 && (
+                                    <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
                                 )}
-                                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
                             </View>
-                            {discountPct > 0 && (
-                                <Text style={styles.itemDiscountPct}>{discountPct}% off</Text>
-                            )}
                         </View>
                     </View>
                 </View>
-                </View>
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -1621,6 +1805,26 @@ export default function CartScreen() {
                 onClose={() => setShowTryAndBuyModal(false)}
             />
 
+            <VariantSelectionModal
+                visible={!!tryBuyEditProduct && !!tryBuyEditLine}
+                product={tryBuyEditProduct}
+                layout="sheet"
+                mode="edit"
+                initialPrimaryOptionValue={
+                    tryBuyEditLine && tryBuyEditProduct
+                        ? primaryOptionLabelFromLine(tryBuyEditProduct, tryBuyEditLine)
+                        : null
+                }
+                initialTryOptionValue={
+                    tryBuyEditLine?.customAttributes?.try_buy_trial_option_value ||
+                    sizeLabelFromVariantTitle(tryBuyEditLine?.customAttributes?.try_buy_trial_variant_title) ||
+                    null
+                }
+                onClose={closeTryBuyEdit}
+                onAddToCart={handleTryBuyEditConfirm}
+                onRemoveTryBuy={handleTryBuyRemoveTrial}
+            />
+
             {/* Stock limit (quantity) modal */}
             <StockLimitModal
                 visible={stockLimitModal.visible}
@@ -1853,6 +2057,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E5E5',
     },
+    itemImagePlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     tryAndBuyBadgeCart: {
         position: 'absolute',
         top: 0,
@@ -1902,6 +2110,28 @@ const styles = StyleSheet.create({
         color: '#717680',
         fontFamily: Fonts.LexendMedium,
         marginTop: 6,
+    },
+    tryBuyDetailBlock: {
+        marginTop: 6,
+        gap: 4,
+    },
+    itemSizeLine: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#181D27',
+        fontFamily: Fonts.LexendSemiBold,
+    },
+    itemTryBuySizeLine: {
+        fontSize: 11,
+        color: '#717680',
+        fontFamily: Fonts.LexendMedium,
+    },
+    itemEditTryBuy: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: Colors.variantSelection,
+        fontFamily: Fonts.LexendSemiBold,
+        textDecorationLine: 'underline',
+        marginTop: 4,
+        alignSelf: 'flex-start',
     },
     itemPriceBlock: {
         alignItems: 'center',

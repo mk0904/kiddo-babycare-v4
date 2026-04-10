@@ -8,14 +8,15 @@ import {
     Platform,
     StatusBar,
 } from 'react-native';
+import { ResizeMode, Video } from 'expo-av';
 import * as NavigationBar from 'expo-navigation-bar'; // Added NavigationBar import
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
-const SPLASH_IMAGE_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/splash.jpg';
-const REMOTE_IMAGE_TIMEOUT = 3000;
-const MIN_SPLASH_DURATION = 2000;
+const REMOTE_VIDEO_TIMEOUT = 6000;
+const MIN_SPLASH_DURATION = 1200;
 const FADE_OUT_DURATION = 400;
+const SPLASH_BG = '#F4EEE5';
 
 interface AnimatedSplashScreenProps {
     onFinish?: () => void;
@@ -23,11 +24,26 @@ interface AnimatedSplashScreenProps {
 
 export const AnimatedSplashScreen = ({ onFinish }: AnimatedSplashScreenProps) => {
     const fadeAnim = useRef(new Animated.Value(1)).current;
-    const [imageSource, setImageSource] = useState(require('../../assets/images/splash.png'));
-    const [imageLoaded, setImageLoaded] = useState(false);
     const [startTime] = useState(Date.now());
     const timeoutRef = useRef<any>(null);
-    const imageLoadTimeoutRef = useRef<any>(null);
+    const videoLoadTimeoutRef = useRef<any>(null);
+    const hasFinishedRef = useRef(false);
+
+    const finishSplash = () => {
+        if (hasFinishedRef.current) return;
+        hasFinishedRef.current = true;
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, MIN_SPLASH_DURATION - elapsed);
+        timeoutRef.current = setTimeout(() => {
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: FADE_OUT_DURATION,
+                useNativeDriver: true,
+            }).start(() => {
+                onFinish?.();
+            });
+        }, remainingTime);
+    };
 
     useEffect(() => {
         if (Platform.OS === 'android') {
@@ -37,32 +53,11 @@ export const AnimatedSplashScreen = ({ onFinish }: AnimatedSplashScreenProps) =>
             NavigationBar.setBehaviorAsync('overlay-swipe');
         }
 
-        const loadRemoteImage = () => {
-            const remoteImageSource = { uri: SPLASH_IMAGE_URL };
-
-            Image.prefetch(SPLASH_IMAGE_URL)
-                .then(() => {
-                    if (!imageLoaded) {
-                        setImageSource(remoteImageSource);
-                        setImageLoaded(true);
-                    }
-                })
-                .catch(() => {
-                    if (!imageLoaded) {
-                        setImageSource(require('../../assets/images/splash.png'));
-                        setImageLoaded(true);
-                    }
-                });
-
-            imageLoadTimeoutRef.current = setTimeout(() => {
-                if (!imageLoaded) {
-                    setImageSource(require('../../assets/images/splash.png'));
-                    setImageLoaded(true);
-                }
-            }, REMOTE_IMAGE_TIMEOUT);
-        };
-
-        loadRemoteImage();
+        videoLoadTimeoutRef.current = setTimeout(() => {
+            if (!hasFinishedRef.current) {
+                finishSplash();
+            }
+        }, REMOTE_VIDEO_TIMEOUT);
 
         return () => {
             // Restore bars when splash finishes
@@ -71,56 +66,57 @@ export const AnimatedSplashScreen = ({ onFinish }: AnimatedSplashScreenProps) =>
                 NavigationBar.setVisibilityAsync('visible');
             }
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            if (imageLoadTimeoutRef.current) clearTimeout(imageLoadTimeoutRef.current);
+            if (videoLoadTimeoutRef.current) clearTimeout(videoLoadTimeoutRef.current);
         };
     }, []);
 
     useEffect(() => {
-        const startFadeOut = () => {
-            const elapsed = Date.now() - startTime;
-            const remainingTime = Math.max(0, MIN_SPLASH_DURATION - elapsed);
-
-            timeoutRef.current = setTimeout(() => {
-                Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: FADE_OUT_DURATION,
-                    useNativeDriver: true,
-                }).start(() => {
-                    onFinish?.();
-                });
-            }, remainingTime);
-        };
-
-        if (imageLoaded) {
-            startFadeOut();
-        }
-
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    }, [imageLoaded, fadeAnim, onFinish, startTime]);
+    }, []);
 
-    const handleImageError = () => {
-        // Check if it's already the local image to avoid infinite loop
-        // But since require return number, and uri returns object, we can check property
-        if (imageSource && typeof imageSource === 'object' && 'uri' in imageSource) {
-            setImageSource(require('../../assets/images/splash.png'));
-            setImageLoaded(true);
+    const handleVideoError = () => {
+        if (!hasFinishedRef.current) {
+            finishSplash();
         }
     };
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-            <Image
-                source={imageSource}
-                style={styles.splashImage}
-                resizeMode="cover"
-                onError={handleImageError}
-                onLoad={() => {
-                    // Either remote or local loaded
-                    setImageLoaded(true);
-                }}
-            />
+            {Platform.OS === 'android' ? (
+                <Image
+                    source={require('../../assets/images/new-splash-screen.png')}
+                    style={styles.splashImage}
+                    resizeMode="cover"
+                    onLoadEnd={() => {
+                        if (videoLoadTimeoutRef.current) {
+                            clearTimeout(videoLoadTimeoutRef.current);
+                            videoLoadTimeoutRef.current = null;
+                        }
+                        finishSplash();
+                    }}
+                />
+            ) : (
+                <Video
+                    source={require('../../assets/images/splash-screen.mp4')}
+                    style={styles.splashImage}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping={false}
+                    onError={handleVideoError}
+                    onPlaybackStatusUpdate={(status) => {
+                        if (!status.isLoaded) return;
+                        if (videoLoadTimeoutRef.current) {
+                            clearTimeout(videoLoadTimeoutRef.current);
+                            videoLoadTimeoutRef.current = null;
+                        }
+                        if (status.didJustFinish) {
+                            finishSplash();
+                        }
+                    }}
+                />
+            )}
         </Animated.View>
     );
 };
@@ -130,7 +126,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         height: SCREEN_HEIGHT,
         width: SCREEN_WIDTH,
-        backgroundColor: '#ffffff',
+        backgroundColor: SPLASH_BG,
         zIndex: 99999,
     },
     splashImage: {

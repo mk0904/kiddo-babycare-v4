@@ -2,8 +2,7 @@ import React, { useMemo, memo, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { configService } from '@/services/configService';
-import { getDeliveryTimeFromGoogleMaps } from '@/config/deliveryConfig';
+import { getDeliveryEta } from '@/config/deliveryConfig';
 
 interface EstimatedDeliveryTimeProps {
   addressLatitude?: number;
@@ -16,53 +15,6 @@ interface EstimatedDeliveryTimeProps {
   showIcon?: boolean;
 }
 
-// Get dark store location and delivery config from configService
-const getDeliveryConfig = () => {
-  const deliveryConfig = configService.getDeliveryConfig() || {};
-  return {
-    darkStoreLatitude: deliveryConfig.darkStoreLocation?.latitude || 28.540546501290788,
-    darkStoreLongitude: deliveryConfig.darkStoreLocation?.longitude || 77.37018854503113,
-    packingTime: deliveryConfig.packingTime || 5,
-    travelTimePerKm: deliveryConfig.travelTimePerKm || 2,
-    maxDeliveryTime: deliveryConfig.maxDeliveryTime || 60,
-  };
-};
-
-/**
- * Calculate distance between two coordinates using Haversine formula
- * Returns distance in kilometers
- */
-const calculateDistance = (
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number => {
-  const R = 6371; // Radius of the Earth in kilometers
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
-  return distance;
-};
-
-/**
- * Calculate estimated delivery time from dark store
- * Formula: distance (km) * travelTimePerKm + packingTime
- */
-const calculateDeliveryTime = (distanceKm: number): number => {
-  const config = getDeliveryConfig();
-  const travelTime = distanceKm * config.travelTimePerKm;
-  const totalTime = Math.round(config.packingTime + travelTime);
-  return totalTime;
-};
-
 const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
   addressLatitude,
   addressLongitude,
@@ -74,31 +26,34 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
   const lat = addressLatitude ?? address?.latitude;
   const lon = addressLongitude ?? address?.longitude;
 
-  const [googleMapsTime, setGoogleMapsTime] = useState<number | null>(null);
-  const [loadingGoogleMaps, setLoadingGoogleMaps] = useState(false);
+  const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
+  const [isServiceable, setIsServiceable] = useState(true);
+  const [loadingEta, setLoadingEta] = useState(false);
 
-  // Try to get delivery time from Google Maps API (for two-wheelers)
+  // Fetch ETA from backend.
   useEffect(() => {
     if (!lat || !lon) {
-      setGoogleMapsTime(null);
+      setDeliveryTime(null);
       return;
     }
 
     let cancelled = false;
-    setLoadingGoogleMaps(true);
+    setLoadingEta(true);
 
-    getDeliveryTimeFromGoogleMaps(lat, lon)
-      .then((time) => {
+    getDeliveryEta(lat, lon)
+      .then((eta) => {
         if (!cancelled) {
-          setGoogleMapsTime(time);
-          setLoadingGoogleMaps(false);
+          setDeliveryTime(eta?.etaMinutes ?? null);
+          setIsServiceable(eta?.isServiceable ?? true);
+          setLoadingEta(false);
         }
       })
       .catch((error) => {
-        console.error('Error fetching Google Maps delivery time:', error);
+        console.error('Error fetching delivery ETA:', error);
         if (!cancelled) {
-          setGoogleMapsTime(null);
-          setLoadingGoogleMaps(false);
+          setDeliveryTime(null);
+          setIsServiceable(true);
+          setLoadingEta(false);
         }
       });
 
@@ -107,42 +62,8 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
     };
   }, [lat, lon]);
 
-  // Calculate delivery time using distance-based fallback
-  const { deliveryTime: fallbackTime, isServiceable: fallbackServiceable } = useMemo(() => {
-    try {
-      // If no address coordinates, can't calculate
-      if (!lat || !lon) {
-        return { deliveryTime: null, isServiceable: true };
-      }
-
-      // Get dark store location from config
-      const config = getDeliveryConfig();
-      const darkStoreLat = config.darkStoreLatitude;
-      const darkStoreLon = config.darkStoreLongitude;
-
-      // Calculate distance from dark store to address
-      const distanceKm = calculateDistance(darkStoreLat, darkStoreLon, lat, lon);
-
-      // Calculate delivery time
-      const time = calculateDeliveryTime(distanceKm);
-
-      // Check if serviceable (within max delivery time)
-      const serviceable = time <= config.maxDeliveryTime;
-
-      return { deliveryTime: time, isServiceable: serviceable };
-    } catch (error) {
-      console.error('Error calculating delivery time:', error);
-      return { deliveryTime: null, isServiceable: true };
-    }
-  }, [lat, lon]);
-
-  // Use Google Maps time if available, otherwise use fallback
-  const deliveryTime = googleMapsTime ?? fallbackTime;
-  const config = getDeliveryConfig();
-  const isServiceable = deliveryTime !== null && deliveryTime <= config.maxDeliveryTime;
-
-  // Show loading indicator while fetching from Google Maps
-  if (loadingGoogleMaps && fallbackTime === null) {
+  // Show loading indicator while fetching ETA
+  if (loadingEta && deliveryTime === null) {
     return (
       <View style={[styles.container, style]}>
         <ActivityIndicator size="small" color={Colors.primary} />
@@ -186,74 +107,52 @@ export const EstimatedDeliveryTime = memo(EstimatedDeliveryTimeComponent, (prevP
 export const useDeliveryStatus = (
   addressLatitude?: number,
   addressLongitude?: number,
-  address?: { latitude?: number; longitude?: number }
+  address?: { latitude?: number; longitude?: number },
+  options?: { hasGiftWrap?: boolean }
 ) => {
   // Extract coordinates once for stable dependencies
   const lat = addressLatitude ?? address?.latitude;
   const lon = addressLongitude ?? address?.longitude;
 
-  const [googleMapsTime, setGoogleMapsTime] = useState<number | null>(null);
-  const [loadingGoogleMaps, setLoadingGoogleMaps] = useState(false);
+  const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
+  const [isServiceable, setIsServiceable] = useState(true);
+  const [loadingEta, setLoadingEta] = useState(false);
 
-  // Try to get delivery time from Google Maps API (for two-wheelers)
+  // Fetch ETA from backend.
   useEffect(() => {
     if (!lat || !lon) {
-      setGoogleMapsTime(null);
-      setLoadingGoogleMaps(false);
+      setDeliveryTime(null);
+      setIsServiceable(true);
+      setLoadingEta(false);
       return;
     }
 
     let cancelled = false;
-    setLoadingGoogleMaps(true);
+    setLoadingEta(true);
 
-    getDeliveryTimeFromGoogleMaps(lat, lon)
-      .then((time) => {
+    getDeliveryEta(lat, lon, { hasGiftWrap: options?.hasGiftWrap === true })
+      .then((eta) => {
         if (!cancelled) {
-          setGoogleMapsTime(time);
-          setLoadingGoogleMaps(false);
+          setDeliveryTime(eta?.etaMinutes ?? null);
+          setIsServiceable(eta?.isServiceable ?? true);
+          setLoadingEta(false);
         }
       })
       .catch((error) => {
-        console.error('Error fetching Google Maps delivery time:', error);
+        console.error('Error fetching delivery ETA:', error);
         if (!cancelled) {
-          setGoogleMapsTime(null);
-          setLoadingGoogleMaps(false);
+          setDeliveryTime(null);
+          setIsServiceable(true);
+          setLoadingEta(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [lat, lon]);
+  }, [lat, lon, options?.hasGiftWrap]);
 
-  // Calculate delivery time using distance-based fallback
-  const { deliveryTime: fallbackTime, isServiceable: fallbackServiceable } = useMemo(() => {
-    try {
-      if (!lat || !lon) {
-        return { deliveryTime: null, isServiceable: true };
-      }
-
-      const config = getDeliveryConfig();
-      const darkStoreLat = config.darkStoreLatitude;
-      const darkStoreLon = config.darkStoreLongitude;
-
-      const distanceKm = calculateDistance(darkStoreLat, darkStoreLon, lat, lon);
-      const time = calculateDeliveryTime(distanceKm);
-      const serviceable = time <= config.maxDeliveryTime;
-
-      return { deliveryTime: time, isServiceable: serviceable };
-    } catch (error) {
-      console.error('Error calculating delivery status:', error);
-      return { deliveryTime: null, isServiceable: true };
-    }
-  }, [lat, lon]); // Only depend on coordinate values, not object references
-
-  // Use Google Maps time if available, otherwise use fallback
-  const deliveryTime = googleMapsTime ?? fallbackTime;
-  const config = getDeliveryConfig();
-  const isServiceable = deliveryTime !== null && deliveryTime <= config.maxDeliveryTime;
-
-  return { isServiceable, deliveryTime, loading: loadingGoogleMaps && fallbackTime === null };
+  return { isServiceable, deliveryTime, loading: loadingEta && deliveryTime === null };
 };
 
 const styles = StyleSheet.create({

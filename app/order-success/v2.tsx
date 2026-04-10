@@ -19,8 +19,14 @@ const AUTO_NAVIGATE_DELAY_MS = 3000;
 
 export default function OrderSuccessV2Screen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ orderId?: string; orderGraphId?: string; estimatedDeliveryMinutes?: string }>();
-    const { orderId, orderGraphId, estimatedDeliveryMinutes } = params;
+    const params = useLocalSearchParams<{
+        orderId?: string;
+        orderGraphId?: string;
+        estimatedDeliveryMinutes?: string;
+        destinationLat?: string;
+        destinationLng?: string;
+    }>();
+    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng } = params;
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -46,18 +52,31 @@ export default function OrderSuccessV2Screen() {
     useEffect(() => {
         const t = setTimeout(() => {
             const etaParam = estimatedDeliveryMinutes != null ? { estimatedDeliveryMinutes } : {};
+            const destParam =
+                destinationLat != null &&
+                destinationLng != null &&
+                String(destinationLat).trim() !== '' &&
+                String(destinationLng).trim() !== ''
+                    ? { destinationLat: String(destinationLat), destinationLng: String(destinationLng) }
+                    : {};
             if (orderGraphId) {
                 const encodedId = typeof orderGraphId === 'string' ? encodeURIComponent(orderGraphId) : orderGraphId;
-                router.replace({ pathname: '/orders/[id]/v2', params: { id: encodedId, ...etaParam } } as any);
+                router.replace({
+                    pathname: '/orders/[id]/v2',
+                    params: { id: encodedId, ...etaParam, ...destParam },
+                } as any);
             } else if (orderId) {
                 const encodedId = typeof orderId === 'string' ? encodeURIComponent(orderId) : orderId;
-                router.replace({ pathname: '/orders/[id]/v2', params: { id: encodedId, ...etaParam } } as any);
+                router.replace({
+                    pathname: '/orders/[id]/v2',
+                    params: { id: encodedId, ...etaParam, ...destParam },
+                } as any);
             } else {
                 router.replace('/orders');
             }
         }, AUTO_NAVIGATE_DELAY_MS);
         return () => clearTimeout(t);
-    }, [orderGraphId, orderId, router]);
+    }, [orderGraphId, orderId, router, estimatedDeliveryMinutes, destinationLat, destinationLng]);
 
     const handleClose = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

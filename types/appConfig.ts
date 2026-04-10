@@ -14,6 +14,22 @@ export interface FreeShoesOfferShoe {
   imageUrl: string;
 }
 
+export interface FreeShoesPickerSizeOption {
+  size: string;
+  isAvailable: boolean;
+  shoeIds?: string[];
+}
+
+export interface FreeShoesPickerConfig {
+  enabled: boolean;
+  shoes: FreeShoesOfferShoe[];
+  sizes: FreeShoesPickerSizeOption[];
+  copy?: {
+    sizeTitle?: string;
+    shoeTitle?: string;
+  };
+}
+
 export interface FreeShoesOfferConfig {
   enabled: boolean;
   /** When false, offer is hidden. When true or undefined, offer is shown (if enabled). Computed by backend from cart context (cartSubtotal, cartCategories). */
@@ -71,6 +87,7 @@ export interface CartConfig {
   };
   giftWrap?: GiftWrapConfig;
   freeShoesOffer?: FreeShoesOfferConfig;
+  freeShoesPicker?: FreeShoesPickerConfig;
   savingsCorner?: { title?: string; applyCta?: string };
   billDetails?: {
     subtotalLabel?: string;
@@ -87,7 +104,23 @@ export interface CheckoutConfig {
 }
 
 export interface OrderDetailConfig {
+  /** Banner image above order content (JPEG/PNG). */
   imageUrl?: string;
+  /** Dark store / pickup hub marker on tracking map (SVG or raster URL). */
+  darkStoreIconUrl?: string;
+  /** Customer / delivery location marker on tracking map (SVG or raster URL). */
+  cusLocUrl?: string;
+  /** Rider / partner position on map (SVG or raster). */
+  partnerIconUrl?: string;
+  /** Partner avatar in delivery card (PNG preferred). */
+  partnerImageUrl?: string;
+}
+
+export interface EntryScreenItem {
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
 }
 
 export interface AppConfigResponse {
@@ -102,4 +135,5 @@ export interface AppConfigResponse {
   cart?: CartConfig;
   checkout?: CheckoutConfig;
   orderDetail?: OrderDetailConfig;
+  entryScreens?: EntryScreenItem[];
 }

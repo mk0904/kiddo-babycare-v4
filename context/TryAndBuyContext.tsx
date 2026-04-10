@@ -41,6 +41,7 @@ export interface TryAndBuyItem {
     image?: string;
     quantity: number;
     tags?: string[];
+    customAttributes?: Record<string, string>;
 }
 
 export interface TryAndBuyOrder extends Order {
@@ -282,7 +283,11 @@ export const TryAndBuyProvider = ({ children }: { children: ReactNode }) => {
                     quantity: item.quantity,
                     price: item.price,
                     title: item.title,
+                    variantTitle: item.variantTitle,
                     tags: item.tags ?? [],
+                    ...(item.customAttributes && Object.keys(item.customAttributes).length > 0
+                        ? { customAttributes: item.customAttributes }
+                        : {}),
                 })),
                 totalAmount,
                 currencyCode: 'INR',

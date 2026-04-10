@@ -238,6 +238,14 @@ export function getSubtotalForAllowedCategories(
   return sum;
 }
 
+function formatCategoryLabel(categories: string[] | null | undefined): string {
+  if (!categories?.length) return '';
+  return categories
+    .map((c) => String(c).trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
 /**
  * Check if a coupon is applicable for display purposes.
  * For allowedCategories: min purchase and discount use combined cart value of products in any of those categories.
@@ -274,9 +282,6 @@ export const getCouponApplicabilityForDisplay = (
   if (coupon.ticketingOnly && !hasTicketingProducts) {
     return { applicable: false, reason: 'Valid for Events, Playhouses & Petting Farms' };
   }
-  if (!coupon.ticketingOnly && !coupon.clothingOnly && hasTicketingProducts && !hasFashionItems) {
-    return { applicable: false, reason: 'Valid for apparel only' };
-  }
 
   const allowed = coupon.allowedCategories?.length ? coupon.allowedCategories : null;
   const singleCategory = coupon.applicableCategory?.trim().toLowerCase();
@@ -286,10 +291,14 @@ export const getCouponApplicabilityForDisplay = (
     effectiveSubtotal = Array.isArray(lineItems)
       ? getSubtotalForAllowedCategories(lineItems, allowed)
       : 0;
-    categoryLabel = allowed.join(', ');
+    categoryLabel = formatCategoryLabel(allowed);
   } else if (singleCategory) {
     effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
     categoryLabel = singleCategory;
+  }
+
+  if (allowed?.length && effectiveSubtotal <= 0) {
+    return { applicable: false, reason: `Add ${categoryLabel} products to avail this coupon` };
   }
 
   if (coupon.minimumPurchaseAmount) {
@@ -521,10 +530,34 @@ export const validateCouponConditions = async (
       effectiveSubtotal = Array.isArray(lineItems)
         ? getSubtotalForAllowedCategories(lineItems, allowed)
         : 0;
-      categoryLabel = allowed.join(', ');
+      categoryLabel = formatCategoryLabel(allowed);
     } else if (singleCategory && categorySubtotals) {
       effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
       categoryLabel = singleCategory;
+    }
+
+    if (coupon.clothingOnly && !(Array.isArray(lineItems) && lineItems.some((item) => (item.tags ?? []).some((tag) => {
+      const t = String(tag).trim().toLowerCase();
+      return t === 'clothing' || t === 'apparel' || t === 'fashion';
+    })))) {
+      return {
+        isValid: false,
+        error: 'Add a fashion item to use this offer.',
+      };
+    }
+
+    if (coupon.ticketingOnly && !(Array.isArray(lineItems) && lineItems.some((item) => (item.tags ?? []).some((tag) => String(tag).trim().toLowerCase() === 'ticketing')))) {
+      return {
+        isValid: false,
+        error: 'This coupon is valid for Events, Playhouses & Petting Farms only.',
+      };
+    }
+
+    if (allowed?.length && effectiveSubtotal <= 0) {
+      return {
+        isValid: false,
+        error: `Add ${categoryLabel} products to avail this coupon.`,
+      };
     }
 
     // Check if coupon is active (date range)
@@ -691,7 +724,7 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
     conditions.push('Only for apparel');
   }
 
-  const allowedLabel = coupon.allowedCategories?.length ? coupon.allowedCategories.join(', ') : '';
+  const allowedLabel = formatCategoryLabel(coupon.allowedCategories);
   const singleLabel = coupon.applicableCategory?.trim() ?? '';
 
   if (allowedLabel) {

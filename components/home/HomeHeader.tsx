@@ -4,7 +4,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -15,6 +15,19 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+/** Read scroll offset from Animated.Value (not in public TS typings). */
+function animatedScrollYValue(v: Animated.Value): number {
+  try {
+    const node = v as unknown as { __getValue?: () => number };
+    if (typeof node.__getValue === 'function') {
+      return Number(node.__getValue()) || 0;
+    }
+  } catch {
+    /* noop */
+  }
+  return 0;
+}
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
@@ -90,17 +103,39 @@ export function HomeHeader({
     return headerTopHeight;
   }, [headerTopHeight]);
 
-  const headerTranslateAmount = useMemo(() => {
-    return headerTopHeight - insets.top;
-  }, [headerTopHeight, insets.top]);
-
   // Header is in document flow (no overlay), so keep it fixed — no translate on scroll
   const headerTranslateY = useMemo(() => new Animated.Value(0), []);
 
-  // Keep top info bar always visible (header is in flow, no collapse)
-  const topInfoBarOpacity = 1;
+  /** Scroll down (finger up) → collapse ETA + address + wishlist; search + categories stay and read as sticky. */
+  const TOP_INFO_COLLAPSE_RANGE = 56;
+  const TOP_INFO_FALLBACK_HEIGHT = 132;
 
-  // Remove white background overlay - keep original background always visible
+  const topInfoMeasuredRef = useRef(TOP_INFO_FALLBACK_HEIGHT);
+  /** Layout-driven clip height (maxHeight is not supported by native animated module). */
+  const [topInfoClipHeight, setTopInfoClipHeight] = useState<number | null>(null);
+
+  const topInfoOpacity = scrollY.interpolate({
+    inputRange: [0, TOP_INFO_COLLAPSE_RANGE * 0.45, TOP_INFO_COLLAPSE_RANGE],
+    outputRange: [1, 0.35, 0],
+    extrapolate: 'clamp',
+  });
+
+  const updateTopInfoClip = useCallback((scrollValue: number) => {
+    const y = Math.max(0, scrollValue);
+    const t = Math.min(y / TOP_INFO_COLLAPSE_RANGE, 1);
+    const full = topInfoMeasuredRef.current;
+    setTopInfoClipHeight(Math.max(0, full * (1 - t)));
+  }, []);
+
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      updateTopInfoClip(value);
+    });
+    updateTopInfoClip(animatedScrollYValue(scrollY));
+    return () => {
+      scrollY.removeListener(id);
+    };
+  }, [scrollY, updateTopInfoClip]);
 
   const headerBorderBottomOpacity = scrollY.interpolate({
     inputRange: [0, stickyThreshold * 0.8, stickyThreshold],
@@ -179,74 +214,86 @@ export function HomeHeader({
         <View style={{ position: 'relative', zIndex: 1 }} collapsable={false}>
           <View
             style={[
-              styles.topInfoBar,
-              {
-                opacity: topInfoBarOpacity,
-              },
+              styles.topInfoClip,
+              topInfoClipHeight != null ? { height: topInfoClipHeight } : null,
             ]}
             collapsable={false}
           >
-            <View style={styles.leftInfoContainer}>
-              <View style={styles.kiddoRow}>
-                <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
-                  The best for kids in 
-                </Text>
-                {(address || isUnserviceable || locationStatus === 'loading') && (estimatedTime !== null || loadingTime || isUnserviceable) && (
-                  <View style={styles.estimatedTimeWrapper}>
-                    {loadingTime ? (
-                      <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
-                    ) : isUnserviceable ? (
-                      <Text style={[styles.estimatedTimeText, styles.unserviceableText]}>
-                        Area unserviceable
-                      </Text>
-                    ) : estimatedTime !== null ? (
-                      <View style={styles.estimatedTimeContent}>
-                        <Text style={[styles.estimatedTimeText, { color: textColor }]}>
-                          {estimatedTime} mins
-                        </Text>
-                        <Image
-                          source={require('@/assets/fonts/lightningsymbol.png')}
-                          style={styles.lightningIcon}
-                          resizeMode="contain"
-                          accessibilityIgnoresInvertColors
-                        />
+            <Animated.View style={{ opacity: topInfoOpacity }} collapsable={false}>
+            <View
+              style={styles.topInfoBar}
+              collapsable={false}
+              onLayout={(e) => {
+                const h = e.nativeEvent.layout.height;
+                if (h <= 0) return;
+                topInfoMeasuredRef.current = h;
+                updateTopInfoClip(animatedScrollYValue(scrollY));
+              }}
+            >
+              <View style={styles.leftInfoContainer}>
+                <View style={styles.kiddoRow}>
+                  <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
+                    The best for kids in
+                  </Text>
+                  {(address || isUnserviceable || locationStatus === 'loading') &&
+                    (estimatedTime !== null || loadingTime || isUnserviceable) && (
+                      <View style={styles.estimatedTimeWrapper}>
+                        {loadingTime ? (
+                          <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
+                        ) : isUnserviceable ? (
+                          <Text style={[styles.estimatedTimeText, styles.unserviceableText]}>
+                            Area unserviceable
+                          </Text>
+                        ) : estimatedTime !== null ? (
+                          <View style={styles.estimatedTimeContent}>
+                            <Text style={[styles.estimatedTimeText, { color: textColor }]}>
+                              {estimatedTime} mins
+                            </Text>
+                            <Image
+                              source={require('@/assets/fonts/lightningsymbol.png')}
+                              style={styles.lightningIcon}
+                              resizeMode="contain"
+                              accessibilityIgnoresInvertColors
+                            />
+                          </View>
+                        ) : null}
                       </View>
-                    ) : null}
-                  </View>
-                )}
+                    )}
+                </View>
+                <View style={styles.addressRow}>
+                  <LocationButton
+                    address={address}
+                    categoryLabel={addressCategoryLabel}
+                    textColor={textColor}
+                    onPress={onLocationPress}
+                  />
+                </View>
               </View>
-              <View style={styles.addressRow}>
-                <LocationButton
-                  address={address}
-                  categoryLabel={addressCategoryLabel}
-                  textColor={textColor}
-                  onPress={onLocationPress}
+              <TouchableOpacity
+                onPress={() => router.push('/wishlist')}
+                style={styles.wishlistButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="heart-outline" size={24} color={textColor} />
+              </TouchableOpacity>
+            </View>
+            </Animated.View>
+          </View>
+
+          <View style={styles.stickySearchCategoryBlock} collapsable={false}>
+            <View style={styles.searchContainer}>
+              <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+            </View>
+            {categories && categories.length > 0 ? (
+              <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
+                <CategoryNavigationBar
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onCategorySelect={onCategorySelect}
                 />
               </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push('/wishlist')}
-              style={styles.wishlistButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="heart-outline" size={24} color={textColor} />
-            </TouchableOpacity>
+            ) : null}
           </View>
-
-          <View style={styles.searchContainer}>
-            <SearchBar
-              suggestions={searchSuggestions}
-              onPress={onSearchPress}
-            />
-          </View>
-
-          {categories && categories.length > 0 && (
-            <CategoryNavigationBar
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategorySelect={onCategorySelect}
-            />
-          )}
         </View>
       </HeaderWrapper>
       <Animated.View
@@ -272,6 +319,9 @@ const styles = StyleSheet.create({
   headerContainer: {
     width: '100%',
     overflow: 'visible',
+  },
+  topInfoClip: {
+    overflow: 'hidden',
   },
   topInfoBar: {
     flexDirection: 'row',
@@ -324,6 +374,8 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   searchContainer: {
+    position: 'relative',
+    zIndex: 1,
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 4,
@@ -332,6 +384,14 @@ const styles = StyleSheet.create({
   wishlistButton: {
     padding: 4,
     marginLeft: 8,
+  },
+  stickySearchCategoryBlock: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  categoryBarAboveUnderlay: {
+    position: 'relative',
+    zIndex: 1,
   },
 });
 

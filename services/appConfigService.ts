@@ -9,24 +9,16 @@ import type {
   AppConfigResponse,
   CartConfig,
   CartFeatures,
+  EntryScreenItem,
   FreeShoesOfferConfig,
+  FreeShoesPickerConfig,
   GiftWrapConfig,
   OrderDetailConfig,
 } from '@/types/appConfig';
-import { configService } from './configService';
-
-const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
-
-function getBackendBase(): string {
-  const raw = configService.getRawConfig();
-  const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return (base as string).replace(/\/+$/, '');
-}
+import { getBackendApiPath } from './backendBase';
 
 function getAppConfigUrl(payload?: AppConfigPayload): string {
-  const base = getBackendBase();
-  const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-  const url = `${prefix}/app/config`;
+  const url = getBackendApiPath('app/config');
   if (!payload) return url;
   const params = new URLSearchParams();
   if (payload.phone != null && payload.phone !== '') params.set('phone', payload.phone);
@@ -57,6 +49,30 @@ const DEFAULT_CART_FEATURES: CartFeatures = {
   showSavingsCorner: true,
   showCompletePurchaseSection: true,
 };
+
+function parseEntryScreenItem(raw: unknown): EntryScreenItem | null {
+  if (typeof raw === 'string') {
+    const imageUrl = raw.trim();
+    if (!imageUrl) return null;
+    return { imageUrl };
+  }
+  if (raw == null || typeof raw !== 'object') return null;
+  const rec = raw as Record<string, unknown>;
+  const imageCandidate =
+    rec.imageUrl ?? rec.image_url ?? rec.image ?? rec.bannerUrl ?? rec.banner_url ?? rec.url;
+  const imageUrl = imageCandidate != null ? String(imageCandidate).trim() : '';
+  if (!imageUrl) return null;
+  const title = rec.title != null ? String(rec.title).trim() : '';
+  const subtitle = rec.subtitle != null ? String(rec.subtitle).trim() : '';
+  const ctaRaw = rec.ctaLabel ?? rec.cta_label ?? rec.ctaText ?? rec.cta_text ?? rec.buttonText;
+  const ctaLabel = ctaRaw != null ? String(ctaRaw).trim() : '';
+  return {
+    imageUrl,
+    ...(title ? { title } : {}),
+    ...(subtitle ? { subtitle } : {}),
+    ...(ctaLabel ? { ctaLabel } : {}),
+  };
+}
 
 class AppConfigService {
   private config: AppConfigResponse | null = null;
@@ -105,6 +121,10 @@ class AppConfigService {
     return this.config?.cart?.freeShoesOffer ?? null;
   }
 
+  getFreeShoesPickerConfig(): FreeShoesPickerConfig | null {
+    return this.config?.cart?.freeShoesPicker ?? null;
+  }
+
   getGiftWrapConfig(): GiftWrapConfig | null {
     return this.config?.cart?.giftWrap ?? null;
   }
@@ -115,6 +135,12 @@ class AppConfigService {
 
   getOrderDetailConfig(): OrderDetailConfig | null {
     return this.config?.orderDetail ?? null;
+  }
+
+  getEntryScreens(): EntryScreenItem[] {
+    const raw = this.config?.entryScreens;
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    return raw.map((it) => parseEntryScreenItem(it)).filter((it): it is EntryScreenItem => it != null);
   }
 
   /** When true, show "Events" in address Save as and sync addressType to Shopify. */

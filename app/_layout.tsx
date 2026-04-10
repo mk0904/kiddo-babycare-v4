@@ -8,14 +8,15 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useMemo } from 'react';
-import { Alert, Linking, Platform, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
+import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
 import { isAppUpdateRequired } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -31,6 +32,7 @@ import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import type { EntryScreenItem } from '@/types/appConfig';
 import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
 import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
@@ -44,6 +46,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+const ANDROID_SPLASH_BG = '#F4EEE5';
+const ENTRY_SCREENS_SEEN_KEY = 'entry_screens_seen_v1';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -63,16 +67,71 @@ Notifications.setNotificationHandler({
 // Prevent the default Expo splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+let bootExperienceCompletedForSession = false;
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const user = useUserStore(state => state.user);
-  const [isSplashVisible, setIsSplashVisible] = React.useState(false);
+  const [isSplashVisible, setIsSplashVisible] = React.useState(!bootExperienceCompletedForSession);
+  const [entryScreens, setEntryScreens] = React.useState<EntryScreenItem[]>([]);
+  const [isEntryScreensVisible, setIsEntryScreensVisible] = React.useState(false);
+  const [isEntryScreensDecisionPending, setIsEntryScreensDecisionPending] = React.useState(
+    !bootExperienceCompletedForSession,
+  );
+  const [isStartupGateOpen, setIsStartupGateOpen] = React.useState(bootExperienceCompletedForSession);
   const [appIsReady, setAppIsReady] = React.useState(false);
   const metaReadyRef = React.useRef(Platform.OS !== 'ios');
   const metaInitStartedRef = React.useRef(false);
+  const entryPrefetchStartedRef = React.useRef(false);
 
   const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+  const appConfigPayload = useMemo(
+    () => ({
+      phone: user?.phone ?? undefined,
+      customerId: user?.customerId ?? user?.id ?? undefined,
+      appVersion: Constants.expoConfig?.version ?? undefined,
+      deviceType: Platform.OS,
+    }),
+    [user?.phone, user?.customerId, user?.id],
+  );
+
+  const resolveEntryScreensDecision = useCallback((screens: EntryScreenItem[]) => {
+    setEntryScreens(screens);
+    setIsEntryScreensDecisionPending(false);
+    if (!isSplashVisible && screens.length > 0) {
+      setIsEntryScreensVisible(true);
+    }
+  }, [isSplashVisible]);
+
+  const prefetchEntryScreens = useCallback(async () => {
+    if (bootExperienceCompletedForSession) {
+      setIsEntryScreensDecisionPending(false);
+      setIsStartupGateOpen(true);
+      return;
+    }
+    if (entryPrefetchStartedRef.current) return;
+    entryPrefetchStartedRef.current = true;
+    try {
+      const alreadySeenEntryScreens = await AsyncStorage.getItem(ENTRY_SCREENS_SEEN_KEY);
+      if (alreadySeenEntryScreens === 'true') {
+        resolveEntryScreensDecision([]);
+        return;
+      }
+
+      let screens = appConfigService.getEntryScreens();
+      if (screens.length === 0) {
+        await Promise.race([
+          appConfigService.loadAppConfig(false, appConfigPayload),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+        ]);
+        screens = appConfigService.getEntryScreens();
+      }
+      resolveEntryScreensDecision(screens);
+    } catch {
+      resolveEntryScreensDecision([]);
+    }
+  }, [appConfigPayload, resolveEntryScreensDecision]);
 
   // Track screen views
   useScreenTracking();
@@ -117,12 +176,7 @@ export default function RootLayout() {
       
       // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
       configService.loadConfig().then(() => {
-        appConfigService.loadAppConfig(false, {
-          phone: user?.phone ?? undefined,
-          customerId: user?.customerId ?? user?.id ?? undefined,
-          appVersion: Constants.expoConfig?.version ?? undefined,
-          deviceType: Platform.OS,
-        }).catch((error) => {
+        appConfigService.loadAppConfig(false, appConfigPayload).catch((error) => {
           if (__DEV__) console.warn('[RootLayout] Failed to load app config from backend:', error);
         });
       }).catch((error) => {
@@ -328,14 +382,74 @@ export default function RootLayout() {
         clearTimeout(fontTimeout);
       }
     };
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, appConfigPayload]);
+
+  React.useEffect(() => {
+    void prefetchEntryScreens();
+  }, [prefetchEntryScreens]);
+
+  const handleSplashFinish = useCallback(() => {
+    if (bootExperienceCompletedForSession) {
+      setIsSplashVisible(false);
+      setIsStartupGateOpen(true);
+      return;
+    }
+    setIsSplashVisible(false);
+    if (!isEntryScreensDecisionPending && entryScreens.length > 0) {
+      setIsEntryScreensVisible(true);
+    }
+  }, [entryScreens.length, isEntryScreensDecisionPending]);
+
+  React.useEffect(() => {
+    if (isSplashVisible) return;
+    if (isEntryScreensDecisionPending) return;
+    setIsEntryScreensVisible(entryScreens.length > 0);
+  }, [isSplashVisible, isEntryScreensDecisionPending, entryScreens.length]);
+
+  React.useEffect(() => {
+    if (isSplashVisible) return;
+    if (isEntryScreensDecisionPending) return;
+    if (isEntryScreensVisible) return;
+    if (entryScreens.length === 0) {
+      bootExperienceCompletedForSession = true;
+      setIsStartupGateOpen(true);
+    }
+  }, [isSplashVisible, isEntryScreensDecisionPending, isEntryScreensVisible, entryScreens.length]);
+
+  const handleEntryScreensDone = useCallback(() => {
+    AsyncStorage.setItem(ENTRY_SCREENS_SEEN_KEY, 'true').catch((error) => {
+      if (__DEV__) console.warn('[RootLayout] Failed to persist entry-screen completion:', error);
+    });
+    setIsEntryScreensVisible(false);
+    setEntryScreens([]);
+    bootExperienceCompletedForSession = true;
+    setIsStartupGateOpen(true);
+  }, []);
+
+  const shouldHoldForEntryScreens =
+    !isSplashVisible &&
+    (isEntryScreensDecisionPending || (entryScreens.length > 0 && !isEntryScreensVisible));
 
   // Always render providers, even during loading, to prevent "useAuth must be used within AuthProvider" errors
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {(!fontsLoaded || !appIsReady) ? (
+          {isSplashVisible && (
+            <AnimatedSplashScreen
+              onFinish={handleSplashFinish}
+            />
+          )}
+          {!isSplashVisible && isEntryScreensVisible && (
+            <EntryScreensCarousel
+              screens={entryScreens}
+              onDone={handleEntryScreensDone}
+            />
+          )}
+          {shouldHoldForEntryScreens && (
+            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: ANDROID_SPLASH_BG, zIndex: 99999 }} />
+          )}
+          {(!fontsLoaded || !appIsReady || !isStartupGateOpen || shouldHoldForEntryScreens) ? (
             null
           ) : updateRequired ? (
             <View style={{ flex: 1 }}>
@@ -350,11 +464,6 @@ export default function RootLayout() {
                 <RecentlyViewedProvider>
                   <TryAndBuyProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                    {isSplashVisible && (
-                      <AnimatedSplashScreen
-                        onFinish={() => setIsSplashVisible(false)}
-                      />
-                    )}
                     <TabBarVisibilityProvider>
                       <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="index" />

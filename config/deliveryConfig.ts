@@ -1,7 +1,7 @@
 // Delivery Configuration
 // Calculate delivery time based on distance: 2 mins per km + 5 mins
 
-export const GOOGLE_MAP_API = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
+import { getBackendApiPath } from '@/services/backendBase';
 export const DARK_STORE_LOCATION = {
   latitude: 28.540546501290788,
   longitude: 77.37018854503113,
@@ -38,79 +38,92 @@ export const estimateDeliveryTime = (distanceKm: number): number => {
 /** Default ETA (minutes) when distance/address is unknown. Used for order success and order detail when no stored ETA. */
 export const DEFAULT_ETA_MINUTES = 30;
 
-// Check if location is within delivery range (max 60 mins)
-export const isWithinDeliveryRange = (latitude: number, longitude: number) => {
-  if (!latitude || !longitude) {
-    return {
-      isDeliverable: false,
-      distance: 0,
-      estimatedTime: 0,
-    };
+interface EtaOptions {
+  hasGiftWrap?: boolean;
+  originLatitude?: number;
+  originLongitude?: number;
+}
+
+export interface EtaResponse {
+  etaMinutes: number;
+  isServiceable: boolean;
+  storeTimeMin: number;
+  giftWrapTimeMin?: number;
+  googleTimeMin: number;
+  gateToDoorMin: number;
+  lat: number;
+  lng: number;
+  formattedAddress?: string;
+  fallbackUsed: boolean;
+}
+
+async function postJSON<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
+  try {
+    const response = await fetch(getBackendApiPath(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch (error) {
+    console.error(`Error calling backend ${path}:`, error);
+    return null;
   }
+}
 
-  const distance = calculateDistance(
-    DARK_STORE_LOCATION.latitude,
-    DARK_STORE_LOCATION.longitude,
-    latitude,
-    longitude
-  );
-
-  const estimatedTime = estimateDeliveryTime(distance);
-
-  return {
-    isDeliverable: estimatedTime <= 60, // Max 60 mins
-    distance: distance,
-    estimatedTime: estimatedTime,
-  };
+export const getDeliveryEta = async (
+  latitude: number,
+  longitude: number,
+  options: EtaOptions = {}
+): Promise<EtaResponse | null> => {
+  return postJSON<EtaResponse>('eta', {
+    lat: latitude,
+    lng: longitude,
+    originLat: typeof options.originLatitude === 'number' ? options.originLatitude : undefined,
+    originLng: typeof options.originLongitude === 'number' ? options.originLongitude : undefined,
+    hasGiftWrap: options.hasGiftWrap === true,
+  });
 };
 
-// Get delivery time using Google Maps Distance Matrix API (two-wheelers mode)
+export const getDeliveryEtaForAddressDetails = async (
+  address: string,
+  options: EtaOptions = {}
+): Promise<EtaResponse | null> => {
+  return postJSON<EtaResponse>('eta', {
+    address,
+    hasGiftWrap: options.hasGiftWrap === true,
+  });
+};
+
+// Get delivery time from backend ETA endpoint.
 export const getDeliveryTimeFromGoogleMaps = async (
   latitude: number,
-  longitude: number
+  longitude: number,
+  options: EtaOptions = {}
 ): Promise<number | null> => {
-  try {
-    const origin = `${DARK_STORE_LOCATION.latitude},${DARK_STORE_LOCATION.longitude}`;
-    const destination = `${latitude},${longitude}`;
+  const data = await getDeliveryEta(latitude, longitude, options);
+  return data?.etaMinutes ?? null;
+};
 
-    // Use two-wheelers mode for delivery
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&mode=driving&key=${GOOGLE_MAP_API}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === 'OK' && data.rows[0] && data.rows[0].elements[0].status === 'OK') {
-      const duration = data.rows[0].elements[0].duration.value; // Duration in seconds
-      const travelTimeMinutes = Math.ceil(duration / 60);
-      const totalMinutes = Math.ceil(PACKING_TIME + travelTimeMinutes);
-      return totalMinutes;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching delivery time from Google Maps:', error);
-    return null;
-  }
+export const getDeliveryEtaForAddress = async (
+  address: string,
+  options: EtaOptions = {}
+): Promise<number | null> => {
+  const data = await getDeliveryEtaForAddressDetails(address, options);
+  return data?.etaMinutes ?? null;
 };
 
 // Geocode address to get coordinates
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number } | null> => {
-  try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAP_API}`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === 'OK' && data.results.length > 0) {
-      const location = data.results[0].geometry.location;
-      return {
-        latitude: location.lat,
-        longitude: location.lng,
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('Error geocoding address:', error);
-    return null;
-  }
+  const data = await postJSON<{ lat: number; lng: number }>('geocode/forward', { address });
+  if (!data) return null;
+  return {
+    latitude: data.lat,
+    longitude: data.lng,
+  };
 };
 
 /** Reverse geocode coordinates to a short label (locality or formatted address). */
@@ -118,18 +131,9 @@ export const reverseGeocode = async (
   latitude: number,
   longitude: number
 ): Promise<string | null> => {
-  try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAP_API}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status !== 'OK' || !data.results?.length) return null;
-    const result = data.results[0];
-    const components = result.address_components || [];
-    const locality = components.find((c: any) => c.types.includes('locality'))?.long_name;
-    const area = components.find((c: any) => c.types.includes('sublocality') || c.types.includes('neighborhood'))?.long_name;
-    return locality || area || result.formatted_address || null;
-  } catch (error) {
-    console.error('Error reverse geocoding:', error);
-    return null;
-  }
+  const data = await postJSON<{ formattedAddress?: string; address1?: string; city?: string; state?: string; pincode?: string }>(
+    'geocode/reverse',
+    { lat: latitude, lng: longitude }
+  );
+  return data?.address1 || data?.city || data?.formattedAddress || null;
 };

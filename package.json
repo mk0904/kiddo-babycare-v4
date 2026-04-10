@@ -72,6 +72,9 @@
     "react-native-worklets": "0.5.1",
     "zustand": "^5.0.9"
   },
+  "engines": {
+    "node": ">=20 <25"
+  },
   "devDependencies": {
     "@types/lodash": "^4.17.21",
     "@types/react": "~19.1.0",
