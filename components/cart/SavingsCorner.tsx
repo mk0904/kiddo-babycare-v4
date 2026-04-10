@@ -307,42 +307,79 @@ export function SavingsCorner({
                 {/* Apply Coupon — layout aligned with design: header row + pill input */}
                 <View style={styles.applyCouponBlock}>
                     {hasAppliedCoupon ? (
-                        <View style={styles.applyCouponHeaderRow}>
-                            <View style={styles.applyCouponHeaderLeft}>
-                                <Image
-                                    source={require('@/assets/icons/coupon.png')}
-                                    style={styles.applyCouponHeaderIcon}
-                                    resizeMode="contain"
-                                />
-                                <View style={styles.applyCouponHeaderTextCol}>
-                                    <Text style={styles.applyCouponSectionTitle} numberOfLines={1}>
-                                        Coupon applied
-                                    </Text>
-                                    <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
-                                        {appliedHeadline}
-                                    </Text>
-                                    {lastApplyError ? (
-                                        <Text style={styles.cardErrorText} numberOfLines={2}>
-                                            {lastApplyError}
+                        <>
+                            <View style={styles.applyCouponHeaderRow}>
+                                <View style={styles.applyCouponHeaderLeft}>
+                                    <Image
+                                        source={require('@/assets/icons/coupon.png')}
+                                        style={styles.applyCouponHeaderIcon}
+                                        resizeMode="contain"
+                                    />
+                                    <View style={styles.applyCouponHeaderTextCol}>
+                                        <Text style={styles.applyCouponSectionTitle} numberOfLines={1}>
+                                            {(appliedDiscountCode ?? 'APPLIED').toUpperCase()}
                                         </Text>
-                                    ) : null}
+                                        <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                            You saved {formatCurrency(appliedSaveAmount)} on this order
+                                        </Text>
+                                        {lastApplyError ? (
+                                            <Text style={styles.cardErrorText} numberOfLines={2}>
+                                                {lastApplyError}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                </View>
+                                <View style={styles.applyCouponAppliedTag}>
+                                    <Ionicons name="checkmark" size={18} color={Colors.primary} />
+                                    <Text style={styles.applyCouponAppliedTagText}>Applied</Text>
                                 </View>
                             </View>
-                            {couponApplying ? (
-                                <ActivityIndicator size="small" color={Colors.primary} />
-                            ) : (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if (appliedDiscountCode) handleRemoveCoupon(appliedDiscountCode);
+
+                            <View style={styles.applyCouponPill}>
+                                <TextInput
+                                    style={styles.applyCouponPillInput}
+                                    placeholder="Enter Coupon Code"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={manualCode}
+                                    onChangeText={(t) => {
+                                        setManualCode(t.toUpperCase());
+                                        setManualCodeMessage(null);
+                                        setLastApplyError(null);
                                     }}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    activeOpacity={0.7}
-                                    disabled={couponApplying}
+                                    editable={!couponApplying}
+                                    autoCapitalize="characters"
+                                    autoCorrect={false}
+                                    scrollEnabled={false}
+                                    multiline={false}
+                                    returnKeyType="done"
+                                    onSubmitEditing={() => void handleApplyManualCode(false)}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => void handleApplyManualCode(false)}
+                                    disabled={!canSubmitInlineCode}
+                                    activeOpacity={0.6}
+                                    style={styles.applyCouponPillApplyHit}
+                                    hitSlop={{ top: 12, bottom: 12, left: 8, right: 4 }}
                                 >
-                                    <Text style={styles.applyCouponRemoveText}>Remove</Text>
+                                    {couponApplying ? (
+                                        <ActivityIndicator size="small" color={Colors.primary} />
+                                    ) : (
+                                        <Text
+                                            style={[
+                                                styles.applyCouponPillApplyText,
+                                                canSubmitInlineCode && styles.applyCouponPillApplyTextActive,
+                                            ]}
+                                        >
+                                            APPLY
+                                        </Text>
+                                    )}
                                 </TouchableOpacity>
-                            )}
-                        </View>
+                            </View>
+
+                            {manualCodeMessage != null ? (
+                                <Text style={styles.manualCodeMessage}>{manualCodeMessage}</Text>
+                            ) : null}
+                        </>
                     ) : (
                         <>
                             <View style={styles.applyCouponHeaderRow}>
@@ -428,23 +465,25 @@ export function SavingsCorner({
                                 <Text style={styles.manualCodeMessage}>{manualCodeMessage}</Text>
                             ) : null}
 
-                            <SavingsCornerCouponCarousel
-                                visible={isAuthenticated}
-                                loading={loadingCoupons}
-                                coupons={sortedDisplayCoupons}
-                                couponApplying={couponApplying}
-                                hasTicketingProducts={hasTicketingProducts}
-                                hasFashionItems={hasFashionItems}
-                                cartSubtotal={cartSubtotal}
-                                cartItemCount={cartItemCount}
-                                userOrderCount={userOrderCount}
-                                couponUsages={couponUsages}
-                                categorySubtotals={categorySubtotals}
-                                lineItems={cartItems}
-                                onApplyCoupon={(c) => void handleApplyCouponFromList(c)}
-                            />
                         </>
                     )}
+
+                    <SavingsCornerCouponCarousel
+                        visible={isAuthenticated}
+                        loading={loadingCoupons}
+                        coupons={sortedDisplayCoupons}
+                        couponApplying={couponApplying}
+                        hasTicketingProducts={hasTicketingProducts}
+                        hasFashionItems={hasFashionItems}
+                        cartSubtotal={cartSubtotal}
+                        cartItemCount={cartItemCount}
+                        userOrderCount={userOrderCount}
+                        couponUsages={couponUsages}
+                        categorySubtotals={categorySubtotals}
+                        lineItems={cartItems}
+                        appliedCouponCode={appliedDiscountCode}
+                        onApplyCoupon={(c) => void handleApplyCouponFromList(c)}
+                    />
                 </View>
 
                 {/* <View style={styles.kiddoCashRow}>
@@ -741,6 +780,17 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     applyCouponRemoveText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.primary,
+    },
+    applyCouponAppliedTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 4,
+    },
+    applyCouponAppliedTagText: {
+        marginLeft: 4,
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendSemiBold,
         color: Colors.primary,

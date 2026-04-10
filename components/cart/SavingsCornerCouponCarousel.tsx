@@ -24,8 +24,24 @@ export interface SavingsCornerCouponItem {
     [key: string]: unknown;
 }
 
-/** Fixed height so carousel cards line up; reason is capped here (full text in details modal). */
-const TICKET_CARD_HEIGHT = 182;
+/** Fixed height so carousel cards line up across states. */
+const TICKET_CARD_HEIGHT = 135;
+
+function getCouponHeadline(coupon: SavingsCornerCouponItem): string {
+    if (coupon.value != null && coupon.value !== 0) {
+        if (coupon.valueType === 'percentage') return `${coupon.value}% off upto ₹500`;
+        return `Save ₹${coupon.value}`;
+    }
+    return coupon.title?.trim() || 'Special offer';
+}
+
+function getCouponSubline(coupon: SavingsCornerCouponItem): string {
+    if (coupon.value != null && coupon.value !== 0) {
+        if (coupon.valueType === 'percentage') return `Flat ${coupon.value}% OFF, min purchase ₹500, max discount ₹500`;
+        return `Flat ₹${coupon.value} OFF on your order`;
+    }
+    return 'Apply this coupon on eligible items.';
+}
 
 export interface SavingsCornerCouponCarouselProps {
     /** When false, renders nothing. */
@@ -41,6 +57,7 @@ export interface SavingsCornerCouponCarouselProps {
     couponUsages: Record<string, number>;
     categorySubtotals: Record<string, number>;
     lineItems: { tags?: string[]; price?: number; quantity?: number }[];
+    appliedCouponCode?: string | null;
     onApplyCoupon: (coupon: SavingsCornerCouponItem) => void;
 }
 
@@ -92,6 +109,7 @@ export function SavingsCornerCouponCarousel({
     couponUsages,
     categorySubtotals,
     lineItems,
+    appliedCouponCode,
     onApplyCoupon,
 }: SavingsCornerCouponCarouselProps) {
     const [details, setDetails] = useState<{ code: string; subtitle: string; bullets: string[] } | null>(null);
@@ -140,36 +158,63 @@ export function SavingsCornerCouponCarousel({
                             valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
                         } as CouponCode)
                         : [];
-                    const offerTitle =
-                        coupon.title ||
-                        (coupon.value != null && coupon.value !== 0
-                            ? coupon.valueType === 'percentage'
-                                ? `Get ${coupon.value}% off`
-                                : `Get ₹${coupon.value} off`
-                            : coupon.code
-                                ? `Use code ${coupon.code}`
-                                : 'Coupon');
                     const codeStr = (coupon.code || '—').toUpperCase();
+                    const headline = getCouponHeadline(coupon);
+                    const subline = getCouponSubline(coupon);
+                    const codeLabel = `#${codeStr}`;
+                    const trimmedReason = String(applicability.reason ?? '').trim();
+                    const showReason = isDisabled && trimmedReason.length > 0;
+                    const isApplied =
+                        !!appliedCouponCode &&
+                        codeStr !== '—' &&
+                        codeStr === appliedCouponCode.trim().toUpperCase();
+                    const isAppliedSuccess = isApplied && !showReason;
 
                     return (
                         <View key={coupon.code || `carousel-${index}`} style={[styles.ticketSlot, { width: ticketWidth }]}>
+                            <View style={[styles.ticketNotch, styles.ticketNotchLeft]} />
+                            <View style={[styles.ticketNotch, styles.ticketNotchRight]} />
                             <View
                                 style={[
                                     styles.ticketCard,
                                     { height: TICKET_CARD_HEIGHT },
-                                    (couponApplying || isDisabled) && styles.ticketCardMuted,
+                                    (couponApplying || (isDisabled && !isApplied)) && styles.ticketCardMuted,
                                 ]}
                             >
                                 <View style={styles.ticketTopRow}>
+                                    <Text style={styles.ticketDescText} numberOfLines={1}>
+                                        {headline.toUpperCase()}
+                                    </Text>
+                                </View>
+                                <View style={styles.ticketDividerWrap}>
+                                    <View style={styles.ticketDividerDashed} />
+                                </View>
+                                <View style={styles.ticketReasonSlot}>
+                                    {showReason ? (
+                                        <Text style={styles.ticketReasonText} numberOfLines={2} ellipsizeMode="tail">
+                                            {trimmedReason}
+                                        </Text>
+                                    ) : (
+                                        <Text style={styles.ticketSublineText} numberOfLines={2}>
+                                            {subline}
+                                        </Text>
+                                    )}
+                                </View>
+                                <View style={styles.ticketBottomRow}>
                                     <View style={styles.ticketCodeBox}>
                                         <Text
-                                            style={[styles.ticketCodeText, isDisabled && styles.ticketTextMuted]}
+                                            style={[styles.ticketCodeText, (isDisabled || isApplied) && styles.ticketTextMuted]}
                                             numberOfLines={1}
                                         >
-                                            {codeStr}
+                                            {codeLabel}
                                         </Text>
                                     </View>
-                                    {isDisabled ? (
+                                    {isAppliedSuccess ? (
+                                        <View style={styles.appliedBadge}>
+                                            <Ionicons name="checkmark" size={18} color={Colors.primary} />
+                                            <Text style={styles.appliedBadgeText}>Applied</Text>
+                                        </View>
+                                    ) : isDisabled ? (
                                         <Text style={styles.ticketApplyDisabled}>Apply</Text>
                                     ) : (
                                         <TouchableOpacity
@@ -188,39 +233,6 @@ export function SavingsCornerCouponCarousel({
                                             )}
                                         </TouchableOpacity>
                                     )}
-                                </View>
-                                <View style={styles.ticketDividerWrap}>
-                                    <View style={styles.ticketDividerDashed} />
-                                </View>
-                                <View style={styles.ticketBottomRow}>
-                                    <Text
-                                        style={[styles.ticketDescText, isDisabled && styles.ticketTextMuted]}
-                                        numberOfLines={1}
-                                    >
-                                        {offerTitle}
-                                    </Text>
-                                    {!isDisabled ? (
-                                        <TouchableOpacity
-                                            onPress={() =>
-                                                setDetails(buildCouponDetailsContent(coupon, applicability, conditions))
-                                            }
-                                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                            accessibilityLabel="Coupon details"
-                                        >
-                                            <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
-                                        </TouchableOpacity>
-                                    ) : null}
-                                </View>
-                                <View style={styles.ticketReasonSlot}>
-                                    {isDisabled && String(applicability.reason ?? '').trim() ? (
-                                        <Text
-                                            style={styles.ticketReasonText}
-                                            numberOfLines={2}
-                                            ellipsizeMode="tail"
-                                        >
-                                            {String(applicability.reason).trim()}
-                                        </Text>
-                                    ) : null}
                                 </View>
                             </View>
 
@@ -258,14 +270,29 @@ const styles = StyleSheet.create({
         position: 'relative',
         marginRight: 12,
     },
-    ticketCard: {
+    ticketNotch: {
+        position: 'absolute',
+        width: 20,
+        height: 20,
         borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 14,
+        backgroundColor: '#FFFFFF',
+        top: 30,
+        zIndex: 2,
+    },
+    ticketNotchLeft: {
+        left: -12,
+    },
+    ticketNotchRight: {
+        right: -12,
+    },
+    ticketCard: {
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingTop: 12,
+        paddingBottom: 0,
         borderWidth: 1,
-        borderColor: '#FAFAFA',
-        backgroundColor: '#FAFAFA',
+        borderColor: '#FEEFEF',
+        backgroundColor: '#FEEFEF',
         overflow: 'hidden',
     },
     ticketCardMuted: {
@@ -277,51 +304,48 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     ticketCodeBox: {
-        flex: 1,
-        minWidth: 0,
+        minWidth: 96,
         marginRight: 10,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
         borderWidth: 1,
-        borderColor: '#CBD0D7',
+        borderColor: '#FF7E7E',
         borderStyle: 'dashed',
-        borderRadius: 20,
-        backgroundColor: '#F5F6F8',
+        borderRadius: 16,
+        backgroundColor: 'transparent',
     },
     ticketCodeText: {
         fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendSemiBold,
         color: '#181D27',
-        letterSpacing: 0.2,
     },
     ticketTextMuted: {
-        color: '#181D27',
+        color: '#181D2780',
     },
     ticketApplyActive: {
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendSemiBold,
         color: '#F15E5E',
-        letterSpacing: 0,
     },
     ticketApplyDisabled: {
         fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#A4A7AE',
-        letterSpacing: 0,
     },
     ticketDividerWrap: {
-        marginTop: 14,
-        marginBottom: 14,
+        marginTop: 10,
+        marginBottom: 10,
     },
     ticketDividerDashed: {
         borderTopWidth: 1,
-        borderColor: '#D4D6DB',
+        borderColor: '#F3CBCD',
         width: '100%',
     },
     ticketBottomRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginTop: 12,
     },
     ticketReasonSlot: {
         justifyContent: 'flex-start',
@@ -329,18 +353,33 @@ const styles = StyleSheet.create({
     ticketDescText: {
         flex: 1,
         fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.LexendMedium,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#181D27',
-        marginRight: 6,
+        
+    },
+    ticketSublineText: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#535862',
+        lineHeight: 16,
+        minHeight: 32,
     },
     ticketReasonText: {
         fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.LexendMedium,
+        fontFamily: Fonts.LexendRegular,
         color: '#D92D20',
-        lineHeight: 18,
-        backgroundColor: '#FEE4E2',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+        lineHeight: 16,
+        minHeight: 32,
     },
+    appliedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    appliedBadgeText: {
+        marginLeft: 4,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.primary,
+    },
+    
 });
