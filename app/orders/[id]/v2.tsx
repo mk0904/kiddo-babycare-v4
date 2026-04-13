@@ -21,6 +21,7 @@ import {
     DELIVERY_ACTIVE_STATUSES,
     distanceMetersLatLng,
     shippingAddressString,
+    statusAllowsLiveDirectionsEta,
 } from '@/utils/orderDeliveryHeaderText';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { sizeLabelFromVariantTitle } from '@/utils/tryAndBuyProduct';
@@ -44,6 +45,14 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PARTNER_AVATAR_FALLBACK = require('@/assets/icons/partnerIcon.png');
+
+/** Remote `orderDetail` may send `eventOrderUrl` or typo `eventOrderurl`. */
+function getEventOrderHeroUrl(cfg: OrderDetailConfig | null | undefined): string {
+    if (!cfg) return '';
+    const ext = cfg as OrderDetailConfig & { eventOrderurl?: string };
+    const u = ext.eventOrderUrl ?? ext.eventOrderurl;
+    return typeof u === 'string' ? u.trim() : '';
+}
 
 function orderDetailPartnerAvatarSource(cfg: OrderDetailConfig | null | undefined) {
     const png = cfg?.partnerImageUrl?.trim();
@@ -240,6 +249,7 @@ export default function OrderDetailV2Screen() {
     const darkStoreIconUrl = orderDetailCfg?.darkStoreIconUrl?.trim() || '';
     const riderMapIconUri = orderDetailRiderMarkerUri(orderDetailCfg);
     const partnerAvatarSrc = orderDetailPartnerAvatarSource(orderDetailCfg);
+    const eventOrderHeroUrl = useMemo(() => getEventOrderHeroUrl(orderDetailCfg), [orderDetailCfg]);
 
     const {
         id,
@@ -452,7 +462,7 @@ export default function OrderDetailV2Screen() {
             !!riderCoords &&
             distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
         const shouldComputeEta =
-            DELIVERY_ACTIVE_STATUSES.has(statusKey) &&
+            statusAllowsLiveDirectionsEta(statusKey) &&
             !!destinationCoords &&
             !ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey) &&
             (isOutForDelivery ? !!riderCoords : true) &&
@@ -749,6 +759,7 @@ export default function OrderDetailV2Screen() {
         : '—';
 
     const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+    const isEventOrder = deliveryPartnerStatus?.isEventOrder === true;
     /** Pill may show Delivered from DPS before Shopify fulfillment flips — align body copy with partner. */
     const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
     const partnerSaysDelivered =
@@ -803,9 +814,11 @@ export default function OrderDetailV2Screen() {
     /** Includes first paint after checkout when GET delivery-status has not returned yet (empty key). */
     const shouldShowAssignSoonMessage =
         isPhysicalDeliveryOrder &&
+        !isEventOrder &&
         !isDelivered &&
         !RIDER_LIVE_OR_DONE_STATUSES.has(deliveryStatusKey);
     const shouldShowDeliveryPartnerDetails =
+        !isEventOrder &&
         (['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) ||
             ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) ||
             isRiderNearDropoff) &&
@@ -825,6 +838,7 @@ export default function OrderDetailV2Screen() {
     const orderBlocksTrackingMap =
         !!order && (isOnlyTicketingOrder(order) || order?.fulfillmentStatus === 'FULFILLED');
     const shouldShowTrackingMap =
+        !isEventOrder &&
         !!destinationCoords &&
         !orderBlocksTrackingMap &&
         !hideTrackingMapStatuses.has(deliveryStatusKey) &&
@@ -921,7 +935,8 @@ export default function OrderDetailV2Screen() {
     }, [trackingPolylineCoordinates, shouldShowTrackingMap, fitTrackingBounds]);
 
     if (loading) {
-        const mapWhileLoading = shouldShowTrackingMap && mapRegion;
+        const eventHeroWhileLoading = isEventOrder && !!eventOrderHeroUrl;
+        const mapWhileLoading = !eventHeroWhileLoading && shouldShowTrackingMap && mapRegion;
         const showPostCheckoutChrome = !!destinationCoords && !!id;
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -949,7 +964,18 @@ export default function OrderDetailV2Screen() {
                         <View style={{ minWidth: 8 }} />
                     )}
                 </View>
-                {mapWhileLoading ? (
+                {eventHeroWhileLoading ? (
+                    <View style={[styles.trackingWrap, { marginTop: 8, marginHorizontal: 16 }]}>
+                        <View style={styles.trackingMapFrame}>
+                            <Image
+                                source={{ uri: eventOrderHeroUrl }}
+                                style={styles.trackingMap}
+                                contentFit="cover"
+                                accessibilityLabel="Event order"
+                            />
+                        </View>
+                    </View>
+                ) : mapWhileLoading ? (
                     <View style={[styles.trackingWrap, { marginTop: 8, marginHorizontal: 16 }]}>
                         <View style={styles.trackingMapFrame}>
                             <MapView
@@ -1061,7 +1087,7 @@ export default function OrderDetailV2Screen() {
                         </View>
                     </View>
                 ) : null}
-                {showPostCheckoutChrome ? (
+                {showPostCheckoutChrome && !isEventOrder ? (
                     <View style={{ paddingHorizontal: 16, marginTop: 12, marginBottom: 8 }}>
                         <View style={styles.deliveryPartnerCard}>
                             <View style={styles.deliveryPartnerContent}>
@@ -1151,12 +1177,14 @@ export default function OrderDetailV2Screen() {
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle}>Order Summary</Text>
                 </View>
-                {!!deliveryStatusLabel && (
+                {!!deliveryStatusLabel ? (
                     <View style={[styles.headerStatusPill, { backgroundColor: deliveryStatusColors.bg }]}>
                         <Text style={[styles.headerStatusText, { color: deliveryStatusColors.text }]}>
                             {deliveryStatusLabel}
                         </Text>
                     </View>
+                ) : (
+                    <View style={{ minWidth: 8 }} />
                 )}
             </View>
 
@@ -1172,7 +1200,18 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {shouldShowTrackingMap && mapRegion ? (
+                {isEventOrder && eventOrderHeroUrl ? (
+                    <View style={styles.trackingWrap}>
+                        <View style={styles.trackingMapFrame}>
+                            <Image
+                                source={{ uri: eventOrderHeroUrl }}
+                                style={styles.trackingMap}
+                                contentFit="cover"
+                                accessibilityLabel="Event order"
+                            />
+                        </View>
+                    </View>
+                ) : shouldShowTrackingMap && mapRegion ? (
                     <View style={styles.trackingWrap}>
                         <View style={styles.trackingMapFrame}>
                             <MapView
@@ -1329,7 +1368,7 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {isRiderAtCustomer && destinationCoords ? (
+                {isRiderAtCustomer && destinationCoords && !isEventOrder ? (
                     <View style={styles.arrivedAtCard}>
                         <View style={styles.arrivedAtIconWrap}>
                             <Ionicons name="checkmark-circle" size={28} color="#15803D" />
@@ -1558,10 +1597,12 @@ export default function OrderDetailV2Screen() {
                     <View style={styles.addressCard}>
                         <Text style={styles.billTitle}>Order Details</Text>
 
-                        {/* Status and address below bill details */}
-                        <View style={styles.belowBillSection}>
-                            <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
-                        </View>
+                        {/* Status and address below bill details (hidden for event orders when no ETA copy) */}
+                        {!!headerStatusText.trim() ? (
+                            <View style={styles.belowBillSection}>
+                                <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
+                            </View>
+                        ) : null}
                         <Text style={styles.billTitle}>Delivery address</Text>
                         <View style={styles.addressBlock}>
                             {[

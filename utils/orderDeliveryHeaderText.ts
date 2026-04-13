@@ -33,6 +33,26 @@ export const DELIVERY_ACTIVE_STATUSES = new Set([
   'en_route',
 ]);
 
+const LIVE_ETA_TERMINAL_STATUSES = new Set([
+  'delivered',
+  'cancelled',
+  'canceled',
+  'returned',
+  'refunded',
+]);
+
+/**
+ * Whether we may call Directions-backed live ETA and show it in the header.
+ * Includes early UX states: empty key (pill shows "Placed") and explicit `placed` from DPS,
+ * not only {@link DELIVERY_ACTIVE_STATUSES}.
+ */
+export function statusAllowsLiveDirectionsEta(statusKey: string): boolean {
+  const k = String(statusKey ?? '').trim().toLowerCase();
+  if (LIVE_ETA_TERMINAL_STATUSES.has(k)) return false;
+  if (!k || k === 'placed') return true;
+  return DELIVERY_ACTIVE_STATUSES.has(k);
+}
+
 /** Meters between two WGS84 points (haversine). */
 export function distanceMetersLatLng(
   a: { latitude: number; longitude: number },
@@ -95,12 +115,18 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
   const { order, paramEta, deliveryPartnerStatus, liveEtaMinutes, riderCoords, destinationCoords } =
     input;
 
+  const isEventOrder = deliveryPartnerStatus?.isEventOrder === true;
+
   const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
   const hasPartnerStatus = deliveryStatusKey.length > 0;
   const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
   const partnerSaysDelivered =
     deliveryStatusKey === 'delivered' || isDeliveryStatusDelivered(deliveryPartnerStatus);
   const isDelivered = shopifyFulfilled || partnerSaysDelivered;
+
+  if (isEventOrder && !isDelivered) {
+    return '';
+  }
 
   const staticEtaMinutes =
     Number(paramEta ?? order?.estimatedDeliveryMinutes ?? DEFAULT_ETA_MINUTES) || DEFAULT_ETA_MINUTES;
@@ -113,11 +139,13 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
     distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
 
+  const canShowLiveEtaWithoutRider =
+    !deliveryStatusKey || deliveryStatusKey === 'placed';
   const showLiveEtaInHeader =
     liveEtaMinutes != null &&
-    !!riderCoords &&
     !!destinationCoords &&
-    DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
+    statusAllowsLiveDirectionsEta(deliveryStatusKey) &&
+    (!!riderCoords || canShowLiveEtaWithoutRider) &&
     !isRiderNearDropoff &&
     !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey);
 

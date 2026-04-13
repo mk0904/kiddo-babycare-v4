@@ -28,6 +28,11 @@ export type DeliveryPartnerTryBuyPostDeliveryMap = Record<string, DeliveryPartne
 export interface DeliveryPartnerOrderStatus {
   shopifyOrderId: string;
   status: string;
+  /**
+   * Event / non–last-mile fulfilment: hide map, rider/partner UI, and “Arriving by” ETA on order summary.
+   * Backend may send `isEventsOrder` (typo); we normalize to this field.
+   */
+  isEventOrder?: boolean;
   deliveryPartner: AssignedDeliveryPartner;
   /** Optional live rider position from GET delivery-status (when WebSocket is unused). */
   rider_lat?: number | string | null;
@@ -405,9 +410,14 @@ function normalizeDeliveryPartnerOrderStatusPayload(data: unknown): DeliveryPart
     mergeTryBuyPostDeliveryMaps(explicit, fromItems),
     fromTryBuyLines,
   );
+  const isEventOrder =
+    o.isEventOrder === true ||
+    o.isEventsOrder === true ||
+    (typeof o.isEventOrder === 'string' && String(o.isEventOrder).toLowerCase() === 'true');
   return {
     ...(data as DeliveryPartnerOrderStatus),
     ...(tryBuy != null ? { tryBuyPostDelivery: tryBuy } : {}),
+    ...(isEventOrder ? { isEventOrder: true } : {}),
   };
 }
 
