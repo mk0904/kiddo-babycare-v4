@@ -1,4 +1,3 @@
-import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ICON_SIZE = 170;
+/** Let the success state read before auto-advancing to order summary */
 const AUTO_NAVIGATE_DELAY_MS = 3000;
 
 export default function OrderSuccessV2Screen() {
@@ -48,7 +48,7 @@ export default function OrderSuccessV2Screen() {
         ]).start();
     }, []);
 
-    // After 3 seconds, navigate to order detail (or orders list if no id)
+    // After a short beat, navigate to order summary (or orders list if no id)
     useEffect(() => {
         const t = setTimeout(() => {
             const etaParam = estimatedDeliveryMinutes != null ? { estimatedDeliveryMinutes } : {};

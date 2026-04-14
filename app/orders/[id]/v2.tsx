@@ -84,6 +84,21 @@ const TRACKING_MAP_STYLE = [
 ];
 
 /** Storefront `node(id:)` expects a Shopify GID; checkout sometimes returns numeric id only. */
+/** Numeric Shopify order id from route `id` (GID, numeric, or encoded) — for delivery-status before Storefront returns. */
+function shopifyNumericOrderIdFromRouteParam(raw: string): string {
+    if (!raw) return '';
+    try {
+        const decoded = decodeURIComponent(raw.trim());
+        const m = decoded.match(/\/Order\/(\d+)/i);
+        if (m?.[1]) return m[1];
+        const base = decoded.split('?')[0]?.trim() ?? '';
+        if (/^\d+$/.test(base)) return base;
+    } catch {
+        /* ignore */
+    }
+    return '';
+}
+
 function normalizeStorefrontOrderGid(rawId: string): string {
     const id = rawId.trim();
     if (!id) return id;
@@ -202,6 +217,14 @@ const DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 10_000;
  */
 const RIDER_LOCATION_POLL_MS = 4_000;
 
+/**
+ * First minute on order detail: re-fetch delivery-status as soon as the previous request finishes
+ * (`setTimeout(0)` between polls — no fixed ms delay). After the window, poll every 25s.
+ */
+const DELIVERY_STATUS_POLL_FAST_MS = 0;
+const DELIVERY_STATUS_POLL_FAST_WINDOW_MS = 60_000;
+const DELIVERY_STATUS_POLL_SLOW_MS = 25_000;
+
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
     placed: 'Placed',
     confirmed: 'Confirmed',
@@ -239,11 +262,6 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 export default function OrderDetailV2Screen() {
     /** Re-read app-config icons when screen is focused (config may load after first paint). */
     const [orderDetailCfgRev, setOrderDetailCfgRev] = useState(0);
-    useFocusEffect(
-        useCallback(() => {
-            setOrderDetailCfgRev((n) => n + 1);
-        }, []),
-    );
     const orderDetailCfg = useMemo(() => appConfigService.getOrderDetailConfig(), [orderDetailCfgRev]);
     const cusLocUrl = orderDetailCfg?.cusLocUrl?.trim() || '';
     const darkStoreIconUrl = orderDetailCfg?.darkStoreIconUrl?.trim() || '';
@@ -258,13 +276,20 @@ export default function OrderDetailV2Screen() {
         destinationLat: paramDestinationLat,
         destinationLng: paramDestinationLng,
     } = useLocalSearchParams<{
-        id: string;
+        id: string | string[];
         estimatedDeliveryMinutes?: string;
         from?: string;
         /** Forwarded from checkout so the map can render before Shopify returns the order */
         destinationLat?: string;
         destinationLng?: string;
     }>();
+    const orderRouteId = typeof id === 'string' ? id : Array.isArray(id) ? (id[0] ?? '') : '';
+    const orderRouteIdRef = useRef(orderRouteId);
+    orderRouteIdRef.current = orderRouteId;
+    const routeNumericForDeliveryPoll = useMemo(
+        () => shopifyNumericOrderIdFromRouteParam(orderRouteId),
+        [orderRouteId],
+    );
     const router = useRouter();
     const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
     const { user } = useAuth();
@@ -279,6 +304,18 @@ export default function OrderDetailV2Screen() {
     const [error, setError] = useState<string | null>(null);
     const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(null);
     const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<DeliveryPartnerOrderStatus | null>(null);
+    /**
+     * Until GET delivery-status returns, avoid showing map / partner / post-checkout delivery strip so
+     * event orders do not flash last-mile UI before `isEventOrder: true`. After a short timeout, show
+     * them anyway so a missing DPS row does not block the screen forever.
+     */
+    const [dpsTimedOutAssumePhysical, setDpsTimedOutAssumePhysical] = useState(false);
+    useEffect(() => {
+        setDpsTimedOutAssumePhysical(false);
+        if (deliveryPartnerStatus != null) return;
+        const tid = setTimeout(() => setDpsTimedOutAssumePhysical(true), 4000);
+        return () => clearTimeout(tid);
+    }, [deliveryPartnerStatus, orderRouteId]);
     const [destinationCoords, setDestinationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [riderCoords, setRiderCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     /** Google Maps on Android needs tracksViewChanges=true briefly so custom marker bitmaps are captured after layout. */
@@ -288,8 +325,43 @@ export default function OrderDetailV2Screen() {
     const [routeVersion, setRouteVersion] = useState(0);
     const [isTrackingMapUserControlled, setIsTrackingMapUserControlled] = useState(false);
     const trackingMapRef = useRef<MapView | null>(null);
+    const prevOrderRouteIdRef = useRef<string | null>(null);
     const orderRef = useRef(order);
     orderRef.current = order;
+
+    useFocusEffect(
+        useCallback(() => {
+            setOrderDetailCfgRev((n) => n + 1);
+            let cancelled = false;
+            void (async () => {
+                const loaded = String(orderRef.current?.id ?? '').trim();
+                let numeric =
+                    shopifyNumericOrderIdFromRouteParam(orderRouteIdRef.current) ||
+                    (loaded.includes('/Order/')
+                        ? loaded.split('/').pop()?.split('?')[0]?.trim() || ''
+                        : '');
+                if (!numeric || cancelled) return;
+                try {
+                    const st = await getDeliveryPartnerOrderStatus(numeric);
+                    if (cancelled || !st) return;
+                    setDeliveryPartnerStatus(st);
+                    const hasRiderOnPoll =
+                        st.rider_lat != null ||
+                        st.rider_lng != null ||
+                        st.riderLatitude != null ||
+                        st.riderLongitude != null;
+                    const polled = riderCoordsFromDeliveryStatus(st);
+                    if (hasRiderOnPoll && polled) setRiderCoords(polled);
+                } catch {
+                    /* keep last status on transient errors */
+                }
+            })();
+            return () => {
+                cancelled = true;
+            };
+        }, []),
+    );
+
     const deliveryPartnerStatusRef = useRef(deliveryPartnerStatus);
     deliveryPartnerStatusRef.current = deliveryPartnerStatus;
     const destinationCoordsRef = useRef(destinationCoords);
@@ -311,6 +383,65 @@ export default function OrderDetailV2Screen() {
     const firstRiderRouteOrderIdRef = useRef('');
 
     const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    // Navigating to a different order: clear partner status so we never mix two orders.
+    useEffect(() => {
+        const cur = orderRouteId.trim();
+        if (prevOrderRouteIdRef.current === cur) return;
+        prevOrderRouteIdRef.current = cur;
+        setDeliveryPartnerStatus(null);
+    }, [orderRouteId]);
+
+    /**
+     * While the Shopify order is still loading, poll GET delivery-status from the route id on the
+     * same cadence as the main poller (next tick after each response for the first minute).
+     */
+    useEffect(() => {
+        if (!routeNumericForDeliveryPoll) return;
+        const oid = String(order?.id ?? '').trim();
+        if (oid.includes('/Order/')) return;
+
+        let cancelled = false;
+        let tid: ReturnType<typeof setTimeout> | null = null;
+
+        const apply = (result: DeliveryPartnerOrderStatus | null) => {
+            if (!result) return;
+            setDeliveryPartnerStatus((prev) => {
+                const want = routeNumericForDeliveryPoll.replace(/\D/g, '');
+                const resN = String(result.shopifyOrderId ?? '').replace(/\D/g, '');
+                const sameOrder =
+                    !resN ||
+                    !want ||
+                    resN === want ||
+                    resN.endsWith(want) ||
+                    want.endsWith(resN);
+                if (!sameOrder) return prev;
+                if (!prev) return result;
+                const prevN = String(prev.shopifyOrderId ?? '').replace(/\D/g, '');
+                if (prevN && want && prevN !== want && !prevN.endsWith(want) && !want.endsWith(prevN)) return prev;
+                return { ...prev, ...result };
+            });
+        };
+
+        const tick = async () => {
+            if (cancelled) return;
+            try {
+                const result = await getDeliveryPartnerOrderStatus(routeNumericForDeliveryPoll);
+                if (cancelled) return;
+                apply(result);
+            } catch {
+                /* non-fatal */
+            }
+            if (!cancelled) tid = setTimeout(tick, DELIVERY_STATUS_POLL_FAST_MS);
+        };
+
+        void tick();
+
+        return () => {
+            cancelled = true;
+            if (tid) clearTimeout(tid);
+        };
+    }, [routeNumericForDeliveryPoll, order?.id]);
 
     // Map destination from checkout (available before Storefront returns the order)
     useEffect(() => {
@@ -338,14 +469,14 @@ export default function OrderDetailV2Screen() {
     useEffect(() => {
         let cancelled = false;
         const fetchOrder = async () => {
-            if (!id || typeof id !== 'string') {
+            if (!orderRouteId.trim()) {
                 setLoading(false);
                 setError('Invalid order ID');
                 return;
             }
             setLoading(true);
             try {
-                let orderId = normalizeStorefrontOrderGid(decodeURIComponent(id).trim());
+                let orderId = normalizeStorefrontOrderGid(decodeURIComponent(orderRouteId).trim());
                 const baseId = orderId.includes('?') ? orderId.split('?')[0] : orderId;
                 const queryPart = orderId.includes('?') ? orderId.split('?')[1] : '';
                 const isDraftOrder = baseId.startsWith('gid://shopify/DraftOrder/');
@@ -399,7 +530,7 @@ export default function OrderDetailV2Screen() {
                     }
                 } else {
                     const postCheckoutRetries = 10;
-                    const retryDelayMs = 1200;
+                    const retryDelayMs = 300;
                     for (let attempt = 0; attempt < postCheckoutRetries; attempt++) {
                         if (cancelled) return;
                         fetchedOrder = await shopifyApi.getOrderById(orderId);
@@ -427,7 +558,7 @@ export default function OrderDetailV2Screen() {
         return () => {
             cancelled = true;
         };
-    }, [id, shopifyCustomerToken]);
+    }, [orderRouteId, shopifyCustomerToken]);
 
     useEffect(() => {
         // Do not clear coords while order is still loading — that broke post-checkout map
@@ -524,11 +655,21 @@ export default function OrderDetailV2Screen() {
                 liveEtaTimerRef.current = null;
             }
         };
-    }, [deliveryPartnerStatus?.status, destinationCoords, riderCoords?.latitude, riderCoords?.longitude]);
+    }, [
+        deliveryPartnerStatus?.status,
+        deliveryPartnerStatus?.isEventOrder,
+        destinationCoords,
+        riderCoords?.latitude,
+        riderCoords?.longitude,
+    ]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
-        if (!rawOrderId || !rawOrderId.includes('/Order/')) {
+        if (!rawOrderId) {
+            // Order still loading — keep delivery-status from route early poll if any.
+            return;
+        }
+        if (!rawOrderId.includes('/Order/')) {
             setDeliveryPartnerStatus(null);
             return;
         }
@@ -540,41 +681,52 @@ export default function OrderDetailV2Screen() {
         }
 
         let cancelled = false;
-        let intervalId: ReturnType<typeof setInterval> | null = null;
-
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
         const TERMINAL_DELIVERY_POLL_STATUSES = new Set(['delivered', 'cancelled', 'returned']);
+        const fastWindowEnd = Date.now() + DELIVERY_STATUS_POLL_FAST_WINDOW_MS;
 
         const pollDeliveryStatus = async () => {
-            const result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+            if (cancelled) return;
+            let result: DeliveryPartnerOrderStatus | null = null;
+            try {
+                result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+            } catch {
+                /* transient network — retry on next tick */
+            }
             if (cancelled) return;
 
-            setDeliveryPartnerStatus(result);
+            if (result) {
+                setDeliveryPartnerStatus(result);
 
-            const r = result as DeliveryPartnerOrderStatus | null;
-            const hasRiderOnPoll =
-                !!r &&
-                (r.rider_lat != null ||
-                    r.rider_lng != null ||
-                    r.riderLatitude != null ||
-                    r.riderLongitude != null);
-            const polled = riderCoordsFromDeliveryStatus(r);
-            if (hasRiderOnPoll && polled) {
-                setRiderCoords(polled);
+                const r = result as DeliveryPartnerOrderStatus | null;
+                const hasRiderOnPoll =
+                    !!r &&
+                    (r.rider_lat != null ||
+                        r.rider_lng != null ||
+                        r.riderLatitude != null ||
+                        r.riderLongitude != null);
+                const polled = riderCoordsFromDeliveryStatus(r);
+                if (hasRiderOnPoll && polled) {
+                    setRiderCoords(polled);
+                }
+
+                const statusKey = String(result?.status ?? '').trim().toLowerCase();
+                if (TERMINAL_DELIVERY_POLL_STATUSES.has(statusKey)) return;
             }
 
-            const statusKey = String(result?.status ?? '').trim().toLowerCase();
-            if (TERMINAL_DELIVERY_POLL_STATUSES.has(statusKey) && intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
+            if (cancelled) return;
+            const nextMs =
+                Date.now() < fastWindowEnd ? DELIVERY_STATUS_POLL_FAST_MS : DELIVERY_STATUS_POLL_SLOW_MS;
+            timeoutId = setTimeout(() => {
+                void pollDeliveryStatus();
+            }, nextMs);
         };
 
-        pollDeliveryStatus();
-        intervalId = setInterval(pollDeliveryStatus, 25 * 1000);
+        void pollDeliveryStatus();
 
         return () => {
             cancelled = true;
-            if (intervalId) clearInterval(intervalId);
+            if (timeoutId) clearTimeout(timeoutId);
         };
     }, [order?.id]);
 
@@ -591,8 +743,10 @@ export default function OrderDetailV2Screen() {
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
         const statusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+        const isEvent = deliveryPartnerStatus?.isEventOrder === true;
         const isActive =
             !!shopifyOrderId &&
+            !isEvent &&
             (DELIVERY_ACTIVE_STATUSES.has(statusKey) || ARRIVED_AT_CUSTOMER_STATUSES.has(statusKey));
 
         if (!isActive) return;
@@ -618,7 +772,7 @@ export default function OrderDetailV2Screen() {
             cancelled = true;
             clearInterval(intervalId);
         };
-    }, [order?.id, deliveryPartnerStatus?.status]);
+    }, [order?.id, deliveryPartnerStatus?.status, deliveryPartnerStatus?.isEventOrder]);
 
     useEffect(() => {
         const rawOrderId = String(order?.id ?? '').trim();
@@ -634,6 +788,7 @@ export default function OrderDetailV2Screen() {
             const statusKey = String(dps?.status ?? '').trim().toLowerCase();
             const terminalStatus = ['delivered', 'cancelled', 'returned'].includes(statusKey);
             const fulfilled = o?.fulfillmentStatus === 'FULFILLED';
+            const eventOrder = dps?.isEventOrder === true;
             const ticketingOnly = o ? isOnlyTicketingOrder(o) : true;
             const nearDrop =
                 !!rc &&
@@ -646,6 +801,7 @@ export default function OrderDetailV2Screen() {
                 !!shopifyOrderId &&
                 !terminalStatus &&
                 !fulfilled &&
+                !eventOrder &&
                 !ticketingOnly &&
                 !riderArrivedUi
             );
@@ -665,6 +821,7 @@ export default function OrderDetailV2Screen() {
             // Only wipe the route for terminal orders — keep it visible during all other transitions
             // (e.g. status change from rider_assigned → out_for_delivery, near-drop check, etc.)
             if (isTerminalStatus()) setRouteCoordinates(null);
+            else if (deliveryPartnerStatusRef.current?.isEventOrder === true) setRouteCoordinates(null);
             return;
         }
 
@@ -676,6 +833,8 @@ export default function OrderDetailV2Screen() {
                 // Don't wipe the polyline mid-delivery — a momentary shouldFetchRoute=false
                 // (near-drop check, status transitioning) would make the path disappear.
                 if (!cancelled && isTerminalStatus()) setRouteCoordinates(null);
+                else if (!cancelled && deliveryPartnerStatusRef.current?.isEventOrder === true)
+                    setRouteCoordinates(null);
                 return;
             }
             const fetchGen = ++deliveryRouteFetchGen.current;
@@ -710,6 +869,7 @@ export default function OrderDetailV2Screen() {
         order?.id,
         order?.fulfillmentStatus,
         deliveryPartnerStatus?.status,
+        deliveryPartnerStatus?.isEventOrder,
         destinationCoords?.latitude,
         destinationCoords?.longitude,
     ]);
@@ -725,6 +885,7 @@ export default function OrderDetailV2Screen() {
             ? rawOrderId.split('/').pop()?.split('?')[0]?.trim() || ''
             : '';
         if (!shopifyOrderId) return;
+        if (deliveryPartnerStatusRef.current?.isEventOrder === true) return;
         // Reset per order
         if (firstRiderRouteOrderIdRef.current !== shopifyOrderId) {
             didFirstRiderRouteFetchRef.current = false;
@@ -746,7 +907,7 @@ export default function OrderDetailV2Screen() {
     }, [riderCoords?.latitude, riderCoords?.longitude]);
 
     const copyOrderId = async () => {
-        const oid = order?.orderNumber || order?.id?.split('/').pop() || id;
+        const oid = order?.orderNumber || order?.id?.split('/').pop() || orderRouteId;
         try {
             await Share.share({ message: `Order ID: ${oid}` });
         } catch (_) {
@@ -759,7 +920,16 @@ export default function OrderDetailV2Screen() {
         : '—';
 
     const deliveryStatusKey = String(deliveryPartnerStatus?.status ?? '').trim().toLowerCase();
+    /**
+     * From latest GET delivery-status only (polled fast → slow; also refetched on screen focus).
+     * Recomputes whenever `deliveryPartnerStatus` updates.
+     */
     const isEventOrder = deliveryPartnerStatus?.isEventOrder === true;
+    /** Last-mile map + partner UI only when DPS says not an event order, or we time out waiting on DPS. */
+    const showLastMileDeliveryUi =
+        deliveryPartnerStatus != null
+            ? deliveryPartnerStatus.isEventOrder !== true
+            : dpsTimedOutAssumePhysical;
     /** Pill may show Delivered from DPS before Shopify fulfillment flips — align body copy with partner. */
     const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
     const partnerSaysDelivered =
@@ -792,7 +962,9 @@ export default function OrderDetailV2Screen() {
               ? deliveryStatusKey
               : isPhysicalDeliveryOrder
                 ? 'placed'
-                : '';
+                : isEventOrder
+                  ? 'placed'
+                  : '';
     const deliveryStatusLabel = !statusKeyForHeaderPill
         ? ''
         : (DELIVERY_STATUS_LABELS[statusKeyForHeaderPill] ??
@@ -814,11 +986,11 @@ export default function OrderDetailV2Screen() {
     /** Includes first paint after checkout when GET delivery-status has not returned yet (empty key). */
     const shouldShowAssignSoonMessage =
         isPhysicalDeliveryOrder &&
-        !isEventOrder &&
+        showLastMileDeliveryUi &&
         !isDelivered &&
         !RIDER_LIVE_OR_DONE_STATUSES.has(deliveryStatusKey);
     const shouldShowDeliveryPartnerDetails =
-        !isEventOrder &&
+        showLastMileDeliveryUi &&
         (['rider_assigned', 'out_for_delivery'].includes(deliveryStatusKey) ||
             ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) ||
             isRiderNearDropoff) &&
@@ -838,7 +1010,7 @@ export default function OrderDetailV2Screen() {
     const orderBlocksTrackingMap =
         !!order && (isOnlyTicketingOrder(order) || order?.fulfillmentStatus === 'FULFILLED');
     const shouldShowTrackingMap =
-        !isEventOrder &&
+        showLastMileDeliveryUi &&
         !!destinationCoords &&
         !orderBlocksTrackingMap &&
         !hideTrackingMapStatuses.has(deliveryStatusKey) &&
@@ -937,7 +1109,7 @@ export default function OrderDetailV2Screen() {
     if (loading) {
         const eventHeroWhileLoading = isEventOrder && !!eventOrderHeroUrl;
         const mapWhileLoading = !eventHeroWhileLoading && shouldShowTrackingMap && mapRegion;
-        const showPostCheckoutChrome = !!destinationCoords && !!id;
+        const showPostCheckoutChrome = !!destinationCoords && !!orderRouteId.trim();
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
@@ -1087,7 +1259,7 @@ export default function OrderDetailV2Screen() {
                         </View>
                     </View>
                 ) : null}
-                {showPostCheckoutChrome && !isEventOrder ? (
+                {showPostCheckoutChrome && showLastMileDeliveryUi ? (
                     <View style={{ paddingHorizontal: 16, marginTop: 12, marginBottom: 8 }}>
                         <View style={styles.deliveryPartnerCard}>
                             <View style={styles.deliveryPartnerContent}>
@@ -1133,7 +1305,7 @@ export default function OrderDetailV2Screen() {
         );
     }
 
-    const displayOrderId = order.orderNumber || order.id?.split('/').pop() || id;
+    const displayOrderId = order.orderNumber || order.id?.split('/').pop() || orderRouteId;
 
     const formatCurrency = (amount: number) =>
         `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -1368,7 +1540,7 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {isRiderAtCustomer && destinationCoords && !isEventOrder ? (
+                {isRiderAtCustomer && destinationCoords && showLastMileDeliveryUi ? (
                     <View style={styles.arrivedAtCard}>
                         <View style={styles.arrivedAtIconWrap}>
                             <Ionicons name="checkmark-circle" size={28} color="#15803D" />
@@ -1595,10 +1767,10 @@ export default function OrderDetailV2Screen() {
                 {/* Delivery address – hide when order has only ticketing products */}
                 {order?.shippingAddress && !isOnlyTicketingOrder(order) && (
                     <View style={styles.addressCard}>
-                        <Text style={styles.billTitle}>Order Details</Text>
+                        {!isEventOrder ? <Text style={styles.billTitle}>Order Details</Text> : null}
 
-                        {/* Status and address below bill details (hidden for event orders when no ETA copy) */}
-                        {!!headerStatusText.trim() ? (
+                        {/* Arrival / ETA line — hidden for event orders (map + partner hidden there too). */}
+                        {!isEventOrder && !!headerStatusText.trim() ? (
                             <View style={styles.belowBillSection}>
                                 <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
                             </View>
