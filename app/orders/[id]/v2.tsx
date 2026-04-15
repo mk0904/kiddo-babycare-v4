@@ -269,6 +269,12 @@ export default function OrderDetailV2Screen() {
     const partnerAvatarSrc = orderDetailPartnerAvatarSource(orderDetailCfg);
     const eventOrderHeroUrl = useMemo(() => getEventOrderHeroUrl(orderDetailCfg), [orderDetailCfg]);
 
+    useEffect(() => {
+        const u = eventOrderHeroUrl.trim();
+        if (!u) return;
+        void Image.prefetch(u);
+    }, [eventOrderHeroUrl]);
+
     const {
         id,
         estimatedDeliveryMinutes: paramEta,
@@ -284,6 +290,10 @@ export default function OrderDetailV2Screen() {
         destinationLng?: string;
     }>();
     const orderRouteId = typeof id === 'string' ? id : Array.isArray(id) ? (id[0] ?? '') : '';
+    const [eventHeroImageReady, setEventHeroImageReady] = useState(false);
+    useEffect(() => {
+        setEventHeroImageReady(false);
+    }, [eventOrderHeroUrl, orderRouteId]);
     const orderRouteIdRef = useRef(orderRouteId);
     orderRouteIdRef.current = orderRouteId;
     const routeNumericForDeliveryPoll = useMemo(
@@ -925,11 +935,14 @@ export default function OrderDetailV2Screen() {
      * Recomputes whenever `deliveryPartnerStatus` updates.
      */
     const isEventOrder = deliveryPartnerStatus?.isEventOrder === true;
-    /** Last-mile map + partner UI only when DPS says not an event order, or we time out waiting on DPS. */
+    /** `isEventOrder` omitted from DPS = unknown — do not show map until explicit `false` or timeout. */
+    const evOrderFlag = deliveryPartnerStatus?.isEventOrder;
+    const awaitingEventOrderClassification =
+        deliveryPartnerStatus != null && evOrderFlag !== true && evOrderFlag !== false;
     const showLastMileDeliveryUi =
-        deliveryPartnerStatus != null
-            ? deliveryPartnerStatus.isEventOrder !== true
-            : dpsTimedOutAssumePhysical;
+        evOrderFlag === true ? false : evOrderFlag === false ? true : dpsTimedOutAssumePhysical;
+    const showEventHeroSkeletonOnly =
+        awaitingEventOrderClassification && !!eventOrderHeroUrl.trim() && !dpsTimedOutAssumePhysical;
     /** Pill may show Delivered from DPS before Shopify fulfillment flips — align body copy with partner. */
     const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
     const partnerSaysDelivered =
@@ -1106,8 +1119,20 @@ export default function OrderDetailV2Screen() {
         fitTrackingBounds(true, { force: false });
     }, [trackingPolylineCoordinates, shouldShowTrackingMap, fitTrackingBounds]);
 
+    const renderEventHeroSkeletonBody = () => (
+        <>
+            <View>
+                <View style={styles.eventHeroSkeletonBar} />
+                <View style={[styles.eventHeroSkeletonBar, styles.eventHeroSkeletonBarShort]} />
+                <View style={[styles.eventHeroSkeletonBar, styles.eventHeroSkeletonBarMedium]} />
+            </View>
+            <ActivityIndicator size="small" color="#94A3B8" />
+        </>
+    );
+
     if (loading) {
-        const eventHeroWhileLoading = isEventOrder && !!eventOrderHeroUrl;
+        const eventHeroWhileLoading =
+            (isEventOrder && !!eventOrderHeroUrl.trim()) || showEventHeroSkeletonOnly;
         const mapWhileLoading = !eventHeroWhileLoading && shouldShowTrackingMap && mapRegion;
         const showPostCheckoutChrome = !!destinationCoords && !!orderRouteId.trim();
         return (
@@ -1138,13 +1163,33 @@ export default function OrderDetailV2Screen() {
                 </View>
                 {eventHeroWhileLoading ? (
                     <View style={[styles.trackingWrap, { marginTop: 8, marginHorizontal: 16 }]}>
-                        <View style={styles.trackingMapFrame}>
-                            <Image
-                                source={{ uri: eventOrderHeroUrl }}
-                                style={styles.trackingMap}
-                                contentFit="cover"
-                                accessibilityLabel="Event order"
-                            />
+                        <View style={[styles.trackingMapFrame, styles.eventHeroFrame]}>
+                            {isEventOrder && !!eventOrderHeroUrl.trim() ? (
+                                <>
+                                    <Image
+                                        source={{ uri: eventOrderHeroUrl }}
+                                        style={[styles.trackingMap, { opacity: eventHeroImageReady ? 1 : 0 }]}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
+                                        priority="high"
+                                        onLoad={() => setEventHeroImageReady(true)}
+                                        onError={() => setEventHeroImageReady(true)}
+                                        accessibilityLabel="Event order"
+                                    />
+                                    {!eventHeroImageReady ? (
+                                        <View
+                                            style={[StyleSheet.absoluteFillObject, styles.eventHeroSkeletonOverlay]}
+                                            pointerEvents="none"
+                                        >
+                                            {renderEventHeroSkeletonBody()}
+                                        </View>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <View style={[styles.trackingMap, styles.eventHeroSkeletonOnlyPanel]}>
+                                    {renderEventHeroSkeletonBody()}
+                                </View>
+                            )}
                         </View>
                     </View>
                 ) : mapWhileLoading ? (
@@ -1372,15 +1417,35 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {isEventOrder && eventOrderHeroUrl ? (
+                {(isEventOrder && !!eventOrderHeroUrl.trim()) || showEventHeroSkeletonOnly ? (
                     <View style={styles.trackingWrap}>
-                        <View style={styles.trackingMapFrame}>
-                            <Image
-                                source={{ uri: eventOrderHeroUrl }}
-                                style={styles.trackingMap}
-                                contentFit="cover"
-                                accessibilityLabel="Event order"
-                            />
+                        <View style={[styles.trackingMapFrame, styles.eventHeroFrame]}>
+                            {isEventOrder && !!eventOrderHeroUrl.trim() ? (
+                                <>
+                                    <Image
+                                        source={{ uri: eventOrderHeroUrl }}
+                                        style={[styles.trackingMap, { opacity: eventHeroImageReady ? 1 : 0 }]}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
+                                        priority="high"
+                                        onLoad={() => setEventHeroImageReady(true)}
+                                        onError={() => setEventHeroImageReady(true)}
+                                        accessibilityLabel="Event order"
+                                    />
+                                    {!eventHeroImageReady ? (
+                                        <View
+                                            style={[StyleSheet.absoluteFillObject, styles.eventHeroSkeletonOverlay]}
+                                            pointerEvents="none"
+                                        >
+                                            {renderEventHeroSkeletonBody()}
+                                        </View>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <View style={[styles.trackingMap, styles.eventHeroSkeletonOnlyPanel]}>
+                                    {renderEventHeroSkeletonBody()}
+                                </View>
+                            )}
                         </View>
                     </View>
                 ) : shouldShowTrackingMap && mapRegion ? (
@@ -1767,10 +1832,10 @@ export default function OrderDetailV2Screen() {
                 {/* Delivery address – hide when order has only ticketing products */}
                 {order?.shippingAddress && !isOnlyTicketingOrder(order) && (
                     <View style={styles.addressCard}>
-                        {!isEventOrder ? <Text style={styles.billTitle}>Order Details</Text> : null}
+                        {showLastMileDeliveryUi ? <Text style={styles.billTitle}>Order Details</Text> : null}
 
-                        {/* Arrival / ETA line — hidden for event orders (map + partner hidden there too). */}
-                        {!isEventOrder && !!headerStatusText.trim() ? (
+                        {/* Arrival / ETA line — same gate as map (no flash before DPS classifies order). */}
+                        {showLastMileDeliveryUi && !!headerStatusText.trim() ? (
                             <View style={styles.belowBillSection}>
                                 <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
                             </View>
@@ -2257,6 +2322,46 @@ const styles = StyleSheet.create({
     },
     trackingMapFrame: {
         position: 'relative',
+    },
+    /** Fills behind remote event hero so layout is stable while the image decodes. */
+    eventHeroFrame: {
+        minHeight: 220,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#ECEFF3',
+    },
+    eventHeroSkeletonOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#E8ECF1',
+        justifyContent: 'space-between',
+        paddingTop: 22,
+        paddingBottom: 22,
+        paddingHorizontal: 18,
+    },
+    eventHeroSkeletonBar: {
+        height: 11,
+        borderRadius: 6,
+        backgroundColor: '#D1D9E3',
+        width: '100%',
+        marginBottom: 10,
+    },
+    eventHeroSkeletonBarShort: {
+        width: '74%',
+        alignSelf: 'flex-start',
+    },
+    eventHeroSkeletonBarMedium: {
+        width: '52%',
+        alignSelf: 'flex-start',
+    },
+    /** Skeleton-only slot while DPS has not yet sent `isEventOrder` (no map flash). */
+    eventHeroSkeletonOnlyPanel: {
+        width: '100%',
+        height: 220,
+        backgroundColor: '#E8ECF1',
+        justifyContent: 'space-between',
+        paddingTop: 22,
+        paddingBottom: 22,
+        paddingHorizontal: 18,
     },
     mapFloatingButton: {
         position: 'absolute',

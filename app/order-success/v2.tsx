@@ -1,4 +1,5 @@
 import { Fonts } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -46,6 +47,14 @@ export default function OrderSuccessV2Screen() {
                 useNativeDriver: true,
             }),
         ]).start();
+    }, []);
+
+    // Warm the event-order hero cache while this screen is visible so order summary paints faster.
+    useEffect(() => {
+        const d = appConfigService.getOrderDetailConfig();
+        const ext = d as { eventOrderUrl?: string; eventOrderurl?: string } | null;
+        const u = (ext?.eventOrderUrl ?? ext?.eventOrderurl)?.trim();
+        if (u) void Image.prefetch(u);
     }, []);
 
     // After a short beat, navigate to order summary (or orders list if no id)

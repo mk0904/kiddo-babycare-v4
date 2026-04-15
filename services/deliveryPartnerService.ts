@@ -410,15 +410,29 @@ function normalizeDeliveryPartnerOrderStatusPayload(data: unknown): DeliveryPart
     mergeTryBuyPostDeliveryMaps(explicit, fromItems),
     fromTryBuyLines,
   );
-  const isEventOrder =
+  const rawEventTrue =
     o.isEventOrder === true ||
     o.isEventsOrder === true ||
     (typeof o.isEventOrder === 'string' && String(o.isEventOrder).toLowerCase() === 'true');
-  return {
+  const rawEventFalse =
+    o.isEventOrder === false ||
+    o.isEventsOrder === false ||
+    (typeof o.isEventOrder === 'string' &&
+      ['false', '0', 'no'].includes(String(o.isEventOrder).toLowerCase()));
+
+  const out = {
     ...(data as DeliveryPartnerOrderStatus),
     ...(tryBuy != null ? { tryBuyPostDelivery: tryBuy } : {}),
-    ...(isEventOrder ? { isEventOrder: true } : {}),
-  };
+  } as DeliveryPartnerOrderStatus;
+
+  if (rawEventTrue) {
+    out.isEventOrder = true;
+  } else if (rawEventFalse) {
+    out.isEventOrder = false;
+  } else {
+    delete (out as { isEventOrder?: boolean }).isEventOrder;
+  }
+  return out;
 }
 
 function expandDpsMatchKeys(lineIdKeys: string[]): Set<string> {
