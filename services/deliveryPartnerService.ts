@@ -33,6 +33,11 @@ export interface DeliveryPartnerOrderStatus {
    * Backend may send `isEventsOrder` (typo); we normalize to this field.
    */
   isEventOrder?: boolean;
+  /**
+   * Schools “delivered” event variant: same event-style summary as `isEventOrder`, but hero uses
+   * `schoolsDeliveredEventOrderUrl` from app config instead of `eventOrderUrl`.
+   */
+  isSchoolsDeliveredEventOrder?: boolean;
   deliveryPartner: AssignedDeliveryPartner;
   /** Optional live rider position from GET delivery-status (when WebSocket is unused). */
   rider_lat?: number | string | null;
@@ -431,6 +436,25 @@ function normalizeDeliveryPartnerOrderStatusPayload(data: unknown): DeliveryPart
     out.isEventOrder = false;
   } else {
     delete (out as { isEventOrder?: boolean }).isEventOrder;
+  }
+
+  const rawSchoolsTrue =
+    o.isSchoolsDeliveredEventOrder === true ||
+    o.is_schools_delivered_event_order === true ||
+    (typeof o.isSchoolsDeliveredEventOrder === 'string' &&
+      String(o.isSchoolsDeliveredEventOrder).toLowerCase() === 'true');
+  const rawSchoolsFalse =
+    o.isSchoolsDeliveredEventOrder === false ||
+    o.is_schools_delivered_event_order === false ||
+    (typeof o.isSchoolsDeliveredEventOrder === 'string' &&
+      ['false', '0', 'no'].includes(String(o.isSchoolsDeliveredEventOrder).toLowerCase()));
+
+  if (rawSchoolsTrue) {
+    out.isSchoolsDeliveredEventOrder = true;
+  } else if (rawSchoolsFalse) {
+    out.isSchoolsDeliveredEventOrder = false;
+  } else {
+    delete (out as { isSchoolsDeliveredEventOrder?: boolean }).isSchoolsDeliveredEventOrder;
   }
   return out;
 }

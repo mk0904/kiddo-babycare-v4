@@ -54,6 +54,14 @@ function getEventOrderHeroUrl(cfg: OrderDetailConfig | null | undefined): string
     return typeof u === 'string' ? u.trim() : '';
 }
 
+/** Remote `orderDetail` may send `schoolsDeliveredEventOrderUrl` or typo `schoolsDeliveredEventOrderurl`. */
+function getSchoolsDeliveredEventOrderHeroUrl(cfg: OrderDetailConfig | null | undefined): string {
+    if (!cfg) return '';
+    const ext = cfg as OrderDetailConfig & { schoolsDeliveredEventOrderurl?: string };
+    const u = ext.schoolsDeliveredEventOrderUrl ?? ext.schoolsDeliveredEventOrderurl;
+    return typeof u === 'string' ? u.trim() : '';
+}
+
 function orderDetailPartnerAvatarSource(cfg: OrderDetailConfig | null | undefined) {
     const png = cfg?.partnerImageUrl?.trim();
     if (png) return { uri: png };
@@ -268,12 +276,21 @@ export default function OrderDetailV2Screen() {
     const riderMapIconUri = orderDetailRiderMarkerUri(orderDetailCfg);
     const partnerAvatarSrc = orderDetailPartnerAvatarSource(orderDetailCfg);
     const eventOrderHeroUrl = useMemo(() => getEventOrderHeroUrl(orderDetailCfg), [orderDetailCfg]);
+    const schoolsDeliveredEventOrderHeroUrl = useMemo(
+        () => getSchoolsDeliveredEventOrderHeroUrl(orderDetailCfg),
+        [orderDetailCfg],
+    );
+    const hasConfiguredEventHeroAsset = useMemo(
+        () => !!(eventOrderHeroUrl.trim() || schoolsDeliveredEventOrderHeroUrl.trim()),
+        [eventOrderHeroUrl, schoolsDeliveredEventOrderHeroUrl],
+    );
 
     useEffect(() => {
-        const u = eventOrderHeroUrl.trim();
-        if (!u) return;
-        void Image.prefetch(u);
-    }, [eventOrderHeroUrl]);
+        const a = eventOrderHeroUrl.trim();
+        const b = schoolsDeliveredEventOrderHeroUrl.trim();
+        if (a) void Image.prefetch(a);
+        if (b) void Image.prefetch(b);
+    }, [eventOrderHeroUrl, schoolsDeliveredEventOrderHeroUrl]);
 
     const {
         id,
@@ -291,9 +308,6 @@ export default function OrderDetailV2Screen() {
     }>();
     const orderRouteId = typeof id === 'string' ? id : Array.isArray(id) ? (id[0] ?? '') : '';
     const [eventHeroImageReady, setEventHeroImageReady] = useState(false);
-    useEffect(() => {
-        setEventHeroImageReady(false);
-    }, [eventOrderHeroUrl, orderRouteId]);
     const orderRouteIdRef = useRef(orderRouteId);
     orderRouteIdRef.current = orderRouteId;
     const routeNumericForDeliveryPoll = useMemo(
@@ -941,8 +955,24 @@ export default function OrderDetailV2Screen() {
         deliveryPartnerStatus != null && evOrderFlag !== true && evOrderFlag !== false;
     const showLastMileDeliveryUi =
         evOrderFlag === true ? false : evOrderFlag === false ? true : dpsTimedOutAssumePhysical;
+    const eventHeroDisplayUrl = useMemo(() => {
+        if (deliveryPartnerStatus?.isSchoolsDeliveredEventOrder !== true) {
+            return eventOrderHeroUrl;
+        }
+        const schools = schoolsDeliveredEventOrderHeroUrl.trim();
+        return schools !== '' ? schools : eventOrderHeroUrl;
+    }, [
+        deliveryPartnerStatus?.isSchoolsDeliveredEventOrder,
+        schoolsDeliveredEventOrderHeroUrl,
+        eventOrderHeroUrl,
+    ]);
+
+    useEffect(() => {
+        setEventHeroImageReady(false);
+    }, [eventHeroDisplayUrl, orderRouteId]);
+
     const showEventHeroSkeletonOnly =
-        awaitingEventOrderClassification && !!eventOrderHeroUrl.trim() && !dpsTimedOutAssumePhysical;
+        awaitingEventOrderClassification && hasConfiguredEventHeroAsset && !dpsTimedOutAssumePhysical;
     /** Pill may show Delivered from DPS before Shopify fulfillment flips — align body copy with partner. */
     const shopifyFulfilled = order?.fulfillmentStatus === 'FULFILLED';
     const partnerSaysDelivered =
@@ -1132,7 +1162,7 @@ export default function OrderDetailV2Screen() {
 
     if (loading) {
         const eventHeroWhileLoading =
-            (isEventOrder && !!eventOrderHeroUrl.trim()) || showEventHeroSkeletonOnly;
+            (isEventOrder && !!eventHeroDisplayUrl.trim()) || showEventHeroSkeletonOnly;
         const mapWhileLoading = !eventHeroWhileLoading && shouldShowTrackingMap && mapRegion;
         const showPostCheckoutChrome = !!destinationCoords && !!orderRouteId.trim();
         return (
@@ -1164,10 +1194,10 @@ export default function OrderDetailV2Screen() {
                 {eventHeroWhileLoading ? (
                     <View style={[styles.trackingWrap, { marginTop: 8, marginHorizontal: 16 }]}>
                         <View style={[styles.trackingMapFrame, styles.eventHeroFrame]}>
-                            {isEventOrder && !!eventOrderHeroUrl.trim() ? (
+                            {isEventOrder && !!eventHeroDisplayUrl.trim() ? (
                                 <>
                                     <Image
-                                        source={{ uri: eventOrderHeroUrl }}
+                                        source={{ uri: eventHeroDisplayUrl }}
                                         style={[styles.trackingMap, { opacity: eventHeroImageReady ? 1 : 0 }]}
                                         contentFit="cover"
                                         cachePolicy="memory-disk"
@@ -1417,13 +1447,13 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {(isEventOrder && !!eventOrderHeroUrl.trim()) || showEventHeroSkeletonOnly ? (
+                {(isEventOrder && !!eventHeroDisplayUrl.trim()) || showEventHeroSkeletonOnly ? (
                     <View style={styles.trackingWrap}>
                         <View style={[styles.trackingMapFrame, styles.eventHeroFrame]}>
-                            {isEventOrder && !!eventOrderHeroUrl.trim() ? (
+                            {isEventOrder && !!eventHeroDisplayUrl.trim() ? (
                                 <>
                                     <Image
-                                        source={{ uri: eventOrderHeroUrl }}
+                                        source={{ uri: eventHeroDisplayUrl }}
                                         style={[styles.trackingMap, { opacity: eventHeroImageReady ? 1 : 0 }]}
                                         contentFit="cover"
                                         cachePolicy="memory-disk"
