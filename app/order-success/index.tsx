@@ -76,12 +76,12 @@ export default function OrderSuccessScreen() {
             // Shopify order IDs might include query parameters like ?key=...
             const encodedId = typeof orderGraphId === 'string' ? encodeURIComponent(orderGraphId) : orderGraphId;
             console.log('[OrderSuccess] Navigating to order details with ID:', orderGraphId);
-            router.push({ pathname: '/orders/[id]', params: { id: encodedId } } as any);
+            router.push({ pathname: '/orders/[id]/v2', params: { id: encodedId } } as any);
         } else if (orderId) {
             // Fallback: try to navigate with orderId if orderGraphId is not available
             const encodedId = typeof orderId === 'string' ? encodeURIComponent(orderId) : orderId;
             console.log('[OrderSuccess] Navigating to order details with fallback orderId:', orderId);
-            router.push({ pathname: '/orders/[id]', params: { id: encodedId } } as any);
+            router.push({ pathname: '/orders/[id]/v2', params: { id: encodedId } } as any);
         } else {
             router.push('/orders');
         }

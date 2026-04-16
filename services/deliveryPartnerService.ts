@@ -28,6 +28,16 @@ export type DeliveryPartnerTryBuyPostDeliveryMap = Record<string, DeliveryPartne
 export interface DeliveryPartnerOrderStatus {
   shopifyOrderId: string;
   status: string;
+  /**
+   * Event / non–last-mile fulfilment: hide map, rider/partner UI, and “Arriving by” ETA on order summary.
+   * Backend may send `isEventsOrder` (typo); we normalize to this field.
+   */
+  isEventOrder?: boolean;
+  /**
+   * Schools “delivered” event variant: same event-style summary as `isEventOrder`, but hero uses
+   * `schoolsDeliveredEventOrderUrl` from app config instead of `eventOrderUrl`.
+   */
+  isSchoolsDeliveredEventOrder?: boolean;
   deliveryPartner: AssignedDeliveryPartner;
   /** Optional live rider position from GET delivery-status (when WebSocket is unused). */
   rider_lat?: number | string | null;
@@ -405,10 +415,48 @@ function normalizeDeliveryPartnerOrderStatusPayload(data: unknown): DeliveryPart
     mergeTryBuyPostDeliveryMaps(explicit, fromItems),
     fromTryBuyLines,
   );
-  return {
+  const rawEventTrue =
+    o.isEventOrder === true ||
+    o.isEventsOrder === true ||
+    (typeof o.isEventOrder === 'string' && String(o.isEventOrder).toLowerCase() === 'true');
+  const rawEventFalse =
+    o.isEventOrder === false ||
+    o.isEventsOrder === false ||
+    (typeof o.isEventOrder === 'string' &&
+      ['false', '0', 'no'].includes(String(o.isEventOrder).toLowerCase()));
+
+  const out = {
     ...(data as DeliveryPartnerOrderStatus),
     ...(tryBuy != null ? { tryBuyPostDelivery: tryBuy } : {}),
-  };
+  } as DeliveryPartnerOrderStatus;
+
+  if (rawEventTrue) {
+    out.isEventOrder = true;
+  } else if (rawEventFalse) {
+    out.isEventOrder = false;
+  } else {
+    delete (out as { isEventOrder?: boolean }).isEventOrder;
+  }
+
+  const rawSchoolsTrue =
+    o.isSchoolsDeliveredEventOrder === true ||
+    o.is_schools_delivered_event_order === true ||
+    (typeof o.isSchoolsDeliveredEventOrder === 'string' &&
+      String(o.isSchoolsDeliveredEventOrder).toLowerCase() === 'true');
+  const rawSchoolsFalse =
+    o.isSchoolsDeliveredEventOrder === false ||
+    o.is_schools_delivered_event_order === false ||
+    (typeof o.isSchoolsDeliveredEventOrder === 'string' &&
+      ['false', '0', 'no'].includes(String(o.isSchoolsDeliveredEventOrder).toLowerCase()));
+
+  if (rawSchoolsTrue) {
+    out.isSchoolsDeliveredEventOrder = true;
+  } else if (rawSchoolsFalse) {
+    out.isSchoolsDeliveredEventOrder = false;
+  } else {
+    delete (out as { isSchoolsDeliveredEventOrder?: boolean }).isSchoolsDeliveredEventOrder;
+  }
+  return out;
 }
 
 function expandDpsMatchKeys(lineIdKeys: string[]): Set<string> {

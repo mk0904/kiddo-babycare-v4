@@ -106,6 +106,16 @@ export interface CheckoutConfig {
 export interface OrderDetailConfig {
   /** Banner image above order content (JPEG/PNG). */
   imageUrl?: string;
+  /**
+   * Hero image for event orders — shown on order summary instead of the map when `isEventOrder` is true.
+   * Remote JSON may use typo key `eventOrderurl`; the app reads both.
+   */
+  eventOrderUrl?: string;
+  /**
+   * Hero image when `isSchoolsDeliveredEventOrder` is true — overrides {@link eventOrderUrl} for that banner.
+   * Remote JSON may use typo key `schoolsDeliveredEventOrderurl`; the app reads both.
+   */
+  schoolsDeliveredEventOrderUrl?: string;
   /** Dark store / pickup hub marker on tracking map (SVG or raster URL). */
   darkStoreIconUrl?: string;
   /** Customer / delivery location marker on tracking map (SVG or raster URL). */

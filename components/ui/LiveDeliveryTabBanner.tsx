@@ -19,6 +19,7 @@ import {
   DELIVERY_ACTIVE_STATUSES,
   distanceMetersLatLng,
   shippingAddressString,
+  statusAllowsLiveDirectionsEta,
 } from '@/utils/orderDeliveryHeaderText';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -210,6 +211,11 @@ export function LiveDeliveryTabBanner({
       return;
     }
 
+    if (st.isEventOrder === true) {
+      if (pollActiveRef.current) setModel(null);
+      return;
+    }
+
     const phase = liveTabBannerPhaseFromPartnerStatus(st);
     if (phase == null) {
       if (pollActiveRef.current) setModel(null);
@@ -266,7 +272,7 @@ export function LiveDeliveryTabBanner({
             ? DARK_STORE_LOCATION
             : null;
       const canUseLiveEta =
-        DELIVERY_ACTIVE_STATUSES.has(dk) &&
+        statusAllowsLiveDirectionsEta(dk) &&
         !!destinationCoords &&
         !!etaOrigin &&
         !nearDrop &&

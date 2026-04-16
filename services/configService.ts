@@ -1,9 +1,32 @@
 // Config Service - Loads and manages remote config
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
+import { Platform } from 'react-native';
 
-// Remote config URL - all config is fetched from remote only
-const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
+/** Production API base (must stay in sync with `services/backendBase.ts` when env is unset). */
+const PRODUCTION_BACKEND_API_V1 = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+
+/**
+ * GET /api/v1/remote-config?appVersion=...&deviceType=...
+ * Returns { configUrl: "https://..." }. Do not import `backendBase` here (circular with configService).
+ */
+function getRemoteConfigApiUrl(): string {
+  const envBase =
+    typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_BACKEND_API_BASE
+      ? String(process.env.EXPO_PUBLIC_BACKEND_API_BASE).trim()
+      : '';
+  if (envBase) {
+    const base = envBase.replace(/\/+$/, '');
+    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+    return `${prefix}/remote-config`;
+  }
+  return `${PRODUCTION_BACKEND_API_V1}/remote-config`;
+}
+
+/** Fallback JSON URL if remote-config API fails (offline / new field). */
+const FALLBACK_CONFIG_JSON_URL =
+  'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
 
 // Default config - will be loaded from Kiddo's appConfig.json
 const defaultConfig: AppConfig = {
@@ -23,6 +46,30 @@ class ConfigService {
   /** Set when config is successfully loaded; used to cache-bust sidebar images so they refresh each app session */
   private configLoadedAt: number | null = null;
 
+  /**
+   * Resolves the Shopify CDN JSON URL via backend:
+   * GET /api/v1/remote-config?appVersion=1.9.0&deviceType=android
+   */
+  private async resolveConfigJsonUrl(): Promise<string> {
+    const appVersion = getAppVersionForApi();
+    const deviceType = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+    const apiUrl = `${getRemoteConfigApiUrl()}?${new URLSearchParams({ appVersion, deviceType }).toString()}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`remote-config HTTP ${response.status} ${response.statusText}`);
+    }
+    const body = (await response.json()) as { configUrl?: string };
+    const configUrl = typeof body?.configUrl === 'string' ? body.configUrl.trim() : '';
+    if (!configUrl) {
+      throw new Error('remote-config response missing configUrl');
+    }
+    return configUrl;
+  }
+
   // Load config from remote or local
   async loadConfig(remoteUrl?: string, forceReload: boolean = false): Promise<AppConfig> {
     // If already loading and not forcing reload, return the existing promise
@@ -37,9 +84,18 @@ class ConfigService {
       this.configLoadedAt = null;
     }
 
-    const url = remoteUrl || REMOTE_CONFIG_URL;
+    const resolveUrl = async (): Promise<string> => {
+      if (remoteUrl?.trim()) return remoteUrl.trim();
+      try {
+        return await this.resolveConfigJsonUrl();
+      } catch (e) {
+        console.warn('[ConfigService] remote-config failed, using fallback JSON URL:', e);
+        return FALLBACK_CONFIG_JSON_URL;
+      }
+    };
+
     this.isLoading = true;
-    this.loadPromise = this._loadConfig(url);
+    this.loadPromise = resolveUrl().then((url) => this._loadConfig(url));
     
     try {
       const result = await this.loadPromise;

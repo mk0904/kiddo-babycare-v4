@@ -1,5 +1,5 @@
-import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Fonts } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ICON_SIZE = 170;
+/** Let the success state read before auto-advancing to order summary */
 const AUTO_NAVIGATE_DELAY_MS = 3000;
 
 export default function OrderSuccessV2Screen() {
@@ -48,7 +49,15 @@ export default function OrderSuccessV2Screen() {
         ]).start();
     }, []);
 
-    // After 3 seconds, navigate to order detail (or orders list if no id)
+    // Warm the event-order hero cache while this screen is visible so order summary paints faster.
+    useEffect(() => {
+        const d = appConfigService.getOrderDetailConfig();
+        const ext = d as { eventOrderUrl?: string; eventOrderurl?: string } | null;
+        const u = (ext?.eventOrderUrl ?? ext?.eventOrderurl)?.trim();
+        if (u) void Image.prefetch(u);
+    }, []);
+
+    // After a short beat, navigate to order summary (or orders list if no id)
     useEffect(() => {
         const t = setTimeout(() => {
             const etaParam = estimatedDeliveryMinutes != null ? { estimatedDeliveryMinutes } : {};
