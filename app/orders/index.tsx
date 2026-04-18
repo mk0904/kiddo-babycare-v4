@@ -1,6 +1,7 @@
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserStore, type UserProfile } from '@/store/userStore';
 import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
 import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -215,6 +216,12 @@ const getFirstBookingDate = (order: any): string | null => {
     return null;
 };
 
+/** Same token resolution as order detail (v2) and delivery banner — Storefront customer token may live on `user` or root `accessToken` after persist. */
+function getShopifyCustomerAccessTokenForOrders(user: UserProfile | null): string {
+    const persisted = useUserStore.getState().accessToken;
+    return String(user?.customerAccessToken ?? user?.accessToken ?? persisted ?? '').trim();
+}
+
 export default function OrdersScreen() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuth();
@@ -230,9 +237,10 @@ export default function OrdersScreen() {
             setLoading(true);
             
             // Fetch orders from both Shopify (regular orders) and local storage (Try & Buy)
+            const shopifyToken = getShopifyCustomerAccessTokenForOrders(user);
             const [shopifyOrdersResult, localOrders] = await Promise.all([
-                user?.customerAccessToken 
-                    ? shopifyApi.getCustomerOrders(user.customerAccessToken, 50).catch(() => null)
+                shopifyToken
+                    ? shopifyApi.getCustomerOrders(shopifyToken, 50).catch(() => null)
                     : Promise.resolve(null),
                 orderService.getAllOrders().catch(() => []),
             ]);
