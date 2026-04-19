@@ -7,6 +7,7 @@ import { DeliveryCard } from '@/components/cart/DeliveryCard';
 import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
+import { MilestoneTracker } from '@/components/home/MilestoneTracker';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
@@ -131,6 +132,8 @@ export default function CartScreen() {
         () => appConfigService.getCheckoutConfig(),
         [appConfigRefresh]
     );
+    const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [appConfigRefresh]);
+    const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
     const giftWrapping = useGiftWrapping();
     const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
         defaultAddress?.latitude,
@@ -1559,16 +1562,26 @@ export default function CartScreen() {
             </View>
 
             {cartItems.length > 0 && (
-                <>
+                <View style={styles.cartBodyColumn}>
                     {/* Total Savings Banner - full width, lighter green, thinner */}
                     {displaySavings > 0 && (
                         <View style={styles.savingsBanner}>
                             <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(displaySavings)}!</Text>
                         </View>
                     )}
+                    <View style={styles.cartMilestoneSlot}>
+                        <MilestoneTracker
+                            variant="embedded"
+                            milestoneUI={milestoneUI}
+                            onExpandedChange={setCartMilestoneExpanded}
+                        />
+                    </View>
                     <ScrollView
                         style={styles.scrollView}
-                        contentContainerStyle={styles.scrollContent}
+                        contentContainerStyle={[
+                            styles.scrollContent,
+                            cartMilestoneExpanded ? { paddingBottom: 220 } : null,
+                        ]}
                         showsVerticalScrollIndicator={false}
                     >
 
@@ -1762,7 +1775,7 @@ export default function CartScreen() {
                         {/* Spacer */}
                         <View style={styles.spacerEnd} />
                     </ScrollView>
-                </>
+                </View>
             )}
 
             {/* Footer - Only show when cart has items */}
@@ -1931,6 +1944,13 @@ const styles = StyleSheet.create({
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendBold,
         color: '#EDFCF2',
+    },
+    cartBodyColumn: {
+        flex: 1,
+        minHeight: 0,
+    },
+    cartMilestoneSlot: {
+        width: '100%',
     },
     scrollView: {
         flex: 1,

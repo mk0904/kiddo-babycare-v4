@@ -1,6 +1,8 @@
 import { Tabs } from 'expo-router';
 import React, { useMemo } from 'react';
 
+import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
+import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBar from '@/components/ui/TabBar';
@@ -16,6 +18,8 @@ export default function TabLayout() {
   const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'ticketing', 'account'];
 
   return (
+    <MilestoneDockProvider>
+    <LiveDeliveryStackOffsetProvider>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -53,5 +57,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </LiveDeliveryStackOffsetProvider>
+    </MilestoneDockProvider>
   );
 }

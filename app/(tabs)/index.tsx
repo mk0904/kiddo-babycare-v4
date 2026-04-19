@@ -1,5 +1,6 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
+import { MilestoneTracker } from '@/components/home/MilestoneTracker';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
@@ -10,7 +11,10 @@ import {
 import { Colors } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
+import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { ContentBlock } from '@/types/content';
@@ -21,10 +25,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated,
+    LayoutChangeEvent,
     Platform,
     ScrollView,
     StyleSheet,
-    View
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,6 +46,19 @@ export default function HomeScreen() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+  const { dockHeight: milestoneDockHeight, setMilestoneDockHeight } = useMilestoneDock();
+
+  useEffect(() => appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1)), []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setMilestoneDockHeight(0);
+    }, [setMilestoneDockHeight])
+  );
+
+  const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
   // Auto-detected location when user has no saved address (serviceable / unserviceable)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
@@ -262,6 +280,18 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
+  const tabBarStackBottom = useMemo(() => {
+    const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
+    return Math.max(insets.bottom, 0) + tabBarHeight;
+  }, [insets.bottom, configLoading]);
+
+  const { stackExtraPx: liveDeliveryStackExtra } = useLiveDeliveryStackOffset();
+
+  const scrollBottomPad = useMemo(() => {
+    const milestoneReserve = milestoneExpanded ? 380 : 130;
+    return Math.max(80, tabBarStackBottom + milestoneReserve);
+  }, [tabBarStackBottom, milestoneExpanded]);
+
   // Use a safe initial estimate to prevent jump
   // Account for: safe area top + top info bar + search bar + category nav bar
   // Breakdown:
@@ -277,7 +307,16 @@ export default function HomeScreen() {
   const [dynamicHeaderHeight, setDynamicHeaderHeight] = useState(0);
 
   // Tab bar visibility control
-  const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
+  const { isVisible: isTabBarVisibleFromScroll, setScrollDirection, reset: resetTabBar } =
+    useTabBarVisibility();
+
+  /** Match `TabBar` → `FloatingCartButton` `anchorExtraOffset` on Home (milestone strip + live pill stack). */
+  const scrollToTopAnchorExtra = useMemo(() => {
+    if (!isTabBarVisibleFromScroll) return 0;
+    const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 130) + 8;
+    const milestoneReserveForCart = milestoneStripReserveForStack + 8;
+    return liveDeliveryStackExtra + milestoneReserveForCart;
+  }, [isTabBarVisibleFromScroll, milestoneDockHeight, liveDeliveryStackExtra]);
 
   // Use the measured height if available, otherwise fallback to estimate
   // Add label height (approximately 40px) and gap (8px) to account for the delivery label only on homepage (all category)
@@ -287,6 +326,24 @@ export default function HomeScreen() {
   // Scroll-to-top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const scrollYValue = useRef(0);
+  const milestoneScrollTranslateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    /** Tab bar translates by ~`tabBarStackBottom`; the milestone strip is taller — offset must include measured height so it fully leaves the screen. */
+    const hideTranslate = tabBarStackBottom + Math.max(milestoneDockHeight, 120);
+    Animated.spring(milestoneScrollTranslateY, {
+      toValue: isTabBarVisibleFromScroll ? 0 : hideTranslate,
+      useNativeDriver: true,
+      tension: 40,
+      friction: 8,
+      velocity: 0,
+    }).start();
+  }, [
+    isTabBarVisibleFromScroll,
+    tabBarStackBottom,
+    milestoneDockHeight,
+    milestoneScrollTranslateY,
+  ]);
 
   const handleSearchPress = useCallback(() => {
     console.log('Search pressed, navigating to /search');
@@ -543,6 +600,7 @@ export default function HomeScreen() {
               paddingTop: 0,
               minHeight: '100%',
               backgroundColor: pageBackgroundColor,
+              paddingBottom: scrollBottomPad,
             },
           ]}
         showsVerticalScrollIndicator={false}
@@ -573,8 +631,23 @@ export default function HomeScreen() {
       <ScrollToTopButton
         visible={showScrollToTop}
         onPress={handleScrollToTop}
-        bottomOffset={80}
+        tabBarReserveHeight={tabBarStackBottom}
+        anchorExtraOffset={scrollToTopAnchorExtra}
       />
+
+      <Animated.View
+        style={[
+          styles.milestoneDock,
+          {
+            bottom: tabBarStackBottom,
+            transform: [{ translateY: milestoneScrollTranslateY }],
+          },
+        ]}
+        pointerEvents={isTabBarVisibleFromScroll ? 'box-none' : 'none'}
+        onLayout={(e: LayoutChangeEvent) => setMilestoneDockHeight(e.nativeEvent.layout.height)}
+      >
+        <MilestoneTracker milestoneUI={milestoneUI} onExpandedChange={setMilestoneExpanded} />
+      </Animated.View>
 
       {/* Address Modal */}
       <AddressModal
@@ -598,9 +671,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 80,
     paddingTop: 0,
     flexGrow: 1,
+  },
+  milestoneDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 55,
+    elevation: 55,
   },
   scrollViewContent: {
     flex: 1,

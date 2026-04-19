@@ -22,13 +22,19 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FloatingCartButtonProps {
     showTabBar?: boolean;
-    /** Extra space reserved above the tab bar (e.g. live delivery pill). */
+    /** Extra space reserved above the tab bar (e.g. live delivery pill + home milestone strip). */
     anchorExtraOffset?: number;
+    /**
+     * Pixel distance from screen bottom to the top of the tab bar (bar + home indicator).
+     * When set, matches TabBar `totalHeight` so the cart anchor aligns with the real bar height from config.
+     */
+    tabBarReserveHeight?: number;
 }
 
 const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     showTabBar = false,
     anchorExtraOffset = 0,
+    tabBarReserveHeight,
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -45,6 +51,12 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
     const TAB_BAR_HEIGHT = 60;
     const bottomInset = Math.max(insets.bottom, 0);
+    const tabBarBlockHeight =
+        showTabBar && tabBarReserveHeight != null && tabBarReserveHeight > 0
+            ? tabBarReserveHeight
+            : showTabBar
+              ? TAB_BAR_HEIGHT + bottomInset
+              : bottomInset;
     const isCartScreen = pathname === '/cart';
     const isPDP = pathname?.includes('/product/');
     
@@ -58,8 +70,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
     // On PDP, position above the bottom bar with some spacing
     const pdpBottomOffset = PDP_BOTTOM_BAR_HEIGHT + 12;
-    const baseBottomOffset =
-        (showTabBar ? TAB_BAR_HEIGHT + bottomInset : bottomInset) + 18 + (anchorExtraOffset || 0);
+    const baseBottomOffset = tabBarBlockHeight + 18 + (anchorExtraOffset || 0);
     const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
 
     // Entrance animation (native driver)

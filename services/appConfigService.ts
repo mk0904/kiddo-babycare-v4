@@ -13,6 +13,7 @@ import type {
   FreeShoesOfferConfig,
   FreeShoesPickerConfig,
   GiftWrapConfig,
+  MilestoneUIConfig,
   OrderDetailConfig,
 } from '@/types/appConfig';
 import { getBackendApiPath } from './backendBase';
@@ -77,6 +78,7 @@ function parseEntryScreenItem(raw: unknown): EntryScreenItem | null {
 class AppConfigService {
   private config: AppConfigResponse | null = null;
   private loadPromise: Promise<AppConfigResponse | null> | null = null;
+  private readonly listeners = new Set<() => void>();
 
   async loadAppConfig(forceReload = false, payload?: AppConfigPayload): Promise<AppConfigResponse | null> {
     if (!forceReload && this.loadPromise) return this.loadPromise;
@@ -92,6 +94,7 @@ class AppConfigService {
         if (!res.ok) throw new Error(`App config HTTP ${res.status}`);
         const data: AppConfigResponse = await res.json();
         this.config = data;
+        this.emitConfigListeners();
         if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
         return data;
       } catch (e) {
@@ -107,6 +110,28 @@ class AppConfigService {
 
   getConfig(): AppConfigResponse | null {
     return this.config;
+  }
+
+  /** Subscribe to successful app-config loads (same tick as `getConfig()` update). */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private emitConfigListeners(): void {
+    this.listeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+        if (__DEV__) console.warn('[AppConfigService] listener error:', e);
+      }
+    });
+  }
+
+  getMilestoneUI(): MilestoneUIConfig | null {
+    return this.config?.milestoneUI ?? null;
   }
 
   getCartFeatures(): CartFeatures {

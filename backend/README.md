@@ -43,3 +43,12 @@ If you store config in DB or env, build the same JSON shape and return it. The a
 - `cart.giftWrap.enabled`, `cart.giftWrap.options`, etc.
 
 See `kiddo-app/types/appConfig.ts` for the full TypeScript interface.
+
+## Point the Kiddo app at localhost
+
+1. Run kiddo-service locally so **GET** `http://<host>:<port>/api/v1/app/config` returns your JSON.
+2. In the **kiddo-app** repo root, copy **`.env.example`** → **`.env`** and set **`EXPO_PUBLIC_BACKEND_API_BASE`**:
+   - **Android emulator:** `http://10.0.2.2:<port>` (maps to your machine’s loopback).
+   - **iOS simulator:** `http://127.0.0.1:<port>` or `http://localhost:<port>`.
+3. Restart Metro. The app uses `getBackendApiPath('app/config')`, which becomes `<base>/api/v1/app/config` unless `base` already ends with `/api/v1`.
+4. Include **`milestoneUI`** on the same JSON payload when you want the home/cart milestone strip to reflect your backend.

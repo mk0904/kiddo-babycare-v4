@@ -7,6 +7,8 @@ import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
 import { Colors, Fonts } from '@/constants/theme';
+import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
+import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { TabBarConfig } from '@/types/tabBarTypes';
@@ -65,17 +67,8 @@ export const TabBar = (props: BottomTabBarProps) => {
     const bottomInset = Math.max(insets.bottom, 0);
     const totalHeight = tabBarHeight + bottomInset;
 
-    const [liveDeliveryStackExtra, setLiveDeliveryStackExtra] = React.useState(0);
-
-    useEffect(() => {
-        Animated.spring(translateY, {
-            toValue: isVisible ? 0 : totalHeight,
-            useNativeDriver: true,
-            tension: 40,
-            friction: 8,
-            velocity: 0,
-        }).start();
-    }, [isVisible, totalHeight, translateY]);
+    const { stackExtraPx: liveDeliveryStackExtra, setStackExtraPx: setLiveDeliveryStackExtra } =
+        useLiveDeliveryStackOffset();
 
     // Get visible tabs from config, fallback to default
     const visibleTabs = useMemo(() => {
@@ -95,6 +88,35 @@ export const TabBar = (props: BottomTabBarProps) => {
             return false;
         }
     }, [props.state, visibleTabs]);
+
+    const activeTabName = useMemo(() => {
+        try {
+            const { state } = props;
+            if (!state?.routes?.length || state.index === undefined) return '';
+            return state.routes[state.index]?.name ?? '';
+        } catch {
+            return '';
+        }
+    }, [props.state]);
+
+    const milestoneDockHeight = useMilestoneDockHeightSafe();
+    /** Milestone strip only exists on Home (see `MilestoneTracker` on index screen). */
+    const isHomeTab = activeTabName === 'index';
+    /** Lift live-delivery pill + View cart above the measured strip (min height before first `onLayout`). */
+    const milestoneStripReserveForStack =
+        isVisible && shouldShowTabBar && isHomeTab ? Math.max(milestoneDockHeight, 130) + 8 : 0;
+    const milestoneReserveForCart =
+        isVisible && shouldShowTabBar && isHomeTab ? milestoneStripReserveForStack + 8 : 0;
+
+    useEffect(() => {
+        Animated.spring(translateY, {
+            toValue: isVisible ? 0 : totalHeight,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 8,
+            velocity: 0,
+        }).start();
+    }, [isVisible, totalHeight, translateY]);
 
     // Render tab icon: use config URLs (e.g. Shopify) when set, otherwise fall back to local assets
     const renderTabIcon = (routeName: string, isFocused: boolean) => {
@@ -139,10 +161,12 @@ export const TabBar = (props: BottomTabBarProps) => {
                 showTabBar={shouldShowTabBar}
                 tabStackHeight={totalHeight}
                 onStackOffsetChange={setLiveDeliveryStackExtra}
+                milestoneStripBottomReserve={milestoneStripReserveForStack}
             />
             <FloatingCartButton
                 showTabBar={shouldShowTabBar}
-                anchorExtraOffset={liveDeliveryStackExtra}
+                tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
+                anchorExtraOffset={liveDeliveryStackExtra + milestoneReserveForCart}
             />
 
             {shouldShowTabBar && (

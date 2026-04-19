@@ -116,12 +116,18 @@ export interface LiveDeliveryTabBannerProps {
   /** Tab bar row + home indicator (`TabBar` `totalHeight`). */
   tabStackHeight: number;
   onStackOffsetChange: (extraPx: number) => void;
+  /**
+   * Extra `bottom` offset so the pill clears the home milestone strip (same stack order as View cart).
+   * Supplied by TabBar when Home tab + tab bar visible.
+   */
+  milestoneStripBottomReserve?: number;
 }
 
 export function LiveDeliveryTabBanner({
   showTabBar,
   tabStackHeight,
   onStackOffsetChange,
+  milestoneStripBottomReserve = 0,
 }: LiveDeliveryTabBannerProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -384,9 +390,12 @@ export function LiveDeliveryTabBanner({
   const showRiderImage = model.phase === 'packing' || model.phase === 'tracking';
   const showCheckImage = model.phase === 'delivered';
 
+  const pillBottom =
+    tabStackHeight + milestoneStripBottomReserve + 10;
+
   return (
     <View
-      style={[styles.wrap, { bottom: tabStackHeight + 10 }]}
+      style={[styles.wrap, { bottom: pillBottom }]}
       pointerEvents="box-none"
       onLayout={onLayoutBanner}
     >

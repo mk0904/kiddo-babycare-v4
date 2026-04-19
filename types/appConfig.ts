@@ -133,6 +133,53 @@ export interface EntryScreenItem {
   ctaLabel?: string;
 }
 
+/** Single milestone step assets + copy (backend `milestoneUI.milestoneFirst` … `milestoneFourth`). */
+export interface MilestoneSlotConfig {
+  activeColor?: string;
+  inactiveColor?: string;
+  /** Primary icon URL (new API); used with `activeIconUrl` / `inactiveIconUrl`. */
+  iconUrl?: string;
+  activeIconUrl?: string;
+  inactiveIconUrl?: string;
+  /** Default / outline glyph when step is inactive (new API). */
+  defaultIconUrl?: string;
+  title?: string;
+  description?: string;
+  /** When true, this step is done; used with `currentStepIndex` to infer active step. */
+  isCompleted?: boolean;
+  completedHorLine?: string;
+  completedVerLine?: string;
+  /** Current-step horizontal segment (latest API key shape). */
+  horizontallineUrl?: string;
+  /** Current-step vertical segment (latest API key shape). */
+  verticallineUrl?: string;
+  /** Active horizontal segment (PascalCase `L` variant, legacy). */
+  horizontalLineUrl?: string;
+  /** Active vertical segment (PascalCase `L` variant, legacy). */
+  verticalLineUrl?: string;
+  /** Backend typo — prefer this key when present. */
+  horActiveLIne?: string;
+  horActiveLine?: string;
+  pendingHorLine?: string;
+  pendingVerLine?: string;
+  verActiveLine?: string;
+}
+
+export interface MilestoneUIConfig {
+  /** Expanded panel header (e.g. “On your next 4 orders”). */
+  expandedTitle?: string;
+  /** Optional server-driven progress; when set, overrides `isCompleted`-based step. */
+  currentStepIndex?: number;
+  /** Shared completed horizontal segment when a slot omits `completedHorLine`. */
+  horizontalCompletedLineUrl?: string;
+  /** Shared completed vertical segment when a slot omits `completedVerLine`. */
+  verticalCompletedLineUrl?: string;
+  milestoneFirst?: MilestoneSlotConfig;
+  milestoneSecond?: MilestoneSlotConfig;
+  milestoneThird?: MilestoneSlotConfig;
+  milestoneFourth?: MilestoneSlotConfig;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
@@ -146,4 +193,5 @@ export interface AppConfigResponse {
   checkout?: CheckoutConfig;
   orderDetail?: OrderDetailConfig;
   entryScreens?: EntryScreenItem[];
+  milestoneUI?: MilestoneUIConfig;
 }
