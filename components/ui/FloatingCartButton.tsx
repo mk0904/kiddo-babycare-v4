@@ -55,11 +55,11 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
         showTabBar && tabBarReserveHeight != null && tabBarReserveHeight > 0
             ? tabBarReserveHeight
             : showTabBar
-              ? TAB_BAR_HEIGHT + bottomInset
-              : bottomInset;
+                ? TAB_BAR_HEIGHT + bottomInset
+                : bottomInset;
     const isCartScreen = pathname === '/cart';
     const isPDP = pathname?.includes('/product/');
-    
+
     // Calculate bottom bar height on PDP:
     // padding top (16) + content height (~48) + padding bottom (Math.max(insets.bottom, 20)) + border (1)
     const PDP_PADDING_TOP = 16;
@@ -70,7 +70,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
     // On PDP, position above the bottom bar with some spacing
     const pdpBottomOffset = PDP_BOTTOM_BAR_HEIGHT + 12;
-    const baseBottomOffset = tabBarBlockHeight + 18 + (anchorExtraOffset || 0);
+    const baseBottomOffset = tabBarBlockHeight + 0 + (anchorExtraOffset || 0);
     const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
 
     // Entrance animation (native driver)

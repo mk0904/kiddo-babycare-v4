@@ -169,6 +169,12 @@ export interface MilestoneSlotConfig {
   verActiveLine?: string;
 }
 
+export interface HotWheelConfig {
+  deliveryFee: number;
+  isEnabled: boolean;
+  minCartValue: number;
+}
+
 export interface MilestoneUIConfig {
   /** Expanded panel header (e.g. “On your next 4 orders”). */
   expandedTitle?: string;
@@ -198,4 +204,5 @@ export interface AppConfigResponse {
   orderDetail?: OrderDetailConfig;
   entryScreens?: EntryScreenItem[];
   milestoneUI?: MilestoneUIConfig;
+  hotWheelConfig?: HotWheelConfig;
 }

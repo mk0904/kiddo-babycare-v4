@@ -13,8 +13,10 @@ export interface BillDetailsProps {
     isTicketingOnly?: boolean;
     /** Original handling fee shown struck + FREE (only when !isTicketingOnly). */
     handlingFeeOriginal?: number;
-    /** Original delivery fee shown struck + FREE (only when !isTicketingOnly). */
+    /** Original delivery fee shown struck (only when !isTicketingOnly). */
     deliveryFeeOriginal?: number;
+    /** Actual delivery fee to charge (e.g. 50 from HotWheels). If 0 or omitted, shows FREE. */
+    deliveryFee?: number;
     /** Platform fee when cart has only ticket products (e.g. 20); 0 = hide row. Shown like handling fee. */
     platformFee?: number;
     /** Coupon discount amount (positive number; total of all coupon discounts) */
@@ -48,6 +50,7 @@ export function BillDetails({
     isTicketingOnly = false,
     handlingFeeOriginal = 0,
     deliveryFeeOriginal = 0,
+    deliveryFee = 0,
     platformFee = 0,
     couponDiscount,
     hasHeyKiddo = false,
@@ -112,8 +115,14 @@ export function BillDetails({
                         <View style={styles.row}>
                             <Text style={styles.label}>Delivery Fee</Text>
                             <View style={styles.valueRow}>
-                                <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
-                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                                {deliveryFee > 0 ? (
+                                    <Text style={styles.value}>{formatCurrency(deliveryFee)}</Text>
+                                ) : (
+                                    <>
+                                        <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
+                                        <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                                    </>
+                                )}
                             </View>
                         </View>
                     )}

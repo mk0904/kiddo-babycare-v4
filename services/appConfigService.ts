@@ -87,6 +87,12 @@ class AppConfigService {
     this.loadPromise = (async () => {
       try {
         const url = getAppConfigUrl(payload);
+        if (__DEV__) {
+          console.log('[AppConfigService] GET app/config request:', {
+            url,
+            payload: payload || 'no payload',
+          });
+        }
         const res = await fetch(url, {
           method: 'GET',
           headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
@@ -139,6 +145,10 @@ class AppConfigService {
 
   getCartFeatures(): CartFeatures {
     return this.config?.features?.cart ?? DEFAULT_CART_FEATURES;
+  }
+
+  getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
+    return this.config?.hotWheelConfig ?? null;
   }
 
   getCartConfig(): CartConfig | null {

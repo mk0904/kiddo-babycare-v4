@@ -105,11 +105,16 @@ export const TabBar = (props: BottomTabBarProps) => {
     const milestoneDockHeight = useMilestoneDockHeightSafe();
     /** Milestone strip only exists on Home (see `MilestoneTracker` on index screen). */
     const isHomeTab = activeTabName === 'index';
-    /** Lift live-delivery pill + View cart above the measured strip (min height before first `onLayout`). */
+    
+    /** 
+     * Lift live-delivery pill + View cart above the measured strip.
+     * We use a 12px gap instead of subtracting pixels to prevent overlap.
+     */
     const milestoneStripReserveForStack =
-        isVisible && shouldShowTabBar && isHomeTab ? Math.max(milestoneDockHeight, 130) + 8 : 0;
+        isVisible && shouldShowTabBar && isHomeTab ? Math.max(milestoneDockHeight, 0) + 12 : 0;
+    
     const milestoneReserveForCart =
-        isVisible && shouldShowTabBar && isHomeTab ? milestoneStripReserveForStack + 8 : 0;
+        isVisible && shouldShowTabBar && isHomeTab ? milestoneStripReserveForStack + 4 : 0;
 
     useEffect(() => {
         Animated.spring(translateY, {
@@ -170,7 +175,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                 showTabBar={shouldShowTabBar}
                 tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
                 anchorExtraOffset={
-                    liveDeliveryStackExtra + milestoneReserveForCart - LIVE_DELIVERY_DOWNSET_PX
+                    liveDeliveryStackExtra + milestoneReserveForCart
                 }
             />
 

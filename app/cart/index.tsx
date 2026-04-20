@@ -164,8 +164,9 @@ export default function CartScreen() {
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
-    // Use Zustand store
-    const cartItems = useCartItems();
+     // Use Zustand store
+     const cartStore = useCartStore();
+     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
     const status = useCartStatus();
@@ -326,6 +327,9 @@ export default function CartScreen() {
         ],
         [cartItems]
     );
+    if (__DEV__) {
+        console.log('[CartScreen] computed cartCategoryTags:', cartCategoryTags);
+    }
     const itemSubtotalForOffers = useMemo(
         () => cartItems.reduce((s, i) => s + Number(i.price ?? 0) * Number(i.quantity), 0),
         [cartItems]
@@ -645,7 +649,7 @@ export default function CartScreen() {
     // Subtotal after discount
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
 
-    const deliveryFee = 0;
+    const deliveryFee = cartStore.shippingFee();
     // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
     const giftWrappingFee = isTicketingOnly
         ? 0
@@ -1686,6 +1690,7 @@ export default function CartScreen() {
                             isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
+                            deliveryFee={deliveryFee}
                             platformFee={platformFeeDisplay}
                             couponDiscount={discountAmount}
                             hasHeyKiddo={hasHeyKiddoApplied}

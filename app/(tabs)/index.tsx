@@ -313,9 +313,9 @@ export default function HomeScreen() {
   /** Match `TabBar` → `FloatingCartButton` `anchorExtraOffset` on Home (milestone strip + live pill stack). */
   const scrollToTopAnchorExtra = useMemo(() => {
     if (!isTabBarVisibleFromScroll) return 0;
-    const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 130) + 8;
-    const milestoneReserveForCart = milestoneStripReserveForStack + 8;
-    return liveDeliveryStackExtra + milestoneReserveForCart - LIVE_DELIVERY_DOWNSET_PX;
+    const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 0) + 12;
+    const milestoneReserveForCart = milestoneStripReserveForStack + 4;
+    return liveDeliveryStackExtra + milestoneReserveForCart;
   }, [isTabBarVisibleFromScroll, milestoneDockHeight, liveDeliveryStackExtra]);
 
   // Use the measured height if available, otherwise fallback to estimate

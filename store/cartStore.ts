@@ -103,6 +103,7 @@ interface CartState {
     mrp: () => number;
     subtotal: () => number;
     discountAmount: () => number;
+    shippingFee: () => number;
     total: () => number;
 
     // Actions
@@ -150,6 +151,7 @@ interface CartState {
     // Cart management
     ensureCart: () => Promise<string | null>;
     getCheckoutUrl: () => Promise<string | null>;
+    syncDeliveryFeeToShopify: () => Promise<void>;
 }
 
 // Available gift items (configure based on your store)
@@ -276,6 +278,16 @@ export const useCartStore = create<CartState>()(
                     (sum, item) => sum + item.price * item.quantity,
                     0
                 );
+            },
+            shippingFee: () => {
+                const state = get();
+                const subtotal = state.subtotal();
+                const { appConfigService } = require('@/services/appConfigService');
+                const hw = appConfigService.getHotWheelConfig();
+                if (hw?.isEnabled && subtotal > 0 && subtotal < hw.minCartValue) {
+                    return hw.deliveryFee;
+                }
+                return 0;
             },
 
             discountAmount: () => {
@@ -443,8 +455,8 @@ export const useCartStore = create<CartState>()(
                     return state.payment.total;
                 }
                 
-                // Fallback: calculate from subtotal and discount
-                return Math.max(0, state.subtotal() - state.discountAmount());
+                // Fallback: calculate from subtotal, discount and shipping
+                return Math.max(0, state.subtotal() - state.discountAmount() + state.shippingFee());
             },
 
             // Status actions
@@ -516,6 +528,7 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
                     get().validateAppliedDiscountCodes();
+                    get().syncDeliveryFeeToShopify();
 
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -567,6 +580,7 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
                     get().validateAppliedDiscountCodes();
+                    get().syncDeliveryFeeToShopify();
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -601,6 +615,7 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
                     get().validateAppliedDiscountCodes();
+                    get().syncDeliveryFeeToShopify();
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -1056,12 +1071,13 @@ export const useCartStore = create<CartState>()(
                                 return sum + (Number(item.price ?? 0) * Number(item.quantity));
                             }, 0);
                             
+                            const currentShipping = get().shippingFee();
                             const updatedPayment: CartPayment = {
                                 subtotal: lineItemsSubtotal, // Calculate from lineItems, not Shopify's cost.subtotalAmount
                                 discount: totalDiscountAmount,
-                                shipping: 0,
+                                shipping: currentShipping,
                                 tax: parseFloat(updatedCart.cost?.totalTaxAmount?.amount || '0'),
-                                total: parseFloat(updatedCart.cost?.totalAmount?.amount || '0'),
+                                total: parseFloat(updatedCart.cost?.totalAmount?.amount || '0') + currentShipping,
                                 currencyCode: updatedCart.cost?.totalAmount?.currencyCode || 'INR',
                             };
                             console.log('[CartStore] Updated payment object:', updatedPayment);
@@ -1511,14 +1527,15 @@ export const useCartStore = create<CartState>()(
                         else discount += val;
                     }
                 });
+                const currentShipping = state.shippingFee();
                 discount = Math.min(discount, subtotal);
-                const total = Math.max(0, subtotal - discount + tax);
+                const total = Math.max(0, subtotal - discount + currentShipping + tax);
 
                 set({
                     payment: {
                         subtotal,
                         discount,
-                        shipping: state.payment?.shipping || 0,
+                        shipping: currentShipping,
                         tax,
                         total,
                         currencyCode,
@@ -1527,6 +1544,7 @@ export const useCartStore = create<CartState>()(
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
+                get().syncDeliveryFeeToShopify();
             },
 
             removeAllDiscountCodes: async () => {
@@ -1556,19 +1574,21 @@ export const useCartStore = create<CartState>()(
                     }
                 }
 
+                const currentShipping = state.shippingFee();
                 set({
                     payment: {
                         subtotal,
                         discount: 0,
-                        shipping: state.payment?.shipping || 0,
+                        shipping: currentShipping,
                         tax,
-                        total: Math.max(0, subtotal + tax),
+                        total: Math.max(0, subtotal + currentShipping + tax),
                         currencyCode,
                     },
                     status: 'idle',
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
+                get().syncDeliveryFeeToShopify();
             },
 
             // Sync cart prices
@@ -1778,12 +1798,13 @@ export const useCartStore = create<CartState>()(
                         const tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
                         const total = Math.max(0, lineItemsSubtotal - discount + tax);
 
+                        const currentShipping = get().shippingFee();
                         const updatedPayment: CartPayment = {
                             subtotal: lineItemsSubtotal,
                             discount,
-                            shipping: 0,
+                            shipping: currentShipping,
                             tax,
-                            total,
+                            total: Math.max(0, lineItemsSubtotal - discount + tax) + currentShipping,
                             currencyCode: cart.cost?.totalAmount?.currencyCode || 'INR',
                         };
 
@@ -1796,6 +1817,7 @@ export const useCartStore = create<CartState>()(
                             status: 'idle',
                             lastSyncedAt: Date.now(),
                         });
+                        get().syncDeliveryFeeToShopify();
                     }
                 } catch (error: any) {
                     console.error('[CartStore] fetchCart error:', error);
@@ -1883,6 +1905,21 @@ export const useCartStore = create<CartState>()(
                 }
 
                 return null;
+            },
+ 
+            syncDeliveryFeeToShopify: async () => {
+              const state = get();
+              if (!state.id || !state.id.startsWith('gid://shopify/Cart/')) return;
+              const shipping = state.shippingFee();
+              try {
+                // Fetch the current cart attributes first so we don't overwrite others (e.g. Gift Wrapping)
+                const cart = await shopifyApi.getCart(state.id);
+                const existingAttributes = (cart.attributes || []).filter((attr: any) => attr.key !== 'Delivery Fee');
+                const nextAttributes = [...existingAttributes, { key: 'Delivery Fee', value: String(shipping) }];
+                await shopifyApi.updateCartAttributes(state.id, nextAttributes);
+              } catch (e) {
+                console.warn('[CartStore] Failed to sync shipping fee to Shopify attributes:', e);
+              }
             },
         }),
         {

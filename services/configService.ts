@@ -96,7 +96,7 @@ class ConfigService {
 
     this.isLoading = true;
     this.loadPromise = resolveUrl().then((url) => this._loadConfig(url));
-    
+
     try {
       const result = await this.loadPromise;
       return result;
@@ -105,7 +105,7 @@ class ConfigService {
       this.loadPromise = null;
     }
   }
-  
+
   // Force reload config (useful after updating local config file)
   async reloadConfig(): Promise<AppConfig> {
     return this.loadConfig(undefined, true);
@@ -116,7 +116,7 @@ class ConfigService {
     // Add cache-busting timestamp to ensure fresh config is loaded
     const cacheBuster = `&_t=${Date.now()}`;
     const urlWithCacheBust = url.includes('?') ? `${url}${cacheBuster}` : `${url}?${cacheBuster.substring(1)}`;
-    
+
     let response: Response;
     try {
       response = await fetch(urlWithCacheBust, {
@@ -142,31 +142,31 @@ class ConfigService {
       console.error('[ConfigService] ❌ Remote config fetch failed:', error);
       throw error;
     }
-    
+
     if (!this.rawConfig) {
       throw new Error('Failed to load config from remote source');
     }
-    
+
     const remoteConfig = this.rawConfig;
-    
+
     // Dynamically build home config from all category arrays in config
     const categoryKeys = remoteConfig.categories?.order || [];
     const homeConfig: ScreenConfig = {};
-    
+
     // Load all categories dynamically
     categoryKeys.forEach((key: string) => {
       if (Array.isArray(remoteConfig[key])) {
         homeConfig[key] = remoteConfig[key];
       }
     });
-    
+
     // Also include known categories if they exist (for backwards compatibility)
     ['all', 'girls', 'boys', 'toys', 'babycare'].forEach((key) => {
       if (Array.isArray(remoteConfig[key]) && !homeConfig[key]) {
         homeConfig[key] = remoteConfig[key];
       }
     });
-    
+
     // Transform Kiddo's structure to our structure
     this.config = {
       version: 1,
@@ -216,9 +216,9 @@ class ConfigService {
   // Get category screen blocks
   getCategoryScreenBlocks(): ContentBlock[] {
     if (!this.rawConfig) return [];
-    
+
     const categoryBlocks = this.rawConfig.categoryScreen?.blocks || [];
-    
+
     // Filter visible blocks and sort by order
     return categoryBlocks
       .filter((block: ContentBlock) => block.visible !== false)

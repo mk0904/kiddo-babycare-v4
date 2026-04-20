@@ -47,6 +47,7 @@ export const LIVE_DELIVERY_DOWNSET_PX = 40;
 const DISMISS_PREFIX = '@kiddo/liveTabDeliveredDismissed:';
 const DELIVERED_AUTO_HIDE_MS = 48 * 60 * 60 * 1000;
 const RECENT_ORDER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_START_MS = Date.now();
 
 function partnerAvatarSource(cfg: OrderDetailConfig | null | undefined) {
   const png = cfg?.partnerImageUrl?.trim();
@@ -139,6 +140,7 @@ export function LiveDeliveryTabBanner({
   const persistedAccessToken = useUserStore((s) => s.accessToken);
   const { isVisible: tabBarVisible } = useTabBarVisibility();
   const [model, setModel] = useState<BannerModel | null>(null);
+  const [seenOrderIdsInSession] = useState(() => new Set<string>());
   const [dismissedDeliveredIds, setDismissedDeliveredIds] = useState<Set<string>>(() => new Set());
   const cfg = useMemo(() => appConfigService.getOrderDetailConfig(), []);
   const partnerUri = partnerAvatarSource(cfg);
@@ -208,6 +210,7 @@ export function LiveDeliveryTabBanner({
       if (pollActiveRef.current) setModel(null);
       return;
     }
+    const orderIsNewInSession = !seenOrderIdsInSession.has(numericId);
 
     let st: DeliveryPartnerOrderStatus | null = null;
     try {
@@ -237,11 +240,24 @@ export function LiveDeliveryTabBanner({
         if (pollActiveRef.current) setModel(null);
         return;
       }
-      const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : now;
-      if (Number.isFinite(dm) && now - dm > DELIVERED_AUTO_HIDE_MS) {
+      const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : NaN;
+      /**
+       * Delivered orders should only be visible if:
+       * 1. They were delivered during THIS session (dm >= SESSION_START_MS)
+       * 2. OR they transitioned to delivered while we were watching them (not orderIsNewInSession)
+       */
+      const isOldDelivery = Number.isFinite(dm) && dm < SESSION_START_MS;
+      const wasDeliveredBeforeSessionStart = orderIsNewInSession && (isOldDelivery || Number.isNaN(dm));
+
+      if (wasDeliveredBeforeSessionStart) {
         if (pollActiveRef.current) setModel(null);
         return;
       }
+    }
+
+    // Mark active orders as seen in session so we can show their transition to 'delivered' later
+    if (phase === 'tracking' || phase === 'packing') {
+      seenOrderIdsInSession.add(numericId);
     }
 
     let fullOrder: any = latestOrder;
@@ -395,7 +411,7 @@ export function LiveDeliveryTabBanner({
   const showCheckImage = model.phase === 'delivered';
 
   const pillBottom =
-    tabStackHeight + milestoneStripBottomReserve - LIVE_DELIVERY_DOWNSET_PX;
+    tabStackHeight + milestoneStripBottomReserve + 8;
 
   return (
     <View

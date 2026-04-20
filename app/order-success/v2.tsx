@@ -21,7 +21,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ICON_SIZE = 160;
 const ITEM_WIDTH = 150;
 const GAP = 48;
-const AUTO_NAVIGATE_DELAY_MS = 5000;
+const AUTO_NAVIGATE_DELAY_MS = 7000;
 
 const MILESTONES = [
     {
@@ -187,7 +187,7 @@ export default function OrderSuccessV2Screen() {
 
                 <View style={styles.glowWrapper}>
                     <LinearGradient
-                         colors={[
+                        colors={[
                             '#FFFFFF',
                             'rgba(255, 255, 255, 0)',
                             currentMilestone.glowColor,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     topSection: { flex: 1.2, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
     bottomSection: { flex: 1, width: '100%', justifyContent: 'center' },
 
-    
+
 
     fullWidthGlowContainer: {
         position: 'absolute',
