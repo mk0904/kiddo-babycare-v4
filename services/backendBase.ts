@@ -23,14 +23,14 @@ export function getBackendBase(): string {
   const raw = configService.getRawConfig();
   const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
   const resolved = String(base).replace(/\/+$/, '');
-  if (__DEV__ && !warnedMissingBackendEnv) {
-    warnedMissingBackendEnv = true;
-    console.warn(
-      '[backendBase] EXPO_PUBLIC_BACKEND_API_BASE is unset — using remote app config or production URL:',
-      resolved,
-      '\nAdd a project-root `.env` (copy `.env.example`) and restart Metro with `npx expo start --clear`.',
-    );
-  }
+  // if (__DEV__ && !warnedMissingBackendEnv) {
+  //   warnedMissingBackendEnv = true;
+  //   console.warn(
+  //     '[backendBase] EXPO_PUBLIC_BACKEND_API_BASE is unset — using remote app config or production URL:',
+  //     resolved,
+  //     '\nAdd a project-root `.env` (copy `.env.example`) and restart Metro with `npx expo start --clear`.',
+  //   );
+  // }
   return resolved;
 }
 
