@@ -224,7 +224,7 @@ export default function AccountScreen() {
                 if (params.screen) {
                     // Adjust navigation to Expo Router paths
                     const screenMap: { [key: string]: string } = {
-                        'Orders': '/order-success/v2',
+                        'Orders': '/orders',
                         'Loyalty': '/loyalty',
                         'Rewards': '/rewards',
                         'Returns': '/returns',
