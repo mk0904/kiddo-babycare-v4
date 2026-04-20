@@ -2,6 +2,8 @@ import { configService } from './configService';
 
 const PRODUCTION_BACKEND_URL = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
 
+let warnedMissingBackendEnv: boolean | undefined;
+
 /**
  * Base URL for kiddo-service (no trailing slash). Override with env in dev:
  *
@@ -20,7 +22,16 @@ export function getBackendBase(): string {
 
   const raw = configService.getRawConfig();
   const base = raw?.providers?.backend?.baseUrl || PRODUCTION_BACKEND_URL;
-  return String(base).replace(/\/+$/, '');
+  const resolved = String(base).replace(/\/+$/, '');
+  if (__DEV__ && !warnedMissingBackendEnv) {
+    warnedMissingBackendEnv = true;
+    console.warn(
+      '[backendBase] EXPO_PUBLIC_BACKEND_API_BASE is unset — using remote app config or production URL:',
+      resolved,
+      '\nAdd a project-root `.env` (copy `.env.example`) and restart Metro with `npx expo start --clear`.',
+    );
+  }
+  return resolved;
 }
 
 export function getBackendApiPath(path: string): string {

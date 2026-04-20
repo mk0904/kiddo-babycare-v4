@@ -5,9 +5,10 @@ import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
-    buildMilestoneSlotsFromConfig,
+    buildMilestoneUIModel,
     milestoneCurrentStepFromConfig,
     milestoneExpandedTitleFromConfig,
+    resolveMilestoneConnectorUri,
     type ResolvedMilestoneSlot,
 } from './milestoneUIFromConfig';
 
@@ -15,7 +16,7 @@ import {
 export type MilestoneTrackerVariant = 'dock' | 'embedded';
 
 export interface MilestoneTrackerProps {
-    /** Backend `milestoneUI` from GET /api/v1/app/config. When null, defaults are used. */
+    /** Backend `milestoneUI` from GET /api/v1/app/config. When null/omitted, the strip is not rendered. */
     milestoneUI?: MilestoneUIConfig | null;
     /** When `milestoneUI.currentStepIndex` is unset, progress is inferred from each slot’s `isCompleted`. */
     currentStepIndex?: number;
@@ -26,52 +27,48 @@ export interface MilestoneTrackerProps {
 
 /** Expanded: `milestoneLeft` column width. Collapsed: row height for 32×32 nodes + glow. */
 const MILESTONE_SLOT_WIDTH = 32;
-const LINE_WIDTH = 2;
+const VERTICAL_LINE_FRAME_WIDTH = 16;
 const OPEN_ROW_GAP = 32;
+const EXPANDED_NODE_FRAME = 32;
+const EXPANDED_NODE_BASE_SIZE = 20;
+const EXPANDED_NODE_HIGHLIGHT_SIZE = 48;
 const COLLAPSED_NODE_IMAGE = 20;
+const COLLAPSED_NODE_FRAME = 32;
+const COLLAPSED_NODE_BASE_SIZE = 20;
+const COLLAPSED_NODE_HIGHLIGHT_SIZE = 48;
 const COLLAPSED_ROW_MARGIN_TOP = 2;
 const COLLAPSED_TRACK_BOTTOM_PAD = 10;
 /** Horizontal gap between each icon edge and the line inside the flex bridge. */
 const COLLAPSED_SEGMENT_H_GAP = 8;
-/** 2px line vertically centered on the 32px icon row (bridge and slot share the same height). */
-const COLLAPSED_LINE_TOP_IN_BRIDGE = COLLAPSED_NODE_IMAGE / 2 - 1;
+/** Strip tall enough to preserve PNG gradients; centered on the 20px icon row. */
+const COLLAPSED_H_LINE_FRAME_HEIGHT = 16;
+const COLLAPSED_LINE_TOP_IN_BRIDGE = COLLAPSED_NODE_IMAGE / 2 - COLLAPSED_H_LINE_FRAME_HEIGHT / 2;
 const COLLAPSED_TRACK_HEIGHT =
     COLLAPSED_ROW_MARGIN_TOP + COLLAPSED_NODE_IMAGE + COLLAPSED_TRACK_BOTTOM_PAD;
-/** Reference HTML `.tracker`: horizontal padding on the row. */
-const COLLAPSED_TRACKER_PADDING_H = 10;
-
-type MilestoneConnectorAxis = 'horizontal' | 'vertical';
-
-/**
- * Connector between step `stepIndex` and `stepIndex + 1` (same rules for collapsed vs expanded).
- * - `stepIndex < current` → completed asset
- * - `stepIndex === current` → active asset
- * - else → pending asset
- */
-function milestoneConnectorUri(
-    slots: ResolvedMilestoneSlot[],
-    stepIndex: number,
-    currentStepIndex: number,
-    total: number,
-    axis: MilestoneConnectorAxis
-): string | null {
-    if (stepIndex >= total - 1) return null;
-    const s = slots[stepIndex];
-    if (!s) return null;
-    if (stepIndex < currentStepIndex) {
-        return axis === 'horizontal' ? s.completedHorLine || null : s.completedVerLine || null;
-    }
-    if (stepIndex === currentStepIndex) {
-        return axis === 'horizontal' ? s.horActiveLine || null : s.verActiveLine || null;
-    }
-    return axis === 'horizontal' ? s.pendingHorLine || null : s.pendingVerLine || null;
-}
 
 function milestoneIconUri(slot: ResolvedMilestoneSlot, index: number, currentStepIndex: number): string {
     const completed = index < currentStepIndex;
     const current = index === currentStepIndex;
     if (completed || current) return slot.activeIconUrl || slot.inactiveIconUrl;
     return slot.inactiveIconUrl || slot.activeIconUrl;
+}
+
+function shouldUseHighlightedSize(
+    slots: ResolvedMilestoneSlot[],
+    index: number,
+    currentStepIndex: number
+): boolean {
+    const slot = slots[index];
+    if (!slot) return false;
+
+    const hasCompletionFlags = slots.some((item) => typeof item.isCompleted === 'boolean');
+    if (!hasCompletionFlags) {
+        return index === currentStepIndex;
+    }
+
+    if (slot.isCompleted !== false) return false;
+    const previous = slots[index - 1];
+    return index === 0 || previous?.isCompleted === true;
 }
 
 export function MilestoneTracker({
@@ -82,7 +79,11 @@ export function MilestoneTracker({
 }: MilestoneTrackerProps) {
     const [expanded, setExpanded] = useState(false);
 
-    const slots = useMemo(() => buildMilestoneSlotsFromConfig(milestoneUI ?? undefined), [milestoneUI]);
+    const milestoneModel = useMemo(
+        () => buildMilestoneUIModel(milestoneUI ?? undefined),
+        [milestoneUI],
+    );
+    const slots = milestoneModel?.slots ?? [];
     const expandedHeaderTitle = useMemo(
         () => milestoneExpandedTitleFromConfig(milestoneUI ?? undefined),
         [milestoneUI]
@@ -103,7 +104,13 @@ export function MilestoneTracker({
         });
     }, [onExpandedChange]);
 
+    if (!milestoneModel || slots.length === 0) {
+        return null;
+    }
+
     const n = slots.length;
+    const connector = (stepIndex: number, axis: 'horizontal' | 'vertical') =>
+        resolveMilestoneConnectorUri(milestoneModel, stepIndex, axis, safeCurrent);
 
     const surfaceExpanded =
         variant === 'embedded'
@@ -133,34 +140,33 @@ export function MilestoneTracker({
 
                 {slots.map((slot, index) => {
                     const isLast = index === n - 1;
-                    const lineUri = milestoneConnectorUri(slots, index, safeCurrent, n, 'vertical');
+                    // Expanded list: horizontal connector assets between rows.
+                    const lineUri = connector(index, 'horizontal');
                     const iconUri = milestoneIconUri(slot, index, safeCurrent);
                     const isCurrent = index === safeCurrent;
+                    const useHighlightedSize = shouldUseHighlightedSize(slots, index, safeCurrent);
 
                     return (
                         <View key={`m-${index}`} style={[styles.milestoneRow, isLast && styles.milestoneRowLast]}>
                             <View style={styles.milestoneLeft}>
                                 <View style={styles.iconClip}>
-                                    <Image
-                                        source={{ uri: iconUri }}
-                                        style={styles.iconFill}
-                                        contentFit="cover"
-                                    />
+                                    {iconUri ? (
+                                        <Image
+                                            source={{ uri: iconUri }}
+                                            style={[
+                                                styles.iconFill,
+                                                useHighlightedSize && styles.iconFillHighlighted,
+                                            ]}
+                                            contentFit="contain"
+                                        />
+                                    ) : null}
                                 </View>
                                 {!isLast && lineUri ? (
                                     <Image
                                         source={{ uri: lineUri }}
-                                        style={[styles.connectingLineImage, { height: OPEN_ROW_GAP + 4 }]}
-                                        contentFit="fill"
-                                    />
-                                ) : null}
-                                {!isLast && !lineUri ? (
-                                    <View
-                                        style={[
-                                            styles.connectingLineFallback,
-                                            { height: OPEN_ROW_GAP + 4 },
-                                            index <= safeCurrent && styles.lineFallbackCompleted,
-                                        ]}
+                                        style={[styles.connectingLineImage, { height: OPEN_ROW_GAP + 8 }]}
+                                        contentFit="contain"
+                                        allowDownscaling={false}
                                     />
                                 ) : null}
                             </View>
@@ -168,15 +174,18 @@ export function MilestoneTracker({
                                 <Text
                                     style={[
                                         styles.milestoneTitle,
-                                        {
-                                            color: slot.titleColorActive,
-                                            opacity: isCurrent || index < safeCurrent ? 1 : 0.75,
-                                        },
+                                        slot.titleColorActive ? { color: slot.titleColorActive } : null,
+                                        { opacity: isCurrent || index < safeCurrent ? 1 : 0.6 },
                                     ]}
                                 >
                                     {slot.title}
                                 </Text>
-                                <Text style={[styles.milestoneDesc, { color: slot.subtitleColor }]}>
+                                <Text
+                                    style={[
+                                        styles.milestoneDesc,
+                                        slot.subtitleColor ? { color: slot.subtitleColor } : null,
+                                    ]}
+                                >
                                     {slot.subtitle}
                                 </Text>
                             </View>
@@ -192,23 +201,24 @@ export function MilestoneTracker({
             <View style={styles.collapsedTrackerInner}>
                 <View style={styles.collapsedNodesAndSegmentsRow}>
                     {slots.flatMap((slot, index) => {
-                        const completed = index < safeCurrent;
-                        const current = index === safeCurrent;
                         const iconUri = milestoneIconUri(slot, index, safeCurrent);
+                        const useHighlightedSize = shouldUseHighlightedSize(slots, index, safeCurrent);
                         const node = (
                             <View
                                 key={`nr-${index}`}
-                                style={[styles.nodeSlot, current ? styles.nodeSlotCurrent : null]}
+                                style={styles.nodeSlot}
                             >
                                 <View style={styles.nodeImageClip}>
-                                    <Image
-                                        source={{ uri: iconUri }}
-                                        style={[
-                                            styles.nodeImageFill,
-                                            !current && !completed ? styles.nodeImageDim : null,
-                                        ]}
-                                        contentFit="cover"
-                                    />
+                                    {iconUri ? (
+                                        <Image
+                                            source={{ uri: iconUri }}
+                                            style={[
+                                                styles.nodeImageFill,
+                                                useHighlightedSize && styles.nodeImageFillHighlighted,
+                                            ]}
+                                            contentFit="contain"
+                                        />
+                                    ) : null}
                                 </View>
                             </View>
                         );
@@ -216,24 +226,18 @@ export function MilestoneTracker({
                             return [node];
                         }
                         const segIndex = index;
-                        const uri = milestoneConnectorUri(slots, segIndex, safeCurrent, n, 'horizontal');
+                        // Collapsed strip: vertical connector assets between icons.
+                        const uri = connector(segIndex, 'vertical');
                         const bridge = (
                             <View key={`br-${segIndex}`} style={styles.collapsedSegmentBridge}>
-                                <View style={styles.collapsedBridgeGrey} />
                                 {uri ? (
                                     <Image
                                         source={{ uri }}
                                         style={styles.collapsedBridgeGoldImg}
-                                        contentFit="fill"
+                                        contentFit="contain"
+                                        allowDownscaling={false}
                                     />
-                                ) : (
-                                    <View
-                                        style={[
-                                            styles.collapsedBridgeGoldFallback,
-                                            segIndex <= safeCurrent && styles.lineFallbackCompleted,
-                                        ]}
-                                    />
-                                )}
+                                ) : null}
                             </View>
                         );
                         return [node, bridge];
@@ -292,7 +296,7 @@ export function MilestoneTracker({
 
 const styles = StyleSheet.create({
     modalContainer: {
-        backgroundColor: '#101323E5',
+        backgroundColor: 'rgba(16, 19, 35, 0.8)',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
         borderBottomLeftRadius: 0,
@@ -301,6 +305,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
         paddingBottom: 12,
         overflow: 'hidden',
+        zIndex: 10,
     },
     surfaceEmbeddedExpanded: {
         borderTopLeftRadius: 0,
@@ -326,8 +331,8 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         flex: 1,
-        fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontSize: Fonts.LargeFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#FFFFFF',
         marginRight: 8,
     },
@@ -343,71 +348,78 @@ const styles = StyleSheet.create({
         width: MILESTONE_SLOT_WIDTH,
         marginRight: 12,
         alignItems: 'center',
+        position: 'relative',
+        zIndex: 1,
     },
-    /** Expanded list: fixed box + cover so CDN glyphs read the same size. */
+    /** Expanded list: fixed box + cover; stacked above vertical connector line. */
     iconClip: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        overflow: 'hidden',
-        zIndex: 2,
+        width: EXPANDED_NODE_FRAME,
+        height: EXPANDED_NODE_FRAME,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'visible',
+        zIndex: 20,
+        elevation: 8,
     },
     iconFill: {
-        width: '100%',
-        height: '100%',
+        width: EXPANDED_NODE_BASE_SIZE,
+        height: EXPANDED_NODE_BASE_SIZE,
+        opacity: 1,
     },
-    /** Collapsed track: same footprint for every milestone image. */
+    iconFillHighlighted: {
+        width: EXPANDED_NODE_HIGHLIGHT_SIZE,
+        height: EXPANDED_NODE_HIGHLIGHT_SIZE,
+    },
+    /** Collapsed track: same footprint; clip sits above horizontal segment images. */
     nodeImageClip: {
-        width: COLLAPSED_NODE_IMAGE,
-        height: COLLAPSED_NODE_IMAGE,
-        borderRadius: 10,
-        overflow: 'hidden',
+        width: COLLAPSED_NODE_FRAME,
+        height: COLLAPSED_NODE_FRAME,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'visible',
+        zIndex: 22,
     },
     nodeImageFill: {
-        width: '100%',
-        height: '100%',
+        width: COLLAPSED_NODE_BASE_SIZE,
+        height: COLLAPSED_NODE_BASE_SIZE,
+        opacity: 1,
+    },
+    nodeImageFillHighlighted: {
+        width: COLLAPSED_NODE_HIGHLIGHT_SIZE,
+        height: COLLAPSED_NODE_HIGHLIGHT_SIZE,
     },
     connectingLineImage: {
-        width: LINE_WIDTH,
+        width: VERTICAL_LINE_FRAME_WIDTH,
         position: 'absolute',
         top: 28,
-        left: (MILESTONE_SLOT_WIDTH - LINE_WIDTH) / 2,
-        zIndex: 1,
-    },
-    connectingLineFallback: {
-        width: LINE_WIDTH,
-        position: 'absolute',
-        top: 28,
-        left: (MILESTONE_SLOT_WIDTH - LINE_WIDTH) / 2,
-        zIndex: 1,
-        backgroundColor: 'rgba(255,255,255,0.25)',
-    },
-    lineFallbackCompleted: {
-        backgroundColor: '#E6B800',
+        left: (MILESTONE_SLOT_WIDTH - VERTICAL_LINE_FRAME_WIDTH) / 2,
+        zIndex: 2,
+        elevation: 0,
     },
     milestoneContent: {
         flex: 1,
     },
     milestoneTitle: {
-        fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendRegular,
         marginBottom: 2,
-        lineHeight: 18,
+        color: '#FFFFFF',
     },
     milestoneDesc: {
-        fontSize: 12,
-        fontFamily: Fonts.Regular,
-        lineHeight: 16,
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#FFFFFF99',
     },
     card: {
-        backgroundColor: '#101323E5',
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
+        backgroundColor: 'rgba(16, 19, 35, 0.8)',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 18,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 0,
+        zIndex: 10,
     },
     /** Cart: flush under savings (square top); rounded bottom into cream scroll area. */
     surfaceEmbeddedCollapsed: {
@@ -421,10 +433,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 25,
+        marginBottom: 8,
     },
     collapsedHeaderEmbedded: {
-        marginBottom: 10,
+        marginBottom: 4,
     },
     embeddedCollapsedRow: {
         flexDirection: 'row',
@@ -435,7 +447,7 @@ const styles = StyleSheet.create({
         minWidth: 0,
     },
     embeddedChevronRail: {
-        width: 44,
+        width: 24,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 4,
@@ -443,19 +455,19 @@ const styles = StyleSheet.create({
     },
     collapsedTitle: {
         flex: 1,
-        fontSize: 18,
-        fontFamily: Fonts.SemiBold,
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#FFFFFF',
-        paddingRight: 8,
     },
     collapsedTrack: {
         height: COLLAPSED_TRACK_HEIGHT,
         position: 'relative',
+        zIndex: 0,
+        elevation: 12,
     },
     /** Reference `.tracker`: padding `0 10px`; line + nodes share this box (HTML `::before` is inside it). */
     collapsedTrackerInner: {
         flex: 1,
-        paddingHorizontal: COLLAPSED_TRACKER_PADDING_H,
         justifyContent: 'flex-start',
         position: 'relative',
     },
@@ -473,46 +485,27 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         position: 'relative',
         zIndex: 1,
+        overflow: 'visible',
+        backgroundColor: 'none',
     },
-    collapsedBridgeGrey: {
-        position: 'absolute',
-        left: COLLAPSED_SEGMENT_H_GAP,
-        right: COLLAPSED_SEGMENT_H_GAP,
-        top: COLLAPSED_LINE_TOP_IN_BRIDGE,
-        height: 2,
-        backgroundColor: '#4a4a4a',
-    },
+    /** PNG gradient is in the asset — use `cover` + enough height; z-index below icons (20) but above row. */
     collapsedBridgeGoldImg: {
         position: 'absolute',
         left: COLLAPSED_SEGMENT_H_GAP,
         right: COLLAPSED_SEGMENT_H_GAP,
         top: COLLAPSED_LINE_TOP_IN_BRIDGE,
-        height: 2,
-    },
-    collapsedBridgeGoldFallback: {
-        position: 'absolute',
-        left: COLLAPSED_SEGMENT_H_GAP,
-        right: COLLAPSED_SEGMENT_H_GAP,
-        top: COLLAPSED_LINE_TOP_IN_BRIDGE,
-        height: 2,
-        borderRadius: 1,
-        backgroundColor: 'transparent',
+        height: COLLAPSED_H_LINE_FRAME_HEIGHT,
+        zIndex: 8,
+        elevation: 4,
+        opacity: 1,
     },
     nodeSlot: {
         width: COLLAPSED_NODE_IMAGE,
         height: COLLAPSED_NODE_IMAGE,
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2,
-    },
-    nodeSlotCurrent: {
-        width: COLLAPSED_NODE_IMAGE,
-        height: COLLAPSED_NODE_IMAGE,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2,
-    },
-    nodeImageDim: {
-        opacity: 0.45,
+        overflow: 'visible',
+        zIndex: 20,
+        elevation: 10,
     },
 });

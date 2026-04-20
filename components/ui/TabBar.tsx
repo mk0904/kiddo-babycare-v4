@@ -5,7 +5,10 @@ import HomeInactive from '@/assets/icons/home-inactive-fill.svg';
 import ProfileActive from '@/assets/icons/profile-active-fill.svg';
 import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
+import {
+    LIVE_DELIVERY_DOWNSET_PX,
+    LiveDeliveryTabBanner,
+} from '@/components/ui/LiveDeliveryTabBanner';
 import { Colors, Fonts } from '@/constants/theme';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
@@ -166,7 +169,9 @@ export const TabBar = (props: BottomTabBarProps) => {
             <FloatingCartButton
                 showTabBar={shouldShowTabBar}
                 tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
-                anchorExtraOffset={liveDeliveryStackExtra + milestoneReserveForCart}
+                anchorExtraOffset={
+                    liveDeliveryStackExtra + milestoneReserveForCart - LIVE_DELIVERY_DOWNSET_PX
+                }
             />
 
             {shouldShowTabBar && (

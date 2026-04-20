@@ -16,10 +16,9 @@ import type { OrderDetailConfig } from '@/types/appConfig';
 import {
   ARRIVED_AT_CUSTOMER_STATUSES,
   computeDeliveryHeaderStatusText,
-  DELIVERY_ACTIVE_STATUSES,
   distanceMetersLatLng,
   shippingAddressString,
-  statusAllowsLiveDirectionsEta,
+  statusAllowsLiveDirectionsEta
 } from '@/utils/orderDeliveryHeaderText';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +39,11 @@ const ARRIVED_ICON = require('@/assets/icons/arrivedIcon.png');
 const PARTNER_FALLBACK = require('@/assets/icons/partnerIcon.png');
 
 const POLL_MS = 45_000;
+/**
+ * Pixels to sit the delivery pill closer to the tab stack (subtracted from `bottom`).
+ * Same value is subtracted from floating View cart + scroll-to-top `anchorExtraOffset` (`TabBar`, Home).
+ */
+export const LIVE_DELIVERY_DOWNSET_PX = 40;
 const DISMISS_PREFIX = '@kiddo/liveTabDeliveredDismissed:';
 const DELIVERED_AUTO_HIDE_MS = 48 * 60 * 60 * 1000;
 const RECENT_ORDER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -355,7 +359,7 @@ export function LiveDeliveryTabBanner({
     (e: LayoutChangeEvent) => {
       if (!visible) return;
       const h = e.nativeEvent.layout.height;
-      onStackOffsetChange(Math.ceil(h) + 10);
+      onStackOffsetChange(Math.ceil(h) + 32);
     },
     [visible, onStackOffsetChange],
   );
@@ -391,7 +395,7 @@ export function LiveDeliveryTabBanner({
   const showCheckImage = model.phase === 'delivered';
 
   const pillBottom =
-    tabStackHeight + milestoneStripBottomReserve + 10;
+    tabStackHeight + milestoneStripBottomReserve - LIVE_DELIVERY_DOWNSET_PX;
 
   return (
     <View

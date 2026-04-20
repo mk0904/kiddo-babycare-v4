@@ -1,5 +1,4 @@
 import type { MilestoneSlotConfig, MilestoneUIConfig } from '@/types/appConfig';
-import { MILESTONE_ASSETS, MILESTONE_NODE_IMAGES } from './milestoneTrackerAssets';
 
 const MILESTONE_KEYS = [
     'milestoneFirst',
@@ -8,16 +7,13 @@ const MILESTONE_KEYS = [
     'milestoneFourth',
 ] as const;
 
-const DEFAULT_COPY: { title: string; subtitle: string }[] = [
-    { title: '25% off up to ₹500; MOV ₹499', subtitle: 'Min. cart value Rs. 499' },
-    { title: 'Shop for ₹999 and get a free puzzle!', subtitle: 'Min. cart value Rs. 999' },
-    { title: 'Free shoes on orders above ₹999', subtitle: 'Min. cart value Rs. 999' },
-    { title: 'Mystery gift on orders above ₹999', subtitle: 'Min. cart value Rs. 999' },
-];
-
 function trimUrl(u?: string | null): string {
     const s = (u ?? '').trim();
     return s;
+}
+
+function trimCopy(v?: string | null): string {
+    return (v ?? '').trim();
 }
 
 function horActiveFromSlot(s?: MilestoneSlotConfig): string {
@@ -25,8 +21,8 @@ function horActiveFromSlot(s?: MilestoneSlotConfig): string {
     return trimUrl(s.horActiveLIne ?? s.horActiveLine);
 }
 
-/** Latest schema: `horizontallineUrl`; legacy: `horizontalLineUrl`, `horActiveLIne`. Empty string falls through. */
-function slotHorizontalActiveUrl(s?: MilestoneSlotConfig): string {
+/** `horizontallineUrl`; legacy: `horizontalLineUrl`, `horActiveLIne`. */
+function slotHorizontallineUrl(s?: MilestoneSlotConfig): string {
     if (!s) return '';
     const a = trimUrl(s.horizontallineUrl);
     if (a) return a;
@@ -35,8 +31,8 @@ function slotHorizontalActiveUrl(s?: MilestoneSlotConfig): string {
     return horActiveFromSlot(s);
 }
 
-/** Latest schema: `verticallineUrl`; legacy: `verticalLineUrl`, `verActiveLine`. */
-function slotVerticalActiveUrl(s?: MilestoneSlotConfig): string {
+/** `verticallineUrl`; legacy: `verticalLineUrl`, `verActiveLine`. */
+function slotVerticallineUrl(s?: MilestoneSlotConfig): string {
     if (!s) return '';
     const a = trimUrl(s.verticallineUrl);
     if (a) return a;
@@ -57,72 +53,112 @@ function currentStepFromIsCompleted(ui: MilestoneUIConfig): number | null {
     return Math.min(consecutive, 3);
 }
 
+/**
+ * One milestone step: copy, icons, and per-slot `horizontallineUrl` / `verticallineUrl` only for connectors.
+ */
 export interface ResolvedMilestoneSlot {
     title: string;
     subtitle: string;
     activeIconUrl: string;
     inactiveIconUrl: string;
+    isCompleted?: boolean;
     titleColorActive: string;
     subtitleColor: string;
     completedHorLine: string;
     completedVerLine: string;
-    horActiveLine: string;
+    horizontallineUrl: string;
     pendingHorLine: string;
     pendingVerLine: string;
-    verActiveLine: string;
+    verticallineUrl: string;
+}
+
+export interface ResolvedMilestoneUIModel {
+    slots: ResolvedMilestoneSlot[];
+}
+
+export type MilestoneConnectorAxis = 'horizontal' | 'vertical';
+
+/**
+ * Connector after `stepIndex` toward `stepIndex + 1`.
+ * Per-slot URLs only (no reuse across segments).
+ *
+ * - **`axis === 'horizontal'`** → `horizontallineUrl` — **expanded** list (vertical gap between rows).
+ * - **`axis === 'vertical'`** → `verticallineUrl` — **collapsed** strip (horizontal gap between icons).
+ */
+export function resolveMilestoneConnectorUri(
+    model: ResolvedMilestoneUIModel,
+    stepIndex: number,
+    axis: MilestoneConnectorAxis,
+    currentStepIndex: number
+): string | null {
+    const { slots } = model;
+    if (stepIndex >= slots.length - 1) return null;
+    const seg = slots[stepIndex];
+    if (!seg) return null;
+
+    if (stepIndex < currentStepIndex - 1) {
+        return axis === 'horizontal'
+            ? trimUrl(seg.completedHorLine) || trimUrl(seg.horizontallineUrl) || null
+            : trimUrl(seg.completedVerLine) || trimUrl(seg.verticallineUrl) || null;
+    }
+
+    if (stepIndex === currentStepIndex - 1) {
+        return axis === 'horizontal'
+            ? trimUrl(seg.horizontallineUrl) || trimUrl(seg.pendingHorLine) || null
+            : trimUrl(seg.verticallineUrl) || trimUrl(seg.pendingVerLine) || null;
+    }
+
+    return axis === 'vertical'
+        ? trimUrl(seg.horizontallineUrl) || null
+        : trimUrl(seg.verticallineUrl) || null;
 }
 
 /**
- * Flattens `milestoneUI` into four ordered steps. Missing URLs fall back to bundled defaults
- * so the tracker still renders before the backend ships assets.
+ * Maps `milestoneUI` to four ordered steps (`milestoneFirst` → `milestoneFourth`).
  */
-export function buildMilestoneSlotsFromConfig(
-    ui: MilestoneUIConfig | null | undefined
-): ResolvedMilestoneSlot[] {
-    const root = ui ?? undefined;
-    return MILESTONE_KEYS.map((key, index) => {
-        const raw = root?.[key] as MilestoneSlotConfig | undefined;
-        const copy = DEFAULT_COPY[index] ?? DEFAULT_COPY[0];
-        const defIcon = MILESTONE_NODE_IMAGES[Math.min(index, MILESTONE_NODE_IMAGES.length - 1)];
+export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined): ResolvedMilestoneUIModel | null {
+    if (ui == null) {
+        return null;
+    }
 
-        const globalHorDone = trimUrl(root?.horizontalCompletedLineUrl);
-        const globalVerDone = trimUrl(root?.verticalCompletedLineUrl);
+    const root = ui;
 
-        const activeIconUrl =
-            trimUrl(raw?.activeIconUrl) || trimUrl(raw?.iconUrl) || defIcon;
+    const slots: ResolvedMilestoneSlot[] = MILESTONE_KEYS.map((key) => {
+        const raw = root[key] as MilestoneSlotConfig | undefined;
+
+        const activeIconUrl = trimUrl(raw?.activeIconUrl) || trimUrl(raw?.iconUrl) || '';
         const inactiveIconUrl =
             trimUrl(raw?.inactiveIconUrl) ||
             trimUrl(raw?.defaultIconUrl) ||
             trimUrl(raw?.iconUrl) ||
             trimUrl(raw?.activeIconUrl) ||
-            defIcon;
-
-        const horActiveResolved =
-            slotHorizontalActiveUrl(raw) || globalHorDone || MILESTONE_ASSETS.horCompLine;
-        const verActiveResolved =
-            slotVerticalActiveUrl(raw) || globalVerDone || MILESTONE_ASSETS.verticalActiveLine;
+            '';
 
         return {
-            title: trimUrl(raw?.title) || copy.title,
-            subtitle: trimUrl(raw?.description) || copy.subtitle,
+            title: trimCopy(raw?.header) || trimCopy(raw?.title),
+            subtitle: trimCopy(raw?.body) || trimCopy(raw?.description),
             activeIconUrl,
             inactiveIconUrl,
-            titleColorActive: trimUrl(raw?.activeColor) || '#FFFFFF',
-            subtitleColor: trimUrl(raw?.inactiveColor) || 'rgba(255,255,255,0.6)',
+            isCompleted: raw?.isCompleted,
+            titleColorActive: trimUrl(raw?.activeColor),
+            subtitleColor: trimUrl(raw?.inactiveColor),
             completedHorLine:
-                trimUrl(raw?.completedHorLine) || globalHorDone || MILESTONE_ASSETS.horCompLine,
+                trimUrl(raw?.completedHorLine) || trimUrl(root.horizontalCompletedLineUrl) || slotHorizontallineUrl(raw),
             completedVerLine:
-                trimUrl(raw?.completedVerLine) || globalVerDone || MILESTONE_ASSETS.verticalActiveLine,
-            horActiveLine: horActiveResolved,
-            pendingHorLine: trimUrl(raw?.pendingHorLine) || MILESTONE_ASSETS.horInActiveLine,
-            pendingVerLine: trimUrl(raw?.pendingVerLine) || MILESTONE_ASSETS.verticalInactiveLine,
-            verActiveLine: verActiveResolved,
+                trimUrl(raw?.completedVerLine) || trimUrl(root.verticalCompletedLineUrl) || slotVerticallineUrl(raw),
+            horizontallineUrl: slotHorizontallineUrl(raw),
+            pendingHorLine: trimUrl(raw?.pendingHorLine) || slotHorizontallineUrl(raw),
+            pendingVerLine: trimUrl(raw?.pendingVerLine) || slotVerticallineUrl(raw),
+            verticallineUrl: slotVerticallineUrl(raw),
         };
     });
+
+    return { slots };
 }
 
 export function milestoneExpandedTitleFromConfig(ui: MilestoneUIConfig | null | undefined): string {
-    return trimUrl(ui?.expandedTitle) || 'On your next 4 orders';
+    if (ui == null) return '';
+    return trimUrl(ui.expandedTitle);
 }
 
 export function milestoneCurrentStepFromConfig(

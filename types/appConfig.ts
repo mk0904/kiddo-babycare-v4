@@ -143,6 +143,10 @@ export interface MilestoneSlotConfig {
   inactiveIconUrl?: string;
   /** Default / outline glyph when step is inactive (new API). */
   defaultIconUrl?: string;
+  /** Primary headline in expanded milestone row (preferred over `title`). */
+  header?: string;
+  /** Supporting copy under the headline (preferred over `description`). */
+  body?: string;
   title?: string;
   description?: string;
   /** When true, this step is done; used with `currentStepIndex` to infer active step. */

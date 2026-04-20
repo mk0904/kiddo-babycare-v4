@@ -93,6 +93,9 @@ class AppConfigService {
         });
         if (!res.ok) throw new Error(`App config HTTP ${res.status}`);
         const data: AppConfigResponse = await res.json();
+        if (__DEV__) {
+          console.log('[AppConfigService] GET app/config response (incl. milestoneUI for getMilestoneUI):', JSON.stringify(data, null, 2));
+        }
         this.config = data;
         this.emitConfigListeners();
         if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');

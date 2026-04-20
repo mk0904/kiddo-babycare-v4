@@ -2,13 +2,13 @@ import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { MilestoneTracker } from '@/components/home/MilestoneTracker';
 import { AddressModal } from '@/components/modals/AddressModal';
+import { LIVE_DELIVERY_DOWNSET_PX } from '@/components/ui/LiveDeliveryTabBanner';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
-  getDeliveryEta,
-  getDeliveryEtaForAddress,
-  reverseGeocode,
+    getDeliveryEta,
+    getDeliveryEtaForAddress,
+    reverseGeocode,
 } from '@/config/deliveryConfig';
-import { Colors } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
@@ -16,8 +16,8 @@ import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
-import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { ContentBlock } from '@/types/content';
+import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
@@ -315,7 +315,7 @@ export default function HomeScreen() {
     if (!isTabBarVisibleFromScroll) return 0;
     const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 130) + 8;
     const milestoneReserveForCart = milestoneStripReserveForStack + 8;
-    return liveDeliveryStackExtra + milestoneReserveForCart;
+    return liveDeliveryStackExtra + milestoneReserveForCart - LIVE_DELIVERY_DOWNSET_PX;
   }, [isTabBarVisibleFromScroll, milestoneDockHeight, liveDeliveryStackExtra]);
 
   // Use the measured height if available, otherwise fallback to estimate
@@ -329,7 +329,18 @@ export default function HomeScreen() {
   const milestoneScrollTranslateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    /** Tab bar translates by ~`tabBarStackBottom`; the milestone strip is taller — offset must include measured height so it fully leaves the screen. */
+    /** While expanded, keep the dock pinned (do not slide down with scroll-hidden tab bar). */
+    if (milestoneExpanded) {
+      Animated.spring(milestoneScrollTranslateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 40,
+        friction: 8,
+        velocity: 0,
+      }).start();
+      return;
+    }
+    /** Collapsed: tab bar translates by ~`tabBarStackBottom`; strip is taller — offset includes measured height. */
     const hideTranslate = tabBarStackBottom + Math.max(milestoneDockHeight, 120);
     Animated.spring(milestoneScrollTranslateY, {
       toValue: isTabBarVisibleFromScroll ? 0 : hideTranslate,
@@ -340,6 +351,7 @@ export default function HomeScreen() {
     }).start();
   }, [
     isTabBarVisibleFromScroll,
+    milestoneExpanded,
     tabBarStackBottom,
     milestoneDockHeight,
     milestoneScrollTranslateY,
