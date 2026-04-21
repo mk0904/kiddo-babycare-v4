@@ -12,6 +12,8 @@ import React, { useCallback, useMemo } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import NetInfo from "@react-native-community/netinfo";
+import NoInternetScreen from "@/components/NoInternetScreen";
 
 import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
@@ -83,6 +85,7 @@ export default function RootLayout() {
   const metaReadyRef = React.useRef(Platform.OS !== 'ios');
   const metaInitStartedRef = React.useRef(false);
   const entryPrefetchStartedRef = React.useRef(false);
+  const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
   const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
@@ -385,6 +388,21 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError, appConfigPayload]);
 
   React.useEffect(() => {
+    // Subscribe to network state changes
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    NetInfo.refresh().then(state => {
+      setIsConnected(state.isConnected);
+    });
+  }, []);
+
+  React.useEffect(() => {
     void prefetchEntryScreens();
   }, [prefetchEntryScreens]);
 
@@ -431,6 +449,10 @@ export default function RootLayout() {
     (isEntryScreensDecisionPending || (entryScreens.length > 0 && !isEntryScreensVisible));
 
   // Always render providers, even during loading, to prevent "useAuth must be used within AuthProvider" errors
+  if (!isConnected) {
+    return <NoInternetScreen onRetry={handleRetry} />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
