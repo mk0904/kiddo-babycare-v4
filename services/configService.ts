@@ -2,6 +2,10 @@
 import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
 
+// ⚡ LOCAL CONFIG: Set to true to load from local file instead of remote
+const USE_LOCAL_CONFIG = true;
+import localConfig from '@/config/kiddoAppConfig.json';
+
 // Remote config URL - all config is fetched from remote only
 const REMOTE_CONFIG_URL = 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
 
@@ -56,6 +60,12 @@ class ConfigService {
   }
 
   private async _loadConfig(url: string): Promise<AppConfig> {
+    // ⚡ LOCAL CONFIG MODE: Load from local file for testing
+    if (USE_LOCAL_CONFIG) {
+      console.log('[ConfigService] ⚡ Loading config from LOCAL file (config/kiddoAppConfig.json)');
+      this.rawConfig = localConfig;
+      this.configLoadedAt = Date.now();
+    } else {
     // Fetch config from remote only (allows updates without app release)
     // Add cache-busting timestamp to ensure fresh config is loaded
     const cacheBuster = `&_t=${Date.now()}`;
@@ -86,6 +96,7 @@ class ConfigService {
       console.error('[ConfigService] ❌ Remote config fetch failed:', error);
       throw error;
     }
+    } // end remote config block
     
     if (!this.rawConfig) {
       throw new Error('Failed to load config from remote source');
