@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
 
+# Fix for Apple Silicon Node path
+export PATH="$PATH:/opt/homebrew/bin"
+export NODE_BINARY="/opt/homebrew/bin/node"
+
 #
 # Copyright © 2015-2021 the original authors.
 #

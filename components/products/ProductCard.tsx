@@ -405,7 +405,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       if (routeParam) {
         const collectionIdParam = Array.isArray(collectionId) ? collectionId[0] : collectionId;
         router.push({
-          pathname: `/product/${encodeURIComponent(routeParam)}`,
+          pathname: `/products/${encodeURIComponent(routeParam)}`,
           params: collectionIdParam ? { collectionId: collectionIdParam } : {}
         } as any);
       }

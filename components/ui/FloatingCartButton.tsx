@@ -58,7 +58,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
                 ? TAB_BAR_HEIGHT + bottomInset
                 : bottomInset;
     const isCartScreen = pathname === '/cart';
-    const isPDP = pathname?.includes('/product/');
+    const isPDP = pathname?.includes('/products/');
 
     // Calculate bottom bar height on PDP:
     // padding top (16) + content height (~48) + padding bottom (Math.max(insets.bottom, 20)) + border (1)

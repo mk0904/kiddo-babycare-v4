@@ -1,5 +1,5 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
-import { ProductCard } from '@/components/product/ProductCard';
+import { ProductCard } from '@/components/products/ProductCard';
 import BaseModal from '@/components/ui/BaseModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FilterPanel } from '@/components/ui/FilterPanel';
@@ -417,7 +417,7 @@ export default function SearchScreen() {
 
     const handleProductPress = (product: any) => {
         router.push({
-            pathname: '/product/[id]',
+            pathname: '/products/[id]',
             params: { id: product.id, handle: product.handle },
         } as any);
     };
@@ -658,7 +658,7 @@ export default function SearchScreen() {
                             onProductPress={(product) => {
                                 if (product?.id || product?.handle) {
                                     const routeParam = product.id || product.handle;
-                                    router.push(`/product/${encodeURIComponent(routeParam)}` as any);
+                                    router.push(`/products/${encodeURIComponent(routeParam)}` as any);
                                 }
                             }}
                         />

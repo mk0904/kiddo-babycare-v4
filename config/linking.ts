@@ -6,7 +6,7 @@
  * You must host .well-known/assetlinks.json and .well-known/apple-app-site-association on this domain.
  */
 const RAW =
-  process.env.EXPO_PUBLIC_DEEP_LINK_DOMAIN || 'app.kiddo.in';
+  process.env.EXPO_PUBLIC_DEEP_LINK_DOMAIN || 'allforkiddo.com';
 
 export const DEEP_LINK_DOMAIN = RAW
   .trim()
@@ -18,7 +18,7 @@ export const DEEP_LINK_DOMAIN = RAW
 export const DEEP_LINK_BASE_URL = `https://${DEEP_LINK_DOMAIN}`;
 
 /** Product deep link path prefix (no leading slash). */
-export const PRODUCT_PATH_PREFIX = 'product';
+export const PRODUCT_PATH_PREFIX = 'products';
 
 /** Full product URL for a given handle or id segment. */
 export function getProductDeepLink(handleOrId: string): string {

@@ -12,7 +12,7 @@ import {
     Text,
     TouchableOpacity
 } from 'react-native';
-import { ProductList } from '../product/ProductList';
+import { ProductList } from '../products/ProductList';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

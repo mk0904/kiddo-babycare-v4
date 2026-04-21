@@ -1369,7 +1369,7 @@ export default function CartScreen() {
     };
 
     const handleProductPress = (item: any) => {
-        router.push({ pathname: '/product/[id]', params: { id: item.productId } } as any);
+        router.push({ pathname: '/products/[id]', params: { id: item.productId } } as any);
     };
 
     const handleAddressSelection = () => {

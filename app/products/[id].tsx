@@ -1,7 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
-import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/product/InfiniteProductGrid';
-import { TryBuyModal as TryAndBuyModal } from '@/components/product/TryBuyModal';
-import { TryBuyPdpVariantSection } from '@/components/product/TryBuyPdpVariantSection';
+import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
+import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
+import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
@@ -66,7 +66,7 @@ const EventDatePicker: React.FC<{
         const days = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Reset time to start of day
-        
+
         for (let i = 0; i < 7; i++) {
             const date = new Date(today);
             date.setDate(today.getDate() + i);
@@ -80,19 +80,19 @@ const EventDatePicker: React.FC<{
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
-        
+
         const dateToCheck = new Date(date);
         dateToCheck.setHours(0, 0, 0, 0);
-        
+
         if (dateToCheck.getTime() === today.getTime()) {
             return 'Today';
         } else if (dateToCheck.getTime() === tomorrow.getTime()) {
             return 'Tomorrow';
         } else {
-            return date.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
             });
         }
     };
@@ -101,9 +101,9 @@ const EventDatePicker: React.FC<{
         if (!selectedDate) return false;
         // Compare dates (ignoring time)
         const d1 = new Date(date);
-        d1.setHours(0,0,0,0);
+        d1.setHours(0, 0, 0, 0);
         const d2 = new Date(selectedDate);
-        d2.setHours(0,0,0,0);
+        d2.setHours(0, 0, 0, 0);
         return d1.getTime() === d2.getTime();
     };
 
@@ -121,8 +121,8 @@ const EventDatePicker: React.FC<{
 
     return (
         <View style={datePickerStyles.container}>
-            <ScrollView 
-                style={datePickerStyles.daysList} 
+            <ScrollView
+                style={datePickerStyles.daysList}
                 contentContainerStyle={datePickerStyles.daysListContent}
                 showsVerticalScrollIndicator={false}
             >
@@ -151,8 +151,8 @@ const EventDatePicker: React.FC<{
                                         datePickerStyles.dateSubLabel,
                                         isSelected && datePickerStyles.dateSubLabelSelected
                                     ]}>
-                                        {date.toLocaleDateString('en-US', { 
-                                            month: 'long', 
+                                        {date.toLocaleDateString('en-US', {
+                                            month: 'long',
                                             day: 'numeric',
                                             year: 'numeric'
                                         })}
@@ -239,6 +239,10 @@ const ProductDetailScreen = () => {
     const { handleScroll } = useScrollTracking();
     const insets = useSafeAreaInsets();
 
+    const getProductDeepLink = (pathSegment: string) => {
+        return `https://allforkiddo.com/products/${pathSegment}`;
+    };
+
     const productId = typeof params.id === 'string' ? params.id : null;
     const productHandle = typeof params.handle === 'string' ? params.handle : null;
 
@@ -259,7 +263,7 @@ const ProductDetailScreen = () => {
     const { addToRecentlyViewed, getRecentlyViewed } = useRecentlyViewed();
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const imageGestureRef = useRef({ isHorizontal: false });
-    
+
     // Event date selection state
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -271,32 +275,32 @@ const ProductDetailScreen = () => {
         'gid://shopify/Collection/509771153697', // Petting Farms
     ];
     const EVENTS_COLLECTION_ID = 'gid://shopify/Collection/509771120929';
-    
+
     // Check if product is from ticketing collections (Events, Playhouses, Petting Farms)
     const isTicketingProduct = useMemo(() => {
         // Check if we came from a ticketing collection (check route params)
         const collectionId = params.collectionId as string;
-        const fromTicketing = collectionId && TICKETING_COLLECTION_IDS.some(id => 
+        const fromTicketing = collectionId && TICKETING_COLLECTION_IDS.some(id =>
             collectionId === id || collectionId.includes(id.split('/').pop() || '')
         );
-        
+
         // Or check if product has relevant tags
         const hasTicketingTag = product?.tags?.some((tag: any) => {
             const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-            return tagLower.includes('event') || 
-                   tagLower.includes('playhouse') || 
-                   tagLower.includes('petting') ||
-                   tagLower.includes('farm');
+            return tagLower.includes('event') ||
+                tagLower.includes('playhouse') ||
+                tagLower.includes('petting') ||
+                tagLower.includes('farm');
         });
-        
+
         // Or check if product belongs to any ticketing collection
         const belongsToTicketing = product?.collections?.some((col: any) => {
             const colId = col?.id || col?.node?.id || '';
-            return TICKETING_COLLECTION_IDS.some(ticketingId => 
+            return TICKETING_COLLECTION_IDS.some(ticketingId =>
                 colId === ticketingId || colId.includes(ticketingId.split('/').pop() || '')
             );
         });
-        
+
         const result = fromTicketing || hasTicketingTag || belongsToTicketing;
         // Debug logging
         if (__DEV__) {
@@ -456,8 +460,8 @@ const ProductDetailScreen = () => {
             // Prefer explicit "Date" selected option, else fall back to variant title.
             const dateOpt = Array.isArray(variant.selectedOptions)
                 ? variant.selectedOptions.find((opt: any) =>
-                      typeof opt?.name === 'string' && opt.name.toLowerCase().includes('date')
-                  )
+                    typeof opt?.name === 'string' && opt.name.toLowerCase().includes('date')
+                )
                 : null;
 
             const candidateRaw = dateOpt?.value || variant.title;
@@ -514,7 +518,7 @@ const ProductDetailScreen = () => {
         syncSelectedOptionsFromVariant(only.variant);
         setShowDateError(false);
     }, [isEventsProduct, ticketingDateEntries, selectedEventDate, syncSelectedOptionsFromVariant]);
-    
+
     // Get product detail config
     const productDetailConfig = configService.getProductDetailConfig();
     const recommendationsConfig = productDetailConfig?.sections?.recommendations || {};
@@ -622,7 +626,7 @@ const ProductDetailScreen = () => {
                 setProduct(fullProduct);
                 initializeVariant(fullProduct);
                 loadProductRecommendations(fullProduct.id);
-                
+
                 // Add to recently viewed
                 let imageUrl = '';
                 if (fullProduct?.images?.edges) {
@@ -630,14 +634,14 @@ const ProductDetailScreen = () => {
                 } else if (Array.isArray(fullProduct?.images)) {
                     imageUrl = fullProduct.images[0]?.url || fullProduct.images[0] || '';
                 }
-                
+
                 addToRecentlyViewed({
                     id: fullProduct.id,
                     handle: fullProduct.handle,
                     title: fullProduct.title,
                     image: imageUrl,
                 });
-                
+
                 // Track Product Viewed event
                 try {
                     const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
@@ -656,7 +660,7 @@ const ProductDetailScreen = () => {
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
                 }
-                
+
                 // Load recently viewed products (excluding current)
                 loadRecentlyViewedProducts(fullProduct.handle);
             }
@@ -723,14 +727,14 @@ const ProductDetailScreen = () => {
             // Track recommendation clicked
             try {
                 const { trackRecommendationClicked } = require('@/utils/mixpanelHelpers');
-                const recommendationType = title === 'You May Also Like' ? 'product_recommendation' : 
-                                          title === 'Recently Viewed' ? 'recently_viewed' : 'related';
+                const recommendationType = title === 'You May Also Like' ? 'product_recommendation' :
+                    title === 'Recently Viewed' ? 'recently_viewed' : 'related';
                 trackRecommendationClicked(recommendationType, p.id, p.title);
             } catch (e) {
                 console.warn('Mixpanel tracking error:', e);
             }
-            
-            router.push({ pathname: '/product/[id]', params: { id: p.id, handle: p.handle } });
+
+            router.push({ pathname: '/products/[id]', params: { id: p.id, handle: p.handle } });
         };
 
         return (
@@ -775,19 +779,19 @@ const ProductDetailScreen = () => {
         if (selectedVariant && selectedVariant.availableForSale) {
             try {
                 const addItem = useCartStore.getState().addItem;
-                
+
                 // Get image URL
-                const imageUrl = selectedVariant.image?.url || 
-                                product.images?.[0]?.url || 
-                                product.featuredImage?.url || 
-                                product.images?.edges?.[0]?.node?.url || 
-                                '';
+                const imageUrl = selectedVariant.image?.url ||
+                    product.images?.[0]?.url ||
+                    product.featuredImage?.url ||
+                    product.images?.edges?.[0]?.node?.url ||
+                    '';
 
                 // Get price
                 const price = parseFloat(
-                    selectedVariant.price?.amount || 
-                    product.priceRange?.minVariantPrice?.amount || 
-                    product.price?.amount || 
+                    selectedVariant.price?.amount ||
+                    product.priceRange?.minVariantPrice?.amount ||
+                    product.price?.amount ||
                     '0'
                 );
 
@@ -799,8 +803,8 @@ const ProductDetailScreen = () => {
                     title: product.title || product.name || 'Product',
                     variantTitle: selectedVariant.title,
                     price,
-                    compareAtPrice: selectedVariant.compareAtPrice?.amount 
-                        ? parseFloat(selectedVariant.compareAtPrice.amount) 
+                    compareAtPrice: selectedVariant.compareAtPrice?.amount
+                        ? parseFloat(selectedVariant.compareAtPrice.amount)
                         : undefined,
                     currencyCode: selectedVariant.price?.currencyCode || product.priceRange?.minVariantPrice?.currencyCode || 'INR',
                     image: imageUrl,
@@ -868,9 +872,9 @@ const ProductDetailScreen = () => {
                     '';
                 const price = parseFloat(
                     variant.price?.amount ||
-                        product.priceRange?.minVariantPrice?.amount ||
-                        product.price?.amount ||
-                        '0'
+                    product.priceRange?.minVariantPrice?.amount ||
+                    product.price?.amount ||
+                    '0'
                 );
                 const quantityAvailable =
                     variant.quantityAvailable != null ? Number(variant.quantityAvailable) : undefined;
@@ -919,9 +923,9 @@ const ProductDetailScreen = () => {
         // Keep other option pills (e.g., time slot, ticket type) if present.
         const filtered = isTicketingProduct
             ? options.filter((option: any) => {
-                  const name = String(option?.name || '').toLowerCase();
-                  return !name.includes('date');
-              })
+                const name = String(option?.name || '').toLowerCase();
+                return !name.includes('date');
+            })
             : options;
         return filtered.filter((option: any) => (option.values || []).length > 1);
     }, [product, variants.length, isTicketingProduct]);
@@ -1030,55 +1034,33 @@ const ProductDetailScreen = () => {
         const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
         const productUrl = getProductDeepLink(pathSegment);
         
-        // Share message
-        const message = `${product.title}\n\nCheck this out on Kiddo:\n${productUrl}`;
+        // Use the first image URL for metadata fallback
+        const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
         
         try {
-            // Android: Share text only (native Share doesn't support file + text well)
-            // Apps like WhatsApp will generate a link preview with thumbnail if the meta tags are set on the domain.
             if (Platform.OS === 'android') {
+                // Using the 'url' field for the image forces many Android systems 
+                // to use it as the metadata source for the share bubble.
+                const cleanImageUrl = imageUrl.split('?')[0];
                 await Share.share({
-                    message,
+                    message: `${product.title}\n\nShop on Kiddo: ${productUrl}`,
+                    url: cleanImageUrl,
                     title: product.title,
                 });
-                return;
+            } else {
+                // iOS: Sharing ONLY the URL is the secret to clean rich previews.
+                // It prevents the bplist00 error and tells iOS to fetch the card metadata.
+                await Share.share({
+                    url: productUrl, 
+                    title: product.title,
+                });
             }
-
-            // iOS: Try to share image + text
-            const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
-            let shareUrl = productUrl; // Fallback to link if no image or download fails
-
-            if (imageUrl) {
-                try {
-                    // Clean URL and get extension
-                    const cleanUrl = imageUrl.split('?')[0];
-                    const extMatch = cleanUrl.match(/\.(jpe?g|png|webp|gif)$/i);
-                    const ext = extMatch ? extMatch[1] : 'jpg';
-                    
-                    const cacheDir = FileSystem.cacheDirectory;
-                    if (cacheDir) {
-                        const localUri = `${cacheDir}share_product_${Date.now()}.${ext}`;
-                        const downloadRes = await FileSystem.downloadAsync(imageUrl, localUri);
-                        if (downloadRes && downloadRes.status === 200) {
-                            shareUrl = localUri;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Image download failed for share:', e);
-                }
-            }
-
-            await Share.share({
-                message, // iOS supports message + url (image)
-                url: shareUrl,
-                title: product.title,
-            });
 
             // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
                 trackProductShareClicked(product.id, product.title, 'native');
-            } catch (_) {}
+            } catch (_) { }
 
         } catch (err: any) {
             if (err?.message !== 'User did not share') {
@@ -1245,7 +1227,7 @@ const ProductDetailScreen = () => {
     const isDiaper = useMemo(() => {
         if (!product) return false;
         const title = (product.title || '').toLowerCase();
-        const tags = (product.tags || []).map((tag: any) => 
+        const tags = (product.tags || []).map((tag: any) =>
             typeof tag === 'string' ? tag.toLowerCase() : ''
         );
         return title.includes('diaper') || tags.some((tag: string) => tag.includes('diaper'));
@@ -1299,7 +1281,6 @@ const ProductDetailScreen = () => {
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{product.title}</Text>
                 </View>
-                {/* Share product – commented out for now
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={handleShare}
@@ -1307,7 +1288,6 @@ const ProductDetailScreen = () => {
                 >
                     <Ionicons name="share-outline" size={24} color="#000" />
                 </TouchableOpacity>
-                */}
                 <TouchableOpacity style={styles.wishlistButton} onPress={handleWishlistPress}>
                     <Ionicons
                         name={inWishlist ? "heart" : "heart-outline"}
@@ -1393,163 +1373,163 @@ const ProductDetailScreen = () => {
 
                 <View style={styles.infoContainer}>
                     <View style={styles.sectionCard}>
-                    <View style={styles.vendorRow}>
-                        {product.vendor ? (
-                            <Text style={[
-                                styles.vendorText,
-                                productStyles.vendor && {
-                                    fontSize: productStyles.vendor.fontSize,
-                                    color: productStyles.vendor.color,
-                                    paddingHorizontal: productStyles.vendor.paddingHorizontal,
-                                    marginTop: productStyles.vendor.marginTop,
-                                    marginBottom: productStyles.vendor.marginBottom,
-                                    textTransform: productStyles.vendor.textTransform,
-                                    ...processFontStyle(productStyles.vendor, Fonts.LexendMedium),
-                                }
-                            ]}>{product.vendor}</Text>
-                        ) : null}
-                        {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
-                            <View style={styles.essentialsMetaRow}>
-                                {essentialsMetaParts.packSize ? (
-                                    <View style={styles.essentialsMetaBox}>
-                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.packSize}</Text>
-                                    </View>
-                                ) : null}
-                                {essentialsMetaParts.size ? (
-                                    <View style={styles.essentialsMetaBox}>
-                                        <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.size}</Text>
-                                    </View>
-                                ) : null}
-                            </View>
-                        ) : null}
-                    </View>
-                    <Text style={[
-                        styles.title,
-                        productStyles.title && {
-                            fontSize: productStyles.title.fontSize,
-                            color: productStyles.title.color,
-                            paddingHorizontal: productStyles.title.paddingHorizontal,
-                            paddingTop: productStyles.title.paddingTop,
-                            lineHeight: productStyles.title.lineHeight,
-                            ...processFontStyle(productStyles.title, Fonts.FredokaSemiBold),
-                        }
-                    ]}>{product.title}</Text>
-
-                    {tryBuyPdpEligible && pdpMainTryBuyOption ? (
-                        <TryBuyPdpVariantSection
-                            productVariants={variants}
-                            mainOption={pdpMainTryBuyOption}
-                            primaryValue={selectedOptions[pdpMainTryBuyOption.name]}
-                            onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
-                            tryValue={pdpTrySizeValue}
-                            onTryValueChange={setPdpTrySizeValue}
-                        />
-                    ) : null}
-
-                    {/* Price Section */}
-                    <View style={styles.productPriceContainer}>
-                        <View style={styles.productPriceRow}>
-                            <Text style={styles.productPriceText}>{formattedPrice}</Text>
-                            {formattedMRP && (
-                                <Text style={styles.productMrpText}>{formattedMRP}</Text>
-                            )}
-                            {discountPercentage !== null && (
-                                <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
-                            )}
-                        </View>
-                    </View>
-
-                    {productOptions.length > 0 && (
-                        <View style={styles.variantsContainer}>
-                            {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
-                                <View key={option.name} style={styles.optionContainer}>
-                                    <Text style={[
-                                        styles.optionLabel,
-                                        productStyles.variantLabel && {
-                                            fontSize: productStyles.variantLabel.fontSize,
-                                            color: productStyles.variantLabel.color,
-                                            ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
-                                        }
-                                    ]}>
-                                        {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
-                                    </Text>
-                                    <View style={styles.variantsList}>
-                                        {option.values.map((value: string) => {
-                                            const isSelected = selectedOptions[option.name] === value;
-                                            // Check if this option value is available in any variant
-                                            const isOptionAvailable = variants.some((variant: any) => {
-                                                if (!variant.selectedOptions) return false;
-                                                return variant.selectedOptions.some(
-                                                    (opt: any) => opt.name === option.name && opt.value === value
-                                                ) && variant.availableForSale !== false;
-                                            });
-
-                                            return (
-                                                <TouchableOpacity
-                                                    key={value}
-                                                    style={[
-                                                        styles.variantButton,
-                                                        isSelected && styles.variantButtonActive,
-                                                        !isOptionAvailable && styles.variantButtonDisabled
-                                                    ]}
-                                                    onPress={() => handleOptionSelect(option.name, value)}
-                                                    disabled={!isOptionAvailable}
-                                                >
-                                                    <Text style={[
-                                                        styles.variantText,
-                                                        isSelected && styles.variantTextActive,
-                                                        !isOptionAvailable && styles.variantTextDisabled,
-                                                        productStyles.variantButton && !isSelected && {
-                                                            fontSize: productStyles.variantButton.fontSize,
-                                                            color: productStyles.variantButton.color,
-                                                            ...processFontStyle(productStyles.variantButton, Fonts.Medium),
-                                                        }
-                                                    ]}>
-                                                        {value}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-
-                    {/* Date Selection - Only show for ticketing products (Events, Playhouses, Petting Farms) */}
-                    {isTicketingProduct && (
-                        <View style={styles.dateSelectionContainer}>
-                            <View style={styles.dateLabelContainer}>
-                                <Text style={styles.dateSelectionLabel}>Select Date</Text>
-                                <Text style={styles.requiredAsterisk}>*</Text>
-                            </View>
-                            <TouchableOpacity
-                                style={[
-                                    styles.dateSelectionButton,
-                                    !selectedEventDate && showDateError && styles.dateSelectionButtonError
-                                ]}
-                                onPress={() => {
-                                    setShowDatePicker(true);
-                                    setShowDateError(false); // Clear error when user opens date picker
-                                }}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="calendar-outline" size={20} color={Colors.text} style={styles.dateIcon} />
-                                <Text style={[styles.dateSelectionText, !selectedEventDate && styles.dateSelectionPlaceholder]}>
-                                    {selectedEventDate 
-                                        ? selectedEventDate.toLocaleDateString('en-US', { 
-                                            weekday: 'short', 
-                                            year: 'numeric', 
-                                            month: 'short', 
-                                            day: 'numeric' 
-                                        })
-                                        : 'Select a date'
+                        <View style={styles.vendorRow}>
+                            {product.vendor ? (
+                                <Text style={[
+                                    styles.vendorText,
+                                    productStyles.vendor && {
+                                        fontSize: productStyles.vendor.fontSize,
+                                        color: productStyles.vendor.color,
+                                        paddingHorizontal: productStyles.vendor.paddingHorizontal,
+                                        marginTop: productStyles.vendor.marginTop,
+                                        marginBottom: productStyles.vendor.marginBottom,
+                                        textTransform: productStyles.vendor.textTransform,
+                                        ...processFontStyle(productStyles.vendor, Fonts.LexendMedium),
                                     }
-                                </Text>
-                                <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
-                            </TouchableOpacity>
+                                ]}>{product.vendor}</Text>
+                            ) : null}
+                            {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
+                                <View style={styles.essentialsMetaRow}>
+                                    {essentialsMetaParts.packSize ? (
+                                        <View style={styles.essentialsMetaBox}>
+                                            <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.packSize}</Text>
+                                        </View>
+                                    ) : null}
+                                    {essentialsMetaParts.size ? (
+                                        <View style={styles.essentialsMetaBox}>
+                                            <Text style={styles.essentialsMetaText} numberOfLines={1}>{essentialsMetaParts.size}</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+                            ) : null}
                         </View>
-                    )}
+                        <Text style={[
+                            styles.title,
+                            productStyles.title && {
+                                fontSize: productStyles.title.fontSize,
+                                color: productStyles.title.color,
+                                paddingHorizontal: productStyles.title.paddingHorizontal,
+                                paddingTop: productStyles.title.paddingTop,
+                                lineHeight: productStyles.title.lineHeight,
+                                ...processFontStyle(productStyles.title, Fonts.FredokaSemiBold),
+                            }
+                        ]}>{product.title}</Text>
+
+                        {tryBuyPdpEligible && pdpMainTryBuyOption ? (
+                            <TryBuyPdpVariantSection
+                                productVariants={variants}
+                                mainOption={pdpMainTryBuyOption}
+                                primaryValue={selectedOptions[pdpMainTryBuyOption.name]}
+                                onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
+                                tryValue={pdpTrySizeValue}
+                                onTryValueChange={setPdpTrySizeValue}
+                            />
+                        ) : null}
+
+                        {/* Price Section */}
+                        <View style={styles.productPriceContainer}>
+                            <View style={styles.productPriceRow}>
+                                <Text style={styles.productPriceText}>{formattedPrice}</Text>
+                                {formattedMRP && (
+                                    <Text style={styles.productMrpText}>{formattedMRP}</Text>
+                                )}
+                                {discountPercentage !== null && (
+                                    <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
+                                )}
+                            </View>
+                        </View>
+
+                        {productOptions.length > 0 && (
+                            <View style={styles.variantsContainer}>
+                                {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
+                                    <View key={option.name} style={styles.optionContainer}>
+                                        <Text style={[
+                                            styles.optionLabel,
+                                            productStyles.variantLabel && {
+                                                fontSize: productStyles.variantLabel.fontSize,
+                                                color: productStyles.variantLabel.color,
+                                                ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
+                                            }
+                                        ]}>
+                                            {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
+                                        </Text>
+                                        <View style={styles.variantsList}>
+                                            {option.values.map((value: string) => {
+                                                const isSelected = selectedOptions[option.name] === value;
+                                                // Check if this option value is available in any variant
+                                                const isOptionAvailable = variants.some((variant: any) => {
+                                                    if (!variant.selectedOptions) return false;
+                                                    return variant.selectedOptions.some(
+                                                        (opt: any) => opt.name === option.name && opt.value === value
+                                                    ) && variant.availableForSale !== false;
+                                                });
+
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={value}
+                                                        style={[
+                                                            styles.variantButton,
+                                                            isSelected && styles.variantButtonActive,
+                                                            !isOptionAvailable && styles.variantButtonDisabled
+                                                        ]}
+                                                        onPress={() => handleOptionSelect(option.name, value)}
+                                                        disabled={!isOptionAvailable}
+                                                    >
+                                                        <Text style={[
+                                                            styles.variantText,
+                                                            isSelected && styles.variantTextActive,
+                                                            !isOptionAvailable && styles.variantTextDisabled,
+                                                            productStyles.variantButton && !isSelected && {
+                                                                fontSize: productStyles.variantButton.fontSize,
+                                                                color: productStyles.variantButton.color,
+                                                                ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                            }
+                                                        ]}>
+                                                            {value}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Date Selection - Only show for ticketing products (Events, Playhouses, Petting Farms) */}
+                        {isTicketingProduct && (
+                            <View style={styles.dateSelectionContainer}>
+                                <View style={styles.dateLabelContainer}>
+                                    <Text style={styles.dateSelectionLabel}>Select Date</Text>
+                                    <Text style={styles.requiredAsterisk}>*</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.dateSelectionButton,
+                                        !selectedEventDate && showDateError && styles.dateSelectionButtonError
+                                    ]}
+                                    onPress={() => {
+                                        setShowDatePicker(true);
+                                        setShowDateError(false); // Clear error when user opens date picker
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="calendar-outline" size={20} color={Colors.text} style={styles.dateIcon} />
+                                    <Text style={[styles.dateSelectionText, !selectedEventDate && styles.dateSelectionPlaceholder]}>
+                                        {selectedEventDate
+                                            ? selectedEventDate.toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })
+                                            : 'Select a date'
+                                        }
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
 
                     {/* Product Description - Collapsible */}
@@ -1788,7 +1768,7 @@ const ProductDetailScreen = () => {
                 initialIndex={selectedImageIndex}
                 onClose={() => setImageViewerVisible(false)}
             />
-            
+
             {/* Date Picker Modal */}
             {isTicketingProduct && (
                 <BaseModal
@@ -1805,7 +1785,7 @@ const ProductDetailScreen = () => {
                     />
                 </BaseModal>
             )}
-            
+
             <FloatingCartButton showTabBar={false} />
         </View>
     );

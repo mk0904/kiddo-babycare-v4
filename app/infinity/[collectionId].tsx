@@ -1,4 +1,4 @@
-import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
+import { InfiniteProductGrid } from '@/components/products/InfiniteProductGrid';
 import BaseModal from '@/components/ui/BaseModal';
 import { FilterPanel } from '@/components/ui/FilterPanel';
 import { FilterSortPills } from '@/components/ui/FilterSortPills';
