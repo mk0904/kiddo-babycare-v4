@@ -6,7 +6,6 @@ import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import ImageViewerModal from '@/components/ui/ImageViewerModal';
 import UniversalAdd from '@/components/ui/UniversalAdd';
-import { getProductDeepLink } from '@/config/linking';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
@@ -21,7 +20,6 @@ import { hasTryAndBuyProduct } from '@/utils/tryAndBuyProduct';
 import { findTryVariantForPrimary, getTryBuyPdpMainOptionNameForDefer } from '@/utils/tryBuyVariantSelection';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -1033,25 +1031,35 @@ const ProductDetailScreen = () => {
         const productId = (params as any).id || product.id;
         const pathSegment = handle || String(productId).replace(/^gid:\/\/shopify\/Product\//i, '');
         const productUrl = getProductDeepLink(pathSegment);
-        
+
         // Use the first image URL for metadata fallback
         const imageUrl = images[0] || selectedVariant?.image?.url || product.featuredImage?.url || '';
-        
+
+        // Construct the rich share message
+        let shareMessage = `${product.title}\n\n`;
+        shareMessage += `🌈 Kiddo Price: ${formattedPrice}\n`;
+        if (formattedMRP) {
+            shareMessage += `🏷️ Original Price: ${formattedMRP}\n`;
+        }
+        if (discountPercentage) {
+            shareMessage += `🎉 Save ${discountPercentage}%\n`;
+        }
+        shareMessage += `\n⚡️Delivery in 30 minutes\n\n`;
+        shareMessage += `Shop on Kiddo: ${productUrl}`;
+
         try {
             if (Platform.OS === 'android') {
-                // Using the 'url' field for the image forces many Android systems 
-                // to use it as the metadata source for the share bubble.
                 const cleanImageUrl = imageUrl.split('?')[0];
                 await Share.share({
-                    message: `${product.title}\n\nShop on Kiddo: ${productUrl}`,
-                    url: cleanImageUrl,
+                    message: shareMessage,
+                    url: cleanImageUrl, // Providing URL helps with thumbnail on Android
                     title: product.title,
                 });
             } else {
-                // iOS: Sharing ONLY the URL is the secret to clean rich previews.
-                // It prevents the bplist00 error and tells iOS to fetch the card metadata.
+                // For iOS, providing both message and url can cause bplist errors in some apps.
+                // Including the URL in the message is safer and still triggers previews in WhatsApp.
                 await Share.share({
-                    url: productUrl, 
+                    message: shareMessage,
                     title: product.title,
                 });
             }
@@ -1067,7 +1075,7 @@ const ProductDetailScreen = () => {
                 console.warn('Share error:', err);
             }
         }
-    }, [product, params, images, selectedVariant]);
+    }, [product, params, images, selectedVariant, formattedPrice, formattedMRP, discountPercentage]);
 
     const parsePriceSafely = (priceValue: any) => {
         if (!priceValue) return 0;
