@@ -72,6 +72,13 @@ export interface CheckoutDraftRequest {
   selectedShoeSize?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
+  /** School coupon data: backend should store in Shopify order attributes. */
+  schoolCouponData?: {
+    childName: string;
+    parentName: string;
+    age: string;
+    class: string;
+  } | null;
   /** App version for coupon/eligibility. Required for checkout/draft (same as get coupon by phone). */
   appVersion: string;
   /** Device type for coupon/eligibility ('ios' | 'android'). Required for checkout/draft (same as get coupon by phone). */
@@ -160,6 +167,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     billDetails: body.billDetails,
     selectedShoe: body.selectedShoe ?? '',
     selectedShoeSize: body.selectedShoeSize ?? '',
+    schoolCouponData: body.schoolCouponData,
     isTryAndBuy: body.isTryAndBuy ?? false,
     // Always send non-empty appVersion and deviceType (same as get coupon by phone)
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',

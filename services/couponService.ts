@@ -53,6 +53,8 @@ export interface CouponCode {
   applicableCategory?: string | null;
   /** When set, min purchase and discount apply to combined cart value of products in any of these categories (e.g. ["fashion", "apparel", "clothing"]). Each item counted once. */
   allowedCategories?: string[] | null;
+  /** If true, this coupon requires child details (name, parent name, age, class) to be collected. */
+  isSchoolCoupon?: boolean;
 }
 
 export interface GetEligibleCouponsParams {

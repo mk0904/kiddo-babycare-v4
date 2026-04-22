@@ -132,6 +132,13 @@ export interface OrderData {
     paymentMethod?: 'razorpay' | 'cod' | 'free' | 'try_and_buy';
     /** Full bill breakdown for backend to store in Shopify order. */
     billDetails?: OrderBillDetails;
+    /** School coupon data for Shopify order attributes. */
+    schoolCouponData?: {
+        childName: string;
+        parentName: string;
+        age: string;
+        class: string;
+    } | null;
 }
 
 export interface CreateOrderResult {
@@ -179,6 +186,7 @@ function orderDataToCheckoutDraftRequest(
         billDetails: orderData.billDetails,
         selectedShoe: orderData.selectedShoe ?? '',
         selectedShoeSize: orderData.selectedShoeSize ?? '',
+        schoolCouponData: orderData.schoolCouponData,
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
         appVersion: getAppVersionForApi(),
         deviceType: Platform.OS ?? '',

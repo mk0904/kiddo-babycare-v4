@@ -16,6 +16,7 @@ import type { TryAndBuyVariantSelectionResult } from '@/components/modals/Varian
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
+import { SchoolCouponModal } from '@/components/modals/SchoolCouponModal';
 import {
     getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
@@ -390,6 +391,7 @@ export default function CartScreen() {
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [showSchoolModal, setShowSchoolModal] = useState(false);
     const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
@@ -749,6 +751,20 @@ export default function CartScreen() {
             return;
         }
 
+        const { useCartStore } = await import('@/store/cartStore');
+        const cartStore = useCartStore.getState();
+        const { discountCodes, schoolCouponData } = cartStore;
+
+        // Validate School Coupon requirements
+        const activeSchoolCoupon = discountCodes.find(dc => dc.isSchoolCoupon && dc.applicable !== false);
+        if (activeSchoolCoupon) {
+            if (!schoolCouponData || !schoolCouponData.childName || !schoolCouponData.parentName || !schoolCouponData.age || !schoolCouponData.class) {
+                setShowSchoolModal(true);
+                setOrderLoading(false);
+                return;
+            }
+        }
+
         // For ticketing-only orders, use a default/placeholder address if none selected
         // This ensures the order creation doesn't fail due to missing address structure
         // Use a valid Indian address structure to pass Shopify validation
@@ -1019,6 +1035,7 @@ export default function CartScreen() {
                 selectedShoe: selectedShoe || undefined,
                 selectedShoeSize: selectedShoeSize || undefined,
                 isTryAndBuy: isTryAndBuy,
+                schoolCouponData: activeSchoolCoupon ? cartStore.schoolCouponData : null,
             };
 
             // Call Payment Service
@@ -1860,6 +1877,10 @@ export default function CartScreen() {
                 }}
                 initialSchedule={deliverySchedule}
                 title={checkoutConfig?.scheduleModalTitle}
+            />
+            <SchoolCouponModal
+                visible={showSchoolModal}
+                onClose={() => setShowSchoolModal(false)}
             />
 
         </SafeAreaView>

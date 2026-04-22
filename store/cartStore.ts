@@ -56,6 +56,8 @@ export interface DiscountCode {
     applicableCategory?: string | null;
     /** When set, discount is applied on combined cart value of products in any of these categories. */
     allowedCategories?: string[] | null;
+    /** If true, this coupon requires school/child details. */
+    isSchoolCoupon?: boolean;
 }
 
 export interface GiftWrapping {
@@ -97,6 +99,14 @@ interface CartState {
     selectedShoe: string | null;
     /** Free shoes offer: selected size (e.g. S1, S2) – sent to Shopify with selectedShoe */
     selectedShoeSize: string | null;
+
+    /** School coupon data: collected when isSchoolCoupon is applied. */
+    schoolCouponData: {
+        childName: string;
+        parentName: string;
+        age: string;
+        class: string;
+    } | null;
 
     // Computed getters
     itemCount: () => number;
@@ -147,6 +157,9 @@ interface CartState {
     // Free Shoes Offer
     setSelectedShoe: (shoeId: string | null) => void;
     setSelectedShoeSize: (size: string | null) => void;
+
+    // School Coupon
+    setSchoolCouponData: (data: CartState['schoolCouponData']) => void;
 
     // Cart management
     ensureCart: () => Promise<string | null>;
@@ -254,6 +267,7 @@ export const useCartStore = create<CartState>()(
             giftWrapping: null,
             selectedShoe: null,
             selectedShoeSize: null,
+            schoolCouponData: null,
 
             // Computed getters
             itemCount: () => {
@@ -436,6 +450,7 @@ export const useCartStore = create<CartState>()(
                 set({
                     discountCodes: stillValid,
                     ...(hadHeyKiddo && !hasHeyKiddo ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                    ...(applied.some(dc => dc.isSchoolCoupon) && !stillValid.some(dc => dc.isSchoolCoupon) ? { schoolCouponData: null } : {}),
                 });
 
                 const cartId = state.id;
@@ -670,6 +685,7 @@ export const useCartStore = create<CartState>()(
                     error: null,
                     selectedShoe: null,
                     selectedShoeSize: null,
+                    schoolCouponData: null,
                 });
             },
 
@@ -909,6 +925,7 @@ export const useCartStore = create<CartState>()(
                     ...(originalPriceNum != null ? { originalPrice: originalPriceNum } : {}),
                     ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
                     ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                    isSchoolCoupon: configDiscount.isSchoolCoupon === true,
                 };
 
                 let nextDiscountCodes: DiscountCode[];
@@ -1106,6 +1123,7 @@ export const useCartStore = create<CartState>()(
                                     ...(backendOrig1 != null ? { originalPrice: backendOrig1 } : {}),
                                     ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
                                     ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                                    isSchoolCoupon: configDiscount.isSchoolCoupon === true,
                                 };
                                 if (!codeInResponse) {
                                     console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -1122,6 +1140,7 @@ export const useCartStore = create<CartState>()(
                                             ...discountCodesFromCart[idx],
                                             ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
                                             ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                                            isSchoolCoupon: configDiscount.isSchoolCoupon === true,
                                         };
                                     }
                                 }
@@ -1148,14 +1167,16 @@ export const useCartStore = create<CartState>()(
                             updatedPayment.discount = recalcDiscount;
                             updatedPayment.total = Math.max(0, lineItemsSubtotal - recalcDiscount) + taxAmount;
 
-                            set({
-                                discountCodes: discountCodesFromCart,
-                                payment: updatedPayment,
-                                checkoutUrl: updatedCart.checkoutUrl || state.checkoutUrl,
-                                status: 'idle',
-                                error: null,
-                                lastSyncedAt: Date.now(),
-                            });
+                                const hasSchoolCoupon = discountCodesFromCart.some((dc: any) => dc.isSchoolCoupon);
+                                set({
+                                    discountCodes: discountCodesFromCart,
+                                    payment: updatedPayment,
+                                    checkoutUrl: updatedCart.checkoutUrl || state.checkoutUrl,
+                                    status: 'idle',
+                                    error: null,
+                                    lastSyncedAt: Date.now(),
+                                    ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
+                                });
                             console.log('[CartStore] ✅ State updated with new discount codes and payment');
                             
                             const appliedCode = discountCodesFromCart.find(
@@ -1420,6 +1441,7 @@ export const useCartStore = create<CartState>()(
                             ...(backendOrig != null ? { originalPrice: backendOrig } : {}),
                             ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
                             ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                            isSchoolCoupon: configDiscount.isSchoolCoupon === true,
                         };
                         if (!codeInResponse) {
                             console.log('[CartStore] Code not in Shopify response, adding from backend:', normalizedCode);
@@ -1468,6 +1490,7 @@ export const useCartStore = create<CartState>()(
                         total: Math.max(0, lineItemsSubtotal - recalcDiscount) + taxAmount,
                         currencyCode: updatedCart.cost?.totalAmount?.currencyCode || 'INR',
                     };
+                    const hasSchoolCoupon = discountCodesFromCart.some((dc: any) => dc.isSchoolCoupon);
                     set({
                         discountCodes: discountCodesFromCart,
                         payment: updatedPayment,
@@ -1475,6 +1498,7 @@ export const useCartStore = create<CartState>()(
                         status: 'idle',
                         error: null,
                         lastSyncedAt: Date.now(),
+                        ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
                     });
                     console.log('[CartStore] ✅ Code successfully applied (existing cart path)');
                     return { success: true };
@@ -1490,9 +1514,11 @@ export const useCartStore = create<CartState>()(
                 const state = get();
                 const normalizedCode = code.toUpperCase();
                 const updatedDiscountCodes = state.discountCodes.filter((dc) => dc.code.toUpperCase() !== normalizedCode);
+                const hasSchoolCoupon = updatedDiscountCodes.some(dc => dc.isSchoolCoupon);
                 set({
                     discountCodes: updatedDiscountCodes,
                     ...(normalizedCode === 'HEYKIDDO' ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                    ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
                 });
 
                 const cartId = await get().ensureCart();
@@ -1549,7 +1575,10 @@ export const useCartStore = create<CartState>()(
 
             removeAllDiscountCodes: async () => {
                 const state = get();
-                set({ discountCodes: [] });
+                set({ 
+                    discountCodes: [],
+                    schoolCouponData: null 
+                });
 
                 const cartId = await get().ensureCart();
                 // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
@@ -1907,6 +1936,9 @@ export const useCartStore = create<CartState>()(
                 return null;
             },
  
+            // School Coupon
+            setSchoolCouponData: (data) => set({ schoolCouponData: data }),
+
             syncDeliveryFeeToShopify: async () => {
               const state = get();
               if (!state.id || !state.id.startsWith('gid://shopify/Cart/')) return;
@@ -1934,6 +1966,7 @@ export const useCartStore = create<CartState>()(
                 checkoutUrl: state.checkoutUrl,
                 isTryAndBuy: state.isTryAndBuy,
                 giftWrapping: state.giftWrapping,
+                schoolCouponData: state.schoolCouponData,
             }),
         }
     )

@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 
 import { SavingsCornerCouponCarousel, type SavingsCornerCouponItem } from './SavingsCornerCouponCarousel';
+import { SchoolCouponModal } from '../modals/SchoolCouponModal';
 
 export type SavingsCornerCoupon = SavingsCornerCouponItem;
 
@@ -63,6 +64,7 @@ export function SavingsCorner({
     const [couponApplying, setCouponApplying] = useState(false);
     const [couponUsages, setCouponUsages] = useState<Record<string, number>>({});
     const [lastApplyError, setLastApplyError] = useState<string | null>(null);
+    const [showSchoolModal, setShowSchoolModal] = useState(false);
 
     const cartSubtotal = useMemo(
         () => cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0),
@@ -204,6 +206,11 @@ export function SavingsCorner({
         try {
             const result = await applyDiscountCode(trimmed, { preloadedCoupons: availableCoupons });
             if (result.success) {
+                // Check if the applied coupon is a school coupon
+                const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                if (applied?.isSchoolCoupon) {
+                    setShowSchoolModal(true);
+                }
                 return { success: true };
             }
             const err = result.error ?? 'Failed to apply coupon';
@@ -234,6 +241,11 @@ export function SavingsCorner({
                 const err = result.error ?? 'Failed to apply coupon';
                 setManualCodeMessage(err);
                 setLastApplyError(err);
+            } else {
+                // Check if the applied coupon is a school coupon
+                if (coupon.isSchoolCoupon) {
+                    setShowSchoolModal(true);
+                }
             }
         } catch (error: any) {
             const err = error.message ?? 'Failed to apply coupon';
@@ -298,6 +310,10 @@ export function SavingsCorner({
 
     return (
         <View style={styles.wrapper}>
+            <SchoolCouponModal 
+                visible={showSchoolModal} 
+                onClose={() => setShowSchoolModal(false)} 
+            />
 
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
