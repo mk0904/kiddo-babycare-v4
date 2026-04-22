@@ -758,7 +758,7 @@ export default function CartScreen() {
         // Validate School Coupon requirements
         const activeSchoolCoupon = discountCodes.find(dc => dc.isSchoolCoupon && dc.applicable !== false);
         if (activeSchoolCoupon) {
-            if (!schoolCouponData || !schoolCouponData.childName || !schoolCouponData.parentName || !schoolCouponData.age || !schoolCouponData.class) {
+            if (!schoolCouponData || !schoolCouponData.childName || !schoolCouponData.parentName || !schoolCouponData.dob || !schoolCouponData.gender) {
                 setShowSchoolModal(true);
                 setOrderLoading(false);
                 return;

@@ -104,8 +104,8 @@ interface CartState {
     schoolCouponData: {
         childName: string;
         parentName: string;
-        age: string;
-        class: string;
+        dob: string;
+        gender: string;
     } | null;
 
     // Computed getters

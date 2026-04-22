@@ -76,8 +76,8 @@ export interface CheckoutDraftRequest {
   schoolCouponData?: {
     childName: string;
     parentName: string;
-    age: string;
-    class: string;
+    dob: string;
+    gender: string;
   } | null;
   /** App version for coupon/eligibility. Required for checkout/draft (same as get coupon by phone). */
   appVersion: string;
