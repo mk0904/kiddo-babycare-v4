@@ -3,6 +3,7 @@ import { useCartStore } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
+    Keyboard,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -11,7 +12,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 interface SchoolCouponModalProps {
@@ -32,6 +33,23 @@ export function SchoolCouponModal({ visible, onClose }: SchoolCouponModalProps) 
     const [dobError, setDobError] = useState(false);
     const [dobNumericError, setDobNumericError] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            const showSubscription = Keyboard.addListener('keyboardDidShow', (e) => {
+                setKeyboardHeight(e.endCoordinates.height);
+            });
+            const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+                setKeyboardHeight(0);
+            });
+
+            return () => {
+                showSubscription.remove();
+                hideSubscription.remove();
+            };
+        }
+    }, []);
 
     const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
     const currentYear = new Date().getFullYear();
@@ -96,11 +114,13 @@ export function SchoolCouponModal({ visible, onClose }: SchoolCouponModalProps) 
             animationType="slide"
             transparent={true}
             onRequestClose={onClose}
+            statusBarTranslucent={true}
         >
             <View style={styles.overlay}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.keyboardAvoid}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
                 >
                     <View style={styles.container}>
                         <View style={styles.header}>
@@ -120,8 +140,12 @@ export function SchoolCouponModal({ visible, onClose }: SchoolCouponModalProps) 
 
                         <ScrollView
                             style={styles.scroll}
-                            contentContainerStyle={styles.scrollContent}
+                            contentContainerStyle={[
+                                styles.scrollContent,
+                                Platform.OS === 'android' && { paddingBottom: keyboardHeight }
+                            ]}
                             showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
                         >
                             <View style={styles.field}>
                                 <Text style={styles.label}>Child Name *</Text>
@@ -145,7 +169,7 @@ export function SchoolCouponModal({ visible, onClose }: SchoolCouponModalProps) 
                                 />
                             </View>
 
-                            <View style={styles.row}>
+                            <View style={[styles.row, { marginBottom: 0 }]}>
                                 <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
                                     <Text style={styles.label}>Child's DOB *</Text>
                                     <TouchableOpacity
@@ -322,7 +346,9 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     keyboardAvoid: {
+        flex: 1,
         width: '100%',
+        justifyContent: 'flex-end',
     },
     container: {
         backgroundColor: '#fff',
@@ -360,10 +386,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     scrollContent: {
-        paddingBottom: 0,
+        paddingBottom: 8,
     },
     field: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     label: {
         fontSize: Fonts.SmallFontSize,
@@ -386,10 +412,10 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: 16,
-        paddingTop: 16,
+        paddingTop: 8,
         borderTopWidth: 1,
         borderTopColor: '#F3F4F6',
-        paddingBottom: 24,
+        paddingBottom: 12,
     },
     saveButton: {
         backgroundColor: Colors.primary,
