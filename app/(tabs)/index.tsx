@@ -116,72 +116,30 @@ export default function HomeScreen() {
   const categories = useMemo(() => {
     const configCategories = configService.getCategories();
     if (!configCategories?.order) {
-      // Fallback to default categories
+      // Fallback to minimal default categories (no bundled icons)
       return [
-        {
-          key: 'all',
-          label: 'See all',
-          iconImage: require('@/assets/images/shopall-selected.png'),
-        },
-        {
-          key: 'girls',
-          label: 'Girls',
-          iconImage: require('@/assets/images/girls-fashion-selected.png'),
-        },
-        {
-          key: 'boys',
-          label: 'Boys',
-          iconImage: require('@/assets/images/boys-fashion-selected.png'),
-        },
-        {
-          key: 'babycare',
-          label: 'Baby Care',
-          iconImage: require('@/assets/images/babycare-selected.png'),
-        },
-        {
-          key: 'toys',
-          label: 'Toys',
-          iconImage: require('@/assets/images/toys-selected.png'),
-        },
-        {
-          key: 'babygear',
-          label: 'Baby Gear',
-          iconImage: require('@/assets/images/Baby-Gear.png'),
-        },
+        { key: 'all', label: 'See all' },
+        { key: 'girls', label: 'Girls' },
+        { key: 'boys', label: 'Boys' },
+        { key: 'babycare', label: 'Baby Care' },
+        { key: 'toys', label: 'Toys' },
+        { key: 'babygear', label: 'Baby Gear' },
       ];
     }
 
     // Build categories from config
     const categoryOrder = configCategories.order;
     const categoryItems = configCategories.items || {};
-    const categoryStyles = configCategories.styles || {};
 
     return categoryOrder.map((key) => {
       const categoryDef = categoryItems[key];
-      const defaultLabels: Record<string, string> = {
-        all: 'See all',
-        girls: 'Girls',
-        boys: 'Boys',
-        babycare: 'Baby Care',
-        toys: 'Toys',
-        babygear: 'Baby Gear',
-      };
-      const defaultIcons: Record<string, any> = {
-        all: require('@/assets/images/shopall-selected.png'),
-        girls: require('@/assets/images/girls-fashion-selected.png'),
-        boys: require('@/assets/images/boys-fashion-selected.png'),
-        babycare: require('@/assets/images/babycare-selected.png'),
-        toys: require('@/assets/images/toys-selected.png'),
-        babygear: require('@/assets/images/Baby-Gear.png'),
-      };
 
       const icon = (categoryDef as { icon?: string })?.icon;
       const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
-        label: categoryDef?.label || defaultLabels[key] || key,
+        label: categoryDef?.label || key,
         iconUrl: iconUrl || undefined,
-        iconImage: iconUrl ? undefined : defaultIcons[key],
       };
     });
   }, [configLoading]);
