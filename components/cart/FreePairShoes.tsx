@@ -1,6 +1,6 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
-import type { FreeShoesOfferConfig, FreeShoesPickerSizeOption, SizeOption } from '@/types/appConfig';
+import type { FreeShoesOfferConfig, FreeShoesPickerSizeOption } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
@@ -220,7 +220,7 @@ export function FreePairShoes({
                             ? (displayShoe.name || (displayShoe as { title?: string }).title || 'Free pair')
                             : 'Select from shoe options & sizes'}
                     </Text>
-                    
+
                     <Text style={styles.sizeText}>
                         {isApplied ? (offerCopy?.selectedLabel?.replace('{size}', displaySize) ?? `Size: ${displaySize}`) : 'Sizes 1-4 available'}
                     </Text>
@@ -276,91 +276,90 @@ export function FreePairShoes({
                 <View style={styles.sizeModalContainer}>
                     <Pressable style={styles.sizeModalBackdrop} onPress={closeSizeModal} />
                     <View style={styles.sizeModalCard}>
-                    <View style={styles.sizeModalTitleRow}>
-                        <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
-                        <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
-                            <Ionicons name="close" size={24} color="#717680" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.sizeModalDivider} />
-                    <ScrollView
-                        style={styles.sizeModalScroll}
-                        contentContainerStyle={styles.sizeModalScrollContent}
-                        showsVerticalScrollIndicator={true}
-                    >
-                        <Text style={styles.sizeModalSubtitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
-                        <View style={styles.sizeGrid}>
-                            {sizeOptions.map((sizeOption) => {
-                                const disabled = !sizeOption.isAvailable;
-                                const isSelected = sizeModalSelection === sizeOption.size;
-                                return (
-                                    <TouchableOpacity
-                                        key={sizeOption.size}
-                                        style={[
-                                            styles.sizeButton,
-                                            disabled && styles.sizeButtonDisabled,
-                                            isSelected && styles.sizeButtonSelected,
-                                        ]}
-                                        onPress={() => {
-                                            if (disabled) return;
-                                            setSizeModalSelection(sizeOption.size);
-                                            setSizeModalShoeSelection(getPreferredShoeForSize(sizeOption.size, sizeModalShoeSelection));
-                                        }}
-                                        disabled={disabled}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled, isSelected && styles.sizeButtonTextSelected]}>
-                                            {sizeOption.size}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                        <View style={styles.sizeModalTitleRow}>
+                            <Text style={styles.sizeModalTitle}>{offerCopy?.sizeModalTitle ?? 'Select Size'}</Text>
+                            <TouchableOpacity onPress={closeSizeModal} style={styles.sizeModalClose} hitSlop={12}>
+                                <Ionicons name="close" size={24} color="#717680" />
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.sizeModalSubtitle}>Select Shoe</Text>
-                        {modalShoes.length > 0 ? (
-                            <View style={styles.shoeGrid}>
-                                {modalShoes.map((shoe) => {
-                                    const isSelected = sizeModalShoeSelection === shoe.id;
+                        <View style={styles.sizeModalDivider} />
+                        <ScrollView
+                            style={styles.sizeModalScroll}
+                            contentContainerStyle={styles.sizeModalScrollContent}
+                            showsVerticalScrollIndicator={true}
+                        >
+                            <View style={styles.sizeGrid}>
+                                {sizeOptions.map((sizeOption) => {
+                                    const disabled = !sizeOption.isAvailable;
+                                    const isSelected = sizeModalSelection === sizeOption.size;
                                     return (
                                         <TouchableOpacity
-                                            key={shoe.id}
-                                            style={[styles.shoeOption, isSelected && styles.shoeOptionSelected]}
-                                            onPress={() => setSizeModalShoeSelection(shoe.id)}
-                                            activeOpacity={0.8}
+                                            key={sizeOption.size}
+                                            style={[
+                                                styles.sizeButton,
+                                                disabled && styles.sizeButtonDisabled,
+                                                isSelected && styles.sizeButtonSelected,
+                                            ]}
+                                            onPress={() => {
+                                                if (disabled) return;
+                                                setSizeModalSelection(sizeOption.size);
+                                                setSizeModalShoeSelection(getPreferredShoeForSize(sizeOption.size, sizeModalShoeSelection));
+                                            }}
+                                            disabled={disabled}
+                                            activeOpacity={0.7}
                                         >
-                                            <Image
-                                                source={{ uri: shoe.imageUrl }}
-                                                style={styles.shoeOptionImage}
-                                                contentFit="cover"
-                                                placeholder={{ blurhash: BLURHASH }}
-                                                placeholderContentFit="cover"
-                                            />
+                                            <Text style={[styles.sizeButtonText, disabled && styles.sizeButtonTextDisabled, isSelected && styles.sizeButtonTextSelected]}>
+                                                {sizeOption.size}
+                                            </Text>
                                         </TouchableOpacity>
                                     );
                                 })}
                             </View>
-                        ) : (
-                            <Text style={styles.noShoeText}>No shoe style is available for this size right now.</Text>
-                        )}
-                        <TouchableOpacity
-                            style={[
-                                styles.sizeConfirmButton,
-                                (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmButtonDisabled,
-                            ]}
-                            onPress={confirmSize}
-                            disabled={!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0}
-                            activeOpacity={0.8}
-                        >
-                            <Text
+                            <Text style={styles.sizeModalSubtitle}>Select Shoe</Text>
+                            {modalShoes.length > 0 ? (
+                                <View style={styles.shoeGrid}>
+                                    {modalShoes.map((shoe) => {
+                                        const isSelected = sizeModalShoeSelection === shoe.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={shoe.id}
+                                                style={[styles.shoeOption, isSelected && styles.shoeOptionSelected]}
+                                                onPress={() => setSizeModalShoeSelection(shoe.id)}
+                                                activeOpacity={0.8}
+                                            >
+                                                <Image
+                                                    source={{ uri: shoe.imageUrl }}
+                                                    style={styles.shoeOptionImage}
+                                                    contentFit="cover"
+                                                    placeholder={{ blurhash: BLURHASH }}
+                                                    placeholderContentFit="cover"
+                                                />
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <Text style={styles.noShoeText}>No shoe style is available for this size right now.</Text>
+                            )}
+                            <TouchableOpacity
                                 style={[
-                                    styles.sizeConfirmText,
-                                    (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmTextDisabled,
+                                    styles.sizeConfirmButton,
+                                    (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmButtonDisabled,
                                 ]}
+                                onPress={confirmSize}
+                                disabled={!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0}
+                                activeOpacity={0.8}
                             >
-                                {offerCopy?.confirmLabel ?? 'Confirm'}
-                            </Text>
-                        </TouchableOpacity>
-                    </ScrollView>
+                                <Text
+                                    style={[
+                                        styles.sizeConfirmText,
+                                        (!sizeModalShoeSelection || !sizeModalSelection || modalShoes.length === 0) && styles.sizeConfirmTextDisabled,
+                                    ]}
+                                >
+                                    {offerCopy?.confirmLabel ?? 'Confirm'}
+                                </Text>
+                            </TouchableOpacity>
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -384,7 +383,7 @@ const styles = StyleSheet.create({
     padlockWrap: {
         width: 36,
         height: 36,
-       
+
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -499,7 +498,7 @@ const styles = StyleSheet.create({
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,      
+        gap: 8,
     },
     originalPrice: {
         fontSize: Fonts.SmallFontSize,
@@ -575,7 +574,7 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#E5E7EB',
         marginBottom: 14,
-        marginHorizontal: -20,
+        marginHorizontal: 0,
     },
     shoeGrid: {
         flexDirection: 'row',

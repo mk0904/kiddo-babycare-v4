@@ -7,7 +7,7 @@ import { DeliveryCard } from '@/components/cart/DeliveryCard';
 import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
-import { MilestoneTracker } from '@/components/home/MilestoneTracker';
+// import { MilestoneTracker } from '@/components/home/MilestoneTracker';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
 import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
@@ -133,8 +133,8 @@ export default function CartScreen() {
         () => appConfigService.getCheckoutConfig(),
         [appConfigRefresh]
     );
-    const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [appConfigRefresh]);
-    const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
+    // const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [appConfigRefresh]);
+    // const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
     const giftWrapping = useGiftWrapping();
     const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
         defaultAddress?.latitude,
@@ -1590,18 +1590,18 @@ export default function CartScreen() {
                             <Text style={styles.savingsBannerText}>Total Savings: {formatCurrency(displaySavings)}!</Text>
                         </View>
                     )}
-                    <View style={styles.cartMilestoneSlot}>
+                    {/* <View style={styles.cartMilestoneSlot}>
                         <MilestoneTracker
                             variant="embedded"
                             milestoneUI={milestoneUI}
                             onExpandedChange={setCartMilestoneExpanded}
                         />
-                    </View>
+                    </View> */}
                     <ScrollView
                         style={styles.scrollView}
                         contentContainerStyle={[
                             styles.scrollContent,
-                            cartMilestoneExpanded ? { paddingBottom: 220 } : null,
+                            // cartMilestoneExpanded ? { paddingBottom: 220 } : null,
                         ]}
                         showsVerticalScrollIndicator={false}
                     >

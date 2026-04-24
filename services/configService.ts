@@ -12,6 +12,7 @@ const PRODUCTION_BACKEND_API_V1 = 'https://kiddo-service-874125225773.asia-south
  * Returns { configUrl: "https://..." }. Do not import `backendBase` here (circular with configService).
  */
 function getRemoteConfigApiUrl(): string {
+  /*
   const envBase =
     typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_BACKEND_API_BASE
       ? String(process.env.EXPO_PUBLIC_BACKEND_API_BASE).trim()
@@ -21,6 +22,7 @@ function getRemoteConfigApiUrl(): string {
     const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
     return `${prefix}/remote-config`;
   }
+  */
   return `${PRODUCTION_BACKEND_API_V1}/remote-config`;
 }
 
@@ -86,10 +88,29 @@ class ConfigService {
 
     const resolveUrl = async (): Promise<string> => {
       if (remoteUrl?.trim()) return remoteUrl.trim();
+
+      // Wrap resolution in a timeout to avoid blocking app start
+      const timeoutPromise = new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 2000)
+      );
+
       try {
-        return await this.resolveConfigJsonUrl();
-      } catch (e) {
-        console.warn('[ConfigService] remote-config failed, using fallback JSON URL:', e);
+        return await Promise.race([this.resolveConfigJsonUrl(), timeoutPromise]);
+      } catch (e: any) {
+        if (e.message === 'TIMEOUT') {
+          console.warn('[ConfigService] remote-config resolution timed out (2s), using fallback...');
+          // Continue resolving in background
+          this.resolveConfigJsonUrl()
+            .then((url) => {
+              console.log('[ConfigService] Background remote-config resolved:', url);
+              this._loadConfig(url).catch(() => { });
+            })
+            .catch((bgError) => {
+              console.warn('[ConfigService] Background remote-config resolution failed:', bgError);
+            });
+        } else {
+          console.warn('[ConfigService] remote-config resolution failed, using fallback:', e);
+        }
         return FALLBACK_CONFIG_JSON_URL;
       }
     };

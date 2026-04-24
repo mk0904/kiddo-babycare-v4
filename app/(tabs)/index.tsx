@@ -1,18 +1,16 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
-import { MilestoneTracker } from '@/components/home/MilestoneTracker';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { LIVE_DELIVERY_DOWNSET_PX } from '@/components/ui/LiveDeliveryTabBanner';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
-    getDeliveryEta,
-    getDeliveryEtaForAddress,
-    reverseGeocode,
+  getDeliveryEta,
+  getDeliveryEtaForAddress,
+  reverseGeocode,
 } from '@/config/deliveryConfig';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
-import { useMilestoneDock } from '@/context/MilestoneDockContext';
+// import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
@@ -24,12 +22,12 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    LayoutChangeEvent,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
+  Animated,
+  LayoutChangeEvent,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,19 +44,19 @@ export default function HomeScreen() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
-  const [milestoneUiRev, setMilestoneUiRev] = useState(0);
-  const { dockHeight: milestoneDockHeight, setMilestoneDockHeight } = useMilestoneDock();
+  // const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  // const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+  // const { dockHeight: milestoneDockHeight, setMilestoneDockHeight } = useMilestoneDock();
 
-  useEffect(() => appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1)), []);
+  // useEffect(() => appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1)), []);
 
-  useFocusEffect(
-    useCallback(() => {
-      return () => setMilestoneDockHeight(0);
-    }, [setMilestoneDockHeight])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     return () => setMilestoneDockHeight(0);
+  //   }, [setMilestoneDockHeight])
+  // );
 
-  const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
+  // const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
   // Auto-detected location when user has no saved address (serviceable / unserviceable)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
@@ -246,9 +244,9 @@ export default function HomeScreen() {
   const { stackExtraPx: liveDeliveryStackExtra } = useLiveDeliveryStackOffset();
 
   const scrollBottomPad = useMemo(() => {
-    const milestoneReserve = milestoneExpanded ? 380 : 130;
+    const milestoneReserve = 130; // milestoneExpanded ? 380 : 130;
     return Math.max(80, tabBarStackBottom + milestoneReserve);
-  }, [tabBarStackBottom, milestoneExpanded]);
+  }, [tabBarStackBottom]);
 
   // Use a safe initial estimate to prevent jump
   // Account for: safe area top + top info bar + search bar + category nav bar
@@ -271,10 +269,11 @@ export default function HomeScreen() {
   /** Match `TabBar` → `FloatingCartButton` `anchorExtraOffset` on Home (milestone strip + live pill stack). */
   const scrollToTopAnchorExtra = useMemo(() => {
     if (!isTabBarVisibleFromScroll) return 0;
-    const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 0) + 12;
+    // const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 0) + 12;
+    const milestoneStripReserveForStack = 12;
     const milestoneReserveForCart = milestoneStripReserveForStack + 4;
     return liveDeliveryStackExtra + milestoneReserveForCart;
-  }, [isTabBarVisibleFromScroll, milestoneDockHeight, liveDeliveryStackExtra]);
+  }, [isTabBarVisibleFromScroll, liveDeliveryStackExtra]);
 
   // Use the measured height if available, otherwise fallback to estimate
   // Add label height (approximately 40px) and gap (8px) to account for the delivery label only on homepage (all category)
@@ -286,34 +285,34 @@ export default function HomeScreen() {
   const scrollYValue = useRef(0);
   const milestoneScrollTranslateY = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    /** While expanded, keep the dock pinned (do not slide down with scroll-hidden tab bar). */
-    if (milestoneExpanded) {
-      Animated.spring(milestoneScrollTranslateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 40,
-        friction: 8,
-        velocity: 0,
-      }).start();
-      return;
-    }
-    /** Collapsed: tab bar translates by ~`tabBarStackBottom`; strip is taller — offset includes measured height. */
-    const hideTranslate = tabBarStackBottom + Math.max(milestoneDockHeight, 120);
-    Animated.spring(milestoneScrollTranslateY, {
-      toValue: isTabBarVisibleFromScroll ? 0 : hideTranslate,
-      useNativeDriver: true,
-      tension: 40,
-      friction: 8,
-      velocity: 0,
-    }).start();
-  }, [
-    isTabBarVisibleFromScroll,
-    milestoneExpanded,
-    tabBarStackBottom,
-    milestoneDockHeight,
-    milestoneScrollTranslateY,
-  ]);
+  // useEffect(() => {
+  //   /** While expanded, keep the dock pinned (do not slide down with scroll-hidden tab bar). */
+  //   if (milestoneExpanded) {
+  //     Animated.spring(milestoneScrollTranslateY, {
+  //       toValue: 0,
+  //       useNativeDriver: true,
+  //       tension: 40,
+  //       friction: 8,
+  //       velocity: 0,
+  //     }).start();
+  //     return;
+  //   }
+  //   /** Collapsed: tab bar translates by ~`tabBarStackBottom`; strip is taller — offset includes measured height. */
+  //   const hideTranslate = tabBarStackBottom + Math.max(milestoneDockHeight, 120);
+  //   Animated.spring(milestoneScrollTranslateY, {
+  //     toValue: isTabBarVisibleFromScroll ? 0 : hideTranslate,
+  //     useNativeDriver: true,
+  //     tension: 40,
+  //     friction: 8,
+  //     velocity: 0,
+  //   }).start();
+  // }, [
+  //   isTabBarVisibleFromScroll,
+  //   milestoneExpanded,
+  //   tabBarStackBottom,
+  //   milestoneDockHeight,
+  //   milestoneScrollTranslateY,
+  // ]);
 
   const handleSearchPress = useCallback(() => {
     console.log('Search pressed, navigating to /search');
@@ -573,28 +572,28 @@ export default function HomeScreen() {
               paddingBottom: scrollBottomPad,
             },
           ]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-        removeClippedSubviews={Platform.OS === 'android'}
-        scrollEventThrottle={16}
-        decelerationRate="normal"
-        nestedScrollEnabled={true}
-        keyboardShouldPersistTaps="handled"
-        onScroll={handleScroll}
-        overScrollMode="never"
-        scrollEnabled={true}
-        directionalLockEnabled={false}
-      >
-        <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
-          {configLoading ? (
-            <View style={styles.loadingContainer}>
-              {/* Loading state */}
-            </View>
-          ) : (
-            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
-          )}
-        </View>
-      </Animated.ScrollView>
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          removeClippedSubviews={Platform.OS === 'android'}
+          scrollEventThrottle={16}
+          decelerationRate="normal"
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          onScroll={handleScroll}
+          overScrollMode="never"
+          scrollEnabled={true}
+          directionalLockEnabled={false}
+        >
+          <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
+            {configLoading ? (
+              <View style={styles.loadingContainer}>
+                {/* Loading state */}
+              </View>
+            ) : (
+              <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
+            )}
+          </View>
+        </Animated.ScrollView>
       </View>
 
       {/* Scroll to Top Button */}
@@ -605,7 +604,7 @@ export default function HomeScreen() {
         anchorExtraOffset={scrollToTopAnchorExtra}
       />
 
-      <Animated.View
+      {/* <Animated.View
         style={[
           styles.milestoneDock,
           {
@@ -617,7 +616,7 @@ export default function HomeScreen() {
         onLayout={(e: LayoutChangeEvent) => setMilestoneDockHeight(e.nativeEvent.layout.height)}
       >
         <MilestoneTracker milestoneUI={milestoneUI} onExpandedChange={setMilestoneExpanded} />
-      </Animated.View>
+      </Animated.View> */}
 
       {/* Address Modal */}
       <AddressModal

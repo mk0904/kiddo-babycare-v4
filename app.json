@@ -147,6 +147,7 @@
           "accountId": "69R-748-Z77Z",
           "accountToken": "b4a-2c6",
           "accountRegion": "eu1",
+          "fcmSenderId": "1083846018645",
           "customIdentifiers": "Email,Phone",
           "android": {
             "features": {
