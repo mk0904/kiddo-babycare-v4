@@ -4,7 +4,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Animated,
   Image,
@@ -15,19 +15,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-/** Read scroll offset from Animated.Value (not in public TS typings). */
-function animatedScrollYValue(v: Animated.Value): number {
-  try {
-    const node = v as unknown as { __getValue?: () => number };
-    if (typeof node.__getValue === 'function') {
-      return Number(node.__getValue()) || 0;
-    }
-  } catch {
-    /* noop */
-  }
-  return 0;
-}
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
@@ -106,36 +93,31 @@ export function HomeHeader({
   // Header is in document flow (no overlay), so keep it fixed — no translate on scroll
   const headerTranslateY = useMemo(() => new Animated.Value(0), []);
 
-  /** Scroll down (finger up) → collapse ETA + address + wishlist; search + categories stay and read as sticky. */
-  const TOP_INFO_COLLAPSE_RANGE = 56;
-  const TOP_INFO_FALLBACK_HEIGHT = 132;
+  /**
+   * SIMPLE COLLAPSE LOGIC:
+   * We use translateY to move the content.
+   */
+  const ADDRESS_BAR_HEIGHT = 80;
+  const TOTAL_HEADER_HEIGHT = 220;
 
-  const topInfoMeasuredRef = useRef(TOP_INFO_FALLBACK_HEIGHT);
-  /** Layout-driven clip height (maxHeight is not supported by native animated module). */
-  const [topInfoClipHeight, setTopInfoClipHeight] = useState<number | null>(null);
-
-  const topInfoOpacity = scrollY.interpolate({
-    inputRange: [0, TOP_INFO_COLLAPSE_RANGE * 0.45, TOP_INFO_COLLAPSE_RANGE],
-    outputRange: [1, 0.35, 0],
+  const contentTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, -ADDRESS_BAR_HEIGHT],
     extrapolate: 'clamp',
   });
 
-  const updateTopInfoClip = useCallback((scrollValue: number) => {
-    const y = Math.max(0, scrollValue);
-    const t = Math.min(y / TOP_INFO_COLLAPSE_RANGE, 1);
-    const full = topInfoMeasuredRef.current;
-    setTopInfoClipHeight(Math.max(0, full * (1 - t)));
-  }, []);
+  // This controls the position of the sticky Search/Category part
+  const stickyTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [ADDRESS_BAR_HEIGHT, 0], // Starts below Address bar, slides to top
+    extrapolate: 'clamp',
+  });
 
-  useEffect(() => {
-    const id = scrollY.addListener(({ value }) => {
-      updateTopInfoClip(value);
-    });
-    updateTopInfoClip(animatedScrollYValue(scrollY));
-    return () => {
-      scrollY.removeListener(id);
-    };
-  }, [scrollY, updateTopInfoClip]);
+  const topInfoOpacity = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT * 0.8],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   const headerBorderBottomOpacity = scrollY.interpolate({
     inputRange: [0, stickyThreshold * 0.8, stickyThreshold],
@@ -144,12 +126,13 @@ export function HomeHeader({
   });
 
   const HeaderWrapper = useMemo(() => {
-    return (shouldUseImage && backgroundImage ? ImageBackground : View) as React.ComponentType<any>;
+    const BaseComponent = (shouldUseImage && backgroundImage ? ImageBackground : View);
+    return Animated.createAnimatedComponent(BaseComponent as React.ComponentType<any>);
   }, [shouldUseImage, backgroundImage]);
 
   const headerWrapperProps = useMemo(() => {
     if (!shouldUseImage || !backgroundImage) return {};
-    
+
     // Helper function to resolve local asset paths
     const getImageSource = () => {
       // Check if it's a local asset path (starts with "assets/")
@@ -164,7 +147,7 @@ export function HomeHeader({
       // Remote URL
       return { uri: backgroundImage };
     };
-    
+
     return {
       source: getImageSource(),
       imageStyle: {
@@ -181,7 +164,7 @@ export function HomeHeader({
       {
         backgroundColor: shouldUseImage ? 'transparent' : backgroundColor,
         paddingTop: insets.top,
-        ...(shouldUseImage && { overflow: 'hidden' as const }),
+        overflow: 'hidden' as const,
       },
     ],
     [shouldUseImage, backgroundColor, insets.top]
@@ -191,12 +174,15 @@ export function HomeHeader({
     <Animated.View
       style={[
         {
+          height: insets.top + TOTAL_HEADER_HEIGHT,
           transform: [{ translateY: headerTranslateY }],
           zIndex: 1000,
+          backgroundColor: 'transparent',
         },
       ]}
       collapsable={false}
       renderToHardwareTextureAndroid={true}
+      pointerEvents="box-none"
       onLayout={(event) => {
         const { height } = event.nativeEvent.layout;
         // Only update if height is valid and greater than 0
@@ -208,28 +194,43 @@ export function HomeHeader({
     >
       <HeaderWrapper
         {...headerWrapperProps}
-        style={headerContainerStyle}
+        style={[
+          styles.headerContainer,
+          { 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            zIndex: -1,
+            transform: [{ translateY: contentTranslateY }] // Synchronize background move
+          }
+        ]}
         collapsable={false}
-      >
-        <View style={{ position: 'relative', zIndex: 1 }} collapsable={false}>
-          <View
+        pointerEvents="none"
+      />
+
+      <View style={{ flex: 1, paddingTop: insets.top }} pointerEvents="box-none">
+        <Animated.View
+          style={{
+            position: 'relative',
+            zIndex: 1,
+          }}
+          collapsable={false}
+          pointerEvents="box-none"
+        >
+          {/* Top Info (Address + ETA) */}
+          <Animated.View
             style={[
               styles.topInfoClip,
-              topInfoClipHeight != null ? { height: topInfoClipHeight } : null,
+              { 
+                opacity: topInfoOpacity,
+                transform: [{ translateY: contentTranslateY }]
+              }
             ]}
             collapsable={false}
           >
-            <Animated.View style={{ opacity: topInfoOpacity }} collapsable={false}>
-            <View
-              style={styles.topInfoBar}
-              collapsable={false}
-              onLayout={(e) => {
-                const h = e.nativeEvent.layout.height;
-                if (h <= 0) return;
-                topInfoMeasuredRef.current = h;
-                updateTopInfoClip(animatedScrollYValue(scrollY));
-              }}
-            >
+            <View style={styles.topInfoBar} collapsable={false}>
               <View style={styles.leftInfoContainer}>
                 <View style={styles.kiddoRow}>
                   <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
@@ -277,40 +278,38 @@ export function HomeHeader({
                 <Ionicons name="heart-outline" size={24} color={textColor} />
               </TouchableOpacity>
             </View>
-            </Animated.View>
-          </View>
+          </Animated.View>
 
-          <View style={styles.stickySearchCategoryBlock} collapsable={false}>
-            <View style={styles.searchContainer}>
-              <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
-            </View>
-            {categories && categories.length > 0 ? (
-              <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
-                <CategoryNavigationBar
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onCategorySelect={onCategorySelect}
-                />
-              </View>
-            ) : null}
-          </View>
-        </View>
-      </HeaderWrapper>
-      <Animated.View
+        </Animated.View>
+      </View>
+
+      {/* Sticky Section - Now positioned exactly where it belongs for better touch detection */}
+      <Animated.View 
         style={[
-          {
+          styles.stickySearchCategoryBlock, 
+          { 
             position: 'absolute',
-            bottom: 0,
+            top: insets.top,
             left: 0,
             right: 0,
-            height: 1,
-            backgroundColor: '#E5E5E5',
-            opacity: headerBorderBottomOpacity,
-            zIndex: 1000,
-          },
-        ]}
-        pointerEvents="none"
-      />
+            transform: [{ translateY: stickyTranslateY }] 
+          } 
+        ]} 
+        collapsable={false}
+      >
+        <View style={styles.searchContainer}>
+          <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+        </View>
+        {categories && categories.length > 0 ? (
+          <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
+            <CategoryNavigationBar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={onCategorySelect}
+            />
+          </View>
+        ) : null}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -318,7 +317,8 @@ export function HomeHeader({
 const styles = StyleSheet.create({
   headerContainer: {
     width: '100%',
-    overflow: 'visible',
+    height: '100%', // Cover the full outer container height
+    overflow: 'hidden',
   },
   topInfoClip: {
     overflow: 'hidden',

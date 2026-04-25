@@ -12,7 +12,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 // import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
@@ -23,11 +22,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  LayoutChangeEvent,
   Platform,
   ScrollView,
   StyleSheet,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -256,7 +254,7 @@ export default function HomeScreen() {
   // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
   // Total content: ~220px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 230;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 220;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 
@@ -520,6 +518,8 @@ export default function HomeScreen() {
 
         // Show scroll-to-top button when scrolled down more than 300px
         setShowScrollToTop(offsetY > 300);
+        console.log(`[Scroll Log] Y: ${offsetY.toFixed(1)}`);
+
       },
     }
   );
@@ -542,23 +542,25 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <StatusBar style="dark" />
       <View style={styles.mainColumn}>
-        <HomeHeader
-          scrollY={scrollY}
-          address={displayAddress}
-          addressCategoryLabel={addressCategoryLabel}
-          estimatedTime={homeEstimatedTime}
-          loadingTime={homeLoadingTime}
-          isUnserviceable={isUnserviceable}
-          locationStatus={locationStatus}
-          headerConfig={headerConfig}
-          searchSuggestions={searchSuggestions}
-          onSearchPress={handleSearchPress}
-          onLocationPress={handleLocationPress}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategorySelect={handleCategorySelect}
-          onHeaderHeightChange={setDynamicHeaderHeight}
-        />
+        <View style={styles.headerWrapper}>
+          <HomeHeader
+            scrollY={scrollY}
+            address={displayAddress}
+            addressCategoryLabel={addressCategoryLabel}
+            estimatedTime={homeEstimatedTime}
+            loadingTime={homeLoadingTime}
+            isUnserviceable={isUnserviceable}
+            locationStatus={locationStatus}
+            headerConfig={headerConfig}
+            searchSuggestions={searchSuggestions}
+            onSearchPress={handleSearchPress}
+            onLocationPress={handleLocationPress}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleCategorySelect}
+            onHeaderHeightChange={() => { }} // Not using dynamic height updates anymore
+          />
+        </View>
 
         <Animated.ScrollView
           ref={scrollViewRef}
@@ -566,7 +568,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: 0,
+              paddingTop: initialHeaderHeight, // Start content below the absolute header
               minHeight: '100%',
               backgroundColor: pageBackgroundColor,
               paddingBottom: scrollBottomPad,
@@ -632,6 +634,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  headerWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
   mainColumn: {
     flex: 1,
