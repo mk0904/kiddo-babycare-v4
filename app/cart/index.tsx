@@ -35,6 +35,7 @@ import {
     getActiveMilestoneSlotRaw,
     milestoneGiftBillTitleFromSlot,
     milestoneIsGiftBillDiscountLineTitle,
+    milestoneTakesPrecedenceOverOtherCoupons,
 } from '@/utils/milestoneOrderDiscount';
 import {
     useCartId,
@@ -437,6 +438,15 @@ export default function CartScreen() {
         () => appConfigService.getFreePuzzleGiftDiscountCodeUppercase(),
         [appConfigRefresh]
     );
+    const milestoneShouldOverrideStackedCoupons = useMemo(
+        () =>
+            milestoneTakesPrecedenceOverOtherCoupons(
+                itemSubtotalForOffers,
+                activeMilestoneSlot,
+                milestoneFreeKind
+            ),
+        [itemSubtotalForOffers, activeMilestoneSlot, milestoneFreeKind]
+    );
 
     // Computed values
     const appliedDiscountCodes = discountCodes.map(dc => dc.code);
@@ -634,6 +644,22 @@ export default function CartScreen() {
         }
     }, [milestoneFreeKind, freeShoesGiftCodeUc, freePuzzleGiftCodeUc]);
 
+    // When a milestone is unlocked, drop manual / school coupons so milestone (percent, gift, or free rail) applies.
+    useEffect(() => {
+        if (!milestoneShouldOverrideStackedCoupons) return;
+        for (const dc of discountCodes) {
+            const u = dc.code.toUpperCase();
+            if (u === freeShoesGiftCodeUc || u === freePuzzleGiftCodeUc) continue;
+            void removeDiscountCode(dc.code);
+        }
+    }, [
+        milestoneShouldOverrideStackedCoupons,
+        discountCodes,
+        freeShoesGiftCodeUc,
+        freePuzzleGiftCodeUc,
+        removeDiscountCode,
+    ]);
+
     // Coupon fetching is handled inside SavingsCorner.
 
     // Use address from AddressContext
@@ -745,14 +771,16 @@ export default function CartScreen() {
         }
     }
 
-    /** When any discount code is applied, milestone offer lines and milestone % are suppressed (user picks coupon OR milestone, not both). */
-    const hasAnyDiscountCode = (discountCodes?.length ?? 0) > 0;
+    /** Free-gift codes (HEYKIDDO / KIDPUZZLE) are from the same milestone; other codes block milestone % until the override effect removes them. */
+    const hasNonMilestoneDiscountCode = (discountCodes ?? []).some(
+        (dc) => dc.code.toUpperCase() !== freeShoesGiftCodeUc && dc.code.toUpperCase() !== freePuzzleGiftCodeUc
+    );
     const milestoneConfigDiscountRes = computeMilestoneConfigDiscount(itemSubtotal, activeMilestoneSlot);
     const rawMilestoneConfigDiscountAmount = milestoneConfigDiscountRes?.amount ?? 0;
-    if (!hasAnyDiscountCode && rawMilestoneConfigDiscountAmount > 0) {
+    if (!hasNonMilestoneDiscountCode && rawMilestoneConfigDiscountAmount > 0) {
         calculatedDiscount += rawMilestoneConfigDiscountAmount;
     }
-    const milestoneConfigDiscountAmount = hasAnyDiscountCode ? 0 : rawMilestoneConfigDiscountAmount;
+    const milestoneConfigDiscountAmount = hasNonMilestoneDiscountCode ? 0 : rawMilestoneConfigDiscountAmount;
 
     const hasHeyKiddoApplied = discountCodes.some(
         (dc) => dc.code.toUpperCase() === freeShoesGiftCodeUc && dc.applicable !== false
@@ -1878,7 +1906,7 @@ export default function CartScreen() {
                             milestoneFreePuzzleLabel={milestoneGiftBillTitle || undefined}
                             milestoneConfigDiscount={milestoneConfigDiscountAmount}
                             milestoneIsGiftBillDiscountTitle={
-                                hasAnyDiscountCode
+                                hasNonMilestoneDiscountCode
                                     ? undefined
                                     : milestoneIsGiftBillDiscountTitle || undefined
                             }

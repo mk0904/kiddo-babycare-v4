@@ -116,3 +116,27 @@ export function computeMilestoneConfigDiscount(
     if (amount <= 0) return null;
     return { amount, label: titleFromSlot(slot) };
 }
+
+/**
+ * When true, the active milestone is eligible to apply; manual/stacked discount codes
+ * may be removed so the milestone (percent, gift-bill, or free-shoe/puzzle rail) wins.
+ */
+export function milestoneTakesPrecedenceOverOtherCoupons(
+    itemSubtotal: number,
+    slot: MilestoneSlotConfig | null | undefined,
+    freeKind: MilestoneFreeGiftKind
+): boolean {
+    if (itemSubtotal <= 0) return false;
+    const pct = computeMilestoneConfigDiscount(itemSubtotal, slot);
+    if (pct != null && pct.amount > 0) return true;
+    if (slot == null || !slotIsGiftTrue(slot) || !isMilestoneMinCartUnlocked(slot, itemSubtotal)) {
+        return false;
+    }
+    if (milestoneIsGiftBillDiscountLineTitle(slot, itemSubtotal, freeKind) != null) {
+        return true;
+    }
+    if (freeKind === 'shoes' || freeKind === 'puzzle') {
+        return true;
+    }
+    return false;
+}
