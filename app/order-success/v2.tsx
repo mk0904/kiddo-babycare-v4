@@ -27,48 +27,60 @@ const MILESTONES = [
     {
         id: 1,
         title: "Milestone 1",
-        subtitle: "Min. Cart Value",
-        color: "#FF0099",
-        titleColor: "#FF37B9",
-        subtitleColor: "#FF37B980",
-        glowColor: "#FF37B925", // Increased alpha slightly for horizontal fade
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/firstCompletedIcon.png?v=1776527697",
-        inactiveIcon: "https://img.icons8.com/fluency-systems-regular/96/shopping-cart.png",
+        subtitle: "25% off 💸 on cart value",
+        color: "#3AA0EB",
+        titleColor: "#3AA0EB",
+        subtitleColor: "#3AA0EB",
+        glowColor: "#3AA0EB", // Increased alpha slightly for horizontal fade
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/firstAcOrder.png?v=1777210267",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/firstAcOrder.png?v=1777210267",
     },
     {
         id: 2,
         title: "Milestone 2",
         subtitle: "Free Shoes",
-        color: "#F8DB60",
+        color: "#E0C12B",
         titleColor: "#E0C12B",
-        subtitleColor: "#E0C12BB2",
-        glowColor: "#F8DB6030",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secondCompletedIcon.png?v=1776527697",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secondInActiveIcon.png?v=1776446446",
+        subtitleColor: "#E0C12B",
+        glowColor: "#E0C12B",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secAcOrder.png?v=1777210266",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secAcOrder.png?v=1777210266",
     },
     {
         id: 3,
         title: "Milestone 3",
         subtitle: "Free Puzzle",
-        color: "#72CC7E",
-        titleColor: "#4DC012",
-        subtitleColor: "#4DC012B2",
-        glowColor: "#72CC7E30",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdCompletedIcon.png?v=1776527697",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdInActiveIcon.png?v=1776446446",
+        color: "#F15E5E",
+        titleColor: "#F15E5E",
+        subtitleColor: "#F15E5E",
+        glowColor: "#F15E5E",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdAcOrder.png?v=1777210267",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdDefault.png?v=1777210267",
     },
     {
         id: 4,
         title: "Milestone 4",
         subtitle: "Mystery Gift",
-        color: "#ED6666",
-        titleColor: "#FF2728",
-        subtitleColor: "#FF272880",
-        glowColor: "#ED666625",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthCompletedIcon.png?v=1776527697",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthInActiveIcon.png?v=1776446446",
+        color: "#BD35D5",
+        titleColor: "#BD35D5",
+        subtitleColor: "#BD35D5",
+        glowColor: "#BD35D5",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthAcOrder.png?v=1777210267",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthDefault.png?v=1777210267",
     },
 ];
+
+function glowColorFaded(glowColor: string, alpha = 0.22): string {
+    const s = (glowColor || '').replace('#', '').trim();
+    if (s.length !== 6) return 'rgba(0, 0, 0, 0.12)';
+    const r = parseInt(s.slice(0, 2), 16);
+    const g = parseInt(s.slice(2, 4), 16);
+    const b = parseInt(s.slice(4, 6), 16);
+    if (![r, g, b].every((n) => Number.isFinite(n) && n >= 0 && n <= 255)) {
+        return 'rgba(0, 0, 0, 0.12)';
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export default function OrderSuccessV2Screen() {
     const router = useRouter();
@@ -86,6 +98,7 @@ export default function OrderSuccessV2Screen() {
     const trackAnim = useRef(new Animated.Value((SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2))).current;
 
     const [activeIndex, setActiveIndex] = useState(0);
+    const [milestoneShowAll, setMilestoneShowAll] = useState(false);
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.parallel([
@@ -108,18 +121,21 @@ export default function OrderSuccessV2Screen() {
 
             Animated.timing(trackAnim, {
                 toValue: targetPos,
-                duration: 800,
+                duration: 400,
                 useNativeDriver: true,
             }).start(() => {
                 setActiveIndex(index);
                 setTimeout(() => {
-                    if (index + 1 < MILESTONES.length) runSequence(index + 1);
+                    if (index + 1 < MILESTONES.length) {
+                        runSequence(index + 1);
+                    } else {
+                        setMilestoneShowAll(true);
+                    }
                 }, 1000);
             });
         };
 
         setTimeout(() => runSequence(0), 800);
-
     }, []);
 
     const currentMilestone = MILESTONES[activeIndex];
@@ -185,12 +201,12 @@ export default function OrderSuccessV2Screen() {
 
             <View style={styles.bottomSection}>
 
-                <View style={styles.glowWrapper}>
+                {/* <View style={styles.glowWrapper}>
                     <LinearGradient
                         colors={[
                             '#FFFFFF',
                             'rgba(255, 255, 255, 0)',
-                            currentMilestone.glowColor,
+                            glowColorFaded(currentMilestone.glowColor),
                             'rgba(255, 255, 255, 0)',
                             '#FFFFFF'
                         ]}
@@ -201,7 +217,7 @@ export default function OrderSuccessV2Screen() {
                         locations={[0, 0.05, 0.5, 0.95, 0.5]}
                         style={[styles.topGlowConatiner]}
                     />
-                </View>
+                </View> */}
                 <View style={styles.fullWidthGlowContainer}>
 
                     <LinearGradient
@@ -210,7 +226,7 @@ export default function OrderSuccessV2Screen() {
                         colors={[
                             '#FFFFFF',
                             'rgba(255, 255, 255, 0)',
-                            currentMilestone.glowColor,
+                            glowColorFaded(currentMilestone.glowColor),
                             'rgba(255, 255, 255, 0)',
                             '#FFFFFF'
                         ]}
@@ -224,55 +240,63 @@ export default function OrderSuccessV2Screen() {
 
                 </View>
                 <View style={styles.carouselContainer}>
-                    <Animated.View
-                        style={[
-                            styles.track,
-                            { transform: [{ translateX: trackAnim }] }
-                        ]}
-                    >
-                        {MILESTONES.map((m, index) => {
-                            const isFocus = index === activeIndex;
-                            const isPassedOrFocus = index <= activeIndex;
-
-                            return (
-                                <View key={m.id} style={styles.item}>
-                                    <View
-                                        style={[
-                                            styles.iconContainer,
-                                            isFocus && styles.activeScale,
-                                            { backgroundColor: '#FFFFFF40' }
-                                        ]}
-                                    >
+                    {milestoneShowAll ? (
+                        <View style={styles.clubMilestoneBlock}>
+                            <Text style={styles.clubKicker}>Congratulations!</Text>
+                            <Text style={styles.clubTitle}>
+                                {'Welcome to the\nKiddo Club!'}
+                            </Text>
+                            <View style={styles.milestoneAllRow}>
+                                {MILESTONES.map((m) => (
+                                    <View key={m.id} style={styles.milestoneAllItem}>
+                                        <Image
+                                            source={{ uri: m.activeIcon }}
+                                            style={styles.mIconAll}
+                                            contentFit="contain"
+                                        />
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    ) : (
+                        <Animated.View
+                            style={[
+                                styles.track,
+                                { transform: [{ translateX: trackAnim }] },
+                            ]}
+                        >
+                            {MILESTONES.map((m, index) => {
+                                const isPassedOrFocus = index <= activeIndex;
+                                return (
+                                    <View key={m.id} style={styles.item}>
                                         <Image
                                             source={{
-                                                uri: isPassedOrFocus ? m.activeIcon : m.inactiveIcon
+                                                uri: isPassedOrFocus ? m.activeIcon : m.inactiveIcon,
                                             }}
                                             style={styles.mIcon}
                                             contentFit="contain"
                                         />
+                                        <Text
+                                            style={[
+                                                styles.mTitle,
+                                                { color: isPassedOrFocus ? m.titleColor : '#999' },
+                                            ]}
+                                        >
+                                            {m.title}
+                                        </Text>
+                                        <Text
+                                            style={[
+                                                styles.mSub,
+                                                { color: isPassedOrFocus ? m.subtitleColor : '#BBB' },
+                                            ]}
+                                        >
+                                            {m.subtitle}
+                                        </Text>
                                     </View>
-
-                                    <Text
-                                        style={[
-                                            styles.mTitle,
-                                            { color: isPassedOrFocus ? m.titleColor : '#999' }
-                                        ]}
-                                    >
-                                        {m.title}
-                                    </Text>
-
-                                    <Text
-                                        style={[
-                                            styles.mSub,
-                                            { color: isPassedOrFocus ? m.subtitleColor : '#BBB' }
-                                        ]}
-                                    >
-                                        {m.subtitle}
-                                    </Text>
-                                </View>
-                            );
-                        })}
-                    </Animated.View>
+                                );
+                            })}
+                        </Animated.View>
+                    )}
                 </View>
             </View>
 
@@ -294,8 +318,8 @@ const styles = StyleSheet.create({
     fullWidthGlowContainer: {
         position: 'absolute',
         top: -80,
-        left: -SCREEN_WIDTH * 0.8,
-        right: -SCREEN_WIDTH * 0.8,
+        left: -SCREEN_WIDTH * 0.7,
+        right: -SCREEN_WIDTH * 0.7,
         height: 550,
         zIndex: 1,
         borderTopLeftRadius: SCREEN_WIDTH * 2, // Shallow curve
@@ -333,25 +357,47 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, fontFamily: Fonts.LexendBold, color: '#1A1A1A', marginTop: 15 },
     heroIcon: { width: ICON_SIZE, height: ICON_SIZE },
 
-    carouselContainer: { height: 300, zIndex: 5, marginBottom: 40 },
+    carouselContainer: { minHeight: 300, zIndex: 5, marginBottom: 40, width: '100%' },
     track: { flexDirection: 'row', alignItems: 'flex-end', gap: GAP },
     item: { width: ITEM_WIDTH, alignItems: 'center', position: 'relative' },
-
-
-    iconContainer: {
-        width: 56,
-        height: 56,
-        justifyContent: 'center',
+    /** After the carousel run finishes: static row of all active milestone art + club copy. */
+    clubMilestoneBlock: {
+        width: '100%',
+        paddingHorizontal: 20,
         alignItems: 'center',
-        marginBottom: 8,
-        zIndex: 6,
-        borderRadius: 35,
-        borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.8)',
-        backgroundColor: '#FFFFFF1A', // Light semi-transparent white for inside shadow feel
+        justifyContent: 'center',
     },
-    activeScale: { transform: [{ scale: 1.25 }] },
-    mIcon: { width: 36, height: 36 },
+    clubKicker: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#00000066',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    clubTitle: {
+        fontSize: 24,
+        lineHeight: 32,
+        fontFamily: Fonts.LexendBold,
+        color: '#F15E5E',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    milestoneAllRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        maxWidth: 340,
+        paddingHorizontal: 4,
+    },
+    milestoneAllItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 0,
+    },
+    mIconAll: { width: 56, height: 56 },
+    mIcon: { width: 56, height: 56, marginBottom: 8 },
     mTitle: { fontSize: 14, fontFamily: Fonts.LexendBold },
     mSub: { fontSize: 11, fontFamily: Fonts.LexendMedium },
     footerBackground: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 190, zIndex: 1 },

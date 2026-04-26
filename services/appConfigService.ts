@@ -10,6 +10,8 @@ import type {
   CartConfig,
   CartFeatures,
   EntryScreenItem,
+  FreePuzzleOfferConfig,
+  FreePuzzlePickerConfig,
   FreeShoesOfferConfig,
   FreeShoesPickerConfig,
   GiftWrapConfig,
@@ -161,6 +163,37 @@ class AppConfigService {
 
   getFreeShoesPickerConfig(): FreeShoesPickerConfig | null {
     return this.config?.cart?.freeShoesPicker ?? null;
+  }
+
+  getFreePuzzleOfferConfig(): FreePuzzleOfferConfig | null {
+    return this.config?.cart?.freePuzzleOffer ?? null;
+  }
+
+  getFreePuzzlePickerConfig(): FreePuzzlePickerConfig | null {
+    return this.config?.cart?.freePuzzlePicker ?? null;
+  }
+
+  /**
+   * Which discount code applies to the free-shoes gift — from `cart.freeShoesOffer.discountCode` when set; otherwise a legacy default.
+   * The cart only applies this when the active free-gift step is shoes (`getMilestoneFreeGiftKind` in the cart screen).
+   */
+  getFreeShoesGiftDiscountCodeUppercase(): string {
+    const c = this.config?.cart?.freeShoesOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim().toUpperCase();
+    }
+    return 'HEYKIDDO';
+  }
+
+  /**
+   * Which discount code applies to the free-puzzle gift — from `cart.freePuzzleOffer.discountCode` when set; otherwise a legacy default.
+   */
+  getFreePuzzleGiftDiscountCodeUppercase(): string {
+    const c = this.config?.cart?.freePuzzleOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim().toUpperCase();
+    }
+    return 'KIDPUZZLE';
   }
 
   getGiftWrapConfig(): GiftWrapConfig | null {

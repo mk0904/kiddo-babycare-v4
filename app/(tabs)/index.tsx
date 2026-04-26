@@ -1,38 +1,45 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
+import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
+import { MilestoneCartRow } from '@/components/ui/MilestoneCartRow';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
-  getDeliveryEta,
-  getDeliveryEtaForAddress,
-  reverseGeocode,
+    getDeliveryEta,
+    getDeliveryEtaForAddress,
+    reverseGeocode,
 } from '@/config/deliveryConfig';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
-// import { useMilestoneDock } from '@/context/MilestoneDockContext';
+import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
+import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
-import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View
+    Animated,
+    LayoutChangeEvent,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const isHomeTabFocused = useIsFocused();
   const router = useRouter();
   const { user } = useAuth();
   const { defaultAddress, setDetectedLocation } = useAddress();
+  const cartItemCount = useCartItemCount();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -42,19 +49,26 @@ export default function HomeScreen() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  // const [milestoneExpanded, setMilestoneExpanded] = useState(false);
-  // const [milestoneUiRev, setMilestoneUiRev] = useState(0);
-  // const { dockHeight: milestoneDockHeight, setMilestoneDockHeight } = useMilestoneDock();
+  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
+  const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
+  const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+  const { dockHeight: milestoneDockHeight, setMilestoneDockHeight } = useMilestoneDock();
 
-  // useEffect(() => appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1)), []);
+  /** Subscribe + one bump on mount so we re-read if app config finished loading before this effect ran. */
+  useEffect(() => {
+    const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
+    setMilestoneUiRev((x) => x + 1);
+    return off;
+  }, []);
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     return () => setMilestoneDockHeight(0);
-  //   }, [setMilestoneDockHeight])
-  // );
+  useFocusEffect(
+    useCallback(() => {
+      return () => setMilestoneDockHeight(0);
+    }, [setMilestoneDockHeight])
+  );
 
-  // const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
+  const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
   // Auto-detected location when user has no saved address (serviceable / unserviceable)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
@@ -264,6 +278,14 @@ export default function HomeScreen() {
   const { isVisible: isTabBarVisibleFromScroll, setScrollDirection, reset: resetTabBar } =
     useTabBarVisibility();
 
+  /** When the tab bar is hidden on scroll, dock milestone + cart to the safe area (no double tab bar gap). */
+  const milestoneDockWhenTabHidden = useMemo(
+    () => Math.max(insets.bottom, 0) + 4,
+    [insets.bottom]
+  );
+
+  const isInlineCartVisible = cartItemCount > 0 && !milestoneExpanded;
+
   /** Match `TabBar` → `FloatingCartButton` `anchorExtraOffset` on Home (milestone strip + live pill stack). */
   const scrollToTopAnchorExtra = useMemo(() => {
     if (!isTabBarVisibleFromScroll) return 0;
@@ -281,36 +303,25 @@ export default function HomeScreen() {
   // Scroll-to-top button visibility
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const scrollYValue = useRef(0);
-  const milestoneScrollTranslateY = useRef(new Animated.Value(0)).current;
+  const milestoneDockBottomAnim = useRef(
+    new Animated.Value(tabBarStackBottom)
+  ).current;
+  const milestoneBottomDidMount = useRef(false);
 
-  // useEffect(() => {
-  //   /** While expanded, keep the dock pinned (do not slide down with scroll-hidden tab bar). */
-  //   if (milestoneExpanded) {
-  //     Animated.spring(milestoneScrollTranslateY, {
-  //       toValue: 0,
-  //       useNativeDriver: true,
-  //       tension: 40,
-  //       friction: 8,
-  //       velocity: 0,
-  //     }).start();
-  //     return;
-  //   }
-  //   /** Collapsed: tab bar translates by ~`tabBarStackBottom`; strip is taller — offset includes measured height. */
-  //   const hideTranslate = tabBarStackBottom + Math.max(milestoneDockHeight, 120);
-  //   Animated.spring(milestoneScrollTranslateY, {
-  //     toValue: isTabBarVisibleFromScroll ? 0 : hideTranslate,
-  //     useNativeDriver: true,
-  //     tension: 40,
-  //     friction: 8,
-  //     velocity: 0,
-  //   }).start();
-  // }, [
-  //   isTabBarVisibleFromScroll,
-  //   milestoneExpanded,
-  //   tabBarStackBottom,
-  //   milestoneDockHeight,
-  //   milestoneScrollTranslateY,
-  // ]);
+  useEffect(() => {
+    const to = isTabBarVisibleFromScroll ? tabBarStackBottom : milestoneDockWhenTabHidden;
+    if (!milestoneBottomDidMount.current) {
+      milestoneBottomDidMount.current = true;
+      milestoneDockBottomAnim.setValue(to);
+      return;
+    }
+    Animated.spring(milestoneDockBottomAnim, {
+      toValue: to,
+      useNativeDriver: false,
+      tension: 50,
+      friction: 9,
+    }).start();
+  }, [isTabBarVisibleFromScroll, tabBarStackBottom, milestoneDockWhenTabHidden, milestoneDockBottomAnim]);
 
   const handleSearchPress = useCallback(() => {
     console.log('Search pressed, navigating to /search');
@@ -606,25 +617,38 @@ export default function HomeScreen() {
         anchorExtraOffset={scrollToTopAnchorExtra}
       />
 
-      {/* <Animated.View
-        style={[
-          styles.milestoneDock,
-          {
-            bottom: tabBarStackBottom,
-            transform: [{ translateY: milestoneScrollTranslateY }],
-          },
-        ]}
-        pointerEvents={isTabBarVisibleFromScroll ? 'box-none' : 'none'}
-        onLayout={(e: LayoutChangeEvent) => setMilestoneDockHeight(e.nativeEvent.layout.height)}
-      >
-        <MilestoneTracker milestoneUI={milestoneUI} onExpandedChange={setMilestoneExpanded} />
-      </Animated.View> */}
+      {!kiddoWelcomePopupVisible && (
+        <Animated.View
+          style={[
+            styles.milestoneDock,
+            {
+              bottom: milestoneDockBottomAnim,
+            },
+          ]}
+          pointerEvents="box-none"
+          onLayout={(e: LayoutChangeEvent) => setMilestoneDockHeight(e.nativeEvent.layout.height)}
+        >
+          <MilestoneCartRow
+            milestoneUI={milestoneUI}
+            onMilestoneExpandedChange={setMilestoneExpanded}
+            isInlineWithCart={isInlineCartVisible}
+          />
+        </Animated.View>
+      )}
 
       {/* Address Modal */}
       <AddressModal
         visible={showAddressModal}
         onClose={() => setShowAddressModal(false)}
         fromHome={true}
+      />
+
+      {/* Home: separate Kiddo rewards “first visit” popup (Modal + centered card). Not the milestone strip expander. */}
+      <KiddoRewardsWelcomeModal
+        milestoneUI={milestoneUI}
+        open={!milestoneExpanded}
+        isHomeTabFocused={isHomeTabFocused}
+        onVisibilityChange={setKiddoWelcomePopupVisible}
       />
     </SafeAreaView>
   );
@@ -656,8 +680,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    zIndex: 55,
-    elevation: 55,
+    zIndex: 10000,
+    elevation: 10000,
   },
   scrollViewContent: {
     flex: 1,

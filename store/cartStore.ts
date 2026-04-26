@@ -3,6 +3,7 @@
 // Coupon values come from backend API only (not config)
 
 import { getAppVersionForApi } from '@/constants/versionConfig';
+import { appConfigService } from '@/services/appConfigService';
 import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -99,6 +100,10 @@ interface CartState {
     selectedShoe: string | null;
     /** Free shoes offer: selected size (e.g. S1, S2) – sent to Shopify with selectedShoe */
     selectedShoeSize: string | null;
+    /** Free puzzle (milestone 2) – variant `id` from `freePuzzle*`. */
+    selectedPuzzleId: string | null;
+    /** Chosen age band label (e.g. `2-3 Years`) for filtering puzzles */
+    selectedPuzzleAge: string | null;
 
     /** School coupon data: collected when isSchoolCoupon is applied. */
     schoolCouponData: {
@@ -157,6 +162,7 @@ interface CartState {
     // Free Shoes Offer
     setSelectedShoe: (shoeId: string | null) => void;
     setSelectedShoeSize: (size: string | null) => void;
+    setSelectedPuzzle: (puzzleId: string | null, age?: string | null) => void;
 
     // School Coupon
     setSchoolCouponData: (data: CartState['schoolCouponData']) => void;
@@ -267,6 +273,8 @@ export const useCartStore = create<CartState>()(
             giftWrapping: null,
             selectedShoe: null,
             selectedShoeSize: null,
+            selectedPuzzleId: null,
+            selectedPuzzleAge: null,
             schoolCouponData: null,
 
             // Computed getters
@@ -386,14 +394,14 @@ export const useCartStore = create<CartState>()(
                     const userStore = useUserStore.getState();
                     const user = userStore.user;
                     if (userStore.status !== 'authenticated' || !user) {
-                        set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null });
+                        set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null, selectedPuzzleId: null, selectedPuzzleAge: null });
                         return;
                     }
                     userId = user.id ?? (user as any).customerId ?? (user as any).phone ?? null;
                     userOrderCount = (user as { numberOfOrders?: number })?.numberOfOrders ?? 0;
                     phone = (user as any).phone ?? null;
                 } catch {
-                    set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null });
+                    set({ discountCodes: [], selectedShoe: null, selectedShoeSize: null, selectedPuzzleId: null, selectedPuzzleAge: null });
                     return;
                 }
 
@@ -445,11 +453,16 @@ export const useCartStore = create<CartState>()(
                     }
                 }
 
-                const hadHeyKiddo = applied.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
-                const hasHeyKiddo = stillValid.some((dc) => dc.code.toUpperCase() === 'HEYKIDDO');
+                const shoesUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                const puzUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                const hadHeyKiddo = applied.some((dc) => dc.code.toUpperCase() === shoesUc);
+                const hasHeyKiddo = stillValid.some((dc) => dc.code.toUpperCase() === shoesUc);
+                const hadPuzzle = applied.some((dc) => dc.code.toUpperCase() === puzUc);
+                const hasPuzzle = stillValid.some((dc) => dc.code.toUpperCase() === puzUc);
                 set({
                     discountCodes: stillValid,
                     ...(hadHeyKiddo && !hasHeyKiddo ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                    ...(hadPuzzle && !hasPuzzle ? { selectedPuzzleId: null, selectedPuzzleAge: null } : {}),
                     ...(applied.some(dc => dc.isSchoolCoupon) && !stillValid.some(dc => dc.isSchoolCoupon) ? { schoolCouponData: null } : {}),
                 });
 
@@ -685,6 +698,8 @@ export const useCartStore = create<CartState>()(
                     error: null,
                     selectedShoe: null,
                     selectedShoeSize: null,
+                    selectedPuzzleId: null,
+                    selectedPuzzleAge: null,
                     schoolCouponData: null,
                 });
             },
@@ -932,19 +947,33 @@ export const useCartStore = create<CartState>()(
                 if (configDiscount.nonCombinable) {
                     nextDiscountCodes = [newDiscountCodeEntry];
                 } else {
-                    const existingApplicable = state.discountCodes.filter(
-                        (dc) =>
-                            dc.applicable !== false &&
-                            dc.code.toUpperCase() !== normalizedCode &&
-                            (normalizedCode === 'HEYKIDDO' || dc.code.toUpperCase() !== 'HEYKIDDO')
-                    );
+                    const n = normalizedCode;
+                    const shoesGift = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                    const puzzleGift = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                    const existingApplicable = state.discountCodes.filter((dc) => {
+                        if (dc.applicable === false) return false;
+                        const c = dc.code.toUpperCase();
+                        if (c === n) return false;
+                        const isHey = c === shoesGift;
+                        const isPuz = c === puzzleGift;
+                        if (n === shoesGift && isPuz) return false;
+                        if (n === puzzleGift && isHey) return false;
+                        if (n !== shoesGift && isHey) return false;
+                        if (n !== puzzleGift && isPuz) return false;
+                        return true;
+                    });
                     nextDiscountCodes = [...existingApplicable, newDiscountCodeEntry];
                 }
 
-                set({
-                    discountCodes: nextDiscountCodes,
-                    ...(normalizedCode !== 'HEYKIDDO' ? { selectedShoe: null, selectedShoeSize: null } : {}),
-                });
+                {
+                    const shoesGift = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                    const puzzleGift = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                    set({
+                        discountCodes: nextDiscountCodes,
+                        ...(normalizedCode !== shoesGift ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                        ...(normalizedCode !== puzzleGift ? { selectedPuzzleId: null, selectedPuzzleAge: null } : {}),
+                    });
+                }
 
                 // Get cart for subtotal/tax; discount and total are computed from backend coupon values only
                 let cartForCost: { cost?: { subtotalAmount?: { amount: string }; totalTaxAmount?: { amount: string }; totalAmount?: { amount: string; currencyCode: string } }; checkoutUrl?: string } | null = null;
@@ -1515,11 +1544,16 @@ export const useCartStore = create<CartState>()(
                 const normalizedCode = code.toUpperCase();
                 const updatedDiscountCodes = state.discountCodes.filter((dc) => dc.code.toUpperCase() !== normalizedCode);
                 const hasSchoolCoupon = updatedDiscountCodes.some(dc => dc.isSchoolCoupon);
-                set({
-                    discountCodes: updatedDiscountCodes,
-                    ...(normalizedCode === 'HEYKIDDO' ? { selectedShoe: null, selectedShoeSize: null } : {}),
-                    ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
-                });
+                {
+                    const s = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                    const p = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                    set({
+                        discountCodes: updatedDiscountCodes,
+                        ...(normalizedCode === s ? { selectedShoe: null, selectedShoeSize: null } : {}),
+                        ...(normalizedCode === p ? { selectedPuzzleId: null, selectedPuzzleAge: null } : {}),
+                        ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
+                    });
+                }
 
                 const cartId = await get().ensureCart();
                 // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
@@ -1575,9 +1609,13 @@ export const useCartStore = create<CartState>()(
 
             removeAllDiscountCodes: async () => {
                 const state = get();
-                set({ 
+                set({
                     discountCodes: [],
-                    schoolCouponData: null 
+                    schoolCouponData: null,
+                    selectedShoe: null,
+                    selectedShoeSize: null,
+                    selectedPuzzleId: null,
+                    selectedPuzzleAge: null,
                 });
 
                 const cartId = await get().ensureCart();
@@ -1882,6 +1920,12 @@ export const useCartStore = create<CartState>()(
             },
             setSelectedShoeSize: (size) => {
                 set({ selectedShoeSize: size });
+            },
+            setSelectedPuzzle: (puzzleId, age) => {
+                set({
+                    selectedPuzzleId: puzzleId,
+                    selectedPuzzleAge: puzzleId ? (age != null ? age : get().selectedPuzzleAge) : null,
+                });
             },
 
             // Ensure cart exists (create if needed)

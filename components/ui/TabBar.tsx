@@ -6,8 +6,7 @@ import ProfileActive from '@/assets/icons/profile-active-fill.svg';
 import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import {
-    LIVE_DELIVERY_DOWNSET_PX,
-    LiveDeliveryTabBanner,
+    LiveDeliveryTabBanner
 } from '@/components/ui/LiveDeliveryTabBanner';
 import { Colors, Fonts } from '@/constants/theme';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
@@ -105,16 +104,16 @@ export const TabBar = (props: BottomTabBarProps) => {
     const milestoneDockHeight = useMilestoneDockHeightSafe();
     /** Milestone strip only exists on Home (see `MilestoneTracker` on index screen). */
     const isHomeTab = activeTabName === 'index';
-    
-    /** 
-     * Lift live-delivery pill + View cart above the measured strip.
-     * We use a 12px gap instead of subtracting pixels to prevent overlap.
-     */
+    /** Collapsed milestone strip: height comes from `MilestoneCartRow` on Home. */
+    const isMilestoneCollapsed = milestoneDockHeight > 0 && milestoneDockHeight < 120;
     const milestoneStripReserveForStack =
-        isVisible && shouldShowTabBar && isHomeTab ? Math.max(milestoneDockHeight, 0) + 12 : 0;
-    
+        shouldShowTabBar && isHomeTab && isMilestoneCollapsed
+            ? Math.max(milestoneDockHeight, 0) + 12
+            : 0;
     const milestoneReserveForCart =
-        isVisible && shouldShowTabBar && isHomeTab ? milestoneStripReserveForStack + 4 : 0;
+        shouldShowTabBar && isHomeTab && isMilestoneCollapsed
+            ? milestoneStripReserveForStack + 4
+            : 0;
 
     useEffect(() => {
         Animated.spring(translateY, {
@@ -174,9 +173,7 @@ export const TabBar = (props: BottomTabBarProps) => {
             <FloatingCartButton
                 showTabBar={shouldShowTabBar}
                 tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
-                anchorExtraOffset={
-                    liveDeliveryStackExtra + milestoneReserveForCart
-                }
+                anchorExtraOffset={liveDeliveryStackExtra + milestoneReserveForCart}
             />
 
             {shouldShowTabBar && (

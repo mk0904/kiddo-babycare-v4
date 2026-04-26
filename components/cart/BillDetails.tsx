@@ -25,8 +25,22 @@ export interface BillDetailsProps {
     hasHeyKiddo?: boolean;
     /** Original price for HEYKIDDO row (shown struck when present) */
     heyKiddoOriginalPrice?: number;
+    /** Free puzzle (KIDPUZZLE) — milestone 2 */
+    hasKidPuzzle?: boolean;
+    kidPuzzleOriginalPrice?: number;
     /** Discount from other coupons (non-HEYKIDDO); show as "Coupon Discount" -₹X when > 0 */
     otherCouponDiscount?: number;
+    /** When set (milestone `isGift: true`), use instead of "Free Shoes" for that row */
+    milestoneFreeShoesLabel?: string;
+    /** When set (milestone `isGift: true`), use instead of "Free puzzle" for that row */
+    milestoneFreePuzzleLabel?: string;
+    /** Extra milestone discount (non-gift, `isGift: false` + %/fixed in config) — row label is always "Milestone discount" */
+    milestoneConfigDiscount?: number;
+    /**
+     * `isGift` on 1st/4th steps: when set (non-empty), show a "Milestone discount" row with "Unlocked".
+     * The string is for visibility only; the bill does not show the raw milestone title as the line title.
+     */
+    milestoneIsGiftBillDiscountTitle?: string;
     /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
     /** Gift wrapping applied (when set, show row with this price; may include productIds to detect "applied") */
@@ -55,7 +69,13 @@ export function BillDetails({
     couponDiscount,
     hasHeyKiddo = false,
     heyKiddoOriginalPrice,
+    hasKidPuzzle = false,
+    kidPuzzleOriginalPrice,
     otherCouponDiscount = 0,
+    milestoneFreeShoesLabel,
+    milestoneFreePuzzleLabel,
+    milestoneConfigDiscount = 0,
+    milestoneIsGiftBillDiscountTitle,
     giftWrappingFee,
     giftWrapping = null,
     kiddoCashEnabled,
@@ -141,13 +161,45 @@ export function BillDetails({
                     {/* Free Shoes (HEYKIDDO) – show original price struck + FREE Shoes */}
                     {hasHeyKiddo && (
                         <View style={styles.row}>
-                            <Text style={styles.label}>Free Shoes</Text>
+                            <Text style={styles.label}>
+                                {milestoneFreeShoesLabel?.trim() || 'Free Shoes'}
+                            </Text>
                             <View style={styles.valueRow}>
                                 {heyKiddoOriginalPrice != null && heyKiddoOriginalPrice > 0 && (
                                     <Text style={styles.valueStruck}>{formatCurrency(heyKiddoOriginalPrice)}</Text>
                                 )}
                                 <Text style={[styles.value, styles.freeShoesText]}>FREE SHOES</Text>
                             </View>
+                        </View>
+                    )}
+
+                    {hasKidPuzzle && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>
+                                {milestoneFreePuzzleLabel?.trim() || 'Free puzzle'}
+                            </Text>
+                            <View style={styles.valueRow}>
+                                {kidPuzzleOriginalPrice != null && kidPuzzleOriginalPrice > 0 && (
+                                    <Text style={styles.valueStruck}>{formatCurrency(kidPuzzleOriginalPrice)}</Text>
+                                )}
+                                <Text style={[styles.value, styles.freeShoesText]}>FREE PUZZLE</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {milestoneIsGiftBillDiscountTitle && milestoneIsGiftBillDiscountTitle.trim() !== '' && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Milestone discount</Text>
+                            <Text style={[styles.value, styles.freeShoesText]}>Unlocked</Text>
+                        </View>
+                    )}
+
+                    {milestoneConfigDiscount > 0 && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Milestone discount</Text>
+                            <Text style={[styles.value, styles.discountText]}>
+                                -{formatCurrency(milestoneConfigDiscount)}
+                            </Text>
                         </View>
                     )}
 

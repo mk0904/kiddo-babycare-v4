@@ -1821,7 +1821,9 @@ export default function OrderDetailV2Screen() {
                 {/* Bill details – subtotal = items before discount; discount = derived or from API; total = order total */}
                 {(() => {
                     const discountAmount = Math.max(0, subtotalDisplay + shipping + tax - total);
-                    const isHeyKiddo = couponCode?.toUpperCase() === 'HEYKIDDO';
+                    const isHeyKiddo =
+                        couponCode?.toUpperCase() ===
+                        appConfigService.getFreeShoesGiftDiscountCodeUppercase();
                     const displayDiscount = isHeyKiddo ? 0 : (couponValue > 0 ? couponValue : discountAmount);
                     return (
                         <View style={styles.billCard}>

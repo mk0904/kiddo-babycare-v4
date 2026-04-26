@@ -20,6 +20,48 @@ export interface FreeShoesPickerSizeOption {
   shoeIds?: string[];
 }
 
+export interface FreePuzzleItem {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
+export interface FreePuzzlePickerAge {
+  age: string;
+  isAvailable: boolean;
+  itemIds: string[];
+}
+
+export interface FreePuzzlePickerConfig {
+  enabled: boolean;
+  items: FreePuzzleItem[];
+  ages: FreePuzzlePickerAge[];
+  copy?: {
+    ageTitle?: string;
+    itemTitle?: string;
+  };
+}
+
+export interface FreePuzzleOfferConfig {
+  enabled: boolean;
+  /** Shopify / kiddo discount code for this free-puzzle line (used when milestone 2 is the active free-gift step). */
+  discountCode?: string;
+  visible?: boolean;
+  showWhen?: { cartMinValue?: number; cartHasAnyCategory?: string[] };
+  originalPrice?: number;
+  items?: FreePuzzleItem[];
+  copy?: {
+    title?: string;
+    subtitle?: string;
+    cta?: string;
+    selectedLabel?: string;
+    freeLabel?: string;
+    itemModalTitle?: string;
+    itemModalSubtitle?: string;
+    confirmLabel?: string;
+  };
+}
+
 export interface FreeShoesPickerConfig {
   enabled: boolean;
   shoes: FreeShoesOfferShoe[];
@@ -32,6 +74,8 @@ export interface FreeShoesPickerConfig {
 
 export interface FreeShoesOfferConfig {
   enabled: boolean;
+  /** Shopify / kiddo discount code for this free-shoes line (used when milestone 3 is the active free-gift step). */
+  discountCode?: string;
   /** When false, offer is hidden. When true or undefined, offer is shown (if enabled). Computed by backend from cart context (cartSubtotal, cartCategories). */
   visible?: boolean;
   originalPrice?: number;
@@ -86,6 +130,8 @@ export interface CartConfig {
     scheduledTitle?: string;
   };
   giftWrap?: GiftWrapConfig;
+  freePuzzleOffer?: FreePuzzleOfferConfig;
+  freePuzzlePicker?: FreePuzzlePickerConfig;
   freeShoesOffer?: FreeShoesOfferConfig;
   freeShoesPicker?: FreeShoesPickerConfig;
   savingsCorner?: { title?: string; applyCta?: string };
@@ -147,6 +193,15 @@ export interface MilestoneSlotConfig {
   header?: string;
   /** Supporting copy under the headline (preferred over `description`). */
   body?: string;
+  /** Unlock headline/sub-copy shown when cart crosses `minCartValue`. */
+  unlockedTitle?: string;
+  unlockedSubTitle?: string;
+  /** Minimum cart value needed to unlock this milestone (string/number from backend). */
+  minCartValue?: string | number;
+  /** Optional order label (e.g. `1ST ORDER`) from backend. */
+  orderNumber?: string;
+  /** Optional accent color from backend payload. */
+  color?: string;
   title?: string;
   description?: string;
   /** When true, this step is done; used with `currentStepIndex` to infer active step. */
@@ -167,6 +222,15 @@ export interface MilestoneSlotConfig {
   pendingHorLine?: string;
   pendingVerLine?: string;
   verActiveLine?: string;
+  /** When true, this step is a free-gift offer; use `header` / `title` for the free-item row in bill details. */
+  isGift?: boolean;
+  /**
+   * When `isGift` is not true, milestone-level discount (same rules as stackable coupons: % or fixed on item subtotal, optional cap).
+   * JSON may use snake_case: `discount_type`, `discount_value`, `max_discount`.
+   */
+  discount_type?: 'percentage' | 'fixed' | string;
+  discount_value?: string | number;
+  max_discount?: string | number;
 }
 
 export interface HotWheelConfig {
@@ -178,6 +242,10 @@ export interface HotWheelConfig {
 export interface MilestoneUIConfig {
   /** Expanded panel header (e.g. “On your next 4 orders”). */
   expandedTitle?: string;
+  /** Expanded panel subtitle. */
+  expandedSubTitle?: string;
+  /** Optional animation/video URL. */
+  animationUrl?: string;
   /** Optional server-driven progress; when set, overrides `isCompleted`-based step. */
   currentStepIndex?: number;
   /** Shared completed horizontal segment when a slot omits `completedHorLine`. */

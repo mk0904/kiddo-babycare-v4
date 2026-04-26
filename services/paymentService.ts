@@ -118,6 +118,10 @@ export interface OrderData {
     selectedShoe?: string;
     /** Free shoes offer: selected size (e.g. S1, S2) – sent to backend for Shopify */
     selectedShoeSize?: string;
+    /** Free puzzle (milestone 2) – product variant id */
+    selectedPuzzleId?: string;
+    /** Chosen age label (e.g. `2-3 Years`) */
+    selectedPuzzleAge?: string;
     /** When provided, backend should persist scheduled date/time on order; otherwise treat as instant. */
     deliverySchedule?: {
         date: string; // DD/MM/YYYY
@@ -186,6 +190,8 @@ function orderDataToCheckoutDraftRequest(
         billDetails: orderData.billDetails,
         selectedShoe: orderData.selectedShoe ?? '',
         selectedShoeSize: orderData.selectedShoeSize ?? '',
+        selectedPuzzleId: orderData.selectedPuzzleId ?? '',
+        selectedPuzzleAge: orderData.selectedPuzzleAge ?? '',
         schoolCouponData: orderData.schoolCouponData,
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
         appVersion: getAppVersionForApi(),

@@ -1,16 +1,36 @@
 import { Fonts } from '@/constants/theme';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { configService } from '@/services/configService';
+import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
+import { getHomeMilestoneRowLayout, MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+    CollapsedMilestoneIconProgressRing,
+    MILESTONE_EXPANDED_LIST_IMAGE,
+    MILESTONE_EXPANDED_LIST_OUTER,
+    MilestoneExpandedFormContent,
+} from './milestoneExpandedFormContent';
 import {
     buildMilestoneUIModel,
     milestoneCurrentStepFromConfig,
+    milestoneExpandedSubtitleFromConfig,
     milestoneExpandedTitleFromConfig,
-    resolveMilestoneConnectorUri,
     type ResolvedMilestoneSlot,
 } from './milestoneUIFromConfig';
+
+/** Home: shift expanded modal card slightly **down** (less bottom padding from layout anchor). */
+const HOME_MILESTONE_MODAL_NUDGE_DOWN = 55;
+/**
+ * Cart (`embedded`): extra **up** nudge from vertical center (negative = up). Base in `modalCenterWrap` is -36;
+ * this sum is the full offset.
+ */
+const CART_MILESTONE_MODAL_TRANSLATE_Y = -90;
 
 /** `dock`: above tab bar (rounded top). `embedded`: cart under savings (square top, rounded bottom into scroll). */
 export type MilestoneTrackerVariant = 'dock' | 'embedded';
@@ -23,28 +43,24 @@ export interface MilestoneTrackerProps {
     onExpandedChange?: (expanded: boolean) => void;
     /** `embedded` = bottom corners rounded for cart. Default `dock` = home strip with rounded top. */
     variant?: MilestoneTrackerVariant;
+    /**
+     * When set (Home `MilestoneCartRow` beside cart), remove extra bottom spacing and keep pill height
+     * in sync with `FloatingCartCta` for one visual row.
+     */
+    inlineInCartRow?: boolean;
 }
 
-/** Expanded: `milestoneLeft` column width. Collapsed: row height for 32×32 nodes + glow. */
-const MILESTONE_SLOT_WIDTH = 32;
-const VERTICAL_LINE_FRAME_WIDTH = 16;
-const OPEN_ROW_GAP = 32;
-const EXPANDED_NODE_FRAME = 32;
-const EXPANDED_NODE_BASE_SIZE = 20;
-const EXPANDED_NODE_HIGHLIGHT_SIZE = 48;
-const COLLAPSED_NODE_IMAGE = 20;
-const COLLAPSED_NODE_FRAME = 32;
-const COLLAPSED_NODE_BASE_SIZE = 20;
-const COLLAPSED_NODE_HIGHLIGHT_SIZE = 48;
-const COLLAPSED_ROW_MARGIN_TOP = 2;
-const COLLAPSED_TRACK_BOTTOM_PAD = 10;
-/** Horizontal gap between each icon edge and the line inside the flex bridge. */
-const COLLAPSED_SEGMENT_H_GAP = 8;
-/** Strip tall enough to preserve PNG gradients; centered on the 20px icon row. */
-const COLLAPSED_H_LINE_FRAME_HEIGHT = 16;
-const COLLAPSED_LINE_TOP_IN_BRIDGE = COLLAPSED_NODE_IMAGE / 2 - COLLAPSED_H_LINE_FRAME_HEIGHT / 2;
-const COLLAPSED_TRACK_HEIGHT =
-    COLLAPSED_ROW_MARGIN_TOP + COLLAPSED_NODE_IMAGE + COLLAPSED_TRACK_BOTTOM_PAD;
+/** Collapsed rail: same 44/32 as expanded `MilestoneExpandedFormContent` list. */
+
+function formatINR(amount: number): string {
+    try {
+        return new Intl.NumberFormat('en-IN', {
+            maximumFractionDigits: 0,
+        }).format(Math.max(0, Math.ceil(amount)));
+    } catch {
+        return String(Math.max(0, Math.ceil(amount)));
+    }
+}
 
 function milestoneIconUri(slot: ResolvedMilestoneSlot, index: number, currentStepIndex: number): string {
     const completed = index < currentStepIndex;
@@ -53,31 +69,26 @@ function milestoneIconUri(slot: ResolvedMilestoneSlot, index: number, currentSte
     return slot.inactiveIconUrl || slot.activeIconUrl;
 }
 
-function shouldUseHighlightedSize(
-    slots: ResolvedMilestoneSlot[],
-    index: number,
-    currentStepIndex: number
-): boolean {
-    const slot = slots[index];
-    if (!slot) return false;
-
-    const hasCompletionFlags = slots.some((item) => typeof item.isCompleted === 'boolean');
-    if (!hasCompletionFlags) {
-        return index === currentStepIndex;
-    }
-
-    if (slot.isCompleted !== false) return false;
-    const previous = slots[index - 1];
-    return index === 0 || previous?.isCompleted === true;
-}
-
 export function MilestoneTracker({
     milestoneUI = null,
     currentStepIndex: currentStepProp = 0,
     onExpandedChange,
     variant = 'dock',
+    inlineInCartRow = false,
 }: MilestoneTrackerProps) {
     const [expanded, setExpanded] = useState(false);
+    const onExpandedChangeRef = useRef(onExpandedChange);
+    onExpandedChangeRef.current = onExpandedChange;
+    const insets = useSafeAreaInsets();
+    const { isVisible: isTabBarVisible } = useTabBarVisibility();
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    /** Match Home `milestoneDock` + `index` so the sheet does not sit over the tab when it is shown. */
+    const tabBarStackBottom = useMemo(() => {
+        const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
+        return Math.max(insets.bottom, 0) + tabBarHeight;
+    }, [insets.bottom]);
+    /** Use subtotal (line items) for milestone thresholds — matches merchandising “min cart” rules better than order total. */
+    const cartSubtotal = useCartSubtotal();
 
     const milestoneModel = useMemo(
         () => buildMilestoneUIModel(milestoneUI ?? undefined),
@@ -88,6 +99,10 @@ export function MilestoneTracker({
         () => milestoneExpandedTitleFromConfig(milestoneUI ?? undefined),
         [milestoneUI]
     );
+    const expandedHeaderSubtitle = useMemo(
+        () => milestoneExpandedSubtitleFromConfig(milestoneUI ?? undefined),
+        [milestoneUI]
+    );
     const safeCurrent = useMemo(() => {
         const fromCfg = milestoneCurrentStepFromConfig(milestoneUI ?? undefined, currentStepProp);
         const n = slots.length;
@@ -95,331 +110,281 @@ export function MilestoneTracker({
     }, [milestoneUI, currentStepProp, slots.length]);
 
     const collapsedTitle = slots[safeCurrent]?.title ?? slots[0]?.title ?? '';
+    const collapsedActiveSlot = slots[safeCurrent] ?? slots[0] ?? null;
+    const accentColor =
+        collapsedActiveSlot?.color ||
+        collapsedActiveSlot?.titleColorActive ||
+        '#FF5CC8';
+    const collapsedActiveIconUri = collapsedActiveSlot
+        ? milestoneIconUri(collapsedActiveSlot, safeCurrent, safeCurrent)
+        : '';
+    const collapsedCopy = useMemo(() => {
+        if (!collapsedActiveSlot) {
+            return {
+                title: collapsedTitle,
+                subtitle: '',
+            };
+        }
+        const target = collapsedActiveSlot.minCartValue;
+        const validTarget = typeof target === 'number' && Number.isFinite(target) ? target : null;
+        if (validTarget == null || validTarget <= 0) {
+            return {
+                title: collapsedActiveSlot.unlockedTitle || collapsedActiveSlot.title || collapsedTitle,
+                subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
+            };
+        }
+
+        const remaining = validTarget - (Number(cartSubtotal) || 0);
+        if (remaining <= 0) {
+            return {
+                title: collapsedActiveSlot.unlockedTitle || collapsedActiveSlot.title || collapsedTitle,
+                subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
+            };
+        }
+
+        return {
+            title: `Spend \u20B9${formatINR(remaining)} for ${collapsedActiveSlot.title || collapsedTitle}`,
+            subtitle: collapsedActiveSlot.subtitle || collapsedActiveSlot.orderNumber || '',
+        };
+    }, [collapsedActiveSlot, collapsedTitle, cartSubtotal]);
+
+    const collapsedIconProgress01 = useMemo(() => {
+        if (!collapsedActiveSlot) return 0;
+        const minV = collapsedActiveSlot.minCartValue;
+        if (typeof minV !== 'number' || !Number.isFinite(minV) || minV <= 0) return 1;
+        const ct = Number(cartSubtotal) || 0;
+        return Math.min(1, Math.max(0, ct / minV));
+    }, [collapsedActiveSlot, cartSubtotal]);
 
     const toggle = useCallback(() => {
-        setExpanded((e) => {
-            const next = !e;
-            onExpandedChange?.(next);
-            return next;
-        });
-    }, [onExpandedChange]);
+        setExpanded((e) => !e);
+    }, []);
+
+    const hasMilestones = Boolean(milestoneModel && slots.length > 0);
+    useLayoutEffect(() => {
+        if (!hasMilestones) {
+            onExpandedChangeRef.current?.(false);
+            return;
+        }
+        onExpandedChangeRef.current?.(expanded);
+    }, [expanded, hasMilestones]);
 
     if (!milestoneModel || slots.length === 0) {
         return null;
     }
 
-    const n = slots.length;
-    const connector = (stepIndex: number, axis: 'horizontal' | 'vertical') =>
-        resolveMilestoneConnectorUri(milestoneModel, stepIndex, axis, safeCurrent);
+    /** Home strip: up / modal header down. Cart (`embedded`): reversed so the affordance matches placement. */
+    const collapsedChevron: 'chevron-up' | 'chevron-down' =
+        variant === 'embedded' ? 'chevron-down' : 'chevron-up';
+    const expandedHeaderChevron: 'chevron-up' | 'chevron-down' =
+        variant === 'embedded' ? 'chevron-up' : 'chevron-down';
 
-    const surfaceExpanded =
-        variant === 'embedded'
-            ? [styles.modalContainer, styles.surfaceEmbeddedExpanded]
-            : styles.modalContainer;
     const surfaceCollapsed =
-        variant === 'embedded' ? [styles.card, styles.surfaceEmbeddedCollapsed] : styles.card;
+        variant === 'embedded'
+            ? [styles.collapsedSurface, styles.surfaceEmbeddedCollapsed]
+            : styles.collapsedSurface;
 
-    if (expanded) {
-        return (
-            <View style={surfaceExpanded} accessibilityRole="summary">
-                <TouchableOpacity
-                    style={[styles.modalHeader, variant === 'embedded' && styles.modalHeaderEmbedded]}
-                    onPress={toggle}
-                    activeOpacity={0.85}
-                    accessibilityLabel="Collapse milestone rewards"
-                >
-                    <Text style={styles.modalTitle}>{expandedHeaderTitle}</Text>
-                    <View style={styles.modalHeaderChevronWrap} pointerEvents="none">
-                        <Ionicons
-                            name={variant === 'embedded' ? 'chevron-up' : 'chevron-down'}
-                            size={22}
-                            color="rgba(255,255,255,0.9)"
-                        />
-                    </View>
-                </TouchableOpacity>
+    const isDock = variant === 'dock';
+    const homeMilestoneLayout = isDock ? getHomeMilestoneRowLayout(windowWidth) : null;
+    const cardMaxWidth = isDock && homeMilestoneLayout
+        ? Math.min(homeMilestoneLayout.innerWidth, 420)
+        : Math.min(windowWidth - 40, 420);
+    /** Home: `MILESTONE_CART_ROW_PILL_HEIGHT` (64) — bottom of modal sits level with the strip in `MilestoneCartRow` / `getHomeMilestoneRowLayout`. */
+    const homeStripBottomOffset =
+        (isTabBarVisible ? tabBarStackBottom : Math.max(insets.bottom, 0) + 4) + MILESTONE_CART_ROW_PILL_HEIGHT;
+    const homeModalBottomPad = Math.max(0, homeStripBottomOffset - HOME_MILESTONE_MODAL_NUDGE_DOWN);
+    const modalScrollMaxHeight = isDock
+        ? Math.max(200, windowHeight - insets.top - 20 - homeModalBottomPad)
+        : Math.max(200, windowHeight * 0.86 - insets.top - insets.bottom);
 
-                {slots.map((slot, index) => {
-                    const isLast = index === n - 1;
-                    // Expanded list: horizontal connector assets between rows.
-                    const lineUri = connector(index, 'horizontal');
-                    const iconUri = milestoneIconUri(slot, index, safeCurrent);
-                    const isCurrent = index === safeCurrent;
-                    const useHighlightedSize = shouldUseHighlightedSize(slots, index, safeCurrent);
+    const collapsedContainerStyle = Array.isArray(surfaceCollapsed)
+        ? [...surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow]
+        : [surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow];
 
-                    return (
-                        <View key={`m-${index}`} style={[styles.milestoneRow, isLast && styles.milestoneRowLast]}>
-                            <View style={styles.milestoneLeft}>
-                                <View style={styles.iconClip}>
-                                    {iconUri ? (
-                                        <Image
-                                            source={{ uri: iconUri }}
-                                            style={[
-                                                styles.iconFill,
-                                                useHighlightedSize && styles.iconFillHighlighted,
-                                            ]}
-                                            contentFit="contain"
-                                        />
-                                    ) : null}
-                                </View>
-                                {!isLast && lineUri ? (
-                                    <Image
-                                        source={{ uri: lineUri }}
-                                        style={[styles.connectingLineImage, { height: OPEN_ROW_GAP + 8 }]}
-                                        contentFit="contain"
-                                        allowDownscaling={false}
-                                    />
-                                ) : null}
-                            </View>
-                            <View style={styles.milestoneContent}>
-                                <Text
-                                    style={[
-                                        styles.milestoneTitle,
-                                        slot.titleColorActive ? { color: slot.titleColorActive } : null,
-                                        { opacity: isCurrent || index < safeCurrent ? 1 : 0.6 },
-                                    ]}
-                                >
-                                    {slot.title}
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.milestoneDesc,
-                                        slot.subtitleColor ? { color: slot.subtitleColor } : null,
-                                    ]}
-                                >
-                                    {slot.subtitle}
-                                </Text>
-                            </View>
-                        </View>
-                    );
-                })}
-            </View>
-        );
-    }
-
-    const collapsedTrackEl = (
-        <View style={styles.collapsedTrack}>
-            <View style={styles.collapsedTrackerInner}>
-                <View style={styles.collapsedNodesAndSegmentsRow}>
-                    {slots.flatMap((slot, index) => {
-                        const iconUri = milestoneIconUri(slot, index, safeCurrent);
-                        const useHighlightedSize = shouldUseHighlightedSize(slots, index, safeCurrent);
-                        const node = (
-                            <View
-                                key={`nr-${index}`}
-                                style={styles.nodeSlot}
-                            >
-                                <View style={styles.nodeImageClip}>
-                                    {iconUri ? (
-                                        <Image
-                                            source={{ uri: iconUri }}
-                                            style={[
-                                                styles.nodeImageFill,
-                                                useHighlightedSize && styles.nodeImageFillHighlighted,
-                                            ]}
-                                            contentFit="contain"
-                                        />
-                                    ) : null}
-                                </View>
-                            </View>
-                        );
-                        if (index >= n - 1) {
-                            return [node];
-                        }
-                        const segIndex = index;
-                        // Collapsed strip: vertical connector assets between icons.
-                        const uri = connector(segIndex, 'vertical');
-                        const bridge = (
-                            <View key={`br-${segIndex}`} style={styles.collapsedSegmentBridge}>
-                                {uri ? (
-                                    <Image
-                                        source={{ uri }}
-                                        style={styles.collapsedBridgeGoldImg}
-                                        contentFit="contain"
-                                        allowDownscaling={false}
-                                    />
-                                ) : null}
-                            </View>
-                        );
-                        return [node, bridge];
-                    })}
-                </View>
-            </View>
-        </View>
-    );
+    const hasCollapsedSubtitle = Boolean((collapsedCopy.subtitle || '').trim());
 
     return (
-        <View style={surfaceCollapsed} accessibilityRole="summary">
-            {variant === 'embedded' ? (
+        <View style={styles.milestoneRoot}>
+            <View style={collapsedContainerStyle} accessibilityRole="summary">
                 <View style={styles.embeddedCollapsedRow}>
-                    <View style={styles.embeddedCollapsedMain}>
-                        <TouchableOpacity
-                            style={[styles.collapsedHeader, styles.collapsedHeaderEmbedded]}
-                            onPress={toggle}
-                            activeOpacity={0.85}
-                            accessibilityLabel="Expand milestone rewards"
-                        >
-                            <Text style={styles.collapsedTitle} numberOfLines={2}>
-                                {collapsedTitle}
-                            </Text>
-                        </TouchableOpacity>
-                        {collapsedTrackEl}
-                    </View>
                     <TouchableOpacity
-                        style={styles.embeddedChevronRail}
+                        style={[
+                            styles.collapsedPillPressable,
+                            inlineInCartRow && styles.collapsedPillPressableInCartRow,
+                        ]}
                         onPress={toggle}
-                        activeOpacity={0.85}
+                        activeOpacity={0.92}
                         accessibilityLabel="Expand milestone rewards"
-                        accessibilityRole="button"
                     >
-                        <Ionicons name="chevron-down" size={22} color="rgba(255,255,255,0.95)" />
+                        <BlurView
+                            intensity={100}
+                            tint="light"
+                            style={[
+                                styles.pillBlurContainer,
+                                { borderColor: accentColor },
+                                inlineInCartRow && styles.pillBlurContainerInCartRow,
+                            ]}
+                        >
+                            <View style={styles.collapsedPillContent} pointerEvents="box-none">
+                                {collapsedActiveIconUri ? (
+                                    <View
+                                        style={[
+                                            styles.collapsedActiveIconWrap,
+                                            styles.collapsedActiveIconWrapEmbedded,
+                                            { flexShrink: 0 },
+                                        ]}
+                                    >
+                                        <Image
+                                            source={{ uri: collapsedActiveIconUri }}
+                                            style={styles.collapsedMilestoneIconImage}
+                                            contentFit="contain"
+                                        />
+                                        <CollapsedMilestoneIconProgressRing
+                                            progress01={collapsedIconProgress01}
+                                            accentColor={accentColor}
+                                        />
+                                    </View>
+                                ) : null}
+                                <View style={styles.collapsedCopyWrap}>
+                                    <Text
+                                        numberOfLines={hasCollapsedSubtitle ? 1 : 2}
+                                        ellipsizeMode="tail"
+                                        style={[styles.collapsedTitle, styles.collapsedTitleEmbedded]}
+                                    >
+                                        {collapsedCopy.title}
+                                    </Text>
+                                    {hasCollapsedSubtitle ? (
+                                        <Text
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                            style={styles.collapsedSubtitleEmbedded}
+                                        >
+                                            {collapsedCopy.subtitle}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                                <View style={styles.collapsedChevronWrap} pointerEvents="none">
+                                    <Ionicons name={collapsedChevron} size={22} color="#7B7F86" />
+                                </View>
+                            </View>
+                        </BlurView>
                     </TouchableOpacity>
                 </View>
-            ) : (
-                <>
-                    <TouchableOpacity
-                        style={styles.collapsedHeader}
+            </View>
+
+            <Modal
+                visible={expanded}
+                transparent
+                animationType="fade"
+                onRequestClose={toggle}
+                statusBarTranslucent
+            >
+                <View style={styles.modalRoot}>
+                    <Pressable
+                        style={[
+                            isDock && isTabBarVisible
+                                ? {
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      bottom: tabBarStackBottom,
+                                  }
+                                : StyleSheet.absoluteFill,
+                            styles.modalBackdropScrim,
+                        ]}
                         onPress={toggle}
-                        activeOpacity={0.85}
-                        accessibilityLabel="Expand milestone rewards"
+                        accessibilityLabel="Close milestone rewards"
+                    />
+                    <View
+                        style={[
+                            isDock ? styles.modalHomeMilestoneRowWrap : styles.modalCenterWrap,
+                            {
+                                paddingTop: Math.max(insets.top, 16),
+                                paddingBottom: isDock
+                                    ? homeModalBottomPad
+                                    : Math.max(insets.bottom, 16),
+                            },
+                        ]}
+                        pointerEvents="box-none"
                     >
-                        <Text style={styles.collapsedTitle} numberOfLines={2}>
-                            {collapsedTitle}
-                        </Text>
-                        <Ionicons name="chevron-up" size={18} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    {collapsedTrackEl}
-                </>
-            )}
+                        <View
+                            style={[
+                                styles.modalContainerExpanded,
+                                { width: '100%', maxWidth: cardMaxWidth },
+                            ]}
+                            accessibilityRole="summary"
+                        >
+                            <MilestoneExpandedFormContent
+                                milestoneModel={milestoneModel}
+                                slots={slots}
+                                safeCurrent={safeCurrent}
+                                expandedHeaderTitle={expandedHeaderTitle}
+                                expandedHeaderSubtitle={expandedHeaderSubtitle}
+                                collapsedIconProgress01={collapsedIconProgress01}
+                                accentColor={accentColor}
+                                cartSubtotal={Number(cartSubtotal) || 0}
+                                onHeaderPress={toggle}
+                                headerAction="chevron"
+                                chevronName={expandedHeaderChevron}
+                                maxScrollHeight={modalScrollMaxHeight}
+                            />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        backgroundColor: 'rgba(16, 19, 35, 0.8)',
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 12,
-        overflow: 'hidden',
-        zIndex: 10,
+    milestoneRoot: {
+        width: '100%',
     },
-    surfaceEmbeddedExpanded: {
-        borderTopLeftRadius: 0,
-        borderTopRightRadius: 0,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
-        overflow: 'hidden',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: 24,
-    },
-    modalHeaderEmbedded: {
-        alignItems: 'flex-start',
-    },
-    modalHeaderChevronWrap: {
-        minWidth: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 2,
-    },
-    modalTitle: {
-        flex: 1,
-        fontSize: Fonts.LargeFontSize,
-        fontFamily: Fonts.LexendBold,
-        color: '#FFFFFF',
-        marginRight: 8,
-    },
-    milestoneRow: {
-        flexDirection: 'row',
-        paddingBottom: OPEN_ROW_GAP,
-        alignItems: 'flex-start',
-    },
-    milestoneRowLast: {
-        paddingBottom: 0,
-    },
-    milestoneLeft: {
-        width: MILESTONE_SLOT_WIDTH,
-        marginRight: 12,
-        alignItems: 'center',
-        position: 'relative',
-        zIndex: 1,
-    },
-    /** Expanded list: fixed box + cover; stacked above vertical connector line. */
-    iconClip: {
-        width: EXPANDED_NODE_FRAME,
-        height: EXPANDED_NODE_FRAME,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'visible',
-        zIndex: 20,
-        elevation: 8,
-    },
-    iconFill: {
-        width: EXPANDED_NODE_BASE_SIZE,
-        height: EXPANDED_NODE_BASE_SIZE,
-        opacity: 1,
-    },
-    iconFillHighlighted: {
-        width: EXPANDED_NODE_HIGHLIGHT_SIZE,
-        height: EXPANDED_NODE_HIGHLIGHT_SIZE,
-    },
-    /** Collapsed track: same footprint; clip sits above horizontal segment images. */
-    nodeImageClip: {
-        width: COLLAPSED_NODE_FRAME,
-        height: COLLAPSED_NODE_FRAME,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'visible',
-        zIndex: 22,
-    },
-    nodeImageFill: {
-        width: COLLAPSED_NODE_BASE_SIZE,
-        height: COLLAPSED_NODE_BASE_SIZE,
-        opacity: 1,
-    },
-    nodeImageFillHighlighted: {
-        width: COLLAPSED_NODE_HIGHLIGHT_SIZE,
-        height: COLLAPSED_NODE_HIGHLIGHT_SIZE,
-    },
-    connectingLineImage: {
-        width: VERTICAL_LINE_FRAME_WIDTH,
-        position: 'absolute',
-        top: 28,
-        left: (MILESTONE_SLOT_WIDTH - VERTICAL_LINE_FRAME_WIDTH) / 2,
-        zIndex: 2,
-        elevation: 0,
-    },
-    milestoneContent: {
+    modalRoot: {
         flex: 1,
     },
-    milestoneTitle: {
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendRegular,
-        marginBottom: 2,
-        color: '#FFFFFF',
+    modalBackdropScrim: {
+        backgroundColor: 'rgba(15, 15, 20, 0.5)',
     },
-    milestoneDesc: {
-        fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.LexendRegular,
-        color: '#FFFFFF99',
+    /**
+     * Home: bottom-align so the card base lines up with the 64pt milestone+home row
+     * (`MILESTONE_CART_ROW_PILL_HEIGHT` in `getHomeMilestoneRowLayout`); `paddingHorizontal: 12` = `sideInset`.
+     */
+    modalHomeMilestoneRowWrap: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        paddingHorizontal: 12,
     },
-    card: {
-        backgroundColor: 'rgba(16, 19, 35, 0.8)',
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        paddingHorizontal: 16,
-        paddingTop: 8,
+    /** Cart (`embedded`): centered. */
+    modalCenterWrap: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        transform: [{ translateY: CART_MILESTONE_MODAL_TRANSLATE_Y }],
+    },
+    /** Light expanded panel (Kiddo rewards). */
+    modalContainerExpanded: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        overflow: 'hidden',
+    },
+    collapsedSurface: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: 8,
+        paddingTop: 0,
         paddingBottom: 0,
-        zIndex: 10,
+        zIndex: 50,
+    },
+    /** Home row beside cart: use full column width, no side padding. */
+    collapsedSurfaceInCartRow: {
+        paddingHorizontal: 0,
+        marginBottom: 8,
     },
     /** Cart: flush under savings (square top); rounded bottom into cream scroll area. */
     surfaceEmbeddedCollapsed: {
@@ -429,83 +394,88 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 16,
         overflow: 'hidden',
     },
-    collapsedHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    collapsedPillPressable: {
+        width: '100%',
+        minHeight: 52,
+        zIndex: 1,
+        marginBottom: 12,
         alignItems: 'center',
-        marginBottom: 8,
+        justifyContent: 'center',
     },
-    collapsedHeaderEmbedded: {
-        marginBottom: 4,
+    collapsedPillPressableInCartRow: {
+        marginBottom: 0,
+        minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
+    },
+    pillBlurContainer: {
+        width: '100%',
+        height: 64,
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderStyle: 'solid',
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.7)',
+    },
+    pillBlurContainerInCartRow: {
+        height: MILESTONE_CART_ROW_PILL_HEIGHT,
+    },
+    collapsedPillContent: {
+        flex: 1,
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        padding: 8,
+    },
+    collapsedChevronWrap: {
+        flexShrink: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     embeddedCollapsedRow: {
-        flexDirection: 'row',
-        alignItems: 'stretch',
+        width: '100%',
     },
-    embeddedCollapsedMain: {
+    collapsedTitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: '#000000',
+    },
+    collapsedCopyWrap: {
         flex: 1,
         minWidth: 0,
     },
-    embeddedChevronRail: {
-        width: 24,
+    collapsedActiveIconWrap: {
+        width: MILESTONE_EXPANDED_LIST_OUTER,
+        height: MILESTONE_EXPANDED_LIST_OUTER,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 4,
-        marginTop: 2,
     },
-    collapsedTitle: {
-        flex: 1,
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendBold,
-        color: '#FFFFFF',
-    },
-    collapsedTrack: {
-        height: COLLAPSED_TRACK_HEIGHT,
+    collapsedActiveIconWrapEmbedded: {
+        width: MILESTONE_EXPANDED_LIST_OUTER,
+        height: MILESTONE_EXPANDED_LIST_OUTER,
+        borderRadius: 24,
         position: 'relative',
-        zIndex: 0,
-        elevation: 12,
+        backgroundColor: '#FFFFFF',
     },
-    /** Reference `.tracker`: padding `0 10px`; line + nodes share this box (HTML `::before` is inside it). */
-    collapsedTrackerInner: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        position: 'relative',
-    },
-    /** `[icon][flex-bridge][icon]…` — lines live only in bridges with horizontal + vertical gap from icons (ss). */
-    collapsedNodesAndSegmentsRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: COLLAPSED_ROW_MARGIN_TOP,
-        width: '100%',
-    },
-    collapsedSegmentBridge: {
-        flex: 1,
-        minWidth: COLLAPSED_SEGMENT_H_GAP * 2,
-        height: COLLAPSED_NODE_IMAGE,
-        alignSelf: 'center',
-        position: 'relative',
+    /** Same inner size as expanded Kiddo rewards list (`MILESTONE_EXPANDED_LIST_IMAGE`). */
+    collapsedMilestoneIconImage: {
+        width: MILESTONE_EXPANDED_LIST_IMAGE,
+        height: MILESTONE_EXPANDED_LIST_IMAGE,
         zIndex: 1,
-        overflow: 'visible',
-        backgroundColor: 'none',
     },
-    /** PNG gradient is in the asset — use `cover` + enough height; z-index below icons (20) but above row. */
-    collapsedBridgeGoldImg: {
-        position: 'absolute',
-        left: COLLAPSED_SEGMENT_H_GAP,
-        right: COLLAPSED_SEGMENT_H_GAP,
-        top: COLLAPSED_LINE_TOP_IN_BRIDGE,
-        height: COLLAPSED_H_LINE_FRAME_HEIGHT,
-        zIndex: 8,
-        elevation: 4,
-        opacity: 1,
+    collapsedTitleEmbedded: {
+        color: '#111111',
+        fontSize: 15,
+        lineHeight: 20,
     },
-    nodeSlot: {
-        width: COLLAPSED_NODE_IMAGE,
-        height: COLLAPSED_NODE_IMAGE,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'visible',
-        zIndex: 20,
-        elevation: 10,
+    /** Muted line under title when `unlockedSubtitle` / earned copy is set (light pill). */
+    collapsedSubtitleEmbedded: {
+        marginTop: 2,
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendRegular,
+        color: '#6B6B6B',
+        lineHeight: 16,
     },
 });
+
+export default MilestoneTracker;

@@ -34,6 +34,8 @@ export interface SavingsCornerProps {
     formatCurrency: (amount: number) => string;
     onLoginPress: () => void;
     onKiddoCashChange: (value: boolean) => void;
+    /** Bumps when remote app config reloads so free-shoe discount code (from config) re-resolves. */
+    configRefreshKey?: number;
 }
 
 export function SavingsCorner({
@@ -45,6 +47,7 @@ export function SavingsCorner({
     formatCurrency,
     onLoginPress,
     onKiddoCashChange,
+    configRefreshKey = 0,
 }: SavingsCornerProps) {
     const { user } = useAuth();
     const cartItems = useCartItems();
@@ -291,16 +294,20 @@ export function SavingsCorner({
         setLastApplyError(null);
     };
 
-    const isHeyKiddoApplied = (appliedDiscountCode ?? '').toUpperCase() === 'HEYKIDDO';
+    const freeShoesGiftCodeUc = useMemo(
+        () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const isHeyKiddoApplied = (appliedDiscountCode ?? '').toUpperCase() === freeShoesGiftCodeUc;
     const heyKiddoOriginalPrice = useMemo(() => {
         if (!isHeyKiddoApplied) return undefined;
-        const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
+        const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === freeShoesGiftCodeUc)?.originalPrice;
         if (fromCode != null && Number.isFinite(fromCode)) return fromCode;
         const config = appConfigService.getCartConfig()?.freeShoesOffer ?? appConfigService.getFreeShoesOfferConfig();
         const raw = (config as any)?.originalPrice ?? (config as any)?.original_price;
         const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         return Number.isFinite(num) && num >= 0 ? num : undefined;
-    }, [isHeyKiddoApplied, discountCodes]);
+    }, [isHeyKiddoApplied, discountCodes, freeShoesGiftCodeUc]);
     const appliedSaveAmount = isHeyKiddoApplied && heyKiddoOriginalPrice != null ? heyKiddoOriginalPrice : discountAmount;
     const appliedHeadline = hasAppliedCoupon
         ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''}`

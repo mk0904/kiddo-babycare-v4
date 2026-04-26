@@ -59,6 +59,11 @@ function currentStepFromIsCompleted(ui: MilestoneUIConfig): number | null {
 export interface ResolvedMilestoneSlot {
     title: string;
     subtitle: string;
+    unlockedTitle: string;
+    unlockedSubtitle: string;
+    minCartValue: number | null;
+    orderNumber: string;
+    color: string;
     activeIconUrl: string;
     inactiveIconUrl: string;
     isCompleted?: boolean;
@@ -135,8 +140,19 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
             '';
 
         return {
+            minCartValue:
+                raw?.minCartValue == null || String(raw.minCartValue).trim() === ''
+                    ? null
+                    : (() => {
+                        const parsed = Number.parseFloat(String(raw.minCartValue));
+                        return Number.isFinite(parsed) ? parsed : null;
+                    })(),
             title: trimCopy(raw?.header) || trimCopy(raw?.title),
             subtitle: trimCopy(raw?.body) || trimCopy(raw?.description),
+            unlockedTitle: trimCopy(raw?.unlockedTitle),
+            unlockedSubtitle: trimCopy(raw?.unlockedSubTitle),
+            orderNumber: trimCopy(raw?.orderNumber),
+            color: trimUrl(raw?.color),
             activeIconUrl,
             inactiveIconUrl,
             isCompleted: raw?.isCompleted,
@@ -159,6 +175,11 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
 export function milestoneExpandedTitleFromConfig(ui: MilestoneUIConfig | null | undefined): string {
     if (ui == null) return '';
     return trimUrl(ui.expandedTitle);
+}
+
+export function milestoneExpandedSubtitleFromConfig(ui: MilestoneUIConfig | null | undefined): string {
+    if (ui == null) return '';
+    return trimCopy(ui.expandedSubTitle);
 }
 
 export function milestoneCurrentStepFromConfig(
