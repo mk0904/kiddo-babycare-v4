@@ -197,7 +197,7 @@ export function FreePairShoes({
     return (
         <View style={styles.container}>
             {/* Offer header with padlock */}
-            <View style={styles.offerHeader}>
+            {/* <View style={styles.offerHeader}>
                 <View style={styles.padlockWrap}>
                     <Image source={require('@/assets/icons/unlock.png')} style={styles.padlockIcon} contentFit="contain" />
                 </View>
@@ -207,7 +207,7 @@ export function FreePairShoes({
                         {offerCopy?.subtitle ?? 'FREE Shoes on 1st apparel order worth ₹500'}
                     </Text>
                 </View>
-            </View>
+            </View> */}
 
             {/* Nested product card */}
             <View style={styles.productCard}>
@@ -245,7 +245,7 @@ export function FreePairShoes({
                                 activeOpacity={0.8}
                                 accessibilityLabel="Remove offer"
                             >
-                                <Text style={[styles.appliedButtonText, { color: Colors.primary }]}>Remove</Text>
+                                 <Ionicons name="checkmark" size={22} color="#F15E5E" />
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     },
     productCard: {
         flexDirection: 'row',
-        backgroundColor: '#EFF8FF',
+        backgroundColor: '#FEEFEF',
         borderRadius: 12,
         padding: 12,
         alignItems: 'center',
@@ -431,11 +431,10 @@ const styles = StyleSheet.create({
         marginLeft: 12,
     },
     productName: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#181D27',
         marginBottom: 6,
-        lineHeight: 18,
     },
     productSubtext: {
         fontSize: 14,
@@ -493,10 +492,10 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     appliedButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
+        backgroundColor: '#f7a5a5',
+        borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingHorizontal: 14,
+        paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 12,
         alignItems: 'center',

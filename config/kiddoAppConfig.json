@@ -5830,7 +5830,7 @@
   },
   "freeShoesOffer": {
     "enabled": true,
-    "discountCode": "Free Shoes",
+    "discountCode": "3rd order reward - Free Shoes",
     "shoes": [
       {
         "id": "shoe-1",

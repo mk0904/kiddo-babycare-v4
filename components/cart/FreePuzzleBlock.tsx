@@ -174,7 +174,7 @@ export function FreePuzzleBlock({
 
     return (
         <View style={styles.container}>
-            <View style={styles.offerHeader}>
+            {/* <View style={styles.offerHeader}>
                 <View style={styles.padlockWrap}>
                     <Image source={require('@/assets/icons/unlock.png')} style={styles.padlockIcon} contentFit="contain" />
                 </View>
@@ -184,7 +184,7 @@ export function FreePuzzleBlock({
                         {offerCopy?.subtitle ?? 'Choose a free puzzle for your order.'}
                     </Text>
                 </View>
-            </View>
+            </View> */}
 
             <View style={styles.productCard}>
                 <Image
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     },
     itemImage: { width: 72, height: 72, borderRadius: 8, backgroundColor: '#F0F0F0' },
     productInfo: { flex: 1, marginLeft: 12 },
-    productName: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendMedium, color: '#181D27', marginBottom: 6, lineHeight: 18 },
+    productName: { fontSize: Fonts.ExtraSmallFontSize, fontFamily: Fonts.LexendMedium, color: '#181D27', marginBottom: 6, lineHeight: 18 },
     metaText: { fontSize: 10, fontFamily: Fonts.LexendRegular, color: '#717680' },
     editRemoveRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
     editLink: { fontSize: 10, fontFamily: Fonts.LexendBold, color: '#EAAA08' },
@@ -386,17 +386,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#FEF7C3',
         paddingHorizontal: 20,
         paddingVertical: 10,
-        borderRadius: 8,
+        borderRadius: 12,
         marginBottom: 6,
         borderWidth: 1,
+        borderColor: '#EAAA08',
+    },
+    addButtonText: { fontFamily: Fonts.SemiBold, color: '#EAAA08' },
+    addButtonDisabled: {
+        backgroundColor: '#FEF7C3',
         borderColor: '#FDE272',
     },
-    addButtonText: { fontFamily: Fonts.SemiBold, color: '#FDE272' },
-    addButtonDisabled: {
-        backgroundColor: '#D1D5DB',
-        borderColor: '#D1D5DB',
-    },
-    addButtonTextDisabled: { color: '#6B7280' },
+    addButtonTextDisabled: { color: '#FDE272' },
     selectedStateWrap: { alignItems: 'flex-end' },
     appliedButton: {
         minWidth: 48,

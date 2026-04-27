@@ -21,7 +21,7 @@ const OPEN_ROW_GAP = 32;
 /** Outer box for every step in the expanded list (matches progress ring / collapsed strip). */
 export const MILESTONE_EXPANDED_LIST_OUTER = 44;
 /** Inner glyph — identical for all milestones in expanded list + collapsed rail. */
-export const MILESTONE_EXPANDED_LIST_IMAGE = 24;
+export const MILESTONE_EXPANDED_LIST_IMAGE = 20;
 const EXPANDED_LIST_OUTER = MILESTONE_EXPANDED_LIST_OUTER;
 const EXPANDED_LIST_IMAGE = MILESTONE_EXPANDED_LIST_IMAGE;
 const COLLAPSED_ICON_RING_SIZE = 44;

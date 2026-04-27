@@ -17,10 +17,10 @@ import {
 } from './milestoneUIFromConfig';
 
 const WELCOME_SHOW_DELAY_MS = 0;
-const WELCOME_MODAL_IN_MS = 1000;
-const WELCOME_MODAL_OUT_MS = 1000;
+const WELCOME_MODAL_IN_MS = 0;
+const WELCOME_MODAL_OUT_MS = 0;
 /** Card snaps up from below (aligned with quick bottom-anchored motion on Home). */
-const WELCOME_SLIDE_PX = 36;
+const WELCOME_SLIDE_PX = 0;
 
 const KIDDO_REWARDS_WELCOME_DISMISSED_KEY = 'kiddo_rewards_welcome_modal_dismissed';
 

@@ -23,6 +23,7 @@ import {
     getDeliveryEtaForAddress,
 } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
@@ -57,7 +58,6 @@ import {
     variantIdsEqual,
 } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -128,7 +128,7 @@ export default function CartScreen() {
         const payload: AppConfigPayload = {
             phone: user?.phone ?? undefined,
             customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
-            appVersion: Constants.expoConfig?.version ?? undefined,
+            appVersion: getAppVersionForApi(),
             deviceType: Platform.OS,
         };
         appConfigService.loadAppConfig(true, payload).then(() => {
@@ -388,7 +388,7 @@ export default function CartScreen() {
             const payload: AppConfigPayload = {
                 phone: user?.phone ?? undefined,
                 customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
-                appVersion: Constants.expoConfig?.version ?? undefined,
+                appVersion: getAppVersionForApi(),
                 deviceType: Platform.OS,
                 cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
                 cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
@@ -402,7 +402,7 @@ export default function CartScreen() {
         const payload: AppConfigPayload = {
             phone: user?.phone ?? undefined,
             customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
-            appVersion: Constants.expoConfig?.version ?? undefined,
+            appVersion: getAppVersionForApi(),
             deviceType: Platform.OS,
             cartSubtotal: itemSubtotalForOffers > 0 ? itemSubtotalForOffers : undefined,
             cartCategories: cartCategoryTags.length > 0 ? cartCategoryTags.join(',') : undefined,
@@ -449,12 +449,24 @@ export default function CartScreen() {
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
         [appConfigRefresh]
     );
+    const freeShoesGiftCodeDisplay = useMemo(
+        () => appConfigService.getFreeShoesGiftDiscountCode(),
+        [appConfigRefresh]
+    );
     const freePuzzleGiftCodeUc = useMemo(
         () => appConfigService.getFreePuzzleGiftDiscountCodeUppercase(),
         [appConfigRefresh]
     );
+    const freePuzzleGiftCodeDisplay = useMemo(
+        () => appConfigService.getFreePuzzleGiftDiscountCode(),
+        [appConfigRefresh]
+    );
     const freeMysteryGiftCodeUc = useMemo(
         () => appConfigService.getMysteryGiftDiscountCodeUppercase(),
+        [appConfigRefresh]
+    );
+    const freeMysteryGiftCodeDisplay = useMemo(
+        () => appConfigService.getMysteryGiftDiscountCode(),
         [appConfigRefresh]
     );
     const milestoneShouldOverrideStackedCoupons = useMemo(
@@ -1906,18 +1918,6 @@ export default function CartScreen() {
                             />
                         </View>
 
-                        {/* Delivery Information Card - when at least one non-ticketing product in cart */}
-                        {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
-                            <DeliveryCard
-                                deliverySchedule={deliverySchedule}
-                                onSchedulePress={() => setShowScheduleModal(true)}
-                                estimatedDeliveryMinutes={
-                                    estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
-                                }
-                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
-                            />
-                        )}
-
                         {/* Free puzzle (milestone 2) or free shoes (milestone 3) — backend visibility + app milestone gate */}
                         {hasNonTicketingProducts && showPuzzleMilestoneUIF && (
                             <FreePuzzleBlock
@@ -1982,6 +1982,19 @@ export default function CartScreen() {
                                     await removeDiscountCode(freeShoesGiftCodeUc);
                                 }}
                                 appliedCouponOriginalPrice={freeShoesGiftOriginalPrice}
+                            />
+                        )}
+
+
+                         {/* Delivery Information Card - when at least one non-ticketing product in cart */}
+                         {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
+                            <DeliveryCard
+                                deliverySchedule={deliverySchedule}
+                                onSchedulePress={() => setShowScheduleModal(true)}
+                                estimatedDeliveryMinutes={
+                                    estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
+                                }
+                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
                             />
                         )}
 
@@ -2053,14 +2066,17 @@ export default function CartScreen() {
                             couponDiscount={discountAmount}
                             hasFreeShoesGift={hasFreeShoesGiftApplied}
                             freeShoesGiftOriginalPrice={freeShoesGiftOriginalPrice}
+                            freeShoesCouponCode={freeShoesGiftCodeDisplay}
                             freeShoesTitle={freeShoesBillFromCoupon.title}
                             freeShoesDescription={freeShoesBillFromCoupon.description}
                             hasKidPuzzle={hasKidPuzzleApplied}
                             kidPuzzleOriginalPrice={kidPuzzleOriginalPrice}
+                            freePuzzleCouponCode={freePuzzleGiftCodeDisplay}
                             freePuzzleTitle={freePuzzleBillFromCoupon.title}
                             freePuzzleDescription={freePuzzleBillFromCoupon.description}
                             hasMysteryGift={hasMysteryGiftApplied}
                             mysteryGiftOriginalPrice={mysteryGiftOriginalPrice}
+                            mysteryGiftCouponCode={freeMysteryGiftCodeDisplay}
                             mysteryGiftTitle={mysteryBillFromCoupon.title}
                             mysteryGiftDescription={mysteryBillFromCoupon.description}
                             milestoneMysteryGiftLabel={milestoneGiftBillTitle || undefined}
@@ -2257,20 +2273,20 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5', 
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#F5F5F5',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5',
     },
     backButton: {
         padding: 4,
@@ -2326,7 +2342,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     savingsBanner: {
-        backgroundColor: '#3CCB7F',
+        backgroundColor: '#cef4da',
         marginTop: 0,
 
         paddingVertical: 8,
@@ -2336,7 +2352,7 @@ const styles = StyleSheet.create({
     savingsBannerText: {
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendBold,
-        color: '#EDFCF2',
+        color: '#118a45',
     },
     cartBodyColumn: {
         flex: 1,
@@ -2349,13 +2365,13 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#F5F5F5',
     },
     scrollContent: {
         paddingHorizontal: 16,
         paddingTop: 20,
         paddingBottom: 100,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#F5F5F5',
     },
     tryAndBuySection: {
         backgroundColor: Colors.backgroundSecondary || '#F5F9FA',

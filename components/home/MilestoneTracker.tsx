@@ -49,16 +49,16 @@ const HOME_MILESTONE_MODAL_NUDGE_DOWN = 55;
  * Cart (`embedded`): extra **up** nudge from vertical center (negative = up). Base in `modalCenterWrap` is -36;
  * this sum is the full offset.
  */
-const CART_MILESTONE_MODAL_TRANSLATE_Y = -90;
+const CART_MILESTONE_MODAL_TRANSLATE_Y = -40;
 
 /** `dock`: above tab bar (rounded top). `embedded`: cart under savings (square top, rounded bottom into scroll). */
 export type MilestoneTrackerVariant = 'dock' | 'embedded';
 
 /** How far the sheet slides in from the collapsed strip: home = up from below; cart = down from the pill row. */
-const MILESTONE_MODAL_IN_MS = 205;
-const MILESTONE_MODAL_OUT_MS = 175;
+const MILESTONE_MODAL_IN_MS = 0;
+const MILESTONE_MODAL_OUT_MS = 0;
 const DOCK_MODAL_SLIDE_PX = 32;
-const EMBEDDED_MODAL_SLIDE_PX = 26;
+const EMBEDDED_MODAL_SLIDE_PX = 0;
 
 export interface MilestoneTrackerProps {
     /** Backend `milestoneUI` from GET /api/v1/app/config. When null/omitted, the strip is not rendered. */
@@ -234,7 +234,7 @@ export function MilestoneTracker({
         }
 
         return {
-            title: `Spend \u20B9${formatINR(remaining)} for ${collapsedActiveSlot.title || collapsedTitle}`,
+            title: `Shop for \u20B9${formatINR(remaining)} to get ${collapsedActiveSlot.title || collapsedTitle}`,
             // subtitle: collapsedActiveSlot.subtitle || collapsedActiveSlot.orderNumber || '',
         };
     }, [collapsedActiveSlot, collapsedTitle, cartSubtotal]);
@@ -490,7 +490,15 @@ export function MilestoneTracker({
                                     >
                                         <Image
                                             source={{ uri: collapsedActiveIconUri }}
-                                            style={styles.collapsedMilestoneIconImage}
+                                            style={[
+                                                styles.collapsedMilestoneIconImage,
+                                                {
+                                                    shadowColor: accentColor,
+                                                    shadowOpacity: 0.28,
+                                                    shadowRadius: 16,
+                                                    shadowOffset: { width: 2, height: 4 },
+                                                },
+                                            ]}
                                             contentFit="contain"
                                         />
                                         <CollapsedMilestoneIconProgressRing
@@ -691,7 +699,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         overflow: 'hidden',
         borderStyle: 'solid',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.7)',
     },
     pillBlurContainerInCartRow: {

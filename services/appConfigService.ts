@@ -6,18 +6,18 @@
  * (e.g. https://kiddo-service-874125225773.asia-south1.run.app/api/v1/app/config?phone=%2B917607235050&customerId=12345&appVersion=1.0.0&deviceType=ios)
  */
 import type {
-    AppConfigResponse,
-    CartConfig,
-    CartFeatures,
-    EntryScreenItem,
-    FreePuzzleOfferConfig,
-    FreePuzzlePickerConfig,
-    FreeShoesOfferConfig,
-    FreeShoesPickerConfig,
-    GiftWrapConfig,
-    MilestoneUIConfig,
-    MysteryGiftOfferConfig,
-    OrderDetailConfig,
+  AppConfigResponse,
+  CartConfig,
+  CartFeatures,
+  EntryScreenItem,
+  FreePuzzleOfferConfig,
+  FreePuzzlePickerConfig,
+  FreeShoesOfferConfig,
+  FreeShoesPickerConfig,
+  GiftWrapConfig,
+  MilestoneUIConfig,
+  MysteryGiftOfferConfig,
+  OrderDetailConfig,
 } from '@/types/appConfig';
 import { getBackendApiPath } from './backendBase';
 
@@ -108,6 +108,7 @@ class AppConfigService {
         this.config = data;
         this.emitConfigListeners();
         if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
+        console.log('[AppConfigService] Loaded app config from backend:', data);
         return data;
       } catch (e) {
         if (__DEV__) console.warn('[AppConfigService] Failed to load app config:', e);
@@ -179,39 +180,49 @@ class AppConfigService {
   }
 
   /**
-   * 1st/4th `isGift` gift-bill code — from `cart.mysteryGiftOffer.discountCode` when set; otherwise a default matching common Shopify copy.
+   * 4th milestone gift code (display/original casing) — from config when set; otherwise fallback.
    */
-  getMysteryGiftDiscountCodeUppercase(): string {
+  getMysteryGiftDiscountCode(): string {
     const c = this.config?.cart?.mysteryGiftOffer?.discountCode;
     if (c != null && String(c).trim() !== '') {
-      return String(c).trim().toUpperCase();
+      return String(c).trim();
     }
-    /** Falls back to API/Shopify casing when `mysteryGiftOffer.discountCode` is not in app config. */
-    return 'MYSTERY GIFT';
+    return '4th order reward - Mystery gift';
+  }
+
+  getMysteryGiftDiscountCodeUppercase(): string {
+    return this.getMysteryGiftDiscountCode().toUpperCase();
   }
 
   /**
-   * Which discount code applies to the free-shoes gift — from `cart.freeShoesOffer.discountCode` when set; otherwise `FREE SHOES` (Shopify “Free Shoes”).
+   * 3rd milestone free-shoes code (display/original casing) — from config when set; otherwise fallback.
    * The cart only applies this when the active free-gift step is shoes (`getMilestoneFreeGiftKind` in the cart screen).
    */
-  getFreeShoesGiftDiscountCodeUppercase(): string {
+  getFreeShoesGiftDiscountCode(): string {
     const c = this.config?.cart?.freeShoesOffer?.discountCode;
     if (c != null && String(c).trim() !== '') {
-      return String(c).trim().toUpperCase();
+      return String(c).trim();
     }
-    return 'FREE SHOES';
+    return '3rd order reward - Free Shoes';
+  }
+
+  getFreeShoesGiftDiscountCodeUppercase(): string {
+    return this.getFreeShoesGiftDiscountCode().toUpperCase();
   }
 
   /**
-   * Which discount code applies to the free-puzzle gift — from `cart.freePuzzleOffer.discountCode` when set; otherwise a legacy default.
+   * 2nd milestone free-puzzle code (display/original casing) — from config when set; otherwise fallback.
    */
-  getFreePuzzleGiftDiscountCodeUppercase(): string {
+  getFreePuzzleGiftDiscountCode(): string {
     const c = this.config?.cart?.freePuzzleOffer?.discountCode;
     if (c != null && String(c).trim() !== '') {
-      return String(c).trim().toUpperCase();
+      return String(c).trim();
     }
-    // Backend coupon payload uses code "Free puzzle" in current setup.
-    return 'FREE PUZZLE';
+    return '2nd order reward - Free puzzle';
+  }
+
+  getFreePuzzleGiftDiscountCodeUppercase(): string {
+    return this.getFreePuzzleGiftDiscountCode().toUpperCase();
   }
 
   getGiftWrapConfig(): GiftWrapConfig | null {

@@ -28,12 +28,16 @@ export interface BillDetailsProps {
     /** From coupons API for the shoes gift code (e.g. `title` / `description` on "Free Shoes") */
     freeShoesTitle?: string;
     freeShoesDescription?: string;
+    /** Exact coupon code text to show for the shoes milestone row. */
+    freeShoesCouponCode?: string;
     /** Free puzzle (KIDPUZZLE) — milestone 2 */
     hasKidPuzzle?: boolean;
     kidPuzzleOriginalPrice?: number;
     /** From coupons API for the puzzle gift code (e.g. `title` / `description` on "Free puzzle") */
     freePuzzleTitle?: string;
     freePuzzleDescription?: string;
+    /** Exact coupon code text to show for the puzzle milestone row. */
+    freePuzzleCouponCode?: string;
     /** 1st/4th `isGift` — mystery gift code applied (hidden coupon); show like free puzzle */
     hasMysteryGift?: boolean;
     mysteryGiftOriginalPrice?: number;
@@ -41,6 +45,8 @@ export interface BillDetailsProps {
     mysteryGiftTitle?: string;
     /** From coupons API `description` (e.g. "Mystery gift above ₹999") */
     mysteryGiftDescription?: string;
+    /** Exact coupon code text to show for the mystery-gift milestone row. */
+    mysteryGiftCouponCode?: string;
     /** When API title is absent — milestone slot copy */
     milestoneMysteryGiftLabel?: string;
     /** Discount from other coupons (excludes free-shoes / puzzle / mystery gift codes); show as "Coupon Discount" -₹X when > 0 */
@@ -88,14 +94,17 @@ export function BillDetails({
     freeShoesGiftOriginalPrice,
     freeShoesTitle,
     freeShoesDescription,
+    freeShoesCouponCode,
     hasKidPuzzle = false,
     kidPuzzleOriginalPrice,
     freePuzzleTitle,
     freePuzzleDescription,
+    freePuzzleCouponCode,
     hasMysteryGift = false,
     mysteryGiftOriginalPrice,
     mysteryGiftTitle,
     mysteryGiftDescription,
+    mysteryGiftCouponCode,
     milestoneMysteryGiftLabel,
     otherCouponDiscount = 0,
     milestoneFreeShoesLabel,
@@ -115,6 +124,39 @@ export function BillDetails({
     const [expanded, setExpanded] = useState(true);
     const screenWidth = Dimensions.get('window').width;
     const waveWidth = screenWidth - 32;
+
+    const splitMilestoneCouponCode = (
+        code: string | undefined,
+        fallbackLeft: string,
+        fallbackRight: string
+    ): { left: string; right: string } => {
+        const raw = (code ?? '').trim();
+        if (!raw) return { left: fallbackLeft, right: fallbackRight };
+        const parts = raw.split('-').map((p) => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+            return {
+                left: parts.slice(0, -1).join(' - '),
+                right: parts[parts.length - 1],
+            };
+        }
+        return { left: raw, right: fallbackRight };
+    };
+
+    const freeShoesRow = splitMilestoneCouponCode(
+        freeShoesCouponCode,
+        (freeShoesTitle ?? milestoneFreeShoesLabel)?.trim() || 'Free Shoes',
+        'FREE SHOES'
+    );
+    const freePuzzleRow = splitMilestoneCouponCode(
+        freePuzzleCouponCode,
+        (freePuzzleTitle ?? milestoneFreePuzzleLabel)?.trim() || 'Free puzzle',
+        'FREE PUZZLE'
+    );
+    const mysteryGiftRow = splitMilestoneCouponCode(
+        mysteryGiftCouponCode,
+        (mysteryGiftTitle ?? milestoneMysteryGiftLabel)?.trim() || 'Mystery gift',
+        'SURPRISE GIFT'
+    );
 
     return (
         <View style={styles.wrapper}>
@@ -190,7 +232,7 @@ export function BillDetails({
                         <View style={[styles.row, styles.mysteryGiftRow]}>
                             <View style={styles.mysteryLabelCol}>
                                 <Text style={styles.label} numberOfLines={2}>
-                                    {(freeShoesTitle ?? milestoneFreeShoesLabel)?.trim() || 'Free Shoes'}
+                                    {freeShoesRow.left}
                                 </Text>
                                
                             </View>
@@ -198,7 +240,7 @@ export function BillDetails({
                                 {freeShoesGiftOriginalPrice != null && freeShoesGiftOriginalPrice > 0 && (
                                     <Text style={styles.valueStruck}>{formatCurrency(freeShoesGiftOriginalPrice)}</Text>
                                 )}
-                                <Text style={[styles.value, styles.freeShoesText]}>FREE SHOES</Text>
+                                <Text style={[styles.value, styles.freeShoesText]}>{freeShoesRow.right}</Text>
                             </View>
                         </View>
                     )}
@@ -207,7 +249,7 @@ export function BillDetails({
                         <View style={[styles.row, styles.mysteryGiftRow]}>
                             <View style={styles.mysteryLabelCol}>
                                 <Text style={styles.label} numberOfLines={2}>
-                                    {(freePuzzleTitle ?? milestoneFreePuzzleLabel)?.trim() || 'Free puzzle'}
+                                    {freePuzzleRow.left}
                                 </Text>
                                 
                             </View>
@@ -215,7 +257,7 @@ export function BillDetails({
                                 {kidPuzzleOriginalPrice != null && kidPuzzleOriginalPrice > 0 && (
                                     <Text style={styles.valueStruck}>{formatCurrency(kidPuzzleOriginalPrice)}</Text>
                                 )}
-                                <Text style={[styles.value, styles.freeShoesText]}>FREE PUZZLE</Text>
+                                <Text style={[styles.value, styles.freeShoesText]}>{freePuzzleRow.right}</Text>
                             </View>
                         </View>
                     )}
@@ -224,7 +266,7 @@ export function BillDetails({
                         <View style={[styles.row, styles.mysteryGiftRow]}>
                             <View style={styles.mysteryLabelCol}>
                                 <Text style={styles.label} numberOfLines={2}>
-                                    {(mysteryGiftTitle ?? milestoneMysteryGiftLabel)?.trim() || 'Mystery gift'}
+                                    {mysteryGiftRow.left}
                                 </Text>
                                
                             </View>
@@ -232,7 +274,7 @@ export function BillDetails({
                                 {mysteryGiftOriginalPrice != null && mysteryGiftOriginalPrice > 0 && (
                                     <Text style={styles.valueStruck}>{formatCurrency(mysteryGiftOriginalPrice)}</Text>
                                 )}
-                                <Text style={[styles.value, styles.freeShoesText]}>SURPRISE GIFT</Text>
+                                <Text style={[styles.value, styles.freeShoesText]}>{mysteryGiftRow.right}</Text>
                             </View>
                         </View>
                     )}
@@ -249,7 +291,7 @@ export function BillDetails({
                     {milestoneConfigDiscount > 0 && (
                         <View style={styles.row}>
                             <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
-                                {(milestoneConfigDiscountLabel ?? '').trim() || 'Milestone discount'}
+                                {((milestoneConfigDiscountLabel ?? '').trim() || 'Milestone discount').toLowerCase()}
                             </Text>
                             <Text style={[styles.value, styles.discountText]}>
                                 -{formatCurrency(milestoneConfigDiscount)}

@@ -1907,12 +1907,12 @@ export default function OrderDetailV2Screen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5',
         paddingHorizontal: 16,
         paddingVertical: 20,
         paddingTop: Platform.OS === 'ios' ? 14 : 18,
@@ -1971,7 +1971,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flex: 1,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#F5F5F5',
     },
     scrollContent: {
         paddingHorizontal: 16,

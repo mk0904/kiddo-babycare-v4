@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { configService } from '@/services/configService';
 import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
@@ -64,6 +65,7 @@ export default function HomeScreen() {
       void appConfigService.loadAppConfig(true, {
         phone: user?.phone ?? undefined,
         customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+        appVersion: getAppVersionForApi(),
         deviceType: Platform.OS,
       });
     }, [user?.phone, user?.customerId, user?.id])

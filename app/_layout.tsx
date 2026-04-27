@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Constants from 'expo-constants';
 import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
@@ -19,7 +18,7 @@ import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
 import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
-import { isAppUpdateRequired } from '@/constants/versionConfig';
+import { getAppVersionForApi, isAppUpdateRequired } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { NectorProvider } from '@/context/NectorContext';
@@ -90,13 +89,13 @@ export default function RootLayout() {
   const entryPrefetchStartedRef = React.useRef(false);
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
-  const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
+  const currentVersion = getAppVersionForApi();
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
       customerId: user?.customerId ?? user?.id ?? undefined,
-      appVersion: Constants.expoConfig?.version ?? undefined,
+      appVersion: getAppVersionForApi(),
       deviceType: Platform.OS,
     }),
     [user?.phone, user?.customerId, user?.id],

@@ -3,8 +3,8 @@ import {
     buildMilestoneUIModel,
     milestoneCurrentStepFromConfig,
 } from '@/components/home/milestoneUIFromConfig';
-import { getAppVersionForApi } from '@/constants/versionConfig';
 import { Fonts } from '@/constants/theme';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { appConfigService } from '@/services/appConfigService';
 import { useUserStore } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +43,7 @@ const ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY = 'kiddo_order_success_full_milest
 const MILESTONES = [
     {
         id: 1,
-        title: "Milestone 1",
+        title: "1st Order Reward",
         subtitle: "25% off 💸 on cart value",
         color: "#3AA0EB",
         titleColor: "#3AA0EB",
@@ -54,7 +54,7 @@ const MILESTONES = [
     },
     {
         id: 2,
-        title: "Milestone 2",
+        title: "2st Order Reward",
         subtitle: "Free Shoes",
         color: "#E0C12B",
         titleColor: "#E0C12B",
@@ -65,7 +65,7 @@ const MILESTONES = [
     },
     {
         id: 3,
-        title: "Milestone 3",
+        title: "3rd Order Reward",
         subtitle: "Free Puzzle",
         color: "#F15E5E",
         titleColor: "#F15E5E",
@@ -76,7 +76,7 @@ const MILESTONES = [
     },
     {
         id: 4,
-        title: "Milestone 4",
+        title: "4th Order Reward",
         subtitle: "Mystery Gift",
         color: "#BD35D5",
         titleColor: "#BD35D5",
