@@ -1018,6 +1018,8 @@ export default function CartScreen() {
     };
 
     const handlePlaceOrder = async () => {
+        // Snapshot pre-order milestone step now (before any async ops that could update config).
+        const milestoneStepSnapshot = currentMilestoneStep;
         // Check if user is logged in
         if (!isAuthenticated) {
             Alert.alert(
@@ -1596,6 +1598,7 @@ export default function CartScreen() {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
+                            milestoneStep: String(milestoneStepSnapshot),
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                             ...(selectedAddress &&
                                 typeof selectedAddress.latitude === 'number' &&

@@ -3,9 +3,10 @@ import {
     buildMilestoneUIModel,
     milestoneCurrentStepFromConfig,
 } from '@/components/home/milestoneUIFromConfig';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
-import { getActiveMilestoneSlotRaw, isMilestoneMinCartUnlocked } from '@/utils/milestoneOrderDiscount';
+import { useUserStore } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -17,6 +18,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
+    Platform,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -29,7 +31,7 @@ const ICON_SIZE = 160;
 const ITEM_WIDTH = 150;
 const GAP = 48;
 /** Auto-advance: order summary — longer when the milestone track / Kiddo Club is shown, shorter for “order placed” only. */
-const AUTO_NAVIGATE_WITH_MILESTONE_MS = 10000;
+const AUTO_NAVIGATE_WITH_MILESTONE_MS = 7000;
 const AUTO_NAVIGATE_NO_MILESTONE_MS = 4000;
 
 /**
@@ -99,6 +101,7 @@ function glowColorFaded(glowColor: string, alpha = 0.22): string {
 
 export default function OrderSuccessV2Screen() {
     const router = useRouter();
+    const user = useUserStore((state) => state.user);
     const params = useLocalSearchParams<{
         orderId?: string;
         orderGraphId?: string;
@@ -107,8 +110,10 @@ export default function OrderSuccessV2Screen() {
         destinationLng?: string;
         /** Order total from checkout — compared to active milestone `minCartValue`. */
         total?: string;
+        /** Pre-order milestone step snapshot from cart (0-3). Used to compute animation target. */
+        milestoneStep?: string;
     }>();
-    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam } = params;
+    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam, milestoneStep: milestoneStepParam } = params;
     const orderTotalStr = Array.isArray(orderTotalParam) ? orderTotalParam[0] : orderTotalParam;
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -119,46 +124,133 @@ export default function OrderSuccessV2Screen() {
     const [milestoneShowAll, setMilestoneShowAll] = useState(false);
     /** `null` until AsyncStorage is read; `true` = club already shown once → no milestone block. */
     const [skipMilestoneExperience, setSkipMilestoneExperience] = useState<boolean | null>(null);
-    /** Bumps when `appConfigService` finishes a load so milestone caps recompute (avoid stale “show all 4” on first paint). */
+    /** Bumps when `appConfigService` finishes a load so milestone caps recompute. */
     const [appConfigSeq, setAppConfigSeq] = useState(0);
 
     useEffect(() => appConfigService.subscribe(() => setAppConfigSeq((n) => n + 1)), []);
 
-    const { maxTargetIndex, showClubAfter, allMilestonesComplete } = useMemo(() => {
-        const orderTotal = Number.parseFloat(String(orderTotalStr ?? '')) || 0;
-        const milestoneUI = appConfigService.getMilestoneUI();
-        let maxIdx = MILESTONES.length - 1;
-        let clubAfter = true;
-        let allMilestonesComplete = false;
-        /**
-         * Cap carousel when backend sends `milestoneUI`, even if the active step’s raw slot is missing
-         * (`getActiveMilestoneSlotRaw` would be null and we must not fall back to the legacy full sweep).
-         */
-        if (milestoneUI != null) {
-            allMilestonesComplete = areAllMilestoneSlotsCompleted(milestoneUI);
-            const currentStep = milestoneCurrentStepFromConfig(milestoneUI, 0);
-            const activeSlot = getActiveMilestoneSlotRaw(milestoneUI);
-            const model = buildMilestoneUIModel(milestoneUI);
-            const resolvedMin = model?.slots[currentStep]?.minCartValue ?? null;
-            const unlockedThisOrder =
-                activeSlot != null
-                    ? isMilestoneMinCartUnlocked(activeSlot, orderTotal)
-                    : resolvedMin == null || orderTotal >= resolvedMin;
-            if (unlockedThisOrder) {
-                maxIdx = Math.min(MILESTONES.length - 1, currentStep + 1);
-            } else {
-                maxIdx = currentStep;
-            }
-            /** "Welcome to the Kiddo Club" only when all four steps are `isCompleted` in app config. */
-            clubAfter = allMilestonesComplete && unlockedThisOrder && maxIdx === MILESTONES.length - 1;
+    /**
+     * Number of consecutive completed milestones from the CACHED config at mount time (before the
+     * forced refresh fires). This is the pre-order state, immune to backend timing races.
+     *
+     *   0  = no milestones done yet; this order completes M1, animate up to M2 (index 1)
+     *   1  = M1 done; this order completes M2, animate up to M3 (index 2)
+     *   2  = M1+M2 done; this order completes M3, animate up to M4 (index 3)
+     *   3  = M1-M3 done; this order completes M4, animate all + show Kiddo Club
+     *   4  = all already done before this order (repeat customer), no new milestone block
+     *  -1  = config not in cache yet, fall through to fresh-config path
+     *
+     * useState lazy initializer runs exactly once on first render, before any effects.
+     */
+    const [preOrderCompletedCount] = useState<number>(() => {
+        // Prefer the snapshot passed from cart — it is captured before any async ops.
+        const fromParam = Number.parseInt(String(milestoneStepParam ?? ''), 10);
+        if (Number.isFinite(fromParam) && fromParam >= 0) return fromParam;
+        // Fallback: read from cached config (works when navigating to this screen by other means).
+        const ui = appConfigService.getMilestoneUI();
+        if (ui == null) return -1;
+        const keys = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', 'milestoneFourth'] as const;
+        let count = 0;
+        for (const key of keys) {
+            const v = (ui[key] as { isCompleted?: unknown } | undefined)?.isCompleted;
+            const done =
+                v === true ||
+                v === 1 ||
+                (typeof v === 'string' && v.trim().toLowerCase() === 'true');
+            if (!done) break;
+            count++;
         }
-        return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete };
-    }, [orderTotalStr, appConfigSeq]);
+        return count;
+    });
 
-    const visibleMilestones = useMemo(
-        () => MILESTONES.slice(0, Math.min(MILESTONES.length, maxTargetIndex + 1)),
-        [maxTargetIndex]
-    );
+    // Force fresh app-config on order-success so milestone completion reflects the just-placed order.
+    useEffect(() => {
+        const totalNum = Number.parseFloat(String(orderTotalStr ?? ''));
+        const payload = {
+            phone: user?.phone ?? undefined,
+            customerId: user?.customerId ?? user?.id ?? undefined,
+            appVersion: getAppVersionForApi(),
+            deviceType: Platform.OS,
+            cartSubtotal: Number.isFinite(totalNum) && totalNum > 0 ? totalNum : undefined,
+        };
+        void appConfigService.loadAppConfig(true, payload).catch(() => {
+            // Keep rendering with cached config if refresh fails.
+        });
+    }, [user?.phone, user?.customerId, user?.id, orderTotalStr]);
+
+    const { maxTargetIndex, showClubAfter, allMilestonesComplete } = useMemo(() => {
+        let maxIdx = -1;
+        let clubAfter = false;
+        let allDone = false;
+
+        /**
+         * Primary source: pre-order completed count (no network race condition).
+         * If all 4 milestones were already done before this order, skip the block
+         * entirely so we do not re-show the Kiddo Club for repeat customers.
+         */
+        if (preOrderCompletedCount === MILESTONES.length) {
+            return { maxTargetIndex: -1, showClubAfter: false, allMilestonesComplete: true };
+        }
+
+        if (preOrderCompletedCount >= 0) {
+            /**
+             * This order completes slot[preOrderCompletedCount].
+             * The carousel sweeps from M1 all the way to the newly-unlocked milestone:
+             *   maxIdx = min(preOrderCompletedCount + 1, last index)
+             * When completing the very last milestone the sweep ends at M4 and the
+             * Kiddo Club block replaces the carousel.
+             */
+            maxIdx = Math.min(preOrderCompletedCount + 1, MILESTONES.length - 1);
+            clubAfter = preOrderCompletedCount === MILESTONES.length - 1;
+            allDone = clubAfter;
+        }
+
+        /**
+         * Secondary source: fresh config from loadAppConfig(true).
+         * Always take whichever source shows MORE progress (stale data will be lower).
+         * This also handles preOrderCompletedCount === -1 (no cached config).
+         */
+        const milestoneUI = appConfigService.getMilestoneUI();
+        if (milestoneUI != null) {
+            const freshAllDone = areAllMilestoneSlotsCompleted(milestoneUI);
+            const configuredStep = milestoneCurrentStepFromConfig(milestoneUI, 0);
+            const model = buildMilestoneUIModel(milestoneUI);
+            const freshCompletedCount = (() => {
+                const slots = model?.slots ?? [];
+                let count = 0;
+                for (const slot of slots) {
+                    const v = (slot as { isCompleted?: unknown })?.isCompleted;
+                    const done =
+                        v === true ||
+                        v === 1 ||
+                        (typeof v === 'string' && v.trim().toLowerCase() === 'true');
+                    if (!done) break;
+                    count++;
+                }
+                return count;
+            })();
+            const freshStep = Math.min(
+                MILESTONES.length - 1,
+                Math.max(configuredStep, freshCompletedCount)
+            );
+            if (freshStep > maxIdx) maxIdx = freshStep;
+            if (freshAllDone) {
+                allDone = true;
+                if (maxIdx === MILESTONES.length - 1) clubAfter = true;
+            }
+        }
+
+        return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete: allDone };
+    }, [appConfigSeq, preOrderCompletedCount]);
+
+    const visibleMilestones = useMemo(() => {
+        if (maxTargetIndex < 0) return [];
+        return MILESTONES.slice(0, Math.min(MILESTONES.length, maxTargetIndex + 1));
+    }, [maxTargetIndex]);
+
+    // Even if the "already seen" flag is true, show celebration on the actual completion order.
+    const shouldSkipMilestoneExperience =
+        skipMilestoneExperience === true && !showClubAfter;
 
     useEffect(() => {
         let cancelled = false;
@@ -171,17 +263,6 @@ export default function OrderSuccessV2Screen() {
             cancelled = true;
         };
     }, []);
-
-    /** When every milestone is already done, the first time we show the static club UI — persist; later visits skip the block. */
-    useEffect(() => {
-        if (skipMilestoneExperience !== false) {
-            return;
-        }
-        if (!allMilestonesComplete) {
-            return;
-        }
-        void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
-    }, [skipMilestoneExperience, allMilestonesComplete]);
 
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -201,11 +282,10 @@ export default function OrderSuccessV2Screen() {
     }, [scaleAnim, fadeAnim]);
 
     useEffect(() => {
-        if (skipMilestoneExperience !== false) {
+        if (skipMilestoneExperience == null || shouldSkipMilestoneExperience) {
             return;
         }
-        if (allMilestonesComplete) {
-            // Already finished every step — static club row only, no track carousel.
+        if (maxTargetIndex < 0) {
             return;
         }
         trackAnim.setValue((SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2));
@@ -233,18 +313,21 @@ export default function OrderSuccessV2Screen() {
             });
         };
 
-        const startDelay = setTimeout(() => runSequence(0), 800);
+        const startDelay = setTimeout(() => runSequence(0), 400);
         return () => clearTimeout(startDelay);
-    }, [skipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim]);
+    }, [skipMilestoneExperience, shouldSkipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim]);
 
     const currentMilestone = visibleMilestones[Math.min(activeIndex, visibleMilestones.length - 1)] ?? MILESTONES[0];
     /**
-     * Hide the Kiddo Club / carousel for “every milestone already done before this order”
-     * (`!milestoneShowAll` — we never run the track). Show only when user finishes the
-     * carousel to the club, or is still on the milestone journey.
+     * Require `milestoneUI` in app config (`maxTargetIndex >= 0`).
+     * If all milestones are complete, keep showing this section only while the completion-order
+     * sequence is running (`showClubAfter`) or once it lands on the club finale (`milestoneShowAll`).
      */
     const showMilestoneBlock =
-        skipMilestoneExperience === false && (!allMilestonesComplete || milestoneShowAll);
+        skipMilestoneExperience != null &&
+        !shouldSkipMilestoneExperience &&
+        maxTargetIndex >= 0 &&
+        (!allMilestonesComplete || showClubAfter || milestoneShowAll);
 
     const autoNavigateDelayMs = useMemo(() => {
         if (skipMilestoneExperience == null) {

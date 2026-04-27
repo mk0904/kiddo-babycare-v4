@@ -221,7 +221,7 @@ export function MilestoneTracker({
         if (validTarget == null || validTarget <= 0) {
             return {
                 title: collapsedActiveSlot.unlockedTitle || collapsedActiveSlot.title || collapsedTitle,
-                subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
+                // subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
             };
         }
 
@@ -229,13 +229,13 @@ export function MilestoneTracker({
         if (remaining <= 0) {
             return {
                 title: collapsedActiveSlot.unlockedTitle || collapsedActiveSlot.title || collapsedTitle,
-                subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
+                // subtitle: collapsedActiveSlot.unlockedSubtitle || collapsedActiveSlot.subtitle || '',
             };
         }
 
         return {
             title: `Spend \u20B9${formatINR(remaining)} for ${collapsedActiveSlot.title || collapsedTitle}`,
-            subtitle: collapsedActiveSlot.subtitle || collapsedActiveSlot.orderNumber || '',
+            // subtitle: collapsedActiveSlot.subtitle || collapsedActiveSlot.orderNumber || '',
         };
     }, [collapsedActiveSlot, collapsedTitle, cartSubtotal]);
 
@@ -349,6 +349,13 @@ export function MilestoneTracker({
                     ]}
                     accessibilityRole="summary"
                 >
+                    <BlurView
+                        intensity={28}
+                        tint="light"
+                        style={styles.surfaceFrostBackground}
+                        pointerEvents="none"
+                    />
+                    <View style={styles.surfaceFrostOverlay} pointerEvents="none" />
                     <View style={styles.embeddedCollapsedRow}>
                         <View
                             style={[
@@ -446,6 +453,13 @@ export function MilestoneTracker({
     return (
         <View style={styles.milestoneRoot}>
             <View style={collapsedContainerStyle} accessibilityRole="summary">
+                <BlurView
+                    intensity={28}
+                    tint="light"
+                    style={styles.surfaceFrostBackground}
+                    pointerEvents="none"
+                />
+                <View style={styles.surfaceFrostOverlay} pointerEvents="none" />
                 <View style={styles.embeddedCollapsedRow}>
                     <TouchableOpacity
                         style={[
@@ -636,6 +650,15 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 0,
         zIndex: 50,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    surfaceFrostBackground: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    surfaceFrostOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255, 255, 255, 0.18)',
     },
     /** Home row beside cart: use full column width, no side padding. */
     collapsedSurfaceInCartRow: {
