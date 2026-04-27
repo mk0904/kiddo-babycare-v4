@@ -162,6 +162,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                 showTabBar={shouldShowTabBar}
                 tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
                 anchorExtraOffset={liveDeliveryStackExtra + milestoneReserveForCart}
+                activeRouteName={props.state.routes[props.state.index]?.name}
             />
 
             {shouldShowTabBar && (

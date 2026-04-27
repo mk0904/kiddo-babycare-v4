@@ -1,20 +1,21 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
-import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import { AddressModal } from '@/components/modals/AddressModal';
+import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
-    getDeliveryEta,
-    getDeliveryEtaForAddress,
-    reverseGeocode,
+  getDeliveryEta,
+  getDeliveryEtaForAddress,
+  reverseGeocode,
 } from '@/config/deliveryConfig';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
+import { useMilestoneInlineCartController } from '@/context/MilestoneInlineCartContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
-import { getAppVersionForApi } from '@/constants/versionConfig';
 import { configService } from '@/services/configService';
 import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
@@ -25,11 +26,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -507,7 +508,6 @@ export default function HomeScreen() {
 
         // Show scroll-to-top button when scrolled down more than 300px
         setShowScrollToTop(offsetY > 300);
-        console.log(`[Scroll Log] Y: ${offsetY.toFixed(1)}`);
 
       },
     }

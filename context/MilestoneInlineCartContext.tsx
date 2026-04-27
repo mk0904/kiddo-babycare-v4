@@ -10,6 +10,7 @@ const MilestoneInlineCartContext = createContext<MilestoneInlineCartContextValue
 
 export function MilestoneInlineCartProvider({ children }: { children: React.ReactNode }) {
     const [active, setActive] = useState(false);
+
     const setMilestoneInlineCartInRow = useCallback((v: boolean) => {
         setActive(v);
     }, []);

@@ -1,32 +1,45 @@
 import MilestoneTracker from '@/components/home/MilestoneTracker';
-import { buildMilestoneUIModel } from '@/components/home/milestoneUIFromConfig';
+import { buildMilestoneUIModel, areAllMilestoneSlotsCompleted } from '@/components/home/milestoneUIFromConfig';
 import { useMilestoneInlineCartController } from '@/context/MilestoneInlineCartContext';
+import { useCartItemCount } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { appConfigService } from '@/services/appConfigService';
 import { FloatingCartCta } from './FloatingCartCta';
 
 export type MilestoneCartRowProps = {
     milestoneUI: MilestoneUIConfig | null;
     onMilestoneExpandedChange: (expanded: boolean) => void;
-    /** `cart has items` && `!milestone expanded` (same as `isInlineCartVisible` on Home). */
+    /** Not used for layout split anymore, purely for tracker state if needed. */
     isInlineWithCart: boolean;
 };
 
 /**
  * Pairs `MilestoneTracker` with the shared `View cart` CTA on Home using the same 70% / 30% split as
- * `getHomeMilestoneRowLayout`, so alignment stays in one place app-wide. When this row is active, the
- * context tells `FloatingCartButton` not to render (avoids a duplicate CTA).
+ * `getHomeMilestoneRowLayout`, so alignment stays in one place app-wide. 
  */
-export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInlineWithCart }: MilestoneCartRowProps) {
+export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange }: MilestoneCartRowProps) {
     const { width: windowWidth } = useWindowDimensions();
+    const itemCount = useCartItemCount();
     const setMilestoneInlineCartInRow = useMilestoneInlineCartController()?.setMilestoneInlineCartInRow;
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    /** `MilestoneTracker` is mounted but can return `null` (dismissed / async). Only 70/30 with cart when the strip really paints. */
+    /** `MilestoneTracker` is mounted but can return `null` (dismissed / async). */
     const [stripPaints, setStripPaints] = useState(false);
     const onStripPresenceChange = useCallback((visible: boolean) => {
         setStripPaints(visible);
+    }, []);
+
+    const isAllDoneFromConfig = useMemo(() => milestoneUI ? areAllMilestoneSlotsCompleted(milestoneUI) : false, [milestoneUI]);
+
+    const [isCelebrationSeen, setIsCelebrationSeen] = useState<boolean | null>(null);
+    useEffect(() => {
+        const check = async () => {
+            const val = await AsyncStorage.getItem('milestone_all_done_home_strip_seen_v1');
+            setIsCelebrationSeen(val === 'true');
+        };
+        check();
     }, []);
 
     const hasMilestone = useMemo(() => {
@@ -34,13 +47,15 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
         return Boolean(model && (model.slots?.length ?? 0) > 0);
     }, [milestoneUI]);
 
-    const showInline = Boolean(isInlineWithCart && hasMilestone && stripPaints);
+    // Show inline only if milestones exist AND they aren't all finished
+    const isFinished = isAllDoneFromConfig || isCelebrationSeen === true;
+    const showInline = Boolean(itemCount > 0 && hasMilestone && !isFinished);
 
     useEffect(() => {
-        if (!hasMilestone) {
+        if (!hasMilestone || isFinished) {
             setStripPaints(false);
         }
-    }, [hasMilestone]);
+    }, [hasMilestone, isFinished]);
     const rowLayout = useMemo(() => getHomeMilestoneRowLayout(windowWidth), [windowWidth]);
 
     useEffect(() => {
@@ -55,27 +70,8 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
         return () => setMilestoneInlineCartInRow(false);
     }, [showInline, setMilestoneInlineCartInRow]);
 
-    // Match `FloatingCartButton` entrance when the CTA is inside this row
-    useEffect(() => {
-        if (!showInline) {
-            return;
-        }
-        Animated.spring(scaleAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-            tension: 50,
-            friction: 7,
-        }).start();
-    }, [showInline, scaleAnim]);
 
-    useEffect(() => {
-        if (showInline) {
-            return;
-        }
-        scaleAnim.setValue(0);
-    }, [showInline, scaleAnim]);
-
-    if (!hasMilestone) {
+    if (!hasMilestone || isFinished) {
         return null;
     }
 
@@ -118,15 +114,7 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
                         { width: rowLayout.cartColumnWidth, marginRight: rowLayout.sideInset },
                     ]}
                 >
-                    <Animated.View
-                        style={{
-                            transform: [{ scale: scaleAnim }],
-                            opacity: scaleAnim,
-                            alignSelf: 'stretch',
-                        }}
-                    >
-                        <FloatingCartCta inMilestoneRow testID="milestone-row-view-cart" />
-                    </Animated.View>
+                    <FloatingCartCta inMilestoneRow testID="milestone-row-view-cart" />
                 </View>
             ) : null}
         </View>

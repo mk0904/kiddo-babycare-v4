@@ -1,10 +1,15 @@
+import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
 import { useMilestoneInlineCartActive } from '@/context/MilestoneInlineCartContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
 import { usePathname, useRouter } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildMilestoneUIModel, areAllMilestoneSlotsCompleted } from '@/components/home/milestoneUIFromConfig';
+import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
 import { FloatingCartCta } from './FloatingCartCta';
 
 interface FloatingCartButtonProps {
@@ -16,12 +21,15 @@ interface FloatingCartButtonProps {
      * When set, matches TabBar `totalHeight` so the cart anchor aligns with the real bar height from config.
      */
     tabBarReserveHeight?: number;
+    /** Current active route name from the navigator (faster than usePathname). */
+    activeRouteName?: string;
 }
 
 const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     showTabBar = false,
     anchorExtraOffset = 0,
     tabBarReserveHeight,
+    activeRouteName,
 }) => {
     const itemCount = useCartItemCount();
     const router = useRouter();
@@ -29,9 +37,47 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const insets = useSafeAreaInsets();
     const { isVisible: isTabBarVisible } = useTabBarVisibility();
     const cartInMilestoneRow = useMilestoneInlineCartActive();
+    const milestoneDockHeight = useMilestoneDockHeightSafe();
 
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    const bottomOffsetAnim = useRef(new Animated.Value(0)).current;
+    const [milestoneUiRev, setMilestoneUiRev] = React.useState(0);
+    React.useEffect(() => {
+        const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
+        return off;
+    }, []);
+
+    const milestoneUI = appConfigService.getMilestoneUI();
+    const milestoneModel = React.useMemo(() => buildMilestoneUIModel(milestoneUI), [milestoneUI, milestoneUiRev]);
+    const { width: windowWidth } = useWindowDimensions();
+    
+    // activeRouteName from props is faster than usePathname during transitions
+    const rawRoute = activeRouteName || pathname;
+    const currentRoute = rawRoute?.replace(/^\//, '') || 'index';
+    
+    const isHome = currentRoute === 'index' || currentRoute === '(tabs)/index' || pathname === '/';
+    const isCategory = currentRoute === 'category' || currentRoute === '(tabs)/category' || pathname === '/category';
+    const isInfinity = currentRoute?.startsWith('infinity/') || pathname?.startsWith('/infinity/');
+    
+    const [isCelebrationSeen, setIsCelebrationSeen] = React.useState<boolean | null>(null);
+    React.useEffect(() => {
+        const check = async () => {
+            const val = await AsyncStorage.getItem('milestone_all_done_home_strip_seen_v1');
+            setIsCelebrationSeen(val === 'true');
+        };
+        check();
+        // Also listen to config updates which might happen after order success
+        const off = appConfigService.subscribe(check);
+        return off;
+    }, []);
+
+    const isAllDoneFromConfig = React.useMemo(() => milestoneUI ? areAllMilestoneSlotsCompleted(milestoneUI) : false, [milestoneUI]);
+    const isFinished = isAllDoneFromConfig || isCelebrationSeen === true;
+
+    const hasMilestones = milestoneModel && milestoneModel.slots && milestoneModel.slots.some(s => s.activeIconUrl || s.inactiveIconUrl || s.title);
+    
+    // Switch between milestone screens (where cart is inline) and others (where it floats)
+    const isMilestoneScreen = isHome || isCategory || isInfinity;
+    // If milestones are completed and seen, don't hide the global cart (we want it centered)
+    const shouldHideGlobalCart = isMilestoneScreen && hasMilestones && !isFinished;
 
     const TAB_BAR_HEIGHT = 60;
     const bottomInset = Math.max(insets.bottom, 0);
@@ -54,57 +100,32 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const baseBottomOffset = tabBarBlockHeight + (anchorExtraOffset || 0);
     const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
 
-    useEffect(() => {
-        if (itemCount > 0 && !isCartScreen) {
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                useNativeDriver: true,
-                tension: 50,
-                friction: 7,
-            }).start();
-        } else {
-            Animated.timing(scaleAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start();
-        }
-    }, [itemCount, isCartScreen, scaleAnim]);
+    const visible = itemCount > 0 && !isCartScreen && !shouldHideGlobalCart && !cartInMilestoneRow;
 
-    useEffect(() => {
-        const targetOffset =
-            showTabBar && isTabBarVisible
-                ? baseBottomOffset
-                : hiddenBottomOffset + (anchorExtraOffset || 0);
-        Animated.spring(bottomOffsetAnim, {
-            toValue: targetOffset,
-            useNativeDriver: false,
-            tension: 40,
-            friction: 8,
-        }).start();
-    }, [isTabBarVisible, showTabBar, baseBottomOffset, hiddenBottomOffset, anchorExtraOffset, bottomOffsetAnim]);
-
-    if (itemCount === 0 || isCartScreen) {
+    if (!visible) {
         return null;
     }
-    if (cartInMilestoneRow) {
-        return null;
-    }
+
+    const currentBottomOffset =
+        showTabBar && isTabBarVisible
+            ? baseBottomOffset
+            : hiddenBottomOffset + (anchorExtraOffset || 0);
 
     return (
-        <Animated.View
-            style={[styles.container, { bottom: bottomOffsetAnim }]}
+        <View
+            style={[
+                styles.container, 
+                { bottom: currentBottomOffset },
+            ]}
             pointerEvents="box-none"
         >
-            <Animated.View
-                style={{
-                    transform: [{ scale: scaleAnim }],
-                    opacity: scaleAnim,
-                }}
-            >
-                <FloatingCartCta onPress={() => router.push('/cart' as any)} testID="floating-view-cart" />
-            </Animated.View>
-        </Animated.View>
+            <View style={{ opacity: 1 }}>
+                <FloatingCartCta 
+                    onPress={() => router.push('/cart' as any)} 
+                    testID="floating-view-cart" 
+                />
+            </View>
+        </View>
     );
 };
 
@@ -113,9 +134,9 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         right: 0,
-        alignItems: 'center',
         zIndex: 10000,
         elevation: 10000,
+        alignItems: 'center',
     },
 });
 

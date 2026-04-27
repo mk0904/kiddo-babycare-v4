@@ -80,6 +80,7 @@ export interface ResolvedMilestoneSlot {
 
 export interface ResolvedMilestoneUIModel {
     slots: ResolvedMilestoneSlot[];
+    animationUrl?: string;
 }
 
 export type MilestoneConnectorAxis = 'horizontal' | 'vertical';
@@ -189,7 +190,7 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
         };
     });
 
-    return { slots };
+    return { slots, animationUrl: trimUrl(ui.animationUrl) };
 }
 
 export function milestoneExpandedTitleFromConfig(ui: MilestoneUIConfig | null | undefined): string {

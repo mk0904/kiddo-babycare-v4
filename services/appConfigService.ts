@@ -85,7 +85,6 @@ class AppConfigService {
 
   async loadAppConfig(forceReload = false, payload?: AppConfigPayload): Promise<AppConfigResponse | null> {
     if (!forceReload && this.loadPromise) return this.loadPromise;
-    if (forceReload) this.config = null;
 
     this.loadPromise = (async () => {
       try {

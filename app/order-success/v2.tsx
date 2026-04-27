@@ -38,7 +38,9 @@ const AUTO_NAVIGATE_NO_MILESTONE_MS = 4000;
  * Set when the Kiddo Club / milestone experience has been shown once on order success (carousel finish,
  * or the static all-completed state). Read on mount; when true, skip the entire milestone area next time.
  */
-const ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY = 'kiddo_order_success_full_milestone_celebration_shown_v1';
+const ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY = 'milestone_all_done_home_strip_seen_v1';
+const MILESTONE_MODAL_HEIGHT = 580;
+const MILESTONE_MODAL_WIDTH = SCREEN_WIDTH * 0.94;
 
 const MILESTONES = [
     {
@@ -112,9 +114,12 @@ export default function OrderSuccessV2Screen() {
         total?: string;
         /** Pre-order milestone step snapshot from cart (0-3). Used to compute animation target. */
         milestoneStep?: string;
+        /** Cart subtotal (pre-discount) — compared to active milestone `minCartValue`. */
+        subtotal?: string;
     }>();
-    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam, milestoneStep: milestoneStepParam } = params;
+    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam, milestoneStep: milestoneStepParam, subtotal: subtotalParam } = params;
     const orderTotalStr = Array.isArray(orderTotalParam) ? orderTotalParam[0] : orderTotalParam;
+    const subtotalStr = Array.isArray(subtotalParam) ? subtotalParam[0] : subtotalParam;
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -174,9 +179,11 @@ export default function OrderSuccessV2Screen() {
             cartSubtotal: Number.isFinite(totalNum) && totalNum > 0 ? totalNum : undefined,
         };
         void appConfigService.loadAppConfig(true, payload).catch(() => {
-            // Keep rendering with cached config if refresh fails.
         });
     }, [user?.phone, user?.customerId, user?.id, orderTotalStr]);
+
+    const lastSequenceId = useRef(0);
+    const currentStepRef = useRef(preOrderCompletedCount >= 0 ? preOrderCompletedCount : 0);
 
     const { maxTargetIndex, showClubAfter, allMilestonesComplete } = useMemo(() => {
         let maxIdx = -1;
@@ -184,39 +191,26 @@ export default function OrderSuccessV2Screen() {
         let allDone = false;
 
         /**
-         * Primary source: pre-order completed count (no network race condition).
-         * If all 4 milestones were already done before this order, skip the block
-         * entirely so we do not re-show the Kiddo Club for repeat customers.
+         * TERMINAL STATE:
+         * If all 4 milestones were already done before this order, or if we have
+         * previously seen the full celebration (via AsyncStorage), skip the block.
          */
-        if (preOrderCompletedCount === MILESTONES.length) {
+        if (preOrderCompletedCount >= MILESTONES.length || skipMilestoneExperience === true) {
             return { maxTargetIndex: -1, showClubAfter: false, allMilestonesComplete: true };
         }
 
         if (preOrderCompletedCount >= 0) {
-            /**
-             * This order completes slot[preOrderCompletedCount].
-             * The carousel sweeps from M1 all the way to the newly-unlocked milestone:
-             *   maxIdx = min(preOrderCompletedCount + 1, last index)
-             * When completing the very last milestone the sweep ends at M4 and the
-             * Kiddo Club block replaces the carousel.
-             */
-            maxIdx = Math.min(preOrderCompletedCount + 1, MILESTONES.length - 1);
+            maxIdx = Math.min(preOrderCompletedCount, MILESTONES.length - 1);
             clubAfter = preOrderCompletedCount === MILESTONES.length - 1;
             allDone = clubAfter;
         }
 
-        /**
-         * Secondary source: fresh config from loadAppConfig(true).
-         * Always take whichever source shows MORE progress (stale data will be lower).
-         * This also handles preOrderCompletedCount === -1 (no cached config).
-         */
         const milestoneUI = appConfigService.getMilestoneUI();
-        if (milestoneUI != null) {
+        if (milestoneUI != null && preOrderCompletedCount < MILESTONES.length) {
             const freshAllDone = areAllMilestoneSlotsCompleted(milestoneUI);
-            const configuredStep = milestoneCurrentStepFromConfig(milestoneUI, 0);
             const model = buildMilestoneUIModel(milestoneUI);
+            const slots = model?.slots ?? [];
             const freshCompletedCount = (() => {
-                const slots = model?.slots ?? [];
                 let count = 0;
                 for (const slot of slots) {
                     const v = (slot as { isCompleted?: unknown })?.isCompleted;
@@ -229,80 +223,92 @@ export default function OrderSuccessV2Screen() {
                 }
                 return count;
             })();
-            const freshStep = Math.min(
-                MILESTONES.length - 1,
-                Math.max(configuredStep, freshCompletedCount)
+            
+            const subtotalNum = Number.parseFloat(String(subtotalStr ?? orderTotalStr ?? '0'));
+            const currentSlotThreshold = slots[preOrderCompletedCount]?.minCartValue;
+            
+            const isPredictedComplete = 
+                (typeof currentSlotThreshold === 'number' && subtotalNum >= (currentSlotThreshold - 1)) ||
+                (currentSlotThreshold == null && subtotalNum > 0);
+
+            const effectiveCompletedCount = Math.max(
+                freshCompletedCount, 
+                isPredictedComplete ? preOrderCompletedCount + 1 : preOrderCompletedCount
             );
+            
+            const freshStep = Math.min(MILESTONES.length - 1, effectiveCompletedCount);
             if (freshStep > maxIdx) maxIdx = freshStep;
-            if (freshAllDone) {
+            if (freshAllDone || effectiveCompletedCount >= MILESTONES.length) {
                 allDone = true;
                 if (maxIdx === MILESTONES.length - 1) clubAfter = true;
+                // If we've reached the end, ensure the celebration flag is persisted even if carousel doesn't finish
+                void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
+            }
+
+            if (__DEV__) {
+                console.log('[OrderSuccess] Threshold Debug:', {
+                    preOrderCompletedCount,
+                    subtotalNum,
+                    isPredictedComplete,
+                    effectiveCompletedCount,
+                    maxTargetIndex: maxIdx,
+                    allDone
+                });
             }
         }
 
         return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete: allDone };
-    }, [appConfigSeq, preOrderCompletedCount]);
+    }, [appConfigSeq, preOrderCompletedCount, orderTotalStr, subtotalStr, milestoneStepParam, skipMilestoneExperience]);
 
     const visibleMilestones = useMemo(() => {
         if (maxTargetIndex < 0) return [];
         return MILESTONES.slice(0, Math.min(MILESTONES.length, maxTargetIndex + 1));
     }, [maxTargetIndex]);
 
-    // Even if the "already seen" flag is true, show celebration on the actual completion order.
     const shouldSkipMilestoneExperience =
         skipMilestoneExperience === true && !showClubAfter;
 
     useEffect(() => {
         let cancelled = false;
         AsyncStorage.getItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY).then((v) => {
-            if (!cancelled) {
-                setSkipMilestoneExperience(v === 'true');
-            }
+            if (!cancelled) setSkipMilestoneExperience(v === 'true');
         });
-        return () => {
-            cancelled = true;
-        };
+        return () => { cancelled = true; };
     }, []);
 
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.parallel([
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                tension: 50,
-                friction: 6,
-                useNativeDriver: true,
-            }),
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }),
+            Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 6, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
         ]).start();
     }, [scaleAnim, fadeAnim]);
 
     useEffect(() => {
-        if (skipMilestoneExperience == null || shouldSkipMilestoneExperience) {
+        if (skipMilestoneExperience == null || shouldSkipMilestoneExperience || maxTargetIndex < 0) {
             return;
         }
-        if (maxTargetIndex < 0) {
-            return;
-        }
-        trackAnim.setValue((SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2));
-        setActiveIndex(0);
-        setMilestoneShowAll(false);
 
+        const seqId = ++lastSequenceId.current;
+        
         const runSequence = (index: number) => {
+            if (seqId !== lastSequenceId.current) return;
             if (index > maxTargetIndex || index >= MILESTONES.length) return;
+
             const targetPos = (SCREEN_WIDTH / 2) - (index * (ITEM_WIDTH + GAP)) - (ITEM_WIDTH / 2);
+            currentStepRef.current = index;
+
+            if (__DEV__) console.log(`[OrderSuccess] Animating to index ${index}, pos ${targetPos}`);
 
             Animated.timing(trackAnim, {
                 toValue: targetPos,
                 duration: 400,
                 useNativeDriver: true,
             }).start(() => {
+                if (seqId !== lastSequenceId.current) return;
                 setActiveIndex(index);
                 setTimeout(() => {
+                    if (seqId !== lastSequenceId.current) return;
                     if (index < maxTargetIndex) {
                         runSequence(index + 1);
                     } else if (showClubAfter) {
@@ -313,8 +319,17 @@ export default function OrderSuccessV2Screen() {
             });
         };
 
+        // Always start from index 0 (First Milestone) as requested
+        const initialPos = (SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2);
+        trackAnim.setValue(initialPos);
+        setActiveIndex(0);
+        currentStepRef.current = 0;
+
         const startDelay = setTimeout(() => runSequence(0), 400);
-        return () => clearTimeout(startDelay);
+        return () => {
+            clearTimeout(startDelay);
+            lastSequenceId.current++;
+        };
     }, [skipMilestoneExperience, shouldSkipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim]);
 
     const currentMilestone = visibleMilestones[Math.min(activeIndex, visibleMilestones.length - 1)] ?? MILESTONES[0];

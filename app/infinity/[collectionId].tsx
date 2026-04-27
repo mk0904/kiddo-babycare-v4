@@ -901,6 +901,7 @@ export default function InfinityScreen() {
             <FloatingCartButton
                 showTabBar={false}
                 anchorExtraOffset={floatingCartMilestoneReserve}
+                activeRouteName="infinity"
             />
         </>
     );

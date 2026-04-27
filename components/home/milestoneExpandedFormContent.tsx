@@ -261,11 +261,13 @@ export function MilestoneExpandedFormContent({
                             >
                                 {iconUri ? (
                                     <View style={styles.expandedActiveIconWithRing}>
-                                        <Image
-                                            source={{ uri: iconUri }}
-                                            style={[styles.iconFill, { width: iconSize, height: iconSize }]}
-                                            contentFit="contain"
-                                        />
+                                        <View style={[styles.iconShadowWrapper, { shadowColor: ringColor }]}>
+                                            <Image
+                                                source={{ uri: iconUri }}
+                                                style={[styles.iconFill, { width: iconSize, height: iconSize }]}
+                                                contentFit="contain"
+                                            />
+                                        </View>
                                         {showRingAroundIcon ? (
                                             <CollapsedMilestoneIconProgressRing
                                                 progress01={ringProgress01}
@@ -483,6 +485,18 @@ const styles = StyleSheet.create({
         height: EXPANDED_LIST_IMAGE,
         opacity: 1,
         zIndex: 1,
+    },
+    iconShadowWrapper: {
+        width: EXPANDED_LIST_IMAGE,
+        height: EXPANDED_LIST_IMAGE,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: EXPANDED_LIST_IMAGE / 2,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 1,
+        shadowRadius: 20,
+        elevation: 15,
     },
     expandedActiveIconWithRing: {
         width: EXPANDED_LIST_OUTER,

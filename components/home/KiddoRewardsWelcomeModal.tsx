@@ -4,6 +4,7 @@ import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -278,7 +279,21 @@ export function KiddoRewardsWelcomeModal({
                         styles.modalBackdropScrim,
                         backdropAnimStyle,
                     ]}
-                />
+                >
+                    {milestoneModel?.animationUrl ? (
+                        <Image
+                            source={{ uri: milestoneModel.animationUrl }}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '40%',
+                            }}
+                            contentFit="cover"
+                        />
+                    ) : null}
+                </Animated.View>
                 <View style={styles.popupCenter} pointerEvents="box-none">
                     <Animated.View
                         style={[
@@ -320,7 +335,7 @@ const styles = StyleSheet.create({
     },
     modalBackdropScrim: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(15, 15, 20, 0.5)',
+        backgroundColor: 'rgba(15, 15, 20, 0.4)',
     },
     /** Centers the Kiddo rewards “popup” card on the Home screen, like a dialog. */
     popupCenter: {

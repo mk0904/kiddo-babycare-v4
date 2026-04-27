@@ -271,10 +271,7 @@ export function MilestoneTracker({
                     }
                 }
             );
-            backdropOp.value = withTiming(0, {
-                duration: 135,
-                easing: Easing.bezier(0.4, 0, 1, 0.95),
-            });
+            backdropOp.value = 0;
         } else {
             setExpanded(true);
         }
@@ -286,13 +283,9 @@ export function MilestoneTracker({
             return;
         }
         translateY.value = slideFromStripPx;
-        backdropOp.value = 0;
+        backdropOp.value = 1;
         translateY.value = withTiming(0, {
             duration: MILESTONE_MODAL_IN_MS,
-            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        });
-        backdropOp.value = withTiming(1, {
-            duration: 160,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps

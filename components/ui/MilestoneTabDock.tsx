@@ -59,12 +59,7 @@ export function MilestoneTabDock({
             bottomAnim.setValue(to);
             return;
         }
-        Animated.spring(bottomAnim, {
-            toValue: to,
-            useNativeDriver: false,
-            tension: 50,
-            friction: 9,
-        }).start();
+        bottomAnim.setValue(to);
     }, [
         anchorMode,
         isTabBarVisible,

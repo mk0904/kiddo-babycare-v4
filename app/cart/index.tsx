@@ -1610,6 +1610,7 @@ export default function CartScreen() {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
+                            subtotal: itemSubtotalForOffers.toString(),
                             milestoneStep: String(milestoneStepSnapshot),
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                             ...(selectedAddress &&
