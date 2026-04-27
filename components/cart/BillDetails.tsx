@@ -21,24 +21,41 @@ export interface BillDetailsProps {
     platformFee?: number;
     /** Coupon discount amount (positive number; total of all coupon discounts) */
     couponDiscount: number;
-    /** When true, show a "Free Shoes" row with FREE Shoes instead of amount (HEYKIDDO) */
-    hasHeyKiddo?: boolean;
-    /** Original price for HEYKIDDO row (shown struck when present) */
-    heyKiddoOriginalPrice?: number;
+    /** When true, show a "Free Shoes" row with FREE SHOES instead of amount (milestone 3 / free-shoes gift code) */
+    hasFreeShoesGift?: boolean;
+    /** Original price for the free-shoes row (shown struck when present) */
+    freeShoesGiftOriginalPrice?: number;
+    /** From coupons API for the shoes gift code (e.g. `title` / `description` on "Free Shoes") */
+    freeShoesTitle?: string;
+    freeShoesDescription?: string;
     /** Free puzzle (KIDPUZZLE) — milestone 2 */
     hasKidPuzzle?: boolean;
     kidPuzzleOriginalPrice?: number;
-    /** Discount from other coupons (non-HEYKIDDO); show as "Coupon Discount" -₹X when > 0 */
+    /** From coupons API for the puzzle gift code (e.g. `title` / `description` on "Free puzzle") */
+    freePuzzleTitle?: string;
+    freePuzzleDescription?: string;
+    /** 1st/4th `isGift` — mystery gift code applied (hidden coupon); show like free puzzle */
+    hasMysteryGift?: boolean;
+    mysteryGiftOriginalPrice?: number;
+    /** From coupons API `title` (e.g. "Mystery gift") */
+    mysteryGiftTitle?: string;
+    /** From coupons API `description` (e.g. "Mystery gift above ₹999") */
+    mysteryGiftDescription?: string;
+    /** When API title is absent — milestone slot copy */
+    milestoneMysteryGiftLabel?: string;
+    /** Discount from other coupons (excludes free-shoes / puzzle / mystery gift codes); show as "Coupon Discount" -₹X when > 0 */
     otherCouponDiscount?: number;
     /** When set (milestone `isGift: true`), use instead of "Free Shoes" for that row */
     milestoneFreeShoesLabel?: string;
     /** When set (milestone `isGift: true`), use instead of "Free puzzle" for that row */
     milestoneFreePuzzleLabel?: string;
-    /** Extra milestone discount (non-gift, `isGift: false` + %/fixed in config) — row label is always "Milestone discount" */
+    /** Extra milestone discount (non-gift, `isGift: false` + %/fixed in config) */
     milestoneConfigDiscount?: number;
+    /** Bill row title (e.g. "1st order reward - 25% off"); falls back to "Milestone discount" */
+    milestoneConfigDiscountLabel?: string;
     /**
-     * `isGift` on 1st/4th steps: when set (non-empty), show a "Milestone discount" row with "Unlocked".
-     * The string is for visibility only; the bill does not show the raw milestone title as the line title.
+     * `isGift` on 1st/4th steps: when set (non-empty), show a row with "Unlocked" and this string as the **line label**
+     * (e.g. slot title: "Mystery gift"), not a generic "Milestone discount" title.
      */
     milestoneIsGiftBillDiscountTitle?: string;
     /** Gift wrap fee (0 = hide row or show FREE) */
@@ -67,14 +84,24 @@ export function BillDetails({
     deliveryFee = 0,
     platformFee = 0,
     couponDiscount,
-    hasHeyKiddo = false,
-    heyKiddoOriginalPrice,
+    hasFreeShoesGift = false,
+    freeShoesGiftOriginalPrice,
+    freeShoesTitle,
+    freeShoesDescription,
     hasKidPuzzle = false,
     kidPuzzleOriginalPrice,
+    freePuzzleTitle,
+    freePuzzleDescription,
+    hasMysteryGift = false,
+    mysteryGiftOriginalPrice,
+    mysteryGiftTitle,
+    mysteryGiftDescription,
+    milestoneMysteryGiftLabel,
     otherCouponDiscount = 0,
     milestoneFreeShoesLabel,
     milestoneFreePuzzleLabel,
     milestoneConfigDiscount = 0,
+    milestoneConfigDiscountLabel,
     milestoneIsGiftBillDiscountTitle,
     giftWrappingFee,
     giftWrapping = null,
@@ -158,15 +185,18 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {/* Free Shoes (HEYKIDDO) – show original price struck + FREE Shoes */}
-                    {hasHeyKiddo && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>
-                                {milestoneFreeShoesLabel?.trim() || 'Free Shoes'}
-                            </Text>
+                    {/* Free Shoes — API title/description when present, else milestone label */}
+                    {hasFreeShoesGift && (
+                        <View style={[styles.row, styles.mysteryGiftRow]}>
+                            <View style={styles.mysteryLabelCol}>
+                                <Text style={styles.label} numberOfLines={2}>
+                                    {(freeShoesTitle ?? milestoneFreeShoesLabel)?.trim() || 'Free Shoes'}
+                                </Text>
+                               
+                            </View>
                             <View style={styles.valueRow}>
-                                {heyKiddoOriginalPrice != null && heyKiddoOriginalPrice > 0 && (
-                                    <Text style={styles.valueStruck}>{formatCurrency(heyKiddoOriginalPrice)}</Text>
+                                {freeShoesGiftOriginalPrice != null && freeShoesGiftOriginalPrice > 0 && (
+                                    <Text style={styles.valueStruck}>{formatCurrency(freeShoesGiftOriginalPrice)}</Text>
                                 )}
                                 <Text style={[styles.value, styles.freeShoesText]}>FREE SHOES</Text>
                             </View>
@@ -174,10 +204,13 @@ export function BillDetails({
                     )}
 
                     {hasKidPuzzle && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>
-                                {milestoneFreePuzzleLabel?.trim() || 'Free puzzle'}
-                            </Text>
+                        <View style={[styles.row, styles.mysteryGiftRow]}>
+                            <View style={styles.mysteryLabelCol}>
+                                <Text style={styles.label} numberOfLines={2}>
+                                    {(freePuzzleTitle ?? milestoneFreePuzzleLabel)?.trim() || 'Free puzzle'}
+                                </Text>
+                                
+                            </View>
                             <View style={styles.valueRow}>
                                 {kidPuzzleOriginalPrice != null && kidPuzzleOriginalPrice > 0 && (
                                     <Text style={styles.valueStruck}>{formatCurrency(kidPuzzleOriginalPrice)}</Text>
@@ -187,23 +220,44 @@ export function BillDetails({
                         </View>
                     )}
 
-                    {milestoneIsGiftBillDiscountTitle && milestoneIsGiftBillDiscountTitle.trim() !== '' && (
+                    {hasMysteryGift && (
+                        <View style={[styles.row, styles.mysteryGiftRow]}>
+                            <View style={styles.mysteryLabelCol}>
+                                <Text style={styles.label} numberOfLines={2}>
+                                    {(mysteryGiftTitle ?? milestoneMysteryGiftLabel)?.trim() || 'Mystery gift'}
+                                </Text>
+                               
+                            </View>
+                            <View style={styles.valueRow}>
+                                {mysteryGiftOriginalPrice != null && mysteryGiftOriginalPrice > 0 && (
+                                    <Text style={styles.valueStruck}>{formatCurrency(mysteryGiftOriginalPrice)}</Text>
+                                )}
+                                <Text style={[styles.value, styles.freeShoesText]}>SURPRISE GIFT</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {!hasMysteryGift && milestoneIsGiftBillDiscountTitle && milestoneIsGiftBillDiscountTitle.trim() !== '' && (
                         <View style={styles.row}>
-                            <Text style={styles.label}>Milestone discount</Text>
+                            <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
+                                {milestoneIsGiftBillDiscountTitle.trim()}
+                            </Text>
                             <Text style={[styles.value, styles.freeShoesText]}>Unlocked</Text>
                         </View>
                     )}
 
                     {milestoneConfigDiscount > 0 && (
                         <View style={styles.row}>
-                            <Text style={styles.label}>Milestone discount</Text>
+                            <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
+                                {(milestoneConfigDiscountLabel ?? '').trim() || 'Milestone discount'}
+                            </Text>
                             <Text style={[styles.value, styles.discountText]}>
                                 -{formatCurrency(milestoneConfigDiscount)}
                             </Text>
                         </View>
                     )}
 
-                    {/* Coupon Discount (other coupons; when only HEYKIDDO applied, otherCouponDiscount is 0) */}
+                    {/* Coupon Discount (other coupons; when only free-shoes gift is applied, otherCouponDiscount is 0) */}
                     {otherCouponDiscount > 0 && (
                         <View style={styles.row}>
                             <Text style={styles.label}>Coupon Discount</Text>
@@ -338,6 +392,24 @@ const styles = StyleSheet.create({
         fontSize: Fonts.SmallFontSize,
         color: '#181D27',
         fontFamily: Fonts.LexendMedium,
+    },
+    labelFlex: {
+        flex: 1,
+        marginRight: 12,
+    },
+    mysteryGiftRow: {
+        alignItems: 'flex-start',
+    },
+    mysteryLabelCol: {
+        flex: 1,
+        marginRight: 12,
+        paddingTop: 1,
+    },
+    couponDescriptionSub: {
+        marginTop: 2,
+        fontSize: Fonts.ExtraSmallFontSize,
+        color: '#717680',
+        fontFamily: Fonts.LexendRegular,
     },
     valueRow: {
         flexDirection: 'row',

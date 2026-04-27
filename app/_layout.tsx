@@ -24,6 +24,9 @@ import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { NectorProvider } from '@/context/NectorContext';
 import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
+import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
+import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
+import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
@@ -487,13 +490,19 @@ export default function RootLayout() {
                   <TryAndBuyProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <TabBarVisibilityProvider>
-                      <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="index" />
-                        <Stack.Screen name="(auth)" />
-                        <Stack.Screen name="(tabs)" />
-                        <Stack.Screen name="products/[id]" />
-                        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                      </Stack>
+                      <MilestoneDockProvider>
+                        <MilestoneInlineCartProvider>
+                          <LiveDeliveryStackOffsetProvider>
+                            <Stack screenOptions={{ headerShown: false }}>
+                              <Stack.Screen name="index" />
+                              <Stack.Screen name="(auth)" />
+                              <Stack.Screen name="(tabs)" />
+                              <Stack.Screen name="products/[id]" />
+                              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                            </Stack>
+                          </LiveDeliveryStackOffsetProvider>
+                        </MilestoneInlineCartProvider>
+                      </MilestoneDockProvider>
                     </TabBarVisibilityProvider>
                     <StatusBar style="dark" />
                     </ThemeProvider>

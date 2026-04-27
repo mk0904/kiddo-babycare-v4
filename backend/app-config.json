@@ -59,6 +59,7 @@
     },
     "freeShoesOffer": {
       "enabled": true,
+      "discountCode": "Free Shoes",
       "originalPrice": 4999,
       "showWhen": {
         "cartHasAnyCategory": ["apparel", "fashion"]

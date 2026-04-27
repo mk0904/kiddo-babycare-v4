@@ -1318,7 +1318,8 @@ export const shopifyApi = {
         query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
         variables: {
           cartId,
-          discountCodes: discountCodes.map(code => code.toUpperCase()),
+          // Send exact codes (e.g. "Mystery gift") — Admin matches Shopify’s stored string; do not force uppercase.
+          discountCodes: discountCodes.map((code) => String(code).trim()).filter((c) => c.length > 0),
         },
       });
 

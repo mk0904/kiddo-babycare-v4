@@ -1,12 +1,19 @@
+import {
+    areAllMilestoneSlotsCompleted,
+    buildMilestoneUIModel,
+    milestoneCurrentStepFromConfig,
+} from '@/components/home/milestoneUIFromConfig';
 import { Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
+import { getActiveMilestoneSlotRaw, isMilestoneMinCartUnlocked } from '@/utils/milestoneOrderDiscount';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -21,7 +28,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ICON_SIZE = 160;
 const ITEM_WIDTH = 150;
 const GAP = 48;
-const AUTO_NAVIGATE_DELAY_MS = 7000;
+/** Auto-advance: order summary — longer when the milestone track / Kiddo Club is shown, shorter for “order placed” only. */
+const AUTO_NAVIGATE_WITH_MILESTONE_MS = 10000;
+const AUTO_NAVIGATE_NO_MILESTONE_MS = 4000;
+
+/**
+ * Set when the Kiddo Club / milestone experience has been shown once on order success (carousel finish,
+ * or the static all-completed state). Read on mount; when true, skip the entire milestone area next time.
+ */
+const ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY = 'kiddo_order_success_full_milestone_celebration_shown_v1';
 
 const MILESTONES = [
     {
@@ -90,8 +105,11 @@ export default function OrderSuccessV2Screen() {
         estimatedDeliveryMinutes?: string;
         destinationLat?: string;
         destinationLng?: string;
+        /** Order total from checkout — compared to active milestone `minCartValue`. */
+        total?: string;
     }>();
-    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng } = params;
+    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam } = params;
+    const orderTotalStr = Array.isArray(orderTotalParam) ? orderTotalParam[0] : orderTotalParam;
 
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -99,6 +117,72 @@ export default function OrderSuccessV2Screen() {
 
     const [activeIndex, setActiveIndex] = useState(0);
     const [milestoneShowAll, setMilestoneShowAll] = useState(false);
+    /** `null` until AsyncStorage is read; `true` = club already shown once → no milestone block. */
+    const [skipMilestoneExperience, setSkipMilestoneExperience] = useState<boolean | null>(null);
+    /** Bumps when `appConfigService` finishes a load so milestone caps recompute (avoid stale “show all 4” on first paint). */
+    const [appConfigSeq, setAppConfigSeq] = useState(0);
+
+    useEffect(() => appConfigService.subscribe(() => setAppConfigSeq((n) => n + 1)), []);
+
+    const { maxTargetIndex, showClubAfter, allMilestonesComplete } = useMemo(() => {
+        const orderTotal = Number.parseFloat(String(orderTotalStr ?? '')) || 0;
+        const milestoneUI = appConfigService.getMilestoneUI();
+        let maxIdx = MILESTONES.length - 1;
+        let clubAfter = true;
+        let allMilestonesComplete = false;
+        /**
+         * Cap carousel when backend sends `milestoneUI`, even if the active step’s raw slot is missing
+         * (`getActiveMilestoneSlotRaw` would be null and we must not fall back to the legacy full sweep).
+         */
+        if (milestoneUI != null) {
+            allMilestonesComplete = areAllMilestoneSlotsCompleted(milestoneUI);
+            const currentStep = milestoneCurrentStepFromConfig(milestoneUI, 0);
+            const activeSlot = getActiveMilestoneSlotRaw(milestoneUI);
+            const model = buildMilestoneUIModel(milestoneUI);
+            const resolvedMin = model?.slots[currentStep]?.minCartValue ?? null;
+            const unlockedThisOrder =
+                activeSlot != null
+                    ? isMilestoneMinCartUnlocked(activeSlot, orderTotal)
+                    : resolvedMin == null || orderTotal >= resolvedMin;
+            if (unlockedThisOrder) {
+                maxIdx = Math.min(MILESTONES.length - 1, currentStep + 1);
+            } else {
+                maxIdx = currentStep;
+            }
+            /** "Welcome to the Kiddo Club" only when all four steps are `isCompleted` in app config. */
+            clubAfter = allMilestonesComplete && unlockedThisOrder && maxIdx === MILESTONES.length - 1;
+        }
+        return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete };
+    }, [orderTotalStr, appConfigSeq]);
+
+    const visibleMilestones = useMemo(
+        () => MILESTONES.slice(0, Math.min(MILESTONES.length, maxTargetIndex + 1)),
+        [maxTargetIndex]
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+        AsyncStorage.getItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY).then((v) => {
+            if (!cancelled) {
+                setSkipMilestoneExperience(v === 'true');
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    /** When every milestone is already done, the first time we show the static club UI — persist; later visits skip the block. */
+    useEffect(() => {
+        if (skipMilestoneExperience !== false) {
+            return;
+        }
+        if (!allMilestonesComplete) {
+            return;
+        }
+        void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
+    }, [skipMilestoneExperience, allMilestonesComplete]);
+
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Animated.parallel([
@@ -114,9 +198,22 @@ export default function OrderSuccessV2Screen() {
                 useNativeDriver: true,
             }),
         ]).start();
+    }, [scaleAnim, fadeAnim]);
+
+    useEffect(() => {
+        if (skipMilestoneExperience !== false) {
+            return;
+        }
+        if (allMilestonesComplete) {
+            // Already finished every step — static club row only, no track carousel.
+            return;
+        }
+        trackAnim.setValue((SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2));
+        setActiveIndex(0);
+        setMilestoneShowAll(false);
 
         const runSequence = (index: number) => {
-            if (index >= MILESTONES.length) return;
+            if (index > maxTargetIndex || index >= MILESTONES.length) return;
             const targetPos = (SCREEN_WIDTH / 2) - (index * (ITEM_WIDTH + GAP)) - (ITEM_WIDTH / 2);
 
             Animated.timing(trackAnim, {
@@ -126,19 +223,36 @@ export default function OrderSuccessV2Screen() {
             }).start(() => {
                 setActiveIndex(index);
                 setTimeout(() => {
-                    if (index + 1 < MILESTONES.length) {
+                    if (index < maxTargetIndex) {
                         runSequence(index + 1);
-                    } else {
+                    } else if (showClubAfter) {
                         setMilestoneShowAll(true);
+                        void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
                     }
                 }, 1000);
             });
         };
 
-        setTimeout(() => runSequence(0), 800);
-    }, []);
+        const startDelay = setTimeout(() => runSequence(0), 800);
+        return () => clearTimeout(startDelay);
+    }, [skipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim]);
 
-    const currentMilestone = MILESTONES[activeIndex];
+    const currentMilestone = visibleMilestones[Math.min(activeIndex, visibleMilestones.length - 1)] ?? MILESTONES[0];
+    /**
+     * Hide the Kiddo Club / carousel for “every milestone already done before this order”
+     * (`!milestoneShowAll` — we never run the track). Show only when user finishes the
+     * carousel to the club, or is still on the milestone journey.
+     */
+    const showMilestoneBlock =
+        skipMilestoneExperience === false && (!allMilestonesComplete || milestoneShowAll);
+
+    const autoNavigateDelayMs = useMemo(() => {
+        if (skipMilestoneExperience == null) {
+            // Until we know the celebration flag, assume the long window so the carousel is not cut off.
+            return AUTO_NAVIGATE_WITH_MILESTONE_MS;
+        }
+        return showMilestoneBlock ? AUTO_NAVIGATE_WITH_MILESTONE_MS : AUTO_NAVIGATE_NO_MILESTONE_MS;
+    }, [skipMilestoneExperience, showMilestoneBlock]);
 
     // Warm the event-order hero cache while this screen is visible so order summary paints faster.
     useEffect(() => {
@@ -174,9 +288,17 @@ export default function OrderSuccessV2Screen() {
             } else {
                 router.replace('/orders');
             }
-        }, AUTO_NAVIGATE_DELAY_MS);
+        }, autoNavigateDelayMs);
         return () => clearTimeout(t);
-    }, [orderGraphId, orderId, router, estimatedDeliveryMinutes, destinationLat, destinationLng]);
+    }, [
+        orderGraphId,
+        orderId,
+        router,
+        estimatedDeliveryMinutes,
+        destinationLat,
+        destinationLng,
+        autoNavigateDelayMs,
+    ]);
 
     const handleClose = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -199,106 +321,86 @@ export default function OrderSuccessV2Screen() {
             </View>
 
 
-            <View style={styles.bottomSection}>
-
-                {/* <View style={styles.glowWrapper}>
-                    <LinearGradient
-                        colors={[
-                            '#FFFFFF',
-                            'rgba(255, 255, 255, 0)',
-                            glowColorFaded(currentMilestone.glowColor),
-                            'rgba(255, 255, 255, 0)',
-                            '#FFFFFF'
-                        ]}
-                        start={{ x: 1, y: 1 }}
-                        end={{ x: 1, y: 0 }}
-                        // 0.15 and 0.85 act as the 'walls' where the color must be gone
-                        // 0.5 is your focused center peak
-                        locations={[0, 0.05, 0.5, 0.95, 0.5]}
-                        style={[styles.topGlowConatiner]}
-                    />
-                </View> */}
-                <View style={styles.fullWidthGlowContainer}>
-
-                    <LinearGradient
-                        // We use pure white at the edges to blend into the container background
-                        // We use a transparent version of white between the edges and center to smooth the fade
-                        colors={[
-                            '#FFFFFF',
-                            'rgba(255, 255, 255, 0)',
-                            glowColorFaded(currentMilestone.glowColor),
-                            'rgba(255, 255, 255, 0)',
-                            '#FFFFFF'
-                        ]}
-                        start={{ x: 1, y: 1 }}
-                        end={{ x: 1, y: 0 }}
-                        // 0.15 and 0.85 act as the 'walls' where the color must be gone
-                        // 0.5 is your focused center peak
-                        locations={[0, 0.05, 0.5, 0.95, 0.5]}
-                        style={styles.fullWidthGlow}
-                    />
-
-                </View>
-                <View style={styles.carouselContainer}>
-                    {milestoneShowAll ? (
-                        <View style={styles.clubMilestoneBlock}>
-                            <Text style={styles.clubKicker}>Congratulations!</Text>
-                            <Text style={styles.clubTitle}>
-                                {'Welcome to the\nKiddo Club!'}
-                            </Text>
-                            <View style={styles.milestoneAllRow}>
-                                {MILESTONES.map((m) => (
-                                    <View key={m.id} style={styles.milestoneAllItem}>
-                                        <Image
-                                            source={{ uri: m.activeIcon }}
-                                            style={styles.mIconAll}
-                                            contentFit="contain"
-                                        />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    ) : (
-                        <Animated.View
-                            style={[
-                                styles.track,
-                                { transform: [{ translateX: trackAnim }] },
+            {showMilestoneBlock ? (
+                <View style={styles.bottomSection}>
+                    <View style={styles.fullWidthGlowContainer}>
+                        <LinearGradient
+                            colors={[
+                                '#FFFFFF',
+                                'rgba(255, 255, 255, 0)',
+                                glowColorFaded(currentMilestone.glowColor),
+                                'rgba(255, 255, 255, 0)',
+                                '#FFFFFF',
                             ]}
-                        >
-                            {MILESTONES.map((m, index) => {
-                                const isPassedOrFocus = index <= activeIndex;
-                                return (
-                                    <View key={m.id} style={styles.item}>
-                                        <Image
-                                            source={{
-                                                uri: isPassedOrFocus ? m.activeIcon : m.inactiveIcon,
-                                            }}
-                                            style={styles.mIcon}
-                                            contentFit="contain"
-                                        />
-                                        <Text
-                                            style={[
-                                                styles.mTitle,
-                                                { color: isPassedOrFocus ? m.titleColor : '#999' },
-                                            ]}
-                                        >
-                                            {m.title}
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.mSub,
-                                                { color: isPassedOrFocus ? m.subtitleColor : '#BBB' },
-                                            ]}
-                                        >
-                                            {m.subtitle}
-                                        </Text>
-                                    </View>
-                                );
-                            })}
-                        </Animated.View>
-                    )}
+                            start={{ x: 1, y: 1 }}
+                            end={{ x: 1, y: 0 }}
+                            locations={[0, 0.05, 0.5, 0.95, 0.5]}
+                            style={styles.fullWidthGlow}
+                        />
+                    </View>
+                    <View style={styles.carouselContainer}>
+                        {milestoneShowAll ? (
+                            <View style={styles.clubMilestoneBlock}>
+                                <Text style={styles.clubKicker}>Congratulations!</Text>
+                                <Text style={styles.clubTitle}>
+                                    {'Welcome to the\nKiddo Club!'}
+                                </Text>
+                                <View style={styles.milestoneAllRow}>
+                                    {MILESTONES.map((m) => (
+                                        <View key={m.id} style={styles.milestoneAllItem}>
+                                            <Image
+                                                source={{ uri: m.activeIcon }}
+                                                style={styles.mIconAll}
+                                                contentFit="contain"
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        ) : (
+                            <Animated.View
+                                style={[
+                                    styles.track,
+                                    { transform: [{ translateX: trackAnim }] },
+                                ]}
+                            >
+                                {visibleMilestones.map((m, index) => {
+                                    const isPassedOrFocus = index <= activeIndex;
+                                    return (
+                                        <View key={m.id} style={styles.item}>
+                                            <Image
+                                                source={{
+                                                    uri: isPassedOrFocus ? m.activeIcon : m.inactiveIcon,
+                                                }}
+                                                style={styles.mIcon}
+                                                contentFit="contain"
+                                            />
+                                            <Text
+                                                style={[
+                                                    styles.mTitle,
+                                                    { color: isPassedOrFocus ? m.titleColor : '#999' },
+                                                ]}
+                                            >
+                                                {m.title}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.mSub,
+                                                    { color: isPassedOrFocus ? m.subtitleColor : '#BBB' },
+                                                ]}
+                                            >
+                                                {m.subtitle}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </Animated.View>
+                        )}
+                    </View>
                 </View>
-            </View>
+            ) : (
+                <View style={styles.bottomSectionSpacer} />
+            )}
 
             <View style={styles.footerBackground}>
                 <Image source={require('@/assets/images/order-success-footer.png')} style={styles.footerImage} contentFit="cover" />
@@ -312,6 +414,8 @@ const styles = StyleSheet.create({
     closeButton: { position: 'absolute', top: 48, left: 16, zIndex: 10, padding: 4 },
     topSection: { flex: 1.2, justifyContent: 'center', alignItems: 'center', paddingTop: 40 },
     bottomSection: { flex: 1, width: '100%', justifyContent: 'center' },
+    /** When the full club celebration already ran once — keeps layout without milestone UI. */
+    bottomSectionSpacer: { flex: 1, width: '100%' },
 
 
 
@@ -357,7 +461,13 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, fontFamily: Fonts.LexendBold, color: '#1A1A1A', marginTop: 15 },
     heroIcon: { width: ICON_SIZE, height: ICON_SIZE },
 
-    carouselContainer: { minHeight: 300, zIndex: 5, marginBottom: 40, width: '100%' },
+    carouselContainer: {
+        minHeight: 300,
+        zIndex: 5,
+        marginBottom: 40,
+        width: '100%',
+        overflow: 'hidden',
+    },
     track: { flexDirection: 'row', alignItems: 'flex-end', gap: GAP },
     item: { width: ITEM_WIDTH, alignItems: 'center', position: 'relative' },
     /** After the carousel run finishes: static row of all active milestone art + club copy. */

@@ -5,9 +5,6 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBar from '@/components/ui/TabBar';
 import { Colors } from '@/constants/theme';
-import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
-import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
-import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { configService } from '@/services/configService';
 
@@ -19,48 +16,42 @@ export default function TabLayout() {
   const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'ticketing', 'account'];
 
   return (
-    <MilestoneDockProvider>
-      <MilestoneInlineCartProvider>
-        <LiveDeliveryStackOffsetProvider>
-          <Tabs
-            screenOptions={{
-              tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-              headerShown: false,
-              tabBarButton: HapticTab,
-            }}
-            tabBar={(props) => <TabBar {...props} />}
-          >
-            <Tabs.Screen
-              name="index"
-              options={{
-                title: 'Home',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-              }}
-            />
-            <Tabs.Screen
-              name="category"
-              options={{
-                title: 'Category',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="grid.fill" color={color} />,
-              }}
-            />
-            <Tabs.Screen
-              name="ticketing"
-              options={{
-                title: 'Ticketing',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
-              }}
-            />
-            <Tabs.Screen
-              name="account"
-              options={{
-                title: 'Account',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-              }}
-            />
-          </Tabs>
-        </LiveDeliveryStackOffsetProvider>
-      </MilestoneInlineCartProvider>
-    </MilestoneDockProvider>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        headerShown: false,
+        tabBarButton: HapticTab,
+      }}
+      tabBar={(props) => <TabBar {...props} />}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="category"
+        options={{
+          title: 'Category',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="grid.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ticketing"
+        options={{
+          title: 'Ticketing',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

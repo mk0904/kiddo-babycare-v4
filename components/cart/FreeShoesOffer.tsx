@@ -9,7 +9,7 @@ const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
 interface FreeShoesOfferProps {
   visible?: boolean;
-  /** HEYKIDDO coupon from backend - only source for coupon code/values */
+  /** `cart.freeShoesOffer` from backend / config — source for offer copy and values */
   heykiddoCoupon?: { code?: string; minimumPurchaseAmount?: string | number | null } | null;
 }
 

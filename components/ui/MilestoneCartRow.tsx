@@ -3,7 +3,7 @@ import { buildMilestoneUIModel } from '@/components/home/milestoneUIFromConfig';
 import { useMilestoneInlineCartController } from '@/context/MilestoneInlineCartContext';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { FloatingCartCta } from './FloatingCartCta';
 
@@ -23,13 +23,24 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
     const { width: windowWidth } = useWindowDimensions();
     const setMilestoneInlineCartInRow = useMilestoneInlineCartController()?.setMilestoneInlineCartInRow;
     const scaleAnim = useRef(new Animated.Value(0)).current;
+    /** `MilestoneTracker` is mounted but can return `null` (dismissed / async). Only 70/30 with cart when the strip really paints. */
+    const [stripPaints, setStripPaints] = useState(false);
+    const onStripPresenceChange = useCallback((visible: boolean) => {
+        setStripPaints(visible);
+    }, []);
 
     const hasMilestone = useMemo(() => {
         const model = buildMilestoneUIModel(milestoneUI ?? undefined);
         return Boolean(model && (model.slots?.length ?? 0) > 0);
     }, [milestoneUI]);
 
-    const showInline = Boolean(isInlineWithCart && hasMilestone);
+    const showInline = Boolean(isInlineWithCart && hasMilestone && stripPaints);
+
+    useEffect(() => {
+        if (!hasMilestone) {
+            setStripPaints(false);
+        }
+    }, [hasMilestone]);
     const rowLayout = useMemo(() => getHomeMilestoneRowLayout(windowWidth), [windowWidth]);
 
     useEffect(() => {
@@ -97,6 +108,7 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
                     milestoneUI={milestoneUI}
                     onExpandedChange={onMilestoneExpandedChange}
                     inlineInCartRow={showInline}
+                    onStripPresenceChange={onStripPresenceChange}
                 />
             </View>
             {showInline ? (

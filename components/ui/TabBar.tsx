@@ -91,27 +91,15 @@ export const TabBar = (props: BottomTabBarProps) => {
         }
     }, [props.state, visibleTabs]);
 
-    const activeTabName = useMemo(() => {
-        try {
-            const { state } = props;
-            if (!state?.routes?.length || state.index === undefined) return '';
-            return state.routes[state.index]?.name ?? '';
-        } catch {
-            return '';
-        }
-    }, [props.state]);
-
     const milestoneDockHeight = useMilestoneDockHeightSafe();
-    /** Milestone strip only exists on Home (see `MilestoneTracker` on index screen). */
-    const isHomeTab = activeTabName === 'index';
-    /** Collapsed milestone strip: height comes from `MilestoneCartRow` on Home. */
+    /** Collapsed strip height reported by `MilestoneTabDock` (Home, Category, or stack routes). */
     const isMilestoneCollapsed = milestoneDockHeight > 0 && milestoneDockHeight < 120;
     const milestoneStripReserveForStack =
-        shouldShowTabBar && isHomeTab && isMilestoneCollapsed
+        shouldShowTabBar && isMilestoneCollapsed
             ? Math.max(milestoneDockHeight, 0) + 12
             : 0;
     const milestoneReserveForCart =
-        shouldShowTabBar && isHomeTab && isMilestoneCollapsed
+        shouldShowTabBar && isMilestoneCollapsed
             ? milestoneStripReserveForStack + 4
             : 0;
 

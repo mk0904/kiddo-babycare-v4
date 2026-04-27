@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 type MilestoneDockContextValue = {
-    /** Measured height of the home milestone strip (0 when not on home or not laid out). */
+    /** Measured height of the bottom milestone strip (0 when no host screen reports layout). */
     dockHeight: number;
     setMilestoneDockHeight: (height: number) => void;
 };

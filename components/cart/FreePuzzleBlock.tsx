@@ -3,7 +3,7 @@
  */
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
-import type { FreePuzzleItem, FreePuzzleOfferConfig, FreePuzzlePickerConfig, FreePuzzlePickerAge } from '@/types/appConfig';
+import type { FreePuzzleItem, FreePuzzleOfferConfig, FreePuzzlePickerAge, FreePuzzlePickerConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +20,8 @@ const DEFAULT_AGES: FreePuzzlePickerAge[] = [
 export interface FreePuzzleBlockProps {
     visible?: boolean;
     configRefreshKey?: number;
+    /** When `false`, the Add control is disabled until the milestone min cart is met. */
+    milestoneMinCartUnlocked?: boolean;
     selectedPuzzleId?: string | null;
     selectedPuzzleAge?: string | null;
     onAddPress: () => void;
@@ -46,6 +48,7 @@ function normalizeAgeOptions(items: FreePuzzleItem[], fromPicker: FreePuzzlePick
 export function FreePuzzleBlock({
     visible = true,
     configRefreshKey,
+    milestoneMinCartUnlocked = true,
     selectedPuzzleId,
     selectedPuzzleAge: selectedPuzzleAgeProp,
     onAddPress,
@@ -133,6 +136,9 @@ export function FreePuzzleBlock({
     const itemTitle = pickerCopy?.itemTitle;
 
     const openPicker = () => {
+        if (!isApplied && !milestoneMinCartUnlocked) {
+            return;
+        }
         const current =
             selectedAge && ageOptions.some((o) => o.age === selectedAge && o.isAvailable) ? selectedAge : firstAvailableAge;
         setModalAge(current);
@@ -192,12 +198,12 @@ export function FreePuzzleBlock({
                     <Text style={styles.productName} numberOfLines={2}>
                         {isApplied
                             ? displayItem.name
-                            : 'Select age and puzzle from options'}
+                            : 'Select your free puzzle'}
                     </Text>
                     <Text style={styles.metaText}>
                         {isApplied
-                            ? selectedSubLabel
-                            : 'Ages 2+ · While stocks last'}
+                            && selectedSubLabel
+                           }
                     </Text>
                     {isApplied && (
                         <View style={styles.editRemoveRow}>
@@ -214,9 +220,10 @@ export function FreePuzzleBlock({
                                 style={styles.appliedButton}
                                 onPress={onRemoveOffer}
                                 activeOpacity={0.8}
-                                accessibilityLabel="Remove free puzzle"
+                                accessibilityLabel="Free puzzle added. Double tap to remove"
+                                accessibilityHint="Removes the free puzzle from your order"
                             >
-                                <Text style={[styles.appliedButtonText, { color: Colors.primary }]}>Remove</Text>
+                                <Ionicons name="checkmark" size={22} color="#FFFFFF" />
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
@@ -225,8 +232,13 @@ export function FreePuzzleBlock({
                         </View>
                     ) : (
                         <>
-                            <TouchableOpacity style={styles.addButton} onPress={openPicker} activeOpacity={0.8}>
-                                <Text style={styles.addButtonText}>Add</Text>
+                            <TouchableOpacity
+                                style={[styles.addButton, !milestoneMinCartUnlocked && styles.addButtonDisabled]}
+                                onPress={openPicker}
+                                activeOpacity={0.8}
+                                disabled={!milestoneMinCartUnlocked}
+                            >
+                                <Text style={[styles.addButtonText, !milestoneMinCartUnlocked && styles.addButtonTextDisabled]}>Add</Text>
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
@@ -249,9 +261,9 @@ export function FreePuzzleBlock({
                                 <Ionicons name="close" size={24} color="#717680" />
                             </TouchableOpacity>
                         </View>
-                        {!!offerCopy?.itemModalSubtitle && (
+                        {/* {!!offerCopy?.itemModalSubtitle && (
                             <Text style={styles.modalSubtitleHint}>{offerCopy.itemModalSubtitle}</Text>
-                        )}
+                        )} */}
                         <View style={styles.sizeModalDivider} />
                         <ScrollView
                             style={styles.sizeModalScroll}
@@ -358,7 +370,7 @@ const styles = StyleSheet.create({
     offerSubtitle: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendRegular, color: '#535862', opacity: 0.9 },
     productCard: {
         flexDirection: 'row',
-        backgroundColor: '#EFF8FF',
+        backgroundColor: '#FEFBE8',
         borderRadius: 12,
         padding: 12,
         alignItems: 'center',
@@ -368,29 +380,36 @@ const styles = StyleSheet.create({
     productName: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendMedium, color: '#181D27', marginBottom: 6, lineHeight: 18 },
     metaText: { fontSize: 10, fontFamily: Fonts.LexendRegular, color: '#717680' },
     editRemoveRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-    editLink: { fontSize: 10, fontFamily: Fonts.LexendBold, color: '#F15E5E' },
+    editLink: { fontSize: 10, fontFamily: Fonts.LexendBold, color: '#EAAA08' },
     actionBlock: { alignItems: 'flex-end' },
     addButton: {
-        backgroundColor: Colors.primary,
+        backgroundColor: '#FEF7C3',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
         marginBottom: 6,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: '#FDE272',
     },
-    addButtonText: { fontFamily: Fonts.SemiBold, color: Colors.backgroundWhite },
+    addButtonText: { fontFamily: Fonts.SemiBold, color: '#FDE272' },
+    addButtonDisabled: {
+        backgroundColor: '#D1D5DB',
+        borderColor: '#D1D5DB',
+    },
+    addButtonTextDisabled: { color: '#6B7280' },
     selectedStateWrap: { alignItems: 'flex-end' },
     appliedButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: Colors.primary,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        minWidth: 48,
+        height: 36,
+        paddingHorizontal: 30,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#DCAC43',
         borderRadius: 12,
         marginBottom: 6,
+       
     },
-    appliedButtonText: { fontSize: 14, fontFamily: Fonts.SemiBold },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     originalPrice: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendRegular, color: '#717680', textDecorationLine: 'line-through' },
     freeText: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#16B364' },
@@ -412,9 +431,9 @@ const styles = StyleSheet.create({
     sizeModalScrollContent: { paddingBottom: 4 },
     sizeModalClose: { padding: 4 },
     sizeModalTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    sizeModalTitle: { fontSize: Fonts.MediumFontSize, fontFamily: Fonts.LexendBold, color: '#181D27', flex: 1 },
+    sizeModalTitle: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#181D27', flex: 1 },
     sizeModalDivider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 14 },
-    sizeModalSectionTitle: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#181D27', marginBottom: 10 },
+    sizeModalSectionTitle: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#00000080', marginBottom: 10 },
     itemGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 20 },
     itemThumb: {
         width: 72,
@@ -433,7 +452,7 @@ const styles = StyleSheet.create({
         }),
     },
     itemThumbImage: { width: 72, height: 72 },
-    sizeModalSubtitle: { fontSize: Fonts.MediumFontSize, fontFamily: Fonts.LexendBold, color: '#181D27', marginBottom: 12 },
+    sizeModalSubtitle: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#00000080', marginBottom: 12 },
     noItemText: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendRegular, color: '#717680', marginBottom: 20 },
     sizeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 20 },
     sizeButton: {
@@ -449,7 +468,7 @@ const styles = StyleSheet.create({
     },
     sizeButtonDisabled: { borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', opacity: 0.7 },
     sizeButtonSelected: { borderColor: '#F15E5E', borderWidth: 2, backgroundColor: '#F15E5E' },
-    sizeButtonText: { fontSize: 11, fontFamily: Fonts.LexendBold, color: '#414651', textAlign: 'center' },
+    sizeButtonText: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendBold, color: '#414651', textAlign: 'center' },
     sizeButtonTextDisabled: { color: '#9CA3AF' },
     sizeButtonTextSelected: { color: '#FFFFFF' },
     sizeConfirmButton: { backgroundColor: Colors.primary, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },

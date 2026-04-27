@@ -70,6 +70,10 @@ export interface CheckoutDraftRequest {
   selectedShoe?: string;
   /** Free shoes offer: selected size (e.g. S1, S2) – backend should store in Shopify order (note_attributes or similar) */
   selectedShoeSize?: string;
+  /**
+   * Free puzzle (milestone) – variant id + age label. Backends that only read `selected_shoe` / `selected_shoe_size`
+   * should also accept puzzle via those same two slots: see `createDraft` payload (mirrored + explicit snake_case).
+   */
   selectedPuzzleId?: string;
   selectedPuzzleAge?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
@@ -122,6 +126,14 @@ export interface CheckoutCompleteResponse {
  */
 export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutDraftResponse> {
   const url = getBackendApiPath('checkout/draft');
+  const shoeId = (body.selectedShoe ?? '').trim();
+  const shoeSize = (body.selectedShoeSize ?? '').trim();
+  const puzzleId = (body.selectedPuzzleId ?? '').trim();
+  const puzzleAge = (body.selectedPuzzleAge ?? '').trim();
+  /** When shoes + puzzle are never both set, same two fields as shoes can carry puzzle variant + age. */
+  const giftSlotId = shoeId || puzzleId;
+  const giftSlotDetail = shoeSize || puzzleAge;
+
   const payload = {
     items: body.items.map((it) => {
       const row: Record<string, unknown> = {
@@ -167,10 +179,17 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     deliveryType: body.deliveryType ?? (body.deliverySchedule?.date && body.deliverySchedule?.time ? 'scheduled' : 'instant'),
     paymentMethod: body.paymentMethod ?? 'cod',
     billDetails: body.billDetails,
-    selectedShoe: body.selectedShoe ?? '',
-    selectedShoeSize: body.selectedShoeSize ?? '',
-    selectedPuzzleId: body.selectedPuzzleId ?? '',
-    selectedPuzzleAge: body.selectedPuzzleAge ?? '',
+    // Same two fields as free shoes: for puzzle, variant id → "shoe" slot, age label → "size" slot.
+    selectedShoe: giftSlotId,
+    selectedShoeSize: giftSlotDetail,
+    selectedPuzzleId: puzzleId,
+    selectedPuzzleAge: puzzleAge,
+    /** Parity with backends that use snake_case (same as shoes). */
+    selected_shoe: giftSlotId,
+    selected_shoe_size: giftSlotDetail,
+    /** Explicit puzzle (camel + snake) so backends don’t have to infer from coupon only. */
+    selected_puzzle_id: puzzleId,
+    selected_puzzle_age: puzzleAge,
     schoolCouponData: body.schoolCouponData,
     isTryAndBuy: body.isTryAndBuy ?? false,
     // Always send non-empty appVersion and deviceType (same as get coupon by phone)

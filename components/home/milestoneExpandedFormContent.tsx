@@ -38,7 +38,15 @@ function defaultOrderNumberLabel(index: number): string {
     return '4TH ORDER';
 }
 
-function milestoneIconUri(slot: ResolvedMilestoneSlot, index: number, currentStepIndex: number): string {
+function milestoneIconUri(
+    slot: ResolvedMilestoneSlot,
+    index: number,
+    currentStepIndex: number,
+    preferEntryIcon: boolean
+): string {
+    if (preferEntryIcon && slot.entryIconUrl) {
+        return slot.entryIconUrl;
+    }
     const completed = index < currentStepIndex;
     const current = index === currentStepIndex;
     if (completed || current) return slot.activeIconUrl || slot.inactiveIconUrl;
@@ -178,6 +186,14 @@ export type MilestoneExpandedFormContentProps = {
      * @default true
      */
     showMilestoneIconColoredProgress?: boolean;
+    /** Prefer per-slot `entryIconUrl` when available (welcome modal). */
+    preferEntryIcon?: boolean;
+    /** Show the outer ring around step icons. */
+    showMilestoneIconRing?: boolean;
+    /** Dim future-step icons/text. */
+    dimFutureSteps?: boolean;
+    /** Override icon glyph size inside the fixed 44x44 icon slot. */
+    iconSize?: number;
 };
 
 /**
@@ -198,6 +214,10 @@ export function MilestoneExpandedFormContent({
     maxScrollHeight,
     closeControl = 'iconOnly',
     showMilestoneIconColoredProgress = true,
+    preferEntryIcon = false,
+    showMilestoneIconRing = true,
+    dimFutureSteps = true,
+    iconSize = EXPANDED_LIST_IMAGE,
 }: MilestoneExpandedFormContentProps) {
     const n = slots.length;
     const connector = useCallback(
@@ -211,13 +231,13 @@ export function MilestoneExpandedFormContent({
             slots.map((slot, index) => {
                 const isLast = index === n - 1;
                 const lineUri = connector(index, 'horizontal');
-                const iconUri = milestoneIconUri(slot, index, safeCurrent);
+                const iconUri = milestoneIconUri(slot, index, safeCurrent, preferEntryIcon);
                 const isFuture = index > safeCurrent;
                 const isCompletedStep = index < safeCurrent;
                 const isCurrentStep = index === safeCurrent;
                 const slotRingColor = slot.color || slot.titleColorActive || accentColor;
-                const showRingAroundIcon = Boolean(iconUri && (isCurrentStep || isCompletedStep));
-                const ringProgress01 = isCurrentStep ? collapsedIconProgress01 : 1;
+                const showRingAroundIcon = Boolean(showMilestoneIconRing && iconUri);
+                const ringProgress01 = isFuture ? 0 : (isCurrentStep ? collapsedIconProgress01 : 1);
                 const ringColor = isCurrentStep ? accentColor : slotRingColor;
                 const orderLabel = (slot.orderNumber || '').trim() || defaultOrderNumberLabel(index);
                 const activeTitleColor = slot.titleColorActive ? { color: slot.titleColorActive } : null;
@@ -236,14 +256,14 @@ export function MilestoneExpandedFormContent({
                             <View
                                 style={[
                                     styles.iconClip,
-                                    isFuture && styles.expandedIconClipFuture,
+                                    isFuture && dimFutureSteps && styles.expandedIconClipFuture,
                                 ]}
                             >
                                 {iconUri ? (
                                     <View style={styles.expandedActiveIconWithRing}>
                                         <Image
                                             source={{ uri: iconUri }}
-                                            style={styles.iconFill}
+                                            style={[styles.iconFill, { width: iconSize, height: iconSize }]}
                                             contentFit="contain"
                                         />
                                         {showRingAroundIcon ? (
@@ -268,7 +288,10 @@ export function MilestoneExpandedFormContent({
                         <View style={styles.milestoneContent}>
                             {orderLabel ? (
                                 <Text
-                                    style={[styles.expandedOrderLabel, isFuture && styles.expandedOrderLabelFuture]}
+                                    style={[
+                                        styles.expandedOrderLabel,
+                                        isFuture && dimFutureSteps && styles.expandedOrderLabelFuture,
+                                    ]}
                                     numberOfLines={1}
                                 >
                                     {orderLabel}
@@ -277,7 +300,7 @@ export function MilestoneExpandedFormContent({
                             <Text
                                 style={[
                                     styles.expandedRewardTitle,
-                                    isFuture && styles.expandedRewardTitleFuture,
+                                    isFuture && dimFutureSteps && styles.expandedRewardTitleFuture,
                                     !isFuture && activeTitleColor,
                                 ]}
                                 numberOfLines={2}
@@ -288,7 +311,7 @@ export function MilestoneExpandedFormContent({
                                 <Text
                                     style={[
                                         styles.expandedDescription,
-                                        isFuture && styles.expandedDescriptionFuture,
+                                        isFuture && dimFutureSteps && styles.expandedDescriptionFuture,
                                         !isFuture && activeSubtitleColor,
                                     ]}
                                 >
@@ -308,6 +331,10 @@ export function MilestoneExpandedFormContent({
             collapsedIconProgress01,
             cartSubtotal,
             showMilestoneIconColoredProgress,
+            preferEntryIcon,
+            showMilestoneIconRing,
+            dimFutureSteps,
+            iconSize,
         ]
     );
 

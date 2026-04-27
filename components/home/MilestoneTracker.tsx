@@ -5,10 +5,21 @@ import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout, MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    AppState,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from 'react-native';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     CollapsedMilestoneIconProgressRing,
@@ -17,12 +28,20 @@ import {
     MilestoneExpandedFormContent,
 } from './milestoneExpandedFormContent';
 import {
+    areAllMilestoneSlotsCompleted,
     buildMilestoneUIModel,
     milestoneCurrentStepFromConfig,
     milestoneExpandedSubtitleFromConfig,
     milestoneExpandedTitleFromConfig,
     type ResolvedMilestoneSlot,
 } from './milestoneUIFromConfig';
+
+const MILESTONE_TRACKER_DISMISSED_KEY = 'milestone_tracker_dismissed_all_done_v1';
+/** Set when the “all milestones achieved” strip was left after all were complete (app backgrounded). Next launch: hide the pill. */
+const MILESTONE_ALL_DONE_STRIP_SEEN_KEY = 'milestone_all_done_home_strip_seen_v1';
+const ALL_DONE_RING_DEFAULTS = ['#E879F9', '#EAAA08', '#12B76A', '#F04438'] as const;
+/** All done: show milestone icons only when the tracker is at least this fraction of the window width. */
+const ALL_DONE_ICONS_MIN_WIDTH_FRACTION = 0.8;
 
 /** Home: shift expanded modal card slightly **down** (less bottom padding from layout anchor). */
 const HOME_MILESTONE_MODAL_NUDGE_DOWN = 55;
@@ -34,6 +53,12 @@ const CART_MILESTONE_MODAL_TRANSLATE_Y = -90;
 
 /** `dock`: above tab bar (rounded top). `embedded`: cart under savings (square top, rounded bottom into scroll). */
 export type MilestoneTrackerVariant = 'dock' | 'embedded';
+
+/** How far the sheet slides in from the collapsed strip: home = up from below; cart = down from the pill row. */
+const MILESTONE_MODAL_IN_MS = 205;
+const MILESTONE_MODAL_OUT_MS = 175;
+const DOCK_MODAL_SLIDE_PX = 32;
+const EMBEDDED_MODAL_SLIDE_PX = 26;
 
 export interface MilestoneTrackerProps {
     /** Backend `milestoneUI` from GET /api/v1/app/config. When null/omitted, the strip is not rendered. */
@@ -48,6 +73,11 @@ export interface MilestoneTrackerProps {
      * in sync with `FloatingCartCta` for one visual row.
      */
     inlineInCartRow?: boolean;
+    /**
+     * When the strip is not actually rendered (loading, dismissed “all done”, or no data), this is
+     * `false` so the Home row can center the cart CTA instead of 70% empty + 30% cart.
+     */
+    onStripPresenceChange?: (visible: boolean) => void;
 }
 
 /** Collapsed rail: same 44/32 as expanded `MilestoneExpandedFormContent` list. */
@@ -75,13 +105,19 @@ export function MilestoneTracker({
     onExpandedChange,
     variant = 'dock',
     inlineInCartRow = false,
+    onStripPresenceChange,
 }: MilestoneTrackerProps) {
     const [expanded, setExpanded] = useState(false);
+    const [hideAfterAllDoneDismiss, setHideAfterAllDoneDismiss] = useState<boolean | null>(null);
     const onExpandedChangeRef = useRef(onExpandedChange);
     onExpandedChangeRef.current = onExpandedChange;
     const insets = useSafeAreaInsets();
     const { isVisible: isTabBarVisible } = useTabBarVisibility();
     const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const [allDoneTrackerLayoutW, setAllDoneTrackerLayoutW] = useState(0);
+    const allDoneMilestoneIconsMinW = windowWidth * ALL_DONE_ICONS_MIN_WIDTH_FRACTION;
+    const showAllDoneMilestoneIcons =
+        allDoneTrackerLayoutW === 0 || allDoneTrackerLayoutW >= allDoneMilestoneIconsMinW;
     /** Match Home `milestoneDock` + `index` so the sheet does not sit over the tab when it is shown. */
     const tabBarStackBottom = useMemo(() => {
         const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
@@ -95,6 +131,61 @@ export function MilestoneTracker({
         [milestoneUI],
     );
     const slots = milestoneModel?.slots ?? [];
+    const allMilestonesComplete = useMemo(
+        () => areAllMilestoneSlotsCompleted(milestoneUI ?? null),
+        [milestoneUI]
+    );
+    const dismissAllMilestonesComplete = useCallback(() => {
+        setHideAfterAllDoneDismiss(true);
+        void AsyncStorage.setItem(MILESTONE_TRACKER_DISMISSED_KEY, 'true').catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const [dismissed, seenAllDoneInPriorSession] = await Promise.all([
+                    AsyncStorage.getItem(MILESTONE_TRACKER_DISMISSED_KEY),
+                    AsyncStorage.getItem(MILESTONE_ALL_DONE_STRIP_SEEN_KEY),
+                ]);
+                if (cancelled) return;
+                setHideAfterAllDoneDismiss(
+                    dismissed === 'true' || seenAllDoneInPriorSession === 'true'
+                );
+            } catch {
+                if (!cancelled) {
+                    setHideAfterAllDoneDismiss(false);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    /** After all milestones are done, the first time the user leaves the app (or locks), don’t show the all-done pill on the next open. */
+    useEffect(() => {
+        const onAppState = (state: string) => {
+            if (state !== 'background') {
+                return;
+            }
+            if (hideAfterAllDoneDismiss !== false) {
+                return;
+            }
+            if (!allMilestonesComplete) {
+                return;
+            }
+            void AsyncStorage.setItem(MILESTONE_ALL_DONE_STRIP_SEEN_KEY, 'true');
+        };
+        const sub = AppState.addEventListener('change', onAppState);
+        return () => sub.remove();
+    }, [hideAfterAllDoneDismiss, allMilestonesComplete]);
+
+    useLayoutEffect(() => {
+        if (allMilestonesComplete) {
+            setExpanded(false);
+        }
+    }, [allMilestonesComplete]);
     const expandedHeaderTitle = useMemo(
         () => milestoneExpandedTitleFromConfig(milestoneUI ?? undefined),
         [milestoneUI]
@@ -156,11 +247,75 @@ export function MilestoneTracker({
         return Math.min(1, Math.max(0, ct / minV));
     }, [collapsedActiveSlot, cartSubtotal]);
 
-    const toggle = useCallback(() => {
-        setExpanded((e) => !e);
+    const slideFromStripPx = useMemo(
+        () => (variant === 'embedded' ? -EMBEDDED_MODAL_SLIDE_PX : DOCK_MODAL_SLIDE_PX),
+        [variant]
+    );
+    const translateY = useSharedValue(
+        variant === 'embedded' ? -EMBEDDED_MODAL_SLIDE_PX : DOCK_MODAL_SLIDE_PX
+    );
+    const backdropOp = useSharedValue(0);
+
+    const finishClose = useCallback(() => {
+        setExpanded(false);
     }, []);
 
+    const toggle = useCallback(() => {
+        if (expanded) {
+            translateY.value = withTiming(
+                slideFromStripPx,
+                { duration: MILESTONE_MODAL_OUT_MS, easing: Easing.bezier(0.4, 0, 1, 0.95) },
+                (finished) => {
+                    if (finished) {
+                        runOnJS(finishClose)();
+                    }
+                }
+            );
+            backdropOp.value = withTiming(0, {
+                duration: 135,
+                easing: Easing.bezier(0.4, 0, 1, 0.95),
+            });
+        } else {
+            setExpanded(true);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+    }, [expanded, finishClose, slideFromStripPx]);
+
+    useLayoutEffect(() => {
+        if (!expanded) {
+            return;
+        }
+        translateY.value = slideFromStripPx;
+        backdropOp.value = 0;
+        translateY.value = withTiming(0, {
+            duration: MILESTONE_MODAL_IN_MS,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+        backdropOp.value = withTiming(1, {
+            duration: 160,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+    }, [expanded, slideFromStripPx]);
+
+    const backdropAnimStyle = useAnimatedStyle(() => ({
+        opacity: backdropOp.value,
+    }));
+
+    const cardAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
     const hasMilestones = Boolean(milestoneModel && slots.length > 0);
+    const stripPaints = hasMilestones && hideAfterAllDoneDismiss === false;
+    useLayoutEffect(() => {
+        onStripPresenceChange?.(stripPaints);
+    }, [onStripPresenceChange, stripPaints]);
+    useLayoutEffect(() => {
+        return () => {
+            onStripPresenceChange?.(false);
+        };
+    }, [onStripPresenceChange]);
     useLayoutEffect(() => {
         if (!hasMilestones) {
             onExpandedChangeRef.current?.(false);
@@ -169,8 +324,93 @@ export function MilestoneTracker({
         onExpandedChangeRef.current?.(expanded);
     }, [expanded, hasMilestones]);
 
+    if (hideAfterAllDoneDismiss === null) {
+        return null;
+    }
+    if (hideAfterAllDoneDismiss) {
+        return null;
+    }
     if (!milestoneModel || slots.length === 0) {
         return null;
+    }
+    if (allMilestonesComplete) {
+        return (
+            <View
+                style={styles.milestoneRoot}
+                onLayout={(e) => {
+                    setAllDoneTrackerLayoutW(e.nativeEvent.layout.width);
+                }}
+            >
+                <View
+                    style={[
+                        styles.collapsedSurface,
+                        variant === 'embedded' && styles.surfaceEmbeddedCollapsed,
+                        inlineInCartRow && styles.collapsedSurfaceInCartRow,
+                    ]}
+                    accessibilityRole="summary"
+                >
+                    <View style={styles.embeddedCollapsedRow}>
+                        <View
+                            style={[
+                                styles.collapsedPillPressable,
+                                inlineInCartRow && styles.collapsedPillPressableInCartRow,
+                            ]}
+                        >
+                            <BlurView
+                                intensity={100}
+                                tint="light"
+                                style={[
+                                    styles.pillBlurContainer,
+                                    { borderColor: '#D5D7DA' },
+                                    inlineInCartRow && styles.pillBlurContainerInCartRow,
+                                ]}
+                            >
+                                <View style={styles.collapsedPillContent} pointerEvents="box-none">
+                                    <View style={styles.allDoneTextCol}>
+                                        <Text style={styles.allDoneKicker}>All milestones achieved</Text>
+                                        <Text style={styles.collapsedTitleEmbedded}>Congratulations!</Text>
+                                    </View>
+                                    {showAllDoneMilestoneIcons ? (
+                                        <View style={styles.allDoneIconsRow}>
+                                            {slots.map((slot, i) => {
+                                                const slotColor = slot.color && String(slot.color).trim();
+                                                const ring =
+                                                    slotColor ||
+                                                    ALL_DONE_RING_DEFAULTS[i % ALL_DONE_RING_DEFAULTS.length];
+                                                const uri = slot.activeIconUrl || slot.inactiveIconUrl;
+                                                return (
+                                                    <View key={`all-done-m-${i}`} style={styles.allDoneIconCell}>
+                                                        <View
+                                                            style={[styles.allDoneIconRing, { borderColor: ring }]}
+                                                        >
+                                                            {!!uri && (
+                                                                <Image
+                                                                    source={{ uri }}
+                                                                    style={styles.allDoneIconImage}
+                                                                    contentFit="contain"
+                                                                />
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    ) : null}
+                                    <Pressable
+                                        onPress={dismissAllMilestonesComplete}
+                                        style={({ pressed }) => [styles.allDoneClose, pressed && { opacity: 0.72 }]}
+                                        hitSlop={12}
+                                        accessibilityLabel="Dismiss; milestone tracker will stay hidden"
+                                    >
+                                        <Ionicons name="close" size={22} color="#7B7F86" />
+                                    </Pressable>
+                                </View>
+                            </BlurView>
+                        </View>
+                    </View>
+                </View>
+            </View>
+        );
     }
 
     /** Home strip: up / modal header down. Cart (`embedded`): reversed so the affordance matches placement. */
@@ -275,12 +515,12 @@ export function MilestoneTracker({
             <Modal
                 visible={expanded}
                 transparent
-                animationType="fade"
+                animationType="none"
                 onRequestClose={toggle}
                 statusBarTranslucent
             >
                 <View style={styles.modalRoot}>
-                    <Pressable
+                    <Animated.View
                         style={[
                             isDock && isTabBarVisible
                                 ? {
@@ -292,6 +532,21 @@ export function MilestoneTracker({
                                   }
                                 : StyleSheet.absoluteFill,
                             styles.modalBackdropScrim,
+                            backdropAnimStyle,
+                        ]}
+                        pointerEvents="box-none"
+                    />
+                    <Pressable
+                        style={[
+                            isDock && isTabBarVisible
+                                ? {
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      bottom: tabBarStackBottom,
+                                  }
+                                : StyleSheet.absoluteFill,
                         ]}
                         onPress={toggle}
                         accessibilityLabel="Close milestone rewards"
@@ -308,10 +563,11 @@ export function MilestoneTracker({
                         ]}
                         pointerEvents="box-none"
                     >
-                        <View
+                        <Animated.View
                             style={[
                                 styles.modalContainerExpanded,
                                 { width: '100%', maxWidth: cardMaxWidth },
+                                cardAnimStyle,
                             ]}
                             accessibilityRole="summary"
                         >
@@ -329,7 +585,7 @@ export function MilestoneTracker({
                                 chevronName={expandedHeaderChevron}
                                 maxScrollHeight={modalScrollMaxHeight}
                             />
-                        </View>
+                        </Animated.View>
                     </View>
                 </View>
             </Modal>
@@ -464,8 +720,9 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     collapsedTitleEmbedded: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendBold,
         color: '#111111',
-        fontSize: 15,
         lineHeight: 20,
     },
     /** Muted line under title when `unlockedSubtitle` / earned copy is set (light pill). */
@@ -475,6 +732,48 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendRegular,
         color: '#6B6B6B',
         lineHeight: 16,
+    },
+    allDoneTextCol: {
+        flex: 1,
+        minWidth: 0,
+    },
+    /** Muted line — matches `collapsedSubtitleEmbedded` (light pill) */
+    allDoneKicker: {
+        fontSize: 12,
+        fontFamily: Fonts.LexendBold,
+        color: '#6B6B6B',
+        marginBottom: 2,
+    },
+    allDoneIconsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        flexShrink: 0,
+    },
+    allDoneIconCell: {
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    allDoneIconRing: {
+        width: 36,
+        height: 36,
+        borderRadius: 20,
+        borderWidth: 2.5,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    allDoneIconImage: {
+        width: 20,
+        height: 20,
+    },
+    allDoneClose: {
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

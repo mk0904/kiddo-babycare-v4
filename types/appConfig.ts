@@ -42,6 +42,25 @@ export interface FreePuzzlePickerConfig {
   };
 }
 
+/**
+ * 1st / 4th-order `isGift` steps — no product picker; user taps Add to apply the hidden coupon (same flow as free shoes / free puzzle gift codes).
+ */
+export interface MysteryGiftOfferConfig {
+  enabled: boolean;
+  /** Shopify / kiddo discount code (e.g. “Mystery gift”); may be `isVisible: false` in coupons API. */
+  discountCode?: string;
+  visible?: boolean;
+  originalPrice?: number;
+  copy?: {
+    title?: string;
+    subtitle?: string;
+    cta?: string;
+    freeLabel?: string;
+    /** Shown in the “applied” state under the title */
+    selectedLabel?: string;
+  };
+}
+
 export interface FreePuzzleOfferConfig {
   enabled: boolean;
   /** Shopify / kiddo discount code for this free-puzzle line (used when milestone 2 is the active free-gift step). */
@@ -124,6 +143,8 @@ export interface CartFeatures {
 }
 
 export interface CartConfig {
+  /** Gift bill only (1st/4th `isGift`); pairs with `milestoneIsGiftBillDiscountLineTitle` / manual coupon apply. */
+  mysteryGiftOffer?: MysteryGiftOfferConfig;
   deliveryCard?: {
     instantLabel?: string;
     scheduleCta?: string;
@@ -187,6 +208,10 @@ export interface MilestoneSlotConfig {
   iconUrl?: string;
   activeIconUrl?: string;
   inactiveIconUrl?: string;
+  /** Welcome modal entry icon (used when `KiddoRewardsWelcomeModal` opens). */
+  entryIconUrl?: string;
+  /** Legacy casing fallback for entry icon. */
+  entryiconUrl?: string;
   /** Default / outline glyph when step is inactive (new API). */
   defaultIconUrl?: string;
   /** Primary headline in expanded milestone row (preferred over `title`). */

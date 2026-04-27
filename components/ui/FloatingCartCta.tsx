@@ -40,7 +40,10 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
     return (
         <TouchableOpacity
             testID={testID}
-            style={[styles.button, inMilestoneRow && styles.buttonInMilestoneRow]}
+            style={[
+                styles.button,
+                inMilestoneRow ? styles.buttonInMilestoneRow : styles.buttonFloating,
+            ]}
             onPress={handlePress}
             activeOpacity={0.92}
         >
@@ -81,6 +84,10 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         paddingHorizontal: 10,
     },
+    /** Space above the tab bar when the pill is `FloatingCartButton` (not in `MilestoneCartRow`). */
+    buttonFloating: {
+        marginBottom: 10,
+    },
     buttonInMilestoneRow: {
         minWidth: 0,
         width: '100%',
@@ -89,6 +96,7 @@ const styles = StyleSheet.create({
         minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
         maxHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
         alignSelf: 'stretch',
+        marginBottom: 0,
     },
     content: {
         flexDirection: 'row',

@@ -73,7 +73,9 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
     useEffect(() => {
         const targetOffset =
-            showTabBar && isTabBarVisible ? baseBottomOffset : hiddenBottomOffset;
+            showTabBar && isTabBarVisible
+                ? baseBottomOffset
+                : hiddenBottomOffset + (anchorExtraOffset || 0);
         Animated.spring(bottomOffsetAnim, {
             toValue: targetOffset,
             useNativeDriver: false,

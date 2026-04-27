@@ -6,17 +6,18 @@
  * (e.g. https://kiddo-service-874125225773.asia-south1.run.app/api/v1/app/config?phone=%2B917607235050&customerId=12345&appVersion=1.0.0&deviceType=ios)
  */
 import type {
-  AppConfigResponse,
-  CartConfig,
-  CartFeatures,
-  EntryScreenItem,
-  FreePuzzleOfferConfig,
-  FreePuzzlePickerConfig,
-  FreeShoesOfferConfig,
-  FreeShoesPickerConfig,
-  GiftWrapConfig,
-  MilestoneUIConfig,
-  OrderDetailConfig,
+    AppConfigResponse,
+    CartConfig,
+    CartFeatures,
+    EntryScreenItem,
+    FreePuzzleOfferConfig,
+    FreePuzzlePickerConfig,
+    FreeShoesOfferConfig,
+    FreeShoesPickerConfig,
+    GiftWrapConfig,
+    MilestoneUIConfig,
+    MysteryGiftOfferConfig,
+    OrderDetailConfig,
 } from '@/types/appConfig';
 import { getBackendApiPath } from './backendBase';
 
@@ -173,8 +174,24 @@ class AppConfigService {
     return this.config?.cart?.freePuzzlePicker ?? null;
   }
 
+  getMysteryGiftOfferConfig(): MysteryGiftOfferConfig | null {
+    return this.config?.cart?.mysteryGiftOffer ?? null;
+  }
+
   /**
-   * Which discount code applies to the free-shoes gift — from `cart.freeShoesOffer.discountCode` when set; otherwise a legacy default.
+   * 1st/4th `isGift` gift-bill code — from `cart.mysteryGiftOffer.discountCode` when set; otherwise a default matching common Shopify copy.
+   */
+  getMysteryGiftDiscountCodeUppercase(): string {
+    const c = this.config?.cart?.mysteryGiftOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim().toUpperCase();
+    }
+    /** Falls back to API/Shopify casing when `mysteryGiftOffer.discountCode` is not in app config. */
+    return 'MYSTERY GIFT';
+  }
+
+  /**
+   * Which discount code applies to the free-shoes gift — from `cart.freeShoesOffer.discountCode` when set; otherwise `FREE SHOES` (Shopify “Free Shoes”).
    * The cart only applies this when the active free-gift step is shoes (`getMilestoneFreeGiftKind` in the cart screen).
    */
   getFreeShoesGiftDiscountCodeUppercase(): string {
@@ -182,7 +199,7 @@ class AppConfigService {
     if (c != null && String(c).trim() !== '') {
       return String(c).trim().toUpperCase();
     }
-    return 'HEYKIDDO';
+    return 'FREE SHOES';
   }
 
   /**
@@ -193,7 +210,8 @@ class AppConfigService {
     if (c != null && String(c).trim() !== '') {
       return String(c).trim().toUpperCase();
     }
-    return 'KIDPUZZLE';
+    // Backend coupon payload uses code "Free puzzle" in current setup.
+    return 'FREE PUZZLE';
   }
 
   getGiftWrapConfig(): GiftWrapConfig | null {

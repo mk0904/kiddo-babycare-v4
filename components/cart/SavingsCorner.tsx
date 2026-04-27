@@ -20,8 +20,8 @@ import {
     View
 } from 'react-native';
 
-import { SavingsCornerCouponCarousel, type SavingsCornerCouponItem } from './SavingsCornerCouponCarousel';
 import { SchoolCouponModal } from '../modals/SchoolCouponModal';
+import { SavingsCornerCouponCarousel, type SavingsCornerCouponItem } from './SavingsCornerCouponCarousel';
 
 export type SavingsCornerCoupon = SavingsCornerCouponItem;
 
@@ -298,17 +298,19 @@ export function SavingsCorner({
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
         [configRefreshKey]
     );
-    const isHeyKiddoApplied = (appliedDiscountCode ?? '').toUpperCase() === freeShoesGiftCodeUc;
-    const heyKiddoOriginalPrice = useMemo(() => {
-        if (!isHeyKiddoApplied) return undefined;
+    const isFreeShoesGiftApplied =
+        Boolean(freeShoesGiftCodeUc) && (appliedDiscountCode ?? '').toUpperCase() === freeShoesGiftCodeUc;
+    const freeShoesGiftDisplayPrice = useMemo(() => {
+        if (!isFreeShoesGiftApplied) return undefined;
         const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === freeShoesGiftCodeUc)?.originalPrice;
         if (fromCode != null && Number.isFinite(fromCode)) return fromCode;
         const config = appConfigService.getCartConfig()?.freeShoesOffer ?? appConfigService.getFreeShoesOfferConfig();
         const raw = (config as any)?.originalPrice ?? (config as any)?.original_price;
         const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         return Number.isFinite(num) && num >= 0 ? num : undefined;
-    }, [isHeyKiddoApplied, discountCodes, freeShoesGiftCodeUc]);
-    const appliedSaveAmount = isHeyKiddoApplied && heyKiddoOriginalPrice != null ? heyKiddoOriginalPrice : discountAmount;
+    }, [isFreeShoesGiftApplied, discountCodes, freeShoesGiftCodeUc]);
+    const appliedSaveAmount =
+        isFreeShoesGiftApplied && freeShoesGiftDisplayPrice != null ? freeShoesGiftDisplayPrice : discountAmount;
     const appliedHeadline = hasAppliedCoupon
         ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''}`
         : '';

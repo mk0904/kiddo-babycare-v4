@@ -3,8 +3,10 @@ import { configService } from '@/services/configService';
 import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MilestoneExpandedFormContent } from './milestoneExpandedFormContent';
 import {
@@ -15,6 +17,12 @@ import {
 } from './milestoneUIFromConfig';
 
 const WELCOME_SHOW_DELAY_MS = 0;
+const WELCOME_MODAL_IN_MS = 1000;
+const WELCOME_MODAL_OUT_MS = 1000;
+/** Card snaps up from below (aligned with quick bottom-anchored motion on Home). */
+const WELCOME_SLIDE_PX = 36;
+
+const KIDDO_REWARDS_WELCOME_DISMISSED_KEY = 'kiddo_rewards_welcome_modal_dismissed';
 
 export type KiddoRewardsWelcomeModalProps = {
     milestoneUI: MilestoneUIConfig | null | undefined;
@@ -26,9 +34,9 @@ export type KiddoRewardsWelcomeModalProps = {
 
 /**
  * Home-only **popup** over the main feed: same Kiddo rewards list as the expanded strip, in a dimmed
- * `Modal` (separate from `MilestoneTracker`). Shown a few seconds after the Home tab is focused, when
- * milestone app-config exists. Dismiss only via the X control. No AsyncStorage — shows again the next
- * time the app is brought to the foreground (user “opens” the app again).
+ * `Modal` (separate from `MilestoneTracker`). Shown after the Home tab is focused when milestone
+ * app-config exists. Dismiss via the X (or Android back): persisted in AsyncStorage so it auto-opens
+ * only once. Full rewards detail afterward is via the milestone strip chevron (`MilestoneTracker`).
  */
 export function KiddoRewardsWelcomeModal({
     milestoneUI,
@@ -37,8 +45,10 @@ export function KiddoRewardsWelcomeModal({
     onVisibilityChange,
 }: KiddoRewardsWelcomeModalProps) {
     const homeLandedAtMsRef = useRef<number | null>(null);
-    /** After the user closes the sheet, don’t re-arm until the next time the app becomes `active` (no storage). */
+    /** Session re-arm on foreground; ignored if the user has permanently dismissed (`AsyncStorage`). */
     const mayAutoShowRef = useRef(true);
+    const persistDismissedRef = useRef(false);
+    const [persistDismissed, setPersistDismissed] = useState<boolean | null>(null);
     const [scheduleTick, setScheduleTick] = useState(0);
     const insets = useSafeAreaInsets();
     const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -91,18 +101,92 @@ export function KiddoRewardsWelcomeModal({
         [windowHeight, insets.top, insets.bottom]
     );
 
-    const dismiss = useCallback(() => {
-        mayAutoShowRef.current = false;
+    const translateY = useSharedValue(WELCOME_SLIDE_PX);
+    const backdropOp = useSharedValue(0);
+
+    const finishHideModal = useCallback(() => {
         setVisible(false);
     }, []);
+
+    const dismiss = useCallback(() => {
+        mayAutoShowRef.current = false;
+        persistDismissedRef.current = true;
+        setPersistDismissed(true);
+        void AsyncStorage.setItem(KIDDO_REWARDS_WELCOME_DISMISSED_KEY, 'true').catch(() => {});
+        translateY.value = withTiming(
+            WELCOME_SLIDE_PX,
+            { duration: WELCOME_MODAL_OUT_MS, easing: Easing.bezier(0.4, 0, 1, 0.95) },
+            (finished) => {
+                if (finished) {
+                    runOnJS(finishHideModal)();
+                }
+            }
+        );
+        backdropOp.value = withTiming(0, {
+            duration: 130,
+            easing: Easing.bezier(0.4, 0, 1, 0.95),
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+    }, [finishHideModal]);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const v = await AsyncStorage.getItem(KIDDO_REWARDS_WELCOME_DISMISSED_KEY);
+                if (cancelled) return;
+                const dismissed = v === 'true';
+                persistDismissedRef.current = dismissed;
+                setPersistDismissed(dismissed);
+                if (dismissed) {
+                    mayAutoShowRef.current = false;
+                }
+            } catch {
+                if (!cancelled) {
+                    setPersistDismissed(false);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!visible) {
+            return;
+        }
+        translateY.value = WELCOME_SLIDE_PX;
+        backdropOp.value = 0;
+        translateY.value = withTiming(0, {
+            duration: WELCOME_MODAL_IN_MS,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+        backdropOp.value = withTiming(1, {
+            duration: 160,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+    }, [visible]);
+
+    const backdropAnimStyle = useAnimatedStyle(() => ({
+        opacity: backdropOp.value,
+    }));
+
+    const cardAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
 
     useEffect(() => {
         const onAppState = (state: AppStateStatus) => {
             if (state !== 'active') {
                 return;
             }
-            mayAutoShowRef.current = true;
             setVisible(false);
+            if (persistDismissedRef.current) {
+                return;
+            }
+            mayAutoShowRef.current = true;
             homeLandedAtMsRef.current = Date.now();
             setScheduleTick((t) => t + 1);
         };
@@ -123,6 +207,9 @@ export function KiddoRewardsWelcomeModal({
             return;
         }
         if (!open || !isHomeFocused) {
+            return;
+        }
+        if (persistDismissed !== false) {
             return;
         }
         if (!milestoneModel || slots.length === 0) {
@@ -149,7 +236,7 @@ export function KiddoRewardsWelcomeModal({
             cancelled = true;
             clearTimeout(timer);
         };
-    }, [open, isHomeFocused, visible, milestoneModel, slots.length, scheduleTick]);
+    }, [open, isHomeFocused, visible, milestoneModel, slots.length, scheduleTick, persistDismissed]);
 
     useEffect(() => {
         onVisibilityChange?.(visible);
@@ -163,8 +250,8 @@ export function KiddoRewardsWelcomeModal({
         <Modal
             visible={visible}
             transparent
-            animationType="fade"
-            onRequestClose={() => {}}
+            animationType="none"
+            onRequestClose={dismiss}
             statusBarTranslucent
             hardwareAccelerated
             presentationStyle="overFullScreen"
@@ -176,8 +263,8 @@ export function KiddoRewardsWelcomeModal({
                 ]}
                 pointerEvents="box-none"
             >
-                {/* Backdrop: dims Home; not pressable (dismiss with X only). */}
-                <View
+                {/* Backdrop: dims Home; not pressable (dismiss with X or header / Android back). */}
+                <Animated.View
                     style={[
                         isTabBarVisible
                             ? {
@@ -189,11 +276,16 @@ export function KiddoRewardsWelcomeModal({
                               }
                             : StyleSheet.absoluteFill,
                         styles.modalBackdropScrim,
+                        backdropAnimStyle,
                     ]}
                 />
                 <View style={styles.popupCenter} pointerEvents="box-none">
-                    <View
-                        style={[styles.popupCard, { maxWidth: cardMaxWidth, width: '100%' }]}
+                    <Animated.View
+                        style={[
+                            styles.popupCard,
+                            { maxWidth: cardMaxWidth, width: '100%' },
+                            cardAnimStyle,
+                        ]}
                         accessibilityViewIsModal
                     >
                         <MilestoneExpandedFormContent
@@ -210,8 +302,12 @@ export function KiddoRewardsWelcomeModal({
                             closeControl="iconOnly"
                             maxScrollHeight={modalScrollMaxHeight}
                             showMilestoneIconColoredProgress={false}
+                            preferEntryIcon
+                            showMilestoneIconRing={false}
+                            dimFutureSteps={false}
+                            iconSize={32}
                         />
-                    </View>
+                    </Animated.View>
                 </View>
             </View>
         </Modal>

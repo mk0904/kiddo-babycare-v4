@@ -16,8 +16,6 @@ import {
 } from 'react-native';
 
 const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
-const OFFER_BLUE = '#2563EB';
-const FREE_GREEN = '#16A34A';
 const ORIGINAL_PRICE_DEFAULT = 4999;
 
 /** Default shoe size options (baby/kids) when backend config does not provide sizes. */
@@ -38,6 +36,8 @@ export interface FreePairShoesProps {
     visible?: boolean;
     /** When this changes (e.g. cart appConfigRefresh), config is re-read so backend updates (e.g. shoe name) show up */
     configRefreshKey?: number;
+    /** `false` until the active milestone’s `minCartValue` is met — disables Add only. */
+    milestoneMinCartUnlocked?: boolean;
     selectedShoe?: string | null;
     /** When provided (e.g. from cart store), used as the displayed/confirmed size so it can be sent to Shopify */
     selectedShoeSize?: string | null;
@@ -48,7 +48,7 @@ export interface FreePairShoesProps {
     onRemoveOffer?: () => void;
     /** Optional original price for display (strikethrough); defaults to config/4999 */
     originalPrice?: number;
-    /** When HEYKIDDO is applied, original price from coupon state (overrides originalPrice when set) */
+    /** When the free-shoes gift code is applied, original price from coupon state (overrides originalPrice when set) */
     appliedCouponOriginalPrice?: number;
 }
 
@@ -61,6 +61,7 @@ interface ShoeOption {
 export function FreePairShoes({
     visible = true,
     configRefreshKey,
+    milestoneMinCartUnlocked = true,
     selectedShoe,
     selectedShoeSize: selectedShoeSizeProp,
     onAddPress,
@@ -160,6 +161,9 @@ export function FreePairShoes({
     const modalShoes = getShoesForSize(sizeModalSelection);
 
     const openSizeModal = () => {
+        if (!isApplied && !milestoneMinCartUnlocked) {
+            return;
+        }
         const currentSelection = selectedSize && sizeOptions.some((s) => s.size === selectedSize && s.isAvailable)
             ? selectedSize
             : firstAvailableSize;
@@ -251,11 +255,14 @@ export function FreePairShoes({
                     ) : (
                         <>
                             <TouchableOpacity
-                                style={styles.addButton}
+                                style={[styles.addButton, !milestoneMinCartUnlocked && styles.addButtonDisabled]}
                                 onPress={openSizeModal}
                                 activeOpacity={0.8}
+                                disabled={!milestoneMinCartUnlocked}
                             >
-                                <Text style={styles.addButtonText}>Add</Text>
+                                <Text style={[styles.addButtonText, !milestoneMinCartUnlocked && styles.addButtonTextDisabled]}>
+                                    Add
+                                </Text>
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
@@ -477,6 +484,11 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.SemiBold,
         color: Colors.backgroundWhite,
     },
+    addButtonDisabled: {
+        backgroundColor: '#D1D5DB',
+        borderColor: '#D1D5DB',
+    },
+    addButtonTextDisabled: { color: '#6B7280' },
     selectedStateWrap: {
         alignItems: 'flex-end',
     },

@@ -66,6 +66,7 @@ export interface ResolvedMilestoneSlot {
     color: string;
     activeIconUrl: string;
     inactiveIconUrl: string;
+    entryIconUrl: string;
     isCompleted?: boolean;
     titleColorActive: string;
     subtitleColor: string;
@@ -121,6 +122,20 @@ export function resolveMilestoneConnectorUri(
 /**
  * Maps `milestoneUI` to four ordered steps (`milestoneFirst` → `milestoneFourth`).
  */
+/** True when backend marks every step `milestoneFirst`–`milestoneFourth` as completed. */
+export function areAllMilestoneSlotsCompleted(ui: MilestoneUIConfig | null | undefined): boolean {
+    if (ui == null) {
+        return false;
+    }
+    for (const key of MILESTONE_KEYS) {
+        const slot = ui[key];
+        if (slot?.isCompleted !== true) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined): ResolvedMilestoneUIModel | null {
     if (ui == null) {
         return null;
@@ -137,6 +152,10 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
             trimUrl(raw?.defaultIconUrl) ||
             trimUrl(raw?.iconUrl) ||
             trimUrl(raw?.activeIconUrl) ||
+            '';
+        const entryIconUrl =
+            trimUrl(raw?.entryIconUrl) ||
+            trimUrl(raw?.entryiconUrl) ||
             '';
 
         return {
@@ -155,6 +174,7 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
             color: trimUrl(raw?.color),
             activeIconUrl,
             inactiveIconUrl,
+            entryIconUrl,
             isCompleted: raw?.isCompleted,
             titleColorActive: trimUrl(raw?.activeColor),
             subtitleColor: trimUrl(raw?.inactiveColor),

@@ -5479,21 +5479,24 @@
     "enabled": true,
     "codes": [
       {
-        "code": "HEYKIDDO",
-        "title": "free shoes",
-        "description": "Special discount on shoes",
+        "code": "Free Shoes",
+        "title": "Free Shoes",
+        "description": "Free Shoes above ₹799",
         "value": 0,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 500,
+        "minimumPurchaseAmount": 999,
+        "maxDiscountAmount": null,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
         "usageLimitPerUser": 1,
         "firstOrderOnly": false,
         "ticketingOnly": false,
-        "clothingOnly": true,
+        "clothingOnly": false,
         "nonCombinable": false,
-        "isVisible": true
+        "isVisible": false,
+        "minAndroidVersion": "1.8.8",
+        "minIOSVersion": "3.1.1"
       },
       {
         "code": "FIRSTKIDDOTICKET",
@@ -5827,6 +5830,7 @@
   },
   "freeShoesOffer": {
     "enabled": true,
+    "discountCode": "Free Shoes",
     "shoes": [
       {
         "id": "shoe-1",

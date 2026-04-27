@@ -37,6 +37,25 @@ function titleFromSlot(slot: MilestoneSlotConfig): string {
     return t || 'Milestone offer';
 }
 
+/** Bill row prefix from `orderNumber` (e.g. "1st order") for rewards copy. */
+function orderBitForBillRow(slot: MilestoneSlotConfig): string {
+    const o = (slot.orderNumber ?? '').toString().trim();
+    if (!o) return '1st order';
+    const lower = o.toLowerCase();
+    if (lower.includes('order')) return o;
+    return `${o} order`;
+}
+
+function billRowLabelForConfigDiscount(slot: MilestoneSlotConfig, typeRaw: string, value: number): string {
+    const ob = orderBitForBillRow(slot);
+    if (typeRaw === 'percentage' || typeRaw === 'percent') {
+        const pctStr = Number.isInteger(value) ? String(Math.round(value)) : String(value);
+        return `${ob} reward - ${pctStr}% off`;
+    }
+    const rupee = Math.round(value);
+    return `${ob} reward - ₹${rupee} off`;
+}
+
 /**
  * `true` when the slot’s `minCartValue` (if any) is reached by the cart subtotal.
  */
@@ -86,7 +105,7 @@ export function milestoneIsGiftBillDiscountLineTitle(
 export function computeMilestoneConfigDiscount(
     itemSubtotal: number,
     slot: MilestoneSlotConfig | null | undefined
-): { amount: number; label: string } | null {
+): { amount: number; label: string; billRowLabel: string } | null {
     if (slot == null || itemSubtotal <= 0) return null;
     if (slotIsGiftTrue(slot)) return null;
     const typeRaw = (slot.discount_type ?? (slot as { discountType?: string }).discountType ?? '')
@@ -114,7 +133,11 @@ export function computeMilestoneConfigDiscount(
     }
     amount = Math.min(amount, itemSubtotal);
     if (amount <= 0) return null;
-    return { amount, label: titleFromSlot(slot) };
+    return {
+        amount,
+        label: titleFromSlot(slot),
+        billRowLabel: billRowLabelForConfigDiscount(slot, typeRaw, value),
+    };
 }
 
 /**
