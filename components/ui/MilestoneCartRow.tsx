@@ -21,7 +21,7 @@ export type MilestoneCartRowProps = {
  * Pairs `MilestoneTracker` with the shared `View cart` CTA on Home using the same 70% / 30% split as
  * `getHomeMilestoneRowLayout`, so alignment stays in one place app-wide. 
  */
-export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange }: MilestoneCartRowProps) {
+export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInlineWithCart }: MilestoneCartRowProps) {
     const { width: windowWidth } = useWindowDimensions();
     const itemCount = useCartItemCount();
     const setMilestoneInlineCartInRow = useMilestoneInlineCartController()?.setMilestoneInlineCartInRow;
@@ -49,7 +49,7 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange }: Mil
 
     // Show inline only if milestones exist AND they aren't all finished
     const isFinished = isAllDoneFromConfig || isCelebrationSeen === true;
-    const showInline = Boolean(itemCount > 0 && hasMilestone && !isFinished);
+    const showInline = Boolean(itemCount > 0 && hasMilestone && !isFinished && isInlineWithCart);
 
     useEffect(() => {
         if (!hasMilestone || isFinished) {

@@ -3,7 +3,6 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
-import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
 import {
   getDeliveryEta,
   getDeliveryEtaForAddress,
@@ -13,7 +12,6 @@ import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
-import { useMilestoneInlineCartController } from '@/context/MilestoneInlineCartContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
@@ -588,12 +586,12 @@ export default function HomeScreen() {
       </View>
 
       {/* Scroll to Top Button */}
-      <ScrollToTopButton
+      {/* <ScrollToTopButton
         visible={showScrollToTop}
         onPress={handleScrollToTop}
         tabBarReserveHeight={tabBarStackBottom}
         anchorExtraOffset={scrollToTopAnchorExtra}
-      />
+      /> */}
 
       <MilestoneTabDock
         milestoneUI={milestoneUI}

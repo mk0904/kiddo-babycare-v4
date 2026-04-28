@@ -137,7 +137,7 @@ export function MilestoneTracker({
     );
     const dismissAllMilestonesComplete = useCallback(() => {
         setHideAfterAllDoneDismiss(true);
-        void AsyncStorage.setItem(MILESTONE_TRACKER_DISMISSED_KEY, 'true').catch(() => {});
+        void AsyncStorage.setItem(MILESTONE_TRACKER_DISMISSED_KEY, 'true').catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -288,7 +288,7 @@ export function MilestoneTracker({
         } else {
             setExpanded(true);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
     }, [expanded, finishClose, slideFromStripPx]);
 
     useLayoutEffect(() => {
@@ -301,7 +301,7 @@ export function MilestoneTracker({
             duration: MILESTONE_MODAL_IN_MS,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
     }, [expanded, slideFromStripPx]);
 
     const backdropAnimStyle = useAnimatedStyle(() => ({
@@ -458,7 +458,14 @@ export function MilestoneTracker({
 
     return (
         <View style={styles.milestoneRoot}>
-            <View style={collapsedContainerStyle} accessibilityRole="summary">
+            <View
+                style={[
+                    collapsedContainerStyle,
+                    expanded && { opacity: 0 }
+                ]}
+                accessibilityRole="summary"
+                pointerEvents={expanded ? 'none' : 'auto'}
+            >
                 <BlurView
                     intensity={28}
                     tint="light"
@@ -552,32 +559,14 @@ export function MilestoneTracker({
                 <View style={styles.modalRoot}>
                     <Animated.View
                         style={[
-                            isDock && isTabBarVisible
-                                ? {
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      bottom: tabBarStackBottom,
-                                  }
-                                : StyleSheet.absoluteFill,
+                            StyleSheet.absoluteFill,
                             styles.modalBackdropScrim,
                             backdropAnimStyle,
                         ]}
                         pointerEvents="box-none"
                     />
                     <Pressable
-                        style={[
-                            isDock && isTabBarVisible
-                                ? {
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      bottom: tabBarStackBottom,
-                                  }
-                                : StyleSheet.absoluteFill,
-                        ]}
+                        style={StyleSheet.absoluteFill}
                         onPress={toggle}
                         accessibilityLabel="Close milestone rewards"
                     />
