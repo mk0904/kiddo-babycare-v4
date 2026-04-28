@@ -56,6 +56,7 @@ export function KiddoRewardsWelcomeModal({
     const { isVisible: isTabBarVisible } = useTabBarVisibility();
     const cartSubtotal = useCartSubtotal();
     const [visible, setVisible] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(true);
 
     const milestoneModel = useMemo(
         () => buildMilestoneUIModel(milestoneUI ?? undefined),
@@ -113,7 +114,7 @@ export function KiddoRewardsWelcomeModal({
         mayAutoShowRef.current = false;
         persistDismissedRef.current = true;
         setPersistDismissed(true);
-        void AsyncStorage.setItem(KIDDO_REWARDS_WELCOME_DISMISSED_KEY, 'true').catch(() => {});
+        void AsyncStorage.setItem(KIDDO_REWARDS_WELCOME_DISMISSED_KEY, 'true').catch(() => { });
         translateY.value = withTiming(
             WELCOME_SLIDE_PX,
             { duration: WELCOME_MODAL_OUT_MS, easing: Easing.bezier(0.4, 0, 1, 0.95) },
@@ -127,7 +128,7 @@ export function KiddoRewardsWelcomeModal({
             duration: 130,
             easing: Easing.bezier(0.4, 0, 1, 0.95),
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
     }, [finishHideModal]);
 
     useEffect(() => {
@@ -157,6 +158,9 @@ export function KiddoRewardsWelcomeModal({
         if (!visible) {
             return;
         }
+        setShowConfetti(true);
+        const timer = setTimeout(() => setShowConfetti(false), 2000);
+
         translateY.value = WELCOME_SLIDE_PX;
         backdropOp.value = 0;
         translateY.value = withTiming(0, {
@@ -167,7 +171,8 @@ export function KiddoRewardsWelcomeModal({
             duration: 160,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values not deps
     }, [visible]);
 
     const backdropAnimStyle = useAnimatedStyle(() => ({
@@ -269,31 +274,17 @@ export function KiddoRewardsWelcomeModal({
                     style={[
                         isTabBarVisible
                             ? {
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: tabBarStackBottom,
-                              }
-                            : StyleSheet.absoluteFill,
-                        styles.modalBackdropScrim,
-                        backdropAnimStyle,
-                    ]}
-                >
-                    {milestoneModel?.animationUrl ? (
-                        <Image
-                            source={{ uri: milestoneModel.animationUrl }}
-                            style={{
                                 position: 'absolute',
                                 top: 0,
                                 left: 0,
                                 right: 0,
-                                height: '40%',
-                            }}
-                            contentFit="cover"
-                        />
-                    ) : null}
-                </Animated.View>
+                                bottom: tabBarStackBottom,
+                            }
+                            : StyleSheet.absoluteFill,
+                        styles.modalBackdropScrim,
+                        backdropAnimStyle,
+                    ]}
+                />
                 <View style={styles.popupCenter} pointerEvents="box-none">
                     <Animated.View
                         style={[
@@ -324,6 +315,21 @@ export function KiddoRewardsWelcomeModal({
                         />
                     </Animated.View>
                 </View>
+                {showConfetti && milestoneModel?.animationUrl ? (
+                    <Image
+                        source={{ uri: milestoneModel.animationUrl }}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '70%',
+                            zIndex: 100,
+                        }}
+                        contentFit="cover"
+                        pointerEvents="none"
+                    />
+                ) : null}
             </View>
         </Modal>
     );

@@ -1,3 +1,4 @@
+import { Fonts } from '@/constants/theme';
 import type { EntryScreenItem } from '@/types/appConfig';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,13 +7,15 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const AUTO_ADVANCE_MS = 2000;
+const AUTO_ADVANCE_MS = 4000;
 
 type EntryScreensCarouselProps = {
   screens: EntryScreenItem[];
@@ -33,6 +36,16 @@ export function EntryScreensCarousel({ screens, onDone }: EntryScreensCarouselPr
     setActiveIndex(idx);
   };
 
+  const handleNext = () => {
+    if (activeIndex >= total - 1) {
+      onDone();
+    } else {
+      const next = activeIndex + 1;
+      listRef.current?.scrollToIndex({ index: next, animated: true });
+      setActiveIndex(next);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
@@ -46,13 +59,7 @@ export function EntryScreensCarousel({ screens, onDone }: EntryScreensCarouselPr
       autoTimerRef.current = null;
     }
     autoTimerRef.current = setTimeout(() => {
-      if (activeIndex >= total - 1) {
-        onDone();
-        return;
-      }
-      const next = activeIndex + 1;
-      listRef.current?.scrollToIndex({ index: next, animated: true });
-      setActiveIndex(next);
+      handleNext();
     }, AUTO_ADVANCE_MS);
     return () => {
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
@@ -69,6 +76,9 @@ export function EntryScreensCarousel({ screens, onDone }: EntryScreensCarouselPr
             <View key={`dot-${idx}`} style={[styles.dot, idx === activeIndex ? styles.dotActive : null]} />
           ))}
         </View>
+        <Pressable style={styles.nextButton} hitSlop={15} onPress={handleNext}>
+          <Text style={styles.nextButtonText}>Next</Text>
+        </Pressable>
       </View>
 
       <FlatList
@@ -112,6 +122,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 5,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   dotsRow: {
     flexDirection: 'row',
@@ -120,14 +131,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dot: {
-    width: 7,
+    width: 72, // 3x current (was 7)
     height: 7,
     borderRadius: 4,
     backgroundColor: '#D1D5DB',
-    marginHorizontal: 4,
+    marginHorizontal: 2,
   },
   dotActive: {
-    width: 18,
-    backgroundColor: '#111827',
+    width: 72, // 3x current (was 18)
+    backgroundColor: '#F15E5E',
+  },
+  nextButton: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F15E5E',
+    backgroundColor: '#FEEFEF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+
+  },
+  nextButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F15E5E',
+    fontFamily: Fonts.LexendSemiBold,
   },
 });

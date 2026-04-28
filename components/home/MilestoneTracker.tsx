@@ -247,6 +247,19 @@ export function MilestoneTracker({
         return Math.min(1, Math.max(0, ct / minV));
     }, [collapsedActiveSlot, cartSubtotal]);
 
+    const prevProgressRef = useRef(collapsedIconProgress01);
+    const [showConfetti, setShowConfetti] = useState(false);
+
+    useEffect(() => {
+        if (collapsedIconProgress01 >= 1 && prevProgressRef.current < 1) {
+            setShowConfetti(true);
+            const t = setTimeout(() => setShowConfetti(false), 2000);
+            prevProgressRef.current = collapsedIconProgress01;
+            return () => clearTimeout(t);
+        }
+        prevProgressRef.current = collapsedIconProgress01;
+    }, [collapsedIconProgress01]);
+
     const slideFromStripPx = useMemo(
         () => (variant === 'embedded' ? -EMBEDDED_MODAL_SLIDE_PX : DOCK_MODAL_SLIDE_PX),
         [variant]
@@ -472,6 +485,14 @@ export function MilestoneTracker({
                                 inlineInCartRow && styles.pillBlurContainerInCartRow,
                             ]}
                         >
+                            {showConfetti && milestoneModel?.animationUrl && !expanded ? (
+                                <Image
+                                    source={{ uri: milestoneModel.animationUrl }}
+                                    style={StyleSheet.absoluteFill}
+                                    contentFit="cover"
+                                    pointerEvents="none"
+                                />
+                            ) : null}
                             <View style={styles.collapsedPillContent} pointerEvents="box-none">
                                 {collapsedActiveIconUri ? (
                                     <View

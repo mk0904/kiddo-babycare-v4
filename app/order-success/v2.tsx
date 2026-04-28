@@ -1,7 +1,6 @@
 import {
     areAllMilestoneSlotsCompleted,
-    buildMilestoneUIModel,
-    milestoneCurrentStepFromConfig,
+    buildMilestoneUIModel
 } from '@/components/home/milestoneUIFromConfig';
 import { Fonts } from '@/constants/theme';
 import { getAppVersionForApi } from '@/constants/versionConfig';
@@ -51,8 +50,8 @@ const MILESTONES = [
         titleColor: "#3AA0EB",
         subtitleColor: "#3AA0EB",
         glowColor: "#3AA0EB", // Increased alpha slightly for horizontal fade
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/firstAcOrder.png?v=1777210267",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/firstAcOrder.png?v=1777210267",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
     },
     {
         id: 2,
@@ -62,8 +61,8 @@ const MILESTONES = [
         titleColor: "#E0C12B",
         subtitleColor: "#E0C12B",
         glowColor: "#E0C12B",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secAcOrder.png?v=1777210266",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/secAcOrder.png?v=1777210266",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_74084028-3e19-48b9-8bbc-b0d638968297.png?v=1777355516",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_1_748e4b36-8c36-4122-a10d-ae24879e331b.png?v=1777356943",
     },
     {
         id: 3,
@@ -73,8 +72,8 @@ const MILESTONES = [
         titleColor: "#F15E5E",
         subtitleColor: "#F15E5E",
         glowColor: "#F15E5E",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdAcOrder.png?v=1777210267",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/thirdDefault.png?v=1777210267",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_85c61a4e-b141-4f10-94e6-40b242eb0e11.png?v=1777355516",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_333b5bf4-7fb8-486a-9882-355b90efc476.png?v=1777356943",
     },
     {
         id: 4,
@@ -84,8 +83,8 @@ const MILESTONES = [
         titleColor: "#BD35D5",
         subtitleColor: "#BD35D5",
         glowColor: "#BD35D5",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthAcOrder.png?v=1777210267",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fourthDefault.png?v=1777210267",
+        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_88257d92-9310-4586-a55d-0bf758d655a9.png?v=1777355515",
+        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_fc14050c-23b9-4187-9dd9-fec6e30b52e9.png?v=1777356943",
     },
 ];
 
@@ -223,19 +222,19 @@ export default function OrderSuccessV2Screen() {
                 }
                 return count;
             })();
-            
+
             const subtotalNum = Number.parseFloat(String(subtotalStr ?? orderTotalStr ?? '0'));
             const currentSlotThreshold = slots[preOrderCompletedCount]?.minCartValue;
-            
-            const isPredictedComplete = 
+
+            const isPredictedComplete =
                 (typeof currentSlotThreshold === 'number' && subtotalNum >= (currentSlotThreshold - 1)) ||
                 (currentSlotThreshold == null && subtotalNum > 0);
 
             const effectiveCompletedCount = Math.max(
-                freshCompletedCount, 
+                freshCompletedCount,
                 isPredictedComplete ? preOrderCompletedCount + 1 : preOrderCompletedCount
             );
-            
+
             const freshStep = Math.min(MILESTONES.length - 1, effectiveCompletedCount);
             if (freshStep > maxIdx) maxIdx = freshStep;
             if (freshAllDone || effectiveCompletedCount >= MILESTONES.length) {
@@ -290,7 +289,7 @@ export default function OrderSuccessV2Screen() {
         }
 
         const seqId = ++lastSequenceId.current;
-        
+
         const runSequence = (index: number) => {
             if (seqId !== lastSequenceId.current) return;
             if (index > maxTargetIndex || index >= MILESTONES.length) return;
@@ -474,12 +473,19 @@ export default function OrderSuccessV2Screen() {
                                                 contentFit="contain"
                                             />
                                             <Text
+                                                numberOfLines={2}
                                                 style={[
                                                     styles.mTitle,
-                                                    { color: isPassedOrFocus ? m.titleColor : '#999' },
+                                                    {
+                                                        color: isPassedOrFocus ? m.titleColor : '#999',
+                                                        textAlign: 'center'
+                                                    },
                                                 ]}
                                             >
                                                 {m.title}
+                                                {index === visibleMilestones.length - 1 ? (
+                                                    <Text style={{ fontSize: 16 }}>{'\n'}Unlocked</Text>
+                                                ) : null}
                                             </Text>
                                             <Text
                                                 style={[
