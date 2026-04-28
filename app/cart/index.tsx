@@ -495,7 +495,8 @@ export default function CartScreen() {
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showSchoolModal, setShowSchoolModal] = useState(false);
-    const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule | null>(null);
+    const deliverySchedule = useCartStore(state => state.deliverySchedule);
+    const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
     const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
@@ -1327,7 +1328,7 @@ export default function CartScreen() {
                 } : undefined,
                 couponCode: checkoutCouponCode || undefined,
                 discountAmount: discount > 0 ? discount : undefined,
-                deliverySchedule: deliverySchedule || undefined,
+                deliverySchedule: (deliverySchedule?.date && deliverySchedule?.time) ? deliverySchedule : undefined,
                 deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
                 paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
                 billDetails: {

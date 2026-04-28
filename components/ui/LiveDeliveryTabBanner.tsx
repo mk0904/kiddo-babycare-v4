@@ -113,7 +113,7 @@ export function LiveDeliveryTabBanner({
 }: LiveDeliveryTabBannerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const persistedAccessToken = useUserStore((s) => s.accessToken);
   const { isVisible: tabBarVisible } = useTabBarVisibility();
   const [model, setModel] = useState<BannerModel | null>(null);
@@ -160,7 +160,11 @@ export function LiveDeliveryTabBanner({
     let ordersConn: any;
     try {
       ordersConn = await shopifyApi.getCustomerOrders(token, 12);
-    } catch {
+    } catch (err) {
+      if ((err as any)?.message === 'UNAUTHORIZED_CUSTOMER') {
+        console.warn('[LiveDeliveryTabBanner] Token expired or invalid, forcing logout');
+        logout();
+      }
       if (pollActiveRef.current) setModel(null);
       return;
     }

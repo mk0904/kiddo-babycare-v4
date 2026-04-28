@@ -508,14 +508,19 @@ export default function OrderDetailV2Screen() {
                 let fetchedOrder: any = null;
                 if (shopifyCustomerToken && !isDraftOrder) {
                     try {
-                        const customerOrders = await shopifyApi.getCustomerOrders(shopifyCustomerToken, 50);
+                        const customerOrders = await shopifyApi.getCustomerOrders(shopifyCustomerToken, 50).catch((err) => {
+                            if (err?.message === 'UNAUTHORIZED_CUSTOMER') throw err;
+                            return null;
+                        });
                         const numericId = baseId.split('/').pop()?.split('?')[0];
                         const found = customerOrders?.edges?.map((e: any) => e.node).find((o: any) => {
                             const n = (o.id || '').split('/').pop()?.split('?')[0];
                             return n === numericId || o.id === orderId;
                         });
                         if (found) orderId = found.id;
-                    } catch (_) { }
+                    } catch (err) {
+                        if ((err as any)?.message === 'UNAUTHORIZED_CUSTOMER') throw err;
+                    }
                 }
 
                 if (isDraftOrder || orderId.startsWith('gid://shopify/DraftOrder/')) {
@@ -574,6 +579,11 @@ export default function OrderDetailV2Screen() {
                     setError('Order not found');
                 }
             } catch (err: any) {
+                if (err?.message === 'UNAUTHORIZED_CUSTOMER') {
+                    console.warn('[OrderDetailV2] Token expired or invalid, forcing logout');
+                    logout();
+                    return;
+                }
                 if (!cancelled) setError(err.message || 'Failed to load order');
             }
             if (!cancelled) setLoading(false);

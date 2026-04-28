@@ -224,7 +224,7 @@ function getShopifyCustomerAccessTokenForOrders(user: UserProfile | null): strin
 
 export default function OrdersScreen() {
     const router = useRouter();
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, logout } = useAuth();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     /** shopifyOrderId (numeric) → delivery-partner status; missing key → use Shopify fulfillment. */
@@ -240,7 +240,10 @@ export default function OrdersScreen() {
             const shopifyToken = getShopifyCustomerAccessTokenForOrders(user);
             const [shopifyOrdersResult, localOrders] = await Promise.all([
                 shopifyToken
-                    ? shopifyApi.getCustomerOrders(shopifyToken, 50).catch(() => null)
+                    ? shopifyApi.getCustomerOrders(shopifyToken, 50).catch((err) => {
+                        if (err?.message === 'UNAUTHORIZED_CUSTOMER') throw err;
+                        return null;
+                    })
                     : Promise.resolve(null),
                 orderService.getAllOrders().catch(() => []),
             ]);
@@ -363,7 +366,12 @@ export default function OrdersScreen() {
 
             setDeliveryPartnerStatusByShopifyId(partnerMap);
             setOrders(deduplicatedOrders);
-        } catch (error) {
+        } catch (error: any) {
+            if (error?.message === 'UNAUTHORIZED_CUSTOMER') {
+                console.warn('[OrdersScreen] Token expired or invalid, forcing logout');
+                logout();
+                return;
+            }
             console.error('Error fetching orders:', error);
             setOrders([]);
             setDeliveryPartnerStatusByShopifyId({});

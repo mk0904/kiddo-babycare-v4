@@ -1232,8 +1232,17 @@ export const shopifyApi = {
         console.error('[ShopifyApi] getCurrentCustomerId errors:', response.data.errors);
         return null;
       }
-      return response.data.data.customer?.id ?? null;
+      
+      const customer = response.data.data?.customer;
+      if (customerAccessToken && customer === null) {
+        const error = new Error('UNAUTHORIZED_CUSTOMER');
+        (error as any).isAuthError = true;
+        throw error;
+      }
+      
+      return customer?.id ?? null;
     } catch (error) {
+      if ((error as any).isAuthError) throw error;
       console.error('[ShopifyApi] getCurrentCustomerId error:', error);
       return null;
     }
@@ -1254,8 +1263,19 @@ export const shopifyApi = {
         return null;
       }
 
-      return response.data.data.customer?.orders;
+      const customer = response.data.data?.customer;
+      
+      // If a token was provided but Shopify returns null for customer, the token is invalid/expired
+      if (customerAccessToken && customer === null) {
+        console.warn('[shopifyApi] getCustomerOrders: customer is null (token likely invalid/expired)');
+        const error = new Error('UNAUTHORIZED_CUSTOMER');
+        (error as any).isAuthError = true;
+        throw error;
+      }
+
+      return customer?.orders;
     } catch (error) {
+      if ((error as any).isAuthError) throw error;
       if (!isLikelyAxiosNetworkError(error)) {
         console.error('Error fetching customer orders:', error);
       }

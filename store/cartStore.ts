@@ -123,6 +123,14 @@ interface CartState {
         gender: string;
     } | null;
 
+    deliverySchedule: {
+        date: string;
+        time: string;
+        day: string;
+        dateFormat: string;
+        timeSlotLabel?: string;
+    } | null;
+
     // Computed getters
     itemCount: () => number;
     mrp: () => number;
@@ -181,6 +189,7 @@ interface CartState {
     ensureCart: () => Promise<string | null>;
     getCheckoutUrl: () => Promise<string | null>;
     syncDeliveryFeeToShopify: () => Promise<void>;
+    setDeliverySchedule: (schedule: CartState['deliverySchedule']) => void;
 }
 
 // Available gift items (configure based on your store)
@@ -286,6 +295,7 @@ export const useCartStore = create<CartState>()(
             selectedPuzzleId: null,
             selectedPuzzleAge: null,
             schoolCouponData: null,
+            deliverySchedule: null,
 
             // Computed getters
             itemCount: () => {
@@ -722,6 +732,7 @@ export const useCartStore = create<CartState>()(
                     selectedPuzzleId: null,
                     selectedPuzzleAge: null,
                     schoolCouponData: null,
+                    deliverySchedule: null,
                 });
             },
 
@@ -2118,6 +2129,8 @@ export const useCartStore = create<CartState>()(
                 console.warn('[CartStore] Failed to sync shipping fee to Shopify attributes:', e);
               }
             },
+
+            setDeliverySchedule: (schedule) => set({ deliverySchedule: schedule }),
         }),
         {
             name: 'cart-storage',
@@ -2132,6 +2145,7 @@ export const useCartStore = create<CartState>()(
                 isTryAndBuy: state.isTryAndBuy,
                 giftWrapping: state.giftWrapping,
                 schoolCouponData: state.schoolCouponData,
+                deliverySchedule: state.deliverySchedule,
             }),
         }
     )
