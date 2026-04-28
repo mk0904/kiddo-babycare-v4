@@ -506,12 +506,6 @@ export function MilestoneTracker({
                                             source={{ uri: collapsedActiveIconUri }}
                                             style={[
                                                 styles.collapsedMilestoneIconImage,
-                                                {
-                                                    shadowColor: accentColor,
-                                                    shadowOpacity: 0.28,
-                                                    shadowRadius: 16,
-                                                    shadowOffset: { width: 2, height: 4 },
-                                                },
                                             ]}
                                             contentFit="contain"
                                         />
