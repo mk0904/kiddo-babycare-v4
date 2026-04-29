@@ -245,7 +245,7 @@ export function FreePairShoes({
                                 activeOpacity={0.8}
                                 accessibilityLabel="Remove offer"
                             >
-                                 <Ionicons name="checkmark" size={22} color="#F15E5E" />
+                                <Ionicons name="close" size={22} color="#F15E5E" />
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>

@@ -69,7 +69,7 @@ export function MilestoneDiscountBlock({
                             activeOpacity={0.8}
                             accessibilityLabel="Remove milestone discount"
                         >
-                            <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+                            <Ionicons name="close" size={22} color="#FFFFFF" />
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity

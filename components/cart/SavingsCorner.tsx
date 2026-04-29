@@ -360,10 +360,16 @@ export function SavingsCorner({
                                         ) : null}
                                     </View>
                                 </View>
-                                <View style={styles.applyCouponAppliedTag}>
-                                    <Ionicons name="checkmark" size={18} color={Colors.primary} />
-                                    <Text style={styles.applyCouponAppliedTagText}>Applied</Text>
-                                </View>
+                                <TouchableOpacity
+                                    style={styles.applyCouponAppliedTag}
+                                    onPress={() => {
+                                        if (appliedDiscountCode) {
+                                            handleRemoveCoupon(appliedDiscountCode);
+                                        }
+                                    }}
+                                >
+                                    <Text style={[styles.applyCouponAppliedTagText, { color: '#EF4444' }]}>Remove</Text>
+                                </TouchableOpacity>
                             </View>
 
                             <View style={styles.applyCouponPill}>

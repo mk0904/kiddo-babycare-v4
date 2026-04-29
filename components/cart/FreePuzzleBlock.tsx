@@ -114,8 +114,8 @@ export function FreePuzzleBlock({
         appliedCouponOriginalPrice != null
             ? appliedCouponOriginalPrice
             : originalPrice != null
-              ? originalPrice
-              : configOriginalPrice;
+                ? originalPrice
+                : configOriginalPrice;
 
     const getItemsForAge = (age: string | null) => {
         if (!age) return itemOptions;
@@ -203,7 +203,7 @@ export function FreePuzzleBlock({
                     <Text style={styles.metaText}>
                         {isApplied
                             && selectedSubLabel
-                           }
+                        }
                     </Text>
                     {isApplied && (
                         <View style={styles.editRemoveRow}>
@@ -223,7 +223,7 @@ export function FreePuzzleBlock({
                                 accessibilityLabel="Free puzzle added. Double tap to remove"
                                 accessibilityHint="Removes the free puzzle from your order"
                             >
-                                <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+                                <Ionicons name="close" size={22} color="#FFFFFF" />
                             </TouchableOpacity>
                             <View style={styles.priceRow}>
                                 <Text style={styles.originalPrice}>{formatPrice(effectiveOriginalPrice)}</Text>
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#DCAC43',
         borderRadius: 12,
         marginBottom: 6,
-       
+
     },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     originalPrice: { fontSize: Fonts.SmallFontSize, fontFamily: Fonts.LexendRegular, color: '#717680', textDecorationLine: 'line-through' },
