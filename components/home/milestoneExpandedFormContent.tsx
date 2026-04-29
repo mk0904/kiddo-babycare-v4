@@ -108,15 +108,7 @@ export function CollapsedMilestoneIconProgressRing({
         if (!showColoredProgress) {
             return;
         }
-        if (didMount.current) {
-            didMount.current = false;
-            animatedP.value = target;
-            return;
-        }
-        animatedP.value = withTiming(target, {
-            duration: 480,
-            easing: Easing.out(Easing.cubic),
-        });
+        animatedP.value = target;
     }, [target, animatedP, showColoredProgress]);
 
     const accentAnimatedProps = useAnimatedProps(() => {
@@ -145,7 +137,7 @@ export function CollapsedMilestoneIconProgressRing({
                 fill="none"
             />
             {showColoredProgress ? (
-                <AnimatedProgressCircle
+                <Circle
                     cx={size / 2}
                     cy={size / 2}
                     r={r}
@@ -154,7 +146,8 @@ export function CollapsedMilestoneIconProgressRing({
                     strokeLinecap="round"
                     fill="none"
                     transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                    animatedProps={accentAnimatedProps}
+                    strokeDasharray={`${RING_CIRC * Math.min(1, Math.max(0, progress01))} ${RING_CIRC}`}
+                    opacity={progress01 <= 0.002 ? 0 : 1}
                 />
             ) : null}
         </Svg>

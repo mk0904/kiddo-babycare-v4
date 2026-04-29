@@ -319,9 +319,9 @@ export function SavingsCorner({
 
     return (
         <View style={styles.wrapper}>
-            <SchoolCouponModal 
-                visible={showSchoolModal} 
-                onClose={() => setShowSchoolModal(false)} 
+            <SchoolCouponModal
+                visible={showSchoolModal}
+                onClose={() => setShowSchoolModal(false)}
             />
 
             <View style={styles.section}>
@@ -344,9 +344,15 @@ export function SavingsCorner({
                                         <Text style={styles.applyCouponSectionTitle} numberOfLines={1}>
                                             {(appliedDiscountCode ?? 'APPLIED').toUpperCase()}
                                         </Text>
-                                        <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
-                                            You saved {formatCurrency(appliedSaveAmount)} on this order
-                                        </Text>
+                                        {
+                                            appliedSaveAmount > 0 &&
+                                            (
+                                                <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                                    You saved {formatCurrency(appliedSaveAmount)} on this order
+                                                </Text>
+                                            )
+                                        }
+
                                         {lastApplyError ? (
                                             <Text style={styles.cardErrorText} numberOfLines={2}>
                                                 {lastApplyError}

@@ -19,7 +19,7 @@ import {
     useWindowDimensions,
     View,
 } from 'react-native';
-import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     CollapsedMilestoneIconProgressRing,
@@ -49,7 +49,7 @@ const HOME_MILESTONE_MODAL_NUDGE_DOWN = 55;
  * Cart (`embedded`): extra **up** nudge from vertical center (negative = up). Base in `modalCenterWrap` is -36;
  * this sum is the full offset.
  */
-const CART_MILESTONE_MODAL_TRANSLATE_Y = -40;
+const CART_MILESTONE_MODAL_TRANSLATE_Y = -50;
 
 /** `dock`: above tab bar (rounded top). `embedded`: cart under savings (square top, rounded bottom into scroll). */
 export type MilestoneTrackerVariant = 'dock' | 'embedded';
@@ -355,13 +355,6 @@ export function MilestoneTracker({
                     ]}
                     accessibilityRole="summary"
                 >
-                    <BlurView
-                        intensity={28}
-                        tint="light"
-                        style={styles.surfaceFrostBackground}
-                        pointerEvents="none"
-                    />
-                    <View style={styles.surfaceFrostOverlay} pointerEvents="none" />
                     <View style={styles.embeddedCollapsedRow}>
                         <View
                             style={[
@@ -466,13 +459,6 @@ export function MilestoneTracker({
                 accessibilityRole="summary"
                 pointerEvents={expanded ? 'none' : 'auto'}
             >
-                <BlurView
-                    intensity={28}
-                    tint="light"
-                    style={styles.surfaceFrostBackground}
-                    pointerEvents="none"
-                />
-                <View style={styles.surfaceFrostOverlay} pointerEvents="none" />
                 <View style={styles.embeddedCollapsedRow}>
                     <TouchableOpacity
                         style={[
@@ -557,11 +543,11 @@ export function MilestoneTracker({
                 statusBarTranslucent
             >
                 <View style={styles.modalRoot}>
-                    <Animated.View
+                    <View
                         style={[
                             StyleSheet.absoluteFill,
                             styles.modalBackdropScrim,
-                            backdropAnimStyle,
+                            { opacity: 1 },
                         ]}
                         pointerEvents="box-none"
                     />
@@ -582,11 +568,10 @@ export function MilestoneTracker({
                         ]}
                         pointerEvents="box-none"
                     >
-                        <Animated.View
+                        <View
                             style={[
                                 styles.modalContainerExpanded,
                                 { width: '100%', maxWidth: cardMaxWidth },
-                                cardAnimStyle,
                             ]}
                             accessibilityRole="summary"
                         >
@@ -604,7 +589,7 @@ export function MilestoneTracker({
                                 chevronName={expandedHeaderChevron}
                                 maxScrollHeight={modalScrollMaxHeight}
                             />
-                        </Animated.View>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -651,7 +636,7 @@ const styles = StyleSheet.create({
     },
     collapsedSurface: {
         backgroundColor: 'transparent',
-        paddingHorizontal: 8,
+        paddingHorizontal: 0,
         paddingTop: 0,
         paddingBottom: 0,
         zIndex: 50,
