@@ -210,52 +210,52 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 .map((tabName) => props.state.routes.find((route) => route.name === tabName))
                                 .filter((route) => route !== undefined)
                                 .map((route) => {
-                                const { options } = props.descriptors[route.key];
-                                const originalIndex = props.state.routes.findIndex((r) => r.key === route.key);
-                                const isFocused = props.state.index === originalIndex;
+                                    const { options } = props.descriptors[route.key];
+                                    const originalIndex = props.state.routes.findIndex((r) => r.key === route.key);
+                                    const isFocused = props.state.index === originalIndex;
 
-                                const onPress = () => {
-                                    const event = props.navigation.emit({
-                                        type: 'tabPress',
-                                        target: route.key,
-                                        canPreventDefault: true,
-                                    });
+                                    const onPress = () => {
+                                        const event = props.navigation.emit({
+                                            type: 'tabPress',
+                                            target: route.key,
+                                            canPreventDefault: true,
+                                        });
 
-                                    if (!isFocused && !event.defaultPrevented) {
-                                        props.navigation.navigate(route.name, route.params);
-                                    }
-                                };
+                                        if (!isFocused && !event.defaultPrevented) {
+                                            props.navigation.navigate(route.name, route.params);
+                                        }
+                                    };
 
-                                const onLongPress = () => {
-                                    props.navigation.emit({
-                                        type: 'tabLongPress',
-                                        target: route.key,
-                                    });
-                                };
+                                    const onLongPress = () => {
+                                        props.navigation.emit({
+                                            type: 'tabLongPress',
+                                            target: route.key,
+                                        });
+                                    };
 
-                                return (
-                                    <TouchableOpacity
-                                        key={route.key}
-                                        accessibilityRole="button"
-                                        accessibilityState={isFocused ? { selected: true } : {}}
-                                        accessibilityLabel={options.tabBarAccessibilityLabel}
-                                        testID={(options as any).tabBarTestID}
-                                        onPress={onPress}
-                                        onLongPress={onLongPress}
-                                        style={styles.tabItem}
-                                    >
-                                        {renderTabIcon(route.name, isFocused)}
-                                        <Text
-                                            style={[
-                                                styles.tabLabel,
-                                                { color: isFocused ? activeColor : inactiveColor }
-                                            ]}
+                                    return (
+                                        <TouchableOpacity
+                                            key={route.key}
+                                            accessibilityRole="button"
+                                            accessibilityState={isFocused ? { selected: true } : {}}
+                                            accessibilityLabel={options.tabBarAccessibilityLabel}
+                                            testID={(options as any).tabBarTestID}
+                                            onPress={onPress}
+                                            onLongPress={onLongPress}
+                                            style={styles.tabItem}
                                         >
-                                            {getTabLabel(route.name, options.title)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                            {renderTabIcon(route.name, isFocused)}
+                                            <Text
+                                                style={[
+                                                    styles.tabLabel,
+                                                    { color: isFocused ? activeColor : inactiveColor }
+                                                ]}
+                                            >
+                                                {getTabLabel(route.name, options.title)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                         </View>
                         {bottomInset > 0 && <View style={{ height: bottomInset, backgroundColor: '#FFFFFF' }} />}
                     </View>
@@ -280,8 +280,6 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     container: {
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
         overflow: 'visible',
         width: '100%',
         backgroundColor: '#FFFFFF',
@@ -309,7 +307,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
+        paddingVertical: 4,
         gap: 2,
     },
     tabLabel: {

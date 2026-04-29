@@ -526,7 +526,7 @@ export default function HomeScreen() {
   }, [headerTopHeight]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="dark" />
       <View style={styles.mainColumn}>
         <View style={styles.headerWrapper}>

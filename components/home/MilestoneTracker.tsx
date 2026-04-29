@@ -680,6 +680,7 @@ const styles = StyleSheet.create({
         height: 64,
         borderRadius: 24,
         overflow: 'hidden',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderStyle: 'solid',
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.7)',
@@ -693,7 +694,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         padding: 8,
     },
     collapsedChevronWrap: {
