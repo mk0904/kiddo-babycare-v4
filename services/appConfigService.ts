@@ -186,7 +186,7 @@ class AppConfigService {
     if (c != null && String(c).trim() !== '') {
       return String(c).trim();
     }
-    return '4th order reward - Mystery gift';
+    return 'FOURTHMILESTONE';
   }
 
   getMysteryGiftDiscountCodeUppercase(): string {
@@ -202,7 +202,7 @@ class AppConfigService {
     if (c != null && String(c).trim() !== '') {
       return String(c).trim();
     }
-    return '3rd order reward - Free Shoes';
+    return 'THIRDMILESTONE';
   }
 
   getFreeShoesGiftDiscountCodeUppercase(): string {
@@ -217,7 +217,7 @@ class AppConfigService {
     if (c != null && String(c).trim() !== '') {
       return String(c).trim();
     }
-    return '2nd order reward - Free puzzle';
+    return 'SECONDMILESTONE';
   }
 
   getFreePuzzleGiftDiscountCodeUppercase(): string {

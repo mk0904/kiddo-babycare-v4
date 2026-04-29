@@ -59,6 +59,10 @@ export interface BillDetailsProps {
     milestoneConfigDiscount?: number;
     /** Bill row title (e.g. "1st order reward - 25% off"); falls back to "Milestone discount" */
     milestoneConfigDiscountLabel?: string;
+    /** Exact coupon code text for the milestone discount row (e.g. "FIRSTMILESTONE - 25% OFF") */
+    milestoneConfigDiscountCouponCode?: string;
+    /** Optional description for the milestone discount row (subtext) */
+    milestoneConfigDiscountDescription?: string;
     /**
      * `isGift` on 1st/4th steps: when set (non-empty), show a row with "Unlocked" and this string as the **line label**
      * (e.g. slot title: "Mystery gift"), not a generic "Milestone discount" title.
@@ -111,6 +115,8 @@ export function BillDetails({
     milestoneFreePuzzleLabel,
     milestoneConfigDiscount = 0,
     milestoneConfigDiscountLabel,
+    milestoneConfigDiscountCouponCode,
+    milestoneConfigDiscountDescription,
     milestoneIsGiftBillDiscountTitle,
     giftWrappingFee,
     giftWrapping = null,
@@ -139,23 +145,28 @@ export function BillDetails({
                 right: parts[parts.length - 1],
             };
         }
-        return { left: raw, right: fallbackRight };
+        return { left: fallbackLeft || raw, right: fallbackRight };
     };
 
     const freeShoesRow = splitMilestoneCouponCode(
         freeShoesCouponCode,
-        (freeShoesTitle ?? milestoneFreeShoesLabel)?.trim() || 'Free Shoes',
+        'Third Reward',
         'FREE SHOES'
     );
     const freePuzzleRow = splitMilestoneCouponCode(
         freePuzzleCouponCode,
-        (freePuzzleTitle ?? milestoneFreePuzzleLabel)?.trim() || 'Free puzzle',
+        'Second Reward',
         'FREE PUZZLE'
     );
     const mysteryGiftRow = splitMilestoneCouponCode(
         mysteryGiftCouponCode,
-        (mysteryGiftTitle ?? milestoneMysteryGiftLabel)?.trim() || 'Mystery gift',
+        'Fourth Reward',
         'SURPRISE GIFT'
+    );
+    const milestoneDiscountRow = splitMilestoneCouponCode(
+        milestoneConfigDiscountCouponCode,
+        'First Reward',
+        'DISCOUNT'
     );
 
     return (
@@ -176,193 +187,198 @@ export function BillDetails({
                 </TouchableOpacity>
                 {expanded && (
                     <>
-                    <View style={styles.content}>
-                    {/* Item Total */}
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Item Total</Text>
-                        <View style={styles.valueRow}>
-                            {mrp > itemTotal && (
-                                <Text style={styles.valueStruck}>{formatCurrency(mrp)}</Text>
-                            )}
-                            <Text style={styles.value}>{formatCurrency(itemTotal)}</Text>
-                        </View>
-                    </View>
-
-                    {/* Handling Fee - only when not ticket-only */}
-                    {!isTicketingOnly && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Handling Fee</Text>
-                            <View style={styles.valueRow}>
-                                <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
-                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                        <View style={styles.content}>
+                            {/* Item Total */}
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Item Total</Text>
+                                <View style={styles.valueRow}>
+                                    {mrp > itemTotal && (
+                                        <Text style={styles.valueStruck}>{formatCurrency(mrp)}</Text>
+                                    )}
+                                    <Text style={styles.value}>{formatCurrency(itemTotal)}</Text>
+                                </View>
                             </View>
-                        </View>
-                    )}
 
-                    {/* Delivery Fee - only when not ticket-only */}
-                    {!isTicketingOnly && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Delivery Fee</Text>
-                            <View style={styles.valueRow}>
-                                {deliveryFee > 0 ? (
-                                    <Text style={styles.value}>{formatCurrency(deliveryFee)}</Text>
-                                ) : (
-                                    <>
-                                        <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
+                            {/* Handling Fee - only when not ticket-only */}
+                            {!isTicketingOnly && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Handling Fee</Text>
+                                    <View style={styles.valueRow}>
+                                        <Text style={styles.valueStruck}>{formatCurrency(handlingFeeOriginal)}</Text>
                                         <Text style={[styles.value, styles.freeText]}>FREE</Text>
-                                    </>
-                                )}
-                            </View>
-                        </View>
-                    )}
-
-                    {/* Platform Fee (ticket-only, display only: struck + FREE, not added to bill) */}
-                    {platformFee > 0 && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Platform Fee</Text>
-                            <View style={styles.valueRow}>
-                                <Text style={styles.valueStruck}>{formatCurrency(platformFee)}</Text>
-                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* Free Shoes — API title/description when present, else milestone label */}
-                    {hasFreeShoesGift && (
-                        <View style={[styles.row, styles.mysteryGiftRow]}>
-                            <View style={styles.mysteryLabelCol}>
-                                <Text style={styles.label} numberOfLines={2}>
-                                    {freeShoesRow.left}
-                                </Text>
-                               
-                            </View>
-                            <View style={styles.valueRow}>
-                                {freeShoesGiftOriginalPrice != null && freeShoesGiftOriginalPrice > 0 && (
-                                    <Text style={styles.valueStruck}>{formatCurrency(freeShoesGiftOriginalPrice)}</Text>
-                                )}
-                                <Text style={[styles.value, styles.freeShoesText]}>{freeShoesRow.right}</Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {hasKidPuzzle && (
-                        <View style={[styles.row, styles.mysteryGiftRow]}>
-                            <View style={styles.mysteryLabelCol}>
-                                <Text style={styles.label} numberOfLines={2}>
-                                    {freePuzzleRow.left}
-                                </Text>
-                                
-                            </View>
-                            <View style={styles.valueRow}>
-                                {kidPuzzleOriginalPrice != null && kidPuzzleOriginalPrice > 0 && (
-                                    <Text style={styles.valueStruck}>{formatCurrency(kidPuzzleOriginalPrice)}</Text>
-                                )}
-                                <Text style={[styles.value, styles.freeShoesText]}>{freePuzzleRow.right}</Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {hasMysteryGift && (
-                        <View style={[styles.row, styles.mysteryGiftRow]}>
-                            <View style={styles.mysteryLabelCol}>
-                                <Text style={styles.label} numberOfLines={2}>
-                                    {mysteryGiftRow.left}
-                                </Text>
-                               
-                            </View>
-                            <View style={styles.valueRow}>
-                                {mysteryGiftOriginalPrice != null && mysteryGiftOriginalPrice > 0 && (
-                                    <Text style={styles.valueStruck}>{formatCurrency(mysteryGiftOriginalPrice)}</Text>
-                                )}
-                                <Text style={[styles.value, styles.freeShoesText]}>{mysteryGiftRow.right}</Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {!hasMysteryGift && milestoneIsGiftBillDiscountTitle && milestoneIsGiftBillDiscountTitle.trim() !== '' && (
-                        <View style={styles.row}>
-                            <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
-                                {milestoneIsGiftBillDiscountTitle.trim()}
-                            </Text>
-                            <Text style={[styles.value, styles.freeShoesText]}>Unlocked</Text>
-                        </View>
-                    )}
-
-                    {milestoneConfigDiscount > 0 && (
-                        <View style={styles.row}>
-                            <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
-                                {((milestoneConfigDiscountLabel ?? '').trim() || 'Milestone discount').toLowerCase()}
-                            </Text>
-                            <Text style={[styles.value, styles.discountText]}>
-                                -{formatCurrency(milestoneConfigDiscount)}
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Coupon Discount (other coupons; when only free-shoes gift is applied, otherCouponDiscount is 0) */}
-                    {otherCouponDiscount > 0 && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Coupon Discount</Text>
-                            <Text style={[styles.value, styles.discountText]}>
-                                -{formatCurrency(otherCouponDiscount)}
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Gift Wrap - only show when there is an actual fee (hide after user removes gift-wrapped items) */}
-                    {giftWrappingFee > 0 && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Gift Wrap</Text>
-                            <View style={styles.valueRow}>
-                                <Text style={styles.value}>
-                                    {(() => {
-                                        const price = Number(giftWrapping?.price) || giftWrappingFee || 0;
-                                        return price > 0 ? formatCurrency(price) : 'FREE';
-                                    })()}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* Kiddo Cash */}
-                    {kiddoCashEnabled && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Kiddo Cash</Text>
-                            <Text style={[styles.value, styles.kiddoCashDeduction]}>
-                                -{formatCurrency(kiddoCashApplied)}
-                            </Text>
-                        </View>
-                    )}
-
-                    <View style={styles.separator} />
-                    <View style={styles.row}>
-                        <Text style={styles.labelToPay}>To Pay</Text>
-                        <View style={styles.valueRow}>
-                            {total !== toPay && (
-                                <Text style={styles.valueStruck}>{formatCurrency(total)}</Text>
+                                    </View>
+                                </View>
                             )}
-                            <Text style={styles.valueToPay}>{formatCurrency(toPay)}</Text>
+
+                            {/* Delivery Fee - only when not ticket-only */}
+                            {!isTicketingOnly && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Delivery Fee</Text>
+                                    <View style={styles.valueRow}>
+                                        {deliveryFee > 0 ? (
+                                            <Text style={styles.value}>{formatCurrency(deliveryFee)}</Text>
+                                        ) : (
+                                            <>
+                                                <Text style={styles.valueStruck}>{formatCurrency(deliveryFeeOriginal)}</Text>
+                                                <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                                            </>
+                                        )}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Platform Fee (ticket-only, display only: struck + FREE, not added to bill) */}
+                            {platformFee > 0 && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Platform Fee</Text>
+                                    <View style={styles.valueRow}>
+                                        <Text style={styles.valueStruck}>{formatCurrency(platformFee)}</Text>
+                                        <Text style={[styles.value, styles.freeText]}>FREE</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Free Shoes — API title/description when present, else milestone label */}
+                            {hasFreeShoesGift && (
+                                <View style={[styles.row, styles.mysteryGiftRow]}>
+                                    <View style={styles.mysteryLabelCol}>
+                                        <Text style={styles.label} numberOfLines={2}>
+                                            {freeShoesRow.left}
+                                        </Text>
+
+                                    </View>
+                                    <View style={styles.valueRow}>
+                                        {freeShoesGiftOriginalPrice != null && freeShoesGiftOriginalPrice > 0 && (
+                                            <Text style={styles.valueStruck}>{formatCurrency(freeShoesGiftOriginalPrice)}</Text>
+                                        )}
+                                        <Text style={[styles.value, styles.freeShoesText]}>{freeShoesRow.right}</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {hasKidPuzzle && (
+                                <View style={[styles.row, styles.mysteryGiftRow]}>
+                                    <View style={styles.mysteryLabelCol}>
+                                        <Text style={styles.label} numberOfLines={2}>
+                                            {freePuzzleRow.left}
+                                        </Text>
+
+                                    </View>
+                                    <View style={styles.valueRow}>
+                                        {kidPuzzleOriginalPrice != null && kidPuzzleOriginalPrice > 0 && (
+                                            <Text style={styles.valueStruck}>{formatCurrency(kidPuzzleOriginalPrice)}</Text>
+                                        )}
+                                        <Text style={[styles.value, styles.freeShoesText]}>{freePuzzleRow.right}</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {hasMysteryGift && (
+                                <View style={[styles.row, styles.mysteryGiftRow]}>
+                                    <View style={styles.mysteryLabelCol}>
+                                        <Text style={styles.label} numberOfLines={2}>
+                                            {mysteryGiftRow.left}
+                                        </Text>
+
+                                    </View>
+                                    <View style={styles.valueRow}>
+                                        {mysteryGiftOriginalPrice != null && mysteryGiftOriginalPrice > 0 && (
+                                            <Text style={styles.valueStruck}>{formatCurrency(mysteryGiftOriginalPrice)}</Text>
+                                        )}
+                                        <Text style={[styles.value, styles.freeShoesText]}>{mysteryGiftRow.right}</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {!hasMysteryGift && milestoneIsGiftBillDiscountTitle && milestoneIsGiftBillDiscountTitle.trim() !== '' && (
+                                <View style={styles.row}>
+                                    <Text style={[styles.label, styles.labelFlex]} numberOfLines={2}>
+                                        {milestoneIsGiftBillDiscountTitle.trim()}
+                                    </Text>
+                                    <Text style={[styles.value, styles.freeShoesText]}>Unlocked</Text>
+                                </View>
+                            )}
+
+                            {milestoneConfigDiscount > 0 && (
+                                <View style={[styles.row, styles.mysteryGiftRow]}>
+                                    <View style={styles.mysteryLabelCol}>
+                                        <Text style={styles.label} numberOfLines={2}>
+                                            {milestoneDiscountRow.left}
+                                        </Text>
+
+                                    </View>
+                                    <View style={styles.valueRow}>
+                                        <Text style={[styles.value, styles.discountText]}>
+                                            -{formatCurrency(milestoneConfigDiscount)}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Coupon Discount (other coupons; when only free-shoes gift is applied, otherCouponDiscount is 0) */}
+                            {otherCouponDiscount > 0 && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Coupon Discount</Text>
+                                    <Text style={[styles.value, styles.discountText]}>
+                                        -{formatCurrency(otherCouponDiscount)}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* Gift Wrap - only show when there is an actual fee (hide after user removes gift-wrapped items) */}
+                            {giftWrappingFee > 0 && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Gift Wrap</Text>
+                                    <View style={styles.valueRow}>
+                                        <Text style={styles.value}>
+                                            {(() => {
+                                                const price = Number(giftWrapping?.price) || giftWrappingFee || 0;
+                                                return price > 0 ? formatCurrency(price) : 'FREE';
+                                            })()}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Kiddo Cash */}
+                            {kiddoCashEnabled && (
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Kiddo Cash</Text>
+                                    <Text style={[styles.value, styles.kiddoCashDeduction]}>
+                                        -{formatCurrency(kiddoCashApplied)}
+                                    </Text>
+                                </View>
+                            )}
+
+                            <View style={styles.separator} />
+                            <View style={styles.row}>
+                                <Text style={styles.labelToPay}>To Pay</Text>
+                                <View style={styles.valueRow}>
+                                    {total !== toPay && (
+                                        <Text style={styles.valueStruck}>{formatCurrency(total)}</Text>
+                                    )}
+                                    <Text style={styles.valueToPay}>{formatCurrency(toPay)}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.savingsBannerWrap}>
+                                <Text style={styles.savingsBanner}>
+                                    You saved {formatCurrency(displaySavings)}!
+                                </Text>
+                            </View>
                         </View>
-                    </View>
-                    <View style={styles.savingsBannerWrap}>
-                        <Text style={styles.savingsBanner}>
-                            You saved {formatCurrency(displaySavings)}!
-                        </Text>
-                    </View>
-                    </View>
-                    <View style={[styles.waveOuter, { width: waveWidth }]} pointerEvents="none">
-                        <Svg
-                            viewBox="0 0 100 38"
-                            preserveAspectRatio="none"
-                            width={waveWidth}
-                            height={32}
-                        >
-                            <Path
-                                d="M0,0 L100,0 L100,14 L96.67,25 L93.33,14 L90,25 L86.67,14 L83.33,25 L80,14 L76.67,25 L73.33,14 L70,25 L66.67,14 L63.33,25 L60,14 L56.67,25 L53.33,14 L50,25 L46.67,14 L43.33,25 L40,14 L36.67,25 L33.33,14 L30,25 L26.67,14 L23.33,25 L20,14 L16.67,25 L13.33,14 L10,25 L6.67,14 L3.33,25 L0,14 L0,0 Z"
-                                fill="#fff"
-                            />
-                        </Svg>
-                    </View>
+                        <View style={[styles.waveOuter, { width: waveWidth }]} pointerEvents="none">
+                            <Svg
+                                viewBox="0 0 100 38"
+                                preserveAspectRatio="none"
+                                width={waveWidth}
+                                height={32}
+                            >
+                                <Path
+                                    d="M0,0 L100,0 L100,14 L96.67,25 L93.33,14 L90,25 L86.67,14 L83.33,25 L80,14 L76.67,25 L73.33,14 L70,25 L66.67,14 L63.33,25 L60,14 L56.67,25 L53.33,14 L50,25 L46.67,14 L43.33,25 L40,14 L36.67,25 L33.33,14 L30,25 L26.67,14 L23.33,25 L20,14 L16.67,25 L13.33,14 L10,25 L6.67,14 L3.33,25 L0,14 L0,0 Z"
+                                    fill="#fff"
+                                />
+                            </Svg>
+                        </View>
                     </>
                 )}
             </View>
@@ -379,7 +395,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         borderRadius: 12,
         padding: 15,
-        
+
         overflow: 'visible',
         position: 'relative',
         marginTop: 0,

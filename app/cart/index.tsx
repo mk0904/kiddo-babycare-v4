@@ -7,12 +7,14 @@ import { DeliveryCard } from '@/components/cart/DeliveryCard';
 import { FreePairShoes } from '@/components/cart/FreePairShoes';
 import { FreePuzzleBlock } from '@/components/cart/FreePuzzleBlock';
 import { GiftWrappingCard } from '@/components/cart/GiftWrappingCard';
+import { MilestoneDiscountBlock } from '@/components/cart/MilestoneDiscountBlock';
+import { MysteryGiftBlock } from '@/components/cart/MysteryGiftBlock';
 import { SavingsCorner } from '@/components/cart/SavingsCorner';
 import MilestoneTracker from '@/components/home/MilestoneTracker';
 import { milestoneCurrentStepFromConfig } from '@/components/home/milestoneUIFromConfig';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
-import { DeliverySchedule, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { SchoolCouponModal } from '@/components/modals/SchoolCouponModal';
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
@@ -45,12 +47,11 @@ import {
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import {
-    computeMilestoneConfigDiscount,
     getActiveMilestoneSlotRaw,
     isMilestoneMinCartUnlocked,
     milestoneGiftBillTitleFromSlot,
     milestoneIsGiftBillDiscountLineTitle,
-    milestoneTakesPrecedenceOverOtherCoupons,
+    milestoneTakesPrecedenceOverOtherCoupons
 } from '@/utils/milestoneOrderDiscount';
 import {
     sizeLabelFromVariantTitle,
@@ -368,6 +369,25 @@ export default function CartScreen() {
         if (activeMilestoneSlot == null) return true;
         return isMilestoneMinCartUnlocked(activeMilestoneSlot, itemSubtotalForOffers);
     }, [activeMilestoneSlot, itemSubtotalForOffers]);
+
+    // Per-milestone unlock checks to ensure rewards are always interactable if their specific threshold is met
+    const milestoneSecondUnlocked = useMemo(() => {
+        const slot = milestoneUI?.milestoneSecond;
+        if (!slot) return false;
+        return isMilestoneMinCartUnlocked(slot, itemSubtotalForOffers);
+    }, [milestoneUI?.milestoneSecond, itemSubtotalForOffers]);
+
+    const milestoneThirdUnlocked = useMemo(() => {
+        const slot = milestoneUI?.milestoneThird;
+        if (!slot) return false;
+        return isMilestoneMinCartUnlocked(slot, itemSubtotalForOffers);
+    }, [milestoneUI?.milestoneThird, itemSubtotalForOffers]);
+
+    const milestoneFourthUnlocked = useMemo(() => {
+        const slot = milestoneUI?.milestoneFourth;
+        if (!slot) return false;
+        return isMilestoneMinCartUnlocked(slot, itemSubtotalForOffers);
+    }, [milestoneUI?.milestoneFourth, itemSubtotalForOffers]);
     const milestoneIsGiftBillDiscountTitle = useMemo(
         () =>
             milestoneIsGiftBillDiscountLineTitle(
@@ -445,6 +465,12 @@ export default function CartScreen() {
         milestoneFreeKind === 'puzzle' &&
         showPuzzleByBackend &&
         freePuzzleOfferConfig?.enabled !== false;
+    const showDiscountMilestoneUIF =
+        cartFeatures.showFreePairShoes &&
+        milestoneFreeKind === 'discount';
+    const showMysteryMilestoneUIF =
+        cartFeatures.showFreePairShoes &&
+        milestoneFreeKind === 'mystery';
     const freeShoesGiftCodeUc = useMemo(
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
         [appConfigRefresh]
@@ -468,6 +494,10 @@ export default function CartScreen() {
     const freeMysteryGiftCodeDisplay = useMemo(
         () => appConfigService.getMysteryGiftDiscountCode(),
         [appConfigRefresh]
+    );
+    const milestoneDiscountCodeUc = useMemo(
+        () => 'FIRSTMILESTONE',
+        []
     );
     const milestoneShouldOverrideStackedCoupons = useMemo(
         () =>
@@ -656,39 +686,8 @@ export default function CartScreen() {
         freePuzzleGiftCodeUc,
     ]);
 
-    // 4th milestone (milestone Fourth) + gift-bill slot unlocked: auto-apply `cart.mysteryGiftOffer` code (e.g. "Mystery gift")
-    useEffect(() => {
-        if (currentMilestoneStep !== 3) return;
-        if (milestoneIsGiftBillDiscountTitle == null) return;
-        if (mysteryGiftOfferConfig?.enabled === false) return;
-        if (cartItems.length === 0 || !hasNonTicketingProducts) return;
-        const hasMystery = discountCodes.some(
-            (dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc && dc.applicable !== false
-        );
-        if (hasMystery) return;
-        const rawOrig = mysteryGiftOfferConfig?.originalPrice;
-        const orig = typeof rawOrig === 'number' && rawOrig >= 0 ? rawOrig : undefined;
-        void (async () => {
-            const result = await applyDiscountCode(freeMysteryGiftCodeUc, { originalPrice: orig });
-            if (
-                !result.success &&
-                result.error &&
-                !result.error.toLowerCase().includes('already applied')
-            ) {
-                if (__DEV__) console.warn('[Cart] Mystery gift auto-apply:', result.error);
-            }
-        })();
-    }, [
-        currentMilestoneStep,
-        milestoneIsGiftBillDiscountTitle,
-        mysteryGiftOfferConfig?.enabled,
-        mysteryGiftOfferConfig?.originalPrice,
-        hasNonTicketingProducts,
-        cartItems.length,
-        discountCodes,
-        freeMysteryGiftCodeUc,
-        applyDiscountCode,
-    ]);
+    // Milestone auto-application of mystery gift is now disabled (decoupled).
+    // The user must apply the coupon or select the gift manually.
 
     /* Clear the other rail’s selection + free-gift coupon when active milestone no longer matches. */
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only `milestoneFreeKind` is intentional
@@ -719,24 +718,8 @@ export default function CartScreen() {
         }
     }, [milestoneIsGiftBillDiscountTitle, freeMysteryGiftCodeUc, discountCodes, removeDiscountCode]);
 
-    // When a milestone is unlocked, drop manual / school coupons so milestone (percent, gift, or free rail) applies.
-    useEffect(() => {
-        if (!milestoneShouldOverrideStackedCoupons) return;
-        for (const dc of discountCodes) {
-            const u = dc.code.toUpperCase();
-            if (u === freeShoesGiftCodeUc || u === freePuzzleGiftCodeUc || u === freeMysteryGiftCodeUc) {
-                continue;
-            }
-            void removeDiscountCode(dc.code);
-        }
-    }, [
-        milestoneShouldOverrideStackedCoupons,
-        discountCodes,
-        freeShoesGiftCodeUc,
-        freePuzzleGiftCodeUc,
-        freeMysteryGiftCodeUc,
-        removeDiscountCode,
-    ]);
+    // Milestone coupon override is now disabled (decoupled).
+    // Milestones and normal coupons can coexist or overwrite each other based on standard Shopify rules.
 
     // Coupon fetching is handled inside SavingsCorner.
 
@@ -784,6 +767,11 @@ export default function CartScreen() {
     }
 
     let otherCouponDiscountAmount = 0;
+    let milestoneConfigDiscountAmount = 0;
+    let milestoneConfigDiscountLabel = '';
+    let milestoneAppliedCode = '';
+    let milestoneAppliedDescription = '';
+
     if (discountCodes && discountCodes.length > 0) {
         for (const discountCode of discountCodes) {
             if (__DEV__) {
@@ -793,11 +781,14 @@ export default function CartScreen() {
             const shouldProcess = discountCode.applicable !== false;
             const discountValue = Number(discountCode.value ?? 0);
             const discountType = discountCode.type;
+
+            const isMilestoneCoupon = (discountCode as any).isMilestone === true;
             const isFreeShoesGiftCode =
                 Boolean(freeShoesGiftCodeUc) && discountCode.code.toUpperCase() === freeShoesGiftCodeUc;
             const isKidPuzzle = discountCode.code.toUpperCase() === freePuzzleGiftCodeUc;
+            const isMysteryGift = discountCode.code.toUpperCase() === freeMysteryGiftCodeUc;
 
-            if (shouldProcess && discountValue > 0) {
+            if (shouldProcess) {
                 const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
                 const baseAmount = discountCode.allowedCategories?.length
                     ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
@@ -806,70 +797,42 @@ export default function CartScreen() {
                         : itemSubtotal;
 
                 let codeDiscount = 0;
-                if (discountType === 'percentage') {
-                    codeDiscount = (baseAmount * discountValue) / 100;
-                } else {
-                    codeDiscount = Math.min(discountValue, baseAmount);
-                }
-                if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
-                    codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
-                }
-                calculatedDiscount += codeDiscount;
-                if (isFreeShoesGiftCode) {
-                    // Free shoes gift — own bill row, not "Coupon discount"
-                } else if (isKidPuzzle) {
-                    // Free puzzle (KIDPUZZLE) — own bill row, not "Coupon discount"
-                } else {
-                    otherCouponDiscountAmount += codeDiscount;
-                }
-                if (__DEV__) {
-                    console.log('[CartScreen] Applied discount:', {
-                        code: discountCode.code,
-                        type: discountType,
-                        value: discountValue,
-                        baseAmount,
-                        codeDiscount,
-                        maxDiscountAmount: discountCode.maxDiscountAmount,
-                        calculatedDiscount,
-                    });
-                }
-            } else {
-                if (__DEV__) {
-                    if (!shouldProcess) {
-                        console.log('[CartScreen] Discount code not applicable:', discountCode.code);
+                if (discountValue > 0) {
+                    if (discountType === 'percentage') {
+                        codeDiscount = (baseAmount * discountValue) / 100;
                     } else {
-                        console.warn('[CartScreen] Discount code has no value:', discountCode);
+                        codeDiscount = Math.min(discountValue, baseAmount);
+                    }
+                    if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
+                        codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
+                    }
+                } else if (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) {
+                    // Milestone fallback: use originalPrice if Shopify value is 0
+                    const rewardPrice = Number(discountCode.originalPrice ?? 0);
+                    if (rewardPrice > 0) {
+                        codeDiscount = rewardPrice;
+                    }
+                }
+
+                if (codeDiscount > 0) {
+                    calculatedDiscount += codeDiscount;
+                    // ... rest of logic for label and categorization
+                    if (isFreeShoesGiftCode || isKidPuzzle || isMysteryGift || isMilestoneCoupon) {
+                        milestoneConfigDiscountAmount += codeDiscount;
+                        if (!milestoneConfigDiscountLabel) {
+                            const stepIndex = milestoneCurrentStepFromConfig(milestoneUI, 0);
+                            const ordinals = ['First', 'Second', 'Third', 'Fourth'];
+                            milestoneConfigDiscountLabel = (stepIndex >= 0 && stepIndex < ordinals.length) ? `${ordinals[stepIndex]} Reward` : 'Milestone Reward';
+                            milestoneAppliedCode = discountCode.code;
+                            milestoneAppliedDescription = discountCode.couponDescription || discountCode.description || '';
+                        }
+                    } else {
+                        otherCouponDiscountAmount += codeDiscount;
                     }
                 }
             }
         }
-    } else {
-        if (__DEV__) {
-            console.log('[CartScreen] No discount codes found in store');
-        }
     }
-
-    const hasMysteryGiftApplied = discountCodes.some(
-        (dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc && dc.applicable !== false
-    );
-    const mysteryGiftOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)
-        ?.originalPrice;
-    /** Free-gift codes (milestone shoes / puzzle / gift-bill) are from the same program; other codes block milestone % until the override effect removes them. */
-    const hasNonMilestoneDiscountCode = (discountCodes ?? []).some(
-        (dc) => {
-            const u = dc.code.toUpperCase();
-            if (freeShoesGiftCodeUc && u === freeShoesGiftCodeUc) return false;
-            if (u === freePuzzleGiftCodeUc) return false;
-            if (u === freeMysteryGiftCodeUc) return false;
-            return true;
-        }
-    );
-    const milestoneConfigDiscountRes = computeMilestoneConfigDiscount(itemSubtotal, activeMilestoneSlot);
-    const rawMilestoneConfigDiscountAmount = milestoneConfigDiscountRes?.amount ?? 0;
-    if (!hasNonMilestoneDiscountCode && rawMilestoneConfigDiscountAmount > 0) {
-        calculatedDiscount += rawMilestoneConfigDiscountAmount;
-    }
-    const milestoneConfigDiscountAmount = hasNonMilestoneDiscountCode ? 0 : rawMilestoneConfigDiscountAmount;
 
     const hasFreeShoesGiftApplied =
         Boolean(freeShoesGiftCodeUc) &&
@@ -902,40 +865,35 @@ export default function CartScreen() {
         );
         return { title: dc?.couponTitle, description: dc?.couponDescription };
     }, [discountCodes, freeMysteryGiftCodeUc]);
+    const hasMysteryGiftApplied = discountCodes.some(
+        (dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc && dc.applicable !== false
+    );
+    const mysteryGiftOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)
+        ?.originalPrice;
+
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
-            const label = (milestoneConfigDiscountRes?.billRowLabel ?? '').trim();
-            return label || 'Milestone discount';
-        }
-        if (
-            !hasNonMilestoneDiscountCode &&
-            milestoneIsGiftBillDiscountTitle &&
-            milestoneIsGiftBillDiscountTitle.trim() !== ''
-        ) {
-            return milestoneIsGiftBillDiscountTitle.trim();
+            return milestoneDiscountCodeUc || 'FIRSTMILESTONE';
         }
         if (hasFreeShoesGiftApplied) {
-            const label = (milestoneGiftBillTitle ?? '').trim();
-            return label || 'Free Shoes';
+            return freeShoesGiftCodeUc || 'THIRDMILESTONE';
         }
         if (hasKidPuzzleApplied) {
-            const label = (milestoneGiftBillTitle ?? '').trim();
-            return label || 'Free puzzle';
+            return freePuzzleGiftCodeUc || 'SECONDMILESTONE';
         }
         if (hasMysteryGiftApplied) {
-            const label = (milestoneGiftBillTitle ?? '').trim();
-            return label || 'Mystery gift';
+            return freeMysteryGiftCodeUc || 'FOURTHMILESTONE';
         }
         return undefined;
     }, [
         milestoneConfigDiscountAmount,
-        milestoneConfigDiscountRes?.billRowLabel,
-        hasNonMilestoneDiscountCode,
-        milestoneIsGiftBillDiscountTitle,
+        milestoneDiscountCodeUc,
         hasFreeShoesGiftApplied,
+        freeShoesGiftCodeUc,
         hasKidPuzzleApplied,
+        freePuzzleGiftCodeUc,
         hasMysteryGiftApplied,
-        milestoneGiftBillTitle,
+        freeMysteryGiftCodeUc,
     ]);
     const checkoutCouponCode = appliedDiscountCode || milestoneCouponCodeCopy;
 
@@ -1059,8 +1017,7 @@ export default function CartScreen() {
             return;
         }
 
-        const { useCartStore } = await import('@/store/cartStore');
-        const cartStore = useCartStore.getState();
+        const cartStoreState = cartStore; // Use statically imported instance
         const { discountCodes, schoolCouponData } = cartStore;
 
         // Validate School Coupon requirements
@@ -1351,17 +1308,15 @@ export default function CartScreen() {
             // Call Payment Service
             console.log('Calling PaymentService.createOrderWithPayment...');
 
-            // For Pay Online, sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
-            if (effectivePaymentMethod === 'razorpay') {
-                try {
-                    const cartId = await ensureCart();
-                    if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
-                        const { shopifyApi } = await import('@/services/shopifyApi');
-                        await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
-                    }
-                } catch (syncErr) {
-                    console.warn('[Cart] Failed to sync discount codes to Shopify before Pay Online', syncErr);
+            // Sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
+            try {
+                const cartId = await ensureCart();
+                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                    const { shopifyApi } = await import('@/services/shopifyApi');
+                    await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
                 }
+            } catch (syncErr) {
+                console.warn('[Cart] Failed to sync discount codes to Shopify before order completion', syncErr);
             }
 
             const result = await PaymentService.createOrderWithPayment(
@@ -1613,6 +1568,7 @@ export default function CartScreen() {
                             total: total.toString(),
                             subtotal: itemSubtotalForOffers.toString(),
                             milestoneStep: String(milestoneStepSnapshot),
+                            appliedCouponCode: appliedDiscountCode || '',
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                             ...(selectedAddress &&
                                 typeof selectedAddress.latitude === 'number' &&
@@ -1928,7 +1884,7 @@ export default function CartScreen() {
                                 milestoneMinCartUnlocked={milestoneMinCartUnlocked}
                                 selectedPuzzleId={selectedPuzzleId}
                                 selectedPuzzleAge={selectedPuzzleAge}
-                                onAddPress={() => {}}
+                                onAddPress={() => { }}
                                 onConfirmAgeItem={async (itemId, age) => {
                                     setSelectedPuzzle(itemId, age);
                                     if (hasKidPuzzleApplied) {
@@ -1987,9 +1943,61 @@ export default function CartScreen() {
                             />
                         )}
 
+                        {hasNonTicketingProducts && showDiscountMilestoneUIF && (
+                            <MilestoneDiscountBlock
+                                visible
+                                code={milestoneDiscountCodeUc}
+                                title={activeMilestoneSlot?.header || '25% OFF'}
+                                description={activeMilestoneSlot?.body || 'Get 25% off on your first order'}
+                                iconUrl={activeMilestoneSlot?.iconUrl}
+                                milestoneMinCartUnlocked={milestoneMinCartUnlocked}
+                                isApplied={discountCodes.some(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)}
+                                onAddPress={async () => {
+                                    const rawOrig = (activeMilestoneSlot as any)?.originalPrice ?? (activeMilestoneSlot as any)?.original_price;
+                                    const orig = typeof rawOrig === 'number' ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                    const originalPrice = orig != null && Number.isFinite(orig) && orig >= 0 ? orig : undefined;
 
-                         {/* Delivery Information Card - when at least one non-ticketing product in cart */}
-                         {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
+                                    const result = await applyDiscountCode(milestoneDiscountCodeUc, { originalPrice });
+                                    if (!result.success && result.error && !result.error.toLowerCase().includes('already applied')) {
+                                        Alert.alert('Coupon', result.error);
+                                    }
+                                }}
+                                onRemoveOffer={async () => {
+                                    await removeDiscountCode(milestoneDiscountCodeUc);
+                                }}
+                                accentColor={activeMilestoneSlot?.activeColor}
+                                backgroundColor={activeMilestoneSlot?.inactiveColor}
+                            />
+                        )}
+
+                        {hasNonTicketingProducts && showMysteryMilestoneUIF && (
+                            <MysteryGiftBlock
+                                visible={showMysteryMilestoneUIF && !!freeMysteryGiftCodeUc}
+                                code={freeMysteryGiftCodeUc}
+                                title={milestoneUI?.milestoneFourth?.header || milestoneUI?.milestoneFourth?.title || 'Mystery Gift'}
+                                description={milestoneUI?.milestoneFourth?.body || milestoneUI?.milestoneFourth?.description || 'You unlocked a mystery gift!'}
+                                iconUrl={milestoneUI?.milestoneFourth?.iconUrl}
+                                milestoneMinCartUnlocked={milestoneMinCartUnlocked}
+                                isApplied={discountCodes.some(dc => dc.code.toUpperCase() === freeMysteryGiftCodeUc)}
+                                onAddPress={async () => {
+                                    const rawOrig = (milestoneUI?.milestoneFourth as any)?.originalPrice ?? (milestoneUI?.milestoneFourth as any)?.original_price;
+                                    const orig = typeof rawOrig === 'number' ? rawOrig : typeof rawOrig === 'string' ? parseFloat(rawOrig) : undefined;
+                                    const originalPrice = orig != null && Number.isFinite(orig) && orig >= 0 ? orig : undefined;
+
+                                    const result = await applyDiscountCode(freeMysteryGiftCodeUc, { originalPrice });
+                                    if (!result.success && result.error && !result.error.toLowerCase().includes('already applied')) {
+                                        Alert.alert('Coupon Error', result.error);
+                                    }
+                                }}
+                                onRemoveOffer={() => removeDiscountCode(freeMysteryGiftCodeUc)}
+                                accentColor={milestoneUI?.milestoneFourth?.activeColor || milestoneUI?.milestoneFourth?.color}
+                                backgroundColor={milestoneUI?.milestoneFourth?.color ? `${milestoneUI.milestoneFourth.color}15` : undefined}
+                            />
+                        )}
+
+
+                        {/* Delivery Information Card - when at least one non-ticketing product in cart */}
+                        {hasNonTicketingProducts && cartFeatures.showDeliveryCard && (
                             <DeliveryCard
                                 deliverySchedule={deliverySchedule}
                                 onSchedulePress={() => setShowScheduleModal(true)}
@@ -2085,18 +2093,10 @@ export default function CartScreen() {
                             milestoneFreeShoesLabel={milestoneGiftBillTitle || undefined}
                             milestoneFreePuzzleLabel={milestoneGiftBillTitle || undefined}
                             milestoneConfigDiscount={milestoneConfigDiscountAmount}
-                            milestoneConfigDiscountLabel={
-                                milestoneConfigDiscountAmount > 0
-                                    ? milestoneConfigDiscountRes?.billRowLabel
-                                    : undefined
-                            }
-                            milestoneIsGiftBillDiscountTitle={
-                                hasNonMilestoneDiscountCode
-                                    ? undefined
-                                    : hasMysteryGiftApplied
-                                        ? undefined
-                                        : milestoneIsGiftBillDiscountTitle || undefined
-                            }
+                            milestoneConfigDiscountLabel={milestoneConfigDiscountLabel || undefined}
+                            milestoneConfigDiscountCouponCode={milestoneDiscountCodeUc}
+                            milestoneConfigDiscountDescription={discountCodes.find(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)?.couponDescription}
+                            milestoneIsGiftBillDiscountTitle={undefined}
                             otherCouponDiscount={otherCouponDiscountAmount}
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
@@ -2275,7 +2275,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5', 
+        backgroundColor: '#F5F5F5',
     },
     loadingContainer: {
         flex: 1,

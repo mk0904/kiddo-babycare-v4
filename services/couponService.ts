@@ -55,6 +55,8 @@ export interface CouponCode {
   allowedCategories?: string[] | null;
   /** If true, this coupon requires child details (name, parent name, age, class) to be collected. */
   isSchoolCoupon?: boolean;
+  /** If true, this coupon is treated as a milestone reward in the UI. */
+  isMilestone?: boolean;
 }
 
 export interface GetEligibleCouponsParams {
@@ -208,6 +210,7 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       code: (c.code ?? c.couponCode ?? '').toString().trim(),
       applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
       allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
+      isMilestone: c.isMilestone === true || c.is_milestone === true,
     })) as CouponCode[];
 
     if (__DEV__) console.log('[CouponService] Loaded', normalized.length, returnAllVisible ? 'visible' : 'eligible', 'coupons from backend');

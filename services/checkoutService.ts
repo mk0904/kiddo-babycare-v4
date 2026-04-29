@@ -174,6 +174,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
       : undefined,
     giftWrapping: body.giftWrapping,
     couponCode: body.couponCode ?? '',
+    coupon_code: body.couponCode ?? '',
     discountAmount: body.discountAmount ?? 0,
     deliverySchedule: body.deliverySchedule,
     deliveryType: body.deliveryType ?? (body.deliverySchedule?.date && body.deliverySchedule?.time ? 'scheduled' : 'instant'),

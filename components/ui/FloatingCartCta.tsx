@@ -1,7 +1,7 @@
 import { Fonts } from '@/constants/theme';
 import { useCartItemCount } from '@/store/cartStore';
-import { Ionicons } from '@expo/vector-icons';
 import { MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -14,7 +14,7 @@ export type FloatingCartCtaProps = {
 };
 
 /** Solid coral; matches the floating “Cart” pill. */
-const CART_PILL_BG = '#DB5656';
+const CART_PILL_BG = '#F15E5E';
 
 /**
  * Shared floating “Cart” control. Used by `FloatingCartButton` and `MilestoneCartRow`.

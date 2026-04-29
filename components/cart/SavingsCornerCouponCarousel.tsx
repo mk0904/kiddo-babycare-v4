@@ -28,6 +28,7 @@ export interface SavingsCornerCouponItem {
 const TICKET_CARD_HEIGHT = 135;
 
 function getCouponHeadline(coupon: SavingsCornerCouponItem): string {
+    if (coupon.isMilestone) return 'Milestone Reward';
     if (coupon.value != null && coupon.value !== 0) {
         if (coupon.valueType === 'percentage') return `${coupon.value}% off upto ₹500`;
         return `Save ₹${coupon.value}`;

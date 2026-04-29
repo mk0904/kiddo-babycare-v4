@@ -1,5 +1,4 @@
 import {
-    areAllMilestoneSlotsCompleted,
     buildMilestoneUIModel
 } from '@/components/home/milestoneUIFromConfig';
 import { Fonts } from '@/constants/theme';
@@ -27,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ICON_SIZE = 160;
-const ITEM_WIDTH = 150;
+const ITEM_WIDTH = 180;
 const GAP = 48;
 /** Auto-advance: order summary — longer when the milestone track / Kiddo Club is shown, shorter for “order placed” only. */
 const AUTO_NAVIGATE_WITH_MILESTONE_MS = 7000;
@@ -41,52 +40,70 @@ const ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY = 'milestone_all_done_home_strip_s
 const MILESTONE_MODAL_HEIGHT = 580;
 const MILESTONE_MODAL_WIDTH = SCREEN_WIDTH * 0.94;
 
-const MILESTONES = [
-    {
-        id: 1,
-        title: "1st Order Reward",
-        subtitle: "25% off 💸 on cart value",
-        color: "#3AA0EB",
-        titleColor: "#3AA0EB",
-        subtitleColor: "#3AA0EB",
-        glowColor: "#3AA0EB", // Increased alpha slightly for horizontal fade
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
-    },
-    {
-        id: 2,
-        title: "2st Order Reward",
-        subtitle: "Free Shoes",
-        color: "#E0C12B",
-        titleColor: "#E0C12B",
-        subtitleColor: "#E0C12B",
-        glowColor: "#E0C12B",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_74084028-3e19-48b9-8bbc-b0d638968297.png?v=1777355516",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_1_748e4b36-8c36-4122-a10d-ae24879e331b.png?v=1777356943",
-    },
-    {
-        id: 3,
-        title: "3rd Order Reward",
-        subtitle: "Free Puzzle",
-        color: "#F15E5E",
-        titleColor: "#F15E5E",
-        subtitleColor: "#F15E5E",
-        glowColor: "#F15E5E",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_85c61a4e-b141-4f10-94e6-40b242eb0e11.png?v=1777355516",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_333b5bf4-7fb8-486a-9882-355b90efc476.png?v=1777356943",
-    },
-    {
-        id: 4,
-        title: "4th Order Reward",
-        subtitle: "Mystery Gift",
-        color: "#BD35D5",
-        titleColor: "#BD35D5",
-        subtitleColor: "#BD35D5",
-        glowColor: "#BD35D5",
-        activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_88257d92-9310-4586-a55d-0bf758d655a9.png?v=1777355515",
-        inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_fc14050c-23b9-4187-9dd9-fec6e30b52e9.png?v=1777356943",
-    },
-];
+function getDynamicMilestones() {
+    const ui = appConfigService.getMilestoneUI();
+    const model = buildMilestoneUIModel(ui);
+    if (!model || model.slots.length === 0) {
+        return [
+            {
+                id: 1,
+                title: "1st Order Reward",
+                subtitle: "25% off 💸 on cart value",
+                color: "#3AA0EB",
+                titleColor: "#3AA0EB",
+                subtitleColor: "#3AA0EB",
+                glowColor: "#3AA0EB",
+                activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
+                inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_df699638-d165-4010-af14-7e0b37e1bd31.png?v=1777355515",
+            },
+            {
+                id: 2,
+                title: "2nd Order Reward",
+                subtitle: "Free Puzzle",
+                color: "#E0C12B",
+                titleColor: "#E0C12B",
+                subtitleColor: "#E0C12B",
+                glowColor: "#E0C12B",
+                activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_74084028-3e19-48b9-8bbc-b0d638968297.png?v=1777355516",
+                inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_1_748e4b36-8c36-4122-a10d-ae24879e331b.png?v=1777356943",
+            },
+            {
+                id: 3,
+                title: "3rd Order Reward",
+                subtitle: "Free Shoes",
+                color: "#F15E5E",
+                titleColor: "#F15E5E",
+                subtitleColor: "#F15E5E",
+                glowColor: "#F15E5E",
+                activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_85c61a4e-b141-4f10-94e6-40b242eb0e11.png?v=1777355516",
+                inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_333b5bf4-7fb8-486a-9882-355b90efc476.png?v=1777356943",
+            },
+            {
+                id: 4,
+                title: "4th Order Reward",
+                subtitle: "Mystery Gift",
+                color: "#BD35D5",
+                titleColor: "#BD35D5",
+                subtitleColor: "#BD35D5",
+                glowColor: "#BD35D5",
+                activeIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_88257d92-9310-4586-a55d-0bf758d655a9.png?v=1777355515",
+                inactiveIcon: "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_fc14050c-23b9-4187-9dd9-fec6e30b52e9.png?v=1777356943",
+            },
+        ];
+    }
+
+    return model.slots.map((slot, idx) => ({
+        id: idx + 1,
+        title: slot.orderNumber || `${idx + 1}${idx === 0 ? 'st' : idx === 1 ? 'nd' : idx === 2 ? 'rd' : 'th'} Order Reward`,
+        subtitle: slot.subtitle,
+        color: slot.titleColorActive || '#3AA0EB',
+        titleColor: slot.titleColorActive || '#3AA0EB',
+        subtitleColor: slot.titleColorActive || '#3AA0EB',
+        glowColor: slot.titleColorActive || '#3AA0EB',
+        activeIcon: slot.activeIconUrl,
+        inactiveIcon: slot.inactiveIconUrl,
+    }));
+}
 
 function glowColorFaded(glowColor: string, alpha = 0.22): string {
     const s = (glowColor || '').replace('#', '').trim();
@@ -115,8 +132,20 @@ export default function OrderSuccessV2Screen() {
         milestoneStep?: string;
         /** Cart subtotal (pre-discount) — compared to active milestone `minCartValue`. */
         subtotal?: string;
+        /** The discount code applied to this order (if any). */
+        appliedCouponCode?: string;
     }>();
-    const { orderId, orderGraphId, estimatedDeliveryMinutes, destinationLat, destinationLng, total: orderTotalParam, milestoneStep: milestoneStepParam, subtotal: subtotalParam } = params;
+    const {
+        orderId,
+        orderGraphId,
+        estimatedDeliveryMinutes,
+        destinationLat,
+        destinationLng,
+        total: orderTotalParam,
+        milestoneStep: milestoneStepParam,
+        subtotal: subtotalParam,
+        appliedCouponCode
+    } = params;
     const orderTotalStr = Array.isArray(orderTotalParam) ? orderTotalParam[0] : orderTotalParam;
     const subtotalStr = Array.isArray(subtotalParam) ? subtotalParam[0] : subtotalParam;
 
@@ -169,100 +198,77 @@ export default function OrderSuccessV2Screen() {
 
     // Force fresh app-config on order-success so milestone completion reflects the just-placed order.
     useEffect(() => {
-        const totalNum = Number.parseFloat(String(orderTotalStr ?? ''));
         const payload = {
             phone: user?.phone ?? undefined,
             customerId: user?.customerId ?? user?.id ?? undefined,
             appVersion: getAppVersionForApi(),
             deviceType: Platform.OS,
-            cartSubtotal: Number.isFinite(totalNum) && totalNum > 0 ? totalNum : undefined,
+            appliedCoupon: appliedCouponCode || undefined,
         };
         void appConfigService.loadAppConfig(true, payload).catch(() => {
         });
-    }, [user?.phone, user?.customerId, user?.id, orderTotalStr]);
+    }, [user?.phone, user?.customerId, user?.id, appliedCouponCode]);
 
     const lastSequenceId = useRef(0);
+    const milestones = useMemo(() => getDynamicMilestones(), [appConfigSeq]);
     const currentStepRef = useRef(preOrderCompletedCount >= 0 ? preOrderCompletedCount : 0);
-
-    const { maxTargetIndex, showClubAfter, allMilestonesComplete } = useMemo(() => {
+    const milestoneState = useMemo(() => {
         let maxIdx = -1;
         let clubAfter = false;
-        let allDone = false;
+        const totalMilestones = milestones.length;
 
-        /**
-         * TERMINAL STATE:
-         * If all 4 milestones were already done before this order, or if we have
-         * previously seen the full celebration (via AsyncStorage), skip the block.
-         */
-        if (preOrderCompletedCount >= MILESTONES.length || skipMilestoneExperience === true) {
+        if (skipMilestoneExperience === true) {
             return { maxTargetIndex: -1, showClubAfter: false, allMilestonesComplete: true };
         }
 
-        if (preOrderCompletedCount >= 0) {
-            maxIdx = Math.min(preOrderCompletedCount, MILESTONES.length - 1);
-            clubAfter = preOrderCompletedCount === MILESTONES.length - 1;
-            allDone = clubAfter;
-        }
+        // 1. Determine progression from applied coupon
+        const normalizedCoupon = (appliedCouponCode || '').trim().toUpperCase();
+        const milestoneCoupons = ['FIRSTMILESTONE', 'SECONDMILESTONE', 'THIRDMILESTONE', 'FOURTHMILESTONE'];
+        const completedByCouponIdx = milestoneCoupons.indexOf(normalizedCoupon);
 
+        // 2. Determine progression from backend flags (refreshed config)
         const milestoneUI = appConfigService.getMilestoneUI();
-        if (milestoneUI != null && preOrderCompletedCount < MILESTONES.length) {
-            const freshAllDone = areAllMilestoneSlotsCompleted(milestoneUI);
-            const model = buildMilestoneUIModel(milestoneUI);
-            const slots = model?.slots ?? [];
-            const freshCompletedCount = (() => {
-                let count = 0;
-                for (const slot of slots) {
-                    const v = (slot as { isCompleted?: unknown })?.isCompleted;
-                    const done =
-                        v === true ||
-                        v === 1 ||
-                        (typeof v === 'string' && v.trim().toLowerCase() === 'true');
-                    if (!done) break;
-                    count++;
-                }
-                return count;
-            })();
-
-            const subtotalNum = Number.parseFloat(String(subtotalStr ?? orderTotalStr ?? '0'));
-            const currentSlotThreshold = slots[preOrderCompletedCount]?.minCartValue;
-
-            const isPredictedComplete =
-                (typeof currentSlotThreshold === 'number' && subtotalNum >= (currentSlotThreshold - 1)) ||
-                (currentSlotThreshold == null && subtotalNum > 0);
-
-            const effectiveCompletedCount = Math.max(
-                freshCompletedCount,
-                isPredictedComplete ? preOrderCompletedCount + 1 : preOrderCompletedCount
-            );
-
-            const freshStep = Math.min(MILESTONES.length - 1, effectiveCompletedCount);
-            if (freshStep > maxIdx) maxIdx = freshStep;
-            if (freshAllDone || effectiveCompletedCount >= MILESTONES.length) {
-                allDone = true;
-                if (maxIdx === MILESTONES.length - 1) clubAfter = true;
-                // If we've reached the end, ensure the celebration flag is persisted even if carousel doesn't finish
-                void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
+        const freshCompletedCount = (() => {
+            if (!milestoneUI) return preOrderCompletedCount;
+            let count = 0;
+            const keys = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', 'milestoneFourth'] as const;
+            for (const key of keys) {
+                const slot = milestoneUI[key];
+                if (slot?.isCompleted) count++;
+                else break;
             }
+            return count;
+        })();
 
-            if (__DEV__) {
-                console.log('[OrderSuccess] Threshold Debug:', {
-                    preOrderCompletedCount,
-                    subtotalNum,
-                    isPredictedComplete,
-                    effectiveCompletedCount,
-                    maxTargetIndex: maxIdx,
-                    allDone
-                });
-            }
+        // Use the furthest progression detected
+        const targetCompletedCount = Math.max(
+            preOrderCompletedCount,
+            freshCompletedCount,
+            completedByCouponIdx !== -1 ? completedByCouponIdx + 1 : 0
+        );
+
+        if (targetCompletedCount >= totalMilestones) {
+            maxIdx = totalMilestones - 1;
+            clubAfter = true;
+        } else {
+            maxIdx = targetCompletedCount;
+            clubAfter = false;
         }
 
-        return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete: allDone };
-    }, [appConfigSeq, preOrderCompletedCount, orderTotalStr, subtotalStr, milestoneStepParam, skipMilestoneExperience]);
+        // Terminal state: if everything was already done before this order
+        if (preOrderCompletedCount >= totalMilestones) {
+            return { maxTargetIndex: 3, showClubAfter: true, allMilestonesComplete: true };
+        }
+
+        return { maxTargetIndex: maxIdx, showClubAfter: clubAfter, allMilestonesComplete: clubAfter };
+    }, [milestones, preOrderCompletedCount, appliedCouponCode, appConfigSeq, skipMilestoneExperience]);
+
+    const { maxTargetIndex, showClubAfter, allMilestonesComplete } = milestoneState;
 
     const visibleMilestones = useMemo(() => {
         if (maxTargetIndex < 0) return [];
-        return MILESTONES.slice(0, Math.min(MILESTONES.length, maxTargetIndex + 1));
-    }, [maxTargetIndex]);
+        return milestones.slice(0, Math.min(milestones.length, maxTargetIndex + 1));
+    }, [maxTargetIndex, milestones]);
 
     const shouldSkipMilestoneExperience =
         skipMilestoneExperience === true && !showClubAfter;
@@ -292,7 +298,7 @@ export default function OrderSuccessV2Screen() {
 
         const runSequence = (index: number) => {
             if (seqId !== lastSequenceId.current) return;
-            if (index > maxTargetIndex || index >= MILESTONES.length) return;
+            if (index > maxTargetIndex || index >= milestones.length) return;
 
             const targetPos = (SCREEN_WIDTH / 2) - (index * (ITEM_WIDTH + GAP)) - (ITEM_WIDTH / 2);
             currentStepRef.current = index;
@@ -318,20 +324,21 @@ export default function OrderSuccessV2Screen() {
             });
         };
 
-        // Always start from index 0 (First Milestone) as requested
-        const initialPos = (SCREEN_WIDTH / 2) - (ITEM_WIDTH / 2);
+        // Always start the animation from the very first milestone (index 0)
+        const startIdx = 0;
+        const initialPos = (SCREEN_WIDTH / 2) - (startIdx * (ITEM_WIDTH + GAP)) - (ITEM_WIDTH / 2);
         trackAnim.setValue(initialPos);
-        setActiveIndex(0);
-        currentStepRef.current = 0;
+        setActiveIndex(startIdx);
+        currentStepRef.current = startIdx;
 
-        const startDelay = setTimeout(() => runSequence(0), 400);
+        const startDelay = setTimeout(() => runSequence(startIdx), 400);
         return () => {
             clearTimeout(startDelay);
             lastSequenceId.current++;
         };
-    }, [skipMilestoneExperience, shouldSkipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim]);
+    }, [skipMilestoneExperience, shouldSkipMilestoneExperience, allMilestonesComplete, maxTargetIndex, showClubAfter, trackAnim, milestones, preOrderCompletedCount]);
 
-    const currentMilestone = visibleMilestones[Math.min(activeIndex, visibleMilestones.length - 1)] ?? MILESTONES[0];
+    const currentMilestone = visibleMilestones[Math.min(activeIndex, visibleMilestones.length - 1)] ?? milestones[0];
     /**
      * Require `milestoneUI` in app config (`maxTargetIndex >= 0`).
      * If all milestones are complete, keep showing this section only while the completion-order
@@ -443,7 +450,7 @@ export default function OrderSuccessV2Screen() {
                                     {'Welcome to the\nKiddo Club!'}
                                 </Text>
                                 <View style={styles.milestoneAllRow}>
-                                    {MILESTONES.map((m) => (
+                                    {milestones.map((m) => (
                                         <View key={m.id} style={styles.milestoneAllItem}>
                                             <Image
                                                 source={{ uri: m.activeIcon }}
@@ -613,7 +620,7 @@ const styles = StyleSheet.create({
     mIconAll: { width: 56, height: 56 },
     mIcon: { width: 56, height: 56, marginBottom: 8 },
     mTitle: { fontSize: 14, fontFamily: Fonts.LexendBold },
-    mSub: { fontSize: 11, fontFamily: Fonts.LexendMedium },
+    mSub: { fontSize: 11, fontFamily: Fonts.LexendMedium, textAlign: 'center' },
     footerBackground: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 190, zIndex: 1 },
     footerImage: { width: '100%', height: '100%' }
 });
