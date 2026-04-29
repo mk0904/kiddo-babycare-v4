@@ -59,12 +59,7 @@ export function MysteryGiftBlock({
                     {/* <Text style={styles.metaText} numberOfLines={2}>
                         {description}
                     </Text> */}
-                    {isApplied && (
-                        <View style={styles.appliedBadge}>
-                            <Ionicons name="checkmark-circle" size={14} color="#16B364" />
-                            {/* <Text style={styles.appliedBadgeText}>Added to cart</Text> */}
-                        </View>
-                    )}
+                    
                 </View>
                 <View style={styles.actionBlock}>
                     {isApplied ? (

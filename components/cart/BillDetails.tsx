@@ -161,7 +161,7 @@ export function BillDetails({
     const mysteryGiftRow = splitMilestoneCouponCode(
         mysteryGiftCouponCode,
         'Fourth Reward',
-        'SURPRISE GIFT'
+        'MYSTERY GIFT'
     );
     const milestoneDiscountRow = splitMilestoneCouponCode(
         milestoneConfigDiscountCouponCode,

@@ -1,6 +1,6 @@
 import { milestoneCurrentStepFromConfig } from '@/components/home/milestoneUIFromConfig';
-import type { MilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import type { MilestoneSlotConfig, MilestoneUIConfig } from '@/types/appConfig';
+import type { MilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 
 const MILESTONE_KEYS = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', 'milestoneFourth'] as const;
 
@@ -9,6 +9,18 @@ const MILESTONE_KEYS = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', '
  */
 export function getActiveMilestoneSlotRaw(ui: MilestoneUIConfig | null | undefined): MilestoneSlotConfig | null {
     if (ui == null) return null;
+
+    // Count completed steps to detect total completion
+    let completedCount = 0;
+    for (const key of MILESTONE_KEYS) {
+        const slot = (ui as Record<string, unknown>)[key] as MilestoneSlotConfig | undefined;
+        if (slotIsCompletedTrue(slot)) completedCount++;
+        else break;
+    }
+
+    // If all 4 milestones are done, there is no "active" slot for rewards/UI
+    if (completedCount >= 4) return null;
+
     const step = milestoneCurrentStepFromConfig(ui, 0);
     const key = MILESTONE_KEYS[step];
     if (!key) return null;
@@ -26,6 +38,15 @@ function parseNum(v: string | number | null | undefined): number | null {
 function slotIsGiftTrue(slot: MilestoneSlotConfig | null | undefined): boolean {
     if (slot == null) return false;
     const v = (slot as { isGift?: boolean | string | number | null }).isGift;
+    if (v === true) return true;
+    if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
+    if (v === 1) return true;
+    return false;
+}
+
+export function slotIsCompletedTrue(slot: MilestoneSlotConfig | null | undefined): boolean {
+    if (slot == null) return false;
+    const v = (slot as { isCompleted?: boolean | string | number | null }).isCompleted;
     if (v === true) return true;
     if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
     if (v === 1) return true;

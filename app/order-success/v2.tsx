@@ -29,7 +29,7 @@ const ICON_SIZE = 160;
 const ITEM_WIDTH = 180;
 const GAP = 48;
 /** Auto-advance: order summary — longer when the milestone track / Kiddo Club is shown, shorter for “order placed” only. */
-const AUTO_NAVIGATE_WITH_MILESTONE_MS = 7000;
+const AUTO_NAVIGATE_WITH_MILESTONE_MS = 10000;
 const AUTO_NAVIGATE_NO_MILESTONE_MS = 4000;
 
 /**
@@ -234,7 +234,9 @@ export default function OrderSuccessV2Screen() {
             const keys = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', 'milestoneFourth'] as const;
             for (const key of keys) {
                 const slot = milestoneUI[key];
-                if (slot?.isCompleted) count++;
+                const v = (slot as any)?.isCompleted;
+                const isDone = v === true || (typeof v === 'string' && v.trim().toLowerCase() === 'true') || v === 1;
+                if (isDone) count++;
                 else break;
             }
             return count;
@@ -317,8 +319,12 @@ export default function OrderSuccessV2Screen() {
                     if (index < maxTargetIndex) {
                         runSequence(index + 1);
                     } else if (showClubAfter) {
-                        setMilestoneShowAll(true);
-                        void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
+                        // Pause on the final milestone for a beat longer before showing the club finale
+                        setTimeout(() => {
+                            if (seqId !== lastSequenceId.current) return;
+                            setMilestoneShowAll(true);
+                            void AsyncStorage.setItem(ORDER_SUCCESS_CLUB_CELEBRATION_SEEN_KEY, 'true');
+                        }, 600);
                     }
                 }, 1000);
             });
@@ -490,7 +496,7 @@ export default function OrderSuccessV2Screen() {
                                                 ]}
                                             >
                                                 {m.title}
-                                                {index === visibleMilestones.length - 1 ? (
+                                                {index === visibleMilestones.length - 1 && !showClubAfter ? (
                                                     <Text style={{ fontSize: 16 }}>{'\n'}Unlocked</Text>
                                                 ) : null}
                                             </Text>

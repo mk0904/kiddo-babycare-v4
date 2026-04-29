@@ -1,4 +1,5 @@
 import { milestoneCurrentStepFromConfig } from '@/components/home/milestoneUIFromConfig';
+import { slotIsCompletedTrue } from './milestoneOrderDiscount';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 
 export type MilestoneFreeGiftKind = 'puzzle' | 'shoes' | 'discount' | 'mystery' | 'none';
@@ -13,7 +14,20 @@ export type MilestoneFreeGiftKind = 'puzzle' | 'shoes' | 'discount' | 'mystery' 
 export function getMilestoneFreeGiftKind(
     milestoneUI: MilestoneUIConfig | null | undefined
 ): MilestoneFreeGiftKind {
-    const step = milestoneCurrentStepFromConfig(milestoneUI ?? null, 0);
+    if (milestoneUI == null) return 'none';
+
+    // Count completed steps to detect total completion
+    let completedCount = 0;
+    const keys = ['milestoneFirst', 'milestoneSecond', 'milestoneThird', 'milestoneFourth'] as const;
+    for (const key of keys) {
+        if (slotIsCompletedTrue(milestoneUI[key])) completedCount++;
+        else break;
+    }
+
+    // If all 4 milestones are done, no more gifts to show
+    if (completedCount >= 4) return 'none';
+
+    const step = milestoneCurrentStepFromConfig(milestoneUI, 0);
     if (step === 0) return 'discount';
     if (step === 1) return 'puzzle';
     if (step === 2) return 'shoes';

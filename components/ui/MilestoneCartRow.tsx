@@ -1,13 +1,12 @@
 import MilestoneTracker from '@/components/home/MilestoneTracker';
-import { buildMilestoneUIModel, areAllMilestoneSlotsCompleted } from '@/components/home/milestoneUIFromConfig';
+import { areAllMilestoneSlotsCompleted, buildMilestoneUIModel } from '@/components/home/milestoneUIFromConfig';
 import { useMilestoneInlineCartController } from '@/context/MilestoneInlineCartContext';
 import { useCartItemCount } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { appConfigService } from '@/services/appConfigService';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { FloatingCartCta } from './FloatingCartCta';
 
 export type MilestoneCartRowProps = {
@@ -87,16 +86,16 @@ export function MilestoneCartRow({ milestoneUI, onMilestoneExpandedChange, isInl
                     styles.milestoneCol,
                     showInline
                         ? {
-                              width: rowLayout.milestoneWidth,
-                              marginLeft: rowLayout.sideInset,
-                              marginRight: rowLayout.gap,
-                          }
+                            width: rowLayout.milestoneWidth,
+                            marginLeft: rowLayout.sideInset,
+                            marginRight: rowLayout.gap,
+                        }
                         : {
-                              flex: 1,
-                              minWidth: 0,
-                              marginLeft: rowLayout.sideInset,
-                              marginRight: rowLayout.sideInset,
-                          },
+                            flex: 1,
+                            minWidth: 0,
+                            marginLeft: rowLayout.sideInset,
+                            marginRight: rowLayout.sideInset,
+                        },
                 ]}
                 pointerEvents="box-none"
             >

@@ -41,12 +41,16 @@ function slotVerticallineUrl(s?: MilestoneSlotConfig): string {
     return trimUrl(s.verActiveLine);
 }
 
-/** Count leading `isCompleted: true` steps → active step index (next incomplete), capped at 3. */
+/** Count leading completed steps → active step index (next incomplete), capped at 3. */
 function currentStepFromIsCompleted(ui: MilestoneUIConfig): number | null {
     let consecutive = 0;
     for (const key of MILESTONE_KEYS) {
         const slot = ui[key];
-        if (slot?.isCompleted === true) consecutive += 1;
+        // Use a robust check for completion (handle true, "true", 1)
+        const v = (slot as any)?.isCompleted;
+        const isDone = v === true || (typeof v === 'string' && v.trim().toLowerCase() === 'true') || v === 1;
+        
+        if (isDone) consecutive += 1;
         else break;
     }
     if (consecutive === 0) return null;

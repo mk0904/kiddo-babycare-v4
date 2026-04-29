@@ -707,16 +707,35 @@ export default function CartScreen() {
                 void removeDiscountCode(freePuzzleGiftCodeUc);
             }
         }
-    }, [milestoneFreeKind, freeShoesGiftCodeUc, freePuzzleGiftCodeUc]);
+        if (milestoneFreeKind !== 'mystery') {
+            if (discountCodes.some((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)) {
+                void removeDiscountCode(freeMysteryGiftCodeUc);
+            }
+        }
+    }, [milestoneFreeKind, freeShoesGiftCodeUc, freePuzzleGiftCodeUc, freeMysteryGiftCodeUc]);
 
-    // Gift-bill milestone (1st/4th) — clear mystery code when the slot is no longer unlocked for bill display.
+    /**
+     * Gift-bill milestone (1st/4th with `freeKind === 'none'`) — clear mystery code when the slot is no longer
+     * unlocked for bill display.
+     *
+     * When the active step is the mystery rail (`freeKind === 'mystery'`), `milestoneIsGiftBillDiscountTitle` is
+     * always null by definition (see `milestoneIsGiftBillDiscountLineTitle`), so we must NOT strip the coupon here;
+     * otherwise Add would apply and this effect would immediately remove it.
+     */
     useEffect(() => {
+        if (milestoneFreeKind === 'mystery') return;
         if (milestoneIsGiftBillDiscountTitle == null) {
             if (discountCodes.some((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)) {
                 void removeDiscountCode(freeMysteryGiftCodeUc);
             }
         }
-    }, [milestoneIsGiftBillDiscountTitle, freeMysteryGiftCodeUc, discountCodes, removeDiscountCode]);
+    }, [
+        milestoneFreeKind,
+        milestoneIsGiftBillDiscountTitle,
+        freeMysteryGiftCodeUc,
+        discountCodes,
+        removeDiscountCode,
+    ]);
 
     // Milestone coupon override is now disabled (decoupled).
     // Milestones and normal coupons can coexist or overwrite each other based on standard Shopify rules.
