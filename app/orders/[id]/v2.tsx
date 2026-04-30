@@ -1832,9 +1832,24 @@ export default function OrderDetailV2Screen() {
                 {(() => {
                     const discountAmount = Math.max(0, subtotalDisplay + shipping + tax - total);
                     const freeShoesGiftUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                    const freePuzzleGiftUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                    const mysteryGiftUc = appConfigService.getMysteryGiftDiscountCodeUppercase();
+
                     const isFreeShoesGiftCoupon =
                         Boolean(freeShoesGiftUc) && couponCode?.toUpperCase() === freeShoesGiftUc;
-                    const displayDiscount = isFreeShoesGiftCoupon ? 0 : (couponValue > 0 ? couponValue : discountAmount);
+                    const isFreePuzzleGiftCoupon =
+                        Boolean(freePuzzleGiftUc) && couponCode?.toUpperCase() === freePuzzleGiftUc;
+                    const isMysteryGiftCoupon =
+                        Boolean(mysteryGiftUc) && couponCode?.toUpperCase() === mysteryGiftUc;
+
+                    const isGiftCoupon = isFreeShoesGiftCoupon || isFreePuzzleGiftCoupon || isMysteryGiftCoupon;
+                    const displayDiscount = isGiftCoupon ? 0 : (couponValue > 0 ? couponValue : discountAmount);
+
+                    let giftText = '';
+                    if (isFreeShoesGiftCoupon) giftText = 'Free Shoe';
+                    else if (isFreePuzzleGiftCoupon) giftText = 'Free Puzzle';
+                    else if (isMysteryGiftCoupon) giftText = 'Mystery Gift';
+
                     return (
                         <View style={styles.billCard}>
                             <Text style={styles.billTitle}>Bill details</Text>
@@ -1847,8 +1862,8 @@ export default function OrderDetailV2Screen() {
                                     <Text style={styles.billLabel}>
                                         {couponCode ? `Coupon (${couponCode})` : 'Discount'}
                                     </Text>
-                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isFreeShoesGiftCoupon) || isFreeShoesGiftCoupon) && styles.billDiscountValue]}>
-                                        {isFreeShoesGiftCoupon ? 'Free Shoe' : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
+                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isGiftCoupon) || isGiftCoupon) && styles.billDiscountValue]}>
+                                        {isGiftCoupon ? giftText : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
                                     </Text>
                                 </View>
                             )}

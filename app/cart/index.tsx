@@ -1925,6 +1925,7 @@ export default function CartScreen() {
                                     await removeDiscountCode(freePuzzleGiftCodeUc);
                                 }}
                                 appliedCouponOriginalPrice={kidPuzzleOriginalPrice}
+                                secondMilestoneIcon={milestoneUI?.secondMilestoneIcon}
                             />
                         )}
                         {hasNonTicketingProducts && showShoesMilestoneUIF && (
@@ -1959,6 +1960,7 @@ export default function CartScreen() {
                                     await removeDiscountCode(freeShoesGiftCodeUc);
                                 }}
                                 appliedCouponOriginalPrice={freeShoesGiftOriginalPrice}
+                                thirdMilestoneIcon={milestoneUI?.thirdMilestoneIcon}
                             />
                         )}
 
@@ -1968,7 +1970,7 @@ export default function CartScreen() {
                                 code={milestoneDiscountCodeUc}
                                 title={activeMilestoneSlot?.header || '25% OFF'}
                                 description={activeMilestoneSlot?.body || 'Get 25% off on your first order'}
-                                iconUrl={activeMilestoneSlot?.iconUrl}
+                                firstMilestoneIcon={milestoneUI?.firstMilestoneIcon}
                                 milestoneMinCartUnlocked={milestoneMinCartUnlocked}
                                 isApplied={discountCodes.some(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)}
                                 onAddPress={async () => {
@@ -1995,7 +1997,7 @@ export default function CartScreen() {
                                 code={freeMysteryGiftCodeUc}
                                 title={milestoneUI?.milestoneFourth?.header || milestoneUI?.milestoneFourth?.title || 'Mystery Gift'}
                                 description={milestoneUI?.milestoneFourth?.body || milestoneUI?.milestoneFourth?.description || 'You unlocked a mystery gift!'}
-                                iconUrl={milestoneUI?.milestoneFourth?.iconUrl}
+                                fourthMilestoneIcon={milestoneUI?.fourthMilestoneIcon}
                                 milestoneMinCartUnlocked={milestoneMinCartUnlocked}
                                 isApplied={discountCodes.some(dc => dc.code.toUpperCase() === freeMysteryGiftCodeUc)}
                                 onAddPress={async () => {

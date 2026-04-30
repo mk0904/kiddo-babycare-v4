@@ -150,22 +150,22 @@ export function BillDetails({
 
     const freeShoesRow = splitMilestoneCouponCode(
         freeShoesCouponCode,
-        'Third Reward',
+        'Third Milestone',
         'FREE SHOES'
     );
     const freePuzzleRow = splitMilestoneCouponCode(
         freePuzzleCouponCode,
-        'Second Reward',
+        'Second Milestone',
         'FREE PUZZLE'
     );
     const mysteryGiftRow = splitMilestoneCouponCode(
         mysteryGiftCouponCode,
-        'Fourth Reward',
+        'Fourth Milestone',
         'MYSTERY GIFT'
     );
     const milestoneDiscountRow = splitMilestoneCouponCode(
         milestoneConfigDiscountCouponCode,
-        'First Reward',
+        'First Milestone',
         'DISCOUNT'
     );
 

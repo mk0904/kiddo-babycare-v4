@@ -151,14 +151,21 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
     const slots: ResolvedMilestoneSlot[] = MILESTONE_KEYS.map((key) => {
         const raw = root[key] as MilestoneSlotConfig | undefined;
 
-        const activeIconUrl = trimUrl(raw?.activeIconUrl) || trimUrl(raw?.iconUrl) || '';
+        const topLevelIcon = (key === 'milestoneFirst') ? root.firstMilestoneIcon :
+            (key === 'milestoneSecond') ? root.secondMilestoneIcon :
+                (key === 'milestoneThird') ? root.thirdMilestoneIcon :
+                    (key === 'milestoneFourth') ? root.fourthMilestoneIcon : '';
+
+        const activeIconUrl = trimUrl(topLevelIcon) || trimUrl(raw?.activeIconUrl) || trimUrl(raw?.iconUrl) || '';
         const inactiveIconUrl =
+            trimUrl(topLevelIcon) ||
             trimUrl(raw?.inactiveIconUrl) ||
             trimUrl(raw?.defaultIconUrl) ||
             trimUrl(raw?.iconUrl) ||
             trimUrl(raw?.activeIconUrl) ||
             '';
         const entryIconUrl =
+            trimUrl(topLevelIcon) ||
             trimUrl(raw?.entryIconUrl) ||
             trimUrl(raw?.entryiconUrl) ||
             '';

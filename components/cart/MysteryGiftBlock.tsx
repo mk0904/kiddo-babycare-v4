@@ -1,5 +1,6 @@
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -12,7 +13,7 @@ export interface MysteryGiftBlockProps {
     /** Description (e.g. You unlocked a special mystery gift!) */
     description: string;
     /** Icon URL from milestone config */
-    iconUrl?: string;
+    fourthMilestoneIcon?: string;
     /** When false, the Add control is disabled until the milestone min cart is met. */
     milestoneMinCartUnlocked?: boolean;
     /** Whether this specific coupon is applied */
@@ -32,7 +33,7 @@ export function MysteryGiftBlock({
     code,
     title,
     description,
-    iconUrl,
+    fourthMilestoneIcon,
     milestoneMinCartUnlocked = true,
     isApplied,
     onAddPress,
@@ -50,7 +51,11 @@ export function MysteryGiftBlock({
             <View style={[styles.productCard, { backgroundColor: displayBg }]}>
                 <View style={styles.frostOverlay} />
                 <View style={[styles.rewardIcon, styles.iconPlaceholder]}>
-                    <Ionicons name="help-circle-outline" size={32} color={displayColor} />
+                    {fourthMilestoneIcon ? (
+                        <Image source={{ uri: fourthMilestoneIcon }} style={styles.rewardIcon} contentFit="contain" />
+                    ) : (
+                        <Ionicons name="help-circle-outline" size={32} color={displayColor} />
+                    )}
                 </View>
                 <View style={styles.productInfo}>
                     <Text style={styles.productName} numberOfLines={2}>

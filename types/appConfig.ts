@@ -281,6 +281,10 @@ export interface MilestoneUIConfig {
   milestoneSecond?: MilestoneSlotConfig;
   milestoneThird?: MilestoneSlotConfig;
   milestoneFourth?: MilestoneSlotConfig;
+  firstMilestoneIcon?: string;
+  secondMilestoneIcon?: string;
+  thirdMilestoneIcon?: string;
+  fourthMilestoneIcon?: string;
 }
 
 export interface AppConfigResponse {
