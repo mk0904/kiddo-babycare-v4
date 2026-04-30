@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import {
     resolveMilestoneConnectorUri,
@@ -296,7 +296,7 @@ export function MilestoneExpandedFormContent({
                                 style={[
                                     styles.expandedRewardTitle,
                                     isFuture && dimFutureSteps && styles.expandedRewardTitleFuture,
-                                    !isFuture && activeTitleColor,
+
                                 ]}
                                 numberOfLines={2}
                             >
@@ -307,7 +307,7 @@ export function MilestoneExpandedFormContent({
                                     style={[
                                         styles.expandedDescription,
                                         isFuture && dimFutureSteps && styles.expandedDescriptionFuture,
-                                        !isFuture && activeSubtitleColor,
+
                                     ]}
                                 >
                                     {descriptionText}

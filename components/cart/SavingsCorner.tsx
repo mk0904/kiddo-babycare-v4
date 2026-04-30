@@ -298,8 +298,29 @@ export function SavingsCorner({
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
         [configRefreshKey]
     );
+    const freePuzzleGiftCodeUc = useMemo(
+        () => appConfigService.getFreePuzzleGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const mysteryGiftCodeUc = useMemo(
+        () => appConfigService.getMysteryGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const appliedCouponUc = (appliedDiscountCode ?? '').toUpperCase();
     const isFreeShoesGiftApplied =
-        Boolean(freeShoesGiftCodeUc) && (appliedDiscountCode ?? '').toUpperCase() === freeShoesGiftCodeUc;
+        Boolean(freeShoesGiftCodeUc) && appliedCouponUc === freeShoesGiftCodeUc;
+    const isFreePuzzleGiftApplied =
+        Boolean(freePuzzleGiftCodeUc) && appliedCouponUc === freePuzzleGiftCodeUc;
+    const isMysteryGiftApplied =
+        Boolean(mysteryGiftCodeUc) && appliedCouponUc === mysteryGiftCodeUc;
+    const isGiftCouponApplied =
+        isFreeShoesGiftApplied || isFreePuzzleGiftApplied || isMysteryGiftApplied;
+    const appliedGiftSubtitle = useMemo(() => {
+        if (isFreeShoesGiftApplied) return 'You will get Free Shoe on this order';
+        if (isFreePuzzleGiftApplied) return 'You will get Free Puzzle on this order';
+        if (isMysteryGiftApplied) return 'You will get Mystery Gift on this order';
+        return null;
+    }, [isFreeShoesGiftApplied, isFreePuzzleGiftApplied, isMysteryGiftApplied]);
     const freeShoesGiftDisplayPrice = useMemo(() => {
         if (!isFreeShoesGiftApplied) return undefined;
         const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === freeShoesGiftCodeUc)?.originalPrice;
@@ -344,15 +365,16 @@ export function SavingsCorner({
                                         <Text style={styles.applyCouponSectionTitle} numberOfLines={1}>
                                             {(appliedDiscountCode ?? 'APPLIED').toUpperCase()}
                                         </Text>
-                                        {
-                                            appliedSaveAmount > 0 &&
-                                            (
-                                                <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
-                                                    You saved {formatCurrency(appliedSaveAmount)} on this order
-                                                </Text>
-                                            )
-                                        }
-
+                                        {!appliedGiftSubtitle && appliedSaveAmount > 0 ? (
+                                            <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                                You saved {formatCurrency(appliedSaveAmount)} on this order
+                                            </Text>
+                                        ) : null}
+                                        {appliedGiftSubtitle ? (
+                                            <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                                {appliedGiftSubtitle}
+                                            </Text>
+                                        ) : null}
                                         {lastApplyError ? (
                                             <Text style={styles.cardErrorText} numberOfLines={2}>
                                                 {lastApplyError}
@@ -811,7 +833,7 @@ const styles = StyleSheet.create({
         color: '#181D27',
     },
     applyCouponAppliedSub: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#535862',
         marginTop: 2,

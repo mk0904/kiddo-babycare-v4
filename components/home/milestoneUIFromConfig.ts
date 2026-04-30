@@ -49,7 +49,7 @@ function currentStepFromIsCompleted(ui: MilestoneUIConfig): number | null {
         // Use a robust check for completion (handle true, "true", 1)
         const v = (slot as any)?.isCompleted;
         const isDone = v === true || (typeof v === 'string' && v.trim().toLowerCase() === 'true') || v === 1;
-        
+
         if (isDone) consecutive += 1;
         else break;
     }
@@ -188,8 +188,8 @@ export function buildMilestoneUIModel(ui: MilestoneUIConfig | null | undefined):
             inactiveIconUrl,
             entryIconUrl,
             isCompleted: raw?.isCompleted,
-            titleColorActive: trimUrl(raw?.activeColor),
-            subtitleColor: trimUrl(raw?.inactiveColor),
+            titleColorActive: trimUrl(raw?.color),
+            subtitleColor: trimUrl(raw?.color),
             completedHorLine:
                 trimUrl(raw?.completedHorLine) || trimUrl(root.horizontalCompletedLineUrl) || slotHorizontallineUrl(raw),
             completedVerLine:

@@ -444,7 +444,7 @@ export default function OrderSuccessV2Screen() {
                             ]}
                             start={{ x: 1, y: 1 }}
                             end={{ x: 1, y: 0 }}
-                            locations={[0, 0.05, 0.5, 0.95, 0.5]}
+                            locations={[0, 0.05, 0.5, 0.95, 1.0]}
                             style={styles.fullWidthGlow}
                         />
                     </View>
