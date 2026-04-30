@@ -843,7 +843,7 @@ export default function CartScreen() {
                             const ordinals = ['First', 'Second', 'Third', 'Fourth'];
                             milestoneConfigDiscountLabel = (stepIndex >= 0 && stepIndex < ordinals.length) ? `${ordinals[stepIndex]} Reward` : 'Milestone Reward';
                             milestoneAppliedCode = discountCode.code;
-                            milestoneAppliedDescription = discountCode.couponDescription || discountCode.description || '';
+                            milestoneAppliedDescription = discountCode.couponDescription || '';
                         }
                     } else {
                         otherCouponDiscountAmount += codeDiscount;
@@ -1925,7 +1925,6 @@ export default function CartScreen() {
                                     await removeDiscountCode(freePuzzleGiftCodeUc);
                                 }}
                                 appliedCouponOriginalPrice={kidPuzzleOriginalPrice}
-                                secondMilestoneIcon={milestoneUI?.secondMilestoneIcon}
                             />
                         )}
                         {hasNonTicketingProducts && showShoesMilestoneUIF && (
@@ -1960,7 +1959,6 @@ export default function CartScreen() {
                                     await removeDiscountCode(freeShoesGiftCodeUc);
                                 }}
                                 appliedCouponOriginalPrice={freeShoesGiftOriginalPrice}
-                                thirdMilestoneIcon={milestoneUI?.thirdMilestoneIcon}
                             />
                         )}
 

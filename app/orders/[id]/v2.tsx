@@ -316,7 +316,7 @@ export default function OrderDetailV2Screen() {
     );
     const router = useRouter();
     const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     /** Shopify Storefront customer token (order + tracking APIs). Prefer user.*, fall back to persisted store (same as login). */
     const persistedAccessToken = useUserStore((s) => s.accessToken);
     const shopifyCustomerToken = useMemo(
