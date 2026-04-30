@@ -4,8 +4,9 @@ import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
 import { couponService, type CouponCode } from '@/services/couponService';
 import { useCartItems, useCartStore } from '@/store/cartStore';
+import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
@@ -22,6 +23,16 @@ import {
 
 import { SchoolCouponModal } from '../modals/SchoolCouponModal';
 import { SavingsCornerCouponCarousel, type SavingsCornerCouponItem } from './SavingsCornerCouponCarousel';
+import { SavingsCornerPromoOfferContent } from './SavingsCornerPromoOfferContent';
+
+/** Minimal deal modal when app config has no `speacialDealConfig` but a deal coupon is applied. */
+const FALLBACK_SPECIAL_DEAL_CONFIG: SpecialDealConfig = {
+    isEnabled: true,
+    title: 'Special offer',
+    bannerText: 'Offer unlocked!',
+    footerCta: 'Add products to unlock offer',
+    offerTime: 30,
+};
 
 export type SavingsCornerCoupon = SavingsCornerCouponItem;
 
@@ -60,6 +71,8 @@ export function SavingsCorner({
     const appliedDiscountCode = appliedDiscountCodes[0] ?? null;
 
     const [showCouponsModal, setShowCouponsModal] = useState(false);
+    /** Promo upsell (Mother’s Day style) first; user can switch to the classic coupon list. */
+    const [couponModalMode, setCouponModalMode] = useState<'promo' | 'list'>('promo');
     const [manualCode, setManualCode] = useState('');
     const [manualCodeMessage, setManualCodeMessage] = useState<string | null>(null);
     const [availableCoupons, setAvailableCoupons] = useState<SavingsCornerCoupon[]>([]);
@@ -290,9 +303,62 @@ export function SavingsCorner({
 
     const closeModal = () => {
         setShowCouponsModal(false);
+        setCouponModalMode('promo');
         setManualCodeMessage(null);
         setLastApplyError(null);
     };
+
+    const specialDealConfig = useMemo(() => appConfigService.getSpecialDealConfig(), [configRefreshKey]);
+    const specialDealPromoEnabled = specialDealConfig?.isEnabled === true;
+
+    const hasDealCouponApplied = useMemo(
+        () => discountCodes.some((dc) => dc.isDealCoupon === true),
+        [discountCodes]
+    );
+
+    const resolvedDealConfig: SpecialDealConfig | null = useMemo(() => {
+        if (specialDealConfig) return specialDealConfig;
+        if (hasDealCouponApplied) return FALLBACK_SPECIAL_DEAL_CONFIG;
+        return null;
+    }, [specialDealConfig, hasDealCouponApplied]);
+
+    /** Promo sheet: deal coupon and/or enabled special-deal config from app. */
+    const showPromoOfferSheet =
+        couponModalMode === 'promo' &&
+        isAuthenticated &&
+        resolvedDealConfig != null &&
+        (hasDealCouponApplied || specialDealPromoEnabled);
+
+    const openApplyCouponsModal = () => {
+        setCouponModalMode(isAuthenticated && specialDealPromoEnabled ? 'promo' : 'list');
+        setShowCouponsModal(true);
+    };
+
+    /** View All → classic coupon list / manual entry (not the promo upsell). */
+    const openCouponsListModal = () => {
+        setCouponModalMode('list');
+        setShowCouponsModal(true);
+    };
+
+    /** Opens {@link SavingsCornerPromoOfferContent} (same as deal-coupon auto-open). */
+    const openDealPromoModal = () => {
+        setCouponModalMode('promo');
+        setShowCouponsModal(true);
+    };
+
+    /** Deal coupon applied → open special-offer modal (once per apply / restore). */
+    const hadDealCouponRef = useRef(false);
+    useEffect(() => {
+        if (!isAuthenticated) {
+            hadDealCouponRef.current = hasDealCouponApplied;
+            return;
+        }
+        if (hasDealCouponApplied && !hadDealCouponRef.current) {
+            setCouponModalMode('promo');
+            setShowCouponsModal(true);
+        }
+        hadDealCouponRef.current = hasDealCouponApplied;
+    }, [hasDealCouponApplied, isAuthenticated]);
 
     const freeShoesGiftCodeUc = useMemo(
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
@@ -394,6 +460,17 @@ export function SavingsCorner({
                                 </TouchableOpacity>
                             </View>
 
+                            {hasDealCouponApplied ? (
+                                <TouchableOpacity
+                                    style={styles.dealPromoCta}
+                                    onPress={openDealPromoModal}
+                                    activeOpacity={0.85}
+                                    disabled={!isAuthenticated}
+                                >
+                                    <Text style={styles.dealPromoCtaText}>Get 50% off products</Text>
+                                </TouchableOpacity>
+                            ) : null}
+
                             <View style={styles.applyCouponPill}>
                                 <TextInput
                                     style={styles.applyCouponPillInput}
@@ -442,16 +519,21 @@ export function SavingsCorner({
                     ) : (
                         <>
                             <View style={styles.applyCouponHeaderRow}>
-                                <View style={styles.applyCouponHeaderLeft}>
+                                <TouchableOpacity
+                                    style={styles.applyCouponHeaderLeft}
+                                    onPress={openApplyCouponsModal}
+                                    activeOpacity={0.7}
+                                    disabled={couponApplying}
+                                >
                                     <Image
                                         source={require('@/assets/icons/coupon.png')}
                                         style={styles.applyCouponHeaderIcon}
                                         resizeMode="contain"
                                     />
                                     <Text style={styles.applyCouponSectionTitle}>Apply Coupon</Text>
-                                </View>
+                                </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => setShowCouponsModal(true)}
+                                    onPress={openCouponsListModal}
                                     activeOpacity={0.7}
                                     disabled={couponApplying}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -578,6 +660,18 @@ export function SavingsCorner({
                         activeOpacity={1}
                         onPress={closeModal}
                     />
+                    {showPromoOfferSheet ? (
+                        <View style={styles.promoModalCenter} pointerEvents="box-none">
+                            <SavingsCornerPromoOfferContent
+                                key={configRefreshKey}
+                                dealConfig={resolvedDealConfig}
+                                formatCurrency={formatCurrency}
+                                onClose={closeModal}
+                                onSkip={closeModal}
+                                onSeeAllCoupons={() => setCouponModalMode('list')}
+                            />
+                        </View>
+                    ) : (
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                         style={styles.modalKeyboardAvoid}
@@ -586,6 +680,15 @@ export function SavingsCorner({
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
                                 <View style={styles.modalHeaderLeft}>
+                                    {isAuthenticated && (hasDealCouponApplied || specialDealPromoEnabled) ? (
+                                        <TouchableOpacity
+                                            onPress={() => setCouponModalMode('promo')}
+                                            hitSlop={12}
+                                            style={styles.modalBackHit}
+                                        >
+                                            <Ionicons name="chevron-back" size={22} color={Colors.primary} />
+                                        </TouchableOpacity>
+                                    ) : null}
                                     <View style={styles.modalHeaderIconWrap}>
                                         <Image source={require('@/assets/icons/coupon.png')} style={styles.modalHeaderIconImage} resizeMode="contain" />
                                     </View>
@@ -767,6 +870,7 @@ export function SavingsCorner({
                             </ScrollView>
                         </View>
                     </KeyboardAvoidingView>
+                    )}
                 </View>
             </Modal>
         </View>
@@ -852,6 +956,15 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         fontSize: Fonts.SmallFontSize,
         fontFamily: Fonts.LexendSemiBold,
+        color: Colors.primary,
+    },
+    dealPromoCta: {
+        marginBottom: 8,
+        marginLeft: 8,
+    },
+    dealPromoCtaText: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.primary,
     },
     applyCouponViewAll: {
@@ -959,6 +1072,16 @@ const styles = StyleSheet.create({
         color: '#6D28D9',
     },
     // Modal
+    promoModalCenter: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 24,
+    },
+    modalBackHit: {
+        marginRight: 4,
+        justifyContent: 'center',
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',

@@ -57,6 +57,8 @@ export interface CouponCode {
   isSchoolCoupon?: boolean;
   /** If true, this coupon is treated as a milestone reward in the UI. */
   isMilestone?: boolean;
+  /** If true, cart shows the deal upsell modal (e.g. Mother’s Day kit promo). */
+  isDealCoupon?: boolean;
 }
 
 export interface GetEligibleCouponsParams {

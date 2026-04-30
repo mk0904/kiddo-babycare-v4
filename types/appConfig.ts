@@ -142,7 +142,54 @@ export interface CartFeatures {
   showCompletePurchaseSection: boolean;
 }
 
+/** Single condition row in the special-deal promo modal (icon + copy). */
+export interface SpecialDealCondition {
+  iconUrl?: string;
+  text?: string;
+}
+
+/** Tab driving a Shopify collection in the special-deal promo grid. */
+export interface SpecialDealTab {
+  /** Admin URL, numeric id, or `gid://shopify/Collection/...` — used only to load products. */
+  collectionId?: string;
+  /** Backend snake_case alias for {@link collectionId}. */
+  collection_id?: string;
+  isActive?: boolean;
+  /** Shown as the tab title in the promo modal. */
+  label?: string;
+  /** Stable id for analytics / keys (not shown as the tab title). */
+  value?: string;
+}
+
+/**
+ * Cart “special deal” promo modal — driven by app config.
+ * Backend JSON key is historically misspelled `speacialDealConfig`; {@link CartConfig.specialDealConfig} is an optional alias.
+ */
+export interface SpecialDealConfig {
+  actualPrice?: number;
+  bannerText?: string;
+  conditions?: SpecialDealCondition[];
+  /** Interpreted as percentage off for grid “offer price” when 0 &lt; discount ≤ 100. */
+  discount?: number;
+  discountedPrice?: number;
+  firstLineText?: string;
+  footerCta?: string;
+  isEnabled?: boolean;
+  minCartValue?: number;
+  /** Countdown duration in minutes. */
+  offerTime?: number;
+  secondLineText?: string;
+  successIconUrl?: string;
+  tabs?: SpecialDealTab[];
+  thirdLineText?: string;
+  title?: string;
+}
+
 export interface CartConfig {
+  /** Backend typo preserved — special deal promo (`getSpecialDealConfig` also reads `specialDealConfig`). */
+  speacialDealConfig?: SpecialDealConfig;
+  /** Correct spelling alias for {@link speacialDealConfig}. */
+  specialDealConfig?: SpecialDealConfig;
   /** Gift bill only (1st/4th `isGift`); pairs with `milestoneIsGiftBillDiscountLineTitle` / manual coupon apply. */
   mysteryGiftOffer?: MysteryGiftOfferConfig;
   deliveryCard?: {
@@ -292,6 +339,9 @@ export interface AppConfigResponse {
   updatedAt?: string;
   /** When true, show "Events" in address Save as (Home/Work/Other/Events) and persist in Shopify. */
   isEvent?: boolean;
+  /** Some backends send special-deal promo at root instead of under `cart`. */
+  speacialDealConfig?: SpecialDealConfig;
+  specialDealConfig?: SpecialDealConfig;
   features?: {
     cart?: CartFeatures;
     checkout?: Record<string, boolean>;

@@ -18,7 +18,9 @@ import type {
   MilestoneUIConfig,
   MysteryGiftOfferConfig,
   OrderDetailConfig,
+  SpecialDealConfig,
 } from '@/types/appConfig';
+import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { getBackendApiPath } from './backendBase';
 
 function getAppConfigUrl(payload?: AppConfigPayload): string {
@@ -156,6 +158,20 @@ class AppConfigService {
 
   getCartConfig(): CartConfig | null {
     return this.config?.cart ?? null;
+  }
+
+  /** Special-deal promo modal config (`speacialDealConfig` / `specialDealConfig` on cart or root payload). */
+  getSpecialDealConfig(): SpecialDealConfig | null {
+    const cfg = this.config;
+    if (!cfg) return null;
+    const raw =
+      cfg.cart?.speacialDealConfig ??
+      cfg.cart?.specialDealConfig ??
+      cfg.speacialDealConfig ??
+      cfg.specialDealConfig ??
+      null;
+    if (raw == null) return null;
+    return normalizeSpecialDealConfig(raw);
   }
 
   getFreeShoesOfferConfig(): FreeShoesOfferConfig | null {
