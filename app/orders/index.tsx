@@ -11,7 +11,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Image,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -227,14 +229,20 @@ export default function OrdersScreen() {
     const { user, isAuthenticated, logout } = useAuth();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [isAutoRetrying, setIsAutoRetrying] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     /** shopifyOrderId (numeric) → delivery-partner status; missing key → use Shopify fulfillment. */
     const [deliveryPartnerStatusByShopifyId, setDeliveryPartnerStatusByShopifyId] = useState<Record<string, string>>(
         {},
     );
 
-    const loadOrders = async () => {
+    const loadOrders = async (isRefresh = false, isAutoRetry = false) => {
         try {
-            setLoading(true);
+            if (isRefresh) setRefreshing(true);
+            else if (isAutoRetry) setIsAutoRetrying(true);
+            else setLoading(true);
+            setError(null);
             
             // Fetch orders from both Shopify (regular orders) and local storage (Try & Buy)
             const shopifyToken = getShopifyCustomerAccessTokenForOrders(user);
@@ -366,21 +374,41 @@ export default function OrdersScreen() {
 
             setDeliveryPartnerStatusByShopifyId(partnerMap);
             setOrders(deduplicatedOrders);
-        } catch (error: any) {
-            if (error?.message === 'UNAUTHORIZED_CUSTOMER') {
-                console.warn('[OrdersScreen] Token expired or invalid, forcing logout');
-                logout();
+        } catch (err: any) {
+            if (err?.message === 'UNAUTHORIZED_CUSTOMER') {
+                console.warn('[OrdersScreen] Token expired or invalid, prompting for relogin');
+                Alert.alert(
+                    'Session Expired',
+                    'Your session has expired. Please log in again to view your orders.',
+                    [
+                        {
+                            text: 'Log In',
+                            onPress: async () => {
+                                await logout();
+                                router.push('/(auth)/login' as any);
+                            }
+                        }
+                    ],
+                    { cancelable: false }
+                );
                 return;
             }
-            console.error('Error fetching orders:', error);
+            console.error('Error loading orders:', err);
+            setError(err.message || 'Failed to load orders');
             setOrders([]);
             setDeliveryPartnerStatusByShopifyId({});
         } finally {
             setLoading(false);
+            setRefreshing(false);
+            setIsAutoRetrying(false);
         }
     };
 
-    // Refresh orders when screen comes into focus (e.g., when navigating back from order details)
+    const onRefresh = () => {
+        loadOrders(true);
+    };
+
+    // Refresh orders when screen comes into focus
     useFocusEffect(
         React.useCallback(() => {
             if (isAuthenticated) {
@@ -391,7 +419,22 @@ export default function OrdersScreen() {
         }, [isAuthenticated, user])
     );
 
-    if (loading) {
+    // Automatic retry logic if no orders found (handles Shopify indexing delay)
+    React.useEffect(() => {
+        if (!isAuthenticated || loading || refreshing || isAutoRetrying || orders.length > 0) return;
+
+        // Only auto-retry once after a short delay if list is empty
+        const timer = setTimeout(() => {
+            if (orders.length === 0) {
+                console.log('[OrdersScreen] Auto-retrying to fetch orders...');
+                loadOrders(false, true);
+            }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [isAuthenticated, orders.length, loading, refreshing]);
+
+    if (loading && !refreshing && !isAutoRetrying) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
@@ -404,9 +447,10 @@ export default function OrdersScreen() {
                     <Text style={styles.headerTitle}>My Orders</Text>
                     <View style={styles.placeholder} />
                 </View>
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-            </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text style={styles.loadingText}>Loading your orders...</Text>
+                </View>
             </SafeAreaView>
         );
     }
@@ -425,10 +469,10 @@ export default function OrdersScreen() {
                     <View style={styles.placeholder} />
                 </View>
                 <EmptyState
-                    icon="lock-closed-outline"
-                    title="Sign in to view orders"
-                    subtitle="You need to be logged in to access your order history"
-                    buttonText="Sign In"
+                    icon="person-outline"
+                    title="Sign in to see your orders"
+                    subtitle="Track your current orders and view your purchase history by signing in to your account."
+                    buttonText="Log In / Sign Up"
                     onButtonPress={() => router.push('/(auth)/login' as any)}
                 />
             </SafeAreaView>
@@ -449,18 +493,42 @@ export default function OrdersScreen() {
             </View>
 
             {orders.length === 0 ? (
-                <EmptyState
-                    icon="receipt-outline"
-                    title="No Orders Yet"
-                    subtitle="When you place your first order, it will appear here"
-                    buttonText="Start Shopping"
-                    onButtonPress={() => router.push('/' as any)}
-                />
+                <ScrollView 
+                    style={styles.scrollView} 
+                    contentContainerStyle={{ flex: 1 }}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} tintColor={Colors.primary} />
+                    }
+                >
+                    <EmptyState
+                        icon="receipt-outline"
+                        title={error ? 'Unable to load orders' : 'No Orders Yet'}
+                        subtitle={error ? error : "When you place your first order, it will appear here. Pull down to refresh if you just placed an order."}
+                        buttonText="Start Shopping"
+                        onButtonPress={() => router.push('/' as any)}
+                    />
+                    {isAutoRetrying ? (
+                        <View style={styles.autoRetryContainer}>
+                            <ActivityIndicator size="small" color={Colors.primary} />
+                            <Text style={styles.autoRetryText}>Checking for new orders...</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity 
+                            style={styles.retryButton} 
+                            onPress={() => loadOrders(false)}
+                        >
+                            <Text style={styles.retryButtonText}>Retry Loading</Text>
+                        </TouchableOpacity>
+                    )}
+                </ScrollView>
             ) : (
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} tintColor={Colors.primary} />
+                    }
                 >
                     {orders.map((order) => {
                         const ticketing = isTicketingOrder(order);
@@ -694,5 +762,41 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.Bold,
         color: Colors.text,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+        fontFamily: Fonts.Medium,
+    },
+    retryButton: {
+        marginTop: -40,
+        marginBottom: 40,
+        alignSelf: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+    },
+    retryButtonText: {
+        color: Colors.primary,
+        fontFamily: Fonts.SemiBold,
+        fontSize: 14,
+    },
+    loadingText: {
+        marginTop: 16,
+        color: Colors.textSecondary,
+        fontFamily: Fonts.Medium,
+        fontSize: 14,
+    },
+    autoRetryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: -40,
+        marginBottom: 40,
+    },
+    autoRetryText: {
+        marginLeft: 10,
+        color: Colors.primary,
+        fontFamily: Fonts.Medium,
+        fontSize: 14,
     },
 });
