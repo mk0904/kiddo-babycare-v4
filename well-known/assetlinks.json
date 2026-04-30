@@ -1,11 +1,17 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.barereactnativeapp072",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+        "99:E8:F9:57:8A:57:F3:5C:6F:00:73:0D:69:BA:3B:6D:9A:16:57:5D:CA:83:85:C2:E7:94:5E:3C:3C:3E:2D:03",
+        "0F:E4:87:D6:EE:47:01:50:AE:10:1F:E5:FF:D9:34:2B:07:AF:2B:13:98:7B:81:CE:1D:14:17:B4:AC:1D:F0:63",
+        "BE:8C:38:39:B3:DF:69:B6:33:DE:7A:B4:73:C6:29:5F:73:CE:F7:57:11:80:91:50:4D:23:CE:6A:E0:41:8B:71",
+        "DC:9C:5F:1A:05:07:44:03:CC:E9:13:95:C7:99:99:65:21:5C:30:E5:60:E2:B3:24:D7:93:D3:5F:F5:6C:54:E5",
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
       ]
     }
   }

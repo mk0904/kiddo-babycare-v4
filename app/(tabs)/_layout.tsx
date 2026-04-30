@@ -10,7 +10,7 @@ import { configService } from '@/services/configService';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  
+
   // Get visible tabs from config
   const tabBarConfig = useMemo(() => configService.getTabBarConfig(), []);
   const visibleTabs = tabBarConfig?.visibleTabs || ['index', 'category', 'ticketing', 'account'];

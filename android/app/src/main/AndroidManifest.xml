@@ -59,11 +59,15 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="app"/>
       </intent-filter>
-      <intent-filter android:autoVerify="true" data-generated="true">
+      <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="https" android:host="app.kiddo.in" android:pathPrefix="/product"/>
-        <category android:name="android.intent.category.BROWSABLE"/>
         <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="http"/>
+        <data android:scheme="https"/>
+        <data android:host="allforkiddo.com"/>
+        <data android:host="www.allforkiddo.com"/>
+        <data android:pathPrefix="/"/>
       </intent-filter>
     </activity>
     <activity android:name="com.facebook.FacebookActivity" android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" android:label="@string/app_name"/>

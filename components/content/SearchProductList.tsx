@@ -3,7 +3,7 @@ import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { SearchProductListBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import React from 'react';
-import { ProductList } from '../product/ProductList';
+import { ProductList } from '../products/ProductList';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface SearchProductListProps extends BaseContentBlockProps {

@@ -329,7 +329,7 @@ export const shopifyAdminApi = {
             customAttributes: input.customAttributes,
           }),
           ...(input.discountCodes && input.discountCodes.length > 0 && !input.appliedDiscount && {
-            discountCodes: input.discountCodes.map((c) => c.toUpperCase()),
+            discountCodes: input.discountCodes.map((c) => String(c).trim()).filter((x) => x.length > 0),
           }),
           ...(input.appliedDiscount && input.appliedDiscount.value > 0 && {
             appliedDiscount: {

@@ -4,6 +4,9 @@
 node_modules/
 .venv-lexend/
 
+# Local env (e.g. EXPO_PUBLIC_BACKEND_API_BASE for localhost kiddo-service)
+.env
+
 # Expo
 .expo/
 dist/

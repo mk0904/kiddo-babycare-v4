@@ -4,7 +4,7 @@ import { InfiniteProductGridBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { InfiniteProductGrid as InfiniteProductGridComponent } from '../product/InfiniteProductGrid';
+import { InfiniteProductGrid as InfiniteProductGridComponent } from '../products/InfiniteProductGrid';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface InfiniteProductGridProps extends Omit<BaseContentBlockProps, 'onPress'> {

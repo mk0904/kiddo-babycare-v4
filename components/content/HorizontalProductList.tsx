@@ -1,6 +1,7 @@
-import { ProductCard } from '@/components/product/ProductCard';
+import { ProductCard } from '@/components/products/ProductCard';
 import { HorizontalProductListSkeleton } from '@/components/ui/SkeletonLoader';
 import { Colors, Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
 import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
@@ -14,7 +15,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 
 interface HorizontalProductListProps {
     collectionIds?: string[];
@@ -211,9 +211,9 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
 
         const prices: number[] = [];
         normalizedProducts.forEach((product) => {
-            const firstVariant = product.variants?.edges?.[0]?.node || 
-                                (Array.isArray(product.variants) ? product.variants[0] : null);
-            
+            const firstVariant = product.variants?.edges?.[0]?.node ||
+                (Array.isArray(product.variants) ? product.variants[0] : null);
+
             let price = 0;
             if (firstVariant?.price?.amount) {
                 price = parsePrice(firstVariant.price.amount);
@@ -322,7 +322,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
         <ContainerWrapper {...containerWrapperProps}>
             {title && title.trim() && (
                 <View style={titleContainerStyle as any}>
-                    <Text 
+                    <Text
                         style={titleStyle as any}
                         numberOfLines={2}
                         ellipsizeMode="tail"

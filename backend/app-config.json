@@ -59,6 +59,7 @@
     },
     "freeShoesOffer": {
       "enabled": true,
+      "discountCode": "3rd order reward - Free Shoes",
       "originalPrice": 4999,
       "showWhen": {
         "cartHasAnyCategory": ["apparel", "fashion"]

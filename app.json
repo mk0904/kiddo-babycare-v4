@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.9.3",
+    "version": "1.9.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
@@ -12,7 +12,10 @@
       "icon": "./assets/images/icon.png",
       "supportsTablet": false,
       "bundleIdentifier": "com.kiddo.ak",
-      "associatedDomains": ["applinks:app.kiddo.in"],
+      "associatedDomains": [
+        "applinks:allforkiddo.com",
+        "applinks:www.allforkiddo.com"
+      ],
       "config": {
         "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
       },
@@ -54,11 +57,19 @@
           "data": [
             {
               "scheme": "https",
-              "host": "app.kiddo.in",
-              "pathPrefix": "/product"
+              "host": "allforkiddo.com",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.allforkiddo.com",
+              "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
@@ -78,7 +89,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "origin": "https://allforkiddo.com"
+        }
+      ],
       "expo-notifications",
       [
         "expo-font",
@@ -131,6 +147,7 @@
           "accountId": "69R-748-Z77Z",
           "accountToken": "b4a-2c6",
           "accountRegion": "eu1",
+          "fcmSenderId": "1083846018645",
           "customIdentifiers": "Email,Phone",
           "android": {
             "features": {

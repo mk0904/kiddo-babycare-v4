@@ -1,7 +1,10 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import { Colors } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
+import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -10,14 +13,35 @@ import {
     StyleSheet,
     ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_HEADER = { title: 'Category', showSearch: true, showWishlist: true };
 
 export default function CategoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const cartItemCount = useCartItemCount();
   const [configLoading, setConfigLoading] = useState(true);
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
+  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+
+  useEffect(() => {
+    const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
+    setMilestoneUiRev((x) => x + 1);
+    return off;
+  }, []);
+
+  const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
+
+  const tabBarStackBottom = useMemo(() => {
+    const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
+    return Math.max(insets.bottom, 0) + tabBarHeight;
+  }, [insets.bottom]);
+
+  const scrollBottomPad = useMemo(() => Math.max(80, tabBarStackBottom + 130), [tabBarStackBottom]);
+
+  const isInlineCartVisible = cartItemCount > 0 && !milestoneExpanded;
 
   const screenConfig = useMemo(() => configService.getCategoryScreenConfig(), [configLoading]);
   const headerConfig = useMemo(() => ({ ...DEFAULT_HEADER, ...screenConfig?.header }), [screenConfig]);
@@ -97,11 +121,19 @@ export default function CategoryScreen() {
       />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPad }]}
         showsVerticalScrollIndicator={false}
       >
         <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} />
       </ScrollView>
+
+      <MilestoneTabDock
+        milestoneUI={milestoneUI}
+        visible
+        onMilestoneExpandedChange={setMilestoneExpanded}
+        isInlineWithCart={isInlineCartVisible}
+        anchorMode="tabBar"
+      />
     </SafeAreaView>
   );
 }

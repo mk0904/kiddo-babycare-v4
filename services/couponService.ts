@@ -47,12 +47,16 @@ export interface CouponCode {
   isVisible?: boolean;
   /** Max discount in currency units (e.g. INR). Applied when valueType is percentage (or fixed) to cap the discount. */
   maxDiscountAmount?: number | null;
-  /** Original price for display (e.g. HEYKIDDO free shoe – show struck in bill details). */
+  /** Original price for display (e.g. free-shoes gift – show struck in bill details). */
   originalPrice?: number | null;
   /** When set, min purchase and discount apply to this category's subtotal only (single category). */
   applicableCategory?: string | null;
   /** When set, min purchase and discount apply to combined cart value of products in any of these categories (e.g. ["fashion", "apparel", "clothing"]). Each item counted once. */
   allowedCategories?: string[] | null;
+  /** If true, this coupon requires child details (name, parent name, age, class) to be collected. */
+  isSchoolCoupon?: boolean;
+  /** If true, this coupon is treated as a milestone reward in the UI. */
+  isMilestone?: boolean;
 }
 
 export interface GetEligibleCouponsParams {
@@ -72,6 +76,11 @@ export interface GetEligibleCouponsParams {
   deviceType: string;
   /** When true, backend returns all visible coupons (not only eligible). Frontend then shows disabled + reason for ineligible. */
   returnAllVisible?: boolean;
+  /**
+   * When true, backend should include `isVisible: false` coupons in the response.
+   * Required for manual apply / `validateCouponCode` — hidden offers (e.g. “Mystery gift”) are not listed in the carousel.
+   */
+  includeHiddenCoupons?: boolean;
 }
 
 /**
@@ -80,7 +89,7 @@ export interface GetEligibleCouponsParams {
  * Returns [] when coupons is null or on error.
  */
 export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsParams): Promise<CouponCode[]> => {
-  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing, cartCategories, appVersion, deviceType, returnAllVisible } = params;
+  const { phone, cartSubTotal, cartItemCount, hasTicketing, hasClothing, cartCategories, appVersion, deviceType, returnAllVisible, includeHiddenCoupons } = params;
 
   try {
     const base = getCouponsApiBase();
@@ -100,7 +109,14 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     // Always send non-empty appVersion and deviceType (e.g. in emulator when Constants.expoConfig?.version may be undefined)
     body.appVersion = (appVersion != null && String(appVersion).trim() !== '') ? String(appVersion).trim() : '0.0.0';
     body.deviceType = (deviceType != null && String(deviceType).trim() !== '') ? String(deviceType).trim() : Platform.OS;
-    if (returnAllVisible === true) body.returnAllVisible = true;
+    if (returnAllVisible === true) {
+      body.returnAllVisible = true;
+      body.return_all_visible = true;
+    }
+    if (includeHiddenCoupons === true) {
+      body.includeHiddenCoupons = true;
+      body.include_hidden_coupons = true;
+    }
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,18 +135,56 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
 
     const data = await response.json();
     const looksLikeCoupon = (c: any) => c && typeof c === 'object' && (c.code != null || c.couponCode != null || c.value != null);
-    // When requesting all visible, prefer visibleCoupons so we get non-eligible too (for disabled state in UI)
-    let coupons: any[] | undefined = returnAllVisible
-      ? (data?.visibleCoupons ?? data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible)
-      : (data?.coupons ?? data?.visibleCoupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible);
+
+    const mergeByCouponCode = (lists: (any[] | undefined)[]): any[] => {
+      const byNorm = new Map<string, any>();
+      for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+        for (const c of list) {
+          if (!looksLikeCoupon(c)) continue;
+          const raw = (c?.code ?? c?.couponCode ?? '').toString();
+          const k = raw.trim().toUpperCase().replace(/\s+/g, '');
+          if (!k) continue;
+          if (!byNorm.has(k)) byNorm.set(k, c);
+        }
+      }
+      return Array.from(byNorm.values());
+    };
+
+    // When `includeHiddenCoupons` is true, do NOT prefer `visibleCoupons` first — it omits isVisible:false (e.g. "Mystery gift").
+    // Use full `coupons` / `eligibleCoupons` first, merge visible + hidden if split.
+    let coupons: any[] | undefined;
+    if (includeHiddenCoupons) {
+      const fromMain = data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
+      const fromVis = data?.visibleCoupons;
+      const fromHid = data?.hiddenCoupons;
+      if (Array.isArray(fromHid) && fromHid.length > 0) {
+        coupons = mergeByCouponCode([fromMain, fromVis, fromHid].filter(Array.isArray) as any[][]);
+      } else if (Array.isArray(fromMain) && fromMain.length > 0) {
+        coupons = fromMain;
+        if (returnAllVisible && Array.isArray(fromVis) && fromVis.length > 0) {
+          coupons = mergeByCouponCode([fromMain, fromVis]);
+        }
+      } else {
+        coupons = mergeByCouponCode([fromVis, fromMain].filter(Array.isArray) as any[][]) || fromVis || fromMain;
+      }
+    } else if (returnAllVisible) {
+      coupons = data?.visibleCoupons ?? data?.coupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
+    } else {
+      coupons = data?.coupons ?? data?.visibleCoupons ?? data?.eligibleCoupons ?? data?.couponCodes ?? data?.eligible;
+    }
+
     if (!Array.isArray(coupons) && data?.coupon != null) coupons = [data.coupon];
     if (!Array.isArray(coupons) && data?.data != null) {
       const d = data.data;
+      const dIncludeHidden = includeHiddenCoupons;
       coupons = Array.isArray(d)
         ? d
-        : returnAllVisible
-          ? (d?.visibleCoupons ?? d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined))
-          : (d?.coupons ?? d?.visibleCoupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined));
+        : dIncludeHidden
+          ? (d?.coupons ?? d?.eligibleCoupons ?? d?.visibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined))
+          : returnAllVisible
+            ? (d?.visibleCoupons ?? d?.coupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined))
+            : (d?.coupons ?? d?.visibleCoupons ?? d?.eligibleCoupons ?? d?.couponCodes ?? (d?.coupon != null ? [d.coupon] : undefined));
     }
     if (!Array.isArray(coupons) && data?.result?.coupons != null) coupons = data.result.coupons;
     if (!Array.isArray(coupons) && Array.isArray(data)) {
@@ -156,6 +210,7 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       code: (c.code ?? c.couponCode ?? '').toString().trim(),
       applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
       allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
+      isMilestone: c.isMilestone === true || c.is_milestone === true,
     })) as CouponCode[];
 
     if (__DEV__) console.log('[CouponService] Loaded', normalized.length, returnAllVisible ? 'visible' : 'eligible', 'coupons from backend');
@@ -349,14 +404,40 @@ export const validateCouponCode = async (
       return null;
     }
 
-    const fetchParams = options?.useVisibleCoupons ? { ...params, returnAllVisible: true } : params;
-    const eligibleCoupons = await getEligibleCouponsFromBackend(fetchParams);
+    const fetchParams = {
+      ...params,
+      includeHiddenCoupons: true as const,
+      ...(options?.useVisibleCoupons
+        ? { returnAllVisible: true as const }
+        : {}),
+    };
+    let eligibleCoupons = await getEligibleCouponsFromBackend(fetchParams);
     const normalize = (s: string | null | undefined) =>
       (s ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
     const upperCodeNorm = upperCode.replace(/\s+/g, '');
-    const matchingCoupon = eligibleCoupons.find(
-      (coupon) => normalize(coupon.code ?? (coupon as any).couponCode) === upperCodeNorm
-    );
+    const findMatch = (list: CouponCode[]) =>
+      list.find((coupon) => normalize(coupon.code ?? (coupon as any).couponCode) === upperCodeNorm);
+
+    let matchingCoupon = findMatch(eligibleCoupons) ?? null;
+
+    // If first response used returnAllVisible + includeHidden, some APIs still only return visibleCoupons; retry eligible-only.
+    if (!matchingCoupon) {
+      const { returnAllVisible: _drop, ...rest } = fetchParams as any;
+      const second = await getEligibleCouponsFromBackend({
+        ...rest,
+        includeHiddenCoupons: true,
+        returnAllVisible: false,
+      } as GetEligibleCouponsParams);
+      matchingCoupon = findMatch(second);
+      if (!matchingCoupon) {
+        const byNorm = new Map<string, CouponCode>();
+        for (const c of [...eligibleCoupons, ...second]) {
+          const n = normalize(c?.code ?? (c as any).couponCode);
+          if (n) byNorm.set(n, c);
+        }
+        matchingCoupon = byNorm.get(upperCodeNorm) ?? null;
+      }
+    }
 
     if (!matchingCoupon && __DEV__ && eligibleCoupons.length > 0) {
       const codes = eligibleCoupons.map((c) => c.code ?? (c as any).couponCode).filter(Boolean);

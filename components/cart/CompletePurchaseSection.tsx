@@ -21,7 +21,7 @@ export function CompletePurchaseSection() {
             config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
             title=""
             onProductsLoaded={handleProductsLoaded}
-            onProductPress={(p) => p?.id && router.push({ pathname: '/product/[id]', params: { id: p.id } } as any)}
+            onProductPress={(p) => p?.id && router.push({ pathname: '/products/[id]', params: { id: p.id } } as any)}
             onAddToCart={(p) => {
                 if (p?.variants?.edges?.[0]?.node) {
                     const v = p.variants.edges[0].node;

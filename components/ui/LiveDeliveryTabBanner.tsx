@@ -1,4 +1,3 @@
-import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -6,21 +5,12 @@ import { appConfigService } from '@/services/appConfigService';
 import {
   getDeliveryPartnerOrderStatus,
   liveTabBannerPhaseFromPartnerStatus,
-  riderCoordsFromDeliveryStatus,
   type DeliveryPartnerOrderStatus,
-  type LiveTabBannerPhase,
+  type LiveTabBannerPhase
 } from '@/services/deliveryPartnerService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
 import type { OrderDetailConfig } from '@/types/appConfig';
-import {
-  ARRIVED_AT_CUSTOMER_STATUSES,
-  computeDeliveryHeaderStatusText,
-  DELIVERY_ACTIVE_STATUSES,
-  distanceMetersLatLng,
-  shippingAddressString,
-  statusAllowsLiveDirectionsEta,
-} from '@/utils/orderDeliveryHeaderText';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
@@ -39,10 +29,16 @@ const RIDER_ICON = require('@/assets/icons/riderIcon.png');
 const ARRIVED_ICON = require('@/assets/icons/arrivedIcon.png');
 const PARTNER_FALLBACK = require('@/assets/icons/partnerIcon.png');
 
-const POLL_MS = 45_000;
-const DISMISS_PREFIX = '@kiddo/liveTabDeliveredDismissed:';
+const POLL_MS = 25_000;
+/**
+ * Pixels to sit the delivery pill closer to the tab stack (subtracted from `bottom`).
+ * Same value is subtracted from floating View cart + scroll-to-top `anchorExtraOffset` (`TabBar`, Home).
+ */
+export const LIVE_DELIVERY_DOWNSET_PX = 40;
+const DISMISS_PREFIX = '@kiddo/liveTabDismissed:';
 const DELIVERED_AUTO_HIDE_MS = 48 * 60 * 60 * 1000;
 const RECENT_ORDER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_START_MS = Date.now();
 
 function partnerAvatarSource(cfg: OrderDetailConfig | null | undefined) {
   const png = cfg?.partnerImageUrl?.trim();
@@ -89,20 +85,6 @@ function isOnlyTicketingOrderNode(o: any): boolean {
   return edges.every((e: any) => isTicketingLineItemNode(e?.node));
 }
 
-function formatItemsSubtitle(order: any): string {
-  const edges = order?.lineItems?.edges ?? [];
-  const n = edges.length;
-  if (n === 0) return '';
-  const titles = edges
-    .map((e: any) => String(e?.node?.title || '').trim())
-    .filter(Boolean);
-  const first = titles[0] || 'Order';
-  const secondWord = titles[1] ? String(titles[1]).split(/\s+/)[0] : '';
-  const head = first.length > 28 ? `${first.slice(0, 26)}…` : first;
-  if (n === 1) return `1 item: ${head}`;
-  if (secondWord) return `${n} items: ${head}, ${secondWord}…`;
-  return `${n} items: ${head}…`;
-}
 
 type BannerModel = {
   phase: LiveTabBannerPhase;
@@ -116,20 +98,27 @@ export interface LiveDeliveryTabBannerProps {
   /** Tab bar row + home indicator (`TabBar` `totalHeight`). */
   tabStackHeight: number;
   onStackOffsetChange: (extraPx: number) => void;
+  /**
+   * Extra `bottom` offset so the pill clears the home milestone strip (same stack order as View cart).
+   * Supplied by TabBar when Home tab + tab bar visible.
+   */
+  milestoneStripBottomReserve?: number;
 }
 
 export function LiveDeliveryTabBanner({
   showTabBar,
   tabStackHeight,
   onStackOffsetChange,
+  milestoneStripBottomReserve = 0,
 }: LiveDeliveryTabBannerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const persistedAccessToken = useUserStore((s) => s.accessToken);
   const { isVisible: tabBarVisible } = useTabBarVisibility();
   const [model, setModel] = useState<BannerModel | null>(null);
-  const [dismissedDeliveredIds, setDismissedDeliveredIds] = useState<Set<string>>(() => new Set());
+  const [seenOrderIdsInSession] = useState(() => new Set<string>());
+  const [dismissedStateKeys, setDismissedStateKeys] = useState<Set<string>>(() => new Set());
   const cfg = useMemo(() => appConfigService.getOrderDetailConfig(), []);
   const partnerUri = partnerAvatarSource(cfg);
 
@@ -143,9 +132,9 @@ export function LiveDeliveryTabBanner({
       for (const k of keys) {
         if (k.startsWith(DISMISS_PREFIX)) next.add(k.slice(DISMISS_PREFIX.length));
       }
-      setDismissedDeliveredIds(next);
+      setDismissedStateKeys(next);
     } catch {
-      setDismissedDeliveredIds(new Set());
+      setDismissedStateKeys(new Set());
     }
   }, []);
 
@@ -171,7 +160,11 @@ export function LiveDeliveryTabBanner({
     let ordersConn: any;
     try {
       ordersConn = await shopifyApi.getCustomerOrders(token, 12);
-    } catch {
+    } catch (err) {
+      if ((err as any)?.message === 'UNAUTHORIZED_CUSTOMER') {
+        console.warn('[LiveDeliveryTabBanner] Token expired or invalid, forcing logout');
+        logout();
+      }
       if (pollActiveRef.current) setModel(null);
       return;
     }
@@ -198,6 +191,7 @@ export function LiveDeliveryTabBanner({
       if (pollActiveRef.current) setModel(null);
       return;
     }
+    const orderIsNewInSession = !seenOrderIdsInSession.has(numericId);
 
     let st: DeliveryPartnerOrderStatus | null = null;
     try {
@@ -222,16 +216,31 @@ export function LiveDeliveryTabBanner({
       return;
     }
 
+    const stateKey = `${numericId}:${phase}`;
+    if (dismissedStateKeys.has(stateKey)) {
+      if (pollActiveRef.current) setModel(null);
+      return;
+    }
+
     if (phase === 'delivered') {
-      if (dismissedDeliveredIds.has(numericId)) {
+      const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : NaN;
+      /**
+       * Delivered orders should only be visible if:
+       * 1. They were delivered during THIS session (dm >= SESSION_START_MS)
+       * 2. OR they transitioned to delivered while we were watching them (not orderIsNewInSession)
+       */
+      const isOldDelivery = Number.isFinite(dm) && dm < SESSION_START_MS;
+      const wasDeliveredBeforeSessionStart = orderIsNewInSession && (isOldDelivery || Number.isNaN(dm));
+
+      if (wasDeliveredBeforeSessionStart) {
         if (pollActiveRef.current) setModel(null);
         return;
       }
-      const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : now;
-      if (Number.isFinite(dm) && now - dm > DELIVERED_AUTO_HIDE_MS) {
-        if (pollActiveRef.current) setModel(null);
-        return;
-      }
+    }
+
+    // Mark active orders as seen in session so we can show their transition to 'delivered' later
+    if (phase === 'tracking' || phase === 'packing') {
+      seenOrderIdsInSession.add(numericId);
     }
 
     let fullOrder: any = latestOrder;
@@ -247,58 +256,10 @@ export function LiveDeliveryTabBanner({
     let headerPrimary = '';
     if (phase === 'packing') {
       headerPrimary = 'Your order is getting packed';
-    } else {
-      const addr = shippingAddressString(fullOrder?.shippingAddress);
-      let destinationCoords: { latitude: number; longitude: number } | null = null;
-      if (addr) {
-        try {
-          destinationCoords = await geocodeAddress(addr);
-        } catch {
-          destinationCoords = null;
-        }
-      }
-      const riderCoords = riderCoordsFromDeliveryStatus(st);
-      const dk = String(st.status ?? '').trim().toLowerCase();
-      const isOutForDelivery = dk === 'out_for_delivery';
-      const nearDrop =
-        isOutForDelivery &&
-        !!riderCoords &&
-        !!destinationCoords &&
-        distanceMetersLatLng(riderCoords, destinationCoords) <= 110;
-      const etaOrigin =
-        isOutForDelivery && riderCoords
-          ? riderCoords
-          : !!destinationCoords
-            ? DARK_STORE_LOCATION
-            : null;
-      const canUseLiveEta =
-        statusAllowsLiveDirectionsEta(dk) &&
-        !!destinationCoords &&
-        !!etaOrigin &&
-        !nearDrop &&
-        !ARRIVED_AT_CUSTOMER_STATUSES.has(dk);
-
-      let liveEtaMinutes: number | null = null;
-      if (canUseLiveEta && destinationCoords && etaOrigin) {
-        try {
-          const eta = await getDeliveryEta(destinationCoords.latitude, destinationCoords.longitude, {
-            originLatitude: etaOrigin.latitude,
-            originLongitude: etaOrigin.longitude,
-          });
-          liveEtaMinutes = eta?.etaMinutes ?? null;
-        } catch {
-          liveEtaMinutes = null;
-        }
-      }
-
-      headerPrimary = computeDeliveryHeaderStatusText({
-        order: fullOrder,
-        paramEta: null,
-        deliveryPartnerStatus: st,
-        liveEtaMinutes,
-        riderCoords,
-        destinationCoords,
-      });
+    } else if (phase === 'tracking') {
+      headerPrimary = 'Your delivery partner is out for delivery';
+    } else if (phase === 'delivered') {
+      headerPrimary = 'Your order has been delivered';
     }
 
     if (!pollActiveRef.current) return;
@@ -309,7 +270,7 @@ export function LiveDeliveryTabBanner({
     user?.accessToken,
     persistedAccessToken,
     hideForRoute,
-    dismissedDeliveredIds,
+    dismissedStateKeys,
   ]);
 
   const fetchGen = useRef(0);
@@ -349,12 +310,11 @@ export function LiveDeliveryTabBanner({
     (e: LayoutChangeEvent) => {
       if (!visible) return;
       const h = e.nativeEvent.layout.height;
-      onStackOffsetChange(Math.ceil(h) + 10);
+      onStackOffsetChange(Math.ceil(h) + 32);
     },
     [visible, onStackOffsetChange],
   );
 
-  const subtitle = model ? formatItemsSubtitle(model.order) : '';
 
   const handleView = () => {
     if (!model?.order?.id) return;
@@ -364,16 +324,17 @@ export function LiveDeliveryTabBanner({
     } as any);
   };
 
-  const handleDismissDelivered = async () => {
-    if (!model || model.phase !== 'delivered') return;
+  const handleDismiss = async () => {
+    if (!model) return;
     const nid = extractShopifyOrderNumericId(model.order.id);
     if (!nid) return;
+    const stateKey = `${nid}:${model.phase}`;
     try {
-      await AsyncStorage.setItem(`${DISMISS_PREFIX}${nid}`, '1');
+      await AsyncStorage.setItem(`${DISMISS_PREFIX}${stateKey}`, '1');
     } catch {
       /* ignore */
     }
-    setDismissedDeliveredIds((prev) => new Set(prev).add(nid));
+    setDismissedStateKeys((prev) => new Set(prev).add(stateKey));
     setModel(null);
   };
 
@@ -384,13 +345,16 @@ export function LiveDeliveryTabBanner({
   const showRiderImage = model.phase === 'packing' || model.phase === 'tracking';
   const showCheckImage = model.phase === 'delivered';
 
+  const pillBottom =
+    tabStackHeight + milestoneStripBottomReserve + 8;
+
   return (
     <View
-      style={[styles.wrap, { bottom: tabStackHeight + 10 }]}
+      style={[styles.wrap, { bottom: pillBottom }]}
       pointerEvents="box-none"
       onLayout={onLayoutBanner}
     >
-      <View style={styles.pill}>
+      <TouchableOpacity style={styles.pill} onPress={handleView} activeOpacity={0.9}>
         <View style={styles.leftIcon}>
           {showRiderImage ? (
             <Image source={RIDER_ICON} style={styles.riderImg} contentFit="contain" />
@@ -405,28 +369,21 @@ export function LiveDeliveryTabBanner({
           <Text style={styles.title} numberOfLines={2}>
             {model.headerPrimary}
           </Text>
-          {!!subtitle && (
-            <Text style={styles.sub} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          )}
         </View>
 
-        {model.phase === 'delivered' ? (
-          <TouchableOpacity
-            onPress={handleDismissDelivered}
-            style={styles.closeBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityLabel="Dismiss delivery notification"
-          >
-            <Ionicons name="close" size={22} color={Colors.primary} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={handleView} style={styles.viewBtn} activeOpacity={0.85}>
-            <Text style={styles.viewBtnText}>View</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+        <TouchableOpacity onPress={handleView} style={styles.viewBtn}>
+          <Text style={styles.viewBtnText}>View</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleDismiss}
+          style={styles.closeBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Dismiss delivery notification"
+        >
+          <Ionicons name="close" size={22} color={Colors.primary} />
+        </TouchableOpacity>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -477,15 +434,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Fonts.SmallFontSize,
-    fontFamily: Fonts.LexendMedium,
+    fontFamily: Fonts.LexendSemiBold,
     color: Colors.light.text,
     lineHeight: 20,
-  },
-  sub: {
-    marginTop: 2,
-    fontSize: Fonts.ExtraSmallFontSize,
-    fontFamily: Fonts.LexendMedium,
-    color: '#6B7280',
   },
   viewBtn: {
     borderWidth: 1,
@@ -496,7 +447,7 @@ const styles = StyleSheet.create({
   },
   viewBtnText: {
     fontSize: 14,
-    fontFamily: Fonts.SemiBold,
+    fontFamily: Fonts.LexendSemiBold,
     color: Colors.primary,
   },
   closeBtn: {

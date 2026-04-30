@@ -3105,7 +3105,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-fbsdk-next (from `../node_modules/react-native-fbsdk-next`)
-  - react-native-google-maps (from `/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps`)
+  - react-native-google-maps (from `/Users/adarshdixit/Documents/kiddo-app/node_modules/react-native-maps`)
   - react-native-maps (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-onesignal (from `../node_modules/react-native-onesignal`)
@@ -3313,7 +3313,7 @@ EXTERNAL SOURCES:
   react-native-fbsdk-next:
     :path: "../node_modules/react-native-fbsdk-next"
   react-native-google-maps:
-    :path: "/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps"
+    :path: "/Users/adarshdixit/Documents/kiddo-app/node_modules/react-native-maps"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-netinfo:

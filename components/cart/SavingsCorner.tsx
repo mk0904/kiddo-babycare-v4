@@ -20,6 +20,7 @@ import {
     View
 } from 'react-native';
 
+import { SchoolCouponModal } from '../modals/SchoolCouponModal';
 import { SavingsCornerCouponCarousel, type SavingsCornerCouponItem } from './SavingsCornerCouponCarousel';
 
 export type SavingsCornerCoupon = SavingsCornerCouponItem;
@@ -33,6 +34,8 @@ export interface SavingsCornerProps {
     formatCurrency: (amount: number) => string;
     onLoginPress: () => void;
     onKiddoCashChange: (value: boolean) => void;
+    /** Bumps when remote app config reloads so free-shoe discount code (from config) re-resolves. */
+    configRefreshKey?: number;
 }
 
 export function SavingsCorner({
@@ -44,6 +47,7 @@ export function SavingsCorner({
     formatCurrency,
     onLoginPress,
     onKiddoCashChange,
+    configRefreshKey = 0,
 }: SavingsCornerProps) {
     const { user } = useAuth();
     const cartItems = useCartItems();
@@ -63,6 +67,7 @@ export function SavingsCorner({
     const [couponApplying, setCouponApplying] = useState(false);
     const [couponUsages, setCouponUsages] = useState<Record<string, number>>({});
     const [lastApplyError, setLastApplyError] = useState<string | null>(null);
+    const [showSchoolModal, setShowSchoolModal] = useState(false);
 
     const cartSubtotal = useMemo(
         () => cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0),
@@ -204,6 +209,11 @@ export function SavingsCorner({
         try {
             const result = await applyDiscountCode(trimmed, { preloadedCoupons: availableCoupons });
             if (result.success) {
+                // Check if the applied coupon is a school coupon
+                const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                if (applied?.isSchoolCoupon) {
+                    setShowSchoolModal(true);
+                }
                 return { success: true };
             }
             const err = result.error ?? 'Failed to apply coupon';
@@ -234,6 +244,11 @@ export function SavingsCorner({
                 const err = result.error ?? 'Failed to apply coupon';
                 setManualCodeMessage(err);
                 setLastApplyError(err);
+            } else {
+                // Check if the applied coupon is a school coupon
+                if (coupon.isSchoolCoupon) {
+                    setShowSchoolModal(true);
+                }
             }
         } catch (error: any) {
             const err = error.message ?? 'Failed to apply coupon';
@@ -279,17 +294,44 @@ export function SavingsCorner({
         setLastApplyError(null);
     };
 
-    const isHeyKiddoApplied = (appliedDiscountCode ?? '').toUpperCase() === 'HEYKIDDO';
-    const heyKiddoOriginalPrice = useMemo(() => {
-        if (!isHeyKiddoApplied) return undefined;
-        const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === 'HEYKIDDO')?.originalPrice;
+    const freeShoesGiftCodeUc = useMemo(
+        () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const freePuzzleGiftCodeUc = useMemo(
+        () => appConfigService.getFreePuzzleGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const mysteryGiftCodeUc = useMemo(
+        () => appConfigService.getMysteryGiftDiscountCodeUppercase(),
+        [configRefreshKey]
+    );
+    const appliedCouponUc = (appliedDiscountCode ?? '').toUpperCase();
+    const isFreeShoesGiftApplied =
+        Boolean(freeShoesGiftCodeUc) && appliedCouponUc === freeShoesGiftCodeUc;
+    const isFreePuzzleGiftApplied =
+        Boolean(freePuzzleGiftCodeUc) && appliedCouponUc === freePuzzleGiftCodeUc;
+    const isMysteryGiftApplied =
+        Boolean(mysteryGiftCodeUc) && appliedCouponUc === mysteryGiftCodeUc;
+    const isGiftCouponApplied =
+        isFreeShoesGiftApplied || isFreePuzzleGiftApplied || isMysteryGiftApplied;
+    const appliedGiftSubtitle = useMemo(() => {
+        if (isFreeShoesGiftApplied) return 'You will get Free Shoe on this order';
+        if (isFreePuzzleGiftApplied) return 'You will get Free Puzzle on this order';
+        if (isMysteryGiftApplied) return 'You will get Mystery Gift on this order';
+        return null;
+    }, [isFreeShoesGiftApplied, isFreePuzzleGiftApplied, isMysteryGiftApplied]);
+    const freeShoesGiftDisplayPrice = useMemo(() => {
+        if (!isFreeShoesGiftApplied) return undefined;
+        const fromCode = discountCodes.find((dc) => dc.code.toUpperCase() === freeShoesGiftCodeUc)?.originalPrice;
         if (fromCode != null && Number.isFinite(fromCode)) return fromCode;
         const config = appConfigService.getCartConfig()?.freeShoesOffer ?? appConfigService.getFreeShoesOfferConfig();
         const raw = (config as any)?.originalPrice ?? (config as any)?.original_price;
         const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         return Number.isFinite(num) && num >= 0 ? num : undefined;
-    }, [isHeyKiddoApplied, discountCodes]);
-    const appliedSaveAmount = isHeyKiddoApplied && heyKiddoOriginalPrice != null ? heyKiddoOriginalPrice : discountAmount;
+    }, [isFreeShoesGiftApplied, discountCodes, freeShoesGiftCodeUc]);
+    const appliedSaveAmount =
+        isFreeShoesGiftApplied && freeShoesGiftDisplayPrice != null ? freeShoesGiftDisplayPrice : discountAmount;
     const appliedHeadline = hasAppliedCoupon
         ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''}`
         : '';
@@ -298,6 +340,10 @@ export function SavingsCorner({
 
     return (
         <View style={styles.wrapper}>
+            <SchoolCouponModal
+                visible={showSchoolModal}
+                onClose={() => setShowSchoolModal(false)}
+            />
 
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -319,9 +365,16 @@ export function SavingsCorner({
                                         <Text style={styles.applyCouponSectionTitle} numberOfLines={1}>
                                             {(appliedDiscountCode ?? 'APPLIED').toUpperCase()}
                                         </Text>
-                                        <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
-                                            You saved {formatCurrency(appliedSaveAmount)} on this order
-                                        </Text>
+                                        {!appliedGiftSubtitle && appliedSaveAmount > 0 ? (
+                                            <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                                You saved {formatCurrency(appliedSaveAmount)} on this order
+                                            </Text>
+                                        ) : null}
+                                        {appliedGiftSubtitle ? (
+                                            <Text style={styles.applyCouponAppliedSub} numberOfLines={2}>
+                                                {appliedGiftSubtitle}
+                                            </Text>
+                                        ) : null}
                                         {lastApplyError ? (
                                             <Text style={styles.cardErrorText} numberOfLines={2}>
                                                 {lastApplyError}
@@ -329,10 +382,16 @@ export function SavingsCorner({
                                         ) : null}
                                     </View>
                                 </View>
-                                <View style={styles.applyCouponAppliedTag}>
-                                    <Ionicons name="checkmark" size={18} color={Colors.primary} />
-                                    <Text style={styles.applyCouponAppliedTagText}>Applied</Text>
-                                </View>
+                                <TouchableOpacity
+                                    style={styles.applyCouponAppliedTag}
+                                    onPress={() => {
+                                        if (appliedDiscountCode) {
+                                            handleRemoveCoupon(appliedDiscountCode);
+                                        }
+                                    }}
+                                >
+                                    <Text style={[styles.applyCouponAppliedTagText, { color: '#EF4444' }]}>Remove</Text>
+                                </TouchableOpacity>
                             </View>
 
                             <View style={styles.applyCouponPill}>
@@ -774,7 +833,7 @@ const styles = StyleSheet.create({
         color: '#181D27',
     },
     applyCouponAppliedSub: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: Fonts.ExtraSmallFontSize,
         fontFamily: Fonts.LexendMedium,
         color: '#535862',
         marginTop: 2,

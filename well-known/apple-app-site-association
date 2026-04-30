@@ -1,10 +1,19 @@
 {
   "applinks": {
-    "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.kiddo.ak",
-        "paths": ["/product/*"]
+        "appIDs": [ "ANK22C64TH.com.kiddo.ak" ],
+        "components": [
+          {
+            "/": "/product/*"
+          },
+          {
+            "/": "/products/*"
+          },
+          {
+            "/": "/*"
+          }
+        ]
       }
     ]
   }

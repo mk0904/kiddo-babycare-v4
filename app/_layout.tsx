@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Constants from 'expo-constants';
 import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
@@ -12,16 +11,21 @@ import React, { useCallback, useMemo } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import NetInfo from "@react-native-community/netinfo";
+import NoInternetScreen from "@/components/NoInternetScreen";
 
 import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
 import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
-import { isAppUpdateRequired } from '@/constants/versionConfig';
+import { getAppVersionForApi, isAppUpdateRequired } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { NectorProvider } from '@/context/NectorContext';
 import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
+import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
+import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
+import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
@@ -83,14 +87,15 @@ export default function RootLayout() {
   const metaReadyRef = React.useRef(Platform.OS !== 'ios');
   const metaInitStartedRef = React.useRef(false);
   const entryPrefetchStartedRef = React.useRef(false);
+  const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
-  const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
+  const currentVersion = getAppVersionForApi();
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
       customerId: user?.customerId ?? user?.id ?? undefined,
-      appVersion: Constants.expoConfig?.version ?? undefined,
+      appVersion: getAppVersionForApi(),
       deviceType: Platform.OS,
     }),
     [user?.phone, user?.customerId, user?.id],
@@ -385,6 +390,21 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError, appConfigPayload]);
 
   React.useEffect(() => {
+    // Subscribe to network state changes
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    NetInfo.refresh().then(state => {
+      setIsConnected(state.isConnected);
+    });
+  }, []);
+
+  React.useEffect(() => {
     void prefetchEntryScreens();
   }, [prefetchEntryScreens]);
 
@@ -431,6 +451,10 @@ export default function RootLayout() {
     (isEntryScreensDecisionPending || (entryScreens.length > 0 && !isEntryScreensVisible));
 
   // Always render providers, even during loading, to prevent "useAuth must be used within AuthProvider" errors
+  if (!isConnected) {
+    return <NoInternetScreen onRetry={handleRetry} />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
@@ -465,12 +489,19 @@ export default function RootLayout() {
                   <TryAndBuyProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <TabBarVisibilityProvider>
-                      <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="index" />
-                        <Stack.Screen name="(auth)" />
-                        <Stack.Screen name="(tabs)" />
-                        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                      </Stack>
+                      <MilestoneDockProvider>
+                        <MilestoneInlineCartProvider>
+                          <LiveDeliveryStackOffsetProvider>
+                            <Stack screenOptions={{ headerShown: false }}>
+                              <Stack.Screen name="index" />
+                              <Stack.Screen name="(auth)" />
+                              <Stack.Screen name="(tabs)" />
+                              <Stack.Screen name="products/[id]" />
+                              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                            </Stack>
+                          </LiveDeliveryStackOffsetProvider>
+                        </MilestoneInlineCartProvider>
+                      </MilestoneDockProvider>
                     </TabBarVisibilityProvider>
                     <StatusBar style="dark" />
                     </ThemeProvider>

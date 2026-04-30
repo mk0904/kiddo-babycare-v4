@@ -89,12 +89,12 @@ export const clevertapService = {
   },
 
   /**
-   * Register the native push token with CleverTap (required for push campaigns).
+   * Register the native push token with CleverTap (required for push campaigns and uninstall tracking).
    *
-   * - **Android:** `registerForPush()` is a no-op; we must use `setFCMPushToken` with the FCM token.
-   *   Also creates notification channel `default_channel` (matches `app.json` CleverTap plugin).
-   * - **iOS:** Same JS API `setFCMPushToken` maps native-side to `setPushTokenAsString` (APNs token from
-   *   `getDevicePushTokenAsync`). Push does not work on Simulator.
+   * - **Android:** Uses `setFCMPushToken` (and `setPushToken` for redundancy) with the FCM token.
+   *   Requires `fcmSenderId` in `app.json` for uninstall tracking to work.
+   *   Also creates notification channel `default_channel`.
+   * - **iOS:** Uses `setPushToken` with the APNs token. Push does not work on Simulator.
    *
    * Safe to call multiple times (e.g. after login). Requests notification permission if needed.
    */
@@ -144,7 +144,21 @@ export const clevertapService = {
         return;
       }
 
-      ct.setFCMPushToken(token);
+      if (Platform.OS === 'ios') {
+        // Use setPushToken for APNs (iOS)
+        if (ct.setPushToken) {
+          ct.setPushToken(token);
+        } else {
+          ct.setFCMPushToken(token);
+        }
+      } else {
+        // For Android, ensure the token is registered correctly for FCM
+        ct.setFCMPushToken(token);
+        if (ct.setPushToken) {
+          ct.setPushToken(token);
+        }
+      }
+
       if (__DEV__) {
         console.log('[CleverTap] Native push token sent (', Platform.OS, ', length:', token.length, ')');
       }

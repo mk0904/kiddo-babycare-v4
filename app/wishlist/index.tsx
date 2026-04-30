@@ -15,7 +15,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import { useRouter, useSegments } from 'expo-router';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { Colors, Fonts } from '@/constants/theme';
-import ProductCard from '@/components/product/ProductCard';
+import ProductCard from '@/components/products/ProductCard';
 import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -78,11 +78,11 @@ export default function WishlistScreen() {
     );
 
     const handleProductPress = (product: any) => {
-        router.push(`/product/${encodeURIComponent(product.id)}`);
+        router.push(`/products/${encodeURIComponent(product.id)}`);
     };
 
     const handleAddToCart = (product: any) => {
-        router.push(`/product/${encodeURIComponent(product.id)}`);
+        router.push(`/products/${encodeURIComponent(product.id)}`);
     };
 
 

@@ -316,7 +316,7 @@ export default function OrderDetailV2Screen() {
     );
     const router = useRouter();
     const goBack = () => (from === 'orders' ? router.back() : router.replace('/(tabs)'));
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     /** Shopify Storefront customer token (order + tracking APIs). Prefer user.*, fall back to persisted store (same as login). */
     const persistedAccessToken = useUserStore((s) => s.accessToken);
     const shopifyCustomerToken = useMemo(
@@ -508,14 +508,19 @@ export default function OrderDetailV2Screen() {
                 let fetchedOrder: any = null;
                 if (shopifyCustomerToken && !isDraftOrder) {
                     try {
-                        const customerOrders = await shopifyApi.getCustomerOrders(shopifyCustomerToken, 50);
+                        const customerOrders = await shopifyApi.getCustomerOrders(shopifyCustomerToken, 50).catch((err) => {
+                            if (err?.message === 'UNAUTHORIZED_CUSTOMER') throw err;
+                            return null;
+                        });
                         const numericId = baseId.split('/').pop()?.split('?')[0];
                         const found = customerOrders?.edges?.map((e: any) => e.node).find((o: any) => {
                             const n = (o.id || '').split('/').pop()?.split('?')[0];
                             return n === numericId || o.id === orderId;
                         });
                         if (found) orderId = found.id;
-                    } catch (_) { }
+                    } catch (err) {
+                        if ((err as any)?.message === 'UNAUTHORIZED_CUSTOMER') throw err;
+                    }
                 }
 
                 if (isDraftOrder || orderId.startsWith('gid://shopify/DraftOrder/')) {
@@ -574,6 +579,11 @@ export default function OrderDetailV2Screen() {
                     setError('Order not found');
                 }
             } catch (err: any) {
+                if (err?.message === 'UNAUTHORIZED_CUSTOMER') {
+                    console.warn('[OrderDetailV2] Token expired or invalid, forcing logout');
+                    logout();
+                    return;
+                }
                 if (!cancelled) setError(err.message || 'Failed to load order');
             }
             if (!cancelled) setLoading(false);
@@ -1821,8 +1831,25 @@ export default function OrderDetailV2Screen() {
                 {/* Bill details – subtotal = items before discount; discount = derived or from API; total = order total */}
                 {(() => {
                     const discountAmount = Math.max(0, subtotalDisplay + shipping + tax - total);
-                    const isHeyKiddo = couponCode?.toUpperCase() === 'HEYKIDDO';
-                    const displayDiscount = isHeyKiddo ? 0 : (couponValue > 0 ? couponValue : discountAmount);
+                    const freeShoesGiftUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
+                    const freePuzzleGiftUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
+                    const mysteryGiftUc = appConfigService.getMysteryGiftDiscountCodeUppercase();
+
+                    const isFreeShoesGiftCoupon =
+                        Boolean(freeShoesGiftUc) && couponCode?.toUpperCase() === freeShoesGiftUc;
+                    const isFreePuzzleGiftCoupon =
+                        Boolean(freePuzzleGiftUc) && couponCode?.toUpperCase() === freePuzzleGiftUc;
+                    const isMysteryGiftCoupon =
+                        Boolean(mysteryGiftUc) && couponCode?.toUpperCase() === mysteryGiftUc;
+
+                    const isGiftCoupon = isFreeShoesGiftCoupon || isFreePuzzleGiftCoupon || isMysteryGiftCoupon;
+                    const displayDiscount = isGiftCoupon ? 0 : (couponValue > 0 ? couponValue : discountAmount);
+
+                    let giftText = '';
+                    if (isFreeShoesGiftCoupon) giftText = 'Free Shoe';
+                    else if (isFreePuzzleGiftCoupon) giftText = 'Free Puzzle';
+                    else if (isMysteryGiftCoupon) giftText = 'Mystery Gift';
+
                     return (
                         <View style={styles.billCard}>
                             <Text style={styles.billTitle}>Bill details</Text>
@@ -1835,8 +1862,8 @@ export default function OrderDetailV2Screen() {
                                     <Text style={styles.billLabel}>
                                         {couponCode ? `Coupon (${couponCode})` : 'Discount'}
                                     </Text>
-                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isHeyKiddo) || isHeyKiddo) && styles.billDiscountValue]}>
-                                        {isHeyKiddo ? 'Free Shoe' : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
+                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isGiftCoupon) || isGiftCoupon) && styles.billDiscountValue]}>
+                                        {isGiftCoupon ? giftText : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
                                     </Text>
                                 </View>
                             )}
@@ -1905,12 +1932,12 @@ export default function OrderDetailV2Screen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F5F5F5',
         paddingHorizontal: 16,
         paddingVertical: 20,
         paddingTop: Platform.OS === 'ios' ? 14 : 18,
@@ -1969,7 +1996,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flex: 1,
-        backgroundColor: '#FDF6EC',
+        backgroundColor: '#F5F5F5',
     },
     scrollContent: {
         paddingHorizontal: 16,

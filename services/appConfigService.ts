@@ -10,9 +10,13 @@ import type {
   CartConfig,
   CartFeatures,
   EntryScreenItem,
+  FreePuzzleOfferConfig,
+  FreePuzzlePickerConfig,
   FreeShoesOfferConfig,
   FreeShoesPickerConfig,
   GiftWrapConfig,
+  MilestoneUIConfig,
+  MysteryGiftOfferConfig,
   OrderDetailConfig,
 } from '@/types/appConfig';
 import { getBackendApiPath } from './backendBase';
@@ -77,22 +81,33 @@ function parseEntryScreenItem(raw: unknown): EntryScreenItem | null {
 class AppConfigService {
   private config: AppConfigResponse | null = null;
   private loadPromise: Promise<AppConfigResponse | null> | null = null;
+  private readonly listeners = new Set<() => void>();
 
   async loadAppConfig(forceReload = false, payload?: AppConfigPayload): Promise<AppConfigResponse | null> {
     if (!forceReload && this.loadPromise) return this.loadPromise;
-    if (forceReload) this.config = null;
 
     this.loadPromise = (async () => {
       try {
         const url = getAppConfigUrl(payload);
+        if (__DEV__) {
+          console.log('[AppConfigService] GET app/config request:', {
+            url,
+            payload: payload || 'no payload',
+          });
+        }
         const res = await fetch(url, {
           method: 'GET',
           headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
         });
         if (!res.ok) throw new Error(`App config HTTP ${res.status}`);
         const data: AppConfigResponse = await res.json();
+        if (__DEV__) {
+          // console.log('[AppConfigService] GET app/config response (incl. milestoneUI for getMilestoneUI):', JSON.stringify(data, null, 2));
+        }
         this.config = data;
+        this.emitConfigListeners();
         if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
+        console.log('[AppConfigService] Loaded app config from backend:', data);
         return data;
       } catch (e) {
         if (__DEV__) console.warn('[AppConfigService] Failed to load app config:', e);
@@ -109,8 +124,34 @@ class AppConfigService {
     return this.config;
   }
 
+  /** Subscribe to successful app-config loads (same tick as `getConfig()` update). */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private emitConfigListeners(): void {
+    this.listeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+        if (__DEV__) console.warn('[AppConfigService] listener error:', e);
+      }
+    });
+  }
+
+  getMilestoneUI(): MilestoneUIConfig | null {
+    return this.config?.milestoneUI ?? null;
+  }
+
   getCartFeatures(): CartFeatures {
     return this.config?.features?.cart ?? DEFAULT_CART_FEATURES;
+  }
+
+  getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
+    return this.config?.hotWheelConfig ?? null;
   }
 
   getCartConfig(): CartConfig | null {
@@ -123,6 +164,64 @@ class AppConfigService {
 
   getFreeShoesPickerConfig(): FreeShoesPickerConfig | null {
     return this.config?.cart?.freeShoesPicker ?? null;
+  }
+
+  getFreePuzzleOfferConfig(): FreePuzzleOfferConfig | null {
+    return this.config?.cart?.freePuzzleOffer ?? null;
+  }
+
+  getFreePuzzlePickerConfig(): FreePuzzlePickerConfig | null {
+    return this.config?.cart?.freePuzzlePicker ?? null;
+  }
+
+  getMysteryGiftOfferConfig(): MysteryGiftOfferConfig | null {
+    return this.config?.cart?.mysteryGiftOffer ?? null;
+  }
+
+  /**
+   * 4th milestone gift code (display/original casing) — from config when set; otherwise fallback.
+   */
+  getMysteryGiftDiscountCode(): string {
+    const c = this.config?.cart?.mysteryGiftOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim();
+    }
+    return 'FOURTHMILESTONE';
+  }
+
+  getMysteryGiftDiscountCodeUppercase(): string {
+    return this.getMysteryGiftDiscountCode().toUpperCase();
+  }
+
+  /**
+   * 3rd milestone free-shoes code (display/original casing) — from config when set; otherwise fallback.
+   * The cart only applies this when the active free-gift step is shoes (`getMilestoneFreeGiftKind` in the cart screen).
+   */
+  getFreeShoesGiftDiscountCode(): string {
+    const c = this.config?.cart?.freeShoesOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim();
+    }
+    return 'THIRDMILESTONE';
+  }
+
+  getFreeShoesGiftDiscountCodeUppercase(): string {
+    return this.getFreeShoesGiftDiscountCode().toUpperCase();
+  }
+
+  /**
+   * 2nd milestone free-puzzle code (display/original casing) — from config when set; otherwise fallback.
+   */
+  getFreePuzzleGiftDiscountCode(): string {
+    const c = this.config?.cart?.freePuzzleOffer?.discountCode;
+    if (c != null && String(c).trim() !== '') {
+      return String(c).trim();
+    }
+    return 'SECONDMILESTONE';
+  }
+
+  getFreePuzzleGiftDiscountCodeUppercase(): string {
+    return this.getFreePuzzleGiftDiscountCode().toUpperCase();
   }
 
   getGiftWrapConfig(): GiftWrapConfig | null {

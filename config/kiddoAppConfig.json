@@ -704,6 +704,950 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.03_PM.jpg?v=1773931525"
         }
       ]
+    },
+    "512843055393": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512843088161",
+          "label": "Sensory Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_paet41paet41paet_1.png?v=1776620474"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843219233",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843284769",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843546913",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844136737",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512844202273": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512844333345",
+          "label": "Sensory Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_paet41paet41paet_1.png?v=1776620474"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844464417",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844529953",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844595489",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844857633",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512844988705": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512845480225",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845578529",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845644065",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845742369",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845938977",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512846004513": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512846299425",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846397729",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846659873",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846758177",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846823713",
+          "label": "Phonics & Early Readers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_a5l81wa5l81wa5l8.png?v=1776628355"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846889249",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512846954785": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512847118625",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847184161",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847282465",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847380769",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847479073",
+          "label": "Phonics & Early Readers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_a5l81wa5l81wa5l8.png?v=1776628355"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847577377",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512847216929": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512847413537",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847544609",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847642913",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847741217",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847708449",
+          "label": "Phonics & Early Readers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_a5l81wa5l81wa5l8.png?v=1776628355"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847610145",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512846430497": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512846790945",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846856481",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846922017",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846987553",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847053089",
+          "label": "Phonics & Early Readers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_a5l81wa5l81wa5l8.png?v=1776628355"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847151393",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512894599457": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512846790945",
+          "label": "Interactive Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2.png?v=1776620313"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846856481",
+          "label": "First Learning / Concept Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_36xnrl36xnrl36xn.png?v=1776621133"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846922017",
+          "label": "Picture Books (Story-based)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776626571"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846987553",
+          "label": "Activity Books / Educational Workbooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dyyerydyyerydyye.png?v=1776628186"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847053089",
+          "label": "Phonics & Early Readers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_a5l81wa5l81wa5l8.png?v=1776628355"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847151393",
+          "label": "Storybooks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_6j8uf86j8uf86j8u_892dc07f-c596-4227-8267-809d430d6036.png?v=1776627534"
+        }
+      ]
+    },
+    "512843252001": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512843317537",
+          "label": "Honesty",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_1.png?v=1776618419"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843415841",
+          "label": "Kindness",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_879f49e3-b30e-4f08-ad2f-a46c15acc41f.png?v=1776619097"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843481377",
+          "label": "Responsibility",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_879f49e3-b30e-4f08-ad2f-a46c15acc41f.png?v=1776619523"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843612449",
+          "label": "Discipline & Habits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/discipline.png?v=1776619722"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843776289",
+          "label": "Gratitude",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/gratitude.png?v=1776619788"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843809057",
+          "label": "Perseverance",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/perseverance_hard_work.png?v=1776619943"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512843907361",
+          "label": "Respect",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/respect.png?v=1776620023"
+        }
+      ]
+    },
+    "512844005665": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512844071201",
+          "label": "Self-Confidence / Self-Esteem",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/self_esteem.png?v=1776620302"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844103969",
+          "label": "Managing Anger",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/managing_anger.png?v=1776620372"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844169505",
+          "label": "Overcoming Fear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fear.png?v=1776620424"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844235041",
+          "label": "Dealing with Anxiety",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/dealing_with_anxiety.png?v=1776620495"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844267809",
+          "label": "Patience",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_2.png?v=1776620572"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844431649",
+          "label": "Emotional Awareness",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_3.png?v=1776620666"
+        }
+      ]
+    },
+    "512844497185": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512844628257",
+          "label": "Sharing",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_5.png?v=1776620891"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844726561",
+          "label": "Making Friends",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_6.png?v=1776620936"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844890401",
+          "label": "Empathy",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_7.png?v=1776620989"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845021473",
+          "label": "Communication",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_8.png?v=1776621042"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845054241",
+          "label": "Teamwork",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_9.png?v=1776621120"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845119777",
+          "label": "Conflict Resolution",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_10.png?v=1776621227"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845185313",
+          "label": "Family Relationships",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_11.png?v=1776621399"
+        }
+      ]
+    },
+    "512845218081": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512845250849",
+          "label": "Adventure Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_13.png?v=1776621556"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845349153",
+          "label": "Magical Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_14.png?v=1776621616"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845414689",
+          "label": "Animal Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_15.png?v=1776621664"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845512993",
+          "label": "Everyday Life Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_16.png?v=1776621849"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845611297",
+          "label": "Bedtime Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_17.png?v=1776621940"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845676833",
+          "label": "Funny Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_18.png?v=1776622010"
+        }
+      ]
+    },
+    "512845807905": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512845906209",
+          "label": "ABC & 123",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_20.png?v=1776622204"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845971745",
+          "label": "Colors & Shapes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Emotionsl_Awareness_21.png?v=1776622248"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846037281",
+          "label": "Animals & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_22.png?v=1776622328"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846070049",
+          "label": "Fruits & Veggies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_23.png?v=1776622433"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846135585",
+          "label": "Creativity",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_24.png?v=1776622484"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846201121",
+          "label": "Phonics & Vocabulary",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_25_4971112a-3d91-4aa8-813a-e69015043e7f.png?v=1776622542"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846266657",
+          "label": "School Concepts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_26.png?v=1776622597"
+        }
+      ]
+    },
+    "512844300577": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512844398881",
+          "label": "Cloth Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_vg74qjvg74qjvg74.png?v=1776578314"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844562721",
+          "label": "High-contrast Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/06075722-cd27-433d-91f5-e6707ff9dccb.jpg?v=1776578759"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844661025",
+          "label": "Touch & feel Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_dsp28ddsp28ddsp2_39da0e7b-76f8-4711-829c-b2e067ea6312.png?v=1776578851"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844759329",
+          "label": "Lift-the-flap Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_xfafzfxfafzfxfaf.png?v=1776578989"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844824865",
+          "label": "Pull tabs Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_1v11in1v11in1v11.png?v=1776579153"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844923169",
+          "label": "Pop-ups Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_xfidd7xfidd7xfid.png?v=1776579407"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845087009",
+          "label": "Sound books Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_hfg3zhhfg3zhhfg3.png?v=1776579544"
+        }
+      ]
+    },
+    "512845283617": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512847773985",
+          "label": "Lift-the-flap Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_mlwusimlwusimlwu.png?v=1776580012"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847839521",
+          "label": "Pull tab Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_586qak586qak586q.png?v=1776580146"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847872289",
+          "label": "Pop-up Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_mmwgtpmmwgtpmmwg.png?v=1776580436"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847905057",
+          "label": "Sound books Book",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_hfg3zhhfg3zhhfg3.png?v=1776580503"
+        }
+      ]
+    },
+    "512846364961": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512845447457",
+          "label": "Alphabets (ABCs)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_kyp1qpkyp1qpkyp1.png?v=1776580772"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845709601",
+          "label": "Numbers & Counting",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/b33564b2-3332-4c57-9696-5af5e02c5356.jpg?v=1776580954"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512845840673",
+          "label": "Colors",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_gj0tokgj0tokgj0t.png?v=1776580062"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846102817",
+          "label": "Shapes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_z43tcgz43tcgz43t.png?v=1776581245"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846168353",
+          "label": "Animals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_xfwcjbxfwcjbxfwc.png?v=1776581409"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846233889",
+          "label": "Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ed4f29ae-d28f-446a-9e51-304d464a1bad_1.jpg?v=1776581968"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846332193",
+          "label": "Everyday Objects",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6q930e6q930e6q93.png?v=1776578977"
+        }
+      ]
+    },
+    "512847937825": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512848003361",
+          "label": "Adventure Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_p55pmfp55pmfp55p.png?v=1776583455"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848036129",
+          "label": "Fantasy / Magical Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6j8uf86j8uf86j8u.png?v=1776579706"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848101665",
+          "label": "Emotions & Behavior",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_rzy3gfrzy3gfrzy3.png?v=1776583796"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848134433",
+          "label": "Social Skills & Relationships",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_7wi64f7wi64f7wi6.png?v=1776584031"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848167201",
+          "label": "Bedtime Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_xfwcjbxfwcjbxfwc.png?v=1776581409"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848199969",
+          "label": "Humor / Funny Stories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_curr7hcurr7hcurr.png?v=1776589215"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512848232737",
+          "label": "Values & Life Lessons",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gemini_Generated_Image_6r1dx56r1dx56r1d.png?v=1776589386"
+        }
+      ]
+    },
+    "510861345057": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512580780321",
+          "label": "Half Sleeves T-Shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_i8s5ipi8s5ipi8s5_1.png?v=1776149877"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512580878625",
+          "label": "Sleeveless Tees",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_9ntk2j9ntk2j9ntk_1.png?v=1776150958"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512580911393",
+          "label": "New Polos",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_9wvjls9wvjls9wvj.png?v=1776015226"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512580944161",
+          "label": "Shirts (Cotton / Linen)",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_v8d2xuv8d2xuv8d2.png?v=1776015551"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512580976929",
+          "label": "Full Sleeve Tshirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_k29rrxk29rrxk29r.png?v=1776015894"
+        }
+      ]
+    },
+    "510861476129": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512581566753",
+          "label": "Shorts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_twnjkutwnjkutwnj.png?v=1776016218"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512581697825",
+          "label": "Jeans & Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_gs65h7gs65h7gs65.png?v=1776016671"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512582910241",
+          "label": "Joggers & Cargos",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_mzsivsmzsivsmzsi.png?v=1776017223"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512583074081",
+          "label": "Pyjamas Bottoms",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_bkjqukbkjqukbkjq_1.png?v=1776017457"
+        }
+      ]
+    },
+    "510861508897": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512583303457",
+          "label": "New Shorts - Tshirts/Shirt Co-ord Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_eqd1h4eqd1h4eqd1.png?v=1776017697"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512583401761",
+          "label": "Jeans & Upper Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_Apr_12_2026_11_52_49_PM.png?v=1776018258"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512583500065",
+          "label": "Joggers & Upper Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/BN_C63_SET_7163e125-42e4-4874-aacb-21f94ca42b7d.jpg?v=1776019109"
+        }
+      ]
+    },
+    "510862065953": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512584679713",
+          "label": "Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_r1ve43r1ve43r1ve.png?v=1776059006"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512585400609",
+          "label": "Sandals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_n2jti9n2jti9n2jt.png?v=1776059176"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586350881",
+          "label": "Slippers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_mzdmbumzdmbumzdm.png?v=1776059861"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586187041",
+          "label": "Infant Footwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_wgz9xdwgz9xdwgz9.png?v=1776060109"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586383649",
+          "label": "School Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_gavayigavayigava_1.png?v=1776061008"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586481953",
+          "label": "Socks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_rotlasrotlasrotl.png?v=1776061196"
+        }
+      ]
+    },
+    "510879269153": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512600080673",
+          "label": "Full Sleeve Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_tna1w7tna1w7tna1.png?v=1776062264"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512600441121",
+          "label": "Half Sleeve Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_b0vphcb0vphcb0vp.png?v=1776062301"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512603226401",
+          "label": "Full Bodysuit",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_ash2o8ash2o8ash2.png?v=1776062332"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512603586849",
+          "label": "Romper",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_x9a8avx9a8avx9a8.png?v=1776062511"
+        }
+      ]
+    },
+    "510861771041": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512607125793",
+          "label": "Night Suits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_rlk5dtrlk5dtrlk5.png?v=1776062855"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512608370977",
+          "label": "New Vests",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_5atgbr5atgbr5atg.png?v=1776063147"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512613089569",
+          "label": "Underwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_2fc22g2fc22g2fc2.png?v=1776063427"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564401441",
+          "label": "Potty Training Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_cd7hfccd7hfccd7h_1.png?v=1776064337"
+        }
+      ]
+    },
+    "510862131489": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512614859041",
+          "label": "Sunglasses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_4qv7bi4qv7bi4qv7.png?v=1776065236"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512615055649",
+          "label": "Hats & Caps",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_78rov078rov078ro.png?v=1776065798"
+        }
+      ]
+    },
+    "510860001569": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512620396833",
+          "label": "Half Sleeves T-Shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_ed5jped5jped5jpe.png?v=1776066168"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512620593441",
+          "label": "Sleeveless Tees",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_em6bx5em6bx5em6b.png?v=1776066473"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512621838625",
+          "label": "Full Sleeve Tshirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_sa15pksa15pksa15.png?v=1776066688"
+        }
+      ]
+    },
+    "510860067105": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512624558369",
+          "label": "Shorts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_edxb01edxb01edxb.png?v=1776067152"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512624820513",
+          "label": "Leggings",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_e63cple63cple63c.png?v=1776067568"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512627474721",
+          "label": "Skirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_fmmbs9fmmbs9fmmb.png?v=1776068127"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512627835169",
+          "label": "Jeans & Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_815mqm815mqm815m.png?v=1776068601"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512632848673",
+          "label": "Joggers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_andia7andia7andi.png?v=1776072304"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512633241889",
+          "label": "Pyjamas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_x9tuz1x9tuz1x9tu.png?v=1776073498"
+        }
+      ]
+    },
+    "510860198177": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512670794017",
+          "label": "Jumpsuits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_pe5db5pe5db5pe5d.png?v=1776074142"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512670826785",
+          "label": "Dresses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_gxhvwqgxhvwqgxhv.png?v=1776074345"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512670859553",
+          "label": "Shorts & Upper Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/WhatsApp_Image_2026-04-13_at_3.17.34_PM.jpg?v=1776073699"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512671744289",
+          "label": "Pants & Upper Wear Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_mmnf6ummnf6ummnf.png?v=1776140340"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512671809825",
+          "label": "Skirt & Upper Wear Set",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_gvh0bdgvh0bdgvh0.png?v=1776141866"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512672006433",
+          "label": "Jogger & Upper Wear Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_tzkzmbtzkzmbtzkz.png?v=1776142175"
+        }
+      ]
+    },
+    "510860984609": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512584679713",
+          "label": "Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_r1ve43r1ve43r1ve.png?v=1776059006"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512672104737",
+          "label": "Sandals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_n2jti9n2jti9n2jt_b3490430-7e26-4d18-bb08-5472ca0c250f.png?v=1776142299"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512672170273",
+          "label": "Slippers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_mzdmbumzdmbumzdm_c62c1ba1-3bba-4d7b-bb59-ea9c52111873.png?v=1776142364"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512672727329",
+          "label": "Infant Footwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_lh8bp1lh8bp1lh8b.png?v=1776143022"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512673120545",
+          "label": "Ballerina",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_jc9c9zjc9c9zjc9c.png?v=1776145232"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586383649",
+          "label": "School Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_gavayigavayigava_1.png?v=1776061008"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512586481953",
+          "label": "Socks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_rotlasrotlasrotl.png?v=1776061196"
+        }
+      ]
+    },
+    "510879301921": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512673218849",
+          "label": "Full Sleeve Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_tna1w7tna1w7tna1_1c0c8c54-77d5-4a65-9c2e-c1a48af2b8d9.png?v=1776145328"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512673317153",
+          "label": "Half Sleeve Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_b0vphcb0vphcb0vp_08c4ae35-011f-4d4d-827d-c4d3cfd67382.png?v=1776145371"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512603226401",
+          "label": "Full Bodysuit",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_ash2o8ash2o8ash2.png?v=1776062332"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512674693409",
+          "label": "Rompers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_x3xhk6x3xhk6x3xh.png?v=1776145547"
+        }
+      ]
+    },
+    "510860525857": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512674758945",
+          "label": "Night Suits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/102_4f2de039-1043-46b5-a880-76dbf7a827c0.jpg?v=1776146111"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512674890017",
+          "label": "Vests",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_rj33xqrj33xqrj33.png?v=1776146337"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512674955553",
+          "label": "Underwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_2fc22g2fc22g2fc2_846a022d-a63d-4101-9ba8-ab410a4eb03e.png?v=1776146403"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510564401441",
+          "label": "Potty Training Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_cd7hfccd7hfccd7h_1.png?v=1776064337"
+        }
+      ]
+    },
+    "510861017377": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512614859041",
+          "label": "Sunglasses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_4qv7bi4qv7bi4qv7.png?v=1776065236"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512615055649",
+          "label": "Hats & Caps",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_78rov078rov078ro.png?v=1776065798"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512674988321",
+          "label": "Hair Accessories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_odoh1yodoh1yodoh.png?v=1776147999"
+        }
+      ]
     }
   },
   "productGridDefaults": {
@@ -1260,8 +2204,8 @@
           "name": "Hopscotch"
         },
         {
-          "id": "gid://shopify/Collection/511480693025",
-          "name": "Kanjak Gifts"
+          "id": "gid://shopify/Collection/509520085281",
+          "name": "Books"
         },
         {
           "id": "gid://shopify/Collection/509514514721",
@@ -1503,6 +2447,83 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-age-wise-toys",
+      "type": "categoryGrid",
+      "order": 5.2,
+      "visible": true,
+      "title": "All Age Wise Toys",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512333087009",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333152545",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512422183201",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333218081",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333250849",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333349153",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333381921",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333414689",
+          "name": ""
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10,
+          "backgroundColor": "#F5F5F5"
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
@@ -2621,6 +3642,81 @@
       }
     },
     {
+      "id": "AgeWiseToys",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Age Wise Toys",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512333087009",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333152545",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512422183201",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333218081",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333250849",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333349153",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333381921",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/512333414689",
+          "name": ""
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
       "id": "toys-favourite-brands-grid",
       "type": "categoryGrid",
       "visible": true,
@@ -2643,11 +3739,11 @@
         },
         {
           "id": "gid://shopify/Collection/510758256929",
-          "name": "Barbie"
+          "name": "Lego"
         },
         {
           "id": "gid://shopify/Collection/510758289697",
-          "name": "Lego"
+          "name": "Barbie"
         },
         {
           "id": "gid://shopify/Collection/510759764257",
@@ -2859,6 +3955,309 @@
       }
     }
   ],
+  "books": [
+    {
+      "id": "books-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "visible": true,
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm.png?v=1776686806",
+        "height": 250,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "books-grid-shop-by-age",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Shop by Age",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512843055393",
+          "name": "0 - 6 M"
+        },
+        {
+          "id": "gid://shopify/Collection/512844202273",
+          "name": "6 - 12 Months"
+        },
+        {
+          "id": "gid://shopify/Collection/512844988705",
+          "name": "1 - 2 Years"
+        },
+        {
+          "id": "gid://shopify/Collection/512846004513",
+          "name": "2 - 3 Years"
+        },
+        {
+          "id": "gid://shopify/Collection/512846954785",
+          "name": "3 - 4 Years"
+        },
+        {
+          "id": "gid://shopify/Collection/512847216929",
+          "name": "4 - 5 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/512846430497",
+          "name": "5 - 6 Y"
+        },
+        {
+          "id": "gid://shopify/Collection/512846430497",
+          "name": "6 - 7 Y"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "books-grid-foundations-for-life",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Foundations for Life",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512843252001",
+          "name": "Values & Life Lessons"
+        },
+        {
+          "id": "gid://shopify/Collection/512844005665",
+          "name": "Emotions & Behavior"
+        },
+        {
+          "id": "gid://shopify/Collection/512844497185",
+          "name": "Social Skills & Relationships"
+        },
+        {
+          "id": "gid://shopify/Collection/512845218081",
+          "name": "Stories & Imagination"
+        },
+        {
+          "id": "gid://shopify/Collection/512845807905",
+          "name": "Build Foundations"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "books-HelpYourLittleOneWith",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Help Your Little One With",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512844431649",
+          "name": "Emotional Awareness"
+        },
+        {
+          "id": "gid://shopify/Collection/512844890401",
+          "name": "Empathy"
+        },
+        {
+          "id": "gid://shopify/Collection/512844071201",
+          "name": "Self-Esteem"
+        },
+        {
+          "id": "gid://shopify/Collection/512843612449",
+          "name": "Discipline & Habits"
+        },
+        {
+          "id": "gid://shopify/Collection/512843809057",
+          "name": "Perseverance"
+        },
+        {
+          "id": "gid://shopify/Collection/512844103969",
+          "name": "Managing Anger"
+        },
+        {
+          "id": "gid://shopify/Collection/512844169505",
+          "name": "Overcoming Fear"
+        },
+        {
+          "id": "gid://shopify/Collection/512843415841",
+          "name": "Kindness"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "books-shopByCat",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Shop By Category",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512844300577",
+          "name": "Sensory Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512845283617",
+          "name": "Interactive Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512846364961",
+          "name": "First Learning / Concept Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512847937825",
+          "name": "Storybooks"
+        },
+        {
+          "id": "gid://shopify/Collection/512848298273",
+          "name": "Picture Books (Story-based)"
+        },
+        {
+          "id": "gid://shopify/Collection/512848363809",
+          "name": "Activity Books / Educational Workbooks"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    }
+  ],
   "header": {
     "textColor": "#363636",
     "primaryColor": "#363636"
@@ -2947,7 +4346,8 @@
       "boys",
       "babycare",
       "toys",
-      "babygear"
+      "babygear",
+      "books"
     ],
     "items": {
       "all": {
@@ -3026,6 +4426,20 @@
           "textColor": "#363636",
           "backgroundColor": "#F5F5F5",
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Gear_Header.png?v=1773995483",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "books": {
+        "label": "Books",
+        "pageBackgroundColor": "#FFFFFF",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Book_Icon_Final.png?v=1776677847",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#F5F5F5",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm_34a6c8fe-683e-4b34-aebf-9c04f4b9d7b0.png?v=1773980641",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -4065,21 +5479,24 @@
     "enabled": true,
     "codes": [
       {
-        "code": "HEYKIDDO",
-        "title": "free shoes",
-        "description": "Special discount on shoes",
+        "code": "Free Shoes",
+        "title": "Free Shoes",
+        "description": "Free Shoes above ₹799",
         "value": 0,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 500,
+        "minimumPurchaseAmount": 999,
+        "maxDiscountAmount": null,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
         "usageLimitPerUser": 1,
         "firstOrderOnly": false,
         "ticketingOnly": false,
-        "clothingOnly": true,
+        "clothingOnly": false,
         "nonCombinable": false,
-        "isVisible": true
+        "isVisible": false,
+        "minAndroidVersion": "1.8.8",
+        "minIOSVersion": "3.1.1"
       },
       {
         "code": "FIRSTKIDDOTICKET",
@@ -4413,6 +5830,7 @@
   },
   "freeShoesOffer": {
     "enabled": true,
+    "discountCode": "3rd order reward - Free Shoes",
     "shoes": [
       {
         "id": "shoe-1",

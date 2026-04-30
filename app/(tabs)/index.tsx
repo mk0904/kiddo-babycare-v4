@@ -1,37 +1,43 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
 import { HomeHeader } from '@/components/home/HomeHeader';
+import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
-import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
+import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import {
   getDeliveryEta,
   getDeliveryEtaForAddress,
   reverseGeocode,
 } from '@/config/deliveryConfig';
-import { Colors } from '@/constants/theme';
+import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
-import { getAddressTitleLabel } from '@/utils/addressDisplay';
+import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
-import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { getAddressTitleLabel } from '@/utils/addressDisplay';
+import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const isHomeTabFocused = useIsFocused();
   const router = useRouter();
   const { user } = useAuth();
   const { defaultAddress, setDetectedLocation } = useAddress();
+  const cartItemCount = useCartItemCount();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -41,6 +47,30 @@ export default function HomeScreen() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
+  const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
+  const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+  /** Subscribe + one bump on mount so we re-read if app config finished loading before this effect ran. */
+  useEffect(() => {
+    const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
+    setMilestoneUiRev((x) => x + 1);
+    return off;
+  }, []);
+
+  // Refresh app-config whenever Home regains focus so milestone step moves in-session after checkout.
+  useFocusEffect(
+    useCallback(() => {
+      void appConfigService.loadAppConfig(true, {
+        phone: user?.phone ?? undefined,
+        customerId: (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+        appVersion: getAppVersionForApi(),
+        deviceType: Platform.OS,
+      });
+    }, [user?.phone, user?.customerId, user?.id])
+  );
+
+  const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
   // Auto-detected location when user has no saved address (serviceable / unserviceable)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
@@ -98,72 +128,30 @@ export default function HomeScreen() {
   const categories = useMemo(() => {
     const configCategories = configService.getCategories();
     if (!configCategories?.order) {
-      // Fallback to default categories
+      // Fallback to minimal default categories (no bundled icons)
       return [
-        {
-          key: 'all',
-          label: 'See all',
-          iconImage: require('@/assets/images/shopall-selected.png'),
-        },
-        {
-          key: 'girls',
-          label: 'Girls',
-          iconImage: require('@/assets/images/girls-fashion-selected.png'),
-        },
-        {
-          key: 'boys',
-          label: 'Boys',
-          iconImage: require('@/assets/images/boys-fashion-selected.png'),
-        },
-        {
-          key: 'babycare',
-          label: 'Baby Care',
-          iconImage: require('@/assets/images/babycare-selected.png'),
-        },
-        {
-          key: 'toys',
-          label: 'Toys',
-          iconImage: require('@/assets/images/toys-selected.png'),
-        },
-        {
-          key: 'babygear',
-          label: 'Baby Gear',
-          iconImage: require('@/assets/images/Baby-Gear.png'),
-        },
+        { key: 'all', label: 'See all' },
+        { key: 'girls', label: 'Girls' },
+        { key: 'boys', label: 'Boys' },
+        { key: 'babycare', label: 'Baby Care' },
+        { key: 'toys', label: 'Toys' },
+        { key: 'babygear', label: 'Baby Gear' },
       ];
     }
 
     // Build categories from config
     const categoryOrder = configCategories.order;
     const categoryItems = configCategories.items || {};
-    const categoryStyles = configCategories.styles || {};
 
     return categoryOrder.map((key) => {
       const categoryDef = categoryItems[key];
-      const defaultLabels: Record<string, string> = {
-        all: 'See all',
-        girls: 'Girls',
-        boys: 'Boys',
-        babycare: 'Baby Care',
-        toys: 'Toys',
-        babygear: 'Baby Gear',
-      };
-      const defaultIcons: Record<string, any> = {
-        all: require('@/assets/images/shopall-selected.png'),
-        girls: require('@/assets/images/girls-fashion-selected.png'),
-        boys: require('@/assets/images/boys-fashion-selected.png'),
-        babycare: require('@/assets/images/babycare-selected.png'),
-        toys: require('@/assets/images/toys-selected.png'),
-        babygear: require('@/assets/images/Baby-Gear.png'),
-      };
 
       const icon = (categoryDef as { icon?: string })?.icon;
       const iconUrl = typeof icon === 'string' ? icon : undefined;
       return {
         key,
-        label: categoryDef?.label || defaultLabels[key] || key,
+        label: categoryDef?.label || key,
         iconUrl: iconUrl || undefined,
-        iconImage: iconUrl ? undefined : defaultIcons[key],
       };
     });
   }, [configLoading]);
@@ -262,6 +250,18 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
+  const tabBarStackBottom = useMemo(() => {
+    const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
+    return Math.max(insets.bottom, 0) + tabBarHeight;
+  }, [insets.bottom, configLoading]);
+
+  const { stackExtraPx: liveDeliveryStackExtra } = useLiveDeliveryStackOffset();
+
+  const scrollBottomPad = useMemo(() => {
+    const milestoneReserve = 130; // milestoneExpanded ? 380 : 130;
+    return Math.max(80, tabBarStackBottom + milestoneReserve);
+  }, [tabBarStackBottom]);
+
   // Use a safe initial estimate to prevent jump
   // Account for: safe area top + top info bar + search bar + category nav bar
   // Breakdown:
@@ -270,14 +270,26 @@ export default function HomeScreen() {
   // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
   // Total content: ~220px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 230;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 220;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 
   const [dynamicHeaderHeight, setDynamicHeaderHeight] = useState(0);
 
   // Tab bar visibility control
-  const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
+  const { isVisible: isTabBarVisibleFromScroll, setScrollDirection, reset: resetTabBar } =
+    useTabBarVisibility();
+
+  const isInlineCartVisible = cartItemCount > 0 && !milestoneExpanded;
+
+  /** Match `TabBar` → `FloatingCartButton` `anchorExtraOffset` on Home (milestone strip + live pill stack). */
+  const scrollToTopAnchorExtra = useMemo(() => {
+    if (!isTabBarVisibleFromScroll) return 0;
+    // const milestoneStripReserveForStack = Math.max(milestoneDockHeight, 0) + 12;
+    const milestoneStripReserveForStack = 12;
+    const milestoneReserveForCart = milestoneStripReserveForStack + 4;
+    return liveDeliveryStackExtra + milestoneReserveForCart;
+  }, [isTabBarVisibleFromScroll, liveDeliveryStackExtra]);
 
   // Use the measured height if available, otherwise fallback to estimate
   // Add label height (approximately 40px) and gap (8px) to account for the delivery label only on homepage (all category)
@@ -494,6 +506,7 @@ export default function HomeScreen() {
 
         // Show scroll-to-top button when scrolled down more than 300px
         setShowScrollToTop(offsetY > 300);
+
       },
     }
   );
@@ -513,26 +526,28 @@ export default function HomeScreen() {
   }, [headerTopHeight]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="dark" />
       <View style={styles.mainColumn}>
-        <HomeHeader
-          scrollY={scrollY}
-          address={displayAddress}
-          addressCategoryLabel={addressCategoryLabel}
-          estimatedTime={homeEstimatedTime}
-          loadingTime={homeLoadingTime}
-          isUnserviceable={isUnserviceable}
-          locationStatus={locationStatus}
-          headerConfig={headerConfig}
-          searchSuggestions={searchSuggestions}
-          onSearchPress={handleSearchPress}
-          onLocationPress={handleLocationPress}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategorySelect={handleCategorySelect}
-          onHeaderHeightChange={setDynamicHeaderHeight}
-        />
+        <View style={styles.headerWrapper}>
+          <HomeHeader
+            scrollY={scrollY}
+            address={displayAddress}
+            addressCategoryLabel={addressCategoryLabel}
+            estimatedTime={homeEstimatedTime}
+            loadingTime={homeLoadingTime}
+            isUnserviceable={isUnserviceable}
+            locationStatus={locationStatus}
+            headerConfig={headerConfig}
+            searchSuggestions={searchSuggestions}
+            onSearchPress={handleSearchPress}
+            onLocationPress={handleLocationPress}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleCategorySelect}
+            onHeaderHeightChange={() => { }} // Not using dynamic height updates anymore
+          />
+        </View>
 
         <Animated.ScrollView
           ref={scrollViewRef}
@@ -540,40 +555,50 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: 0,
+              paddingTop: initialHeaderHeight, // Start content below the absolute header
               minHeight: '100%',
               backgroundColor: pageBackgroundColor,
+              paddingBottom: scrollBottomPad,
             },
           ]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-        removeClippedSubviews={Platform.OS === 'android'}
-        scrollEventThrottle={16}
-        decelerationRate="normal"
-        nestedScrollEnabled={true}
-        keyboardShouldPersistTaps="handled"
-        onScroll={handleScroll}
-        overScrollMode="never"
-        scrollEnabled={true}
-        directionalLockEnabled={false}
-      >
-        <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
-          {configLoading ? (
-            <View style={styles.loadingContainer}>
-              {/* Loading state */}
-            </View>
-          ) : (
-            <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
-          )}
-        </View>
-      </Animated.ScrollView>
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          removeClippedSubviews={Platform.OS === 'android'}
+          scrollEventThrottle={16}
+          decelerationRate="normal"
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          onScroll={handleScroll}
+          overScrollMode="never"
+          scrollEnabled={true}
+          directionalLockEnabled={false}
+        >
+          <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
+            {configLoading ? (
+              <View style={styles.loadingContainer}>
+                {/* Loading state */}
+              </View>
+            ) : (
+              <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
+            )}
+          </View>
+        </Animated.ScrollView>
       </View>
 
       {/* Scroll to Top Button */}
-      <ScrollToTopButton
+      {/* <ScrollToTopButton
         visible={showScrollToTop}
         onPress={handleScrollToTop}
-        bottomOffset={80}
+        tabBarReserveHeight={tabBarStackBottom}
+        anchorExtraOffset={scrollToTopAnchorExtra}
+      /> */}
+
+      <MilestoneTabDock
+        milestoneUI={milestoneUI}
+        visible={!kiddoWelcomePopupVisible}
+        onMilestoneExpandedChange={setMilestoneExpanded}
+        isInlineWithCart={isInlineCartVisible}
+        anchorMode="tabBar"
       />
 
       {/* Address Modal */}
@@ -581,6 +606,14 @@ export default function HomeScreen() {
         visible={showAddressModal}
         onClose={() => setShowAddressModal(false)}
         fromHome={true}
+      />
+
+      {/* Home: separate Kiddo rewards “first visit” popup (Modal + centered card). Not the milestone strip expander. */}
+      <KiddoRewardsWelcomeModal
+        milestoneUI={milestoneUI}
+        open={!milestoneExpanded}
+        isHomeTabFocused={isHomeTabFocused}
+        onVisibilityChange={setKiddoWelcomePopupVisible}
       />
     </SafeAreaView>
   );
@@ -591,6 +624,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  headerWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
   mainColumn: {
     flex: 1,
   },
@@ -598,7 +638,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 80,
     paddingTop: 0,
     flexGrow: 1,
   },

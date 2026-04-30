@@ -1,11 +1,15 @@
-import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
+import { InfiniteProductGrid } from '@/components/products/InfiniteProductGrid';
 import BaseModal from '@/components/ui/BaseModal';
 import { FilterPanel } from '@/components/ui/FilterPanel';
 import { FilterSortPills } from '@/components/ui/FilterSortPills';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
+import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import { Colors, Fonts } from '@/constants/theme';
+import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
+import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,13 +22,31 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function InfinityScreen() {
     const { collectionId, title, hideFilters } = useLocalSearchParams<{ collectionId: string; title: string; hideFilters?: string }>();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
+    const cartItemCount = useCartItemCount();
+    const milestoneDockHeight = useMilestoneDockHeightSafe();
     const shouldHideFilters = hideFilters === 'true';
+
+    const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+    const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+
+    useEffect(() => {
+        const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
+        setMilestoneUiRev((x) => x + 1);
+        return off;
+    }, []);
+
+    const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
+
+    const isInlineCartVisible = cartItemCount > 0 && !milestoneExpanded;
+    const isMilestoneCollapsed = milestoneDockHeight > 0 && milestoneDockHeight < 120;
+    const floatingCartMilestoneReserve = isMilestoneCollapsed
+        ? Math.max(milestoneDockHeight, 0) + 12 + 4
+        : 0;
 
     // Get product grid defaults from config
     const gridDefaults = configService.getProductGridDefaults();
@@ -673,6 +695,7 @@ export default function InfinityScreen() {
                         onFacetsLoaded={handleFacetsLoaded}
                         onResultsCount={setTotalItems}
                         style={{ root: { flex: 1 } }}
+                        contentContainerStyle={{ paddingBottom: 120 }}
                         productOptions={{
                             numColumns: 2,
                             gap: gridDefaults.gap,
@@ -868,7 +891,18 @@ export default function InfinityScreen() {
                     </ScrollView>
                 </BaseModal>
             </SafeAreaView>
-            <FloatingCartButton showTabBar={false} />
+            <MilestoneTabDock
+                milestoneUI={milestoneUI}
+                visible
+                onMilestoneExpandedChange={setMilestoneExpanded}
+                isInlineWithCart={isInlineCartVisible}
+                anchorMode="safeAreaOnly"
+            />
+            <FloatingCartButton
+                showTabBar={false}
+                anchorExtraOffset={floatingCartMilestoneReserve}
+                activeRouteName="infinity"
+            />
         </>
     );
 }

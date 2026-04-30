@@ -6,17 +6,26 @@ import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { Colors } from '@/constants/theme';
 
 const TAB_BAR_HEIGHT = 60;
+/** `FloatingCartButton` pill is 52px; this control is 48px — nudge `bottom` so vertical centers line up. */
+const CENTER_MATCH_NUDGE = 2;
 
 interface ScrollToTopButtonProps {
     visible: boolean;
     onPress: () => void;
-    bottomOffset?: number;
+    /**
+     * Tab bar row + home indicator (`TabBar` `totalHeight` / `FloatingCartButton` `tabBarReserveHeight`).
+     * When omitted, uses `TAB_BAR_HEIGHT` + safe-area bottom (may drift if tab bar height is configured).
+     */
+    tabBarReserveHeight?: number;
+    /** Same stacking lift as View cart: live-delivery stack + home milestone reserve. */
+    anchorExtraOffset?: number;
 }
 
 export const ScrollToTopButton = ({
     visible,
     onPress,
-    bottomOffset = 80,
+    tabBarReserveHeight,
+    anchorExtraOffset = 0,
 }: ScrollToTopButtonProps) => {
     const insets = useSafeAreaInsets();
     const { isVisible: isTabBarVisible } = useTabBarVisibility();
@@ -25,8 +34,12 @@ export const ScrollToTopButton = ({
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     const bottomInset = Math.max(insets.bottom, 0);
-    const baseBottomOffset = TAB_BAR_HEIGHT + bottomInset + 18;
-    const hiddenBottomOffset = bottomInset + 18;
+    const tabBarBlockHeight =
+        tabBarReserveHeight != null && tabBarReserveHeight > 0
+            ? tabBarReserveHeight
+            : TAB_BAR_HEIGHT + bottomInset;
+    const baseBottomOffset = tabBarBlockHeight + 18 + anchorExtraOffset + CENTER_MATCH_NUDGE;
+    const hiddenBottomOffset = bottomInset + 18 + CENTER_MATCH_NUDGE;
     const bottomOffsetAnim = useRef(new Animated.Value(baseBottomOffset)).current;
 
     useEffect(() => {
@@ -53,7 +66,7 @@ export const ScrollToTopButton = ({
             tension: 40,
             friction: 8,
         }).start();
-    }, [isTabBarVisible, baseBottomOffset, hiddenBottomOffset]);
+    }, [isTabBarVisible, baseBottomOffset, hiddenBottomOffset, anchorExtraOffset, tabBarReserveHeight]);
 
     return (
         <Animated.View

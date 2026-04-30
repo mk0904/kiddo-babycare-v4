@@ -5,8 +5,12 @@ import HomeInactive from '@/assets/icons/home-inactive-fill.svg';
 import ProfileActive from '@/assets/icons/profile-active-fill.svg';
 import ProfileInactive from '@/assets/icons/profile-inactive-fill.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
-import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
+import {
+    LiveDeliveryTabBanner
+} from '@/components/ui/LiveDeliveryTabBanner';
 import { Colors, Fonts } from '@/constants/theme';
+import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
+import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { TabBarConfig } from '@/types/tabBarTypes';
@@ -65,17 +69,8 @@ export const TabBar = (props: BottomTabBarProps) => {
     const bottomInset = Math.max(insets.bottom, 0);
     const totalHeight = tabBarHeight + bottomInset;
 
-    const [liveDeliveryStackExtra, setLiveDeliveryStackExtra] = React.useState(0);
-
-    useEffect(() => {
-        Animated.spring(translateY, {
-            toValue: isVisible ? 0 : totalHeight,
-            useNativeDriver: true,
-            tension: 40,
-            friction: 8,
-            velocity: 0,
-        }).start();
-    }, [isVisible, totalHeight, translateY]);
+    const { stackExtraPx: liveDeliveryStackExtra, setStackExtraPx: setLiveDeliveryStackExtra } =
+        useLiveDeliveryStackOffset();
 
     // Get visible tabs from config, fallback to default
     const visibleTabs = useMemo(() => {
@@ -95,6 +90,28 @@ export const TabBar = (props: BottomTabBarProps) => {
             return false;
         }
     }, [props.state, visibleTabs]);
+
+    const milestoneDockHeight = useMilestoneDockHeightSafe();
+    /** Collapsed strip height reported by `MilestoneTabDock` (Home, Category, or stack routes). */
+    const isMilestoneCollapsed = milestoneDockHeight > 0 && milestoneDockHeight < 120;
+    const milestoneStripReserveForStack =
+        shouldShowTabBar && isMilestoneCollapsed
+            ? Math.max(milestoneDockHeight, 0) + 12
+            : 0;
+    const milestoneReserveForCart =
+        shouldShowTabBar && isMilestoneCollapsed
+            ? milestoneStripReserveForStack + 4
+            : 0;
+
+    useEffect(() => {
+        Animated.spring(translateY, {
+            toValue: isVisible ? 0 : totalHeight,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 8,
+            velocity: 0,
+        }).start();
+    }, [isVisible, totalHeight, translateY]);
 
     // Render tab icon: use config URLs (e.g. Shopify) when set, otherwise fall back to local assets
     const renderTabIcon = (routeName: string, isFocused: boolean) => {
@@ -139,10 +156,13 @@ export const TabBar = (props: BottomTabBarProps) => {
                 showTabBar={shouldShowTabBar}
                 tabStackHeight={totalHeight}
                 onStackOffsetChange={setLiveDeliveryStackExtra}
+                milestoneStripBottomReserve={milestoneStripReserveForStack}
             />
             <FloatingCartButton
                 showTabBar={shouldShowTabBar}
-                anchorExtraOffset={liveDeliveryStackExtra}
+                tabBarReserveHeight={shouldShowTabBar ? totalHeight : undefined}
+                anchorExtraOffset={liveDeliveryStackExtra + milestoneReserveForCart}
+                activeRouteName={props.state.routes[props.state.index]?.name}
             />
 
             {shouldShowTabBar && (
@@ -190,52 +210,52 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 .map((tabName) => props.state.routes.find((route) => route.name === tabName))
                                 .filter((route) => route !== undefined)
                                 .map((route) => {
-                                const { options } = props.descriptors[route.key];
-                                const originalIndex = props.state.routes.findIndex((r) => r.key === route.key);
-                                const isFocused = props.state.index === originalIndex;
+                                    const { options } = props.descriptors[route.key];
+                                    const originalIndex = props.state.routes.findIndex((r) => r.key === route.key);
+                                    const isFocused = props.state.index === originalIndex;
 
-                                const onPress = () => {
-                                    const event = props.navigation.emit({
-                                        type: 'tabPress',
-                                        target: route.key,
-                                        canPreventDefault: true,
-                                    });
+                                    const onPress = () => {
+                                        const event = props.navigation.emit({
+                                            type: 'tabPress',
+                                            target: route.key,
+                                            canPreventDefault: true,
+                                        });
 
-                                    if (!isFocused && !event.defaultPrevented) {
-                                        props.navigation.navigate(route.name, route.params);
-                                    }
-                                };
+                                        if (!isFocused && !event.defaultPrevented) {
+                                            props.navigation.navigate(route.name, route.params);
+                                        }
+                                    };
 
-                                const onLongPress = () => {
-                                    props.navigation.emit({
-                                        type: 'tabLongPress',
-                                        target: route.key,
-                                    });
-                                };
+                                    const onLongPress = () => {
+                                        props.navigation.emit({
+                                            type: 'tabLongPress',
+                                            target: route.key,
+                                        });
+                                    };
 
-                                return (
-                                    <TouchableOpacity
-                                        key={route.key}
-                                        accessibilityRole="button"
-                                        accessibilityState={isFocused ? { selected: true } : {}}
-                                        accessibilityLabel={options.tabBarAccessibilityLabel}
-                                        testID={(options as any).tabBarTestID}
-                                        onPress={onPress}
-                                        onLongPress={onLongPress}
-                                        style={styles.tabItem}
-                                    >
-                                        {renderTabIcon(route.name, isFocused)}
-                                        <Text
-                                            style={[
-                                                styles.tabLabel,
-                                                { color: isFocused ? activeColor : inactiveColor }
-                                            ]}
+                                    return (
+                                        <TouchableOpacity
+                                            key={route.key}
+                                            accessibilityRole="button"
+                                            accessibilityState={isFocused ? { selected: true } : {}}
+                                            accessibilityLabel={options.tabBarAccessibilityLabel}
+                                            testID={(options as any).tabBarTestID}
+                                            onPress={onPress}
+                                            onLongPress={onLongPress}
+                                            style={styles.tabItem}
                                         >
-                                            {getTabLabel(route.name, options.title)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                            {renderTabIcon(route.name, isFocused)}
+                                            <Text
+                                                style={[
+                                                    styles.tabLabel,
+                                                    { color: isFocused ? activeColor : inactiveColor }
+                                                ]}
+                                            >
+                                                {getTabLabel(route.name, options.title)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                         </View>
                         {bottomInset > 0 && <View style={{ height: bottomInset, backgroundColor: '#FFFFFF' }} />}
                     </View>
@@ -260,8 +280,6 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     container: {
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
         overflow: 'visible',
         width: '100%',
         backgroundColor: '#FFFFFF',
@@ -289,7 +307,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
+        paddingVertical: 4,
         gap: 2,
     },
     tabLabel: {
