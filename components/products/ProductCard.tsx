@@ -62,6 +62,10 @@ interface ProductCardProps {
   dealPromoPercentOff?: number;
   /** Special-offer modal only: green “Offer price” row + strike through list/sale prices above. */
   showPromoOfferPriceBadge?: boolean;
+  /**
+   * When set (e.g. Savings Corner promo grid), show this line directly under the price row and hide the outer green offer badge to avoid duplication.
+   */
+  promoOfferCaptionBelowPrice?: string;
   /** Special-offer modal: notify parent after an add succeeds (unlocks footer CTA). */
   onPromoDealAddSuccess?: () => void;
 }
@@ -82,6 +86,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   priceCompareFirst = false,
   dealPromoPercentOff,
   showPromoOfferPriceBadge = false,
+  promoOfferCaptionBelowPrice,
   onPromoDealAddSuccess,
 }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
@@ -678,13 +683,20 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               )}
             </View>
           </View>
+          {promoOfferCaptionBelowPrice ? (
+            <View style={styles.promoOfferCaptionBelowWrap}>
+              <Text style={styles.promoOfferCaptionBelowPriceRow} numberOfLines={2}>
+                {promoOfferCaptionBelowPrice}
+              </Text>
+            </View>
+          ) : null}
         </View>
         <TryAndBuyModal
           visible={showTryAndBuyModal}
           onClose={() => setShowTryAndBuyModal(false)}
         />
       </TouchableOpacity>
-      {promoOfferBadgeActive && offerPriceDisplay != null ? (
+      {promoOfferBadgeActive && offerPriceDisplay != null && !promoOfferCaptionBelowPrice ? (
         <View style={[styles.promoOfferPriceBadge, styles.promoOfferPriceBadgeOuter]}>
           <Text style={styles.promoOfferPriceText} numberOfLines={1}>
             Offer price: ₹{offerPriceDisplay}
@@ -824,21 +836,39 @@ const styles = StyleSheet.create({
   },
   promoOfferPriceBadge: {
     alignSelf: 'stretch',
-    backgroundColor: '#DCEDC8',
     borderRadius: 8,
     paddingVertical: 5,
     paddingHorizontal: 6,
+    backgroundColor: '#cef4da',
+    padding: 4,
   },
   promoOfferPriceBadgeOuter: {
     marginHorizontal: 8,
     marginTop: 4,
     marginBottom: 2,
+    backgroundColor: '#cef4da',
+    padding: 4,
+    borderRadius: 6,
   },
   promoOfferPriceText: {
     fontSize: 10,
     fontFamily: Fonts.LexendSemiBold,
     color: '#2E7D32',
     textAlign: 'left',
+  },
+  promoOfferCaptionBelowWrap: {
+    alignSelf: 'stretch',
+    marginTop: 6,
+    backgroundColor: '#cef4da',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+  },
+  promoOfferCaptionBelowPriceRow: {
+    fontSize: 10,
+    fontFamily: Fonts.LexendSemiBold,
+    color: '#2E7D32',
+    lineHeight: 14,
   },
   essentialsPriceContainer: {
     flexDirection: 'column',
@@ -944,6 +974,7 @@ const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
   if (prevProps.promoPercentOff !== nextProps.promoPercentOff) return false;
   if (prevProps.dealPromoPercentOff !== nextProps.dealPromoPercentOff) return false;
   if (prevProps.showPromoOfferPriceBadge !== nextProps.showPromoOfferPriceBadge) return false;
+  if (prevProps.promoOfferCaptionBelowPrice !== nextProps.promoOfferCaptionBelowPrice) return false;
   if (prevProps.onPromoDealAddSuccess !== nextProps.onPromoDealAddSuccess) return false;
   if (prevProps.priceCompareFirst !== nextProps.priceCompareFirst) return false;
   if (prevProps.collectionId !== nextProps.collectionId) return false;

@@ -4,9 +4,9 @@ import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal
 import { Colors, Fonts } from '@/constants/theme';
 import {
     SPECIAL_DEAL_PROMO_CART_ATTR,
-    type CartItem,
     useCartItems,
     useCartStore,
+    type CartItem,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';

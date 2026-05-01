@@ -4,11 +4,7 @@
 
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { appConfigService } from '@/services/appConfigService';
-import {
-    getSubtotalForAllowedCategories,
-    lineItemMatchesAllowedCategories,
-    lineItemMatchesApplicableCategory,
-} from '@/services/couponService';
+import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -124,51 +120,38 @@ export function getSubtotalForDealCollectionLines(lineItems: CartItem[], dealPro
     }, 0);
 }
 
-/**
- * Deal coupon eligibility (cart scan):
- * - If coupon has allowedCategories / applicableCategory **and** tab collections are loaded → line must match category **and** (variant in collection **or** added from promo modal with {@link SPECIAL_DEAL_PROMO_CART_ATTR}).
- * - Category only → category match.
- * - Collections loaded only → variant in collection **or** promo-modal attribute.
- * - Neither → all lines (API %-off whole cart).
- */
-export function isCartLineEligibleForDealDiscount(
-    item: CartItem,
-    dc: Pick<DiscountCode, 'allowedCategories' | 'applicableCategory'>,
-    dealProducts: any[],
-): boolean {
-    const rawCat = dc.applicableCategory?.trim().toLowerCase();
-    const hasSingleCategory = Boolean(rawCat);
-    const hasAllowed = Boolean(dc.allowedCategories?.length);
-    const hasCollection = dealProducts.length > 0;
-
-    const matchesCategory = hasAllowed
-        ? lineItemMatchesAllowedCategories(item, dc.allowedCategories)
-        : hasSingleCategory
-          ? lineItemMatchesApplicableCategory(item, dc.applicableCategory)
-          : true;
-
-    const inTabCollection = hasCollection && variantBelongsToListingProducts(dealProducts, item.variantId);
-    const fromPromoModal = specialDealPromoPercentFromItem(item) != null;
-    const matchesCollectionOrModal = !hasCollection || inTabCollection || fromPromoModal;
-
-    if (hasAllowed || hasSingleCategory) {
-        if (hasCollection) {
-            return matchesCategory && matchesCollectionOrModal;
-        }
-        return matchesCategory;
+/** Parsed `gid://shopify/Collection/...` ids from active special-deal config tabs (see {@link parseShopifyCollectionGid}). */
+function collectSpecialDealTabCollectionGids(): string[] {
+    const dealConfig = appConfigService.getSpecialDealConfig();
+    const tabs = dealConfig?.tabs;
+    if (!Array.isArray(tabs)) return [];
+    const gids: string[] = [];
+    for (const tab of tabs) {
+        const raw = tab.collectionId ?? tab.collection_id;
+        const gid = parseShopifyCollectionGid(raw != null ? String(raw) : null);
+        if (gid) gids.push(gid);
     }
-
-    if (hasCollection) {
-        return matchesCollectionOrModal;
-    }
-
-    return true;
+    return gids;
 }
 
-/** Selling subtotal of cart lines eligible for the active deal coupon (see {@link isCartLineEligibleForDealDiscount}). */
+/**
+ * Whether `variantId` belongs to any of `specialDealTabCollectionGids` — always queries Shopify Storefront (no client cache).
+ */
+export async function variantBelongsToSpecialDealTabCollections(
+    variantId: CartItem['variantId'],
+    specialDealTabCollectionGids: readonly string[],
+): Promise<boolean> {
+    if (specialDealTabCollectionGids.length === 0) return false;
+    return shopifyApi.variantBelongsToAnySpecialDealCollections(variantId, specialDealTabCollectionGids);
+}
+
+/** Selling subtotal of cart lines eligible for the active deal coupon (hydrated tab collection products). */
 export function getSubtotalForDealEligibleLines(lineItems: CartItem[], dc: DiscountCode, dealProducts: any[]): number {
+    if (dc.isDealCoupon !== true) return 0;
+    const tabCollectionGids = collectSpecialDealTabCollectionGids();
+    if (tabCollectionGids.length === 0) return 0;
     return lineItems.reduce((sum, item) => {
-        if (!isCartLineEligibleForDealDiscount(item, dc, dealProducts)) return sum;
+        if (!variantBelongsToSpecialDealTabCollections(item.variantId, tabCollectionGids)) return sum;
         return sum + Number(item.price ?? 0) * Number(item.quantity ?? 0);
     }, 0);
 }
@@ -243,11 +226,29 @@ export interface DiscountCode {
     isDealCoupon?: boolean;
 }
 
+/** One row of {@link computeDiscountBreakdown} for Bill / analytics. */
+export type DiscountBreakdownPerCode = {
+    code: string;
+    codeDiscount: number;
+    isDealCoupon: boolean;
+    isMilestone: boolean;
+    applicable: boolean;
+    type: DiscountCode['type'];
+    value: number;
+    baseAmount: number;
+};
+
+export type DiscountBreakdown = {
+    total: number;
+    perCode: DiscountBreakdownPerCode[];
+};
+
 /** Backend may send camelCase or snake_case. */
 function couponIsDealCouponFromApi(c: { isDealCoupon?: boolean; is_deal_coupon?: boolean } | null | undefined, code?: string): boolean {
-    if (c?.isDealCoupon === true || c?.is_deal_coupon === true) return true;
-    const upper = (code || '').toUpperCase();
-    return upper.includes('DEAL') || upper.includes('PROMO') || upper === 'DEALPECIAL';
+    // if (c?.isDealCoupon === true || c?.is_deal_coupon === true) return true;
+    // const upper = (code || '').toUpperCase();
+    // return upper.includes('DEAL') || upper.includes('PROMO') || upper === 'DEALPECIAL';
+    return Boolean(c?.isDealCoupon === true || c?.is_deal_coupon === true);
 }
 
 /** Deal coupons are client-only (modal trigger); never sent to Shopify discount APIs. */
@@ -318,6 +319,9 @@ interface CartState {
     /** Hydrated products from deal collections (isDealCoupon). Used to automatically discount cart items. */
     dealProducts: any[];
 
+    /** Last async discount breakdown (deal lines resolved via Storefront API). Kept in sync by {@link refreshComputedDiscountFromCodes}. */
+    discountBreakdownSnapshot: DiscountBreakdown;
+
     // Computed getters
     itemCount: () => number;
     mrp: () => number;
@@ -383,6 +387,9 @@ interface CartState {
      * Fetches products from deal collections if dealProducts state is empty.
      */
     syncDealPricing: (options?: { forceFetch?: boolean }) => Promise<void>;
+
+    /** Recompute {@link discountBreakdownSnapshot} from current line items + codes (await deal collection checks via Shopify). */
+    refreshComputedDiscountFromCodes: () => Promise<void>;
 }
 
 // Available gift items (configure based on your store)
@@ -433,21 +440,31 @@ function getCartCategorySubtotalsFromLineItems(items: { tags?: string[]; price?:
 }
 
 /**
- * Discount from applied codes (aligned with cart UI / Bill details).
- * Deal coupons (`isDealCoupon`): eligible lines = category rules ∩ (tab collections ∪ promo-modal attr);
- * %-off uses that subtotal; modal/grid %-off lines use {@link SPECIAL_DEAL_PROMO_CART_ATTR} when API value is 0.
+ * Discount from applied codes (aligned with cart UI / Bill details), with per-code breakdown.
+ * Deal coupons (`isDealCoupon`): subtract config `dealCouponFixedAmount` from eligible-line subtotal, then 50% off that remainder;
+ * result capped by `maxDiscountAmount` (when set) and cart subtotal.
  */
-export function computeNonDealDiscountFromCodes(
+const DEFAULT_DEAL_COUPON_FIXED_AMOUNT = 199;
+
+function dealCouponFixedAmountFromConfig(): number {
+    const n = appConfigService.getSpecialDealConfig()?.dealCouponFixedAmount;
+    if (typeof n === 'number' && Number.isFinite(n) && n >= 0) return n;
+    return DEFAULT_DEAL_COUPON_FIXED_AMOUNT;
+}
+
+export function computeDiscountBreakdown(
     lineItems: CartItem[],
     codes: DiscountCode[],
-    dealProducts: any[] = []
-): number {
+    dealProducts: any[] = [],
+): DiscountBreakdown {
     const subtotalVal = lineItems.reduce(
         (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 0),
         0,
     );
     const categorySubtotals = getCartCategorySubtotalsFromLineItems(lineItems);
+    const perCode: DiscountBreakdownPerCode[] = [];
     let discount = 0;
+    const dealFixedRupee = dealCouponFixedAmountFromConfig();
     for (const dc of codes) {
         if (dc.applicable === false) continue;
         const isDeal = dc.isDealCoupon === true;
@@ -471,51 +488,55 @@ export function computeNonDealDiscountFromCodes(
         }
 
         let codeDiscount = 0;
-        // Force DEALPECIAL value to 199 if it is missing (debug fallback)
-        const currentVal = dc.code.toUpperCase() === 'DEALPECIAL' && val === 0 ? 199 : val;
+        const currentVal = val;
 
-        if (currentVal > 0 || isDeal) {
-            // Part A: Base Category/Subtotal Discount (e.g. ₹199 for "plant kit")
+        if (isDeal) {
+            // Eligible deal-line selling subtotal (same lines as baseAmount for deal codes).
+            const eligibleSubtotal = baseAmount;
+            const remainderAfterFixed = Math.max(0, eligibleSubtotal - dealFixedRupee);
+            codeDiscount = (0.5 * remainderAfterFixed) + dealFixedRupee;
+            if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
+                codeDiscount = Math.min(codeDiscount, dc.maxDiscountAmount);
+            }
+            codeDiscount = Math.min(codeDiscount, subtotalVal);
+        } else if (currentVal > 0) {
             if (dc.type === 'percentage') {
                 codeDiscount = (baseAmount * currentVal) / 100;
             } else {
                 codeDiscount = Math.min(currentVal, baseAmount);
             }
 
-            // Part B: when API value is 0, apply promo-modal % or 50% on tab-collection lines (eligible scan only).
-            const dealNumericForGrid = Number(dc.value ?? 0);
-            if (isDeal && !(dealNumericForGrid > 0)) {
-                let partB = 0;
-                for (const item of lineItems) {
-                    if (!isCartLineEligibleForDealDiscount(item, dc, dealProducts)) continue;
-                    const pAttr = specialDealPromoPercentFromItem(item);
-                    const inCol =
-                        dealProducts.length > 0 &&
-                        variantBelongsToListingProducts(dealProducts, item.variantId);
-                    const pct =
-                        pAttr != null && pAttr > 0 && pAttr < 100
-                            ? pAttr
-                            : inCol
-                              ? 50
-                              : 0;
-                    if (pct > 0) {
-                        partB += Math.round(
-                            Number(item.price ?? 0) * Number(item.quantity ?? 0) * (pct / 100),
-                        );
-                    }
-                }
-                codeDiscount += partB;
-            }
-
-            // Final: Apply global cap (e.g. ₹500 maxDiscountAmount)
             if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
                 codeDiscount = Math.min(codeDiscount, dc.maxDiscountAmount);
             }
             codeDiscount = Math.min(codeDiscount, subtotalVal);
         }
-        discount += Math.round(codeDiscount);
+        const rounded = Math.round(codeDiscount);
+        discount += rounded;
+        perCode.push({
+            code: dc.code,
+            codeDiscount: rounded,
+            isDealCoupon: isDeal,
+            isMilestone: dc.isMilestone === true,
+            applicable: true,
+            type: dc.type,
+            value: val,
+            baseAmount,
+        });
     }
-    return Math.min(Math.round(discount), subtotalVal);
+    return {
+        total: Math.min(Math.round(discount), subtotalVal),
+        perCode,
+    };
+}
+
+/** Total only; same as {@link computeDiscountBreakdown}(...).total — kept for existing call sites. */
+export function computeNonDealDiscountFromCodes(
+    lineItems: CartItem[],
+    codes: DiscountCode[],
+    dealProducts: any[] = [],
+): number {
+    return computeDiscountBreakdown(lineItems, codes, dealProducts).total;
 }
 
 function lineItemMatchesVariant(item: CartItem, variantIdNumeric: string): boolean {
@@ -601,6 +622,18 @@ export const useCartStore = create<CartState>()(
             schoolCouponData: null,
             deliverySchedule: null,
             dealProducts: [],
+            discountBreakdownSnapshot: { total: 0, perCode: [] },
+
+            refreshComputedDiscountFromCodes: async () => {
+                const state = get();
+                set({
+                    discountBreakdownSnapshot: computeDiscountBreakdown(
+                        state.lineItems,
+                        state.discountCodes,
+                        state.dealProducts,
+                    ),
+                });
+            },
 
             // Computed getters
             itemCount: () => {
@@ -2250,7 +2283,7 @@ export const useCartStore = create<CartState>()(
                     set({ status: 'loading' });
                     try {
                         const allProds: any[] = [];
-                        for (const tab of dealConfig.tabs) {
+                        for (const tab of dealConfig.tabs ?? []) {
                             const rawId = tab.collectionId ?? (tab as any).collection_id;
                             const collectionId = parseShopifyCollectionGid(rawId);
                             if (collectionId) {
@@ -2267,10 +2300,23 @@ export const useCartStore = create<CartState>()(
                     }
                 }
 
-                if (dealProducts.length === 0) return;
+                const tabGids = collectSpecialDealTabCollectionGids();
+                const eligibilityByVariant = new Map<string, boolean>();
+                if (tabGids.length > 0 && state.lineItems.length > 0 && dealProducts.length === 0) {
+                    const uniqueVariantIds = [...new Set(state.lineItems.map((i) => i.variantId))];
+                    await Promise.all(
+                        uniqueVariantIds.map(async (variantId) => {
+                            const ok = await variantBelongsToSpecialDealTabCollections(variantId, tabGids);
+                            eligibilityByVariant.set(variantId, ok);
+                        }),
+                    );
+                }
 
                 const next = state.lineItems.map((item) => {
-                    const isEligible = variantBelongsToListingProducts(dealProducts, item.variantId);
+                    const isEligible =
+                        dealProducts.length > 0
+                            ? variantBelongsToListingProducts(dealProducts, item.variantId)
+                            : eligibilityByVariant.get(item.variantId) === true;
 
                     if (isEligible) {
                         return {

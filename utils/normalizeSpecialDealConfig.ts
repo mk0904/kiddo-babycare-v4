@@ -108,6 +108,8 @@ export function normalizeSpecialDealConfig(raw: unknown): SpecialDealConfig {
         discount: pickNum(r, 'discount') ?? base.discount,
         minCartValue: pickNum(r, 'minCartValue', 'min_cart_value') ?? base.minCartValue,
         offerTime: pickNum(r, 'offerTime', 'offer_time') ?? base.offerTime,
+        dealCouponFixedAmount:
+            pickNum(r, 'dealCouponFixedAmount', 'deal_coupon_fixed_amount') ?? base.dealCouponFixedAmount,
         isEnabled,
     };
 }

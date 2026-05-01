@@ -178,6 +178,8 @@ export interface SpecialDealConfig {
   minCartValue?: number;
   /** Countdown duration in minutes. */
   offerTime?: number;
+  /** Fixed rupee component in deal-coupon discount math (before %-of-eligible add-on). Backend may send `deal_coupon_fixed_amount`. */
+  dealCouponFixedAmount?: number;
   secondLineText?: string;
   successIconUrl?: string;
   tabs?: SpecialDealTab[];

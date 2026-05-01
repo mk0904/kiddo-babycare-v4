@@ -89,6 +89,41 @@ const GET_COLLECTION_BY_ID_QUERY = `
   }
 `;
 
+const VARIANT_PRODUCT_COLLECTIONS_QUERY = `
+  query variantProductCollections($id: ID!) {
+    node(id: $id) {
+      ... on ProductVariant {
+        id
+        product {
+          collections(first: 50) {
+            nodes {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** Normalize cart/admin variant reference to Storefront `gid://shopify/ProductVariant/...`. */
+export function parseShopifyVariantGid(raw: string | null | undefined): string | null {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    if (s.startsWith('gid://shopify/ProductVariant/')) return s;
+    const adminMatch = s.match(/\/variants\/(\d+)/);
+    if (adminMatch) return `gid://shopify/ProductVariant/${adminMatch[1]}`;
+    if (/^\d+$/.test(s)) return `gid://shopify/ProductVariant/${s}`;
+    const tail = s.includes('/') ? (s.split('/').pop() ?? '') : s;
+    if (tail && /^\d+$/.test(tail)) return `gid://shopify/ProductVariant/${tail}`;
+    return null;
+}
+
+function normalizeStorefrontGid(id: string): string {
+    return String(id).trim();
+}
+
 const GET_PRODUCTS_BY_COLLECTION_QUERY = `
   query getProductsByCollection($id: ID!, $first: Int!, $after: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean, $filters: [ProductFilter!]) {
     collection(id: $id) {
@@ -1115,6 +1150,38 @@ export const shopifyApi = {
   /**
    * Get products by collection ID with pagination, sorting and filtering
    */
+  /**
+   * Whether this variant’s product is in any of the given collection GIDs (Storefront API).
+   */
+  variantBelongsToAnySpecialDealCollections: async (
+    variantId: string,
+    collectionGids: readonly string[],
+  ): Promise<boolean> => {
+    if (!collectionGids.length) return false;
+    const vid = parseShopifyVariantGid(variantId);
+    if (!vid) return false;
+    const targets = new Set(collectionGids.map((g) => normalizeStorefrontGid(g)));
+    try {
+      const response = await client.post('', {
+        query: VARIANT_PRODUCT_COLLECTIONS_QUERY,
+        variables: { id: vid },
+      });
+      if (response.data.errors?.length) {
+        console.warn('[shopifyApi] variantProductCollections errors:', response.data.errors);
+        return false;
+      }
+      const nodes = response.data.data?.node?.product?.collections?.nodes;
+      console.log('[shopifyApi] variantBelongsToAnySpecialDealCollections nodes:', nodes);
+      if (!Array.isArray(nodes)) return false;
+      return nodes.some((c: { id?: string }) => c?.id && targets.has(normalizeStorefrontGid(c.id)));
+    } catch (error) {
+      if (!isLikelyAxiosNetworkError(error)) {
+        console.warn('[shopifyApi] variantBelongsToAnySpecialDealCollections failed:', error);
+      }
+      return false;
+    }
+  },
+
   getProductsByCollection: async (
     collectionId: string,
     first: number = 20,

@@ -30,10 +30,10 @@ import { tagToAddressType, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
-import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import { shopifyApi } from '@/services/shopifyApi';
 import {
+    computeDiscountBreakdown,
     specialDealPromoPercentFromItem,
     useCartId,
     useCartItemCount,
@@ -44,9 +44,6 @@ import {
     useCheckoutUrl,
     useGiftWrapping,
     useIsTryAndBuy,
-    getSubtotalForDealEligibleLines,
-    isCartLineEligibleForDealDiscount,
-    variantBelongsToListingProducts
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
@@ -781,17 +778,6 @@ export default function CartScreen() {
         return { itemSubtotal: sub, itemMrpTotal: mrp };
     }, [cartItems]);
 
-    // Category subtotals for category-based coupons (same logic as cart store)
-    const categorySubtotalsCart = useMemo(() => {
-        const out: Record<string, number> = {};
-        for (const item of cartItems) {
-            const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
-            const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-            for (const tag of tags) out[tag] = (out[tag] ?? 0) + amount;
-        }
-        return out;
-    }, [cartItems]);
-
     // Total savings from line-item deal promos (isDealCoupon: true)
     const dealSavingsAmount = useMemo(() => {
         return cartItems.reduce((sum, item) => {
@@ -805,111 +791,77 @@ export default function CartScreen() {
         }, 0);
     }, [cartItems]);
 
-    // Calculate discount from discountCodes using same category-aware logic as cart store (so Bill details matches Savings Corner)
-    let calculatedDiscount = 0;
+    const discountBreakdown = useMemo(
+        () => computeDiscountBreakdown(cartItems, discountCodes, dealProducts),
+        [cartItems, discountCodes, dealProducts],
+    );
 
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
-    let otherCouponDiscountAmount = 0;
-    let milestoneConfigDiscountAmount = 0;
-    let milestoneConfigDiscountLabel = '';
-    let milestoneAppliedCode = '';
-    let milestoneAppliedDescription = '';
-
-    if (discountCodes && discountCodes.length > 0) {
-        for (const discountCode of discountCodes) {
-            if (__DEV__) {
-                console.log('[CartScreen] Processing discount code:', discountCode);
-            }
-
-            const shouldProcess = discountCode.applicable !== false;
-            const discountValue = Number(discountCode.value ?? 0);
-            const discountType = discountCode.type;
-
-            const isMilestoneCoupon = (discountCode as any).isMilestone === true;
+    const {
+        calculatedDiscount,
+        otherCouponDiscountAmount,
+        milestoneConfigDiscountAmount,
+        milestoneConfigDiscountLabel,
+        milestoneAppliedCode,
+        milestoneAppliedDescription,
+    } = useMemo(() => {
+        let otherCouponDiscountAmount = 0;
+        let milestoneConfigDiscountAmount = 0;
+        let milestoneConfigDiscountLabel = '';
+        let milestoneAppliedCode = '';
+        let milestoneAppliedDescription = '';
+        for (const row of discountBreakdown.perCode) {
+            if (row.codeDiscount <= 0) continue;
+            const codeUc = row.code.toUpperCase();
             const isFreeShoesGiftCode =
-                Boolean(freeShoesGiftCodeUc) && discountCode.code.toUpperCase() === freeShoesGiftCodeUc;
-            const isKidPuzzle = discountCode.code.toUpperCase() === freePuzzleGiftCodeUc;
-            const isMysteryGift = discountCode.code.toUpperCase() === freeMysteryGiftCodeUc;
-
-            if (shouldProcess) {
-                const isDeal = (discountCode as any).isDealCoupon === true;
-                const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
-                let baseAmount: number;
-                if (isDeal) {
-                    baseAmount = getSubtotalForDealEligibleLines(cartItems, discountCode, dealProducts);
-                } else {
-                    baseAmount = discountCode.allowedCategories?.length
-                        ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
-                        : categoryKey
-                            ? (categorySubtotalsCart[categoryKey] ?? 0)
-                            : itemSubtotal;
+                Boolean(freeShoesGiftCodeUc) && codeUc === freeShoesGiftCodeUc;
+            const isKidPuzzle = codeUc === freePuzzleGiftCodeUc;
+            const isMysteryGift = codeUc === freeMysteryGiftCodeUc;
+            const isMilestoneCoupon = row.isMilestone;
+            if (
+                (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) &&
+                !isFreeShoesGiftCode &&
+                !isKidPuzzle &&
+                !isMysteryGift
+            ) {
+                milestoneConfigDiscountAmount += row.codeDiscount;
+                if (!milestoneConfigDiscountLabel) {
+                    const stepIndex = milestoneCurrentStepFromConfig(milestoneUI ?? null, 0);
+                    const ordinals = ['First', 'Second', 'Third', 'Fourth'];
+                    milestoneConfigDiscountLabel =
+                        stepIndex >= 0 && stepIndex < ordinals.length
+                            ? `${ordinals[stepIndex]} Reward`
+                            : 'Milestone Reward';
+                    milestoneAppliedCode = row.code;
+                    const dc = discountCodes.find(
+                        (d) => d.code.toUpperCase() === codeUc,
+                    );
+                    milestoneAppliedDescription = dc?.couponDescription || '';
                 }
-
-                let codeDiscount = 0;
-                const currentVal =
-                    discountCode.code.toUpperCase() === 'DEALPECIAL' && discountValue === 0 ? 199 : discountValue;
-
-                if (currentVal > 0 || isDeal) {
-                    // Part A: Base Category/Subtotal Discount (e.g. ₹199 for "plant kit")
-                    if (discountType === 'percentage') {
-                        codeDiscount = (baseAmount * currentVal) / 100;
-                    } else {
-                        codeDiscount = Math.min(currentVal, baseAmount);
-                    }
-
-                    const dealNumericForGrid = Number(discountCode.value ?? 0);
-                    if (isDeal && !(dealNumericForGrid > 0)) {
-                        let partB = 0;
-                        for (const item of cartItems) {
-                            if (!isCartLineEligibleForDealDiscount(item, discountCode, dealProducts)) continue;
-                            const pAttr = specialDealPromoPercentFromItem(item);
-                            const inCol =
-                                dealProducts.length > 0 &&
-                                variantBelongsToListingProducts(dealProducts, item.variantId);
-                            const pct =
-                                pAttr != null && pAttr > 0 && pAttr < 100
-                                    ? pAttr
-                                    : inCol
-                                      ? 50
-                                      : 0;
-                            if (pct > 0) {
-                                partB += Math.round(item.price * item.quantity * (pct / 100));
-                            }
-                        }
-                        codeDiscount += partB;
-                    }
-
-                    if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
-                        codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
-                    }
-                    codeDiscount = Math.min(codeDiscount, itemSubtotal);
-                }
-
-                if (codeDiscount > 0) {
-                    calculatedDiscount += codeDiscount;
-                    // ... rest of logic for label and categorization
-                    if ((isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) &&
-                        !isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
-                        milestoneConfigDiscountAmount += codeDiscount;
-                        if (!milestoneConfigDiscountLabel) {
-                            const stepIndex = milestoneCurrentStepFromConfig(milestoneUI, 0);
-                            const ordinals = ['First', 'Second', 'Third', 'Fourth'];
-                            milestoneConfigDiscountLabel = (stepIndex >= 0 && stepIndex < ordinals.length) ? `${ordinals[stepIndex]} Reward` : 'Milestone Reward';
-                            milestoneAppliedCode = discountCode.code;
-                            milestoneAppliedDescription = discountCode.couponDescription || '';
-                        }
-                    } else if (!isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
-                        otherCouponDiscountAmount += codeDiscount;
-                    }
-                }
+            } else if (!isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
+                otherCouponDiscountAmount += row.codeDiscount;
             }
         }
-
-    }
+        return {
+            calculatedDiscount: discountBreakdown.total,
+            otherCouponDiscountAmount,
+            milestoneConfigDiscountAmount,
+            milestoneConfigDiscountLabel,
+            milestoneAppliedCode,
+            milestoneAppliedDescription,
+        };
+    }, [
+        discountBreakdown,
+        discountCodes,
+        freeShoesGiftCodeUc,
+        freePuzzleGiftCodeUc,
+        freeMysteryGiftCodeUc,
+        milestoneUI,
+    ]);
 
     const hasFreeShoesGiftApplied =
         Boolean(freeShoesGiftCodeUc) &&
@@ -948,13 +900,15 @@ export default function CartScreen() {
     const mysteryGiftOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)
         ?.originalPrice;
 
+    const discount = Math.min(Number(discountAmount) || 0, itemSubtotal);
+
     const appliedSaveAmount = useMemo(() => {
-        let total = Math.round(calculatedDiscount);
+        let total = discount;
         if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) total += freeShoesGiftOriginalPrice;
         if (hasKidPuzzleApplied && kidPuzzleOriginalPrice != null) total += (kidPuzzleOriginalPrice || 0);
         if (hasMysteryGiftApplied && mysteryGiftOriginalPrice != null) total += (mysteryGiftOriginalPrice || 0);
         return total;
-    }, [hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice, calculatedDiscount]);
+    }, [discount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
 
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
@@ -982,10 +936,7 @@ export default function CartScreen() {
     ]);
     const checkoutCouponCode = appliedDiscountCode || milestoneCouponCodeCopy;
 
-    // Use our calculated discount instead of Shopify's
-    // Cap the discount to not exceed the subtotal (for fixed discounts)
-    const discount = Math.min(Number(calculatedDiscount) || 0, itemSubtotal);
-
+    // Bill / Savings Corner: same number as store discountAmount() and payment.discount writers
     // Debug log
     if (__DEV__) {
         console.log('[CartScreen] Final discount calculation:', {

@@ -138,6 +138,35 @@ function lineHasDealPromoForModal(li: CartItem, promoDealPercentOff: number): bo
     return p != null && Math.abs(p - promoDealPercentOff) < 0.001;
 }
 
+/**
+ * Listed selling unit — mirrors {@link ProductCard} `price` / `priceNumber` sources so the caption matches the row above.
+ */
+function gridProductSellingUnit(product: any): number {
+    const variants = product?.variants?.edges || product?.variants || [];
+    const firstVariant = variants[0]?.node || variants[0] || {};
+
+    let raw: unknown =
+        firstVariant?.price?.amount ??
+        product?.priceRange?.minVariantPrice?.amount;
+
+    if (raw == null || raw === '') {
+        const p = product?.price;
+        if (p != null && p !== '') {
+            raw = typeof p === 'object' && p !== null && 'amount' in (p as object)
+                ? (p as { amount?: string }).amount
+                : p;
+        }
+    }
+
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+    if (typeof raw === 'string') {
+        const cleaned = raw.replace(/[₹,\s]/g, '').trim();
+        const parsed = parseFloat(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+}
+
 function mergeProductGridVariantKeys(prev: Set<string>, products: any[]): Set<string> {
     const next = new Set(prev);
     for (const node of products) {
@@ -217,6 +246,16 @@ export function SavingsCornerPromoOfferContent({
         }
         return 0;
     }, [cfg.discount]);
+
+    /**
+     * % off for promo row + caption. Config may use `100` as a sentinel; `(1 - pct/100)` would be 0 → always show ₹0.
+     * Clamp to &lt; 100; default 50 when unset.
+     */
+    const displayDealPercentOff = useMemo(() => {
+        let pct = promoDealPercentOff > 0 ? promoDealPercentOff : 50;
+        if (pct >= 100) pct = 50;
+        return pct;
+    }, [promoDealPercentOff]);
 
     const promoGridVariantKeys = useMemo(() => {
         mergeProductGridVariantKeys(accumulatedPromoGridVariantKeysRef.current, listingProducts);
@@ -493,10 +532,19 @@ export function SavingsCornerPromoOfferContent({
                                             product={product}
                                             width={productCardWidth}
                                             collectionId={collectionGid}
-                                            promoPercentOff={promoDealPercentOff}
-                                            dealPromoPercentOff={promoDealPercentOff}
+                                            promoPercentOff={displayDealPercentOff}
+                                            dealPromoPercentOff={displayDealPercentOff}
                                             showPromoOfferPriceBadge
                                             priceCompareFirst
+                                            promoOfferCaptionBelowPrice={`Offer price: ${formatCurrency(
+                                                Math.max(
+                                                    0,
+                                                    Math.round(
+                                                        gridProductSellingUnit(product) *
+                                                            (1 - displayDealPercentOff / 100),
+                                                    ),
+                                                ),
+                                            )}`}
                                             onPromoDealAddSuccess={onPromoDealAddSuccess}
                                         />
                                     </View>
