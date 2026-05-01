@@ -1453,7 +1453,8 @@ export const shopifyApi = {
    */
   createCart: async (
     lines?: Array<{ merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }>,
-    attributes?: { key: string; value: string }[]
+    attributes?: { key: string; value: string }[],
+    discountCodes?: string[]
   ) => {
     try {
       const variables: any = {
@@ -1464,6 +1465,10 @@ export const shopifyApi = {
 
       if (attributes) {
         variables.input.attributes = attributes;
+      }
+
+      if (discountCodes && discountCodes.length > 0) {
+        variables.input.discountCodes = discountCodes;
       }
 
       const response = await client.post('', {

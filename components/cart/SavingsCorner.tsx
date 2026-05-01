@@ -3,7 +3,7 @@ import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
 import { couponService, type CouponCode } from '@/services/couponService';
-import { useCartItems, useCartStore, specialDealPromoPercentFromItem } from '@/store/cartStore';
+import { useCartItems, useCartStore, specialDealPromoPercentFromItem, SPECIAL_DEAL_PROMO_CART_ATTR } from '@/store/cartStore';
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -68,7 +68,23 @@ export function SavingsCorner({
     const removeDiscountCode = useCartStore(state => state.removeDiscountCode);
 
     const appliedDiscountCodes = useMemo(() => discountCodes.map(dc => dc.code), [discountCodes]);
-    const appliedDiscountCode = appliedDiscountCodes[0] ?? null;
+    /**
+     * Header / Remove / carousel must match bill logic: Shopify can leave stale rows in `discountCodes`.
+     * Prefer applicable codes; tie-break by newest appliedAt, then later index (replacement often appended last).
+     */
+    const appliedDiscountCode = useMemo(() => {
+        const indexed = discountCodes.map((dc, i) => ({ dc, i }));
+        const active = indexed.filter(({ dc }) => dc.applicable !== false);
+        const pool = active.length > 0 ? active : indexed;
+        if (pool.length === 0) return null;
+        const best = pool.reduce((a, b) => {
+            const atA = a.dc.appliedAt ?? 0;
+            const atB = b.dc.appliedAt ?? 0;
+            if (atB !== atA) return atB > atA ? b : a;
+            return b.i > a.i ? b : a;
+        });
+        return best.dc.code;
+    }, [discountCodes]);
 
     const [showCouponsModal, setShowCouponsModal] = useState(false);
     /** Promo upsell (Mother’s Day style) first; user can switch to the classic coupon list. */
@@ -152,6 +168,16 @@ export function SavingsCorner({
     ]);
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setShowCouponsModal(false);
+            setCouponModalMode('promo');
+            setManualCode('');
+            setManualCodeMessage(null);
+            setLastApplyError(null);
+        }
+    }, [isAuthenticated]);
+
+    useEffect(() => {
         if (!isAuthenticated || displayCoupons.length === 0) {
             setCouponUsages({});
             return;
@@ -209,11 +235,11 @@ export function SavingsCorner({
     const handleApplyCouponByCode = async (
         code: string,
         options?: { surfaceCardError?: boolean },
-    ): Promise<{ success: boolean; error?: string }> => {
+    ): Promise<{ success: boolean; error?: string; openedDealPromo?: boolean }> => {
         const surfaceCardError = options?.surfaceCardError !== false;
         const trimmed = code.trim().toUpperCase();
         if (!trimmed) return { success: false, error: 'Enter a coupon code' };
-        if (appliedDiscountCodes?.includes(trimmed)) {
+        if (discountCodes.some(dc => dc.code.toUpperCase() === trimmed && dc.applicable !== false)) {
             return { success: false, error: `${trimmed} is already applied.` };
         }
         setCouponApplying(true);
@@ -222,12 +248,15 @@ export function SavingsCorner({
         try {
             const result = await applyDiscountCode(trimmed, { preloadedCoupons: availableCoupons });
             if (result.success) {
-                // Check if the applied coupon is a school coupon
                 const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
                 if (applied?.isSchoolCoupon) {
                     setShowSchoolModal(true);
-                } else if (applied?.isDealCoupon) {
+                    return { success: true };
+                }
+                // Optional upsell: browse deal collection / add products — user can dismiss without adding (see promo sheet CTA).
+                if (applied?.isDealCoupon) {
                     openDealPromoModal();
+                    return { success: true, openedDealPromo: true };
                 }
                 return { success: true };
             }
@@ -246,7 +275,7 @@ export function SavingsCorner({
     const handleApplyCouponFromList = async (coupon: SavingsCornerCoupon) => {
         const code = coupon.code?.toUpperCase();
         if (!code) return;
-        if (appliedDiscountCodes?.includes(code)) {
+        if (discountCodes.some(dc => dc.code.toUpperCase() === code && dc.applicable !== false)) {
             setManualCodeMessage(`${code} is already applied.`);
             return;
         }
@@ -260,7 +289,6 @@ export function SavingsCorner({
                 setManualCodeMessage(err);
                 setLastApplyError(err);
             } else {
-                // Check if the applied coupon is a school coupon or deal coupon
                 if (coupon.isSchoolCoupon) {
                     setShowSchoolModal(true);
                 } else if (coupon.isDealCoupon) {
@@ -280,6 +308,11 @@ export function SavingsCorner({
         setCouponApplying(true);
         try {
             await removeDiscountCode(code);
+            setShowCouponsModal(false);
+            setCouponModalMode('promo');
+            setManualCode('');
+            setManualCodeMessage(null);
+            setLastApplyError(null);
         } catch (error: any) {
             setManualCodeMessage(error.message ?? 'Failed to remove coupon');
         } finally {
@@ -296,6 +329,19 @@ export function SavingsCorner({
 
     const hasAppliedCoupon = (appliedDiscountCodes?.length ?? 0) > 0;
 
+    /** When coupon is removed (UI or cart/sync clearing store), reset modal + input state so errors/text don’t linger. */
+    const hadAppliedCouponRef = useRef(hasAppliedCoupon);
+    useEffect(() => {
+        if (hadAppliedCouponRef.current && !hasAppliedCoupon) {
+            setShowCouponsModal(false);
+            setCouponModalMode('promo');
+            setManualCode('');
+            setManualCodeMessage(null);
+            setLastApplyError(null);
+        }
+        hadAppliedCouponRef.current = hasAppliedCoupon;
+    }, [hasAppliedCoupon]);
+
     const handleApplyManualCode = async (closeModalOnSuccess = true) => {
         const code = manualCode.trim().toUpperCase();
         if (!code) return;
@@ -306,7 +352,7 @@ export function SavingsCorner({
             });
             if (result.success) {
                 setManualCode('');
-                if (closeModalOnSuccess) setShowCouponsModal(false);
+                if (closeModalOnSuccess && !result.openedDealPromo) setShowCouponsModal(false);
             } else {
                 setManualCodeMessage(result.error ?? 'Failed to apply coupon');
             }
@@ -318,6 +364,7 @@ export function SavingsCorner({
     const closeModal = () => {
         setShowCouponsModal(false);
         setCouponModalMode('promo');
+        setManualCode('');
         setManualCodeMessage(null);
         setLastApplyError(null);
     };

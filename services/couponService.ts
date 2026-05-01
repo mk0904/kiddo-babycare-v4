@@ -272,6 +272,7 @@ export interface CouponApplicability {
 /** Line item shape needed for category subtotal. */
 export interface LineItemForCategory {
   tags?: string[];
+  title?: string;
   price?: number;
   quantity?: number;
 }
@@ -303,6 +304,31 @@ export function getSubtotalForAllowedCategories(
     if (isEligible) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
   }
   return sum;
+}
+
+/** Single-line check for allowedCategories (same rules as {@link getSubtotalForAllowedCategories}). */
+export function lineItemMatchesAllowedCategories(
+    item: LineItemForCategory,
+    allowedCategories: string[] | null | undefined,
+): boolean {
+    if (!allowedCategories?.length) return true;
+    return getSubtotalForAllowedCategories([item], allowedCategories) > 0;
+}
+
+/** Single-line check for one applicableCategory key (tags + title, mirrors allowed-category matching). */
+export function lineItemMatchesApplicableCategory(
+    item: LineItemForCategory,
+    applicableCategory: string | null | undefined,
+): boolean {
+    if (!applicableCategory?.trim()) return true;
+    const cat = applicableCategory.trim().toLowerCase();
+    const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+    if (tags.includes(cat)) return true;
+    const title = (item.title ?? '').toLowerCase();
+    if (title.includes(cat)) return true;
+    if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+    if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+    return false;
 }
 
 function formatCategoryLabel(categories: string[] | null | undefined): string {
@@ -364,8 +390,11 @@ export const getCouponApplicabilityForDisplay = (
     categoryLabel = singleCategory;
   }
 
-  if (allowed?.length && effectiveSubtotal <= 0) {
-    return { applicable: false, reason: `Add ${categoryLabel} products to avail this coupon` };
+  if ((allowed?.length || !!singleCategory) && effectiveSubtotal <= 0) {
+    return {
+      applicable: false,
+      reason: `Add ${categoryLabel || singleCategory || 'eligible'} products to avail this coupon`,
+    };
   }
 
   if (coupon.minimumPurchaseAmount) {
@@ -646,10 +675,10 @@ export const validateCouponConditions = async (
       };
     }
 
-    if (allowed?.length && effectiveSubtotal <= 0) {
+    if ((allowed?.length || !!singleCategory) && effectiveSubtotal <= 0) {
       return {
         isValid: false,
-        error: `Add ${categoryLabel} products to avail this coupon.`,
+        error: `Add ${categoryLabel || singleCategory || 'eligible'} products to avail this coupon.`,
       };
     }
 

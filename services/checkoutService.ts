@@ -197,10 +197,12 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
     deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,
   };
+  console.log('[CheckoutService] createDraft request:', { url, payload });
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,
     headers: { 'Content-Type': 'application/json' },
   });
+  console.log('[CheckoutService] createDraft response:', data);
   return data;
 }
 
@@ -210,11 +212,13 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
  */
 export async function completeDraft(body: CheckoutCompleteRequest): Promise<CheckoutCompleteResponse> {
   const url = getBackendApiPath('checkout/complete');
+  console.log('[CheckoutService] completeDraft request:', { url, body });
   try {
     const { data } = await axios.post<CheckoutCompleteResponse>(url, body, {
       timeout: 30000,
       headers: { 'Content-Type': 'application/json' },
     });
+    console.log('[CheckoutService] completeDraft response:', data);
     return data;
   } catch (err: any) {
     const msg =

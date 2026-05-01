@@ -316,17 +316,18 @@ export function SavingsCornerPromoOfferContent({
         promoGridMatchingLineItems.length > 0 || dealPromoAddConfirmed;
 
     const handleUnlock = () => {
-        if (!hasAddedFromPromoGrid) return;
-        const lines =
-            promoGridMatchingLineItems.length > 0
-                ? promoGridMatchingLineItems
-                : dealPromoAddConfirmed
-                  ? lineItems.filter((li: CartItem) =>
-                        lineHasDealPromoForModal(li, promoDealPercentOff),
-                    )
-                  : [];
-        if (lines.length > 0) {
-            onUnlockPress?.(lines.map((li) => li.variantId));
+        if (hasAddedFromPromoGrid) {
+            const lines =
+                promoGridMatchingLineItems.length > 0
+                    ? promoGridMatchingLineItems
+                    : dealPromoAddConfirmed
+                      ? lineItems.filter((li: CartItem) =>
+                            lineHasDealPromoForModal(li, promoDealPercentOff),
+                        )
+                      : [];
+            if (lines.length > 0) {
+                onUnlockPress?.(lines.map((li) => li.variantId));
+            }
         }
         onClose();
     };
@@ -336,6 +337,8 @@ export function SavingsCornerPromoOfferContent({
     const bannerText = cfg.bannerText?.trim() || 'One time offer Unlocked!';
     const titleText = cfg.title?.trim() || 'Special offer';
     const footerCta = cfg.footerCta?.trim() || 'Add products to unlock offer';
+    /** Primary button always dismisses; label reflects optional browse-and-add vs done. */
+    const primaryCtaLabel = hasAddedFromPromoGrid ? footerCta : 'Continue';
     const conditionsSummaryLine = useMemo(() => {
         return (cfg.conditions ?? [])
             .map((c) => (c.text ?? '').trim())
@@ -516,14 +519,11 @@ export function SavingsCornerPromoOfferContent({
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.cta, hasAddedFromPromoGrid && styles.ctaActive]}
+                    style={[styles.cta, styles.ctaActive]}
                     onPress={handleUnlock}
-                    disabled={!hasAddedFromPromoGrid}
                     activeOpacity={0.85}
                 >
-                    <Text style={[styles.ctaText, hasAddedFromPromoGrid && styles.ctaTextActive]}>
-                        {footerCta}
-                    </Text>
+                    <Text style={[styles.ctaText, styles.ctaTextActive]}>{primaryCtaLabel}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onSkip} style={styles.skipWrap}>
                     <Text style={styles.skipText}>Skip for now</Text>

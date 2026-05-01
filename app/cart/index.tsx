@@ -34,6 +34,7 @@ import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import { shopifyApi } from '@/services/shopifyApi';
 import {
+    specialDealPromoPercentFromItem,
     useCartId,
     useCartItemCount,
     useCartItems,
@@ -43,8 +44,9 @@ import {
     useCheckoutUrl,
     useGiftWrapping,
     useIsTryAndBuy,
-    SPECIAL_DEAL_PROMO_CART_ATTR,
-    specialDealPromoPercentFromItem,
+    getSubtotalForDealEligibleLines,
+    isCartLineEligibleForDealDiscount,
+    variantBelongsToListingProducts
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
@@ -195,6 +197,9 @@ export default function CartScreen() {
 
     // Use Zustand store
     const cartStore = useCartStore();
+    const {
+        dealProducts,
+    } = cartStore;
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
@@ -786,7 +791,7 @@ export default function CartScreen() {
         }
         return out;
     }, [cartItems]);
-    
+
     // Total savings from line-item deal promos (isDealCoupon: true)
     const dealSavingsAmount = useMemo(() => {
         return cartItems.reduce((sum, item) => {
@@ -833,15 +838,20 @@ export default function CartScreen() {
             if (shouldProcess) {
                 const isDeal = (discountCode as any).isDealCoupon === true;
                 const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
-                const baseAmount = discountCode.allowedCategories?.length
-                    ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
-                    : categoryKey
-                        ? (categorySubtotalsCart[categoryKey] ?? 0)
-                        : itemSubtotal;
+                let baseAmount: number;
+                if (isDeal) {
+                    baseAmount = getSubtotalForDealEligibleLines(cartItems, discountCode, dealProducts);
+                } else {
+                    baseAmount = discountCode.allowedCategories?.length
+                        ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
+                        : categoryKey
+                            ? (categorySubtotalsCart[categoryKey] ?? 0)
+                            : itemSubtotal;
+                }
 
                 let codeDiscount = 0;
-                // Force DEALPECIAL value to 199 if it is missing (debug fallback)
-                const currentVal = discountCode.code.toUpperCase() === 'DEALPECIAL' && discountValue === 0 ? 199 : discountValue;
+                const currentVal =
+                    discountCode.code.toUpperCase() === 'DEALPECIAL' && discountValue === 0 ? 199 : discountValue;
 
                 if (currentVal > 0 || isDeal) {
                     // Part A: Base Category/Subtotal Discount (e.g. ₹199 for "plant kit")
@@ -851,42 +861,39 @@ export default function CartScreen() {
                         codeDiscount = Math.min(currentVal, baseAmount);
                     }
 
-                    // Part B: Dynamic Deal Savings (50% off items with the marker attribute)
-                    // CRITICAL: We only apply Part B to items that were NOT part of Part A's baseAmount
-                    // to avoid double-discounting the same item.
-                    if (isDeal) {
-                        const allowedCategories = (discountCode as any).allowedCategories || [];
-                        const dealSavings = cartItems.reduce((sum, item) => {
-                            const p = specialDealPromoPercentFromItem(item);
-                            if (p != null && p > 0) {
-                                const isInCategory = allowedCategories.length > 0 && 
-                                    getSubtotalForAllowedCategories([item], allowedCategories) > 0;
-                                
-                                if (!isInCategory) {
-                                    return sum + (item.price * (p / 100)) * item.quantity;
-                                }
+                    const dealNumericForGrid = Number(discountCode.value ?? 0);
+                    if (isDeal && !(dealNumericForGrid > 0)) {
+                        let partB = 0;
+                        for (const item of cartItems) {
+                            if (!isCartLineEligibleForDealDiscount(item, discountCode, dealProducts)) continue;
+                            const pAttr = specialDealPromoPercentFromItem(item);
+                            const inCol =
+                                dealProducts.length > 0 &&
+                                variantBelongsToListingProducts(dealProducts, item.variantId);
+                            const pct =
+                                pAttr != null && pAttr > 0 && pAttr < 100
+                                    ? pAttr
+                                    : inCol
+                                      ? 50
+                                      : 0;
+                            if (pct > 0) {
+                                partB += Math.round(item.price * item.quantity * (pct / 100));
                             }
-                            return sum;
-                        }, 0);
-                        codeDiscount += dealSavings;
+                        }
+                        codeDiscount += partB;
                     }
 
                     if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
                         codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
                     }
                     codeDiscount = Math.min(codeDiscount, itemSubtotal);
-                } else if (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) {
-                    // Milestone fallback: use originalPrice if Shopify value is 0
-                    const rewardPrice = Number(discountCode.originalPrice ?? 0);
-                    if (rewardPrice > 0) {
-                        codeDiscount = rewardPrice;
-                    }
                 }
 
                 if (codeDiscount > 0) {
                     calculatedDiscount += codeDiscount;
                     // ... rest of logic for label and categorization
-                    if (isFreeShoesGiftCode || isKidPuzzle || isMysteryGift || isMilestoneCoupon) {
+                    if ((isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) &&
+                        !isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
                         milestoneConfigDiscountAmount += codeDiscount;
                         if (!milestoneConfigDiscountLabel) {
                             const stepIndex = milestoneCurrentStepFromConfig(milestoneUI, 0);
@@ -895,13 +902,13 @@ export default function CartScreen() {
                             milestoneAppliedCode = discountCode.code;
                             milestoneAppliedDescription = discountCode.couponDescription || '';
                         }
-                    } else {
+                    } else if (!isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
                         otherCouponDiscountAmount += codeDiscount;
                     }
                 }
             }
         }
-        
+
     }
 
     const hasFreeShoesGiftApplied =
@@ -942,9 +949,12 @@ export default function CartScreen() {
         ?.originalPrice;
 
     const appliedSaveAmount = useMemo(() => {
-        if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) return freeShoesGiftOriginalPrice;
-        return Math.round(calculatedDiscount);
-    }, [hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, calculatedDiscount]);
+        let total = Math.round(calculatedDiscount);
+        if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) total += freeShoesGiftOriginalPrice;
+        if (hasKidPuzzleApplied && kidPuzzleOriginalPrice != null) total += (kidPuzzleOriginalPrice || 0);
+        if (hasMysteryGiftApplied && mysteryGiftOriginalPrice != null) total += (mysteryGiftOriginalPrice || 0);
+        return total;
+    }, [hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice, calculatedDiscount]);
 
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
@@ -1388,7 +1398,8 @@ export default function CartScreen() {
                 const cartId = await ensureCart();
                 if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                     const { shopifyApi } = await import('@/services/shopifyApi');
-                    await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
+                    const shopifyCodes = (discountCodes || []).filter(dc => dc.applicable !== false && (dc as any).isDealCoupon !== true).map(dc => dc.code);
+                    await shopifyApi.applyDiscountCodes(cartId, shopifyCodes);
                 }
             } catch (syncErr) {
                 console.warn('[Cart] Failed to sync discount codes to Shopify before order completion', syncErr);
