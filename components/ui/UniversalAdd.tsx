@@ -82,7 +82,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const expectedDealPromoAttr =
         dealPromoPercentOff != null &&
         Number.isFinite(dealPromoPercentOff) &&
-        dealPromoPercentOff > 0 &&
+        dealPromoPercentOff >= 0 &&
         dealPromoPercentOff < 100
             ? String(dealPromoPercentOff)
             : null;
@@ -159,7 +159,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         const promoPctEffective =
             dealPromoPercentOff != null &&
             Number.isFinite(dealPromoPercentOff) &&
-            dealPromoPercentOff > 0 &&
+            dealPromoPercentOff >= 0 &&
             dealPromoPercentOff < 100
                 ? dealPromoPercentOff
                 : null;

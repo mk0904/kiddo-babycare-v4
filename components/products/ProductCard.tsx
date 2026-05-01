@@ -487,16 +487,17 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const effectiveDealPromoPct =
     dealPromoPercentOff != null &&
     Number.isFinite(dealPromoPercentOff) &&
-    dealPromoPercentOff > 0 &&
+    dealPromoPercentOff >= 0 &&
     dealPromoPercentOff < 100
       ? dealPromoPercentOff
       : forcePromoStandardPriceLayout
-        ? 50
+        ? 0
         : null;
 
   const promoOfferBadgeActive =
     forcePromoStandardPriceLayout &&
     effectiveDealPromoPct != null &&
+    effectiveDealPromoPct > 0 &&
     priceNumber > 0;
 
   const offerPriceDisplay = promoOfferBadgeActive

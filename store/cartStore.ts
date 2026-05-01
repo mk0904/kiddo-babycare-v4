@@ -41,7 +41,7 @@ export function specialDealPromoPercentFromItem(item: Pick<CartItem, 'customAttr
     const raw = item.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR];
     if (raw == null) return null;
     const p = parseFloat(String(raw));
-    if (!Number.isFinite(p) || p <= 0 || p >= 100) return null;
+    if (!Number.isFinite(p) || p < 0 || p >= 100) return null;
     return p;
 }
 
@@ -414,21 +414,18 @@ function computeNonDealDiscountFromCodes(lineItems: CartItem[], codes: DiscountC
 
             // Part B: Dynamic Deal Savings (50% off items with the marker attribute)
             if (isDeal) {
-                const allowedCategories = dc.allowedCategories || [];
-                const dealSavings = lineItems.reduce((sum, item) => {
+                const dealSubtotal = lineItems.reduce((sum, item) => {
+                    // Items from SavingsCornerPromoOfferContent have this attribute (even if 0% discount)
                     const p = specialDealPromoPercentFromItem(item);
-                    if (p != null && p > 0) {
-                        // Check if this item was already discounted by Part A
-                        const isInCategory = allowedCategories.length > 0 && 
-                            getSubtotalForAllowedCategories([item], allowedCategories) > 0;
-                        
-                        if (!isInCategory) {
-                            return sum + (item.price * (p / 100)) * item.quantity;
-                        }
+                    if (p != null) {
+                        return sum + (item.price * item.quantity);
                     }
                     return sum;
                 }, 0);
-                codeDiscount += dealSavings;
+
+                // Formula: 199 (base) + 50% of deal items selling price
+                // The base is handled by Part A; here we add the 50% deal component.
+                codeDiscount += Math.round(dealSubtotal * 0.5);
             }
 
             // Final: Apply global cap (e.g. ₹500)

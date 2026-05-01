@@ -126,7 +126,7 @@ function lineHasDealPromoForModal(li: CartItem, promoDealPercentOff: number): bo
     if (
         typeof promoDealPercentOff !== 'number' ||
         !Number.isFinite(promoDealPercentOff) ||
-        promoDealPercentOff <= 0 ||
+        promoDealPercentOff < 0 ||
         promoDealPercentOff >= 100
     ) {
         return false;
@@ -215,7 +215,7 @@ export function SavingsCornerPromoOfferContent({
             const n = parseFloat(d);
             if (Number.isFinite(n) && n > 0 && n <= 100) return n;
         }
-        return 50;
+        return 0;
     }, [cfg.discount]);
 
     const promoGridVariantKeys = useMemo(() => {
