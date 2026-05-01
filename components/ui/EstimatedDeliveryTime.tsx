@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
 import { getDeliveryEta } from '@/config/deliveryConfig';
+import { appConfigService } from '@/services/appConfigService';
+import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 
 interface EstimatedDeliveryTimeProps {
   addressLatitude?: number;
@@ -29,6 +31,8 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
   const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
   const [isServiceable, setIsServiceable] = useState(true);
   const [loadingEta, setLoadingEta] = useState(false);
+  const [appConfigRev, setAppConfigRev] = useState(0);
+  useEffect(() => appConfigService.subscribe(() => setAppConfigRev((x) => x + 1)), []);
 
   // Fetch ETA from backend.
   useEffect(() => {
@@ -44,7 +48,8 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
       .then((eta) => {
         if (!cancelled) {
           setDeliveryTime(eta?.etaMinutes ?? null);
-          setIsServiceable(eta?.isServiceable ?? true);
+          const threshold = appConfigService.getServicableDistanceKm();
+          setIsServiceable(resolveDeliveryServiceable(eta, threshold));
           setLoadingEta(false);
         }
       })
@@ -60,7 +65,7 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [lat, lon]);
+  }, [lat, lon, appConfigRev]);
 
   // Show loading indicator while fetching ETA
   if (loadingEta && deliveryTime === null) {
@@ -117,6 +122,8 @@ export const useDeliveryStatus = (
   const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
   const [isServiceable, setIsServiceable] = useState(true);
   const [loadingEta, setLoadingEta] = useState(false);
+  const [appConfigRev, setAppConfigRev] = useState(0);
+  useEffect(() => appConfigService.subscribe(() => setAppConfigRev((x) => x + 1)), []);
 
   // Fetch ETA from backend.
   useEffect(() => {
@@ -134,7 +141,8 @@ export const useDeliveryStatus = (
       .then((eta) => {
         if (!cancelled) {
           setDeliveryTime(eta?.etaMinutes ?? null);
-          setIsServiceable(eta?.isServiceable ?? true);
+          const threshold = appConfigService.getServicableDistanceKm();
+          setIsServiceable(resolveDeliveryServiceable(eta, threshold));
           setLoadingEta(false);
         }
       })
@@ -150,7 +158,7 @@ export const useDeliveryStatus = (
     return () => {
       cancelled = true;
     };
-  }, [lat, lon, options?.hasGiftWrap]);
+  }, [lat, lon, options?.hasGiftWrap, appConfigRev]);
 
   return { isServiceable, deliveryTime, loading: loadingEta && deliveryTime === null };
 };

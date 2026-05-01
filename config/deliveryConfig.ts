@@ -55,6 +55,12 @@ export interface EtaResponse {
   lng: number;
   formattedAddress?: string;
   fallbackUsed: boolean;
+  /** Distance in km from dark store to customer as returned by kiddo-service ETA (required for app-config radius checks). */
+  distanceKm?: number;
+  /** Snake_case alias if backend sends `distance_km`. */
+  distance_km?: number;
+  /** Configured service radius in km (when returned by kiddo-service). */
+  maxServiceRadiusKm?: number;
 }
 
 async function postJSON<T>(path: string, body: Record<string, unknown>): Promise<T | null> {

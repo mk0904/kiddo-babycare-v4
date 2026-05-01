@@ -80,6 +80,18 @@ function parseEntryScreenItem(raw: unknown): EntryScreenItem | null {
   };
 }
 
+function parseServicableDistanceFromRecord(rec: Record<string, unknown>): number | null {
+  const v =
+    rec.servicableDistance ??
+    rec.serviceableDistance ??
+    rec.servicable_distance ??
+    rec.maxServiceRadiusKm ??
+    rec.max_service_radius_km;
+  if (v == null || v === '') return null;
+  const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 class AppConfigService {
   private config: AppConfigResponse | null = null;
   private loadPromise: Promise<AppConfigResponse | null> | null = null;
@@ -109,7 +121,6 @@ class AppConfigService {
         this.config = data;
         this.emitConfigListeners();
         if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
-        console.log('[AppConfigService] Loaded app config from backend:', data);
         return data;
       } catch (e) {
         if (__DEV__) console.warn('[AppConfigService] Failed to load app config:', e);
@@ -250,6 +261,21 @@ class AppConfigService {
 
   getOrderDetailConfig(): OrderDetailConfig | null {
     return this.config?.orderDetail ?? null;
+  }
+
+  /**
+   * Max straight-line km from dark store (`delivery.servicableDistance` or root-level alias).
+   * Returns null when unset or invalid — ETA `isServiceable` is used alone in that case.
+   */
+  getServicableDistanceKm(): number | null {
+    const cfg = this.config;
+    if (!cfg) return null;
+    const fromDelivery =
+      cfg.delivery && typeof cfg.delivery === 'object'
+        ? parseServicableDistanceFromRecord(cfg.delivery as Record<string, unknown>)
+        : null;
+    if (fromDelivery != null) return fromDelivery;
+    return parseServicableDistanceFromRecord(cfg as Record<string, unknown>);
   }
 
   getEntryScreens(): EntryScreenItem[] {

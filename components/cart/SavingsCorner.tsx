@@ -93,7 +93,9 @@ export function SavingsCorner({
     const [manualCodeMessage, setManualCodeMessage] = useState<string | null>(null);
     const [availableCoupons, setAvailableCoupons] = useState<SavingsCornerCoupon[]>([]);
     const [loadingCoupons, setLoadingCoupons] = useState(false);
-    const [couponApplying, setCouponApplying] = useState(false);
+    /** Which UI surface started the current apply/remove — avoids carousel applies spinning the inline pill. */
+    const [applyUiSource, setApplyUiSource] = useState<null | 'inline' | 'carousel' | 'modal' | 'remove'>(null);
+    const couponBusy = applyUiSource !== null;
     const [couponUsages, setCouponUsages] = useState<Record<string, number>>({});
     const [lastApplyError, setLastApplyError] = useState<string | null>(null);
     const [showSchoolModal, setShowSchoolModal] = useState(false);
@@ -187,49 +189,58 @@ export function SavingsCorner({
         couponService.getCouponUsagesForUser(codes, userId).then(setCouponUsages);
     }, [isAuthenticated, user?.id, user?.customerId, user?.phone, displayCoupons]);
 
+    /** Debounced: cart updates during apply/sync were re-fetching coupons repeatedly and flashing carousel loaders. */
     useEffect(() => {
         if (!isAuthenticated) {
             setAvailableCoupons([]);
+            setLoadingCoupons(false);
             if (__DEV__) console.log('[SavingsCorner] Skipping coupon fetch: user not authenticated');
             return;
         }
-        const fetchCoupons = async () => {
-            setLoadingCoupons(true);
-            try {
-                const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
-                const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                const cartCategories = [...new Set((cartItems.flatMap((item) => (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))))];
-                const categorySubtotalsForFetch: Record<string, number> = {};
-                for (const item of cartItems) {
-                    const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
-                    const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-                    for (const tag of tags) categorySubtotalsForFetch[tag] = (categorySubtotalsForFetch[tag] ?? 0) + amount;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            void (async () => {
+                setLoadingCoupons(true);
+                try {
+                    const cartSubTotal = cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0);
+                    const cartItemCountLocal = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                    const cartCategories = [...new Set((cartItems.flatMap((item) => (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))))];
+                    const categorySubtotalsForFetch: Record<string, number> = {};
+                    for (const item of cartItems) {
+                        const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
+                        const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+                        for (const tag of tags) categorySubtotalsForFetch[tag] = (categorySubtotalsForFetch[tag] ?? 0) + amount;
+                    }
+                    const visibleCoupons = await couponService.getVisibleCouponsFromBackend({
+                        phone: user?.phone ?? null,
+                        cartSubTotal,
+                        cartItemCount: cartItemCountLocal,
+                        hasTicketing: hasTicketingProducts,
+                        hasClothing: hasFashionItems,
+                        cartCategories: cartCategories.length > 0 ? cartCategories : undefined,
+                        categorySubtotals: Object.keys(categorySubtotalsForFetch).length > 0 ? categorySubtotalsForFetch : undefined,
+                        appVersion: getAppVersionForApi(),
+                        deviceType: Platform.OS ?? '',
+                    });
+                    if (cancelled) return;
+                    const normalized: SavingsCornerCoupon[] = (visibleCoupons ?? []).map((c: CouponCode) => ({
+                        ...c,
+                        value: typeof c.value === 'number' ? c.value : typeof c.value === 'string' ? parseFloat(c.value) || undefined : undefined,
+                        valueType: (c.valueType === 'fixed_amount' ? 'fixed' : c.valueType) as 'percentage' | 'fixed' | undefined,
+                    }));
+                    setAvailableCoupons(normalized);
+                } catch (error) {
+                    console.error('[SavingsCorner] Error fetching coupons:', error);
+                    if (!cancelled) setAvailableCoupons([]);
+                } finally {
+                    if (!cancelled) setLoadingCoupons(false);
                 }
-                const visibleCoupons = await couponService.getVisibleCouponsFromBackend({
-                    phone: user?.phone ?? null,
-                    cartSubTotal,
-                    cartItemCount,
-                    hasTicketing: hasTicketingProducts,
-                    hasClothing: hasFashionItems,
-                    cartCategories: cartCategories.length > 0 ? cartCategories : undefined,
-                    categorySubtotals: Object.keys(categorySubtotalsForFetch).length > 0 ? categorySubtotalsForFetch : undefined,
-                    appVersion: getAppVersionForApi(),
-                    deviceType: Platform.OS ?? '',
-                });
-                const normalized: SavingsCornerCoupon[] = (visibleCoupons ?? []).map((c: CouponCode) => ({
-                    ...c,
-                    value: typeof c.value === 'number' ? c.value : typeof c.value === 'string' ? parseFloat(c.value) || undefined : undefined,
-                    valueType: (c.valueType === 'fixed_amount' ? 'fixed' : c.valueType) as 'percentage' | 'fixed' | undefined,
-                }));
-                setAvailableCoupons(normalized);
-            } catch (error) {
-                console.error('[SavingsCorner] Error fetching coupons:', error);
-                setAvailableCoupons([]);
-            } finally {
-                setLoadingCoupons(false);
-            }
+            })();
+        }, 380);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
         };
-        fetchCoupons();
     }, [isAuthenticated, user?.id, user?.customerId, user?.email, user?.phone, cartItems, hasTicketingProducts, hasFashionItems]);
 
     const handleApplyCouponByCode = async (
@@ -242,7 +253,7 @@ export function SavingsCorner({
         if (discountCodes.some(dc => dc.code.toUpperCase() === trimmed && dc.applicable !== false)) {
             return { success: false, error: `${trimmed} is already applied.` };
         }
-        setCouponApplying(true);
+        setApplyUiSource('inline');
         setManualCodeMessage(null);
         setLastApplyError(null);
         try {
@@ -268,18 +279,21 @@ export function SavingsCorner({
             if (surfaceCardError) setLastApplyError(err);
             return { success: false, error: err };
         } finally {
-            setCouponApplying(false);
+            setApplyUiSource(null);
         }
     };
 
-    const handleApplyCouponFromList = async (coupon: SavingsCornerCoupon) => {
+    const handleApplyCouponFromList = async (
+        coupon: SavingsCornerCoupon,
+        surface: 'carousel' | 'modal',
+    ) => {
         const code = coupon.code?.toUpperCase();
         if (!code) return;
         if (discountCodes.some(dc => dc.code.toUpperCase() === code && dc.applicable !== false)) {
             setManualCodeMessage(`${code} is already applied.`);
             return;
         }
-        setCouponApplying(true);
+        setApplyUiSource(surface);
         setManualCodeMessage(null);
         setLastApplyError(null);
         try {
@@ -300,12 +314,12 @@ export function SavingsCorner({
             setManualCodeMessage(err);
             setLastApplyError(err);
         } finally {
-            setCouponApplying(false);
+            setApplyUiSource(null);
         }
     };
 
     const handleRemoveCoupon = async (code: string) => {
-        setCouponApplying(true);
+        setApplyUiSource('remove');
         try {
             await removeDiscountCode(code);
             setShowCouponsModal(false);
@@ -316,7 +330,7 @@ export function SavingsCorner({
         } catch (error: any) {
             setManualCodeMessage(error.message ?? 'Failed to remove coupon');
         } finally {
-            setCouponApplying(false);
+            setApplyUiSource(null);
         }
     };
 
@@ -474,7 +488,7 @@ export function SavingsCorner({
         ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''}`
         : '';
 
-    const canSubmitInlineCode = isAuthenticated && !!manualCode.trim() && !couponApplying;
+    const canSubmitInlineCode = isAuthenticated && !!manualCode.trim() && applyUiSource === null;
 
     return (
         <View style={styles.wrapper}>
@@ -561,7 +575,7 @@ export function SavingsCorner({
                                         setManualCodeMessage(null);
                                         setLastApplyError(null);
                                     }}
-                                    editable={!couponApplying}
+                                    editable={!couponBusy}
                                     autoCapitalize="characters"
                                     autoCorrect={false}
                                     scrollEnabled={false}
@@ -576,7 +590,7 @@ export function SavingsCorner({
                                     style={styles.applyCouponPillApplyHit}
                                     hitSlop={{ top: 12, bottom: 12, left: 8, right: 4 }}
                                 >
-                                    {couponApplying ? (
+                                    {applyUiSource === 'inline' ? (
                                         <ActivityIndicator size="small" color={Colors.primary} />
                                     ) : (
                                         <Text
@@ -602,7 +616,7 @@ export function SavingsCorner({
                                     style={styles.applyCouponHeaderLeft}
                                     onPress={openApplyCouponsModal}
                                     activeOpacity={0.7}
-                                    disabled={couponApplying}
+                                    disabled={couponBusy}
                                 >
                                     <Image
                                         source={require('@/assets/icons/coupon.png')}
@@ -614,10 +628,10 @@ export function SavingsCorner({
                                 <TouchableOpacity
                                     onPress={openCouponsListModal}
                                     activeOpacity={0.7}
-                                    disabled={couponApplying}
+                                    disabled={couponBusy}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                 >
-                                    <Text style={[styles.applyCouponViewAll, couponApplying && styles.viewAllDisabled]}>
+                                    <Text style={[styles.applyCouponViewAll, couponBusy && styles.viewAllDisabled]}>
                                         View All
                                     </Text>
                                 </TouchableOpacity>
@@ -641,7 +655,7 @@ export function SavingsCorner({
                                             setManualCodeMessage(null);
                                             setLastApplyError(null);
                                         }}
-                                        editable={!couponApplying}
+                                        editable={!couponBusy}
                                         autoCapitalize="characters"
                                         autoCorrect={false}
                                         scrollEnabled={false}
@@ -656,7 +670,7 @@ export function SavingsCorner({
                                         style={styles.applyCouponPillApplyHit}
                                         hitSlop={{ top: 12, bottom: 12, left: 8, right: 4 }}
                                     >
-                                        {couponApplying ? (
+                                        {applyUiSource === 'inline' ? (
                                             <ActivityIndicator size="small" color={Colors.primary} />
                                         ) : (
                                             <Text
@@ -692,7 +706,7 @@ export function SavingsCorner({
                         visible={isAuthenticated}
                         loading={loadingCoupons}
                         coupons={sortedDisplayCoupons}
-                        couponApplying={couponApplying}
+                        couponApplying={applyUiSource === 'carousel'}
                         hasTicketingProducts={hasTicketingProducts}
                         hasFashionItems={hasFashionItems}
                         cartSubtotal={cartSubtotal}
@@ -702,7 +716,7 @@ export function SavingsCorner({
                         categorySubtotals={categorySubtotals}
                         lineItems={cartItems}
                         appliedCouponCode={appliedDiscountCode}
-                        onApplyCoupon={(c) => void handleApplyCouponFromList(c)}
+                        onApplyCoupon={(c) => void handleApplyCouponFromList(c, 'carousel')}
                         onCouponPress={handleCouponPress}
                     />
                 </View>
@@ -793,7 +807,7 @@ export function SavingsCorner({
                                                         setManualCode(t.toUpperCase());
                                                         setManualCodeMessage(null);
                                                     }}
-                                                    editable={!couponApplying}
+                                                    editable={!couponBusy}
                                                     autoCapitalize="characters"
                                                     autoCorrect={false}
                                                     scrollEnabled={false}
@@ -803,13 +817,13 @@ export function SavingsCorner({
                                             <TouchableOpacity
                                                 style={[
                                                     styles.applyCodeBtn,
-                                                    (!manualCode.trim() || couponApplying) && styles.applyCodeBtnDisabled,
+                                                    (!manualCode.trim() || couponBusy) && styles.applyCodeBtnDisabled,
                                                 ]}
                                                 onPress={() => void handleApplyManualCode(true)}
-                                                disabled={!manualCode.trim() || couponApplying}
+                                                disabled={!manualCode.trim() || couponBusy}
                                                 activeOpacity={0.8}
                                             >
-                                                {couponApplying ? (
+                                                {applyUiSource === 'inline' ? (
                                                     <ActivityIndicator size="small" color="#fff" />
                                                 ) : (
                                                     <Text style={styles.applyCodeBtnText}>Apply</Text>
@@ -889,7 +903,7 @@ export function SavingsCorner({
                                                             key={coupon.code || `coupon-${coupon.title ?? index}`}
                                                             style={[
                                                                 styles.couponCard,
-                                                                (couponApplying || isDisabled) && styles.couponCardDisabled,
+                                                                (couponBusy || isDisabled) && styles.couponCardDisabled,
                                                             ]}
                                                             onPress={() => handleCouponPress(coupon)}
                                                             activeOpacity={coupon.isDealCoupon ? 0.7 : 1}
@@ -913,16 +927,22 @@ export function SavingsCorner({
                                                                     </View>
                                                                 ) : (
                                                                     <TouchableOpacity
-                                                                        style={[styles.couponCardApplyBtn, couponApplying && styles.couponCardApplyDisabled]}
+                                                                        style={[styles.couponCardApplyBtn, couponBusy && styles.couponCardApplyDisabled]}
                                                                         onPress={() => {
-                                                                            if (couponApplying) return;
-                                                                            handleApplyCouponFromList(coupon);
-                                                                            closeModal();
+                                                                            if (couponBusy) return;
+                                                                            void (async () => {
+                                                                                await handleApplyCouponFromList(coupon, 'modal');
+                                                                                closeModal();
+                                                                            })();
                                                                         }}
-                                                                        disabled={couponApplying}
+                                                                        disabled={couponBusy}
                                                                         activeOpacity={0.8}
                                                                     >
-                                                                        <Text style={styles.couponCardApplyText}>Apply</Text>
+                                                                        {applyUiSource === 'modal' ? (
+                                                                            <ActivityIndicator size="small" color={Colors.primary} />
+                                                                        ) : (
+                                                                            <Text style={styles.couponCardApplyText}>Apply</Text>
+                                                                        )}
                                                                     </TouchableOpacity>
                                                                 )}
                                                             </View>

@@ -44,6 +44,10 @@ If you store config in DB or env, build the same JSON shape and return it. The a
 
 See `kiddo-app/types/appConfig.ts` for the full TypeScript interface.
 
+### Delivery service radius on app config
+
+Include **`delivery.servicableDistance`** (number, km) on the same JSON (or the same field at the **root** of the app-config payload). The app compares it to **`distanceKm`** (and common aliases) from **`POST /eta`** when present; otherwise it derives km using ETA **`lat`/`lng`** vs the app’s **`DARK_STORE_LOCATION`** in `config/deliveryConfig.ts` — keep that coordinate aligned with your hub. Legacy threshold aliases: `serviceableDistance`, `maxServiceRadiusKm`, snake_case variants.
+
 ## Point the Kiddo app at localhost
 
 1. Run kiddo-service locally so **GET** `http://<host>:<port>/api/v1/app/config` returns your JSON.

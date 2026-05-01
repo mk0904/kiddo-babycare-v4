@@ -1167,11 +1167,9 @@ export const shopifyApi = {
         variables: { id: vid },
       });
       if (response.data.errors?.length) {
-        console.warn('[shopifyApi] variantProductCollections errors:', response.data.errors);
         return false;
       }
       const nodes = response.data.data?.node?.product?.collections?.nodes;
-      console.log('[shopifyApi] variantBelongsToAnySpecialDealCollections nodes:', nodes);
       if (!Array.isArray(nodes)) return false;
       return nodes.some((c: { id?: string }) => c?.id && targets.has(normalizeStorefrontGid(c.id)));
     } catch (error) {

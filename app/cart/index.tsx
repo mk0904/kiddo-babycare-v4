@@ -21,9 +21,7 @@ import type { TryAndBuyVariantSelectionResult } from '@/components/modals/Varian
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
-import {
-    getDeliveryEtaForAddress,
-} from '@/config/deliveryConfig';
+import { getDeliveryEtaForAddressDetails } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
@@ -46,6 +44,7 @@ import {
     useIsTryAndBuy,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
+import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import {
     getActiveMilestoneSlotRaw,
@@ -163,7 +162,11 @@ export default function CartScreen() {
     );
     const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
     const giftWrapping = useGiftWrapping();
-    const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
+    const {
+        deliveryTime: estimatedDeliveryMinutes,
+        isServiceable: coordsServiceable,
+        loading: coordsEtaLoading,
+    } = useDeliveryStatus(
         defaultAddress?.latitude,
         defaultAddress?.longitude,
         defaultAddress ?? undefined,
@@ -172,23 +175,49 @@ export default function CartScreen() {
     // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
     // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
     const [etaFromGeocode, setEtaFromGeocode] = useState<number | null>(null);
+    const [etaFromGeocodeServiceable, setEtaFromGeocodeServiceable] = useState(true);
+    const [geocodeEtaLoading, setGeocodeEtaLoading] = useState(false);
     const hasCoords = defaultAddress?.latitude != null && defaultAddress?.longitude != null;
     useEffect(() => {
         if (!defaultAddress || hasCoords) {
             setEtaFromGeocode(null);
+            setEtaFromGeocodeServiceable(true);
+            setGeocodeEtaLoading(false);
             return;
         }
         let cancelled = false;
         const run = async () => {
             const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
-            if (!addressString) return;
-            const deliveryTime = await getDeliveryEtaForAddress(addressString, { hasGiftWrap: !!giftWrapping });
-            if (cancelled || deliveryTime == null) return;
-            if (!cancelled) setEtaFromGeocode(deliveryTime);
+            setGeocodeEtaLoading(true);
+            if (!addressString) {
+                if (!cancelled) {
+                    setEtaFromGeocode(null);
+                    setEtaFromGeocodeServiceable(true);
+                    setGeocodeEtaLoading(false);
+                }
+                return;
+            }
+            try {
+                const data = await getDeliveryEtaForAddressDetails(addressString, { hasGiftWrap: !!giftWrapping });
+                if (cancelled) return;
+                setEtaFromGeocode(data?.etaMinutes ?? null);
+                const threshold = appConfigService.getServicableDistanceKm();
+                setEtaFromGeocodeServiceable(resolveDeliveryServiceable(data, threshold));
+            } finally {
+                if (!cancelled) setGeocodeEtaLoading(false);
+            }
         };
         run();
-        return () => { cancelled = true; };
-    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping]);
+        return () => {
+            cancelled = true;
+        };
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping, appConfigRefresh]);
+
+    const savedAddressOutsideDeliveryZone =
+        !!defaultAddress &&
+        (hasCoords
+            ? !coordsServiceable && !coordsEtaLoading
+            : !etaFromGeocodeServiceable && !geocodeEtaLoading);
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
@@ -1064,6 +1093,15 @@ export default function CartScreen() {
                 setOrderLoading(false);
                 return;
             }
+        }
+
+        if (!isTicketingOnly && hasNonTicketingProducts && savedAddressOutsideDeliveryZone) {
+            Alert.alert(
+                'Area unserviceable',
+                'Delivery is not available at this address. Please choose a location closer to our store.',
+                [{ text: 'OK' }]
+            );
+            return;
         }
 
         // For ticketing-only orders, use a default/placeholder address if none selected
@@ -2041,7 +2079,10 @@ export default function CartScreen() {
                                 estimatedDeliveryMinutes={
                                     estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
                                 }
-                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
+                                isUnserviceable={
+                                    (!defaultAddress && detectedLocationStatus === 'unserviceable') ||
+                                    savedAddressOutsideDeliveryZone
+                                }
                             />
                         )}
 

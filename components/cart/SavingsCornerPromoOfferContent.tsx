@@ -571,7 +571,7 @@ export function SavingsCornerPromoOfferContent({
                     onPress={handleUnlock}
                     activeOpacity={0.85}
                 >
-                    <Text style={[styles.ctaText, styles.ctaTextActive]}>{primaryCtaLabel}</Text>
+                    <Text style={[styles.ctaText, styles.ctaTextActive]}>{footerCta}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onSkip} style={styles.skipWrap}>
                     <Text style={styles.skipText}>Skip for now</Text>

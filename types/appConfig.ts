@@ -336,9 +336,26 @@ export interface MilestoneUIConfig {
   fourthMilestoneIcon?: string;
 }
 
+/**
+ * Delivery zone hints from GET app/config.
+ * When `servicableDistance` is set (km), the app compares it to distance (km) from POST /eta;
+ * ETA distance greater than this → unserviceable (see `resolveDeliveryServiceable`).
+ */
+export interface DeliveryZoneConfig {
+  /** Max straight-line km from dark store; over this → unserviceable (preferred key). */
+  servicableDistance?: number;
+  /** Alias if backend uses corrected spelling. */
+  serviceableDistance?: number;
+  /** @deprecated Prefer `servicableDistance`; kept for older payloads. */
+  maxServiceRadiusKm?: number;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
+  /** Same as `delivery.servicableDistance` if backend sends at root (km). */
+  servicableDistance?: number;
+  serviceableDistance?: number;
   /** When true, show "Events" in address Save as (Home/Work/Other/Events) and persist in Shopify. */
   isEvent?: boolean;
   /** Some backends send special-deal promo at root instead of under `cart`. */
@@ -354,4 +371,5 @@ export interface AppConfigResponse {
   entryScreens?: EntryScreenItem[];
   milestoneUI?: MilestoneUIConfig;
   hotWheelConfig?: HotWheelConfig;
+  delivery?: DeliveryZoneConfig;
 }
