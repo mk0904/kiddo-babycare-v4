@@ -43,6 +43,8 @@ import {
     useCheckoutUrl,
     useGiftWrapping,
     useIsTryAndBuy,
+    SPECIAL_DEAL_PROMO_CART_ATTR,
+    specialDealPromoPercentFromItem,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
@@ -760,11 +762,19 @@ export default function CartScreen() {
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
 
-    // Calculate subtotal from lineItems (like gauntlet does in payment-details)
-    let itemSubtotal = 0;
-    for (const item of cartItems) {
-        itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
-    }
+    const { itemSubtotal, itemMrpTotal } = useMemo(() => {
+        let sub = 0;
+        let mrp = 0;
+        for (const item of cartItems) {
+            const price = Number(item.price ?? 0);
+            const qty = Number(item.quantity ?? 1);
+            sub += price * qty;
+            // Use compareAtPrice if available, otherwise fallback to price
+            const compareAt = Number(item.compareAtPrice ?? item.price ?? 0);
+            mrp += compareAt * qty;
+        }
+        return { itemSubtotal: sub, itemMrpTotal: mrp };
+    }, [cartItems]);
 
     // Category subtotals for category-based coupons (same logic as cart store)
     const categorySubtotalsCart = useMemo(() => {
@@ -775,6 +785,19 @@ export default function CartScreen() {
             for (const tag of tags) out[tag] = (out[tag] ?? 0) + amount;
         }
         return out;
+    }, [cartItems]);
+    
+    // Total savings from line-item deal promos (isDealCoupon: true)
+    const dealSavingsAmount = useMemo(() => {
+        return cartItems.reduce((sum, item) => {
+            const p = specialDealPromoPercentFromItem(item);
+            if (p != null && p > 0 && p < 100) {
+                // Calculate original selling price from discounted price and percentage
+                const originalPrice = Math.round(item.price / (1 - p / 100));
+                return sum + (originalPrice - item.price) * item.quantity;
+            }
+            return sum;
+        }, 0);
     }, [cartItems]);
 
     // Calculate discount from discountCodes using same category-aware logic as cart store (so Bill details matches Savings Corner)
@@ -808,6 +831,7 @@ export default function CartScreen() {
             const isMysteryGift = discountCode.code.toUpperCase() === freeMysteryGiftCodeUc;
 
             if (shouldProcess) {
+                const isDeal = (discountCode as any).isDealCoupon === true;
                 const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
                 const baseAmount = discountCode.allowedCategories?.length
                     ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
@@ -816,15 +840,41 @@ export default function CartScreen() {
                         : itemSubtotal;
 
                 let codeDiscount = 0;
-                if (discountValue > 0) {
+                // Force DEALPECIAL value to 199 if it is missing (debug fallback)
+                const currentVal = discountCode.code.toUpperCase() === 'DEALPECIAL' && discountValue === 0 ? 199 : discountValue;
+
+                if (currentVal > 0 || isDeal) {
+                    // Part A: Base Category/Subtotal Discount (e.g. ₹199 for "plant kit")
                     if (discountType === 'percentage') {
-                        codeDiscount = (baseAmount * discountValue) / 100;
+                        codeDiscount = (baseAmount * currentVal) / 100;
                     } else {
-                        codeDiscount = Math.min(discountValue, baseAmount);
+                        codeDiscount = Math.min(currentVal, baseAmount);
                     }
+
+                    // Part B: Dynamic Deal Savings (50% off items with the marker attribute)
+                    // CRITICAL: We only apply Part B to items that were NOT part of Part A's baseAmount
+                    // to avoid double-discounting the same item.
+                    if (isDeal) {
+                        const allowedCategories = (discountCode as any).allowedCategories || [];
+                        const dealSavings = cartItems.reduce((sum, item) => {
+                            const p = specialDealPromoPercentFromItem(item);
+                            if (p != null && p > 0) {
+                                const isInCategory = allowedCategories.length > 0 && 
+                                    getSubtotalForAllowedCategories([item], allowedCategories) > 0;
+                                
+                                if (!isInCategory) {
+                                    return sum + (item.price * (p / 100)) * item.quantity;
+                                }
+                            }
+                            return sum;
+                        }, 0);
+                        codeDiscount += dealSavings;
+                    }
+
                     if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
                         codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
                     }
+                    codeDiscount = Math.min(codeDiscount, itemSubtotal);
                 } else if (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) {
                     // Milestone fallback: use originalPrice if Shopify value is 0
                     const rewardPrice = Number(discountCode.originalPrice ?? 0);
@@ -851,6 +901,7 @@ export default function CartScreen() {
                 }
             }
         }
+        
     }
 
     const hasFreeShoesGiftApplied =
@@ -889,6 +940,11 @@ export default function CartScreen() {
     );
     const mysteryGiftOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)
         ?.originalPrice;
+
+    const appliedSaveAmount = useMemo(() => {
+        if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) return freeShoesGiftOriginalPrice;
+        return Math.round(calculatedDiscount);
+    }, [hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, calculatedDiscount]);
 
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
@@ -947,7 +1003,7 @@ export default function CartScreen() {
 
     // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total (platform fee not added)
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
-    const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
+    const totalSavings = Math.max(0, itemMrpTotal - subtotalAfterDiscount);
 
     // Bill details display constants (for UX only; Kiddo Cash is dummy)
     const HANDLING_FEE_ORIGINAL = 10;
@@ -1585,7 +1641,7 @@ export default function CartScreen() {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
-                            subtotal: itemSubtotalForOffers.toString(),
+                            subtotal: itemSubtotal.toString(),
                             milestoneStep: String(milestoneStepSnapshot),
                             appliedCouponCode: appliedDiscountCode || '',
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
@@ -1801,7 +1857,7 @@ export default function CartScreen() {
                                         </Text>
                                     )}
                                     <Text style={styles.itemPrice}>
-                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price)}
+                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price * item.quantity)}
                                     </Text>
                                 </View>
                                 {discountPct > 0 && (
@@ -2085,14 +2141,14 @@ export default function CartScreen() {
                         )}
 
                         <BillDetails
-                            mrp={mrp}
+                            mrp={itemMrpTotal}
                             itemTotal={itemSubtotal}
                             isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
                             deliveryFee={deliveryFee}
                             platformFee={platformFeeDisplay}
-                            couponDiscount={discountAmount}
+                            couponDiscount={discount}
                             hasFreeShoesGift={hasFreeShoesGiftApplied}
                             freeShoesGiftOriginalPrice={freeShoesGiftOriginalPrice}
                             freeShoesCouponCode={freeShoesGiftCodeDisplay}
@@ -2108,12 +2164,11 @@ export default function CartScreen() {
                             mysteryGiftCouponCode={freeMysteryGiftCodeDisplay}
                             mysteryGiftTitle={mysteryBillFromCoupon.title}
                             mysteryGiftDescription={mysteryBillFromCoupon.description}
-                            milestoneMysteryGiftLabel={milestoneGiftBillTitle || undefined}
-                            milestoneFreeShoesLabel={milestoneGiftBillTitle || undefined}
-                            milestoneFreePuzzleLabel={milestoneGiftBillTitle || undefined}
+                            milestoneMysteryGiftLabel={undefined}
+                            milestoneFreeShoesLabel={undefined}
+                            milestoneFreePuzzleLabel={undefined}
                             milestoneConfigDiscount={milestoneConfigDiscountAmount}
                             milestoneConfigDiscountLabel={milestoneConfigDiscountLabel || undefined}
-                            milestoneConfigDiscountCouponCode={milestoneDiscountCodeUc}
                             milestoneConfigDiscountDescription={discountCodes.find(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)?.couponDescription}
                             milestoneIsGiftBillDiscountTitle={undefined}
                             otherCouponDiscount={otherCouponDiscountAmount}

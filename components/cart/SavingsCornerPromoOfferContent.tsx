@@ -1,11 +1,17 @@
 import { ProductCard } from '@/components/products/ProductCard';
 import { Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
+import {
+    type CartItem,
+    SPECIAL_DEAL_PROMO_CART_ATTR,
+    specialDealPromoPercentFromItem,
+    useCartStore,
+} from '@/store/cartStore';
 import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
 import { sortInStockFirst } from '@/utils/availability';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     ScrollView,
@@ -38,6 +44,121 @@ function getTabCollectionId(tab: SpecialDealTab | undefined): string | undefined
     if (raw == null || typeof raw !== 'string') return undefined;
     const s = raw.trim();
     return s === '' ? undefined : s;
+}
+
+/** Match cart `variantId` / product id (GID, numeric string, or hydrated number) to grid ids. */
+function variantCanonicalKey(id: string | number | undefined | null): string | null {
+    if (id == null) return null;
+    const s =
+        typeof id === 'number' && Number.isFinite(id)
+            ? String(Math.trunc(id))
+            : String(id).trim();
+    if (!s) return null;
+    return s.includes('/') ? (s.split('/').pop() ?? s) : s;
+}
+
+/** True if this cart line’s variant is one of the variants ever shown in the promo grid. */
+function cartLineMatchesPromoGridVariant(li: CartItem, gridKeys: Set<string>): boolean {
+    const idRaw = li.variantId as string | number | undefined;
+    const idStr =
+        typeof idRaw === 'number' && Number.isFinite(idRaw)
+            ? String(Math.trunc(idRaw))
+            : String(idRaw ?? '').trim();
+    if (!idStr) return false;
+    const canonical = idStr.includes('/') ? (idStr.split('/').pop() ?? idStr) : idStr;
+    if (gridKeys.has(canonical)) return true;
+    for (const gk of gridKeys) {
+        if (
+            idStr === gk ||
+            idStr.endsWith(gk) ||
+            idStr === `gid://shopify/ProductVariant/${gk}`
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** True if this variant id appears on any product row in the current grid (does not depend on accumulated Sets). */
+function variantBelongsToListingProducts(
+    products: any[],
+    variantId: CartItem['variantId'],
+): boolean {
+    const target = variantCanonicalKey(variantId);
+    if (!target) return false;
+    for (const p of products) {
+        const edges = p?.variants?.edges ?? [];
+        for (const e of edges) {
+            if (variantCanonicalKey(e?.node?.id) === target) return true;
+        }
+        if (edges.length === 0 && Array.isArray(p?.variants)) {
+            for (const v of p.variants) {
+                const id = v?.id ?? v?.node?.id;
+                if (variantCanonicalKey(id) === target) return true;
+            }
+        }
+    }
+    return false;
+}
+
+/** Same idea as {@link UniversalAdd} `getItemCount` fallback: cart line matches grid product row by id. */
+function productBelongsToListingProducts(products: any[], productId: CartItem['productId']): boolean {
+    if (productId == null || productId === '') return false;
+    const pidStr =
+        typeof productId === 'number' && Number.isFinite(productId)
+            ? String(Math.trunc(productId))
+            : String(productId).trim();
+    if (!pidStr) return false;
+    const pk = variantCanonicalKey(productId);
+    for (const p of products) {
+        const nid = p?.id;
+        if (nid == null) continue;
+        const ns =
+            typeof nid === 'number' && Number.isFinite(nid) ? String(Math.trunc(nid)) : String(nid).trim();
+        if (ns === pidStr) return true;
+        if (pk != null && variantCanonicalKey(nid) === pk) return true;
+    }
+    return false;
+}
+
+/** Align with UniversalAdd `matchesDealPromoLine` (string) + numeric tolerance. */
+function lineHasDealPromoForModal(li: CartItem, promoDealPercentOff: number): boolean {
+    if (
+        typeof promoDealPercentOff !== 'number' ||
+        !Number.isFinite(promoDealPercentOff) ||
+        promoDealPercentOff <= 0 ||
+        promoDealPercentOff >= 100
+    ) {
+        return false;
+    }
+    const expected = String(promoDealPercentOff);
+    const raw = li.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR];
+    if (String(raw) === expected) return true;
+    const p = specialDealPromoPercentFromItem(li);
+    return p != null && Math.abs(p - promoDealPercentOff) < 0.001;
+}
+
+function mergeProductGridVariantKeys(prev: Set<string>, products: any[]): Set<string> {
+    const next = new Set(prev);
+    for (const node of products) {
+        const edges = node?.variants?.edges ?? [];
+        for (const e of edges) {
+            const vid = e?.node?.id;
+            const k = variantCanonicalKey(vid);
+            if (k) next.add(k);
+        }
+        if (edges.length === 0) {
+            const flat = node?.variants;
+            if (Array.isArray(flat)) {
+                for (const v of flat) {
+                    const vid = v?.id ?? v?.node?.id;
+                    const k = variantCanonicalKey(vid);
+                    if (k) next.add(k);
+                }
+            }
+        }
+    }
+    return next;
 }
 
 export interface SavingsCornerPromoOfferContentProps {
@@ -76,6 +197,31 @@ export function SavingsCornerPromoOfferContent({
     const [remainingSec, setRemainingSec] = useState(initialTimerSec);
     const [listingProducts, setListingProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
+    /** All variant ids ever shown in this modal’s grids (tabs accumulate) — updated synchronously so CTA isn’t one frame behind. */
+    const accumulatedPromoGridVariantKeysRef = useRef<Set<string>>(new Set());
+    const lineItems = useCartStore((s) => s.lineItems);
+
+    /** `UniversalAdd` fired after a successful add — source-of-truth for footer if cart snapshot lags. */
+    const [dealPromoAddConfirmed, setDealPromoAddConfirmed] = useState(false);
+    const onPromoDealAddSuccess = useCallback(() => {
+        setDealPromoAddConfirmed(true);
+    }, []);
+
+    /** % off variant selling price in this modal (display + add-to-cart); defaults to 50 when config omits it. */
+    const promoDealPercentOff = useMemo(() => {
+        const d = cfg.discount as number | string | undefined;
+        if (typeof d === 'number' && Number.isFinite(d) && d > 0 && d <= 100) return d;
+        if (typeof d === 'string' && d.trim() !== '') {
+            const n = parseFloat(d);
+            if (Number.isFinite(n) && n > 0 && n <= 100) return n;
+        }
+        return 50;
+    }, [cfg.discount]);
+
+    const promoGridVariantKeys = useMemo(() => {
+        mergeProductGridVariantKeys(accumulatedPromoGridVariantKeysRef.current, listingProducts);
+        return new Set(accumulatedPromoGridVariantKeysRef.current);
+    }, [listingProducts]);
 
     useEffect(() => {
         setRemainingSec(Math.max(0, Math.floor((cfg.offerTime ?? 30) * 60)));
@@ -151,9 +297,38 @@ export function SavingsCornerPromoOfferContent({
         return rows;
     }, [listingProducts]);
 
+    const promoGridMatchingLineItems = useMemo(() => {
+        return lineItems.filter((li: CartItem) => {
+            if (listingProducts.length === 0) return false;
+            if (!lineHasDealPromoForModal(li, promoDealPercentOff)) return false;
+
+            const variantOnGrid = variantBelongsToListingProducts(listingProducts, li.variantId);
+            const productOnGrid = productBelongsToListingProducts(listingProducts, li.productId);
+            const inAccumulatedGrid =
+                promoGridVariantKeys.size > 0 &&
+                cartLineMatchesPromoGridVariant(li, promoGridVariantKeys);
+
+            return variantOnGrid || productOnGrid || inAccumulatedGrid;
+        });
+    }, [lineItems, promoGridVariantKeys, promoDealPercentOff, listingProducts]);
+
+    const hasAddedFromPromoGrid =
+        promoGridMatchingLineItems.length > 0 || dealPromoAddConfirmed;
+
     const handleUnlock = () => {
-        onUnlockPress?.([]);
-        onSkip();
+        if (!hasAddedFromPromoGrid) return;
+        const lines =
+            promoGridMatchingLineItems.length > 0
+                ? promoGridMatchingLineItems
+                : dealPromoAddConfirmed
+                  ? lineItems.filter((li: CartItem) =>
+                        lineHasDealPromoForModal(li, promoDealPercentOff),
+                    )
+                  : [];
+        if (lines.length > 0) {
+            onUnlockPress?.(lines.map((li) => li.variantId));
+        }
+        onClose();
     };
 
     const actualPrice = Number(cfg.actualPrice ?? 0);
@@ -201,11 +376,11 @@ export function SavingsCornerPromoOfferContent({
                         />
                     ) : (
                         <View style={styles.checkCircle}>
-                            <Ionicons name="checkmark" size={18} color="#fff" />
+                            <Ionicons name="checkmark-sharp" size={22} color="#fff" />
                         </View>
                     )} */}
                     <View style={styles.checkCircle}>
-                            <Ionicons name="checkmark" size={18} color="#fff" />
+                            <Ionicons name="checkmark-sharp" size={22} color="#fff" />
                         </View>
                     <View style={styles.successTextWrap}>
                         <Text style={styles.congrats}>
@@ -219,9 +394,9 @@ export function SavingsCornerPromoOfferContent({
                             {cfg.secondLineText != null && cfg.secondLineText !== ''
                                 ? ` ${cfg.secondLineText}`
                                 : ''}
-                            {cfg.thirdLineText != null && cfg.thirdLineText !== ''
+                            {/* {cfg.thirdLineText != null && cfg.thirdLineText !== ''
                                 ? ` ${cfg.thirdLineText}`
-                                : ''}
+                                : ''} */}
                         </Text>
                     </View>
                 </View>
@@ -251,7 +426,7 @@ export function SavingsCornerPromoOfferContent({
                     <View style={[styles.metaBox, styles.metaBoxTimer]}>
                         <Text style={styles.metaLabel}>Offer valid for</Text>
                         <View style={styles.timerRow}>
-                            <Ionicons name="time-outline" size={16} color="#9CA3AF" />
+                            <Ionicons name="time-outline" size={18} color="#9CA3AF" />
                             <Text style={styles.timerValue}>{timerLabel}</Text>
                         </View>
                     </View>
@@ -315,6 +490,11 @@ export function SavingsCornerPromoOfferContent({
                                             product={product}
                                             width={productCardWidth}
                                             collectionId={collectionGid}
+                                            promoPercentOff={promoDealPercentOff}
+                                            dealPromoPercentOff={promoDealPercentOff}
+                                            showPromoOfferPriceBadge
+                                            priceCompareFirst
+                                            onPromoDealAddSuccess={onPromoDealAddSuccess}
                                         />
                                     </View>
                                 ))}
@@ -329,18 +509,21 @@ export function SavingsCornerPromoOfferContent({
                     )}
                 </View>
 
-                <TouchableOpacity onPress={onSeeAllCoupons} style={styles.seeCouponsLink}>
+                {/* <TouchableOpacity onPress={onSeeAllCoupons} style={styles.seeCouponsLink}>
                     <Text style={styles.seeCouponsText}>See all coupons</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </ScrollView>
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.cta, styles.ctaActive]}
+                    style={[styles.cta, hasAddedFromPromoGrid && styles.ctaActive]}
                     onPress={handleUnlock}
+                    disabled={!hasAddedFromPromoGrid}
                     activeOpacity={0.85}
                 >
-                    <Text style={[styles.ctaText, styles.ctaTextActive]}>{footerCta}</Text>
+                    <Text style={[styles.ctaText, hasAddedFromPromoGrid && styles.ctaTextActive]}>
+                        {footerCta}
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onSkip} style={styles.skipWrap}>
                     <Text style={styles.skipText}>Skip for now</Text>
@@ -353,7 +536,7 @@ export function SavingsCornerPromoOfferContent({
 const styles = StyleSheet.create({
     card: {
         flex: 1,
-        maxHeight: '88%',
+        maxHeight: '95%',
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
         overflow: 'hidden',
@@ -370,13 +553,14 @@ const styles = StyleSheet.create({
         minHeight: 0,
     },
     scrollContent: {
-        paddingTop: 44,
+        paddingTop: 28,
         paddingBottom: 16,
     },
     successRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     successIconImage: {
         width: 36,
@@ -398,7 +582,7 @@ const styles = StyleSheet.create({
         minWidth: 0,
     },
     congrats: {
-        fontSize: 13,
+        fontSize: 14,
         fontFamily: Fonts.LexendRegular,
         color: '#374151',
         lineHeight: 19,
@@ -448,7 +632,7 @@ const styles = StyleSheet.create({
     metaRow: {
         flexDirection: 'row',
         paddingHorizontal: 12,
-        marginTop: 16,
+        marginTop: 24,
         gap: 8,
     },
     metaBox: {
@@ -464,7 +648,7 @@ const styles = StyleSheet.create({
         flex: 3,
     },
     metaLabel: {
-        fontSize: 11,
+        fontSize: 12,
         fontFamily: Fonts.LexendSemiBold,
         color: '#6B7280',
         marginBottom: 4,
@@ -473,17 +657,15 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontFamily: Fonts.LexendRegular,
         color: '#9CA3AF',
-        lineHeight: 14,
         flex: 1,
     },
     timerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        marginTop: 2,
     },
     timerValue: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: Fonts.LexendBold,
         color: OFFER_RED,
     },
@@ -502,7 +684,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabText: {
-        fontSize: 13,
+        fontSize: 12,
         fontFamily: Fonts.LexendMedium,
         color: '#9CA3AF',
         paddingBottom: 6,

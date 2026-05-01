@@ -21,6 +21,8 @@ export interface SavingsCornerCouponItem {
     valueType?: 'percentage' | 'fixed';
     title?: string;
     isVisible?: boolean;
+    /** If true, this coupon opens the special deal promo modal (e.g. Mother’s Day kit). */
+    isDealCoupon?: boolean;
     [key: string]: unknown;
 }
 
@@ -60,6 +62,8 @@ export interface SavingsCornerCouponCarouselProps {
     lineItems: { tags?: string[]; price?: number; quantity?: number }[];
     appliedCouponCode?: string | null;
     onApplyCoupon: (coupon: SavingsCornerCouponItem) => void;
+    /** Fired when the whole coupon ticket is pressed (e.g. to open deal modal). */
+    onCouponPress?: (coupon: SavingsCornerCouponItem) => void;
 }
 
 function buildCouponDetailsContent(
@@ -112,6 +116,7 @@ export function SavingsCornerCouponCarousel({
     lineItems,
     appliedCouponCode,
     onApplyCoupon,
+    onCouponPress,
 }: SavingsCornerCouponCarouselProps) {
     const [details, setDetails] = useState<{ code: string; subtitle: string; bullets: string[] } | null>(null);
     const ticketWidth = useMemo(
@@ -172,7 +177,16 @@ export function SavingsCornerCouponCarousel({
                     const isAppliedSuccess = isApplied && !showReason;
 
                     return (
-                        <View key={coupon.code || `carousel-${index}`} style={[styles.ticketSlot, { width: ticketWidth }]}>
+                        <TouchableOpacity
+                            key={coupon.code || `carousel-${index}`}
+                            style={[styles.ticketSlot, { width: ticketWidth }]}
+                            activeOpacity={coupon.isDealCoupon ? 0.8 : 1}
+                            onPress={() => {
+                                if (coupon.isDealCoupon) {
+                                    onCouponPress?.(coupon);
+                                }
+                            }}
+                        >
                             <View style={[styles.ticketNotch, styles.ticketNotchLeft]} />
                             <View style={[styles.ticketNotch, styles.ticketNotchRight]} />
                             <View
@@ -236,8 +250,7 @@ export function SavingsCornerCouponCarousel({
                                     )}
                                 </View>
                             </View>
-
-                        </View>
+                        </TouchableOpacity>
                     );
                 })}
             </ScrollView>

@@ -21,6 +21,12 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+/**
+ * Strikethrough MRP + `numberOfLines={1}` on very narrow tiles ellipsizes to “…” / horizontal rules
+ * that read like “=”. Omit the MRP text when the card is narrower than this; sale + % off still show.
+ */
+const MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL = 132;
+
 // Calculate card width based on number of columns and padding
 const calculateCardWidth = (
   numColumns = 2,
@@ -45,6 +51,19 @@ interface ProductCardProps {
   width?: number; // Add explicit width support
   averageMarketPrice?: number | null; // Average market price for essentials
   collectionId?: string | string[] | null; // Collection ID for navigation context
+  /**
+   * When the product has no compare-at from Shopify, derive an “MRP” from the current price and
+   * show this % off (e.g. special-deal promo grid aligned with `SpecialDealConfig.discount`).
+   */
+  promoPercentOff?: number;
+  /** When true, show compare-at (MRP) before the selling price (e.g. compact promo grid). */
+  priceCompareFirst?: boolean;
+  /** When set, add-to-cart uses this % off the variant selling price (special-offer modal only). */
+  dealPromoPercentOff?: number;
+  /** Special-offer modal only: green “Offer price” row + strike through list/sale prices above. */
+  showPromoOfferPriceBadge?: boolean;
+  /** Special-offer modal: notify parent after an add succeeds (unlocks footer CTA). */
+  onPromoDealAddSuccess?: () => void;
 }
 
 const ProductCardComponent: React.FC<ProductCardProps> = ({
@@ -59,6 +78,11 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   gap = 8,
   width,
   collectionId,
+  promoPercentOff,
+  priceCompareFirst = false,
+  dealPromoPercentOff,
+  showPromoOfferPriceBadge = false,
+  onPromoDealAddSuccess,
 }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const { isAuthenticated, user } = useAuth();
@@ -226,35 +250,73 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
   const priceNumber = useMemo(() => parsePrice(price), [price, parsePrice]);
 
+  /** Compare-at / list price from Shopify (several shapes + product-level range). */
   const discountPrice = useMemo(() => {
-    // Check multiple possible locations for compareAtPrice
     if (product.discountPrice) return product.discountPrice;
 
-    // Check firstVariant compareAtPrice
     if (firstVariant?.compareAtPrice?.amount) {
       return firstVariant.compareAtPrice.amount;
     }
     if (typeof firstVariant?.compareAtPrice === 'string') return firstVariant.compareAtPrice;
 
-    // Check product compareAtPrice directly
     if (product.compareAtPrice?.amount) {
       return product.compareAtPrice.amount;
     }
     if (product.compareAtPrice) return product.compareAtPrice;
 
+    const rangeMin = product.compareAtPriceRange?.minVariantPrice?.amount;
+    if (rangeMin != null && String(rangeMin).trim() !== '') return rangeMin;
+
     return null;
   }, [product, firstVariant]);
 
+  /** Synthetic MRP when promo config gives % off but variants lack compare-at. */
+  const syntheticCompareAtAmount = useMemo(() => {
+    if (discountPrice != null) return null;
+    const p = promoPercentOff;
+    if (typeof p !== 'number' || !Number.isFinite(p) || p <= 0 || p >= 100) return null;
+    if (priceNumber <= 0) return null;
+    return priceNumber / (1 - p / 100);
+  }, [discountPrice, promoPercentOff, priceNumber]);
+
+  const displayCompareAtAmount = useMemo(() => {
+    if (discountPrice != null) return discountPrice;
+    if (syntheticCompareAtAmount != null) return String(syntheticCompareAtAmount);
+    return null;
+  }, [discountPrice, syntheticCompareAtAmount]);
+
+  const compareAtNumber = useMemo(
+    () => (displayCompareAtAmount != null ? parsePrice(displayCompareAtAmount) : 0),
+    [displayCompareAtAmount, parsePrice],
+  );
+
   // Calculate discount percentage
   const discountPercentage = useMemo(() => {
-    if (!discountPrice) return null;
-    const originalPrice = parsePrice(discountPrice);
-    if (originalPrice > priceNumber && originalPrice > 0) {
-      const percentage = Math.round(((originalPrice - priceNumber) / originalPrice) * 100);
+    if (displayCompareAtAmount == null) return null;
+    const saleR = Math.round(priceNumber);
+    const mrpR = Math.round(compareAtNumber);
+    if (mrpR > saleR && compareAtNumber > 0) {
+      const percentage = Math.round(((compareAtNumber - priceNumber) / compareAtNumber) * 100);
       return percentage > 0 ? percentage : null;
     }
+    if (
+      discountPrice == null &&
+      syntheticCompareAtAmount != null &&
+      typeof promoPercentOff === 'number' &&
+      Number.isFinite(promoPercentOff) &&
+      promoPercentOff > 0
+    ) {
+      return Math.round(promoPercentOff);
+    }
     return null;
-  }, [discountPrice, priceNumber, parsePrice]);
+  }, [
+    displayCompareAtAmount,
+    compareAtNumber,
+    priceNumber,
+    discountPrice,
+    syntheticCompareAtAmount,
+    promoPercentOff,
+  ]);
 
   // Handle wishlist press
   const handleWishlistPress = useCallback(
@@ -412,6 +474,54 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     }
   }, [onPress, product, router, productHandle, collectionId]);
 
+  const showCompareAtRow =
+    displayCompareAtAmount != null &&
+    Math.round(compareAtNumber) > Math.round(priceNumber);
+
+  const showCompareAtLabel =
+    showCompareAtRow && cardWidth >= MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL;
+
+  /** Promo modal: always use the standard price row + green badge (never essentials “Market / Our” block). */
+  const forcePromoStandardPriceLayout = showPromoOfferPriceBadge === true;
+
+  const effectiveDealPromoPct =
+    dealPromoPercentOff != null &&
+    Number.isFinite(dealPromoPercentOff) &&
+    dealPromoPercentOff > 0 &&
+    dealPromoPercentOff < 100
+      ? dealPromoPercentOff
+      : forcePromoStandardPriceLayout
+        ? 50
+        : null;
+
+  const promoOfferBadgeActive =
+    forcePromoStandardPriceLayout &&
+    effectiveDealPromoPct != null &&
+    priceNumber > 0;
+
+  const offerPriceDisplay = promoOfferBadgeActive
+    ? Math.max(0, Math.round(priceNumber * (1 - effectiveDealPromoPct / 100)))
+    : null;
+
+  const compareAtPriceLabel = showCompareAtLabel ? (
+    <Text
+      style={[cardTextStyles.comparePrice, promoOfferBadgeActive && styles.promoOfferStrikeThrough]}
+      numberOfLines={1}
+    >
+      ₹{compareAtNumber.toFixed(0)}
+    </Text>
+  ) : null;
+
+  const salePriceLabel = (
+    <Text
+      style={[cardTextStyles.mainPrice, promoOfferBadgeActive && styles.promoOfferStrikeThrough]}
+      numberOfLines={1}
+      ellipsizeMode="tail"
+    >
+      {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '='}
+    </Text>
+  );
+
   return (
     <View style={[styles.container, { width: cardWidth }, containerStyle]}>
       <TouchableOpacity
@@ -478,7 +588,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               pointerEvents="auto"
               collapsable={false}
             >
-              <UniversalAdd item={product} variant="prominent" />
+              <UniversalAdd
+                item={product}
+                variant="prominent"
+                dealPromoPercentOff={
+                  effectiveDealPromoPct != null ? effectiveDealPromoPct : dealPromoPercentOff
+                }
+                onSuccessfulAdd={showPromoOfferPriceBadge ? onPromoDealAddSuccess : undefined}
+              />
             </View>
           )}
         </View>
@@ -508,7 +625,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
           <View style={styles.priceContainer}>
             <View style={styles.priceColumn}>
-              {hasEssentialsTag && averageMarketPrice && averageMarketPrice > 0 ? (
+              {hasEssentialsTag &&
+              averageMarketPrice &&
+              averageMarketPrice > 0 &&
+              !forcePromoStandardPriceLayout ? (
                 <View style={styles.essentialsPriceContainer}>
                   <View style={styles.essentialsPriceRow}>
                     <Text style={styles.essentialsLabel}>Market Price:</Text>
@@ -524,23 +644,36 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                   </View>
                 </View>
               ) : (
-                <View style={styles.priceRow}>
-                  <View style={styles.priceInfo}>
-                    <Text style={cardTextStyles.mainPrice}>
-                      {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '₹0'}
-                    </Text>
-                    {discountPrice && parsePrice(discountPrice) > priceNumber && (
-                      <Text style={cardTextStyles.comparePrice}>
-                        ₹{parsePrice(discountPrice).toFixed(0)}
+                <>
+                  <View style={styles.priceRow}>
+                    <View style={styles.priceTokens}>
+                      {priceCompareFirst ? (
+                        <>
+                          {compareAtPriceLabel}
+                          {salePriceLabel}
+                        </>
+                      ) : (
+                        <>
+                          {salePriceLabel}
+                          {compareAtPriceLabel}
+                        </>
+                      )}
+                    </View>
+                    {discountPercentage !== null ? (
+                      <Text
+                        style={[
+                          cardTextStyles.discountPercentage,
+                          forcePromoStandardPriceLayout && styles.promoDiscountNoLeadingSpace,
+                        ]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {forcePromoStandardPriceLayout ? '' : ' '}
+                        {discountPercentage}% off
                       </Text>
-                    )}
+                    ) : null}
                   </View>
-                  {discountPercentage !== null && (
-                    <Text style={cardTextStyles.discountPercentage}>
-                      {discountPercentage}% off
-                    </Text>
-                  )}
-                </View>
+                </>
               )}
             </View>
           </View>
@@ -550,6 +683,13 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           onClose={() => setShowTryAndBuyModal(false)}
         />
       </TouchableOpacity>
+      {promoOfferBadgeActive && offerPriceDisplay != null ? (
+        <View style={[styles.promoOfferPriceBadge, styles.promoOfferPriceBadgeOuter]}>
+          <Text style={styles.promoOfferPriceText} numberOfLines={1}>
+            Offer price: ₹{offerPriceDisplay}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -637,19 +777,24 @@ const styles = StyleSheet.create({
   },
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 0,
     flexWrap: 'nowrap',
+    minWidth: 0,
   },
-  priceInfo: {
+  /** MRP + sale only; `% off` sits flush after sale (no spacer pushing it to the row end). */
+  priceTokens: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: 6,
     flexWrap: 'nowrap',
+    flexShrink: 1,
+    minWidth: 0,
   },
   mainPrice: {
     color: '#2c6975',
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: Fonts.LexendBold,
     lineHeight: 16,
     flexShrink: 0,
@@ -657,16 +802,42 @@ const styles = StyleSheet.create({
   comparePrice: {
     color: '#888888',
     textDecorationLine: 'line-through',
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: Fonts.LexendMedium,
-    flexShrink: 0,
+    flexShrink: 1,
+    minWidth: 0,
   },
   discountPercentage: {
     color: '#2c6975',
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: Fonts.LexendSemiBold,
     lineHeight: 16,
     flexShrink: 0,
+    marginLeft: 0,
+  },
+  promoOfferStrikeThrough: {
+    textDecorationLine: 'line-through',
+  },
+  promoDiscountNoLeadingSpace: {
+    marginLeft: 4,
+  },
+  promoOfferPriceBadge: {
+    alignSelf: 'stretch',
+    backgroundColor: '#DCEDC8',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+  },
+  promoOfferPriceBadgeOuter: {
+    marginHorizontal: 8,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  promoOfferPriceText: {
+    fontSize: 10,
+    fontFamily: Fonts.LexendSemiBold,
+    color: '#2E7D32',
+    textAlign: 'left',
   },
   essentialsPriceContainer: {
     flexDirection: 'column',
@@ -769,6 +940,12 @@ const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
 
   if (prevProps.width !== nextProps.width) return false;
   if (prevProps.containerStyle !== nextProps.containerStyle) return false;
+  if (prevProps.promoPercentOff !== nextProps.promoPercentOff) return false;
+  if (prevProps.dealPromoPercentOff !== nextProps.dealPromoPercentOff) return false;
+  if (prevProps.showPromoOfferPriceBadge !== nextProps.showPromoOfferPriceBadge) return false;
+  if (prevProps.onPromoDealAddSuccess !== nextProps.onPromoDealAddSuccess) return false;
+  if (prevProps.priceCompareFirst !== nextProps.priceCompareFirst) return false;
+  if (prevProps.collectionId !== nextProps.collectionId) return false;
 
   return true;
 };

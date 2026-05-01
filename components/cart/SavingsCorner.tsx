@@ -3,7 +3,7 @@ import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
 import { couponService, type CouponCode } from '@/services/couponService';
-import { useCartItems, useCartStore } from '@/store/cartStore';
+import { useCartItems, useCartStore, specialDealPromoPercentFromItem } from '@/store/cartStore';
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -226,6 +226,8 @@ export function SavingsCorner({
                 const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
                 if (applied?.isSchoolCoupon) {
                     setShowSchoolModal(true);
+                } else if (applied?.isDealCoupon) {
+                    openDealPromoModal();
                 }
                 return { success: true };
             }
@@ -258,9 +260,11 @@ export function SavingsCorner({
                 setManualCodeMessage(err);
                 setLastApplyError(err);
             } else {
-                // Check if the applied coupon is a school coupon
+                // Check if the applied coupon is a school coupon or deal coupon
                 if (coupon.isSchoolCoupon) {
                     setShowSchoolModal(true);
+                } else if (coupon.isDealCoupon) {
+                    openDealPromoModal();
                 }
             }
         } catch (error: any) {
@@ -273,10 +277,20 @@ export function SavingsCorner({
     };
 
     const handleRemoveCoupon = async (code: string) => {
+        setCouponApplying(true);
         try {
             await removeDiscountCode(code);
         } catch (error: any) {
             setManualCodeMessage(error.message ?? 'Failed to remove coupon');
+        } finally {
+            setCouponApplying(false);
+        }
+    };
+    
+    /** Open deal modal if coupon has `isDealCoupon`. */
+    const handleCouponPress = (coupon: SavingsCornerCoupon) => {
+        if (coupon.isDealCoupon) {
+            openDealPromoModal();
         }
     };
 
@@ -316,6 +330,14 @@ export function SavingsCorner({
         [discountCodes]
     );
 
+    /** “Get 50% off products” only when the coupon shown in the header is a deal coupon (not any other row). */
+    const showDealPromoUpsellCta = useMemo(() => {
+        const code = appliedDiscountCode;
+        if (!code) return false;
+        const dc = discountCodes.find((x) => x.code.toUpperCase() === code.toUpperCase());
+        return dc?.isDealCoupon === true && dc?.applicable !== false;
+    }, [discountCodes, appliedDiscountCode]);
+
     const resolvedDealConfig: SpecialDealConfig | null = useMemo(() => {
         if (specialDealConfig) return specialDealConfig;
         if (hasDealCouponApplied) return FALLBACK_SPECIAL_DEAL_CONFIG;
@@ -346,19 +368,6 @@ export function SavingsCorner({
         setShowCouponsModal(true);
     };
 
-    /** Deal coupon applied → open special-offer modal (once per apply / restore). */
-    const hadDealCouponRef = useRef(false);
-    useEffect(() => {
-        if (!isAuthenticated) {
-            hadDealCouponRef.current = hasDealCouponApplied;
-            return;
-        }
-        if (hasDealCouponApplied && !hadDealCouponRef.current) {
-            setCouponModalMode('promo');
-            setShowCouponsModal(true);
-        }
-        hadDealCouponRef.current = hasDealCouponApplied;
-    }, [hasDealCouponApplied, isAuthenticated]);
 
     const freeShoesGiftCodeUc = useMemo(
         () => appConfigService.getFreeShoesGiftDiscountCodeUppercase(),
@@ -396,8 +405,24 @@ export function SavingsCorner({
         const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         return Number.isFinite(num) && num >= 0 ? num : undefined;
     }, [isFreeShoesGiftApplied, discountCodes, freeShoesGiftCodeUc]);
-    const appliedSaveAmount =
-        isFreeShoesGiftApplied && freeShoesGiftDisplayPrice != null ? freeShoesGiftDisplayPrice : discountAmount;
+    const dealSavingsAmount = useMemo(() => {
+        return cartItems.reduce((sum, item) => {
+            const p = specialDealPromoPercentFromItem(item);
+            if (p != null && p > 0 && p < 100) {
+                // Calculate original selling price from discounted price and percentage
+                const originalPrice = Math.round(item.price / (1 - p / 100));
+                return sum + (originalPrice - item.price) * item.quantity;
+            }
+            return sum;
+        }, 0);
+    }, [cartItems]);
+
+    const appliedSaveAmount = useMemo(() => {
+        if (isFreeShoesGiftApplied && freeShoesGiftDisplayPrice != null) return freeShoesGiftDisplayPrice;
+        // The store's discountAmount already includes base value + deal savings, capped at maxDiscountAmount.
+        return Math.round(discountAmount);
+    }, [isFreeShoesGiftApplied, freeShoesGiftDisplayPrice, discountAmount]);
+
     const appliedHeadline = hasAppliedCoupon
         ? `Save ${formatCurrency(appliedSaveAmount)} with ${appliedDiscountCode ?? ''}`
         : '';
@@ -421,7 +446,14 @@ export function SavingsCorner({
                     {hasAppliedCoupon ? (
                         <>
                             <View style={styles.applyCouponHeaderRow}>
-                                <View style={styles.applyCouponHeaderLeft}>
+                                <TouchableOpacity
+                                    style={styles.applyCouponHeaderLeft}
+                                    onPress={() => {
+                                        if (hasDealCouponApplied) openDealPromoModal();
+                                    }}
+                                    disabled={!hasDealCouponApplied}
+                                    activeOpacity={hasDealCouponApplied ? 0.7 : 1}
+                                >
                                     <Image
                                         source={require('@/assets/icons/coupon.png')}
                                         style={styles.applyCouponHeaderIcon}
@@ -447,7 +479,7 @@ export function SavingsCorner({
                                             </Text>
                                         ) : null}
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                                 <TouchableOpacity
                                     style={styles.applyCouponAppliedTag}
                                     onPress={() => {
@@ -460,7 +492,7 @@ export function SavingsCorner({
                                 </TouchableOpacity>
                             </View>
 
-                            {hasDealCouponApplied ? (
+                            {showDealPromoUpsellCta ? (
                                 <TouchableOpacity
                                     style={styles.dealPromoCta}
                                     onPress={openDealPromoModal}
@@ -624,6 +656,7 @@ export function SavingsCorner({
                         lineItems={cartItems}
                         appliedCouponCode={appliedDiscountCode}
                         onApplyCoupon={(c) => void handleApplyCouponFromList(c)}
+                        onCouponPress={handleCouponPress}
                     />
                 </View>
 
@@ -663,7 +696,6 @@ export function SavingsCorner({
                     {showPromoOfferSheet ? (
                         <View style={styles.promoModalCenter} pointerEvents="box-none">
                             <SavingsCornerPromoOfferContent
-                                key={configRefreshKey}
                                 dealConfig={resolvedDealConfig}
                                 formatCurrency={formatCurrency}
                                 onClose={closeModal}
@@ -806,12 +838,14 @@ export function SavingsCorner({
                                                             ? `Use code ${coupon.code}`
                                                             : 'Coupon');
                                                 return (
-                                                    <View
+                                                    <TouchableOpacity
                                                         key={coupon.code || `coupon-${coupon.title ?? index}`}
                                                         style={[
                                                             styles.couponCard,
                                                             (couponApplying || isDisabled) && styles.couponCardDisabled,
                                                         ]}
+                                                        onPress={() => handleCouponPress(coupon)}
+                                                        activeOpacity={coupon.isDealCoupon ? 0.7 : 1}
                                                     >
                                                         <View style={styles.couponCardRow}>
                                                             <View style={[styles.couponCardIconWrap, isDisabled && styles.couponCardIconWrapDisabled]}>
@@ -861,7 +895,7 @@ export function SavingsCorner({
                                                                 )}
                                                             </View>
                                                         )}
-                                                    </View>
+                                                    </TouchableOpacity>
                                                 );
                                             })
                                         )}

@@ -285,12 +285,22 @@ export function getSubtotalForAllowedCategories(
   allowedCategories: string[] | null | undefined
 ): number {
   if (!allowedCategories?.length) return 0;
-  const allowedSet = new Set(allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean));
+  const allowedLower = allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
   let sum = 0;
   for (const item of items) {
     const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-    const hasAllowed = tags.some((t) => allowedSet.has(t));
-    if (hasAllowed) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+    const title = (item.title ?? '').toLowerCase();
+    
+    const isEligible = allowedLower.some((cat) => {
+        if (tags.includes(cat)) return true;
+        if (title.includes(cat)) return true;
+        // Handle singular/plural common cases (e.g. "plant kit" vs "plant kits")
+        if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+        if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+        return false;
+    });
+
+    if (isEligible) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
   }
   return sum;
 }

@@ -887,6 +887,20 @@ const CART_LINES_ADD_MUTATION = `
   }
 `;
 
+const CART_LINES_UPDATE_MUTATION = `
+  mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    cartLinesUpdate(cartId: $cartId, lines: $lines) {
+      cart {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 const GET_CART_QUERY = `
   query getCart($cartId: ID!) {
     cart(id: $cartId) {
@@ -1332,6 +1346,45 @@ export const shopifyApi = {
   /**
    * Apply discount codes to cart
    */
+  /**
+   * Update cart lines (e.g. remove line attributes such as special-deal promo).
+   */
+  cartLinesUpdate: async (
+    cartId: string,
+    lines: Array<{ id: string; quantity: number; attributes?: { key: string; value: string }[] }>
+  ) => {
+    try {
+      const response = await client.post('', {
+        query: CART_LINES_UPDATE_MUTATION,
+        variables: {
+          cartId,
+          lines: lines.map((l) => ({
+            id: l.id,
+            quantity: l.quantity,
+            ...(l.attributes !== undefined ? { attributes: l.attributes } : {}),
+          })),
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to update cart lines');
+      }
+
+      const result = response.data.data.cartLinesUpdate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to update cart lines');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error updating cart lines:', error);
+      throw error;
+    }
+  },
+
   applyDiscountCodes: async (cartId: string, discountCodes: string[]) => {
     try {
       const response = await client.post('', {
