@@ -135,6 +135,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
           endCursor
         }
         edges {
+          cursor
           node {
             id
             title
@@ -1107,6 +1108,7 @@ export interface CollectionResponse {
         endCursor: string | null;
       };
       edges: Array<{
+        cursor?: string;
         node: ShopifyProduct;
       }>;
       filters?: Array<{

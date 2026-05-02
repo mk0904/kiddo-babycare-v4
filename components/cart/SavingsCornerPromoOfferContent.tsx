@@ -3,12 +3,13 @@ import { Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
 import { type CartItem, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
-import { sortInStockFirst } from '@/utils/availability';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
     ScrollView,
     StyleSheet,
     Text,
@@ -19,6 +20,60 @@ import {
 
 const SUCCESS_GREEN = '#4CAF50';
 const OFFER_RED = '#FF5252';
+
+/** Storefront page size for promo collection grid; further pages load when user scrolls to the end. */
+const PROMO_COLLECTION_PAGE_SIZE = 24;
+
+/**
+ * Storefront API filters for this modal only — excludes unavailable products on the server for every page/cursor.
+ * See https://shopify.dev/docs/api/storefront/latest/input-objects/ProductFilter
+ */
+const PROMO_COLLECTION_STORE_FILTERS = [{ available: true }] as const;
+
+type PromoTabListingCacheEntry = {
+    listingProducts: any[];
+    productsEndCursor: string | null;
+    hasMoreProducts: boolean;
+};
+
+type MeasureInWindowFn = (callback: (x: number, y: number, width: number, height: number) => void) => void;
+
+function getMeasureInWindowHost(ref: ScrollView | View | null): { measureInWindow: MeasureInWindowFn } | null {
+    const node = ref as unknown as { measureInWindow?: MeasureInWindowFn } | null;
+    const measureInWindow = node?.measureInWindow;
+    if (!node || typeof measureInWindow !== 'function') return null;
+    return { measureInWindow };
+}
+
+/** Prefer `pageInfo.endCursor`; fall back to last edge `cursor` when Storefront omits endCursor (seen with some filter combinations). */
+function resolveCollectionProductsPageCursor(products: {
+    edges?: Array<{ cursor?: string }>;
+    pageInfo?: { endCursor?: string | null };
+} | null | undefined): string | null {
+    const pi = products?.pageInfo;
+    if (pi?.endCursor) return pi.endCursor;
+    const edges = products?.edges ?? [];
+    const last = edges[edges.length - 1];
+    return last?.cursor ?? null;
+}
+
+function mergeUniqueByProductId(existing: any[], incoming: any[]): any[] {
+    if (incoming.length === 0) return existing;
+    const seen = new Set<string>();
+    for (const p of existing) {
+        const id = p?.id;
+        if (id != null && id !== '') seen.add(String(id));
+    }
+    const extra = incoming.filter((p) => {
+        const id = p?.id;
+        if (id == null || id === '') return true;
+        const s = String(id);
+        if (seen.has(s)) return false;
+        seen.add(s);
+        return true;
+    });
+    return extra.length === 0 ? existing : [...existing, ...extra];
+}
 
 /** Admin URL, numeric id, or Shopify Collection GID → Storefront API id. */
 export function parseShopifyCollectionGid(raw: string | undefined | null): string | null {
@@ -204,8 +259,31 @@ export function SavingsCornerPromoOfferContent({
     const [remainingSec, setRemainingSec] = useState(initialTimerSec);
     const [listingProducts, setListingProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
+    const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+    const [productsEndCursor, setProductsEndCursor] = useState<string | null>(null);
+    const [hasMoreProducts, setHasMoreProducts] = useState(false);
+
+    const collectionGidRef = useRef<string | null>(null);
+    const loadingMoreRef = useRef(false);
+    /** Keyed by collection GID so each tab keeps its own pages + cursor when switching away. */
+    const promoTabListingCacheRef = useRef<Map<string, PromoTabListingCacheEntry>>(new Map());
+    const promoListingStateRef = useRef<PromoTabListingCacheEntry>({
+        listingProducts: [],
+        productsEndCursor: null,
+        hasMoreProducts: false,
+    });
+    /** Last collection whose `listingProducts` / cursors in state are for (used when persisting to cache on tab change). */
+    const displayedPromoCollectionGidRef = useRef<string | null>(null);
+
+    promoListingStateRef.current = {
+        listingProducts,
+        productsEndCursor,
+        hasMoreProducts,
+    };
     /** All variant ids ever shown in this modal’s grids (tabs accumulate) — updated synchronously so CTA isn’t one frame behind. */
     const accumulatedPromoGridVariantKeysRef = useRef<Set<string>>(new Set());
+    const promoScrollRef = useRef<ScrollView | null>(null);
+    const lastGridRowRef = useRef<View | null>(null);
     const lineItems = useCartStore((s) => s.lineItems);
 
     /** `UniversalAdd` fired after a successful add — source-of-truth for footer if cart snapshot lags. */
@@ -264,32 +342,177 @@ export function SavingsCornerPromoOfferContent({
         [activeCollectionRaw]
     );
 
+    collectionGidRef.current = collectionGid;
+
     useEffect(() => {
+        loadingMoreRef.current = false;
+
+        const prevDisplayedGid = displayedPromoCollectionGidRef.current;
+        if (prevDisplayedGid && collectionGid && prevDisplayedGid !== collectionGid) {
+            const snap = promoListingStateRef.current;
+            promoTabListingCacheRef.current.set(prevDisplayedGid, {
+                listingProducts: [...snap.listingProducts],
+                productsEndCursor: snap.productsEndCursor,
+                hasMoreProducts: snap.hasMoreProducts,
+            });
+        }
+
         if (!collectionGid) {
+            if (prevDisplayedGid) {
+                const snap = promoListingStateRef.current;
+                promoTabListingCacheRef.current.set(prevDisplayedGid, {
+                    listingProducts: [...snap.listingProducts],
+                    productsEndCursor: snap.productsEndCursor,
+                    hasMoreProducts: snap.hasMoreProducts,
+                });
+            }
             setListingProducts([]);
             setLoadingProducts(false);
+            setLoadingMoreProducts(false);
+            setProductsEndCursor(null);
+            setHasMoreProducts(false);
+            displayedPromoCollectionGidRef.current = null;
             return;
         }
+
+        const cached = promoTabListingCacheRef.current.get(collectionGid);
+        if (cached) {
+            setListingProducts([...cached.listingProducts]);
+            setProductsEndCursor(cached.productsEndCursor);
+            setHasMoreProducts(cached.hasMoreProducts);
+            setLoadingProducts(false);
+            setLoadingMoreProducts(false);
+            displayedPromoCollectionGidRef.current = collectionGid;
+            return;
+        }
+
         let cancelled = false;
         setLoadingProducts(true);
+        setLoadingMoreProducts(false);
+        setProductsEndCursor(null);
+        setHasMoreProducts(false);
+        setListingProducts([]);
         shopifyApi
-            .getProductsByCollection(collectionGid, 24, null)
+            .getProductsByCollection(
+                collectionGid,
+                PROMO_COLLECTION_PAGE_SIZE,
+                null,
+                undefined,
+                false,
+                [...PROMO_COLLECTION_STORE_FILTERS],
+            )
             .then((col) => {
-                if (cancelled) return;
+                if (cancelled || collectionGidRef.current !== collectionGid) return;
                 const edges = col?.products?.edges ?? [];
                 const nodes = edges.map((e: any) => e?.node).filter(Boolean);
-                setListingProducts(sortInStockFirst(nodes));
+                const pi = col?.products?.pageInfo;
+                setListingProducts(nodes);
+                setProductsEndCursor(resolveCollectionProductsPageCursor(col?.products));
+                setHasMoreProducts(Boolean(pi?.hasNextPage));
+                displayedPromoCollectionGidRef.current = collectionGid;
             })
             .catch(() => {
-                if (!cancelled) setListingProducts([]);
+                if (!cancelled && collectionGidRef.current === collectionGid) {
+                    setListingProducts([]);
+                    setProductsEndCursor(null);
+                    setHasMoreProducts(false);
+                    displayedPromoCollectionGidRef.current = collectionGid;
+                }
             })
             .finally(() => {
-                if (!cancelled) setLoadingProducts(false);
+                if (!cancelled && collectionGidRef.current === collectionGid) {
+                    setLoadingProducts(false);
+                }
             });
         return () => {
             cancelled = true;
         };
     }, [collectionGid]);
+
+    const loadMoreProducts = useCallback(() => {
+        if (!collectionGid || !hasMoreProducts || loadingProducts) return;
+        if (loadingMoreRef.current) return;
+        const gid = collectionGid;
+        const after = productsEndCursor;
+        if (after == null) return;
+
+        loadingMoreRef.current = true;
+        setLoadingMoreProducts(true);
+        shopifyApi
+            .getProductsByCollection(
+                gid,
+                PROMO_COLLECTION_PAGE_SIZE,
+                after,
+                undefined,
+                false,
+                [...PROMO_COLLECTION_STORE_FILTERS],
+            )
+            .then((col) => {
+                if (collectionGidRef.current !== gid) return;
+                const edges = col?.products?.edges ?? [];
+                const nodes = edges.map((e: any) => e?.node).filter(Boolean);
+                const pi = col?.products?.pageInfo;
+                setListingProducts((prev) => mergeUniqueByProductId(prev, nodes));
+                setProductsEndCursor(resolveCollectionProductsPageCursor(col?.products));
+                setHasMoreProducts(Boolean(pi?.hasNextPage));
+            })
+            .catch(() => {
+                /* keep hasMoreProducts so user can retry by scrolling again */
+            })
+            .finally(() => {
+                loadingMoreRef.current = false;
+                setLoadingMoreProducts(false);
+            });
+    }, [collectionGid, hasMoreProducts, loadingProducts, productsEndCursor]);
+
+    /** When the last loaded grid row intersects the ScrollView viewport, fetch the next page. */
+    const tryLoadMoreWhenLastRowVisible = useCallback(() => {
+        if (!hasMoreProducts || loadingProducts || loadingMoreProducts) return;
+        if (loadingMoreRef.current) return;
+
+        const scrollMeasurable = getMeasureInWindowHost(promoScrollRef.current);
+        const rowMeasurable = getMeasureInWindowHost(lastGridRowRef.current);
+        if (!scrollMeasurable || !rowMeasurable) return;
+
+        rowMeasurable.measureInWindow((_rx: number, rowY: number, _rw: number, rowH: number) => {
+            scrollMeasurable.measureInWindow((_sx: number, sy: number, _sw: number, sh: number) => {
+                const rowBottom = rowY + rowH;
+                const viewBottom = sy + sh;
+                const intersectsVertically = rowBottom > sy && rowY < viewBottom;
+                if (intersectsVertically) {
+                    loadMoreProducts();
+                }
+            });
+        });
+    }, [hasMoreProducts, loadMoreProducts, loadingMoreProducts, loadingProducts]);
+
+    /** Reliable when sticky headers / layout make `measureInWindow` mismatch the visible viewport. */
+    const tryLoadMoreWhenNearScrollBottom = useCallback(
+        (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            if (!hasMoreProducts || loadingProducts || loadingMoreProducts) return;
+            if (loadingMoreRef.current) return;
+            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+            const threshold = 220;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold) {
+                loadMoreProducts();
+            }
+        },
+        [hasMoreProducts, loadMoreProducts, loadingMoreProducts, loadingProducts],
+    );
+
+    const handlePromoScroll = useCallback(
+        (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            tryLoadMoreWhenNearScrollBottom(e);
+            tryLoadMoreWhenLastRowVisible();
+        },
+        [tryLoadMoreWhenNearScrollBottom, tryLoadMoreWhenLastRowVisible],
+    );
+
+    useEffect(() => {
+        if (loadingProducts || listingProducts.length === 0 || !hasMoreProducts) return;
+        const id = requestAnimationFrame(() => tryLoadMoreWhenLastRowVisible());
+        return () => cancelAnimationFrame(id);
+    }, [listingProducts.length, loadingProducts, hasMoreProducts, tryLoadMoreWhenLastRowVisible]);
 
     const timerLabel = useMemo(() => {
         const m = Math.floor(remainingSec / 60);
@@ -390,11 +613,19 @@ export function SavingsCornerPromoOfferContent({
             </TouchableOpacity>
 
             <ScrollView
+                ref={promoScrollRef}
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
+                scrollEventThrottle={100}
+                onScroll={handlePromoScroll}
+                onContentSizeChange={() => {
+                    requestAnimationFrame(() => tryLoadMoreWhenLastRowVisible());
+                }}
+                stickyHeaderIndices={tabItems.length > 0 ? [1] : undefined}
             >
+                <View style={styles.promoScrollHeader}>
                 <View style={styles.successRow}>
                     {/* {cfg.successIconUrl ? (
                         <Image
@@ -459,37 +690,47 @@ export function SavingsCornerPromoOfferContent({
                         </View>
                     </View>
                 </View>
+                </View>
 
-                {tabItems.length > 0 ? (
-                    <ScrollView
-                        horizontal
-                        nestedScrollEnabled
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.tabsScroll}
-                        contentContainerStyle={styles.tabsRow}
-                    >
-                        {tabItems.map((tab, idx) => {
-                            const active = idx === activeTabIndex;
-                            const tabLabel = String(tab.label ?? '').trim();
-                            return (
-                                <TouchableOpacity
-                                    key={tabKey(tab, idx)}
-                                    onPress={() => setActiveTabIndex(idx)}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.tabItem}>
-                                        <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabLabel}</Text>
-                                        {active ? (
-                                            <View style={styles.tabUnderline} />
-                                        ) : (
-                                            <View style={styles.tabUnderlinePlaceholder} />
-                                        )}
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                ) : null}
+                <View
+                    style={[
+                        styles.stickyTabsHost,
+                        tabItems.length === 0 && styles.stickyTabsHostCollapsed,
+                    ]}
+                >
+                    {tabItems.length > 0 ? (
+                        <ScrollView
+                            horizontal
+                            nestedScrollEnabled
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.tabsScroll}
+                            contentContainerStyle={styles.tabsRow}
+                        >
+                            {tabItems.map((tab, idx) => {
+                                const active = idx === activeTabIndex;
+                                const tabLabel = String(tab.label ?? '').trim();
+                                return (
+                                    <TouchableOpacity
+                                        key={tabKey(tab, idx)}
+                                        onPress={() => setActiveTabIndex(idx)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.tabItem}>
+                                            <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                                                {tabLabel}
+                                            </Text>
+                                            {active ? (
+                                                <View style={styles.tabUnderline} />
+                                            ) : (
+                                                <View style={styles.tabUnderlinePlaceholder} />
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    ) : null}
+                </View>
 
                 <View style={styles.grid}>
                     {loadingProducts ? (
@@ -504,6 +745,8 @@ export function SavingsCornerPromoOfferContent({
                         productRows.map((row, rowIdx) => (
                             <View
                                 key={`promo-grid-row-${rowIdx}`}
+                                ref={rowIdx === productRows.length - 1 ? lastGridRowRef : undefined}
+                                collapsable={rowIdx === productRows.length - 1 ? false : undefined}
                                 style={[
                                     styles.productGridRow,
                                     { paddingHorizontal: gridPad, marginBottom: gridGap },
@@ -545,6 +788,11 @@ export function SavingsCornerPromoOfferContent({
                             </View>
                         ))
                     )}
+                    {loadingMoreProducts && listingProducts.length > 0 ? (
+                        <View style={styles.gridLoadingMore}>
+                            <ActivityIndicator size="small" color={OFFER_RED} />
+                        </View>
+                    ) : null}
                 </View>
 
                 {/* <TouchableOpacity onPress={onSeeAllCoupons} style={styles.seeCouponsLink}>
@@ -590,6 +838,26 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingTop: 28,
         paddingBottom: 16,
+    },
+    promoScrollHeader: {
+        backgroundColor: '#FFFFFF',
+    },
+    /** Direct child of ScrollView at index 1 — sticks to top of scroll viewport when `stickyHeaderIndices` is set. */
+    stickyTabsHost: {
+        backgroundColor: '#FFFFFF',
+        marginTop: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E5E7EB',
+        zIndex: 1,
+        elevation: 2,
+    },
+    stickyTabsHostCollapsed: {
+        height: 0,
+        marginTop: 0,
+        borderBottomWidth: 0,
+        overflow: 'hidden',
+        opacity: 0,
+        elevation: 0,
     },
     successRow: {
         flexDirection: 'row',
@@ -705,7 +973,6 @@ const styles = StyleSheet.create({
         color: OFFER_RED,
     },
     tabsScroll: {
-        marginTop: 16,
         minHeight: 44,
         flexGrow: 0,
     },
@@ -749,6 +1016,12 @@ const styles = StyleSheet.create({
     gridLoading: {
         width: '100%',
         paddingVertical: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    gridLoadingMore: {
+        width: '100%',
+        paddingVertical: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
