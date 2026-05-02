@@ -27,6 +27,18 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
  */
 const MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL = 132;
 
+function scaleFontStyle(style: object, scale: number): object {
+  const f = StyleSheet.flatten(style as any) as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...f };
+  if (typeof f.fontSize === 'number') {
+    out.fontSize = Math.max(8, Math.round(f.fontSize * scale * 10) / 10);
+  }
+  if (typeof f.lineHeight === 'number') {
+    out.lineHeight = Math.max(10, Math.round(f.lineHeight * scale));
+  }
+  return out;
+}
+
 // Calculate card width based on number of columns and padding
 const calculateCardWidth = (
   numColumns = 2,
@@ -73,6 +85,10 @@ interface ProductCardProps {
   promoOfferCaptionBelowPrice?: string;
   /** Special-offer modal: notify parent after an add succeeds (unlocks footer CTA). */
   onPromoDealAddSuccess?: () => void;
+  /** When set (e.g. Savings Corner promo modal), scale down title / price / promo caption text only for this card. */
+  compactTypographyScale?: number;
+  /** Hide the “N% off” suffix next to prices (promo modal shows offer line instead). */
+  hideDiscountPercentage?: boolean;
 }
 
 const ProductCardComponent: React.FC<ProductCardProps> = ({
@@ -94,6 +110,8 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   showPromoOfferPriceBadge = false,
   promoOfferCaptionBelowPrice,
   onPromoDealAddSuccess,
+  compactTypographyScale,
+  hideDiscountPercentage = false,
 }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const { isAuthenticated, user } = useAuth();
@@ -116,14 +134,25 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         ...processFontStyle(fromConfig),
       };
     };
-    return {
+    const merged = {
       productName: merge(styles.productName, 'productName'),
       vendorBadgeText: merge(styles.vendorBadgeText, 'vendorBadgeText'),
       mainPrice: merge(styles.mainPrice, 'mainPrice'),
       comparePrice: merge(styles.comparePrice, 'comparePrice'),
       discountPercentage: merge(styles.discountPercentage, 'discountPercentage'),
     };
-  }, []);
+    const scale = compactTypographyScale;
+    if (scale != null && scale > 0 && scale < 1) {
+      return {
+        productName: scaleFontStyle(merged.productName, scale),
+        vendorBadgeText: scaleFontStyle(merged.vendorBadgeText, scale),
+        mainPrice: scaleFontStyle(merged.mainPrice, scale),
+        comparePrice: scaleFontStyle(merged.comparePrice, scale),
+        discountPercentage: scaleFontStyle(merged.discountPercentage, scale),
+      };
+    }
+    return merged;
+  }, [compactTypographyScale]);
 
   // Get product handle
   const productHandle = useMemo(() => product.handle, [product]);
@@ -439,7 +468,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     // Check if product came from a ticketing collection
     const collectionIdParam = Array.isArray(collectionId) ? collectionId[0] : collectionId;
     if (collectionIdParam) {
-      const isFromTicketingCollection = TICKETING_COLLECTION_IDS.some(id => 
+      const isFromTicketingCollection = TICKETING_COLLECTION_IDS.some(id =>
         collectionIdParam === id || collectionIdParam.includes(id.split('/').pop() || '')
       );
       if (isFromTicketingCollection) return true;
@@ -448,10 +477,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     // Check if product has relevant tags
     const hasTicketingTag = tags.some((tag: any) => {
       const tagLower = typeof tag === 'string' ? tag.toLowerCase() : '';
-      return tagLower.includes('event') || 
-             tagLower.includes('playhouse') || 
-             tagLower.includes('petting') ||
-             tagLower.includes('farm');
+      return tagLower.includes('event') ||
+        tagLower.includes('playhouse') ||
+        tagLower.includes('petting') ||
+        tagLower.includes('farm');
     });
     if (hasTicketingTag) return true;
 
@@ -459,7 +488,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     const productCollections = product.collections?.edges || product.collections || [];
     const belongsToTicketing = productCollections.some((col: any) => {
       const colId = col?.node?.id || col?.id || '';
-      return TICKETING_COLLECTION_IDS.some(ticketingId => 
+      return TICKETING_COLLECTION_IDS.some(ticketingId =>
         colId === ticketingId || colId.includes(ticketingId.split('/').pop() || '')
       );
     });
@@ -489,17 +518,20 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     displayCompareAtAmount != null &&
     Math.round(compareAtNumber) > Math.round(priceNumber);
 
+  /** Promo modal tiles are often narrower than {@link MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL}px — still show MRP when caption row is used. */
   const showCompareAtLabel =
-    showCompareAtRow && cardWidth >= MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL;
+    showCompareAtRow &&
+    cardWidth >= MIN_CARD_WIDTH_FOR_COMPARE_AT_LABEL &&
+    promoOfferCaptionBelowPrice == null;
 
   /** Promo modal: always use the standard price row + green badge (never essentials “Market / Our” block). */
   const forcePromoStandardPriceLayout = showPromoOfferPriceBadge === true;
 
   const effectiveDealPromoPct =
     dealPromoPercentOff != null &&
-    Number.isFinite(dealPromoPercentOff) &&
-    dealPromoPercentOff >= 0 &&
-    dealPromoPercentOff < 100
+      Number.isFinite(dealPromoPercentOff) &&
+      dealPromoPercentOff >= 0 &&
+      dealPromoPercentOff < 100
       ? dealPromoPercentOff
       : forcePromoStandardPriceLayout
         ? 0
@@ -515,24 +547,53 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     ? Math.max(0, Math.round(priceNumber * (1 - effectiveDealPromoPct / 100)))
     : null;
 
+  const compareAtStrikethrough =
+    showCompareAtLabel &&
+    (promoOfferBadgeActive || promoOfferCaptionBelowPrice != null);
+
   const compareAtPriceLabel = showCompareAtLabel ? (
     <Text
-      style={[cardTextStyles.comparePrice, promoOfferBadgeActive && styles.promoOfferStrikeThrough]}
+      style={[
+        cardTextStyles.comparePrice,
+        compareAtStrikethrough && styles.promoOfferStrikeThrough,
+        promoOfferCaptionBelowPrice != null && styles.reducedPrice,
+      ]}
       numberOfLines={1}
+      ellipsizeMode="tail"
     >
       ₹{compareAtNumber.toFixed(0)}
     </Text>
   ) : null;
 
+  /** When an offer caption is present (green pill), we strike through the original selling price as well. */
+  const salePriceStrikethrough =
+    promoOfferBadgeActive || promoOfferCaptionBelowPrice != null;
+
   const salePriceLabel = (
     <Text
-      style={[cardTextStyles.mainPrice, promoOfferBadgeActive && styles.promoOfferStrikeThrough]}
+      style={[
+        cardTextStyles.mainPrice,
+        salePriceStrikethrough && styles.promoOfferStrikeThrough,
+        promoOfferCaptionBelowPrice != null && styles.reducedPrice,
+      ]}
       numberOfLines={1}
       ellipsizeMode="tail"
     >
       {priceNumber > 0 ? `₹${priceNumber.toFixed(0)}` : '='}
     </Text>
   );
+
+  const compactScaledCaptionStyle = useMemo(() => {
+    const s = compactTypographyScale;
+    if (s == null || s <= 0 || s >= 1) return undefined;
+    return scaleFontStyle(styles.promoOfferCaptionBelowPriceRow, s);
+  }, [compactTypographyScale]);
+
+  const compactTbTagTextStyle = useMemo(() => {
+    const s = compactTypographyScale;
+    if (s == null || s <= 0 || s >= 1) return undefined;
+    return scaleFontStyle(styles.tbTagText, s);
+  }, [compactTypographyScale]);
 
   return (
     <View style={[styles.container, { width: cardWidth }, containerStyle]}>
@@ -588,7 +649,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 color="#fff"
                 style={styles.hangerIcon}
               />
-              <Text style={styles.tbTagText} numberOfLines={1}>
+              <Text style={[styles.tbTagText, compactTbTagTextStyle]} numberOfLines={1}>
                 Try & Buy
               </Text>
             </TouchableOpacity>
@@ -642,9 +703,9 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           <View style={styles.priceContainer}>
             <View style={styles.priceColumn}>
               {hasEssentialsTag &&
-              averageMarketPrice &&
-              averageMarketPrice > 0 &&
-              !forcePromoStandardPriceLayout ? (
+                averageMarketPrice &&
+                averageMarketPrice > 0 &&
+                !forcePromoStandardPriceLayout ? (
                 <View style={styles.essentialsPriceContainer}>
                   <View style={styles.essentialsPriceRow}>
                     <Text style={styles.essentialsLabel}>Market Price:</Text>
@@ -662,6 +723,16 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               ) : (
                 <>
                   <View style={styles.priceRow}>
+                    {promoOfferCaptionBelowPrice ? (
+                      <View style={[styles.promoOfferCaptionBelowWrap, { marginTop: 0, marginRight: 8 }]}>
+                        <Text
+                          style={[styles.promoOfferCaptionBelowPriceRow, compactScaledCaptionStyle]}
+                          numberOfLines={1}
+                        >
+                          {promoOfferCaptionBelowPrice}
+                        </Text>
+                      </View>
+                    ) : null}
                     <View style={styles.priceTokens}>
                       {priceCompareFirst ? (
                         <>
@@ -675,7 +746,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                         </>
                       )}
                     </View>
-                    {discountPercentage !== null ? (
+                    {!hideDiscountPercentage && discountPercentage !== null && promoOfferCaptionBelowPrice == null ? (
                       <Text
                         style={[
                           cardTextStyles.discountPercentage,
@@ -693,13 +764,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               )}
             </View>
           </View>
-          {promoOfferCaptionBelowPrice ? (
-            <View style={styles.promoOfferCaptionBelowWrap}>
-              <Text style={styles.promoOfferCaptionBelowPriceRow} numberOfLines={2}>
-                {promoOfferCaptionBelowPrice}
-              </Text>
-            </View>
-          ) : null}
+          {/* Promo offer caption now shown in priceRow above */}
         </View>
         <TryAndBuyModal
           visible={showTryAndBuyModal}
@@ -709,7 +774,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       {promoOfferBadgeActive && offerPriceDisplay != null && !promoOfferCaptionBelowPrice ? (
         <View style={[styles.promoOfferPriceBadge, styles.promoOfferPriceBadgeOuter]}>
           <Text style={styles.promoOfferPriceText} numberOfLines={1}>
-            Offer price: ₹{offerPriceDisplay}
+            ₹{offerPriceDisplay}
           </Text>
         </View>
       ) : null}
@@ -818,7 +883,7 @@ const styles = StyleSheet.create({
   mainPrice: {
     color: '#2c6975',
     fontSize: 10,
-    fontFamily: Fonts.LexendBold,
+    fontFamily: Fonts.LexendRegular,
     lineHeight: 16,
     flexShrink: 0,
   },
@@ -826,14 +891,14 @@ const styles = StyleSheet.create({
     color: '#888888',
     textDecorationLine: 'line-through',
     fontSize: 12,
-    fontFamily: Fonts.LexendMedium,
+    fontFamily: Fonts.LexendRegular,
     flexShrink: 1,
     minWidth: 0,
   },
   discountPercentage: {
     color: '#2c6975',
     fontSize: 10,
-    fontFamily: Fonts.LexendSemiBold,
+    fontFamily: Fonts.LexendRegular,
     lineHeight: 16,
     flexShrink: 0,
     marginLeft: 0,
@@ -844,8 +909,12 @@ const styles = StyleSheet.create({
   promoDiscountNoLeadingSpace: {
     marginLeft: 4,
   },
+  reducedPrice: {
+    fontSize: 10,
+    color: '#888888',
+  },
   promoOfferPriceBadge: {
-    alignSelf: 'stretch',
+    alignSelf: 'flex-start',
     borderRadius: 8,
     paddingVertical: 5,
     paddingHorizontal: 6,
@@ -862,12 +931,12 @@ const styles = StyleSheet.create({
   },
   promoOfferPriceText: {
     fontSize: 10,
-    fontFamily: Fonts.LexendSemiBold,
+    fontFamily: Fonts.LexendRegular,
     color: '#2E7D32',
     textAlign: 'left',
   },
   promoOfferCaptionBelowWrap: {
-    alignSelf: 'stretch',
+    alignSelf: 'flex-start',
     marginTop: 6,
     backgroundColor: '#cef4da',
     borderRadius: 8,
@@ -875,8 +944,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   promoOfferCaptionBelowPriceRow: {
-    fontSize: 10,
-    fontFamily: Fonts.LexendSemiBold,
+    fontSize: 16,
+    fontFamily: Fonts.LexendBold,
     color: '#2E7D32',
     lineHeight: 14,
   },
@@ -986,6 +1055,8 @@ const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
   if (prevProps.applyDealPromoToCart !== nextProps.applyDealPromoToCart) return false;
   if (prevProps.showPromoOfferPriceBadge !== nextProps.showPromoOfferPriceBadge) return false;
   if (prevProps.promoOfferCaptionBelowPrice !== nextProps.promoOfferCaptionBelowPrice) return false;
+  if (prevProps.compactTypographyScale !== nextProps.compactTypographyScale) return false;
+  if (prevProps.hideDiscountPercentage !== nextProps.hideDiscountPercentage) return false;
   if (prevProps.onPromoDealAddSuccess !== nextProps.onPromoDealAddSuccess) return false;
   if (prevProps.priceCompareFirst !== nextProps.priceCompareFirst) return false;
   if (prevProps.collectionId !== nextProps.collectionId) return false;

@@ -560,7 +560,14 @@ export function SavingsCorner({
                                     activeOpacity={0.85}
                                     disabled={!isAuthenticated}
                                 >
-                                    <Text style={styles.dealPromoCtaText}>Get 50% off products</Text>
+                                    <Text style={styles.dealPromoEmoji}>🥳</Text>
+                                    <View style={styles.dealPromoTextContainer}>
+                                        <Text style={styles.dealPromoCtaText}>Go to 50% off store</Text>
+                                        <Text style={styles.dealPromoSubtext}>valid on this order only</Text>
+                                    </View>
+                                    <View>
+                                        <Ionicons name="arrow-forward" size={20} color={Colors.primary} />
+                                    </View>
                                 </TouchableOpacity>
                             ) : null}
 
@@ -1060,13 +1067,35 @@ const styles = StyleSheet.create({
         color: Colors.primary,
     },
     dealPromoCta: {
-        marginBottom: 8,
-        marginLeft: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FDA4AF',
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 16,
+        marginHorizontal: 0,
+    },
+    dealPromoEmoji: {
+        fontSize: 32,
+    },
+    dealPromoTextContainer: {
+        marginLeft: 12,
+        flex: 1,
     },
     dealPromoCtaText: {
-        fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.LexendMedium,
-        color: Colors.primary,
+        fontSize: 20,
+        fontFamily: Fonts.LexendBold,
+        color: '#F43F5E',
+        lineHeight: 24,
+    },
+    dealPromoSubtext: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#4B5563',
+        marginTop: 2,
     },
     applyCouponViewAll: {
         fontSize: Fonts.SmallFontSize,

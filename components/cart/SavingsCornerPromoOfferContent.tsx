@@ -30,6 +30,11 @@ const PROMO_COLLECTION_PAGE_SIZE = 24;
  */
 const PROMO_COLLECTION_STORE_FILTERS = [{ available: true }] as const;
 
+/** Slightly smaller type across this modal only (header, tabs, footer, grid ProductCards). */
+const PROMO_MODAL_TEXT_SCALE = 0.88;
+const promoFs = (px: number) => Math.max(8, Math.round(px * PROMO_MODAL_TEXT_SCALE * 10) / 10);
+const promoLh = (px: number) => Math.max(10, Math.round(px * PROMO_MODAL_TEXT_SCALE));
+
 type PromoTabListingCacheEntry = {
     listingProducts: any[];
     productsEndCursor: string | null;
@@ -557,7 +562,7 @@ export function SavingsCornerPromoOfferContent({
                 promoGridMatchingLineItems.length > 0
                     ? promoGridMatchingLineItems
                     : dealPromoAddConfirmed
-                      ? lineItems.filter((li: CartItem) => {
+                        ? lineItems.filter((li: CartItem) => {
                             if (listingProducts.length === 0) return false;
                             const variantOnGrid = variantBelongsToListingProducts(
                                 listingProducts,
@@ -572,7 +577,7 @@ export function SavingsCornerPromoOfferContent({
                                 cartLineMatchesPromoGridVariant(li, promoGridVariantKeys);
                             return variantOnGrid || productOnGrid || inAccumulatedGrid;
                         })
-                      : [];
+                        : [];
             if (lines.length > 0) {
                 onUnlockPress?.(lines.map((li) => li.variantId));
             }
@@ -586,7 +591,7 @@ export function SavingsCornerPromoOfferContent({
     const titleText = cfg.title?.trim() || 'Special offer';
     const footerCta = cfg.footerCta?.trim() || 'Add products to unlock offer';
     /** Primary button always dismisses; label reflects optional browse-and-add vs done. */
-    const primaryCtaLabel = hasAddedFromPromoGrid ? footerCta : 'Continue';
+    const primaryCtaLabel = hasAddedFromPromoGrid ? 'Go to checkout' : footerCta;
     const conditionsSummaryLine = useMemo(() => {
         return (cfg.conditions ?? [])
             .map((c) => (c.text ?? '').trim())
@@ -598,8 +603,8 @@ export function SavingsCornerPromoOfferContent({
         tabItems.length === 0
             ? 'No collections in offer config yet'
             : !collectionGid
-              ? 'Missing collection for this tab — check collectionId in app config'
-              : 'No products found';
+                ? 'Missing collection for this tab — check collectionId in app config'
+                : 'No products found';
 
     const tabKey = (t: SpecialDealTab, i: number) =>
         String(t.value ?? '').trim() !== ''
@@ -626,70 +631,51 @@ export function SavingsCornerPromoOfferContent({
                 stickyHeaderIndices={tabItems.length > 0 ? [1] : undefined}
             >
                 <View style={styles.promoScrollHeader}>
-                <View style={styles.successRow}>
-                    {/* {cfg.successIconUrl ? (
-                        <Image
-                            source={{ uri: cfg.successIconUrl }}
-                            style={styles.successIconImage}
-                            resizeMode="contain"
-                        />
-                    ) : (
+                    <View style={styles.successRow}>
+
                         <View style={styles.checkCircle}>
-                            <Ionicons name="checkmark-sharp" size={22} color="#fff" />
+                            <Ionicons name="checkmark-sharp" size={16} color="#fff" />
                         </View>
-                    )} */}
-                    <View style={styles.checkCircle}>
-                            <Ionicons name="checkmark-sharp" size={22} color="#fff" />
+                        <View style={styles.successTextWrap}>
+                            <Text style={styles.congrats}>
+                                <Text style={styles.congratsBold}>Congratulations!</Text>
+
+                            </Text>
                         </View>
-                    <View style={styles.successTextWrap}>
-                        <Text style={styles.congrats}>
-                            <Text style={styles.congratsBold}>Congratulations!</Text>
-                            {'\n'}
-                            {cfg.firstLineText != null && cfg.firstLineText !== ''
-                                ? `${cfg.firstLineText} `
-                                : null}
-                            <Text style={styles.strike}>{formatCurrency(actualPrice)}</Text>{' '}
-                            <Text style={styles.priceZero}>{formatCurrency(discountedPrice)}</Text>
-                            {cfg.secondLineText != null && cfg.secondLineText !== ''
-                                ? ` ${cfg.secondLineText}`
-                                : ''}
-                            {/* {cfg.thirdLineText != null && cfg.thirdLineText !== ''
-                                ? ` ${cfg.thirdLineText}`
-                                : ''} */}
-                        </Text>
                     </View>
-                </View>
 
-                <View style={styles.dottedRule} />
+                    <View style={styles.dottedRule} />
 
-                <View style={styles.unlockBanner}>
+                    {/* <View style={styles.unlockBanner}>
                     <Text style={styles.unlockBannerText}>{bannerText}</Text>
-                </View>
-                <Text style={styles.flatOff}>{titleText}</Text>
-
-                <View style={styles.metaRow}>
-                    <View style={[styles.metaBox, styles.metaBoxConditions]}>
-                        <Text style={styles.metaLabel}>Conditions:</Text>
-                        {conditionsSummaryLine !== '' ? (
-                            <Text style={styles.metaSub} numberOfLines={1} ellipsizeMode="tail">
-                                {conditionsSummaryLine}
-                            </Text>
-                        ) : (
-                            <Text style={styles.metaSub}>
-                                {cfg.minCartValue != null && cfg.minCartValue > 0
-                                    ? `Min cart ${formatCurrency(Number(cfg.minCartValue))}`
-                                    : 'See offer details'}
-                            </Text>
-                        )}
+                </View> */}
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.flatOff}>{titleText}</Text>
                     </View>
-                    <View style={[styles.metaBox, styles.metaBoxTimer]}>
-                        <Text style={styles.metaLabel}>Offer valid for</Text>
-                        <View style={styles.timerRow}>
-                            <Ionicons name="time-outline" size={18} color="#9CA3AF" />
-                            <Text style={styles.timerValue}>{timerLabel}</Text>
+
+                    <View style={styles.metaRow}>
+                        <View style={[styles.metaBox, styles.metaBoxConditions]}>
+                            <Text style={styles.metaLabel}>Conditions:</Text>
+                            {conditionsSummaryLine !== '' ? (
+                                <Text style={styles.metaSub} numberOfLines={1} ellipsizeMode="tail">
+                                    {conditionsSummaryLine}
+                                </Text>
+                            ) : (
+                                <Text style={styles.metaSub}>
+                                    {cfg.minCartValue != null && cfg.minCartValue > 0
+                                        ? `Min cart ${formatCurrency(Number(cfg.minCartValue))}`
+                                        : 'See offer details'}
+                                </Text>
+                            )}
+                        </View>
+                        <View style={[styles.metaBox, styles.metaBoxTimer]}>
+                            <Text style={styles.metaLabel}>Offer valid for</Text>
+                            <View style={styles.timerRow}>
+                                <Ionicons name="time-outline" size={18} color="#9CA3AF" />
+                                <Text style={styles.timerValue}>{timerLabel}</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
                 </View>
 
                 <View
@@ -761,17 +747,18 @@ export function SavingsCornerPromoOfferContent({
                                             product={product}
                                             width={productCardWidth}
                                             collectionId={collectionGid}
+                                            compactTypographyScale={PROMO_MODAL_TEXT_SCALE}
+                                            hideDiscountPercentage
                                             promoPercentOff={displayDealPercentOff}
                                             dealPromoPercentOff={displayDealPercentOff}
                                             applyDealPromoToCart={false}
                                             showPromoOfferPriceBadge
-                                            priceCompareFirst
-                                            promoOfferCaptionBelowPrice={`Offer price: ${formatCurrency(
+                                            promoOfferCaptionBelowPrice={`${formatCurrency(
                                                 Math.max(
                                                     0,
                                                     Math.round(
                                                         gridProductSellingUnit(product) *
-                                                            (1 - displayDealPercentOff / 100),
+                                                        (1 - displayDealPercentOff / 100),
                                                     ),
                                                 ),
                                             )}`}
@@ -802,11 +789,14 @@ export function SavingsCornerPromoOfferContent({
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.cta, styles.ctaActive]}
+                    style={[styles.cta, hasAddedFromPromoGrid ? styles.ctaActive : styles.ctaInactive]}
                     onPress={handleUnlock}
                     activeOpacity={0.85}
+                    disabled={!hasAddedFromPromoGrid}
                 >
-                    <Text style={[styles.ctaText, styles.ctaTextActive]}>{footerCta}</Text>
+                    <Text style={[styles.ctaText, hasAddedFromPromoGrid ? styles.ctaTextActive : styles.ctaTextInactive]}>
+                        {primaryCtaLabel}
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onSkip} style={styles.skipWrap}>
                     <Text style={styles.skipText}>Skip for now</Text>
@@ -872,8 +862,8 @@ const styles = StyleSheet.create({
         borderRadius: 18,
     },
     checkCircle: {
-        width: 36,
-        height: 36,
+        width: 22,
+        height: 22,
         borderRadius: 18,
         backgroundColor: SUCCESS_GREEN,
         alignItems: 'center',
@@ -885,10 +875,9 @@ const styles = StyleSheet.create({
         minWidth: 0,
     },
     congrats: {
-        fontSize: 14,
+        fontSize: Fonts.MediumFontSize,
         fontFamily: Fonts.LexendRegular,
         color: '#374151',
-        lineHeight: 19,
     },
     congratsBold: {
         fontFamily: Fonts.LexendBold,
@@ -921,13 +910,13 @@ const styles = StyleSheet.create({
     unlockBannerText: {
         color: '#fff',
         fontFamily: Fonts.LexendRegular,
-        fontSize: Fonts.ExtraSmallFontSize,
+        fontSize: promoFs(Fonts.ExtraSmallFontSize),
         letterSpacing: 0.3,
     },
     flatOff: {
         marginTop: 4,
         textAlign: 'center',
-        fontSize: 32,
+        fontSize: 36,
         fontFamily: Fonts.LexendBold,
         color: OFFER_RED,
         letterSpacing: -0.5,
@@ -935,7 +924,7 @@ const styles = StyleSheet.create({
     metaRow: {
         flexDirection: 'row',
         paddingHorizontal: 12,
-        marginTop: 24,
+        marginTop: 4,
         gap: 8,
     },
     metaBox: {
@@ -951,13 +940,13 @@ const styles = StyleSheet.create({
         flex: 3,
     },
     metaLabel: {
-        fontSize: 12,
+        fontSize: promoFs(12),
         fontFamily: Fonts.LexendSemiBold,
         color: '#6B7280',
         marginBottom: 4,
     },
     metaSub: {
-        fontSize: 10,
+        fontSize: promoFs(10),
         fontFamily: Fonts.LexendRegular,
         color: '#9CA3AF',
         flex: 1,
@@ -968,7 +957,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     timerValue: {
-        fontSize: 14,
+        fontSize: promoFs(14),
         fontFamily: Fonts.LexendBold,
         color: OFFER_RED,
     },
@@ -986,7 +975,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabText: {
-        fontSize: 12,
+        fontSize: promoFs(12),
         fontFamily: Fonts.LexendMedium,
         color: '#9CA3AF',
         paddingBottom: 6,
@@ -1026,7 +1015,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     emptyGridText: {
-        fontSize: 13,
+        fontSize: promoFs(13),
         fontFamily: Fonts.LexendMedium,
         color: '#9CA3AF',
         textAlign: 'center',
@@ -1037,7 +1026,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     seeCouponsText: {
-        fontSize: 13,
+        fontSize: promoFs(13),
         fontFamily: Fonts.LexendSemiBold,
         color: '#6B7280',
         textDecorationLine: 'underline',
@@ -1046,35 +1035,53 @@ const styles = StyleSheet.create({
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: '#E5E7EB',
         paddingHorizontal: 16,
-        paddingTop: 12,
-        paddingBottom: 16,
+        paddingTop: 8,
+        paddingBottom: 12,
         backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     cta: {
         backgroundColor: '#D1D5DB',
-        borderRadius: 14,
-        paddingVertical: 16,
+        borderRadius: 8,
+        paddingVertical: 8,
         alignItems: 'center',
+        width: '80%',
+        justifyContent: 'center',
     },
     ctaActive: {
         backgroundColor: '#FC5D5B',
     },
     ctaText: {
-        fontSize: 15,
+        fontSize: promoFs(15),
         fontFamily: Fonts.LexendBold,
         color: '#F9FAFB',
     },
     ctaTextActive: {
         color: '#FFFFFF',
     },
+    ctaInactive: {
+        backgroundColor: '#D1D5DB',
+    },
+    ctaTextInactive: {
+        color: '#F9FAFB',
+    },
     skipWrap: {
         alignItems: 'center',
-        marginTop: 12,
+        marginTop: 6,
     },
     skipText: {
-        fontSize: 13,
+        fontSize: promoFs(13),
         fontFamily: Fonts.LexendMedium,
         color: '#9CA3AF',
         textDecorationLine: 'underline',
     },
+    titleContainer: {
+        backgroundColor: '#fbf2e8',
+        marginHorizontal: 12,
+        marginVertical: 8,
+        borderRadius: 8,
+        paddingVertical: 4,
+        paddingBottom: 10,
+    }
 });
