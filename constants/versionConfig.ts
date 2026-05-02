@@ -1,13 +1,14 @@
 /**
  * Force update and force re-login configuration (in-code only, no remote config).
  * Bump AUTH_SCHEMA_VERSION to force all users to re-login once.
- * Set MIN_APP_VERSION to the lowest app version that may use the app (older builds see "Update required").
+ * Set MIN_APP_VERSION_IOS / MIN_APP_VERSION_ANDROID so older builds see "Update required".
  */
 
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 /** Bump this to force re-login and clear auth/checkout/cart for all users once. */
-export const AUTH_SCHEMA_VERSION = 3;
+export const AUTH_SCHEMA_VERSION = 4;
 
 /**
  * App version for API calls (coupons, etc.). Uses native version per platform when available
@@ -25,9 +26,11 @@ export function getAppVersionForApi(): string {
   return Constants.expoConfig?.version ?? '0.0.0';
 }
 
-/** Minimum app version required. Older builds will see "Update required" and be sent to the store. */
-export const MIN_APP_VERSION = '1.8.3';
+/** Minimum iOS app version (CFBundleShortVersionString). Older builds see "Update required". */
+export const MIN_APP_VERSION_IOS = '3.1.8';
 
+/** Minimum Android app version (versionName). Older builds see "Update required". */
+export const MIN_APP_VERSION_ANDROID = '1.9.5';
 
 /** Play Store URL (Android). Uses app package from app.json. */
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
@@ -42,10 +45,10 @@ function parseVersion(v: string): number[] {
   return v.split('.').map((n) => parseInt(n, 10) || 0);
 }
 
-export function isAppUpdateRequired(currentVersion: string): boolean {
-  if (!currentVersion || !MIN_APP_VERSION) return false;
+function isVersionBelowMinimum(currentVersion: string, minVersion: string): boolean {
+  if (!currentVersion || !minVersion) return false;
   const cur = parseVersion(currentVersion);
-  const min = parseVersion(MIN_APP_VERSION);
+  const min = parseVersion(minVersion);
   for (let i = 0; i < Math.max(cur.length, min.length); i++) {
     const c = cur[i] ?? 0;
     const m = min[i] ?? 0;
@@ -53,6 +56,19 @@ export function isAppUpdateRequired(currentVersion: string): boolean {
     if (c > m) return false;
   }
   return false;
+}
+
+export function minimumAppVersionForPlatform(os: typeof Platform.OS): string | null {
+  if (os === 'ios') return MIN_APP_VERSION_IOS;
+  if (os === 'android') return MIN_APP_VERSION_ANDROID;
+  return null;
+}
+
+/** True when this binary is older than the minimum allowed for the current platform (iOS vs Android). */
+export function isAppUpdateRequired(currentVersion: string): boolean {
+  const minVersion = minimumAppVersionForPlatform(Platform.OS);
+  if (minVersion == null || minVersion === '') return false;
+  return isVersionBelowMinimum(currentVersion, minVersion);
 }
 
 export function supportsTryBuyPostDeliveryOrderSummary(): boolean {
