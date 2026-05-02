@@ -1,12 +1,7 @@
 import { ProductCard } from '@/components/products/ProductCard';
 import { Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
-import {
-    type CartItem,
-    SPECIAL_DEAL_PROMO_CART_ATTR,
-    specialDealPromoPercentFromItem,
-    useCartStore,
-} from '@/store/cartStore';
+import { type CartItem, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
 import { sortInStockFirst } from '@/utils/availability';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
@@ -121,25 +116,8 @@ function productBelongsToListingProducts(products: any[], productId: CartItem['p
     return false;
 }
 
-/** Align with UniversalAdd `matchesDealPromoLine` (string) + numeric tolerance. */
-function lineHasDealPromoForModal(li: CartItem, promoDealPercentOff: number): boolean {
-    if (
-        typeof promoDealPercentOff !== 'number' ||
-        !Number.isFinite(promoDealPercentOff) ||
-        promoDealPercentOff < 0 ||
-        promoDealPercentOff >= 100
-    ) {
-        return false;
-    }
-    const expected = String(promoDealPercentOff);
-    const raw = li.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR];
-    if (String(raw) === expected) return true;
-    const p = specialDealPromoPercentFromItem(li);
-    return p != null && Math.abs(p - promoDealPercentOff) < 0.001;
-}
-
 /**
- * Listed selling unit — mirrors {@link ProductCard} `price` / `priceNumber` sources so the caption matches the row above.
+ * Listed selling unit — mirrors {@link ProductCard} price sources for “Offer price” caption (display only).
  */
 function gridProductSellingUnit(product: any): number {
     const variants = product?.variants?.edges || product?.variants || [];
@@ -236,7 +214,7 @@ export function SavingsCornerPromoOfferContent({
         setDealPromoAddConfirmed(true);
     }, []);
 
-    /** % off variant selling price in this modal (display + add-to-cart); defaults to 50 when config omits it. */
+    /** % off for promo row UI only (config); add-to-cart uses list price — see `applyDealPromoToCart={false}`. */
     const promoDealPercentOff = useMemo(() => {
         const d = cfg.discount as number | string | undefined;
         if (typeof d === 'number' && Number.isFinite(d) && d > 0 && d <= 100) return d;
@@ -248,8 +226,7 @@ export function SavingsCornerPromoOfferContent({
     }, [cfg.discount]);
 
     /**
-     * % off for promo row + caption. Config may use `100` as a sentinel; `(1 - pct/100)` would be 0 → always show ₹0.
-     * Clamp to &lt; 100; default 50 when unset.
+     * % off shown on tiles; default 50 when unset. Clamp &lt; 100 for display math only.
      */
     const displayDealPercentOff = useMemo(() => {
         let pct = promoDealPercentOff > 0 ? promoDealPercentOff : 50;
@@ -339,17 +316,14 @@ export function SavingsCornerPromoOfferContent({
     const promoGridMatchingLineItems = useMemo(() => {
         return lineItems.filter((li: CartItem) => {
             if (listingProducts.length === 0) return false;
-            if (!lineHasDealPromoForModal(li, promoDealPercentOff)) return false;
-
             const variantOnGrid = variantBelongsToListingProducts(listingProducts, li.variantId);
             const productOnGrid = productBelongsToListingProducts(listingProducts, li.productId);
             const inAccumulatedGrid =
                 promoGridVariantKeys.size > 0 &&
                 cartLineMatchesPromoGridVariant(li, promoGridVariantKeys);
-
             return variantOnGrid || productOnGrid || inAccumulatedGrid;
         });
-    }, [lineItems, promoGridVariantKeys, promoDealPercentOff, listingProducts]);
+    }, [lineItems, promoGridVariantKeys, listingProducts]);
 
     const hasAddedFromPromoGrid =
         promoGridMatchingLineItems.length > 0 || dealPromoAddConfirmed;
@@ -360,9 +334,21 @@ export function SavingsCornerPromoOfferContent({
                 promoGridMatchingLineItems.length > 0
                     ? promoGridMatchingLineItems
                     : dealPromoAddConfirmed
-                      ? lineItems.filter((li: CartItem) =>
-                            lineHasDealPromoForModal(li, promoDealPercentOff),
-                        )
+                      ? lineItems.filter((li: CartItem) => {
+                            if (listingProducts.length === 0) return false;
+                            const variantOnGrid = variantBelongsToListingProducts(
+                                listingProducts,
+                                li.variantId,
+                            );
+                            const productOnGrid = productBelongsToListingProducts(
+                                listingProducts,
+                                li.productId,
+                            );
+                            const inAccumulatedGrid =
+                                promoGridVariantKeys.size > 0 &&
+                                cartLineMatchesPromoGridVariant(li, promoGridVariantKeys);
+                            return variantOnGrid || productOnGrid || inAccumulatedGrid;
+                        })
                       : [];
             if (lines.length > 0) {
                 onUnlockPress?.(lines.map((li) => li.variantId));
@@ -534,6 +520,7 @@ export function SavingsCornerPromoOfferContent({
                                             collectionId={collectionGid}
                                             promoPercentOff={displayDealPercentOff}
                                             dealPromoPercentOff={displayDealPercentOff}
+                                            applyDealPromoToCart={false}
                                             showPromoOfferPriceBadge
                                             priceCompareFirst
                                             promoOfferCaptionBelowPrice={`Offer price: ${formatCurrency(

@@ -58,8 +58,13 @@ interface ProductCardProps {
   promoPercentOff?: number;
   /** When true, show compare-at (MRP) before the selling price (e.g. compact promo grid). */
   priceCompareFirst?: boolean;
-  /** When set, add-to-cart uses this % off the variant selling price (special-offer modal only). */
+  /** When set, drives promo **display** (badge / strike / caption). */
   dealPromoPercentOff?: number;
+  /**
+   * When false, {@link dealPromoPercentOff} is UI-only — add-to-cart uses Shopify selling price (no special-deal line discount).
+   * Default true for other promo grids that intentionally discount the line.
+   */
+  applyDealPromoToCart?: boolean;
   /** Special-offer modal only: green “Offer price” row + strike through list/sale prices above. */
   showPromoOfferPriceBadge?: boolean;
   /**
@@ -85,6 +90,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   promoPercentOff,
   priceCompareFirst = false,
   dealPromoPercentOff,
+  applyDealPromoToCart = true,
   showPromoOfferPriceBadge = false,
   promoOfferCaptionBelowPrice,
   onPromoDealAddSuccess,
@@ -598,9 +604,13 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 item={product}
                 variant="prominent"
                 dealPromoPercentOff={
-                  effectiveDealPromoPct != null ? effectiveDealPromoPct : dealPromoPercentOff
+                  applyDealPromoToCart === false
+                    ? undefined
+                    : effectiveDealPromoPct != null
+                      ? effectiveDealPromoPct
+                      : dealPromoPercentOff
                 }
-                onSuccessfulAdd={showPromoOfferPriceBadge ? onPromoDealAddSuccess : undefined}
+                onSuccessfulAdd={onPromoDealAddSuccess}
               />
             </View>
           )}
@@ -973,6 +983,7 @@ const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
   if (prevProps.containerStyle !== nextProps.containerStyle) return false;
   if (prevProps.promoPercentOff !== nextProps.promoPercentOff) return false;
   if (prevProps.dealPromoPercentOff !== nextProps.dealPromoPercentOff) return false;
+  if (prevProps.applyDealPromoToCart !== nextProps.applyDealPromoToCart) return false;
   if (prevProps.showPromoOfferPriceBadge !== nextProps.showPromoOfferPriceBadge) return false;
   if (prevProps.promoOfferCaptionBelowPrice !== nextProps.promoOfferCaptionBelowPrice) return false;
   if (prevProps.onPromoDealAddSuccess !== nextProps.onPromoDealAddSuccess) return false;
