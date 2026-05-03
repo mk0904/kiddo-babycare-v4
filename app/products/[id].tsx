@@ -813,6 +813,21 @@ const ProductDetailScreen = () => {
                 };
 
                 await addItem(cartItem);
+
+                // Track Add to Cart event
+                try {
+                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    
+                    const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
+                    if (!hasAddedToCart) {
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        await AsyncStorage.setItem('has_added_to_cart', 'true');
+                    }
+                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+                } catch (e) {
+                    console.warn('[PDP] AddToCart tracking error:', e);
+                }
             } catch (error: any) {
                 alert(error.message || 'Failed to add item to cart. Please try again.');
             }
@@ -897,6 +912,21 @@ const ProductDetailScreen = () => {
                     bookingDate: bookingDateToYYYYMMDD(date),
                 };
                 await addItem(cartItem);
+
+                // Track Add to Cart event
+                try {
+                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    
+                    const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
+                    if (!hasAddedToCart) {
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        await AsyncStorage.setItem('has_added_to_cart', 'true');
+                    }
+                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+                } catch (e) {
+                    console.warn('[PDP] Ticketing AddToCart tracking error:', e);
+                }
             } catch (error: any) {
                 alert(error?.message || 'Failed to add to cart. Please try again.');
             }
@@ -1251,6 +1281,19 @@ const ProductDetailScreen = () => {
                 await removeFromWishlist(product.id);
             } else {
                 await addToWishlist(product);
+                
+                // Track Wishlist Added event
+                try {
+                    const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
+                    const price = parseFloat(
+                        product.priceRange?.minVariantPrice?.amount ||
+                        product.variants?.edges?.[0]?.node?.price?.amount ||
+                        '0'
+                    );
+                    trackWishlistAdded(product.id, product.title, price);
+                } catch (e) {
+                    console.warn('[PDP] Wishlist tracking error:', e);
+                }
             }
         } catch (error) {
             console.error('Wishlist error:', error);

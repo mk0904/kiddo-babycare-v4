@@ -562,7 +562,7 @@ export function SavingsCorner({
                                 >
                                     <Text style={styles.dealPromoEmoji}>🥳</Text>
                                     <View style={styles.dealPromoTextContainer}>
-                                        <Text style={styles.dealPromoCtaText}>Go to 50% off store</Text>
+                                        <Text style={styles.dealPromoCtaText}>Go to exclusive 50% off store</Text>
                                         <Text style={styles.dealPromoSubtext}>valid on this order only</Text>
                                     </View>
                                     <View>
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dealPromoCtaText: {
-        fontSize: 20,
+        fontSize: 18,
         fontFamily: Fonts.LexendBold,
         color: '#F43F5E',
         lineHeight: 24,

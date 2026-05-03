@@ -646,9 +646,9 @@ export function SavingsCornerPromoOfferContent({
 
                     <View style={styles.dottedRule} />
 
-                    {/* <View style={styles.unlockBanner}>
+                     <View style={styles.unlockBanner}>
                     <Text style={styles.unlockBannerText}>{bannerText}</Text>
-                </View> */}
+                </View> 
                     <View style={styles.titleContainer}>
                         <Text style={styles.flatOff}>{titleText}</Text>
                     </View>

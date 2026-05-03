@@ -205,6 +205,22 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         try {
             await addItem(cartItem);
+            
+            // Track Add to Cart event
+            try {
+                const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                
+                const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
+                if (!hasAddedToCart) {
+                    trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                    await AsyncStorage.setItem('has_added_to_cart', 'true');
+                }
+                trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+            } catch (e) {
+                console.warn('[UniversalAdd] Tracking error:', e);
+            }
+
             onSuccessfulAdd?.();
         } catch (err: any) {
             Alert.alert('Cannot add to cart', err?.message || 'This item is not available in the requested quantity.');

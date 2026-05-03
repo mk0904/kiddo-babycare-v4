@@ -1054,6 +1054,14 @@ export default function CartScreen() {
     };
 
     const handlePlaceOrder = async () => {
+        // Track Checkout Started event
+        try {
+            const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
+            trackCheckoutStarted(total, cartItems.length, cartItems.map(item => item.productId).filter(Boolean));
+        } catch (e) {
+            console.warn('Checkout started tracking error:', e);
+        }
+
         // Snapshot pre-order milestone step now (before any async ops that could update config).
         const milestoneStepSnapshot = currentMilestoneStep;
         // Check if user is logged in
@@ -1566,6 +1574,7 @@ export default function CartScreen() {
             // Track Payment Success and Order Placed
             try {
                 const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { extractNumericId } = require('@/utils/metaSDK');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
@@ -1574,13 +1583,18 @@ export default function CartScreen() {
                     trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
                     await AsyncStorage.setItem('has_placed_order', 'true');
                 }
-                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
+                const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds);
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
                     paymentMethod: effectivePaymentMethod,
                     itemCount: cartItems.length,
                     hasCoupon: discountCodes.length > 0,
+                    content_ids: cartProductIds.map(id => extractNumericId(id)),
+                    content_type: 'product',
+                    value: cartTotal,
+                    currency: 'INR',
                 });
             } catch (e) {
                 console.warn('Analytics tracking error:', e);
