@@ -2,7 +2,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
-import { couponService, type CouponCode } from '@/services/couponService';
+import { couponService, pickSchoolNameFromCouponRaw, type CouponCode } from '@/services/couponService';
 import { specialDealPromoPercentFromItem, useCartItems, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
@@ -414,6 +414,14 @@ export function SavingsCorner({
         return dc?.isDealCoupon === true && dc?.applicable !== false;
     }, [discountCodes, appliedDiscountCode]);
 
+    /** From coupons API on the applied deal coupon (supports merged payloads + nested keys). */
+    const dealCouponSchoolName = useMemo(() => {
+        const code = appliedDiscountCode;
+        if (!code) return '';
+        const dc = discountCodes.find((x) => x.code.toUpperCase() === code.toUpperCase());
+        return pickSchoolNameFromCouponRaw(dc) ?? '';
+    }, [discountCodes, appliedDiscountCode]);
+
     const resolvedDealConfig: SpecialDealConfig | null = useMemo(() => {
         if (specialDealConfig) return specialDealConfig;
         if (hasDealCouponApplied) return FALLBACK_SPECIAL_DEAL_CONFIG;
@@ -577,7 +585,18 @@ export function SavingsCorner({
                                 >
                                     <Text style={styles.dealPromoEmoji}>🥳</Text>
                                     <View style={styles.dealPromoTextContainer}>
-                                        <Text style={styles.dealPromoCtaText}>Go to exclusive 50% off store</Text>
+                                        <Text style={styles.dealPromoCtaText}>
+                                            Go to{' '}
+                                            <Text>exclusive 50% off store</Text>
+                                            {' '}for{' '}
+                                            {dealCouponSchoolName ? (
+                                                <>
+                                                    <Text style={styles.dealPromoCtaTextBold}>{dealCouponSchoolName}</Text>
+                                                    {' '}
+                                                </>
+                                            ) : null}
+                                            parents
+                                        </Text>
                                         <Text style={styles.dealPromoSubtext}>valid on this order only</Text>
                                     </View>
                                     <View>
@@ -1105,13 +1124,17 @@ const styles = StyleSheet.create({
     },
     dealPromoCtaText: {
         fontSize: 14,
-        fontFamily: Fonts.LexendBold,
+        fontFamily: Fonts.LexendMedium,
         color: '#F43F5E',
-        lineHeight: 24,
+    },
+    dealPromoCtaTextBold: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendMedium,
+        color: '#F43F5E',
     },
     dealPromoSubtext: {
         fontSize: 12,
-        fontFamily: Fonts.LexendSemiBold,
+        fontFamily: Fonts.LexendMedium,
         color: '#4B5563',
         marginTop: 2,
     },

@@ -4,7 +4,7 @@
 
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { appConfigService } from '@/services/appConfigService';
-import { getSubtotalForAllowedCategories } from '@/services/couponService';
+import { getSubtotalForAllowedCategories, pickSchoolNameFromCouponRaw } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -296,6 +296,8 @@ export interface DiscountCode {
     isMilestone?: boolean;
     /** From coupons API: opens deal upsell modal when this code is applied. */
     isDealCoupon?: boolean;
+    /** From coupons API: school label for deal promo copy. */
+    schoolName?: string;
 }
 
 /** One row of {@link computeDiscountBreakdown} for Bill / analytics. */
@@ -314,6 +316,10 @@ export type DiscountBreakdown = {
     total: number;
     perCode: DiscountBreakdownPerCode[];
 };
+
+function schoolNameFromCouponApi(c: unknown): string | undefined {
+    return pickSchoolNameFromCouponRaw(c);
+}
 
 /** Backend may send camelCase or snake_case. */
 function couponIsDealCouponFromApi(c: { isDealCoupon?: boolean; is_deal_coupon?: boolean } | null | undefined, code?: string): boolean {
@@ -849,6 +855,7 @@ export const useCartStore = create<CartState>()(
                             apiDesc != null && String(apiDesc).trim() !== '' ? String(apiDesc).trim() : undefined;
                         const cfgAllowed = configDiscount.allowedCategories ?? (configDiscount as any).allowed_categories;
                         const cfgApCat = configDiscount.applicableCategory ?? (configDiscount as any).applicable_category;
+                        const snValid = schoolNameFromCouponApi(configDiscount as { schoolName?: string | null; school_name?: string | null });
                         stillValid.push({
                             ...dc,
                             isDealCoupon: couponIsDealCouponFromApi(configDiscount as { isDealCoupon?: boolean; is_deal_coupon?: boolean }, dc.code),
@@ -860,6 +867,7 @@ export const useCartStore = create<CartState>()(
                             ...(cfgApCat != null && String(cfgApCat).trim() !== ''
                                 ? { applicableCategory: String(cfgApCat).trim() }
                                 : {}),
+                            ...(snValid != null ? { schoolName: snValid } : {}),
                         });
                     } catch (_) {
                         // validation failed or network error -> drop this code
@@ -1325,6 +1333,7 @@ export const useCartStore = create<CartState>()(
                             ? 'fixed'
                             : 'percentage';
 
+                    const dealSchool = schoolNameFromCouponApi(configDiscount);
                     const dealEntry: DiscountCode = {
                         code: codeToApply,
                         type: backendDealType,
@@ -1345,6 +1354,7 @@ export const useCartStore = create<CartState>()(
                             ? { maxDiscountAmount: Number(configDiscount.maxDiscountAmount) }
                             : {}),
                         ...(configDiscount.isSchoolCoupon === true ? { isSchoolCoupon: true } : {}),
+                        ...(dealSchool != null ? { schoolName: dealSchool } : {}),
                     };
                     const merged = [...base, dealEntry];
 
@@ -1498,12 +1508,14 @@ export const useCartStore = create<CartState>()(
                 }
 
                 let nextDiscountCodes: DiscountCode[];
+                const stubSchool = schoolNameFromCouponApi(configDiscount);
                 const newEntryStub: DiscountCode = {
                     code: codeToApply,
                     type: 'percentage',
                     value: 0,
                     appliedAt: Date.now(),
                     isDealCoupon: couponIsDealCouponFromApi(configDiscount),
+                    ...(stubSchool != null ? { schoolName: stubSchool } : {}),
                 };
                 nextDiscountCodes = [newEntryStub];
 
@@ -1795,6 +1807,8 @@ export const useCartStore = create<CartState>()(
                         const cDesc2 =
                             (bD2 != null && String(bD2).trim() !== '' ? String(bD2).trim() : undefined)
                             ?? existing2?.couponDescription;
+                        const schoolFromBackend = schoolNameFromCouponApi(backendCoupon as { schoolName?: string | null; school_name?: string | null });
+                        const schoolLine = schoolFromBackend ?? existing2?.schoolName;
                         return {
                             code: String(dc.code ?? '').trim(),
                             type: discountType,
@@ -1815,6 +1829,9 @@ export const useCartStore = create<CartState>()(
                                     : {}),
                             ...(cTitle2 != null && cTitle2 !== '' ? { couponTitle: cTitle2 } : {}),
                             ...(cDesc2 != null && cDesc2 !== '' ? { couponDescription: cDesc2 } : {}),
+                            ...(schoolLine != null && String(schoolLine).trim() !== ''
+                                ? { schoolName: String(schoolLine).trim() }
+                                : {}),
                         };
                     });
 
@@ -1835,6 +1852,7 @@ export const useCartStore = create<CartState>()(
                         const cfgD2 = (configDiscount as { description?: string }).description;
                         const cT2 = cfgT2 != null && String(cfgT2).trim() !== '' ? String(cfgT2).trim() : undefined;
                         const cD2 = cfgD2 != null && String(cfgD2).trim() !== '' ? String(cfgD2).trim() : undefined;
+                        const backendSchool = schoolNameFromCouponApi(configDiscount);
                         const backendEntry: DiscountCode = {
                             code: codeToApply,
                             type: backendType,
@@ -1850,6 +1868,7 @@ export const useCartStore = create<CartState>()(
                             isDealCoupon: couponIsDealCouponFromApi(configDiscount, codeToApply),
                             ...(cT2 != null ? { couponTitle: cT2 } : {}),
                             ...(cD2 != null ? { couponDescription: cD2 } : {}),
+                            ...(backendSchool != null ? { schoolName: backendSchool } : {}),
                         };
                         if (!codeInResponse) {
                             console.warn(
@@ -1873,6 +1892,7 @@ export const useCartStore = create<CartState>()(
                                 const d2 = (configDiscount as { description?: string }).description;
                                 const ct2 = t2 != null && String(t2).trim() !== '' ? String(t2).trim() : undefined;
                                 const cd2 = d2 != null && String(d2).trim() !== '' ? String(d2).trim() : undefined;
+                                const mergeSchool = schoolNameFromCouponApi(configDiscount);
                                 discountCodesFromCart[idx] = {
                                     ...discountCodesFromCart[idx],
                                     ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
@@ -1882,6 +1902,7 @@ export const useCartStore = create<CartState>()(
                                     isDealCoupon: couponIsDealCouponFromApi(configDiscount, codeToApply),
                                     ...(ct2 != null ? { couponTitle: ct2 } : {}),
                                     ...(cd2 != null ? { couponDescription: cd2 } : {}),
+                                    ...(mergeSchool != null ? { schoolName: mergeSchool } : {}),
                                 };
                             }
                         }
@@ -2278,6 +2299,9 @@ export const useCartStore = create<CartState>()(
                                     : prevApplied?.allowedCategories?.length
                                         ? prevApplied.allowedCategories
                                         : undefined;
+                            const fetchSchool =
+                                schoolNameFromCouponApi(backendCoupon as { schoolName?: string | null; school_name?: string | null }) ??
+                                prevApplied?.schoolName;
                             return {
                                 code: String(dc.code ?? '').trim(),
                                 type: discountType,
@@ -2293,6 +2317,9 @@ export const useCartStore = create<CartState>()(
                                     ? { applicableCategory: String(applicableCategory).trim() }
                                     : {}),
                                 ...(allowedCategories?.length ? { allowedCategories } : {}),
+                                ...(fetchSchool != null && String(fetchSchool).trim() !== ''
+                                    ? { schoolName: String(fetchSchool).trim() }
+                                    : {}),
                             };
                         });
 

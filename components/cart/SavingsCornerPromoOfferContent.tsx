@@ -1,5 +1,6 @@
 import { ProductCard } from '@/components/products/ProductCard';
 import { Fonts } from '@/constants/theme';
+import { pickSchoolNameFromCouponRaw } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { type CartItem, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
@@ -295,6 +296,7 @@ export function SavingsCornerPromoOfferContent({
     const promoScrollRef = useRef<ScrollView | null>(null);
     const lastGridRowRef = useRef<View | null>(null);
     const lineItems = useCartStore((s) => s.lineItems);
+    const discountCodes = useCartStore((s) => s.discountCodes);
 
     /** `UniversalAdd` fired after a successful add — source-of-truth for footer if cart snapshot lags. */
     const [dealPromoAddConfirmed, setDealPromoAddConfirmed] = useState(false);
@@ -614,7 +616,19 @@ export function SavingsCornerPromoOfferContent({
 
     const actualPrice = Number(cfg.actualPrice ?? 0);
     const discountedPrice = Number(cfg.discountedPrice ?? 0);
-    const bannerText = cfg.bannerText?.trim() || 'One time offer Unlocked!';
+    const bannerText = cfg.bannerText?.trim() || 'One-time Offer Unlocked';
+    /** Same source as cart deal CTA: school label on applied deal coupon from coupons API. */
+    const dealPromoSchoolName = useMemo(() => {
+        const indexed = discountCodes.map((dc, i) => ({ dc, i }));
+        const active = indexed.filter(({ dc }) => dc.applicable !== false);
+        const pool = active.length > 0 ? active : indexed;
+        const dealRows = pool.map(({ dc }) => dc).filter((dc) => dc.isDealCoupon === true);
+        const pickDc =
+            dealRows.length > 0
+                ? dealRows.reduce((a, b) => ((b.appliedAt ?? 0) >= (a.appliedAt ?? 0) ? b : a))
+                : discountCodes.find((dc) => dc.isDealCoupon === true);
+        return pickSchoolNameFromCouponRaw(pickDc) ?? '';
+    }, [discountCodes]);
     const titleText = cfg.title?.trim() || 'Special offer';
     const footerCta = cfg.footerCta?.trim() || 'Add products to unlock offer';
     /** Primary button always dismisses; label reflects optional browse-and-add vs done. */
@@ -673,9 +687,18 @@ export function SavingsCornerPromoOfferContent({
 
                     <View style={styles.dottedRule} />
 
-                     <View style={styles.unlockBanner}>
-                    <Text style={styles.unlockBannerText}>{bannerText}</Text>
-                </View> 
+                    <View style={styles.unlockBanner}>
+                        <Text style={styles.unlockBannerText}>
+                            {dealPromoSchoolName !== '' ? (
+                                <>
+                                    <Text style={styles.unlockBannerSchool}>One Time Offer Unlocked</Text>{'\n'}
+                                    For{' '}{dealPromoSchoolName}{' '}Parents
+                                </>
+                            ) : (
+                                bannerText
+                            )}
+                        </Text>
+                    </View>
                     <View style={styles.titleContainer}>
                         <Text style={styles.flatOff}>{titleText}</Text>
                     </View>
@@ -939,6 +962,13 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontFamily: Fonts.LexendRegular,
         fontSize: promoFs(Fonts.ExtraSmallFontSize),
+        letterSpacing: 0.3,
+        textAlign: 'center',
+    },
+    unlockBannerSchool: {
+        color: '#fff',
+        fontFamily: Fonts.LexendSemiBold,
+        fontSize: 12,
         letterSpacing: 0.3,
     },
     flatOff: {
