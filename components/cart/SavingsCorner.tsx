@@ -6,7 +6,8 @@ import { couponService, type CouponCode } from '@/services/couponService';
 import { specialDealPromoPercentFromItem, useCartItems, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
@@ -99,6 +100,20 @@ export function SavingsCorner({
     const [couponUsages, setCouponUsages] = useState<Record<string, number>>({});
     const [lastApplyError, setLastApplyError] = useState<string | null>(null);
     const [showSchoolModal, setShowSchoolModal] = useState(false);
+
+    /**
+     * Opening PDP from the promo grid must dismiss the sheet *before* navigation so React Navigation’s
+     * frozen cart snapshot does not keep `showCouponsModal === true` (back from PDP would reopen the promo).
+     */
+    const dismissPromoAfterProductNavRef = useRef(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!dismissPromoAfterProductNavRef.current) return;
+            setShowCouponsModal(false);
+            dismissPromoAfterProductNavRef.current = false;
+        }, []),
+    );
 
     const cartSubtotal = useMemo(
         () => cartItems.reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity), 0),
@@ -769,6 +784,9 @@ export function SavingsCorner({
                                 onClose={closeModal}
                                 onSkip={closeModal}
                                 onSeeAllCoupons={() => setCouponModalMode('list')}
+                                onProductNavigationFromPromo={() => {
+                                    dismissPromoAfterProductNavRef.current = true;
+                                }}
                             />
                         </View>
                     ) : (
@@ -1086,13 +1104,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dealPromoCtaText: {
-        fontSize: 18,
+        fontSize: 14,
         fontFamily: Fonts.LexendBold,
         color: '#F43F5E',
         lineHeight: 24,
     },
     dealPromoSubtext: {
-        fontSize: 13,
+        fontSize: 12,
         fontFamily: Fonts.LexendSemiBold,
         color: '#4B5563',
         marginTop: 2,

@@ -19,6 +19,22 @@ function isLikelyAxiosNetworkError(error: unknown): boolean {
   return false;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Storefront returns this when two cart mutations overlap (e.g. discount sync + line update). */
+function graphQlErrorsAreCartConflict(errors: unknown): boolean {
+  if (!Array.isArray(errors) || errors.length === 0) return false;
+  for (const err of errors) {
+    const ext = (err as { extensions?: { code?: string } })?.extensions;
+    if (ext?.code === 'CONFLICT') return true;
+    const msg = String((err as { message?: string })?.message ?? '').toLowerCase();
+    if (msg.includes('conflict') && msg.includes('cart')) return true;
+  }
+  return false;
+}
+
 // GraphQL Queries
 const GET_PRODUCTS_QUERY = `
   query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
@@ -1453,33 +1469,53 @@ export const shopifyApi = {
   },
 
   applyDiscountCodes: async (cartId: string, discountCodes: string[]) => {
-    try {
-      const response = await client.post('', {
-        query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
-        variables: {
-          cartId,
-          // Send exact codes (e.g. "Mystery gift") — Admin matches Shopify’s stored string; do not force uppercase.
-          discountCodes: discountCodes.map((code) => String(code).trim()).filter((c) => c.length > 0),
-        },
-      });
+    const variables = {
+      cartId,
+      // Send exact codes (e.g. "Mystery gift") — Admin matches Shopify’s stored string; do not force uppercase.
+      discountCodes: discountCodes.map((code) => String(code).trim()).filter((c) => c.length > 0),
+    };
 
-      if (response.data.errors) {
-        console.error('Shopify API errors:', response.data.errors);
-        throw new Error(response.data.errors[0]?.message || 'Failed to apply discount codes');
+    const maxAttempts = 4;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await client.post('', {
+          query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
+          variables,
+        });
+
+        if (response.data.errors) {
+          if (graphQlErrorsAreCartConflict(response.data.errors) && attempt < maxAttempts - 1) {
+            await delay(120 * Math.pow(2, attempt));
+            continue;
+          }
+          console.error('Shopify API errors:', response.data.errors);
+          throw new Error(response.data.errors[0]?.message || 'Failed to apply discount codes');
+        }
+
+        const result = response.data.data.cartDiscountCodesUpdate;
+
+        if (result.userErrors && result.userErrors.length > 0) {
+          const error = result.userErrors[0];
+          throw new Error(error.message || 'Failed to apply discount code');
+        }
+
+        return result.cart;
+      } catch (error: any) {
+        const msg = String(error?.message ?? '').toLowerCase();
+        const retryConflict =
+          msg.includes('conflict') && msg.includes('cart') && attempt < maxAttempts - 1;
+        const retryNetwork = isLikelyAxiosNetworkError(error) && attempt < maxAttempts - 1;
+        if (retryConflict || retryNetwork) {
+          await delay(120 * Math.pow(2, attempt));
+          continue;
+        }
+        console.error('Error applying discount codes:', error);
+        throw error;
       }
-
-      const result = response.data.data.cartDiscountCodesUpdate;
-
-      if (result.userErrors && result.userErrors.length > 0) {
-        const error = result.userErrors[0];
-        throw new Error(error.message || 'Failed to apply discount code');
-      }
-
-      return result.cart;
-    } catch (error: any) {
-      console.error('Error applying discount codes:', error);
-      throw error;
     }
+
+    throw new Error('Failed to apply discount codes');
   },
 
   /**

@@ -5,6 +5,7 @@ import { type CartItem, useCartStore } from '@/store/cartStore';
 import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -235,6 +236,8 @@ export interface SavingsCornerPromoOfferContentProps {
     onSkip: () => void;
     onSeeAllCoupons: () => void;
     onUnlockPress?: (selectedVariantIds: string[]) => void;
+    /** Parent marks intent so returning from PDP does not restore a frozen promo sheet (see SavingsCorner). */
+    onProductNavigationFromPromo?: () => void;
 }
 
 export function SavingsCornerPromoOfferContent({
@@ -244,7 +247,9 @@ export function SavingsCornerPromoOfferContent({
     onSkip,
     onSeeAllCoupons,
     onUnlockPress,
+    onProductNavigationFromPromo,
 }: SavingsCornerPromoOfferContentProps) {
+    const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
     const cardMaxWidth = Math.min(windowWidth - 32, 400);
 
@@ -345,6 +350,28 @@ export function SavingsCornerPromoOfferContent({
     const collectionGid = useMemo(
         () => parseShopifyCollectionGid(activeCollectionRaw),
         [activeCollectionRaw]
+    );
+
+    /**
+     * Dismiss overlay before navigating: if `router.push` runs while the sheet is still “open”, the cart
+     * screen can freeze with `showCouponsModal === true` and **Back** from PDP restores the promo modal.
+     * Navigate on the next microtask so close state commits first; delay is short enough to avoid a cart flash.
+     */
+    const handlePromoProductPress = useCallback(
+        (product: any) => {
+            const routeParam = product?.id || product?._id || product?.handle;
+            if (!routeParam) return;
+            const collectionIdParam = collectionGid ?? undefined;
+            onProductNavigationFromPromo?.();
+            onClose();
+            queueMicrotask(() => {
+                router.push({
+                    pathname: `/products/${encodeURIComponent(String(routeParam))}`,
+                    params: collectionIdParam ? { collectionId: collectionIdParam } : {},
+                } as any);
+            });
+        },
+        [collectionGid, onClose, onProductNavigationFromPromo, router],
     );
 
     collectionGidRef.current = collectionGid;
@@ -747,6 +774,7 @@ export function SavingsCornerPromoOfferContent({
                                             product={product}
                                             width={productCardWidth}
                                             collectionId={collectionGid}
+                                            onPress={handlePromoProductPress}
                                             compactTypographyScale={PROMO_MODAL_TEXT_SCALE}
                                             hideDiscountPercentage
                                             promoPercentOff={displayDealPercentOff}
