@@ -59,14 +59,23 @@ export function cartItemSameLineIdentity(
     a: { variantId: string; customAttributes?: Record<string, string> },
     b: { variantId: string; customAttributes?: Record<string, string> },
 ): boolean {
-    if (a.variantId !== b.variantId) return false;
-    return (
-        String(a.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR] ?? '') ===
-        String(b.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR] ?? '')
-    );
+    const ak = canonicalVariantKeyForMerge(a.variantId);
+    const bk = canonicalVariantKeyForMerge(b.variantId);
+    if (!ak || !bk || ak !== bk) return false;
+
+    const tbA = String(a.customAttributes?.try_buy_trial_variant_id ?? '').trim();
+    const tbB = String(b.customAttributes?.try_buy_trial_variant_id ?? '').trim();
+    if (tbA !== tbB) return false;
+
+    const ap = String(a.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR] ?? '').trim();
+    const bp = String(b.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR] ?? '').trim();
+    if (ap === bp) return true;
+    /** Fresh add often omits the marker; {@link syncDealPricing} stamps it on eligible lines — still one physical line. */
+    if (ap === '' || bp === '') return true;
+    return false;
 }
 
-function canonicalVariantKeyForMerge(id: string | number | undefined | null): string | null {
+export function canonicalVariantKeyForMerge(id: string | number | undefined | null): string | null {
     if (id === undefined || id === null) return null;
     const s =
         typeof id === 'number' && Number.isFinite(id)

@@ -3,6 +3,7 @@ import type { TryAndBuyVariantSelectionResult } from '@/components/modals/Varian
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
 import {
+    canonicalVariantKeyForMerge,
     SPECIAL_DEAL_PROMO_CART_ATTR,
     useCartItems,
     useCartStore,
@@ -90,21 +91,37 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const matchesDealPromoLine = (ci: CartItem) => {
         const v = ci.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR];
         if (expectedDealPromoAttr == null) {
-            return v == null || String(v).trim() === '';
+            /** UI-only promo (`applyDealPromoToCart={false}`): line may have no marker yet or `syncDealPricing` may stamp it. */
+            return true;
         }
-        return String(v) === expectedDealPromoAttr;
+        return String(v ?? '').trim() === expectedDealPromoAttr;
     };
 
-    // Get count for this specific item by matching variantId or productId
-    // This handles cases where search results have different variant IDs than what's in the cart
-    const getItemCount = () => {
-        let cartItem = cartItems.find((ci) => ci.variantId === variantId && matchesDealPromoLine(ci));
-
-        if (!cartItem && productId) {
-            cartItem = cartItems.find((ci) => ci.productId === productId && matchesDealPromoLine(ci));
+    const cartLineMatchesProductVariant = (ci: CartItem): boolean => {
+        const vk = canonicalVariantKeyForMerge(variantId);
+        if (
+            (vk != null && canonicalVariantKeyForMerge(ci.variantId) === vk) ||
+            String(ci.variantId) === String(variantId)
+        ) {
+            return true;
         }
+        if (productId == null || productId === '') return false;
+        const pk = canonicalVariantKeyForMerge(productId);
+        return (
+            String(ci.productId) === String(productId) ||
+            (pk != null && canonicalVariantKeyForMerge(ci.productId) === pk)
+        );
+    };
 
-        return cartItem ? cartItem.quantity : 0;
+    // Sum qty across matching lines (handles GID vs numeric ids + deal marker stamped after sync).
+    const getItemCount = () => {
+        let total = 0;
+        for (const ci of cartItems) {
+            if (!cartLineMatchesProductVariant(ci)) continue;
+            if (!matchesDealPromoLine(ci)) continue;
+            total += ci.quantity;
+        }
+        return total;
     };
 
     const count = getItemCount();
@@ -342,12 +359,17 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         await completeAddToCart(currentItem, result.keepVariant, result.tryVariant);
     };
 
-    const getCartItem = () => {
-        let cartItem = cartItems.find((ci) => ci.variantId === variantId && matchesDealPromoLine(ci));
-        if (!cartItem && productId) {
-            cartItem = cartItems.find((ci) => ci.productId === productId && matchesDealPromoLine(ci));
-        }
-        return cartItem;
+    const getCartItem = (): CartItem | undefined => {
+        const candidates = cartItems.filter(
+            (ci) => cartLineMatchesProductVariant(ci) && matchesDealPromoLine(ci),
+        );
+        if (candidates.length === 0) return undefined;
+        candidates.sort((a, b) => {
+            const rank = (x: CartItem) =>
+                x.id?.startsWith('gid://shopify/CartLine/') ? 2 : x.id?.startsWith('item_') ? 1 : 0;
+            return rank(b) - rank(a);
+        });
+        return candidates[0];
     };
 
     const handleRemove = async () => {

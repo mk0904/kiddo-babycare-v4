@@ -946,8 +946,8 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     metaSub: {
-        fontSize: promoFs(10),
-        fontFamily: Fonts.LexendRegular,
+        fontSize: 12,
+        fontFamily: Fonts.LexendMedium,
         color: '#9CA3AF',
         flex: 1,
     },
