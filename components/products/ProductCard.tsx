@@ -34,7 +34,13 @@ function scaleFontStyle(style: object, scale: number): object {
     out.fontSize = Math.max(8, Math.round(f.fontSize * scale * 10) / 10);
   }
   if (typeof f.lineHeight === 'number') {
-    out.lineHeight = Math.max(10, Math.round(f.lineHeight * scale));
+    let lh = Math.max(10, Math.round(f.lineHeight * scale));
+    const fs = typeof out.fontSize === 'number' ? out.fontSize : null;
+    /** iOS clips glyphs when lineHeight < font metrics; keep line box >= ~1.12× fontSize after scale. */
+    if (fs != null && lh < Math.ceil(fs * 1.12)) {
+      lh = Math.ceil(fs * 1.2);
+    }
+    out.lineHeight = lh;
   }
   return out;
 }
@@ -923,7 +929,7 @@ const styles = StyleSheet.create({
   },
   promoOfferPriceBadgeOuter: {
     marginHorizontal: 8,
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: 2,
     backgroundColor: '#cef4da',
     padding: 4,
@@ -934,20 +940,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.LexendRegular,
     color: '#2E7D32',
     textAlign: 'left',
+    lineHeight: 12,
   },
   promoOfferCaptionBelowWrap: {
     alignSelf: 'flex-start',
     marginTop: 6,
     backgroundColor: '#cef4da',
     borderRadius: 8,
-    paddingVertical: 5,
+    paddingVertical: 2,
     paddingHorizontal: 6,
   },
   promoOfferCaptionBelowPriceRow: {
     fontSize: 16,
     fontFamily: Fonts.LexendBold,
     color: '#2E7D32',
-    lineHeight: 14,
+    /** Must be ≥ fontSize — smaller lineHeight clips ₹ / ascenders on iOS. */
+    lineHeight: 22,
   },
   essentialsPriceContainer: {
     flexDirection: 'column',
