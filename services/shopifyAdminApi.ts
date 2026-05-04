@@ -341,12 +341,15 @@ export const shopifyAdminApi = {
         },
       };
 
-      console.log('[AdminAPI] Creating draft order:', JSON.stringify(variables, null, 2));
+      console.log('[AdminAPI] Draft order mutation:', DRAFT_ORDER_CREATE_MUTATION);
+      console.log('[AdminAPI] Draft order variables:', JSON.stringify(variables, null, 2));
 
       const response = await adminClient.post('', {
         query: DRAFT_ORDER_CREATE_MUTATION,
         variables,
       });
+
+      console.log('[AdminAPI] Draft order response:', JSON.stringify(response.data, null, 2));
 
       if (response.data.errors) {
         console.error('[AdminAPI] GraphQL errors:', response.data.errors);

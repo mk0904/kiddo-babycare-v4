@@ -197,12 +197,12 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
     deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,
   };
-  console.log('[CheckoutService] createDraft request:', { url, payload });
+  console.log('[CheckoutService] createDraft request:', JSON.stringify({ url, payload }, null, 2));
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,
     headers: { 'Content-Type': 'application/json' },
   });
-  console.log('[CheckoutService] createDraft response:', data);
+  console.log('[CheckoutService] createDraft response:', JSON.stringify(data, null, 2));
   return data;
 }
 

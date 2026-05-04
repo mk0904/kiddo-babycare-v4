@@ -325,7 +325,8 @@ export interface LineItemForCategory {
  */
 export function getSubtotalForAllowedCategories(
   items: LineItemForCategory[],
-  allowedCategories: string[] | null | undefined
+  allowedCategories: string[] | null | undefined,
+  options: { limitToOne?: boolean } = {}
 ): number {
   if (!allowedCategories?.length) return 0;
   const allowedLower = allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
@@ -343,7 +344,13 @@ export function getSubtotalForAllowedCategories(
         return false;
     });
 
-    if (isEligible) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+    if (isEligible && Number(item.quantity ?? 0) > 0) {
+      if (options.limitToOne) {
+        sum = Math.max(sum, Number(item.price ?? 0));
+      } else {
+        sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+      }
+    }
   }
   return sum;
 }
