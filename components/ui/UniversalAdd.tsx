@@ -2,7 +2,13 @@ import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
-import { useCartItems, useCartStore } from '@/store/cartStore';
+import {
+    canonicalVariantKeyForMerge,
+    SPECIAL_DEAL_PROMO_CART_ATTR,
+    useCartItems,
+    useCartStore,
+    type CartItem,
+} from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +32,13 @@ interface UniversalAddProps {
     /** PDP: when true, block add until shopper picks required options (e.g. Try & Buy size row). */
     pdpAddBlocked?: boolean;
     pdpAddBlockedMessage?: string;
+    /**
+     * Special-offer modal only: percent off the **current variant selling price** (e.g. 50).
+     * Stored on the cart line so subtotal + Shopify sync stay consistent.
+     */
+    dealPromoPercentOff?: number;
+    /** Fires after a line is successfully added to the cart (e.g. promo modal footer CTA). */
+    onSuccessfulAdd?: () => void;
 }
 
 /** Format date as YYYY-MM-DD in local time so the calendar date is preserved (no UTC shift). */
@@ -47,6 +60,8 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     tryBuyTrialVariant,
     pdpAddBlocked = false,
     pdpAddBlockedMessage = 'Please choose your size above before adding to cart.',
+    dealPromoPercentOff,
+    onSuccessfulAdd,
 }) => {
     // Use Zustand store instead of context
     const cartItems = useCartItems();
@@ -65,23 +80,48 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const productId = item.id || item._id;
     const variantId = activeVariant.id || activeVariant._id;
 
-    // Get count for this specific item by matching variantId or productId
-    // This handles cases where search results have different variant IDs than what's in the cart
-    const getItemCount = () => {
-        // First, try to match by variantId
-        let cartItem = cartItems.find(
-            (ci) => ci.variantId === variantId
-        );
+    const expectedDealPromoAttr =
+        dealPromoPercentOff != null &&
+        Number.isFinite(dealPromoPercentOff) &&
+        dealPromoPercentOff > 0 &&
+        dealPromoPercentOff < 100
+            ? String(dealPromoPercentOff)
+            : null;
 
-        // If not found and we have a productId, try matching by productId
-        // This handles search results where variant IDs might not match exactly
-        if (!cartItem && productId) {
-            cartItem = cartItems.find(
-                (ci) => ci.productId === productId
-            );
+    const matchesDealPromoLine = (ci: CartItem) => {
+        const v = ci.customAttributes?.[SPECIAL_DEAL_PROMO_CART_ATTR];
+        if (expectedDealPromoAttr == null) {
+            /** UI-only promo (`applyDealPromoToCart={false}`): line may have no marker yet or `syncDealPricing` may stamp it. */
+            return true;
         }
+        return String(v ?? '').trim() === expectedDealPromoAttr;
+    };
 
-        return cartItem ? cartItem.quantity : 0;
+    const cartLineMatchesProductVariant = (ci: CartItem): boolean => {
+        const vk = canonicalVariantKeyForMerge(variantId);
+        if (
+            (vk != null && canonicalVariantKeyForMerge(ci.variantId) === vk) ||
+            String(ci.variantId) === String(variantId)
+        ) {
+            return true;
+        }
+        if (productId == null || productId === '') return false;
+        const pk = canonicalVariantKeyForMerge(productId);
+        return (
+            String(ci.productId) === String(productId) ||
+            (pk != null && canonicalVariantKeyForMerge(ci.productId) === pk)
+        );
+    };
+
+    // Sum qty across matching lines (handles GID vs numeric ids + deal marker stamped after sync).
+    const getItemCount = () => {
+        let total = 0;
+        for (const ci of cartItems) {
+            if (!cartLineMatchesProductVariant(ci)) continue;
+            if (!matchesDealPromoLine(ci)) continue;
+            total += ci.quantity;
+        }
+        return total;
     };
 
     const count = getItemCount();
@@ -119,7 +159,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             currentItem.images?.edges?.[0]?.node?.url ||
             '';
 
-        const price = parseFloat(
+        const rawSellingPrice = parseFloat(
             finalVariant.price?.amount ||
                 currentItem.priceRange?.minVariantPrice?.amount ||
                 currentItem.price?.amount ||
@@ -133,15 +173,40 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             return;
         }
 
+        const promoPctEffective =
+            dealPromoPercentOff != null &&
+            Number.isFinite(dealPromoPercentOff) &&
+            dealPromoPercentOff > 0 &&
+            dealPromoPercentOff < 100
+                ? dealPromoPercentOff
+                : null;
+
+        let price = rawSellingPrice;
+        let compareAtPrice = finalVariant.compareAtPrice?.amount
+            ? parseFloat(finalVariant.compareAtPrice.amount)
+            : undefined;
+        if (promoPctEffective != null) {
+            compareAtPrice = rawSellingPrice;
+            price = Math.max(0, Math.round(rawSellingPrice * (1 - promoPctEffective / 100)));
+        }
+
+        const customAttrs: Record<string, string> = {};
+        if (promoPctEffective != null) {
+            customAttrs[SPECIAL_DEAL_PROMO_CART_ATTR] = String(promoPctEffective);
+        }
+        if (tryVariant) {
+            customAttrs.try_buy_trial_variant_id = String(tryVariant.id || '');
+            customAttrs.try_buy_trial_variant_title = String(tryVariant.title || '');
+            customAttrs.try_buy_trial_option_value = tryBuyTrialOptionValueFromVariant(tryVariant);
+        }
+
         const cartItem = {
             productId: pid || '',
             variantId: finalVariant.id || variantId || '',
             title: currentItem.title || currentItem.name || 'Product',
             variantTitle: finalVariant.title,
             price,
-            compareAtPrice: finalVariant.compareAtPrice?.amount
-                ? parseFloat(finalVariant.compareAtPrice.amount)
-                : undefined,
+            compareAtPrice,
             currencyCode:
                 finalVariant.price?.currencyCode ||
                 currentItem.priceRange?.minVariantPrice?.currencyCode ||
@@ -152,19 +217,28 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
             quantityAvailable: Number.isFinite(quantityAvailable) ? quantityAvailable : undefined,
             tags: tagsToUse,
             bookingDate: bookingDate ? bookingDateToYYYYMMDD(bookingDate) : undefined,
-            ...(tryVariant
-                ? {
-                      customAttributes: {
-                          try_buy_trial_variant_id: String(tryVariant.id || ''),
-                          try_buy_trial_variant_title: String(tryVariant.title || ''),
-                          try_buy_trial_option_value: tryBuyTrialOptionValueFromVariant(tryVariant),
-                      },
-                  }
-                : {}),
+            ...(Object.keys(customAttrs).length > 0 ? { customAttributes: customAttrs } : {}),
         };
 
         try {
             await addItem(cartItem);
+            
+            // Track Add to Cart event
+            try {
+                const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                
+                const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
+                if (!hasAddedToCart) {
+                    trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                    await AsyncStorage.setItem('has_added_to_cart', 'true');
+                }
+                trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+            } catch (e) {
+                console.warn('[UniversalAdd] Tracking error:', e);
+            }
+
+            onSuccessfulAdd?.();
         } catch (err: any) {
             Alert.alert('Cannot add to cart', err?.message || 'This item is not available in the requested quantity.');
         }
@@ -285,15 +359,17 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
         await completeAddToCart(currentItem, result.keepVariant, result.tryVariant);
     };
 
-    const getCartItem = () => {
-        // First try by variantId
-        let cartItem = cartItems.find(ci => ci.variantId === variantId);
-        // If not found and we have productId, try by productId
-        // This handles search results where variant IDs might not match exactly
-        if (!cartItem && productId) {
-            cartItem = cartItems.find(ci => ci.productId === productId);
-        }
-        return cartItem;
+    const getCartItem = (): CartItem | undefined => {
+        const candidates = cartItems.filter(
+            (ci) => cartLineMatchesProductVariant(ci) && matchesDealPromoLine(ci),
+        );
+        if (candidates.length === 0) return undefined;
+        candidates.sort((a, b) => {
+            const rank = (x: CartItem) =>
+                x.id?.startsWith('gid://shopify/CartLine/') ? 2 : x.id?.startsWith('item_') ? 1 : 0;
+            return rank(b) - rank(a);
+        });
+        return candidates[0];
     };
 
     const handleRemove = async () => {

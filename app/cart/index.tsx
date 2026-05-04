@@ -21,19 +21,18 @@ import type { TryAndBuyVariantSelectionResult } from '@/components/modals/Varian
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
-import {
-    getDeliveryEtaForAddress,
-} from '@/config/deliveryConfig';
+import { getDeliveryEtaForAddressDetails } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
-import { getSubtotalForAllowedCategories } from '@/services/couponService';
 import PaymentService from '@/services/paymentService';
 import { shopifyApi } from '@/services/shopifyApi';
 import {
+    computeDiscountBreakdown,
+    specialDealPromoPercentFromItem,
     useCartId,
     useCartItemCount,
     useCartItems,
@@ -45,6 +44,7 @@ import {
     useIsTryAndBuy,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
+import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import {
     getActiveMilestoneSlotRaw,
@@ -162,7 +162,11 @@ export default function CartScreen() {
     );
     const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
     const giftWrapping = useGiftWrapping();
-    const { deliveryTime: estimatedDeliveryMinutes } = useDeliveryStatus(
+    const {
+        deliveryTime: estimatedDeliveryMinutes,
+        isServiceable: coordsServiceable,
+        loading: coordsEtaLoading,
+    } = useDeliveryStatus(
         defaultAddress?.latitude,
         defaultAddress?.longitude,
         defaultAddress ?? undefined,
@@ -171,28 +175,57 @@ export default function CartScreen() {
     // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
     // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
     const [etaFromGeocode, setEtaFromGeocode] = useState<number | null>(null);
+    const [etaFromGeocodeServiceable, setEtaFromGeocodeServiceable] = useState(true);
+    const [geocodeEtaLoading, setGeocodeEtaLoading] = useState(false);
     const hasCoords = defaultAddress?.latitude != null && defaultAddress?.longitude != null;
     useEffect(() => {
         if (!defaultAddress || hasCoords) {
             setEtaFromGeocode(null);
+            setEtaFromGeocodeServiceable(true);
+            setGeocodeEtaLoading(false);
             return;
         }
         let cancelled = false;
         const run = async () => {
             const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
-            if (!addressString) return;
-            const deliveryTime = await getDeliveryEtaForAddress(addressString, { hasGiftWrap: !!giftWrapping });
-            if (cancelled || deliveryTime == null) return;
-            if (!cancelled) setEtaFromGeocode(deliveryTime);
+            setGeocodeEtaLoading(true);
+            if (!addressString) {
+                if (!cancelled) {
+                    setEtaFromGeocode(null);
+                    setEtaFromGeocodeServiceable(true);
+                    setGeocodeEtaLoading(false);
+                }
+                return;
+            }
+            try {
+                const data = await getDeliveryEtaForAddressDetails(addressString, { hasGiftWrap: !!giftWrapping });
+                if (cancelled) return;
+                setEtaFromGeocode(data?.etaMinutes ?? null);
+                const threshold = appConfigService.getServicableDistanceKm();
+                setEtaFromGeocodeServiceable(resolveDeliveryServiceable(data, threshold));
+            } finally {
+                if (!cancelled) setGeocodeEtaLoading(false);
+            }
         };
         run();
-        return () => { cancelled = true; };
-    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping]);
+        return () => {
+            cancelled = true;
+        };
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping, appConfigRefresh]);
+
+    const savedAddressOutsideDeliveryZone =
+        !!defaultAddress &&
+        (hasCoords
+            ? !coordsServiceable && !coordsEtaLoading
+            : !etaFromGeocodeServiceable && !geocodeEtaLoading);
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
     // Use Zustand store
     const cartStore = useCartStore();
+    const {
+        dealProducts,
+    } = cartStore;
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
@@ -760,98 +793,104 @@ export default function CartScreen() {
     // Calculate totals - Exactly like gauntlet's payment-details component
     const payment = useCartStore(state => state.payment);
 
-    // Calculate subtotal from lineItems (like gauntlet does in payment-details)
-    let itemSubtotal = 0;
-    for (const item of cartItems) {
-        itemSubtotal += Number(item.price ?? 0) * Number(item.quantity);
-    }
-
-    // Category subtotals for category-based coupons (same logic as cart store)
-    const categorySubtotalsCart = useMemo(() => {
-        const out: Record<string, number> = {};
+    const { itemSubtotal, itemMrpTotal } = useMemo(() => {
+        let sub = 0;
+        let mrp = 0;
         for (const item of cartItems) {
-            const amount = Number(item.price ?? 0) * Number(item.quantity ?? 1);
-            const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-            for (const tag of tags) out[tag] = (out[tag] ?? 0) + amount;
+            const price = Number(item.price ?? 0);
+            const qty = Number(item.quantity ?? 1);
+            sub += price * qty;
+            // Use compareAtPrice if available, otherwise fallback to price
+            const compareAt = Number(item.compareAtPrice ?? item.price ?? 0);
+            mrp += compareAt * qty;
         }
-        return out;
+        return { itemSubtotal: sub, itemMrpTotal: mrp };
     }, [cartItems]);
 
-    // Calculate discount from discountCodes using same category-aware logic as cart store (so Bill details matches Savings Corner)
-    let calculatedDiscount = 0;
+    // Total savings from line-item deal promos (isDealCoupon: true)
+    const dealSavingsAmount = useMemo(() => {
+        return cartItems.reduce((sum, item) => {
+            const p = specialDealPromoPercentFromItem(item);
+            if (p != null && p > 0 && p < 100) {
+                // Calculate original selling price from discounted price and percentage
+                const originalPrice = Math.round(item.price / (1 - p / 100));
+                return sum + (originalPrice - item.price) * item.quantity;
+            }
+            return sum;
+        }, 0);
+    }, [cartItems]);
+
+    const discountBreakdown = useMemo(
+        () => computeDiscountBreakdown(cartItems, discountCodes, dealProducts),
+        [cartItems, discountCodes, dealProducts],
+    );
 
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
-    let otherCouponDiscountAmount = 0;
-    let milestoneConfigDiscountAmount = 0;
-    let milestoneConfigDiscountLabel = '';
-    let milestoneAppliedCode = '';
-    let milestoneAppliedDescription = '';
-
-    if (discountCodes && discountCodes.length > 0) {
-        for (const discountCode of discountCodes) {
-            if (__DEV__) {
-                console.log('[CartScreen] Processing discount code:', discountCode);
-            }
-
-            const shouldProcess = discountCode.applicable !== false;
-            const discountValue = Number(discountCode.value ?? 0);
-            const discountType = discountCode.type;
-
-            const isMilestoneCoupon = (discountCode as any).isMilestone === true;
+    const {
+        calculatedDiscount,
+        otherCouponDiscountAmount,
+        milestoneConfigDiscountAmount,
+        milestoneConfigDiscountLabel,
+        milestoneAppliedCode,
+        milestoneAppliedDescription,
+    } = useMemo(() => {
+        let otherCouponDiscountAmount = 0;
+        let milestoneConfigDiscountAmount = 0;
+        let milestoneConfigDiscountLabel = '';
+        let milestoneAppliedCode = '';
+        let milestoneAppliedDescription = '';
+        for (const row of discountBreakdown.perCode) {
+            if (row.codeDiscount <= 0) continue;
+            const codeUc = row.code.toUpperCase();
             const isFreeShoesGiftCode =
-                Boolean(freeShoesGiftCodeUc) && discountCode.code.toUpperCase() === freeShoesGiftCodeUc;
-            const isKidPuzzle = discountCode.code.toUpperCase() === freePuzzleGiftCodeUc;
-            const isMysteryGift = discountCode.code.toUpperCase() === freeMysteryGiftCodeUc;
-
-            if (shouldProcess) {
-                const categoryKey = discountCode.applicableCategory?.trim().toLowerCase();
-                const baseAmount = discountCode.allowedCategories?.length
-                    ? getSubtotalForAllowedCategories(cartItems, discountCode.allowedCategories)
-                    : categoryKey
-                        ? (categorySubtotalsCart[categoryKey] ?? 0)
-                        : itemSubtotal;
-
-                let codeDiscount = 0;
-                if (discountValue > 0) {
-                    if (discountType === 'percentage') {
-                        codeDiscount = (baseAmount * discountValue) / 100;
-                    } else {
-                        codeDiscount = Math.min(discountValue, baseAmount);
-                    }
-                    if (discountCode.maxDiscountAmount != null && discountCode.maxDiscountAmount > 0) {
-                        codeDiscount = Math.min(codeDiscount, discountCode.maxDiscountAmount);
-                    }
-                } else if (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) {
-                    // Milestone fallback: use originalPrice if Shopify value is 0
-                    const rewardPrice = Number(discountCode.originalPrice ?? 0);
-                    if (rewardPrice > 0) {
-                        codeDiscount = rewardPrice;
-                    }
+                Boolean(freeShoesGiftCodeUc) && codeUc === freeShoesGiftCodeUc;
+            const isKidPuzzle = codeUc === freePuzzleGiftCodeUc;
+            const isMysteryGift = codeUc === freeMysteryGiftCodeUc;
+            const isMilestoneCoupon = row.isMilestone;
+            if (
+                (isMilestoneCoupon || isFreeShoesGiftCode || isKidPuzzle || isMysteryGift) &&
+                !isFreeShoesGiftCode &&
+                !isKidPuzzle &&
+                !isMysteryGift
+            ) {
+                milestoneConfigDiscountAmount += row.codeDiscount;
+                if (!milestoneConfigDiscountLabel) {
+                    const stepIndex = milestoneCurrentStepFromConfig(milestoneUI ?? null, 0);
+                    const ordinals = ['First', 'Second', 'Third', 'Fourth'];
+                    milestoneConfigDiscountLabel =
+                        stepIndex >= 0 && stepIndex < ordinals.length
+                            ? `${ordinals[stepIndex]} Reward`
+                            : 'Milestone Reward';
+                    milestoneAppliedCode = row.code;
+                    const dc = discountCodes.find(
+                        (d) => d.code.toUpperCase() === codeUc,
+                    );
+                    milestoneAppliedDescription = dc?.couponDescription || '';
                 }
-
-                if (codeDiscount > 0) {
-                    calculatedDiscount += codeDiscount;
-                    // ... rest of logic for label and categorization
-                    if (isFreeShoesGiftCode || isKidPuzzle || isMysteryGift || isMilestoneCoupon) {
-                        milestoneConfigDiscountAmount += codeDiscount;
-                        if (!milestoneConfigDiscountLabel) {
-                            const stepIndex = milestoneCurrentStepFromConfig(milestoneUI, 0);
-                            const ordinals = ['First', 'Second', 'Third', 'Fourth'];
-                            milestoneConfigDiscountLabel = (stepIndex >= 0 && stepIndex < ordinals.length) ? `${ordinals[stepIndex]} Reward` : 'Milestone Reward';
-                            milestoneAppliedCode = discountCode.code;
-                            milestoneAppliedDescription = discountCode.couponDescription || '';
-                        }
-                    } else {
-                        otherCouponDiscountAmount += codeDiscount;
-                    }
-                }
+            } else if (!isFreeShoesGiftCode && !isKidPuzzle && !isMysteryGift) {
+                otherCouponDiscountAmount += row.codeDiscount;
             }
         }
-    }
+        return {
+            calculatedDiscount: discountBreakdown.total,
+            otherCouponDiscountAmount,
+            milestoneConfigDiscountAmount,
+            milestoneConfigDiscountLabel,
+            milestoneAppliedCode,
+            milestoneAppliedDescription,
+        };
+    }, [
+        discountBreakdown,
+        discountCodes,
+        freeShoesGiftCodeUc,
+        freePuzzleGiftCodeUc,
+        freeMysteryGiftCodeUc,
+        milestoneUI,
+    ]);
 
     const hasFreeShoesGiftApplied =
         Boolean(freeShoesGiftCodeUc) &&
@@ -890,6 +929,16 @@ export default function CartScreen() {
     const mysteryGiftOriginalPrice = discountCodes.find((dc) => dc.code.toUpperCase() === freeMysteryGiftCodeUc)
         ?.originalPrice;
 
+    const discount = Math.min(Number(discountAmount) || 0, itemSubtotal);
+
+    const appliedSaveAmount = useMemo(() => {
+        let total = discount;
+        if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) total += freeShoesGiftOriginalPrice;
+        if (hasKidPuzzleApplied && kidPuzzleOriginalPrice != null) total += (kidPuzzleOriginalPrice || 0);
+        if (hasMysteryGiftApplied && mysteryGiftOriginalPrice != null) total += (mysteryGiftOriginalPrice || 0);
+        return total;
+    }, [discount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
+
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
             return milestoneDiscountCodeUc || 'FIRSTMILESTONE';
@@ -916,10 +965,7 @@ export default function CartScreen() {
     ]);
     const checkoutCouponCode = appliedDiscountCode || milestoneCouponCodeCopy;
 
-    // Use our calculated discount instead of Shopify's
-    // Cap the discount to not exceed the subtotal (for fixed discounts)
-    const discount = Math.min(Number(calculatedDiscount) || 0, itemSubtotal);
-
+    // Bill / Savings Corner: same number as store discountAmount() and payment.discount writers
     // Debug log
     if (__DEV__) {
         console.log('[CartScreen] Final discount calculation:', {
@@ -947,7 +993,7 @@ export default function CartScreen() {
 
     // Final total - ALWAYS calculate from our lineItems, not from Shopify's payment.total (platform fee not added)
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
-    const totalSavings = Math.max(0, mrp - subtotalAfterDiscount);
+    const totalSavings = Math.max(0, itemMrpTotal - subtotalAfterDiscount);
 
     // Bill details display constants (for UX only; Kiddo Cash is dummy)
     const HANDLING_FEE_ORIGINAL = 10;
@@ -1008,6 +1054,14 @@ export default function CartScreen() {
     };
 
     const handlePlaceOrder = async () => {
+        // Track Checkout Started event
+        try {
+            const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
+            trackCheckoutStarted(total, cartItems.length, cartItems.map(item => item.productId).filter(Boolean));
+        } catch (e) {
+            console.warn('Checkout started tracking error:', e);
+        }
+
         // Snapshot pre-order milestone step now (before any async ops that could update config).
         const milestoneStepSnapshot = currentMilestoneStep;
         // Check if user is logged in
@@ -1047,6 +1101,15 @@ export default function CartScreen() {
                 setOrderLoading(false);
                 return;
             }
+        }
+
+        if (!isTicketingOnly && hasNonTicketingProducts && savedAddressOutsideDeliveryZone) {
+            Alert.alert(
+                'Area unserviceable',
+                'Delivery is not available at this address. Please choose a location closer to our store.',
+                [{ text: 'OK' }]
+            );
+            return;
         }
 
         // For ticketing-only orders, use a default/placeholder address if none selected
@@ -1332,7 +1395,8 @@ export default function CartScreen() {
                 const cartId = await ensureCart();
                 if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                     const { shopifyApi } = await import('@/services/shopifyApi');
-                    await shopifyApi.applyDiscountCodes(cartId, appliedDiscountCodes || []);
+                    const shopifyCodes = (discountCodes || []).filter(dc => dc.applicable !== false && (dc as any).isDealCoupon !== true).map(dc => dc.code);
+                    await shopifyApi.applyDiscountCodes(cartId, shopifyCodes);
                 }
             } catch (syncErr) {
                 console.warn('[Cart] Failed to sync discount codes to Shopify before order completion', syncErr);
@@ -1510,6 +1574,7 @@ export default function CartScreen() {
             // Track Payment Success and Order Placed
             try {
                 const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { extractNumericId } = require('@/utils/metaSDK');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
@@ -1518,13 +1583,18 @@ export default function CartScreen() {
                     trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
                     await AsyncStorage.setItem('has_placed_order', 'true');
                 }
-                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod);
+                const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds);
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
                     paymentMethod: effectivePaymentMethod,
                     itemCount: cartItems.length,
                     hasCoupon: discountCodes.length > 0,
+                    content_ids: cartProductIds.map(id => extractNumericId(id)),
+                    content_type: 'product',
+                    value: cartTotal,
+                    currency: 'INR',
                 });
             } catch (e) {
                 console.warn('Analytics tracking error:', e);
@@ -1585,7 +1655,7 @@ export default function CartScreen() {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
                             total: total.toString(),
-                            subtotal: itemSubtotalForOffers.toString(),
+                            subtotal: itemSubtotal.toString(),
                             milestoneStep: String(milestoneStepSnapshot),
                             appliedCouponCode: appliedDiscountCode || '',
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
@@ -1801,7 +1871,7 @@ export default function CartScreen() {
                                         </Text>
                                     )}
                                     <Text style={styles.itemPrice}>
-                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price)}
+                                        {formatCurrency(showTryBuyUi ? unitTotal : item.price * item.quantity)}
                                     </Text>
                                 </View>
                                 {discountPct > 0 && (
@@ -2023,7 +2093,10 @@ export default function CartScreen() {
                                 estimatedDeliveryMinutes={
                                     estimatedDeliveryMinutes ?? etaFromGeocode ?? (detectedLocationStatus === 'serviceable' ? detectedEta : null)
                                 }
-                                isUnserviceable={!defaultAddress && detectedLocationStatus === 'unserviceable'}
+                                isUnserviceable={
+                                    (!defaultAddress && detectedLocationStatus === 'unserviceable') ||
+                                    savedAddressOutsideDeliveryZone
+                                }
                             />
                         )}
 
@@ -2085,14 +2158,14 @@ export default function CartScreen() {
                         )}
 
                         <BillDetails
-                            mrp={mrp}
+                            mrp={itemMrpTotal}
                             itemTotal={itemSubtotal}
                             isTicketingOnly={isTicketingOnly}
                             handlingFeeOriginal={HANDLING_FEE_ORIGINAL}
                             deliveryFeeOriginal={DELIVERY_FEE_ORIGINAL}
                             deliveryFee={deliveryFee}
                             platformFee={platformFeeDisplay}
-                            couponDiscount={discountAmount}
+                            couponDiscount={discount}
                             hasFreeShoesGift={hasFreeShoesGiftApplied}
                             freeShoesGiftOriginalPrice={freeShoesGiftOriginalPrice}
                             freeShoesCouponCode={freeShoesGiftCodeDisplay}
@@ -2108,12 +2181,11 @@ export default function CartScreen() {
                             mysteryGiftCouponCode={freeMysteryGiftCodeDisplay}
                             mysteryGiftTitle={mysteryBillFromCoupon.title}
                             mysteryGiftDescription={mysteryBillFromCoupon.description}
-                            milestoneMysteryGiftLabel={milestoneGiftBillTitle || undefined}
-                            milestoneFreeShoesLabel={milestoneGiftBillTitle || undefined}
-                            milestoneFreePuzzleLabel={milestoneGiftBillTitle || undefined}
+                            milestoneMysteryGiftLabel={undefined}
+                            milestoneFreeShoesLabel={undefined}
+                            milestoneFreePuzzleLabel={undefined}
                             milestoneConfigDiscount={milestoneConfigDiscountAmount}
                             milestoneConfigDiscountLabel={milestoneConfigDiscountLabel || undefined}
-                            milestoneConfigDiscountCouponCode={milestoneDiscountCodeUc}
                             milestoneConfigDiscountDescription={discountCodes.find(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)?.couponDescription}
                             milestoneIsGiftBillDiscountTitle={undefined}
                             otherCouponDiscount={otherCouponDiscountAmount}

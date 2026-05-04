@@ -37,27 +37,46 @@ export function initMetaSDK(): void {
   }
   const { Settings, AppEventsLogger } = sdk;
   try {
-    if (__DEV__) console.log('[Meta SDK] Initializing...');
+    if (__DEV__) console.log('[Meta SDK] Initializing with App ID: 1494379925573507');
     
+    // Basic config
     Settings.setAppID('1494379925573507');
     Settings.setClientToken('04a657781e5dd2df8704fd3292d74e3d');
+    
+    // Enable collection & logging
     Settings.setAutoLogAppEventsEnabled(true);
-    if (__DEV__) Settings.setAppEventsDebugLogEnabled(true);
-    if (Platform.OS === 'android') {
-      Settings.setAdvertiserTrackingEnabled(true);
-      Settings.setAdvertiserIDCollectionEnabled(true);
+    Settings.setAdvertiserIDCollectionEnabled(true);
+    
+    if (Platform.OS === 'ios') {
+      // Advertiser tracking is managed by requestMetaTrackingPermission() on iOS
+      if (__DEV__) console.log('[Meta SDK] iOS detected, ATE will be set after ATT prompt');
+    } else {
+      if (__DEV__) console.log('[Meta SDK] Android detected, ensuring advertiser ID collection is enabled');
     }
+
+    // Enable debug logs in dev if the method exists
+    if (__DEV__) {
+      if ((Settings as any).setAppEventsDebugLogEnabled) {
+        (Settings as any).setAppEventsDebugLogEnabled(true);
+      } else {
+        console.log('[Meta SDK] setAppEventsDebugLogEnabled not available in this SDK version');
+      }
+    }
+
+    // Crucial for Android when AutoInit is false in app.json/AndroidManifest
     Settings.initializeSDK();
     
     initialized = true;
     if (__DEV__) console.log('[Meta SDK] Initialized successfully');
+    
+    // Optional: flush any queued events
     try {
       AppEventsLogger.flush();
     } catch {
       // ignore
     }
   } catch (e) {
-    if (__DEV__) console.warn('[Meta SDK] init failed:', e);
+    if (__DEV__) console.error('[Meta SDK] Initialization failed:', e);
   }
 }
 
@@ -120,14 +139,24 @@ const META_STANDARD_EVENTS: Record<string, string> = {
   'AddToCart': 'AddToCart',
   'Product Viewed': 'ViewContent',
   'ViewContent': 'ViewContent',
-  'Checkout Started': 'InitiatedCheckout',
-  'InitiatedCheckout': 'InitiatedCheckout',
+  'Checkout Started': 'InitiateCheckout',
+  'InitiateCheckout': 'InitiateCheckout',
   'Search Performed': 'Search',
   'Search': 'Search',
-  'CompleteRegistration': 'CompleteRegistration',
+  'Wishlist Added': 'AddToWishlist',
+  'AddToWishlist': 'AddToWishlist',
   'Signup Completed': 'CompleteRegistration',
   'Login Success': 'CompleteRegistration',
 };
+
+/**
+ * Extract numeric ID from Shopify GID (e.g. gid://shopify/Product/123456789 -> 123456789)
+ */
+export function extractNumericId(id: string | undefined | null): string {
+  if (!id) return '';
+  const match = id.match(/\/(\d+)$/);
+  return match ? match[1] : id;
+}
 
 /**
  * Log event to Meta SDK. Use same event_id as in backend track for dedup.
@@ -157,11 +186,15 @@ export function logMetaEvent(
       console.log(`[Meta SDK] Logging event: ${metaEventName}`, { params, dedupId });
     }
 
-    // Sanitize parameters (Meta expects strings or numbers)
-    const sanitized: Record<string, string | number> = {};
+    // Sanitize parameters (Meta expects strings, numbers, or arrays of strings/numbers)
+    const sanitized: Record<string, any> = {};
     for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== null && typeof v !== 'object') {
-        sanitized[k] = v as string | number;
+      if (v === undefined || v === null) continue;
+      
+      if (Array.isArray(v)) {
+        sanitized[k] = v.map(item => (typeof item === 'object' ? JSON.stringify(item) : item));
+      } else if (typeof v !== 'object') {
+        sanitized[k] = v;
       }
     }
 
@@ -169,21 +202,53 @@ export function logMetaEvent(
     if (metaEventName === 'Purchase') {
       const value = Number(params.value || params.amount || params.revenue || 0);
       const currency = String(params.currency || 'INR');
+      
       if (dedupId) {
-        // @ts-ignore - logPurchase supports eventId in some versions
-        AppEventsLogger.logPurchase(value, currency, sanitized, dedupId);
-      } else {
-        AppEventsLogger.logPurchase(value, currency, sanitized);
+        sanitized.event_id = String(dedupId);
       }
       
+      AppEventsLogger.logPurchase(value, currency, sanitized);
       AppEventsLogger.flush();
       return;
     }
 
+    const metaParams: Record<string, any> = { ...sanitized };
+
+    // Standard parameter mapping
+    if (sanitized.productId || sanitized.product_id) {
+      metaParams.content_id = extractNumericId(sanitized.productId || sanitized.product_id);
+    }
+    if (sanitized.content_id) {
+      metaParams.content_ids = [sanitized.content_id];
+    }
+    if (sanitized.content_ids) {
+      metaParams.content_ids = sanitized.content_ids;
+    }
+    if (sanitized.content_type) {
+      metaParams.content_type = sanitized.content_type;
+    }
+    if (sanitized.query || sanitized.search_string) {
+      metaParams.search_string = sanitized.query || sanitized.search_string;
+    }
+    if (sanitized.currency) {
+      metaParams.currency = sanitized.currency;
+    }
+    if (sanitized.value !== undefined) {
+      metaParams.value = sanitized.value;
+    }
+
     if (dedupId) {
-      AppEventsLogger.logEvent(metaEventName, sanitized, dedupId);
+      metaParams.event_id = String(dedupId);
+    }
+
+    if (__DEV__) {
+      console.log(`[MetaSDK] Logging ${standardEventName || eventName}:`, metaParams);
+    }
+
+    if (standardEventName) {
+      AppEventsLogger.logEvent(standardEventName, metaParams);
     } else {
-      AppEventsLogger.logEvent(metaEventName, sanitized);
+      AppEventsLogger.logEvent(eventName, metaParams);
     }
     
     AppEventsLogger.flush();
@@ -203,6 +268,7 @@ export function setMetaUserData(userData: {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  userId?: string;
 }): void {
   if (!initialized) {
     if (__DEV__) console.warn('[Meta SDK] setMetaUserData called before init, skipping');
@@ -210,16 +276,27 @@ export function setMetaUserData(userData: {
   }
   const sdk = getMetaSDK();
   if (!sdk) return;
-  const { Settings } = sdk;
+  const { AppEventsLogger } = sdk;
   try {
     const data: Record<string, string> = {};
     if (userData.email) data.email = userData.email.toLowerCase().trim();
     if (userData.phone) data.phone = userData.phone.replace(/[^0-9]/g, '');
     if (userData.firstName) data.firstName = userData.firstName.toLowerCase().trim();
     if (userData.lastName) data.lastName = userData.lastName.toLowerCase().trim();
+    
     if (__DEV__) console.log('[Meta SDK] Setting user data for advanced matching:', data);
-    Settings.setUserData(data);
+    
+    // @ts-ignore
+    if (AppEventsLogger.setUserData) {
+      AppEventsLogger.setUserData(data);
+    }
+    
+    // Also set the User ID if provided
+    if (userData.userId) {
+      if (__DEV__) console.log('[Meta SDK] Setting User ID:', userData.userId);
+      AppEventsLogger.setUserID(userData.userId);
+    }
   } catch (e) {
-    if (__DEV__) console.warn('[Meta SDK] setUserData failed:', e);
+    if (__DEV__) console.warn('[Meta SDK] setUserData/setUserID failed:', e);
   }
 }

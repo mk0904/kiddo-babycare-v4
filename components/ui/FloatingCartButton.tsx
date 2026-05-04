@@ -100,7 +100,13 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const baseBottomOffset = tabBarBlockHeight + (anchorExtraOffset || 0);
     const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
 
-    const visible = itemCount > 0 && !isCartScreen && !shouldHideGlobalCart && !cartInMilestoneRow;
+    // `cartInMilestoneRow` stays true while Home/Category tabs stay mounted (React Navigation).
+    // Stack routes like `/search` still read that flag and would hide the pill everywhere — only
+    // suppress the floating cart when we're actually on a screen that shows the inline milestone cart.
+    const hideBecauseCartIsInMilestoneRow = isMilestoneScreen && cartInMilestoneRow;
+
+    const visible =
+        itemCount > 0 && !isCartScreen && !shouldHideGlobalCart && !hideBecauseCartIsInMilestoneRow;
 
     if (!visible) {
         return null;

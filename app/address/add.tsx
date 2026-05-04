@@ -1,6 +1,8 @@
 import { useDeliveryStatus } from '@/components/ui/EstimatedDeliveryTime';
 import { SearchIcon } from '@/components/ui/SearchIcon';
 import { Colors, Fonts } from '@/constants/theme';
+import { getAppVersionForApi } from '@/constants/versionConfig';
+import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -20,6 +22,7 @@ import {
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { appConfigService } from '@/services/appConfigService';
 
 const GOOGLE_API_KEY = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -72,6 +75,7 @@ const getPlaceDetails = async (placeId: string) => {
 
 export default function MapAddressScreen() {
     const router = useRouter();
+    const { user } = useAuth();
     const params = useLocalSearchParams<{ returnToCart?: string; returnToHome?: string }>();
     const mapRef = useRef<MapView>(null);
 
@@ -94,13 +98,21 @@ export default function MapAddressScreen() {
     // Timeout for map drag debounce
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Calculate delivery time for selected location
-    const { deliveryTime } = useDeliveryStatus(
+    // Delivery zone + ETA from backend POST /eta (`isServiceable`).
+    const { deliveryTime, isServiceable, loading: etaLoading } = useDeliveryStatus(
         selectedLocation?.latitude,
         selectedLocation?.longitude
     );
-    
-    const isServiceable = deliveryTime !== null && deliveryTime <= 60;
+
+    useEffect(() => {
+        void appConfigService.loadAppConfig(false, {
+            phone: user?.phone ?? undefined,
+            customerId:
+                (user?.customerId ?? user?.id) != null ? String(user?.customerId ?? user?.id) : undefined,
+            appVersion: getAppVersionForApi(),
+            deviceType: Platform.OS,
+        });
+    }, [user?.phone, user?.customerId, user?.id]);
 
     useEffect(() => {
         (async () => {
@@ -541,18 +553,20 @@ export default function MapAddressScreen() {
                     <TouchableOpacity
                         style={[
                             styles.confirmButton, 
-                            (!selectedLocation || loadingAddress || !isServiceable) && styles.disabledButton
+                            (!selectedLocation || loadingAddress || etaLoading || !isServiceable) && styles.disabledButton
                         ]}
                         onPress={handleConfirmLocation}
-                        disabled={!selectedLocation || loadingAddress || !isServiceable}
+                        disabled={!selectedLocation || loadingAddress || etaLoading || !isServiceable}
                     >
                         {loadingAddress ? (
                             <ActivityIndicator size="small" color="#FFF" />
                         ) : (
                             <Text style={styles.confirmButtonText}>
-                                {!isServiceable && deliveryTime !== null 
-                                    ? 'Not Serviceable Yet' 
-                                    : 'Confirm Location'}
+                                {etaLoading
+                                    ? 'Checking delivery area...'
+                                    : !isServiceable
+                                        ? 'Not Serviceable Yet'
+                                        : 'Confirm Location'}
                             </Text>
                         )}
                     </TouchableOpacity>

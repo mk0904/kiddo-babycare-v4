@@ -68,8 +68,7 @@ export default function AddressFormScreen() {
     const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other' | 'events'>('home');
     const [saving, setSaving] = useState(false);
 
-    // Use synchronous delivery time calculation
-    const { deliveryTime, loading: loadingDeliveryTime } = useDeliveryStatus(
+    const { deliveryTime, loading: loadingDeliveryTime, isServiceable } = useDeliveryStatus(
         locationData?.latitude,
         locationData?.longitude
     );
@@ -98,11 +97,10 @@ export default function AddressFormScreen() {
     const handleSaveAddress = async () => {
         if (!validateForm()) return;
 
-        // Check if delivery time exceeds 60 minutes
-        if (deliveryTime !== null && deliveryTime > 60) {
+        if (!isServiceable) {
             Alert.alert(
-                'Delivery Not Available',
-                'We will soon be at this place! 🚀\n\nDelivery to this location takes more than 60 minutes. Please select a location closer to our store.',
+                'Area unserviceable',
+                'This area is outside our delivery zone. Please select a location closer to our store.',
                 [{ text: 'OK' }]
             );
             return;
@@ -186,24 +184,28 @@ export default function AddressFormScreen() {
                             <Text style={styles.locationSummaryTitle}>Selected Location</Text>
                         </View>
                         <Text style={styles.locationSummaryText}>{locationData.formattedAddress}</Text>
-                        {deliveryTime !== null ? (
+                        {!loadingDeliveryTime && deliveryTime !== null ? (
                             <View style={styles.deliveryTimeContainer}>
-                                <Ionicons name="time-outline" size={16} color={deliveryTime > 60 ? Colors.secondary : Colors.primary} />
+                                <Ionicons
+                                    name="time-outline"
+                                    size={16}
+                                    color={isServiceable ? Colors.primary : Colors.secondary}
+                                />
                                 <Text style={[
                                     styles.deliveryTimeText,
-                                    deliveryTime > 60 && styles.deliveryTimeTextError
+                                    !isServiceable && styles.deliveryTimeTextError
                                 ]}>
-                                    {deliveryTime > 60
-                                        ? `Delivery time: ${deliveryTime} mins (exceeds 60 mins)`
+                                    {!isServiceable
+                                        ? 'Area unserviceable — choose a location closer to our store'
                                         : `Delivery available in ${deliveryTime} mins`}
                                 </Text>
                             </View>
                         ) : null}
-                        {deliveryTime !== null && deliveryTime > 60 && (
+                        {!loadingDeliveryTime && deliveryTime !== null && !isServiceable && (
                             <View style={styles.warningContainer}>
                                 <Ionicons name="information-circle-outline" size={16} color={Colors.secondary} />
                                 <Text style={styles.warningText}>
-                                    We will soon be at this place! Please select a location closer to our store.
+                                    This pin is outside our delivery zone. Go back and move the map closer to our store.
                                 </Text>
                             </View>
                         )}
@@ -303,10 +305,10 @@ export default function AddressFormScreen() {
                     <TouchableOpacity
                         style={[
                             styles.saveButton,
-                            (saving || (deliveryTime !== null && deliveryTime > 60)) && styles.saveButtonDisabled
+                            (saving || loadingDeliveryTime || !isServiceable) && styles.saveButtonDisabled
                         ]}
                         onPress={handleSaveAddress}
-                        disabled={saving || (deliveryTime !== null && deliveryTime > 60)}
+                        disabled={saving || loadingDeliveryTime || !isServiceable}
                     >
                         {saving ? (
                             <ActivityIndicator size="small" color="#FFF" />

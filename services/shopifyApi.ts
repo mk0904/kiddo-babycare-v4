@@ -19,6 +19,22 @@ function isLikelyAxiosNetworkError(error: unknown): boolean {
   return false;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Storefront returns this when two cart mutations overlap (e.g. discount sync + line update). */
+function graphQlErrorsAreCartConflict(errors: unknown): boolean {
+  if (!Array.isArray(errors) || errors.length === 0) return false;
+  for (const err of errors) {
+    const ext = (err as { extensions?: { code?: string } })?.extensions;
+    if (ext?.code === 'CONFLICT') return true;
+    const msg = String((err as { message?: string })?.message ?? '').toLowerCase();
+    if (msg.includes('conflict') && msg.includes('cart')) return true;
+  }
+  return false;
+}
+
 // GraphQL Queries
 const GET_PRODUCTS_QUERY = `
   query getProducts($query: String!, $first: Int!, $sortKey: ProductSortKeys, $reverse: Boolean) {
@@ -89,6 +105,41 @@ const GET_COLLECTION_BY_ID_QUERY = `
   }
 `;
 
+const VARIANT_PRODUCT_COLLECTIONS_QUERY = `
+  query variantProductCollections($id: ID!) {
+    node(id: $id) {
+      ... on ProductVariant {
+        id
+        product {
+          collections(first: 50) {
+            nodes {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** Normalize cart/admin variant reference to Storefront `gid://shopify/ProductVariant/...`. */
+export function parseShopifyVariantGid(raw: string | null | undefined): string | null {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    if (s.startsWith('gid://shopify/ProductVariant/')) return s;
+    const adminMatch = s.match(/\/variants\/(\d+)/);
+    if (adminMatch) return `gid://shopify/ProductVariant/${adminMatch[1]}`;
+    if (/^\d+$/.test(s)) return `gid://shopify/ProductVariant/${s}`;
+    const tail = s.includes('/') ? (s.split('/').pop() ?? '') : s;
+    if (tail && /^\d+$/.test(tail)) return `gid://shopify/ProductVariant/${tail}`;
+    return null;
+}
+
+function normalizeStorefrontGid(id: string): string {
+    return String(id).trim();
+}
+
 const GET_PRODUCTS_BY_COLLECTION_QUERY = `
   query getProductsByCollection($id: ID!, $first: Int!, $after: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean, $filters: [ProductFilter!]) {
     collection(id: $id) {
@@ -100,6 +151,7 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
           endCursor
         }
         edges {
+          cursor
           node {
             id
             title
@@ -887,6 +939,20 @@ const CART_LINES_ADD_MUTATION = `
   }
 `;
 
+const CART_LINES_UPDATE_MUTATION = `
+  mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    cartLinesUpdate(cartId: $cartId, lines: $lines) {
+      cart {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 const GET_CART_QUERY = `
   query getCart($cartId: ID!) {
     cart(id: $cartId) {
@@ -1058,6 +1124,7 @@ export interface CollectionResponse {
         endCursor: string | null;
       };
       edges: Array<{
+        cursor?: string;
         node: ShopifyProduct;
       }>;
       filters?: Array<{
@@ -1101,6 +1168,36 @@ export const shopifyApi = {
   /**
    * Get products by collection ID with pagination, sorting and filtering
    */
+  /**
+   * Whether this variant’s product is in any of the given collection GIDs (Storefront API).
+   */
+  variantBelongsToAnySpecialDealCollections: async (
+    variantId: string,
+    collectionGids: readonly string[],
+  ): Promise<boolean> => {
+    if (!collectionGids.length) return false;
+    const vid = parseShopifyVariantGid(variantId);
+    if (!vid) return false;
+    const targets = new Set(collectionGids.map((g) => normalizeStorefrontGid(g)));
+    try {
+      const response = await client.post('', {
+        query: VARIANT_PRODUCT_COLLECTIONS_QUERY,
+        variables: { id: vid },
+      });
+      if (response.data.errors?.length) {
+        return false;
+      }
+      const nodes = response.data.data?.node?.product?.collections?.nodes;
+      if (!Array.isArray(nodes)) return false;
+      return nodes.some((c: { id?: string }) => c?.id && targets.has(normalizeStorefrontGid(c.id)));
+    } catch (error) {
+      if (!isLikelyAxiosNetworkError(error)) {
+        console.warn('[shopifyApi] variantBelongsToAnySpecialDealCollections failed:', error);
+      }
+      return false;
+    }
+  },
+
   getProductsByCollection: async (
     collectionId: string,
     first: number = 20,
@@ -1332,34 +1429,93 @@ export const shopifyApi = {
   /**
    * Apply discount codes to cart
    */
-  applyDiscountCodes: async (cartId: string, discountCodes: string[]) => {
+  /**
+   * Update cart lines (e.g. remove line attributes such as special-deal promo).
+   */
+  cartLinesUpdate: async (
+    cartId: string,
+    lines: Array<{ id: string; quantity: number; attributes?: { key: string; value: string }[] }>
+  ) => {
     try {
       const response = await client.post('', {
-        query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
+        query: CART_LINES_UPDATE_MUTATION,
         variables: {
           cartId,
-          // Send exact codes (e.g. "Mystery gift") — Admin matches Shopify’s stored string; do not force uppercase.
-          discountCodes: discountCodes.map((code) => String(code).trim()).filter((c) => c.length > 0),
+          lines: lines.map((l) => ({
+            id: l.id,
+            quantity: l.quantity,
+            ...(l.attributes !== undefined ? { attributes: l.attributes } : {}),
+          })),
         },
       });
 
       if (response.data.errors) {
         console.error('Shopify API errors:', response.data.errors);
-        throw new Error(response.data.errors[0]?.message || 'Failed to apply discount codes');
+        throw new Error(response.data.errors[0]?.message || 'Failed to update cart lines');
       }
 
-      const result = response.data.data.cartDiscountCodesUpdate;
+      const result = response.data.data.cartLinesUpdate;
 
       if (result.userErrors && result.userErrors.length > 0) {
         const error = result.userErrors[0];
-        throw new Error(error.message || 'Failed to apply discount code');
+        throw new Error(error.message || 'Failed to update cart lines');
       }
 
       return result.cart;
     } catch (error: any) {
-      console.error('Error applying discount codes:', error);
+      console.error('Error updating cart lines:', error);
       throw error;
     }
+  },
+
+  applyDiscountCodes: async (cartId: string, discountCodes: string[]) => {
+    const variables = {
+      cartId,
+      // Send exact codes (e.g. "Mystery gift") — Admin matches Shopify’s stored string; do not force uppercase.
+      discountCodes: discountCodes.map((code) => String(code).trim()).filter((c) => c.length > 0),
+    };
+
+    const maxAttempts = 4;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await client.post('', {
+          query: CART_DISCOUNT_CODES_UPDATE_MUTATION,
+          variables,
+        });
+
+        if (response.data.errors) {
+          if (graphQlErrorsAreCartConflict(response.data.errors) && attempt < maxAttempts - 1) {
+            await delay(120 * Math.pow(2, attempt));
+            continue;
+          }
+          console.error('Shopify API errors:', response.data.errors);
+          throw new Error(response.data.errors[0]?.message || 'Failed to apply discount codes');
+        }
+
+        const result = response.data.data.cartDiscountCodesUpdate;
+
+        if (result.userErrors && result.userErrors.length > 0) {
+          const error = result.userErrors[0];
+          throw new Error(error.message || 'Failed to apply discount code');
+        }
+
+        return result.cart;
+      } catch (error: any) {
+        const msg = String(error?.message ?? '').toLowerCase();
+        const retryConflict =
+          msg.includes('conflict') && msg.includes('cart') && attempt < maxAttempts - 1;
+        const retryNetwork = isLikelyAxiosNetworkError(error) && attempt < maxAttempts - 1;
+        if (retryConflict || retryNetwork) {
+          await delay(120 * Math.pow(2, attempt));
+          continue;
+        }
+        console.error('Error applying discount codes:', error);
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to apply discount codes');
   },
 
   /**
@@ -1400,7 +1556,8 @@ export const shopifyApi = {
    */
   createCart: async (
     lines?: Array<{ merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }>,
-    attributes?: { key: string; value: string }[]
+    attributes?: { key: string; value: string }[],
+    discountCodes?: string[]
   ) => {
     try {
       const variables: any = {
@@ -1411,6 +1568,10 @@ export const shopifyApi = {
 
       if (attributes) {
         variables.input.attributes = attributes;
+      }
+
+      if (discountCodes && discountCodes.length > 0) {
+        variables.input.discountCodes = discountCodes;
       }
 
       const response = await client.post('', {

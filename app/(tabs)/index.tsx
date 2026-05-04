@@ -18,6 +18,7 @@ import { configService } from '@/services/configService';
 import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
+import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
@@ -40,6 +41,8 @@ export default function HomeScreen() {
   const cartItemCount = useCartItemCount();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
+  /** Last GPS position when user has no saved address — re-check ETA when app config (e.g. servicableDistance) updates. */
+  const lastDetectedCoordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [loadingTime, setLoadingTime] = useState(false);
@@ -349,6 +352,35 @@ export default function HomeScreen() {
     }
   }, [defaultAddress]);
 
+  const applyEtaForDetectedCoords = useCallback(
+    async (latitude: number, longitude: number, cancelled: () => boolean) => {
+      const eta = await getDeliveryEta(latitude, longitude);
+      if (cancelled()) return;
+      if (!eta) {
+        setLocationStatus('error');
+        setDetectedLocationLabel('Tap to add delivery address');
+        setDetectedLocation('error');
+        return;
+      }
+      const threshold = appConfigService.getServicableDistanceKm();
+      const ok = resolveDeliveryServiceable(eta, threshold);
+      if (!ok) {
+        setLocationStatus('unserviceable');
+        setDetectedLocationLabel(null);
+        setDetectedEta(null);
+        setDetectedLocation('unserviceable');
+        return;
+      }
+      const label = await reverseGeocode(latitude, longitude);
+      if (cancelled()) return;
+      setLocationStatus('serviceable');
+      setDetectedLocationLabel(label || 'Current location');
+      setDetectedEta(eta.etaMinutes);
+      setDetectedLocation('serviceable', eta.etaMinutes);
+    },
+    [setDetectedLocation]
+  );
+
   useEffect(() => {
     fetchEstimatedTime();
   }, [fetchEstimatedTime]);
@@ -362,6 +394,7 @@ export default function HomeScreen() {
     }
     if (hadAddressRef.current) {
       hadAddressRef.current = false;
+      lastDetectedCoordsRef.current = null;
       setLocationStatus('idle');
       setDetectedLocationLabel(null);
       setDetectedEta(null);
@@ -407,31 +440,8 @@ export default function HomeScreen() {
         }
 
         const { latitude, longitude } = position.coords;
-        const eta = await getDeliveryEta(latitude, longitude);
-        if (cancelled) return;
-
-        if (!eta) {
-          setLocationStatus('error');
-          setDetectedLocationLabel('Tap to add delivery address');
-          setDetectedLocation('error');
-          return;
-        }
-
-        if (!eta.isServiceable) {
-          setLocationStatus('unserviceable');
-          setDetectedLocationLabel(null);
-          setDetectedEta(null);
-          setDetectedLocation('unserviceable');
-          return;
-        }
-
-        const label = await reverseGeocode(latitude, longitude);
-        if (cancelled) return;
-
-        setLocationStatus('serviceable');
-        setDetectedLocationLabel(label || 'Current location');
-        setDetectedEta(eta.etaMinutes);
-        setDetectedLocation('serviceable', eta.etaMinutes);
+        lastDetectedCoordsRef.current = { latitude, longitude };
+        await applyEtaForDetectedCoords(latitude, longitude, () => cancelled);
       } catch (e) {
         if (!cancelled) {
           setLocationStatus('error');
@@ -442,7 +452,19 @@ export default function HomeScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [defaultAddress]);
+  }, [defaultAddress, applyEtaForDetectedCoords]);
+
+  // Re-evaluate serviceability when app config loads or updates (e.g. `delivery.servicableDistance`).
+  useEffect(() => {
+    if (defaultAddress) return;
+    const c = lastDetectedCoordsRef.current;
+    if (!c) return;
+    let cancelled = false;
+    void applyEtaForDetectedCoords(c.latitude, c.longitude, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [milestoneUiRev, defaultAddress, applyEtaForDetectedCoords]);
 
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();

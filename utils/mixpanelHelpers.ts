@@ -1,7 +1,7 @@
 import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
 import { clevertapService } from '@/services/clevertapService';
-import { logMetaEvent } from '@/utils/metaSDK';
+import { logMetaEvent, setMetaUserData, extractNumericId } from '@/utils/metaSDK';
 
 /**
  * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap, Meta CAPI)
@@ -53,6 +53,15 @@ export const identifyUser = (userId: string, userProperties?: {
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
+
+    // Also set Meta user data for advanced matching
+    setMetaUserData({
+      userId,
+      email: userProperties?.email,
+      phone: userProperties?.phone,
+      firstName: userProperties?.name?.split(' ')[0],
+      lastName: userProperties?.name?.split(' ').slice(1).join(' '),
+    });
   } catch (error) {
     console.error('Analytics identify error:', error);
   }
@@ -99,6 +108,10 @@ export const trackProductViewed = (productId: string, productName?: string, pric
     productId,
     productName,
     price,
+    content_id: extractNumericId(productId),
+    content_type: 'product',
+    value: price,
+    currency: 'INR',
   });
 };
 
@@ -108,17 +121,26 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     productName,
     price,
     quantity: quantity || 1,
+    content_id: extractNumericId(productId),
+    content_type: 'product',
+    value: price,
+    currency: 'INR',
   });
 };
 
-export const trackCheckoutStarted = (cartValue: number, itemCount: number) => {
+export const trackCheckoutStarted = (cartValue: number, itemCount: number, productIds?: string[]) => {
   trackEvent('Checkout Started', {
     cartValue,
     itemCount,
+    value: cartValue,
+    currency: 'INR',
+    content_ids: productIds?.map(id => extractNumericId(id)) || [],
+    content_type: 'product',
+    num_items: itemCount,
   });
 };
 
-export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string) => {
+export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string, productIds?: string[]) => {
   trackEvent('Payment Success', {
     event_id: orderId,
     orderId,
@@ -126,6 +148,8 @@ export const trackPaymentSuccess = (orderId: string, amount: number, paymentMeth
     paymentMethod,
     value: amount,
     currency: 'INR',
+    content_ids: productIds?.map(id => extractNumericId(id)) || [],
+    content_type: 'product',
   });
 };
 
@@ -204,6 +228,7 @@ export const trackCategoryViewed = (categoryName: string, categoryId?: string) =
 export const trackSearchPerformed = (query: string, resultsCount?: number) => {
   trackEvent('Search Performed', {
     query,
+    search_string: query,
     resultsCount,
   });
 };
@@ -225,10 +250,15 @@ export const trackRecommendationClicked = (recommendationType: string, itemId: s
   });
 };
 
-export const trackWishlistAdded = (productId: string, productName?: string) => {
+export const trackWishlistAdded = (productId: string, productName?: string, price?: number) => {
   trackEvent('Wishlist Added', {
     productId,
     productName,
+    price,
+    content_id: extractNumericId(productId),
+    content_type: 'product',
+    value: price,
+    currency: 'INR',
   });
 };
 
@@ -283,7 +313,7 @@ export const trackPaymentMethodSelected = (paymentMethod: string) => {
   });
 };
 
-export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string) => {
+export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[]) => {
   trackEvent('Order Placed', {
     event_id: orderId,
     orderId,
@@ -292,6 +322,8 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     paymentMethod,
     value: amount,
     currency: 'INR',
+    content_ids: productIds?.map(id => extractNumericId(id)) || [],
+    content_type: 'product',
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
 };

@@ -57,6 +57,10 @@ export interface CouponCode {
   isSchoolCoupon?: boolean;
   /** If true, this coupon is treated as a milestone reward in the UI. */
   isMilestone?: boolean;
+  /** If true, cart shows the deal upsell modal (e.g. Mother’s Day kit promo). */
+  isDealCoupon?: boolean;
+  /** Display label for school-branded deal copy (e.g. cart CTA “… for {schoolName} parents only”). Backend may send `school_name`. */
+  schoolName?: string | null;
 }
 
 export interface GetEligibleCouponsParams {
@@ -81,6 +85,41 @@ export interface GetEligibleCouponsParams {
    * Required for manual apply / `validateCouponCode` — hidden offers (e.g. “Mystery gift”) are not listed in the carousel.
    */
   includeHiddenCoupons?: boolean;
+}
+
+/** Resolve school display string from raw coupon JSON (camelCase, snake_case, or nested shapes). */
+export function pickSchoolNameFromCouponRaw(c: unknown): string | undefined {
+  if (c == null || typeof c !== 'object') return undefined;
+  const o = c as Record<string, unknown>;
+  const trimStr = (v: unknown): string | undefined => {
+    if (v == null) return undefined;
+    const s = String(v).trim();
+    return s === '' ? undefined : s;
+  };
+  const direct = trimStr(o.schoolName) ?? trimStr(o.school_name);
+  if (direct) return direct;
+  const schoolObj = o.school;
+  if (schoolObj != null && typeof schoolObj === 'object') {
+    const so = schoolObj as Record<string, unknown>;
+    const fromSchool = trimStr(so.name) ?? trimStr(so.title) ?? trimStr(so.label);
+    if (fromSchool) return fromSchool;
+  }
+  for (const key of ['metadata', 'meta', 'config', 'attributes'] as const) {
+    const nested = o[key];
+    if (nested != null && typeof nested === 'object') {
+      const n = nested as Record<string, unknown>;
+      const fromNested = trimStr(n.schoolName) ?? trimStr(n.school_name);
+      if (fromNested) return fromNested;
+    }
+  }
+  return undefined;
+}
+
+function mergeCouponRowDuplicates(existing: any, incoming: any): any {
+  const school = pickSchoolNameFromCouponRaw(incoming) ?? pickSchoolNameFromCouponRaw(existing);
+  const out = { ...existing, ...incoming };
+  if (school) out.schoolName = school;
+  return out;
 }
 
 /**
@@ -145,7 +184,8 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
           const raw = (c?.code ?? c?.couponCode ?? '').toString();
           const k = raw.trim().toUpperCase().replace(/\s+/g, '');
           if (!k) continue;
-          if (!byNorm.has(k)) byNorm.set(k, c);
+          if (!byNorm.has(k)) byNorm.set(k, { ...c });
+          else byNorm.set(k, mergeCouponRowDuplicates(byNorm.get(k), c));
         }
       }
       return Array.from(byNorm.values());
@@ -205,13 +245,17 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
     }
 
     // Normalize coupon objects: ensure code, and camelCase category fields (backend may use snake_case)
-    const normalized = coupons.map((c: any) => ({
-      ...c,
-      code: (c.code ?? c.couponCode ?? '').toString().trim(),
-      applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
-      allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
-      isMilestone: c.isMilestone === true || c.is_milestone === true,
-    })) as CouponCode[];
+    const normalized = coupons.map((c: any) => {
+      const schoolTrim = pickSchoolNameFromCouponRaw(c);
+      return {
+        ...c,
+        code: (c.code ?? c.couponCode ?? '').toString().trim(),
+        applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
+        allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
+        isMilestone: c.isMilestone === true || c.is_milestone === true,
+        ...(schoolTrim != null ? { schoolName: schoolTrim } : {}),
+      };
+    }) as CouponCode[];
 
     if (__DEV__) console.log('[CouponService] Loaded', normalized.length, returnAllVisible ? 'visible' : 'eligible', 'coupons from backend');
     return normalized;
@@ -270,6 +314,7 @@ export interface CouponApplicability {
 /** Line item shape needed for category subtotal. */
 export interface LineItemForCategory {
   tags?: string[];
+  title?: string;
   price?: number;
   quantity?: number;
 }
@@ -283,14 +328,49 @@ export function getSubtotalForAllowedCategories(
   allowedCategories: string[] | null | undefined
 ): number {
   if (!allowedCategories?.length) return 0;
-  const allowedSet = new Set(allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean));
+  const allowedLower = allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
   let sum = 0;
   for (const item of items) {
     const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-    const hasAllowed = tags.some((t) => allowedSet.has(t));
-    if (hasAllowed) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+    const title = (item.title ?? '').toLowerCase();
+    
+    const isEligible = allowedLower.some((cat) => {
+        if (tags.includes(cat)) return true;
+        if (title.includes(cat)) return true;
+        // Handle singular/plural common cases (e.g. "plant kit" vs "plant kits")
+        if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+        if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+        return false;
+    });
+
+    if (isEligible) sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
   }
   return sum;
+}
+
+/** Single-line check for allowedCategories (same rules as {@link getSubtotalForAllowedCategories}). */
+export function lineItemMatchesAllowedCategories(
+    item: LineItemForCategory,
+    allowedCategories: string[] | null | undefined,
+): boolean {
+    if (!allowedCategories?.length) return true;
+    return getSubtotalForAllowedCategories([item], allowedCategories) > 0;
+}
+
+/** Single-line check for one applicableCategory key (tags + title, mirrors allowed-category matching). */
+export function lineItemMatchesApplicableCategory(
+    item: LineItemForCategory,
+    applicableCategory: string | null | undefined,
+): boolean {
+    if (!applicableCategory?.trim()) return true;
+    const cat = applicableCategory.trim().toLowerCase();
+    const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+    if (tags.includes(cat)) return true;
+    const title = (item.title ?? '').toLowerCase();
+    if (title.includes(cat)) return true;
+    if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+    if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+    return false;
 }
 
 function formatCategoryLabel(categories: string[] | null | undefined): string {
@@ -352,8 +432,11 @@ export const getCouponApplicabilityForDisplay = (
     categoryLabel = singleCategory;
   }
 
-  if (allowed?.length && effectiveSubtotal <= 0) {
-    return { applicable: false, reason: `Add ${categoryLabel} products to avail this coupon` };
+  if ((allowed?.length || !!singleCategory) && effectiveSubtotal <= 0) {
+    return {
+      applicable: false,
+      reason: `Add ${categoryLabel || singleCategory || 'eligible'} products to avail this coupon`,
+    };
   }
 
   if (coupon.minimumPurchaseAmount) {
@@ -634,10 +717,10 @@ export const validateCouponConditions = async (
       };
     }
 
-    if (allowed?.length && effectiveSubtotal <= 0) {
+    if ((allowed?.length || !!singleCategory) && effectiveSubtotal <= 0) {
       return {
         isValid: false,
-        error: `Add ${categoryLabel} products to avail this coupon.`,
+        error: `Add ${categoryLabel || singleCategory || 'eligible'} products to avail this coupon.`,
       };
     }
 
