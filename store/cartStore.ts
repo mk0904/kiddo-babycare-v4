@@ -155,14 +155,39 @@ export async function variantBelongsToSpecialDealTabCollections(
 }
 
 /** Selling subtotal of cart lines eligible for the active deal coupon (hydrated tab collection products). */
-export function getSubtotalForDealEligibleLines(lineItems: CartItem[], dc: DiscountCode, dealProducts: any[]): number {
+export async function getSubtotalForDealEligibleLines(
+    lineItems: CartItem[],
+    dc: DiscountCode,
+    dealProducts: any[],
+    couponAllowedCategories: string[],
+    options: { limitToOne?: boolean } = {},
+): Promise<number> {
     if (dc.isDealCoupon !== true) return 0;
     const tabCollectionGids = collectSpecialDealTabCollectionGids();
     if (tabCollectionGids.length === 0) return 0;
-    return lineItems.reduce((sum, item) => {
-        if (!variantBelongsToSpecialDealTabCollections(item.variantId, tabCollectionGids)) return sum;
-        return sum + Number(item.price ?? 0) * Number(item.quantity ?? 0);
-    }, 0);
+
+    // HIGH-PERFORMANCE: Batch all items into one single network request
+    const productIds = lineItems.map(item => item.productId).filter(Boolean);
+    const eligibilityMap = await shopifyApi.batchGetProductsCollectionEligibility(productIds, tabCollectionGids);
+
+    const results = lineItems.map((item) => {
+        const isEligible = eligibilityMap.get(item.productId) === true;
+
+        if (__DEV__) {
+            console.log(`[DealEligibility] Item: "${item.title}" | Eligible: ${isEligible}`);
+        }
+
+        if (!isEligible) return 0;
+        const exists = item?.tags?.some(tag => couponAllowedCategories.includes(tag));
+        const qty = exists ? (Number(item.quantity ?? 0) > 0 ? 1 : 0) : Number(item.quantity ?? 0);
+        return Number(item.price ?? 0) * qty;
+    });
+
+    const subtotal = results.reduce((a, b) => a + b, 0);
+    if (__DEV__) {
+        console.log(`[DealEligibility] Final Eligible Subtotal: ${subtotal}`);
+    }
+    return subtotal;
 }
 
 /** True if a Shopify-mapped line already represents this local row (GID vs numeric variant ids differ). */
@@ -530,11 +555,11 @@ function dealCouponFixedAmountFromConfig(): number {
     return DEFAULT_DEAL_COUPON_FIXED_AMOUNT;
 }
 
-export function computeDiscountBreakdown(
+export async function computeDiscountBreakdown(
     lineItems: CartItem[],
     codes: DiscountCode[],
     dealProducts: any[] = [],
-): DiscountBreakdown {
+): Promise<DiscountBreakdown> {
     const subtotalVal = lineItems.reduce(
         (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 0),
         0,
@@ -556,13 +581,23 @@ export function computeDiscountBreakdown(
         const categoryKey = dc.applicableCategory?.trim().toLowerCase();
         let baseAmount: number;
         if (isDeal) {
-            baseAmount = getSubtotalForDealEligibleLines(lineItems, dc, dealProducts);
+            // Requirement: "discount should be calculated from 1 only" for deal/category products
+            const couponAllowedCategories = dc.allowedCategories || [];
+            baseAmount = await getSubtotalForDealEligibleLines(lineItems, dc, dealProducts, couponAllowedCategories, { limitToOne: true });
         } else {
-            baseAmount = dc.allowedCategories?.length
-                ? getSubtotalForAllowedCategories(lineItems, dc.allowedCategories)
-                : categoryKey
-                    ? (categorySubtotals[categoryKey] ?? 0)
-                    : subtotalVal;
+            if (dc.allowedCategories?.length) {
+                baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories, { limitToOne: true });
+            } else if (categoryKey) {
+                // Calculate subtotal for single applicableCategory, capping to 1 unit TOTAL (highest price)
+                const { lineItemMatchesApplicableCategory } = require('@/services/couponService');
+                const eligiblePrices = lineItems
+                    .filter(item => lineItemMatchesApplicableCategory(item, categoryKey) && Number(item.quantity ?? 0) > 0)
+                    .map(item => Number(item.price ?? 0));
+                baseAmount = eligiblePrices.length > 0 ? Math.max(...eligiblePrices) : 0;
+            } else {
+                // General coupon (no category/deal restriction) - apply to full quantity
+                baseAmount = subtotalVal;
+            }
         }
 
         let codeDiscount = 0;
@@ -570,7 +605,8 @@ export function computeDiscountBreakdown(
 
         if (isDeal) {
             // Eligible deal-line selling subtotal (same lines as baseAmount for deal codes).
-            const eligibleSubtotal = baseAmount;
+            console.log("baseAmount", baseAmount);
+            const eligibleSubtotal = baseAmount + dealFixedRupee;
             const remainderAfterFixed = Math.max(0, eligibleSubtotal - dealFixedRupee);
             codeDiscount = (0.5 * remainderAfterFixed) + dealFixedRupee;
             if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
@@ -591,6 +627,7 @@ export function computeDiscountBreakdown(
         }
         const rounded = Math.round(codeDiscount);
         discount += rounded;
+        console.log("rounded", rounded);
         perCode.push({
             code: dc.code,
             codeDiscount: rounded,
@@ -609,12 +646,13 @@ export function computeDiscountBreakdown(
 }
 
 /** Total only; same as {@link computeDiscountBreakdown}(...).total — kept for existing call sites. */
-export function computeNonDealDiscountFromCodes(
+export async function computeNonDealDiscountFromCodes(
     lineItems: CartItem[],
     codes: DiscountCode[],
     dealProducts: any[] = [],
-): number {
-    return computeDiscountBreakdown(lineItems, codes, dealProducts).total;
+): Promise<number> {
+    const res = await computeDiscountBreakdown(lineItems, codes, dealProducts);
+    return res.total;
 }
 
 function lineItemMatchesVariant(item: CartItem, variantIdNumeric: string): boolean {
@@ -704,12 +742,13 @@ export const useCartStore = create<CartState>()(
 
             refreshComputedDiscountFromCodes: async () => {
                 const state = get();
+                const breakdown = await computeDiscountBreakdown(
+                    state.lineItems,
+                    state.discountCodes,
+                    state.dealProducts,
+                );
                 set({
-                    discountBreakdownSnapshot: computeDiscountBreakdown(
-                        state.lineItems,
-                        state.discountCodes,
-                        state.dealProducts,
-                    ),
+                    discountBreakdownSnapshot: breakdown,
                 });
             },
 
@@ -750,18 +789,8 @@ export const useCartStore = create<CartState>()(
 
             discountAmount: () => {
                 const state = get();
-                // When we have discount codes, always compute from current lineItems so amount stays in sync when cart changes (e.g. remove item from allowed category). Use payment.discount only when there are no codes.
-                // When we have discount codes, always compute from current lineItems so amount stays in sync when cart changes.
-                // We must calculate manually if a deal coupon is present, or if Shopify's discount doesn't match our local codes.
-                const hasDealCoupon = state.discountCodes.some((dc) => (dc as any).isDealCoupon === true);
-                const hasApplicableCodes = state.discountCodes.some((dc) => dc.applicable !== false);
-
-                if (!hasDealCoupon && !hasApplicableCodes && state.payment && state.payment.discount > 0) {
-                    return state.payment.discount;
-                }
-
-                // Calculate from discount codes + current lineItems (category-aware)
-                return computeNonDealDiscountFromCodes(state.lineItems, state.discountCodes, state.dealProducts);
+                // Return the pre-calculated total from the snapshot to keep this getter synchronous
+                return state.discountBreakdownSnapshot?.total ?? 0;
             },
 
             // Revalidate applied coupons when cart changes; remove any that are no longer eligible.
@@ -895,17 +924,15 @@ export const useCartStore = create<CartState>()(
                         console.warn('[CartStore] Failed to sync discount codes to Shopify after revalidation', e);
                     }
                 }
+                get().refreshComputedDiscountFromCodes();
             },
 
             total: () => {
                 const state = get();
-                // Use payment.total from Shopify if available (most accurate)
-                if (state.payment && state.payment.total > 0) {
-                    return state.payment.total;
-                }
+                const currentSubtotal = state.subtotal();
 
-                // Fallback: calculate from subtotal, discount and shipping
-                return Math.max(0, state.subtotal() - state.discountAmount() + state.shippingFee());
+                // Use the synchronous discountAmount() which now reads from the snapshot
+                return Math.max(0, currentSubtotal - state.discountAmount() + state.shippingFee());
             },
 
             // Status actions
@@ -973,11 +1000,16 @@ export const useCartStore = create<CartState>()(
 
                     set({
                         lineItems: newLineItems,
-                        status: 'idle',
                         error: null,
                     });
-                    get().validateAppliedDiscountCodes();
-                    get().syncDeliveryFeeToShopify();
+                    
+                    // Trigger sync in background to keep UI instant
+                    Promise.resolve()
+                        .then(() => get().validateAppliedDiscountCodes())
+                        .then(() => get().syncDeliveryFeeToShopify())
+                        .then(() => get().syncDealPricing())
+                        .then(() => get().refreshComputedDiscountFromCodes())
+                        .finally(() => set({ status: 'idle' }));
 
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -1026,11 +1058,13 @@ export const useCartStore = create<CartState>()(
 
                     set({
                         lineItems: newLineItems,
-                        status: 'idle',
                         error: null,
                     });
-                    get().validateAppliedDiscountCodes();
-                    get().syncDeliveryFeeToShopify();
+                    await get().validateAppliedDiscountCodes();
+                    await get().syncDealPricing();
+                    await get().refreshComputedDiscountFromCodes();
+                    await get().syncDeliveryFeeToShopify();
+                    set({ status: 'idle' });
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -1061,11 +1095,16 @@ export const useCartStore = create<CartState>()(
 
                     set({
                         lineItems: newLineItems,
-                        status: 'idle',
                         error: null,
                     });
-                    get().validateAppliedDiscountCodes();
-                    get().syncDeliveryFeeToShopify();
+                    
+                    // Trigger sync in background to keep UI instant
+                    Promise.resolve()
+                        .then(() => get().validateAppliedDiscountCodes())
+                        .then(() => get().syncDeliveryFeeToShopify())
+                        .then(() => get().syncDealPricing())
+                        .then(() => get().refreshComputedDiscountFromCodes())
+                        .finally(() => set({ status: 'idle' }));
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
@@ -1096,11 +1135,11 @@ export const useCartStore = create<CartState>()(
                     });
                     set({
                         lineItems: newLineItems,
-                        status: 'idle',
                         error: null,
                     });
-                    get().validateAppliedDiscountCodes();
-                    get().applyEligibleGifts();
+                    await get().validateAppliedDiscountCodes();
+                    await get().applyEligibleGifts();
+                    set({ status: 'idle' });
                 } catch (error: any) {
                     set({ status: 'error', error: error.message });
                 }
@@ -1379,7 +1418,6 @@ export const useCartStore = create<CartState>()(
                         const currencyCode = get().payment?.currencyCode || 'INR';
                         const shipping = get().shippingFee();
                         set({
-                            status: 'idle',
                             payment: {
                                 subtotal,
                                 discount,
@@ -1391,10 +1429,9 @@ export const useCartStore = create<CartState>()(
                             error: null,
                             lastSyncedAt: Date.now(),
                         });
-                        get().syncDeliveryFeeToShopify();
-                        void get()
-                            .syncDealPricing({ forceFetch: true })
-                            .catch((e) => console.warn('[CartStore] syncDealPricing after deal apply (local cart):', e));
+                        await get().syncDeliveryFeeToShopify();
+                        // Trigger sync in background so modal opens instantly
+                        get().syncDealPricing({ forceFetch: true }).finally(() => set({ status: 'idle' }));
                         return { success: true };
                     }
 
@@ -1402,7 +1439,7 @@ export const useCartStore = create<CartState>()(
                         const resolvedDealCartId = get().id;
                         const shopifyDealCartId: string =
                             resolvedDealCartId != null &&
-                            resolvedDealCartId.startsWith('gid://shopify/Cart/')
+                                resolvedDealCartId.startsWith('gid://shopify/Cart/')
                                 ? resolvedDealCartId
                                 : cartId;
 
@@ -1418,7 +1455,6 @@ export const useCartStore = create<CartState>()(
                         const currencyCode = get().payment?.currencyCode || 'INR';
                         const shipping = get().shippingFee();
                         set({
-                            status: 'idle',
                             error: null,
                             lastSyncedAt: Date.now(),
                             payment: {
@@ -1430,14 +1466,9 @@ export const useCartStore = create<CartState>()(
                                 currencyCode,
                             },
                         });
-                        get().syncDeliveryFeeToShopify();
-                        // fetchCart ends with syncDealPricing — do not run syncDealPricing in parallel or
-                        // cartLinesUpdate can see stale CartLine ids while Shopify cart has already changed.
-                        void get()
-                            .fetchCart()
-                            .catch((e) =>
-                                console.warn('[CartStore] fetchCart after deal apply (Shopify cart):', e),
-                            );
+                        await get().syncDeliveryFeeToShopify();
+                        // fetchCart in background to avoid delaying modal opening
+                        get().fetchCart().finally(() => set({ status: 'idle' }));
                         return { success: true };
                     } catch (error: any) {
                         console.error('[CartStore] Deal coupon apply error:', error);
@@ -1643,7 +1674,7 @@ export const useCartStore = create<CartState>()(
                     const resolvedCartId = get().id;
                     const shopifyCartIdForApply: string =
                         resolvedCartId != null &&
-                        resolvedCartId.startsWith('gid://shopify/Cart/')
+                            resolvedCartId.startsWith('gid://shopify/Cart/')
                             ? resolvedCartId
                             : cartId;
 
@@ -1678,7 +1709,7 @@ export const useCartStore = create<CartState>()(
                             (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity),
                             0,
                         );
-                        const discountRev = computeNonDealDiscountFromCodes(
+                        const discountRev = await computeNonDealDiscountFromCodes(
                             state.lineItems,
                             state.discountCodes,
                             state.dealProducts,
@@ -1925,7 +1956,7 @@ export const useCartStore = create<CartState>()(
                     const lineItemsSubtotal = state.lineItems.reduce((sum, item) => {
                         return sum + (Number(item.price ?? 0) * Number(item.quantity));
                     }, 0);
-                    const recalcDiscount = computeNonDealDiscountFromCodes(state.lineItems, discountCodesFromCart, state.dealProducts);
+                    const recalcDiscount = await computeNonDealDiscountFromCodes(state.lineItems, discountCodesFromCart, state.dealProducts);
                     const taxAmount = parseFloat(updatedCart.cost?.totalTaxAmount?.amount || '0');
                     const updatedPayment: CartPayment = {
                         subtotal: lineItemsSubtotal,
@@ -1943,11 +1974,14 @@ export const useCartStore = create<CartState>()(
                         discountCodes: discountCodesFromCart,
                         payment: updatedPayment,
                         checkoutUrl: updatedCart.checkoutUrl || state.checkoutUrl,
-                        status: 'idle',
                         error: null,
                         lastSyncedAt: Date.now(),
                         ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
                     });
+                    await get().syncDeliveryFeeToShopify();
+                    await get().syncDealPricing();
+                    await get().validateAppliedDiscountCodes();
+                    set({ status: 'idle' });
                     console.log('[CartStore] ✅ Code successfully applied (existing cart path)');
                     return { success: true };
                 } catch (error: any) {
@@ -1959,6 +1993,7 @@ export const useCartStore = create<CartState>()(
             },
 
             removeDiscountCode: async (code) => {
+                set({ status: 'loading' });
                 const state = get();
                 const normalizedCode = code.toUpperCase();
                 const removedEntry = state.discountCodes.find((dc) => dc.code.toUpperCase() === normalizedCode);
@@ -1993,6 +2028,7 @@ export const useCartStore = create<CartState>()(
 
 
                 await get().syncDealPricing();
+                await get().refreshComputedDiscountFromCodes();
                 const itemsNow = get().lineItems;
                 const lineItemsSubtotal = itemsNow.reduce(
                     (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 0),
@@ -2010,7 +2046,7 @@ export const useCartStore = create<CartState>()(
                     }
                 }
 
-                const discount = computeNonDealDiscountFromCodes(itemsNow, updatedDiscountCodes, state.dealProducts);
+                const discount = await computeNonDealDiscountFromCodes(itemsNow, updatedDiscountCodes, state.dealProducts);
                 const currentShipping = get().shippingFee();
                 const total = Math.max(0, lineItemsSubtotal - discount + currentShipping + tax);
 
@@ -2023,14 +2059,15 @@ export const useCartStore = create<CartState>()(
                         total,
                         currencyCode,
                     },
-                    status: 'idle',
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
-                get().syncDeliveryFeeToShopify();
+                await get().syncDeliveryFeeToShopify();
+                set({ status: 'idle' });
             },
 
             removeAllDiscountCodes: async () => {
+                set({ status: 'loading' });
                 const state = get();
                 const lineSnapshot = state.lineItems;
                 const hadSpecialDealPromoLines = lineSnapshot.some(
@@ -2081,11 +2118,11 @@ export const useCartStore = create<CartState>()(
                         total: Math.max(0, subtotal + currentShipping + tax),
                         currencyCode,
                     },
-                    status: 'idle',
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
-                get().syncDeliveryFeeToShopify();
+                await get().syncDeliveryFeeToShopify();
+                set({ status: 'idle' });
             },
 
             // Sync cart prices
@@ -2145,7 +2182,7 @@ export const useCartStore = create<CartState>()(
                 }
             },
 
-            // Fetch cart from Shopify
+
             fetchCart: async () => {
                 const state = get();
                 if (!state.id) {
@@ -2353,7 +2390,7 @@ export const useCartStore = create<CartState>()(
                         const lineItemsSubtotal = lineItems.reduce((sum, item) => {
                             return sum + (Number(item.price ?? 0) * Number(item.quantity));
                         }, 0);
-                        const discount = computeNonDealDiscountFromCodes(lineItems, discountCodesFromCart, state.dealProducts);
+                        const discount = await computeNonDealDiscountFromCodes(lineItems, discountCodesFromCart, state.dealProducts);
                         const tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
                         const total = Math.max(0, lineItemsSubtotal - discount + tax);
 
@@ -2373,12 +2410,12 @@ export const useCartStore = create<CartState>()(
                             payment: updatedPayment,
                             webUrl: cart.checkoutUrl,
                             checkoutUrl: cart.checkoutUrl,
-                            status: 'idle',
                             lastSyncedAt: Date.now(),
                         });
-                        get().syncDeliveryFeeToShopify();
+                        await get().syncDeliveryFeeToShopify();
                         await get().syncDealPricing();
-                        void get().validateAppliedDiscountCodes();
+                        await get().validateAppliedDiscountCodes();
+                        set({ status: 'idle' });
                     }
                 } catch (error: any) {
                     console.error('[CartStore] fetchCart error:', error);
@@ -2592,34 +2629,22 @@ export const useCartStore = create<CartState>()(
                 }
 
                 const tabGids = collectSpecialDealTabCollectionGids();
-                const eligibilityByVariant = new Map<string, boolean>();
+                const eligibilityByProduct = new Map<string, boolean>();
                 if (tabGids.length > 0 && state.lineItems.length > 0 && dealProducts.length === 0) {
-                    const uniqueVariantIds = [...new Set(state.lineItems.map((i) => i.variantId))];
-                    await Promise.all(
-                        uniqueVariantIds.map(async (variantId) => {
-                            const ok = await variantBelongsToSpecialDealTabCollections(variantId, tabGids);
-                            eligibilityByVariant.set(variantId, ok);
-                        }),
-                    );
+                    const uniqueProductIds = [...new Set(state.lineItems.map((i) => i.productId).filter(Boolean))];
+                    const batchResult = await shopifyApi.batchGetProductsCollectionEligibility(uniqueProductIds as string[], tabGids);
+                    batchResult.forEach((isEligible, pid) => eligibilityByProduct.set(pid, isEligible));
                 }
 
                 const next = state.lineItems.map((item) => {
                     const isEligible =
                         dealProducts.length > 0
                             ? variantBelongsToListingProducts(dealProducts, item.variantId)
-                            : eligibilityByVariant.get(item.variantId) === true;
+                            : eligibilityByProduct.get(item.productId || '') === true;
 
-                    if (isEligible) {
-                        return {
-                            ...item,
-                            customAttributes: {
-                                ...(item.customAttributes || {}),
-                                [SPECIAL_DEAL_PROMO_CART_ATTR]: '50',
-                            },
-                        };
-                    } else {
-                        return stripSpecialDealPromoFromCartLine(item);
-                    }
+                    // No longer reducing individual line prices by 50%. 
+                    // Deal discount is now purely a coupon-based calculation in Bill Details.
+                    return stripSpecialDealPromoFromCartLine(item);
                 });
 
                 if (JSON.stringify(next) !== JSON.stringify(state.lineItems)) {

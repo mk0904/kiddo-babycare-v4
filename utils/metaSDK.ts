@@ -242,14 +242,10 @@ export function logMetaEvent(
     }
 
     if (__DEV__) {
-      console.log(`[MetaSDK] Logging ${standardEventName || eventName}:`, metaParams);
+      console.log(`[MetaSDK] Logging ${metaEventName}:`, metaParams);
     }
 
-    if (standardEventName) {
-      AppEventsLogger.logEvent(standardEventName, metaParams);
-    } else {
-      AppEventsLogger.logEvent(eventName, metaParams);
-    }
+    AppEventsLogger.logEvent(metaEventName, metaParams);
     
     AppEventsLogger.flush();
   } catch (e) {

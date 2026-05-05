@@ -225,6 +225,7 @@ export default function CartScreen() {
     const cartStore = useCartStore();
     const {
         dealProducts,
+        discountBreakdownSnapshot: discountBreakdown,
     } = cartStore;
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
@@ -820,10 +821,8 @@ export default function CartScreen() {
         }, 0);
     }, [cartItems]);
 
-    const discountBreakdown = useMemo(
-        () => computeDiscountBreakdown(cartItems, discountCodes, dealProducts),
-        [cartItems, discountCodes, dealProducts],
-    );
+    // Use the pre-calculated breakdown from the store snapshot (re-calculated async in store)
+    // Removed local useMemo of computeDiscountBreakdown as it is now async
 
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
@@ -1054,10 +1053,62 @@ export default function CartScreen() {
     };
 
     const handlePlaceOrder = async () => {
+        if (status === 'loading' || orderLoading) return;
+        setOrderLoading(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        // GET LATEST STORE STATE TO AVOID STALE CLOSURES
+        const { useCartStore } = await import('@/store/cartStore');
+        const latestStore = useCartStore.getState();
+        const latestCartItems = latestStore.lineItems;
+        const latestDiscountCodes = latestStore.discountCodes;
+        const latestItemSubtotal = latestStore.subtotal();
+        const latestDiscount = latestStore.discountAmount();
+        const latestDeliveryFee = latestStore.shippingFee();
+        const latestGiftWrappingFee = latestStore.getGiftWrappingPrice();
+        const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount);
+        const latestTotal = latestSubtotalAfterDiscount + latestDeliveryFee + latestGiftWrappingFee;
+        const latestToPay = Math.max(0, latestTotal - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
+
+        // Re-calculate derived values using latest state
+        const latestAppliedDiscountCode = latestDiscountCodes.filter((dc) => dc.applicable !== false).map((dc) => dc.code)[0] || null;
+        
+        // Re-calculate milestone coupon using latest state
+        const hasFreeShoesAppliedLatest = Boolean(freeShoesGiftCodeUc) && latestDiscountCodes.some(dc => dc.code.toUpperCase() === freeShoesGiftCodeUc && dc.applicable !== false);
+        const hasKidPuzzleAppliedLatest = latestDiscountCodes.some(dc => dc.code.toUpperCase() === freePuzzleGiftCodeUc && dc.applicable !== false);
+        const hasMysteryGiftAppliedLatest = latestDiscountCodes.some(dc => dc.code.toUpperCase() === freeMysteryGiftCodeUc && dc.applicable !== false);
+        
+        let latestMilestoneConfigDiscountAmount = 0;
+        const latestDiscountBreakdown = latestStore.discountBreakdownSnapshot;
+        for (const row of latestDiscountBreakdown.perCode) {
+            if (row.codeDiscount <= 0) continue;
+            const isMilestoneCoupon = row.isMilestone;
+            const codeUc = row.code.toUpperCase();
+            const isFreeShoes = Boolean(freeShoesGiftCodeUc) && codeUc === freeShoesGiftCodeUc;
+            const isKidPuzzle = codeUc === freePuzzleGiftCodeUc;
+            const isMysteryGift = codeUc === freeMysteryGiftCodeUc;
+            if (isMilestoneCoupon && !isFreeShoes && !isKidPuzzle && !isMysteryGift) {
+                latestMilestoneConfigDiscountAmount += row.codeDiscount;
+            }
+        }
+
+        let latestMilestoneCouponCode: string | undefined;
+        if (latestMilestoneConfigDiscountAmount > 0) {
+            latestMilestoneCouponCode = milestoneDiscountCodeUc || 'FIRSTMILESTONE';
+        } else if (hasFreeShoesAppliedLatest) {
+            latestMilestoneCouponCode = freeShoesGiftCodeUc || 'THIRDMILESTONE';
+        } else if (hasKidPuzzleAppliedLatest) {
+            latestMilestoneCouponCode = freePuzzleGiftCodeUc || 'SECONDMILESTONE';
+        } else if (hasMysteryGiftAppliedLatest) {
+            latestMilestoneCouponCode = freeMysteryGiftCodeUc || 'FOURTHMILESTONE';
+        }
+        
+        const latestCheckoutCouponCode = latestAppliedDiscountCode || latestMilestoneCouponCode;
+
         // Track Checkout Started event
         try {
             const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
-            trackCheckoutStarted(total, cartItems.length, cartItems.map(item => item.productId).filter(Boolean));
+            trackCheckoutStarted(latestTotal, latestCartItems.length, latestCartItems.map(item => item.productId).filter(Boolean));
         } catch (e) {
             console.warn('Checkout started tracking error:', e);
         }
@@ -1080,21 +1131,28 @@ export default function CartScreen() {
                     },
                 ]
             );
+            setOrderLoading(false);
             return;
         }
+
+        // Re-calculate ticketing status using latest state
+        const latestIsTicketingOnly = latestCartItems.length > 0 && latestCartItems.every(item => item.bookingDate || item.tags?.some(tag => {
+            const t = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return t.includes('event') || t.includes('playhouse') || t.includes('petting') || t.includes('farm');
+        }));
 
         // For physical products, require a real delivery address (not the ticketing placeholder).
         // Users who bought ticketing first may have only the placeholder saved; prompt them to add address.
-        if (!isTicketingOnly && !hasValidDeliveryAddress) {
+        if (!latestIsTicketingOnly && !hasValidDeliveryAddress) {
             setShowAddressModal(true);
+            setOrderLoading(false);
             return;
         }
 
-        const cartStoreState = cartStore; // Use statically imported instance
-        const { discountCodes, schoolCouponData } = cartStore;
+        const { schoolCouponData } = latestStore;
 
         // Validate School Coupon requirements
-        const activeSchoolCoupon = discountCodes.find(dc => dc.isSchoolCoupon && dc.applicable !== false);
+        const activeSchoolCoupon = latestDiscountCodes.find(dc => dc.isSchoolCoupon && dc.applicable !== false);
         if (activeSchoolCoupon) {
             if (!schoolCouponData || !schoolCouponData.childName || !schoolCouponData.parentName || !schoolCouponData.dob || !schoolCouponData.gender) {
                 setShowSchoolModal(true);
@@ -1103,12 +1161,18 @@ export default function CartScreen() {
             }
         }
 
-        if (!isTicketingOnly && hasNonTicketingProducts && savedAddressOutsideDeliveryZone) {
+        const latestHasNonTicketingProducts = latestCartItems.some(item => !item.bookingDate && !item.tags?.some(tag => {
+            const t = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return t.includes('event') || t.includes('playhouse') || t.includes('petting') || t.includes('farm');
+        }));
+
+        if (!latestIsTicketingOnly && latestHasNonTicketingProducts && savedAddressOutsideDeliveryZone) {
             Alert.alert(
                 'Area unserviceable',
                 'Delivery is not available at this address. Please choose a location closer to our store.',
                 [{ text: 'OK' }]
             );
+            setOrderLoading(false);
             return;
         }
 
@@ -1127,16 +1191,13 @@ export default function CartScreen() {
             phone: user?.phone || '9999999999'
         };
 
-        setOrderLoading(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
         // Track Checkout Started
         try {
             const { trackEvent } = require('@/utils/mixpanelHelpers');
             trackEvent('Checkout Started', {
-                cartValue: cartTotal,
-                itemCount: cartItems.length,
-                hasCoupon: discountCodes.length > 0,
+                cartValue: latestToPay,
+                itemCount: latestCartItems.length,
+                hasCoupon: latestDiscountCodes.length > 0,
                 paymentMethod: paymentMethod || 'not_selected',
             });
         } catch (e) {
@@ -1149,7 +1210,7 @@ export default function CartScreen() {
             // Validate product availability before placing order
             try {
                 const { shopifyApi } = await import('@/services/shopifyApi');
-                const variantIds = cartItems.map(item => item.variantId);
+                const variantIds = latestCartItems.map(item => item.variantId);
                 const variants = await shopifyApi.getVariantsByIds(variantIds);
 
                 // Create a map of variant ID to variant data for easier lookup
@@ -1165,7 +1226,7 @@ export default function CartScreen() {
                 const itemsToFix: Array<{ item: any; realVariant: any }> = [];
 
                 // First pass: identify items with wrong variant IDs and collect fixes
-                for (const item of cartItems) {
+                for (const item of latestCartItems) {
                     let variant = variantMap.get(item.variantId);
 
                     // If variant not found, it might be a search result with wrong variant ID
@@ -1321,13 +1382,13 @@ export default function CartScreen() {
             }
 
             // Effective payment method for backend (so Shopify order has correct method)
-            const isFreeOrder = toPay === 0;
+            const isFreeOrder = latestToPay === 0;
             const chosenPayment = paymentMethod === 'cod' ? 'cod' : 'razorpay';
             const effectivePaymentMethod = isFreeOrder ? 'free' : chosenPayment;
 
             // Prepare order data with full checkout details for backend/Shopify
             const orderData = {
-                items: cartItems.map(item => ({
+                items: latestCartItems.map(item => ({
                     id: item.id,
                     productId: item.productId,
                     variantId: item.variantId,
@@ -1343,7 +1404,7 @@ export default function CartScreen() {
                         ? { customAttributes: item.customAttributes }
                         : {}),
                 })),
-                totalAmount: toPay,
+                totalAmount: latestToPay,
                 currencyCode: 'INR',
                 email: user?.email || 'guest@example.com',
                 phone: user?.phone || billingAddress.phone || '',
@@ -1365,26 +1426,26 @@ export default function CartScreen() {
                     name: giftWrapping.name,
                     price: giftWrapping.price
                 } : undefined,
-                couponCode: checkoutCouponCode || undefined,
-                discountAmount: discount > 0 ? discount : undefined,
+                couponCode: latestCheckoutCouponCode || undefined,
+                discountAmount: latestDiscount > 0 ? latestDiscount : undefined,
                 deliverySchedule: (deliverySchedule?.date && deliverySchedule?.time) ? deliverySchedule : undefined,
                 deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
                 paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
                 billDetails: {
-                    subtotal: itemSubtotal,
-                    subtotalAfterDiscount,
-                    deliveryFee,
-                    giftWrappingFee,
-                    discount,
-                    total: toPay,
+                    subtotal: latestItemSubtotal,
+                    subtotalAfterDiscount: latestSubtotalAfterDiscount,
+                    deliveryFee: latestDeliveryFee,
+                    giftWrappingFee: latestGiftWrappingFee,
+                    discount: latestDiscount,
+                    total: latestToPay,
                     currencyCode: 'INR',
                 },
                 selectedShoe: selectedShoe || undefined,
                 selectedShoeSize: selectedShoeSize || undefined,
                 selectedPuzzleId: selectedPuzzleId || undefined,
-                selectedPuzzleAge: selectedPuzzleAge || undefined,
+                selectedPuzzleAge: latestStore.selectedPuzzleAge || undefined,
                 isTryAndBuy: isTryAndBuy,
-                schoolCouponData: activeSchoolCoupon ? cartStore.schoolCouponData : null,
+                schoolCouponData: activeSchoolCoupon ? latestStore.schoolCouponData : null,
             };
 
             // Call Payment Service
@@ -1392,10 +1453,10 @@ export default function CartScreen() {
 
             // Sync Shopify cart discount codes to match our store so the backend doesn't apply a stale coupon from the cart
             try {
-                const cartId = await ensureCart();
+                const cartId = await latestStore.ensureCart();
                 if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                     const { shopifyApi } = await import('@/services/shopifyApi');
-                    const shopifyCodes = (discountCodes || []).filter(dc => dc.applicable !== false && (dc as any).isDealCoupon !== true).map(dc => dc.code);
+                    const shopifyCodes = (latestDiscountCodes || []).filter(dc => dc.applicable !== false && (dc as any).isDealCoupon !== true).map(dc => dc.code);
                     await shopifyApi.applyDiscountCodes(cartId, shopifyCodes);
                 }
             } catch (syncErr) {
@@ -2285,7 +2346,7 @@ export default function CartScreen() {
                             paymentMethod={paymentMethod}
                             toPay={toPay}
                             formatCurrency={formatCurrency}
-                            orderLoading={orderLoading}
+                            orderLoading={orderLoading || status === 'loading'}
                             isAuthenticated={isAuthenticated}
                             onPlaceOrder={handlePlaceOrder}
                             onAddAddress={handleAddressSelection}

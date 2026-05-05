@@ -10,6 +10,9 @@ const client = axios.create({
   },
 });
 
+/** Cache for product collection eligibility to optimize performance during checkout/cart updates. */
+const collectionEligibilityCache = new Map<string, boolean>();
+
 /** Offline / DNS / TLS failures — avoid console.error spam from background polls (e.g. live delivery tab). */
 function isLikelyAxiosNetworkError(error: unknown): boolean {
   if (error == null || typeof error !== 'object') return false;
@@ -105,16 +108,27 @@ const GET_COLLECTION_BY_ID_QUERY = `
   }
 `;
 
-const VARIANT_PRODUCT_COLLECTIONS_QUERY = `
-  query variantProductCollections($id: ID!) {
-    node(id: $id) {
-      ... on ProductVariant {
+const PRODUCT_COLLECTIONS_QUERY = `
+  query productCollections($id: ID!) {
+    product(id: $id) {
+      id
+      collections(first: 50) {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+`;
+
+const PRODUCTS_COLLECTIONS_QUERY = `
+  query productsCollections($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Product {
         id
-        product {
-          collections(first: 50) {
-            nodes {
-              id
-            }
+        collections(first: 20) {
+          nodes {
+            id
           }
         }
       }
@@ -124,20 +138,20 @@ const VARIANT_PRODUCT_COLLECTIONS_QUERY = `
 
 /** Normalize cart/admin variant reference to Storefront `gid://shopify/ProductVariant/...`. */
 export function parseShopifyVariantGid(raw: string | null | undefined): string | null {
-    if (raw == null) return null;
-    const s = String(raw).trim();
-    if (!s) return null;
-    if (s.startsWith('gid://shopify/ProductVariant/')) return s;
-    const adminMatch = s.match(/\/variants\/(\d+)/);
-    if (adminMatch) return `gid://shopify/ProductVariant/${adminMatch[1]}`;
-    if (/^\d+$/.test(s)) return `gid://shopify/ProductVariant/${s}`;
-    const tail = s.includes('/') ? (s.split('/').pop() ?? '') : s;
-    if (tail && /^\d+$/.test(tail)) return `gid://shopify/ProductVariant/${tail}`;
-    return null;
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  if (s.startsWith('gid://shopify/ProductVariant/')) return s;
+  const adminMatch = s.match(/\/variants\/(\d+)/);
+  if (adminMatch) return `gid://shopify/ProductVariant/${adminMatch[1]}`;
+  if (/^\d+$/.test(s)) return `gid://shopify/ProductVariant/${s}`;
+  const tail = s.includes('/') ? (s.split('/').pop() ?? '') : s;
+  if (tail && /^\d+$/.test(tail)) return `gid://shopify/ProductVariant/${tail}`;
+  return null;
 }
 
 function normalizeStorefrontGid(id: string): string {
-    return String(id).trim();
+  return String(id).trim();
 }
 
 const GET_PRODUCTS_BY_COLLECTION_QUERY = `
@@ -1198,6 +1212,103 @@ export const shopifyApi = {
     }
   },
 
+  productBelongsToAnyCollections: async (
+    productId: string,
+    collectionGids: readonly string[],
+  ): Promise<boolean> => {
+    if (!collectionGids.length) return false;
+    const pid = productId.startsWith('gid://shopify/Product/') ? productId : `gid://shopify/Product/${productId}`;
+    
+    // Check cache first to avoid slow network requests during checkout/quantity changes
+    const cacheKey = `${pid}:${[...collectionGids].sort().join(',')}`;
+    if (collectionEligibilityCache.has(cacheKey)) {
+      return collectionEligibilityCache.get(cacheKey)!;
+    }
+
+    const targets = new Set(collectionGids.map((g) => normalizeStorefrontGid(g)));
+    try {
+      const response = await client.post('', {
+        query: PRODUCT_COLLECTIONS_QUERY,
+        variables: { id: pid },
+      });
+      if (response.data.errors?.length) {
+        return false;
+      }
+      const nodes = response.data.data?.product?.collections?.nodes;
+      if (!Array.isArray(nodes)) return false;
+      const isEligible = nodes.some((c: { id?: string }) => c?.id && targets.has(normalizeStorefrontGid(c.id)));
+      
+      // Store result in cache
+      collectionEligibilityCache.set(cacheKey, isEligible);
+      return isEligible;
+    } catch (error) {
+      if (!isLikelyAxiosNetworkError(error)) {
+        console.warn('[shopifyApi] productBelongsToAnyCollections failed:', error);
+      }
+      return false;
+    }
+  },
+
+  /** 
+   * HIGH-PERFORMANCE: Checks multiple products for collection membership in a SINGLE request.
+   * Eliminates the 10-second delay when syncing large carts.
+   */
+  batchGetProductsCollectionEligibility: async (
+    productIds: string[],
+    collectionGids: readonly string[]
+  ): Promise<Map<string, boolean>> => {
+    const results = new Map<string, boolean>();
+    if (!productIds.length || !collectionGids.length) return results;
+
+    const gidsToFetch: string[] = [];
+    const targets = new Set(collectionGids.map((g) => normalizeStorefrontGid(g)));
+
+    // Check cache first
+    for (const id of productIds) {
+      const pid = id.startsWith('gid://shopify/Product/') ? id : `gid://shopify/Product/${id}`;
+      const cacheKey = `${pid}:${[...collectionGids].sort().join(',')}`;
+      if (collectionEligibilityCache.has(cacheKey)) {
+        results.set(id, collectionEligibilityCache.get(cacheKey)!);
+      } else {
+        gidsToFetch.push(pid);
+      }
+    }
+
+    if (gidsToFetch.length === 0) return results;
+
+    try {
+      const response = await client.post('', {
+        query: PRODUCTS_COLLECTIONS_QUERY,
+        variables: { ids: gidsToFetch },
+      });
+
+      const nodes = response.data?.data?.nodes || [];
+      for (const node of nodes) {
+        if (!node) continue;
+        const productGid = node.id;
+        const productCollectionGids = (node.collections?.nodes || []).map((c: any) => normalizeStorefrontGid(c.id));
+        const isEligible = targets.size > 0 && productCollectionGids.some((gid: string) => targets.has(gid));
+        
+        // Cache it for individual calls too
+        const cacheKey = `${productGid}:${[...collectionGids].sort().join(',')}`;
+        collectionEligibilityCache.set(cacheKey, isEligible);
+        
+        // Match back to original ID (numeric or GID)
+        const originalId = productIds.find(id => id === productGid || `gid://shopify/Product/${id}` === productGid);
+        if (originalId) results.set(originalId, isEligible);
+      }
+      
+      // Fill in remaining as false if fetch failed for some
+      for (const id of productIds) {
+        if (!results.has(id)) results.set(id, false);
+      }
+    } catch (error) {
+      console.warn('[shopifyApi] batchGetProductsCollectionEligibility failed:', error);
+    }
+
+    return results;
+  },
+
   getProductsByCollection: async (
     collectionId: string,
     first: number = 20,
@@ -1329,14 +1440,14 @@ export const shopifyApi = {
         console.error('[ShopifyApi] getCurrentCustomerId errors:', response.data.errors);
         return null;
       }
-      
+
       const customer = response.data.data?.customer;
       if (customerAccessToken && customer === null) {
         const error = new Error('UNAUTHORIZED_CUSTOMER');
         (error as any).isAuthError = true;
         throw error;
       }
-      
+
       return customer?.id ?? null;
     } catch (error) {
       if ((error as any).isAuthError) throw error;
@@ -1361,7 +1472,7 @@ export const shopifyApi = {
       }
 
       const customer = response.data.data?.customer;
-      
+
       // If a token was provided but Shopify returns null for customer, the token is invalid/expired
       if (customerAccessToken && customer === null) {
         console.warn('[shopifyApi] getCustomerOrders: customer is null (token likely invalid/expired)');
