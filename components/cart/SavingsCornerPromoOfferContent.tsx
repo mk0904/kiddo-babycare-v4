@@ -1,17 +1,17 @@
 import { ProductCard } from '@/components/products/ProductCard';
 import { Fonts } from '@/constants/theme';
-import { pickSchoolNameFromCouponRaw } from '@/services/couponService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { type CartItem, useCartStore } from '@/store/cartStore';
-import type { SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
-import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
+import type { SpecialDealCondition, SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
+import { normalizeSpecialDealConfig, normalizeSpecialDealTab } from '@/utils/normalizeSpecialDealConfig';
 import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    type NativeScrollEvent,
-    type NativeSyntheticEvent,
+    FlatList,
     ScrollView,
     StyleSheet,
     Text,
@@ -19,6 +19,7 @@ import {
     useWindowDimensions,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SUCCESS_GREEN = '#4CAF50';
 const OFFER_RED = '#FF5252';
@@ -35,7 +36,12 @@ const PROMO_COLLECTION_STORE_FILTERS = [{ available: true }] as const;
 /** Slightly smaller type across this modal only (header, tabs, footer, grid ProductCards). */
 const PROMO_MODAL_TEXT_SCALE = 0.88;
 const promoFs = (px: number) => Math.max(8, Math.round(px * PROMO_MODAL_TEXT_SCALE * 10) / 10);
-const promoLh = (px: number) => Math.max(10, Math.round(px * PROMO_MODAL_TEXT_SCALE));
+
+/** Left category rail width when `sideTabs` is present (matches promo modal layout). */
+const SIDE_RAIL_WIDTH = 76;
+
+/** Product grid columns — two-up cards like the promo reference UI. */
+const GRID_COLUMNS = 2;
 
 type PromoTabListingCacheEntry = {
     listingProducts: any[];
@@ -239,6 +245,8 @@ export interface SavingsCornerPromoOfferContentProps {
     onUnlockPress?: (selectedVariantIds: string[]) => void;
     /** Parent marks intent so returning from PDP does not restore a frozen promo sheet (see SavingsCorner). */
     onProductNavigationFromPromo?: () => void;
+    /** `bottomSheet`: full-width panel with top rounded corners (e.g. parent uses slide-up Modal). */
+    presentation?: 'centered' | 'bottomSheet';
 }
 
 export function SavingsCornerPromoOfferContent({
@@ -249,30 +257,77 @@ export function SavingsCornerPromoOfferContent({
     onSeeAllCoupons,
     onUnlockPress,
     onProductNavigationFromPromo,
+    presentation = 'centered',
 }: SavingsCornerPromoOfferContentProps) {
     const router = useRouter();
-    const { width: windowWidth } = useWindowDimensions();
-    const cardMaxWidth = Math.min(windowWidth - 32, 400);
+    const insets = useSafeAreaInsets();
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const isBottomSheet = presentation === 'bottomSheet';
+    const cardMaxWidth = isBottomSheet ? windowWidth : Math.min(windowWidth - 32, 400);
+    /** Bottom sheet parent only had maxHeight — `flex:1` on the card then collapsed (no bounded height). */
+    const bottomSheetHeight = useMemo(() => {
+        if (!isBottomSheet) return null;
+        return Math.round(windowHeight * 0.92);
+    }, [isBottomSheet, windowHeight]);
 
     /** Merges snake_case / alternate API keys so `tabs[].label` + `collectionId` always line up. */
     const cfg = useMemo(() => normalizeSpecialDealConfig(dealConfig), [dealConfig]);
 
-    /** Tabs with a visible `label`; products load from `collectionId` / `collection_id` only. */
-    const tabItems: SpecialDealTab[] = useMemo(() => {
+    /** Legacy top-level tabs when `sideTabs` is absent. */
+    const legacyTabItems: SpecialDealTab[] = useMemo(() => {
         return (cfg.tabs ?? []).filter((t) => {
             if (!t || t.isActive === false) return false;
             return String(t.label ?? '').trim() !== '';
         });
     }, [cfg.tabs]);
 
+    const sideTabGroups = useMemo(() => {
+        const raw = cfg.sideTabs;
+        if (!Array.isArray(raw) || raw.length === 0) return [];
+        return raw.filter((g) => g && Array.isArray(g.tabs) && g.tabs.length > 0);
+    }, [cfg.sideTabs]);
+
+    const useSideTabsLayout = sideTabGroups.length > 0;
+
+    const [activeSideTabIndex, setActiveSideTabIndex] = useState(0);
+
+    const tabItems: SpecialDealTab[] = useMemo(() => {
+        if (useSideTabsLayout) {
+            const group = sideTabGroups[activeSideTabIndex] ?? sideTabGroups[0];
+            const inner = group?.tabs ?? [];
+            const out: SpecialDealTab[] = [];
+            for (const row of inner) {
+                const n = normalizeSpecialDealTab(row);
+                if (n) out.push(n);
+            }
+            if (out.length === 0 && legacyTabItems.length > 0) return legacyTabItems;
+            return out;
+        }
+        return legacyTabItems;
+    }, [useSideTabsLayout, sideTabGroups, activeSideTabIndex, legacyTabItems]);
+
     const [activeTabIndex, setActiveTabIndex] = useState(0);
-    const initialTimerSec = Math.max(0, Math.floor((cfg.offerTime ?? 30) * 60));
-    const [remainingSec, setRemainingSec] = useState(initialTimerSec);
+
+    /** {@link SpecialDealConfig.offerTime} — duration in seconds. */
+    const offerDurationSec = useMemo(
+        () => Math.max(0, Math.floor(Number(cfg.offerTime ?? 30))),
+        [cfg.offerTime],
+    );
+    const [offerRemainingSec, setOfferRemainingSec] = useState(offerDurationSec);
+
     const [listingProducts, setListingProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
     const [productsEndCursor, setProductsEndCursor] = useState<string | null>(null);
     const [hasMoreProducts, setHasMoreProducts] = useState(false);
+    const videoUri = useMemo(() => (
+        cfg.videoUrl != null && String(cfg.videoUrl).trim() !== '' ? String(cfg.videoUrl).trim() : null
+    ), [cfg.videoUrl]);
+    const [videoVisible, setVideoVisible] = useState(true);
+
+    useEffect(() => {
+        setVideoVisible(true);
+    }, [videoUri]);
 
     const collectionGidRef = useRef<string | null>(null);
     const loadingMoreRef = useRef(false);
@@ -293,10 +348,7 @@ export function SavingsCornerPromoOfferContent({
     };
     /** All variant ids ever shown in this modal’s grids (tabs accumulate) — updated synchronously so CTA isn’t one frame behind. */
     const accumulatedPromoGridVariantKeysRef = useRef<Set<string>>(new Set());
-    const promoScrollRef = useRef<ScrollView | null>(null);
-    const lastGridRowRef = useRef<View | null>(null);
     const lineItems = useCartStore((s) => s.lineItems);
-    const discountCodes = useCartStore((s) => s.discountCodes);
 
     /** `UniversalAdd` fired after a successful add — source-of-truth for footer if cart snapshot lags. */
     const [dealPromoAddConfirmed, setDealPromoAddConfirmed] = useState(false);
@@ -330,8 +382,26 @@ export function SavingsCornerPromoOfferContent({
     }, [listingProducts]);
 
     useEffect(() => {
-        setRemainingSec(Math.max(0, Math.floor((cfg.offerTime ?? 30) * 60)));
-    }, [cfg.offerTime]);
+        setOfferRemainingSec(offerDurationSec);
+    }, [offerDurationSec]);
+
+    useEffect(() => {
+        const t = setInterval(() => {
+            setOfferRemainingSec((s) => (s <= 0 ? 0 : s - 1));
+        }, 1000);
+        return () => clearInterval(t);
+    }, []);
+
+    useEffect(() => {
+        setActiveSideTabIndex((i) => {
+            if (sideTabGroups.length === 0) return 0;
+            return Math.min(Math.max(0, i), sideTabGroups.length - 1);
+        });
+    }, [sideTabGroups.length]);
+
+    useEffect(() => {
+        if (useSideTabsLayout) setActiveTabIndex(0);
+    }, [activeSideTabIndex, useSideTabsLayout]);
 
     useEffect(() => {
         setActiveTabIndex((i) => {
@@ -339,13 +409,6 @@ export function SavingsCornerPromoOfferContent({
             return Math.min(Math.max(0, i), tabItems.length - 1);
         });
     }, [tabItems.length]);
-
-    useEffect(() => {
-        const t = setInterval(() => {
-            setRemainingSec((s) => (s <= 0 ? 0 : s - 1));
-        }, 1000);
-        return () => clearInterval(t);
-    }, []);
 
     const activeTab = tabItems[activeTabIndex] ?? tabItems[0];
     const activeCollectionRaw = getTabCollectionId(activeTab);
@@ -464,8 +527,9 @@ export function SavingsCornerPromoOfferContent({
     }, [collectionGid]);
 
     const loadMoreProducts = useCallback(() => {
-        if (!collectionGid || !hasMoreProducts || loadingProducts) return;
+        if (!collectionGid || !hasMoreProducts || loadingProducts || loadingMoreProducts) return;
         if (loadingMoreRef.current) return;
+
         const gid = collectionGid;
         const after = productsEndCursor;
         if (after == null) return;
@@ -483,92 +547,29 @@ export function SavingsCornerPromoOfferContent({
             )
             .then((col) => {
                 if (collectionGidRef.current !== gid) return;
+                const pi = col?.products?.pageInfo;
                 const edges = col?.products?.edges ?? [];
                 const nodes = edges.map((e: any) => e?.node).filter(Boolean);
-                const pi = col?.products?.pageInfo;
+
                 setListingProducts((prev) => mergeUniqueByProductId(prev, nodes));
                 setProductsEndCursor(resolveCollectionProductsPageCursor(col?.products));
                 setHasMoreProducts(Boolean(pi?.hasNextPage));
             })
             .catch(() => {
-                /* keep hasMoreProducts so user can retry by scrolling again */
+                /* keep hasMoreProducts so user can retry */
             })
             .finally(() => {
                 loadingMoreRef.current = false;
                 setLoadingMoreProducts(false);
             });
-    }, [collectionGid, hasMoreProducts, loadingProducts, productsEndCursor]);
+    }, [collectionGid, hasMoreProducts, loadingProducts, loadingMoreProducts, productsEndCursor]);
 
-    /** When the last loaded grid row intersects the ScrollView viewport, fetch the next page. */
-    const tryLoadMoreWhenLastRowVisible = useCallback(() => {
-        if (!hasMoreProducts || loadingProducts || loadingMoreProducts) return;
-        if (loadingMoreRef.current) return;
-
-        const scrollMeasurable = getMeasureInWindowHost(promoScrollRef.current);
-        const rowMeasurable = getMeasureInWindowHost(lastGridRowRef.current);
-        if (!scrollMeasurable || !rowMeasurable) return;
-
-        rowMeasurable.measureInWindow((_rx: number, rowY: number, _rw: number, rowH: number) => {
-            scrollMeasurable.measureInWindow((_sx: number, sy: number, _sw: number, sh: number) => {
-                const rowBottom = rowY + rowH;
-                const viewBottom = sy + sh;
-                const intersectsVertically = rowBottom > sy && rowY < viewBottom;
-                if (intersectsVertically) {
-                    loadMoreProducts();
-                }
-            });
-        });
-    }, [hasMoreProducts, loadMoreProducts, loadingMoreProducts, loadingProducts]);
-
-    /** Reliable when sticky headers / layout make `measureInWindow` mismatch the visible viewport. */
-    const tryLoadMoreWhenNearScrollBottom = useCallback(
-        (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-            if (!hasMoreProducts || loadingProducts || loadingMoreProducts) return;
-            if (loadingMoreRef.current) return;
-            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-            const threshold = 220;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold) {
-                loadMoreProducts();
-            }
-        },
-        [hasMoreProducts, loadMoreProducts, loadingMoreProducts, loadingProducts],
-    );
-
-    const handlePromoScroll = useCallback(
-        (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-            tryLoadMoreWhenNearScrollBottom(e);
-            tryLoadMoreWhenLastRowVisible();
-        },
-        [tryLoadMoreWhenNearScrollBottom, tryLoadMoreWhenLastRowVisible],
-    );
-
-    useEffect(() => {
-        if (loadingProducts || listingProducts.length === 0 || !hasMoreProducts) return;
-        const id = requestAnimationFrame(() => tryLoadMoreWhenLastRowVisible());
-        return () => cancelAnimationFrame(id);
-    }, [listingProducts.length, loadingProducts, hasMoreProducts, tryLoadMoreWhenLastRowVisible]);
-
-    const timerLabel = useMemo(() => {
-        const m = Math.floor(remainingSec / 60);
-        const sec = remainingSec % 60;
-        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-    }, [remainingSec]);
-
-    /** Three-column grid inside modal (card width accounts for two gutters between three tiles). */
-    const GRID_COLUMNS = 3;
     const gridGap = 8;
     const gridPad = 12;
+    const contentInnerWidth = useSideTabsLayout ? cardMaxWidth - SIDE_RAIL_WIDTH : cardMaxWidth;
     const productCardWidth = Math.floor(
-        (cardMaxWidth - gridPad * 2 - gridGap * (GRID_COLUMNS - 1)) / GRID_COLUMNS
+        (contentInnerWidth - gridPad * 2 - gridGap * (GRID_COLUMNS - 1)) / GRID_COLUMNS
     );
-
-    const productRows = useMemo(() => {
-        const rows: any[][] = [];
-        for (let i = 0; i < listingProducts.length; i += GRID_COLUMNS) {
-            rows.push(listingProducts.slice(i, i + GRID_COLUMNS));
-        }
-        return rows;
-    }, [listingProducts]);
 
     const promoGridMatchingLineItems = useMemo(() => {
         return lineItems.filter((li: CartItem) => {
@@ -614,35 +615,30 @@ export function SavingsCornerPromoOfferContent({
         onClose();
     };
 
-    const actualPrice = Number(cfg.actualPrice ?? 0);
-    const discountedPrice = Number(cfg.discountedPrice ?? 0);
-    const bannerText = cfg.bannerText?.trim() || 'One-time Offer Unlocked';
-    /** Same source as cart deal CTA: school label on applied deal coupon from coupons API. */
-    const dealPromoSchoolName = useMemo(() => {
-        const indexed = discountCodes.map((dc, i) => ({ dc, i }));
-        const active = indexed.filter(({ dc }) => dc.applicable !== false);
-        const pool = active.length > 0 ? active : indexed;
-        const dealRows = pool.map(({ dc }) => dc).filter((dc) => dc.isDealCoupon === true);
-        const pickDc =
-            dealRows.length > 0
-                ? dealRows.reduce((a, b) => ((b.appliedAt ?? 0) >= (a.appliedAt ?? 0) ? b : a))
-                : discountCodes.find((dc) => dc.isDealCoupon === true);
-        return pickSchoolNameFromCouponRaw(pickDc) ?? '';
-    }, [discountCodes]);
     const titleText = cfg.title?.trim() || 'Special offer';
+
+    const countdownLead = String(cfg.firstLineText ?? '').trim();
+
+    const showOfferCountdown =
+        offerDurationSec > 0 || String(cfg.firstLineText ?? '').trim() !== '';
+
+    /** {@link SpecialDealConfig.conditions} — text rows only (icons not rendered). */
+    const dealConditionRows: SpecialDealCondition[] = useMemo(() => {
+        return (cfg.conditions ?? []).filter((c) => {
+            if (!c) return false;
+            return String(c.text ?? '').trim() !== '';
+        });
+    }, [cfg.conditions]);
+
     const footerCta = cfg.footerCta?.trim() || 'Add products to unlock offer';
     /** Primary button always dismisses; label reflects optional browse-and-add vs done. */
     const primaryCtaLabel = hasAddedFromPromoGrid ? 'Go to checkout' : footerCta;
-    const conditionsSummaryLine = useMemo(() => {
-        return (cfg.conditions ?? [])
-            .map((c) => (c.text ?? '').trim())
-            .filter(Boolean)
-            .join(' | ');
-    }, [cfg.conditions]);
 
     const gridEmptyMessage =
         tabItems.length === 0
-            ? 'No collections in offer config yet'
+            ? useSideTabsLayout
+                ? 'No collections for this category — check sideTabs in app config'
+                : 'No collections in offer config yet'
             : !collectionGid
                 ? 'Missing collection for this tab — check collectionId in app config'
                 : 'No products found';
@@ -652,193 +648,221 @@ export function SavingsCornerPromoOfferContent({
             ? `deal-tab-${String(t.value).trim()}`
             : `deal-tab-${i}-${getTabCollectionId(t) ?? String(t.label ?? '').slice(0, 24)}`;
 
+
     return (
-        <View style={[styles.card, { width: cardMaxWidth, maxWidth: cardMaxWidth }]}>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={14}>
-                <Ionicons name="close" size={22} color="#9CA3AF" />
+        <View
+            style={[
+                styles.card,
+                isBottomSheet && styles.cardBottomSheet,
+                { width: cardMaxWidth, maxWidth: cardMaxWidth },
+                isBottomSheet &&
+                bottomSheetHeight != null && {
+                    flex: 0,
+                    flexGrow: 0,
+                    height: bottomSheetHeight,
+                    maxHeight: bottomSheetHeight,
+                },
+            ]}
+        >
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={14} accessibilityRole="button">
+                <View style={styles.closeBtnInner}>
+                    <Ionicons name="close" size={18} color="#6B7280" />
+                </View>
             </TouchableOpacity>
 
-            <ScrollView
-                ref={promoScrollRef}
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                scrollEventThrottle={100}
-                onScroll={handlePromoScroll}
-                onContentSizeChange={() => {
-                    requestAnimationFrame(() => tryLoadMoreWhenLastRowVisible());
-                }}
-                stickyHeaderIndices={tabItems.length > 0 ? [1] : undefined}
-            >
-                <View style={styles.promoScrollHeader}>
-                    <View style={styles.successRow}>
+            <View style={styles.titleContainer}>
+                <Text style={styles.heroTitle}>{titleText}</Text>
 
-                        <View style={styles.checkCircle}>
-                            <Ionicons name="checkmark-sharp" size={16} color="#fff" />
+                {dealConditionRows.map((c, i) => {
+                    const line = String(c.text ?? '').trim();
+                    return (
+                        <View key={`deal-condition-${i}-${line.slice(0, 32)}`} style={styles.conditionRow}>
+                            <Text style={[styles.conditionText, styles.conditionTextFullWidth]}>{line}</Text>
                         </View>
-                        <View style={styles.successTextWrap}>
-                            <Text style={styles.congrats}>
-                                <Text style={styles.congratsBold}>Congratulations!</Text>
+                    );
+                })}
+            </View>
 
+            {showOfferCountdown ? (
+                <View style={styles.countdownRow}>
+                    <View style={styles.countdownHairline} />
+                    <View style={styles.countdownTextRow}>
+                        {countdownLead !== '' ? (
+                            <Text style={styles.countdownLead} numberOfLines={1}>
+                                {`${countdownLead} `}
                             </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.dottedRule} />
-
-                    <View style={styles.unlockBanner}>
-                        <Text style={styles.unlockBannerText}>
-                            {dealPromoSchoolName !== '' ? (
-                                <>
-                                    <Text style={styles.unlockBannerSchool}>One Time Offer Unlocked</Text>{'\n'}
-                                    For{' '}{dealPromoSchoolName}{' '}Parents
-                                </>
-                            ) : (
-                                bannerText
-                            )}
+                        ) : null}
+                        <Text
+                            style={[
+                                styles.countdownStatus,
+                                offerRemainingSec <= 0 && styles.countdownUnlocked,
+                            ]}
+                            numberOfLines={2}
+                        >
+                            {offerRemainingSec > 0
+                                ? `Unlocking in ${offerRemainingSec}s`
+                                : 'Unlocked'}
                         </Text>
                     </View>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.flatOff}>{titleText}</Text>
-                    </View>
-
-                    <View style={styles.metaRow}>
-                        <View style={[styles.metaBox, styles.metaBoxConditions]}>
-                            <Text style={styles.metaLabel}>Conditions:</Text>
-                            {conditionsSummaryLine !== '' ? (
-                                <Text style={styles.metaSub} numberOfLines={1} ellipsizeMode="tail">
-                                    {conditionsSummaryLine}
-                                </Text>
-                            ) : (
-                                <Text style={styles.metaSub}>
-                                    {cfg.minCartValue != null && cfg.minCartValue > 0
-                                        ? `Min cart ${formatCurrency(Number(cfg.minCartValue))}`
-                                        : 'See offer details'}
-                                </Text>
-                            )}
-                        </View>
-                        <View style={[styles.metaBox, styles.metaBoxTimer]}>
-                            <Text style={styles.metaLabel}>Offer valid for</Text>
-                            <View style={styles.timerRow}>
-                                <Ionicons name="time-outline" size={18} color="#9CA3AF" />
-                                <Text style={styles.timerValue}>{timerLabel}</Text>
-                            </View>
-                        </View>
-                    </View>
+                    <View style={styles.countdownHairline} />
                 </View>
+            ) : null}
 
-                <View
-                    style={[
-                        styles.stickyTabsHost,
-                        tabItems.length === 0 && styles.stickyTabsHostCollapsed,
-                    ]}
-                >
-                    {tabItems.length > 0 ? (
-                        <ScrollView
-                            horizontal
-                            nestedScrollEnabled
-                            showsHorizontalScrollIndicator={false}
-                            style={styles.tabsScroll}
-                            contentContainerStyle={styles.tabsRow}
-                        >
-                            {tabItems.map((tab, idx) => {
-                                const active = idx === activeTabIndex;
-                                const tabLabel = String(tab.label ?? '').trim();
-                                return (
-                                    <TouchableOpacity
-                                        key={tabKey(tab, idx)}
-                                        onPress={() => setActiveTabIndex(idx)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.tabItem}>
-                                            <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                                                {tabLabel}
-                                            </Text>
-                                            {active ? (
-                                                <View style={styles.tabUnderline} />
-                                            ) : (
-                                                <View style={styles.tabUnderlinePlaceholder} />
-                                            )}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    ) : null}
-                </View>
-
-                <View style={styles.grid}>
-                    {loadingProducts ? (
-                        <View style={styles.gridLoading}>
-                            <ActivityIndicator size="small" color={OFFER_RED} />
-                        </View>
-                    ) : listingProducts.length === 0 ? (
-                        <View style={styles.gridLoading}>
-                            <Text style={styles.emptyGridText}>{gridEmptyMessage}</Text>
-                        </View>
-                    ) : (
-                        productRows.map((row, rowIdx) => (
-                            <View
-                                key={`promo-grid-row-${rowIdx}`}
-                                ref={rowIdx === productRows.length - 1 ? lastGridRowRef : undefined}
-                                collapsable={rowIdx === productRows.length - 1 ? false : undefined}
-                                style={[
-                                    styles.productGridRow,
-                                    { paddingHorizontal: gridPad, marginBottom: gridGap },
-                                ]}
-                            >
-                                {row.map((product, colIdx) => (
-                                    <View
-                                        key={product?.id ?? product?.handle ?? `p-${rowIdx}-${colIdx}`}
-                                        style={{ width: productCardWidth }}
-                                    >
-                                        <ProductCard
-                                            product={product}
-                                            width={productCardWidth}
-                                            collectionId={collectionGid}
-                                            onPress={handlePromoProductPress}
-                                            compactTypographyScale={PROMO_MODAL_TEXT_SCALE}
-                                            hideDiscountPercentage
-                                            promoPercentOff={displayDealPercentOff}
-                                            dealPromoPercentOff={displayDealPercentOff}
-                                            applyDealPromoToCart={false}
-                                            showPromoOfferPriceBadge
-                                            promoOfferCaptionBelowPrice={`${formatCurrency(
-                                                Math.max(
-                                                    0,
-                                                    Math.round(
-                                                        gridProductSellingUnit(product) *
-                                                        (1 - displayDealPercentOff / 100),
-                                                    ),
-                                                ),
-                                            )}`}
-                                            onPromoDealAddSuccess={onPromoDealAddSuccess}
-                                        />
+            <View style={styles.bodyRow}>
+                {useSideTabsLayout ? (
+                    <ScrollView
+                        style={styles.sideRail}
+                        contentContainerStyle={styles.sideRailContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                    >
+                        {sideTabGroups.map((group, sIdx) => {
+                            const sideActive = sIdx === activeSideTabIndex;
+                            const sideLabel =
+                                String(group.title ?? group.key ?? '')
+                                    .trim() || `Category ${sIdx + 1}`;
+                            const sideImg = String(group.imageUrl ?? '').trim();
+                            const sideKey = String(group.key ?? '').trim() || `side-${sIdx}`;
+                            return (
+                                <TouchableOpacity
+                                    key={sideKey}
+                                    onPress={() => setActiveSideTabIndex(sIdx)}
+                                    activeOpacity={0.75}
+                                    style={styles.sideRailItemWrap}
+                                >
+                                    <View style={[styles.sideRailItem, sideActive && styles.sideRailItemActive]}>
+                                        {sideImg !== '' ? (
+                                            <Image
+                                                source={{ uri: sideImg }}
+                                                style={styles.sideRailImage}
+                                                contentFit="cover"
+                                            />
+                                        ) : (
+                                            <View style={styles.sideRailImagePlaceholder} />
+                                        )}
+                                        <Text style={[styles.sideRailLabel, sideActive && styles.sideRailLabelActive]} numberOfLines={2}>
+                                            {sideLabel}
+                                        </Text>
                                     </View>
-                                ))}
-                                {Array.from({ length: GRID_COLUMNS - row.length }).map((_, spacerIdx) => (
-                                    <View
-                                        key={`spacer-${rowIdx}-${spacerIdx}`}
-                                        style={{ width: productCardWidth }}
-                                    />
-                                ))}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                ) : null}
+
+                <View style={styles.mainScroll}>
+                    <View
+                        style={[
+                            styles.stickyTabsHost,
+                            tabItems.length === 0 && styles.stickyTabsHostCollapsed,
+                        ]}
+                    >
+                        {tabItems.length > 0 ? (
+                            <ScrollView
+                                horizontal
+                                nestedScrollEnabled
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.tabsScroll}
+                                contentContainerStyle={styles.chipsRow}
+                            >
+                                {tabItems.map((tab, idx) => {
+                                    const active = idx === activeTabIndex;
+                                    const tabLabel = String(tab.label ?? '').trim();
+                                    const uri = String(tab.imageUrl ?? '').trim();
+                                    return (
+                                        <TouchableOpacity
+                                            key={tabKey(tab, idx)}
+                                            onPress={() => setActiveTabIndex(idx)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.chipItem}>
+                                                {uri !== '' ? (
+                                                    <Image
+                                                        source={{ uri }}
+                                                        style={[styles.chipImage, active && styles.chipImageActive]}
+                                                        contentFit="cover"
+                                                    />
+                                                ) : (
+                                                    <View style={[styles.chipPlaceholder, active && styles.chipImageActive]} />
+                                                )}
+                                                <Text
+                                                    style={[styles.chipLabel, active && styles.chipLabelActive]}
+                                                    numberOfLines={2}
+                                                >
+                                                    {tabLabel}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+                        ) : null}
+                    </View>
+
+                    <FlatList
+                        data={listingProducts}
+                        numColumns={GRID_COLUMNS}
+                        keyExtractor={(item) => item?.id ?? item?.handle ?? String(Math.random())}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        onEndReached={() => loadMoreProducts()}
+                        onEndReachedThreshold={0.5}
+                        ListHeaderComponent={
+                            loadingProducts ? (
+                                <View style={styles.gridLoading}>
+                                    <ActivityIndicator size="small" color={OFFER_RED} />
+                                </View>
+                            ) : listingProducts.length === 0 ? (
+                                <View style={styles.gridLoading}>
+                                    <Text style={styles.emptyGridText}>{gridEmptyMessage}</Text>
+                                </View>
+                            ) : null
+                        }
+                        ListFooterComponent={
+                            loadingMoreProducts && listingProducts.length > 0 ? (
+                                <View style={styles.gridLoadingMore}>
+                                    <ActivityIndicator size="small" color={OFFER_RED} />
+                                </View>
+                            ) : null
+                        }
+                        renderItem={({ item }) => (
+                            <View style={{ width: productCardWidth, marginHorizontal: gridGap / 2, marginBottom: gridGap }}>
+                                <ProductCard
+                                    product={item}
+                                    width={productCardWidth}
+                                    collectionId={collectionGid}
+                                    onPress={handlePromoProductPress}
+                                    compactTypographyScale={PROMO_MODAL_TEXT_SCALE}
+                                    hideDiscountPercentage
+                                    promoPercentOff={displayDealPercentOff}
+                                    dealPromoPercentOff={displayDealPercentOff}
+                                    applyDealPromoToCart={false}
+                                    showPromoOfferPriceBadge
+                                    promoOfferCaptionBelowPrice={`${formatCurrency(
+                                        Math.max(
+                                            0,
+                                            Math.round(
+                                                gridProductSellingUnit(item) *
+                                                (1 - displayDealPercentOff / 100),
+                                            ),
+                                        ),
+                                    )}`}
+                                    onPromoDealAddSuccess={onPromoDealAddSuccess}
+                                />
                             </View>
-                        ))
-                    )}
-                    {loadingMoreProducts && listingProducts.length > 0 ? (
-                        <View style={styles.gridLoadingMore}>
-                            <ActivityIndicator size="small" color={OFFER_RED} />
-                        </View>
-                    ) : null}
+                        )}
+                        columnWrapperStyle={styles.productGridRow}
+                    />
                 </View>
+            </View>
 
-                {/* <TouchableOpacity onPress={onSeeAllCoupons} style={styles.seeCouponsLink}>
-                    <Text style={styles.seeCouponsText}>See all coupons</Text>
-                </TouchableOpacity> */}
-            </ScrollView>
-
-            <View style={styles.footer}>
+            <View
+                style={[
+                    styles.footer,
+                    isBottomSheet && { paddingBottom: Math.max(12, insets.bottom) },
+                ]}
+            >
                 <TouchableOpacity
                     style={[styles.cta, hasAddedFromPromoGrid ? styles.ctaActive : styles.ctaInactive]}
                     onPress={handleUnlock}
@@ -853,6 +877,25 @@ export function SavingsCornerPromoOfferContent({
                     <Text style={styles.skipText}>Skip for now</Text>
                 </TouchableOpacity>
             </View>
+
+            {videoUri && videoVisible && (
+                <View style={styles.floatingVideoContainer}>
+                    <Video
+                        source={{ uri: videoUri }}
+                        style={styles.floatingVideo}
+                        resizeMode={ResizeMode.COVER}
+                        isLooping={false}
+                        shouldPlay
+                        isMuted={false}
+                        useNativeControls={false}
+                        onPlaybackStatusUpdate={(status) => {
+                            if (status.isLoaded && status.didJustFinish) {
+                                setVideoVisible(false);
+                            }
+                        }}
+                    />
+                </View>
+            )}
         </View>
     );
 }
@@ -865,6 +908,12 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         overflow: 'hidden',
     },
+    cardBottomSheet: {
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+    },
     closeBtn: {
         position: 'absolute',
         top: 12,
@@ -872,22 +921,164 @@ const styles = StyleSheet.create({
         zIndex: 2,
         padding: 4,
     },
-    scroll: {
+    closeBtnInner: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bodyRow: {
         flex: 1,
+        flexDirection: 'row',
         minHeight: 0,
     },
+    mainScroll: {
+        flex: 1,
+        minWidth: 0,
+        minHeight: 0,
+    },
+    sideRail: {
+        width: SIDE_RAIL_WIDTH,
+        flexGrow: 0,
+        flexShrink: 0,
+        borderRightWidth: 2,
+        borderRightColor: '#F3E8EE',
+        backgroundColor: '#FFFBFC',
+    },
+    sideRailContent: {
+        paddingTop: 8,
+        paddingBottom: 12,
+        paddingHorizontal: 6,
+        alignItems: 'center',
+    },
+    sideRailItemWrap: {
+        marginBottom: 10,
+    },
+    sideRailItem: {
+        alignItems: 'center',
+        width: SIDE_RAIL_WIDTH - 12,
+    },
+    sideRailItemActive: {
+        borderRightWidth: 3,
+        borderRightColor: OFFER_RED,
+        paddingHorizontal: 4,
+    },
+    sideRailImage: {
+        width: 52,
+        height: 52,
+        borderRadius: 12,
+        backgroundColor: '#FFF5F5',
+    },
+    sideRailImagePlaceholder: {
+        width: 52,
+        height: 52,
+        borderRadius: 12,
+        backgroundColor: '#E8E8E8',
+    },
+    sideRailLabel: {
+        marginTop: 4,
+        fontSize: promoFs(9),
+        fontFamily: Fonts.LexendMedium,
+        color: '#4B5563',
+        textAlign: 'center',
+        lineHeight: 12,
+    },
+    sideRailLabelActive: {
+        fontFamily: Fonts.LexendBold,
+        color: '#111827',
+    },
     scrollContent: {
-        paddingTop: 28,
+        paddingTop: 8,
         paddingBottom: 16,
     },
     promoScrollHeader: {
         backgroundColor: '#FFFFFF',
     },
+    headerVideo: {
+        width: '100%',
+        height: 176,
+        backgroundColor: '#111827',
+        marginBottom: 8,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    heroBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FBEFE6',
+        marginHorizontal: 12,
+        marginTop: 4,
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        gap: 10,
+    },
+    heroEmoji: {
+        fontSize: 28,
+        lineHeight: 32,
+    },
+    heroTextCol: {
+        flex: 1,
+        minWidth: 0,
+    },
+    heroTitle: {
+        fontSize: 36,
+        fontFamily: Fonts.LexendBold,
+        color: OFFER_RED,
+        letterSpacing: -0.3,
+    },
+    conditionRow: {
+        marginTop: 0,
+        width: '100%',
+        maxWidth: '100%',
+    },
+    conditionText: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
+    },
+    conditionTextFullWidth: {
+        textAlign: 'center',
+    },
+    countdownRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+        paddingHorizontal: 12,
+        gap: 10,
+    },
+    countdownHairline: {
+        flex: 1,
+        height: 2,
+        backgroundColor: '#D1D5DB',
+    },
+    countdownTextRow: {
+        flexShrink: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    countdownLead: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
+    },
+    countdownStatus: {
+        fontSize: Fonts.ExtraSmallFontSize,
+        fontFamily: Fonts.LexendBold,
+        color: OFFER_RED,
+    },
+    countdownUnlocked: {
+        color: SUCCESS_GREEN,
+    },
     /** Direct child of ScrollView at index 1 — sticks to top of scroll viewport when `stickyHeaderIndices` is set. */
     stickyTabsHost: {
         backgroundColor: '#FFFFFF',
-        marginTop: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
+        marginTop: 0,
+        borderBottomWidth: 0.5,
         borderBottomColor: '#E5E7EB',
         zIndex: 1,
         elevation: 2,
@@ -1020,7 +1211,7 @@ const styles = StyleSheet.create({
         color: OFFER_RED,
     },
     tabsScroll: {
-        minHeight: 44,
+        minHeight: 100,
         flexGrow: 0,
     },
     tabsRow: {
@@ -1028,6 +1219,45 @@ const styles = StyleSheet.create({
         gap: 16,
         alignItems: 'flex-end',
         paddingBottom: 4,
+    },
+    chipsRow: {
+        paddingHorizontal: 8,
+        paddingTop: 8,
+        paddingBottom: 6,
+        gap: 14,
+        alignItems: 'flex-start',
+    },
+    chipItem: {
+        width: 68,
+        alignItems: 'center',
+    },
+    chipImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#E5E7EB',
+    },
+    chipImageActive: {
+        borderWidth: 2,
+        borderColor: OFFER_RED,
+    },
+    chipPlaceholder: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#E5E7EB',
+    },
+    chipLabel: {
+        marginTop: 6,
+        fontSize: promoFs(10),
+        fontFamily: Fonts.LexendMedium,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 13,
+    },
+    chipLabelActive: {
+        color: '#111827',
+        fontFamily: Fonts.LexendBold,
     },
     tabItem: {
         alignItems: 'center',
@@ -1137,9 +1367,29 @@ const styles = StyleSheet.create({
     titleContainer: {
         backgroundColor: '#fbf2e8',
         marginHorizontal: 12,
-        marginVertical: 8,
-        borderRadius: 8,
-        paddingVertical: 4,
+        marginVertical: 12,
+        borderRadius: 12,
+        paddingVertical: 12,
         paddingBottom: 10,
-    }
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    floatingVideoContainer: {
+        position: 'absolute',
+        bottom: 130,
+        right: 16,
+        width: 150,
+        height: 180,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+        elevation: 10,
+        zIndex: 999,
+
+    },
+    floatingVideo: {
+        width: '100%',
+        height: '100%',
+    },
 });

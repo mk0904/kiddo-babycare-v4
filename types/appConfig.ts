@@ -157,8 +157,29 @@ export interface SpecialDealTab {
   isActive?: boolean;
   /** Shown as the tab title in the promo modal. */
   label?: string;
+  /** Optional chip / tab image (e.g. `sideTabs[].tabs[].imageUrl`). */
+  imageUrl?: string;
   /** Stable id for analytics / keys (not shown as the tab title). */
   value?: string;
+}
+
+/** Sub-tab under a {@link SpecialDealSideTabGroup} (e.g. brand / category chip). */
+export interface SpecialDealSideTabItem {
+  collectionId?: string;
+  collection_id?: string;
+  imageUrl?: string;
+  name?: string;
+  value?: string;
+}
+
+/** Grouped side navigation row (Essentials, Fashion, …) with nested collection tabs. */
+export interface SpecialDealSideTabGroup {
+  collectionId?: string;
+  collection_id?: string;
+  imageUrl?: string;
+  key?: string;
+  title?: string;
+  tabs?: SpecialDealSideTabItem[];
 }
 
 /**
@@ -176,15 +197,17 @@ export interface SpecialDealConfig {
   footerCta?: string;
   isEnabled?: boolean;
   minCartValue?: number;
-  /** Countdown duration in minutes. */
+  /** Promo modal countdown length in **seconds** (e.g. `29` → ticks down 29s to 0). */
   offerTime?: number;
   /** Fixed rupee component in deal-coupon discount math (before %-of-eligible add-on). Backend may send `deal_coupon_fixed_amount`. */
   dealCouponFixedAmount?: number;
   secondLineText?: string;
+  sideTabs?: SpecialDealSideTabGroup[];
   successIconUrl?: string;
   tabs?: SpecialDealTab[];
   thirdLineText?: string;
   title?: string;
+  videoUrl?: string;
 }
 
 export interface CartConfig {

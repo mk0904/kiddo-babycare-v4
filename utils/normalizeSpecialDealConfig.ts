@@ -17,6 +17,7 @@ export function normalizeSpecialDealTab(raw: unknown): SpecialDealTab | null {
     const collectionId = collectionRaw != null ? String(collectionRaw).trim() : undefined;
 
     const value = str(t.value) ?? str(t.key) ?? str(t.id);
+    const imageUrl = str(t.imageUrl) ?? str(t.image_url);
 
     const inactive =
         t.isActive === false ||
@@ -28,6 +29,7 @@ export function normalizeSpecialDealTab(raw: unknown): SpecialDealTab | null {
         label,
         ...(value ? { value } : {}),
         ...(collectionId ? { collectionId } : {}),
+        ...(imageUrl ? { imageUrl } : {}),
         isActive: !inactive,
     };
 }
@@ -92,10 +94,17 @@ export function normalizeSpecialDealConfig(raw: unknown): SpecialDealConfig {
               ? true
               : base.isEnabled !== false;
 
+    const sideTabsRaw = r.sideTabs ?? r.side_tabs;
+    const sideTabs =
+        Array.isArray(sideTabsRaw) && sideTabsRaw.length > 0
+            ? (sideTabsRaw as SpecialDealConfig['sideTabs'])
+            : base.sideTabs;
+
     return {
         ...base,
         ...(normalizedTabs != null ? { tabs: normalizedTabs } : {}),
         ...(normalizedConditions != null ? { conditions: normalizedConditions } : {}),
+        ...(sideTabs != null ? { sideTabs } : {}),
         title: pickStr(r, 'title', 'headline') ?? base.title,
         bannerText: pickStr(r, 'bannerText', 'banner_text') ?? base.bannerText,
         firstLineText: pickStr(r, 'firstLineText', 'first_line_text') ?? base.firstLineText,
@@ -110,6 +119,7 @@ export function normalizeSpecialDealConfig(raw: unknown): SpecialDealConfig {
         offerTime: pickNum(r, 'offerTime', 'offer_time') ?? base.offerTime,
         dealCouponFixedAmount:
             pickNum(r, 'dealCouponFixedAmount', 'deal_coupon_fixed_amount') ?? base.dealCouponFixedAmount,
+        videoUrl: pickStr(r, 'videoUrl', 'video_url') ?? base.videoUrl,
         isEnabled,
     };
 }
