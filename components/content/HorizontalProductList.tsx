@@ -36,6 +36,8 @@ interface HorizontalProductListProps {
     showSeeMore?: boolean; // Legacy prop for backward compatibility
     /** Called when products have finished loading (with the loaded products array). */
     onProductsLoaded?: (products: any[]) => void;
+    /** External value that triggers a re-render when it changes (e.g. cart items length). */
+    refreshKey?: any;
 }
 
 const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
@@ -50,6 +52,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
     onCollectionPress,
     showSeeMore = false,
     onProductsLoaded,
+    refreshKey,
 }) => {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -428,7 +431,8 @@ const areEqual = (prevProps: any, nextProps: any) => {
         prevProps.onProductPress === nextProps.onProductPress &&
         prevProps.onAddToCart === nextProps.onAddToCart &&
         prevProps.onSeeMore === nextProps.onSeeMore &&
-        prevProps.onCollectionPress === nextProps.onCollectionPress
+        prevProps.onCollectionPress === nextProps.onCollectionPress &&
+        prevProps.refreshKey === nextProps.refreshKey
     );
 };
 

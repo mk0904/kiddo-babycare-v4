@@ -5,7 +5,7 @@ import { type CartItem, useCartStore } from '@/store/cartStore';
 import type { SpecialDealCondition, SpecialDealConfig, SpecialDealTab } from '@/types/appConfig';
 import { normalizeSpecialDealConfig, normalizeSpecialDealTab } from '@/utils/normalizeSpecialDealConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { ResizeMode, Video } from 'expo-av';
+import { Audio, ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -383,6 +383,15 @@ export function SavingsCornerPromoOfferContent({
     useEffect(() => {
         setOfferRemainingSec(offerDurationSec);
     }, [offerDurationSec]);
+
+    useEffect(() => {
+        // Ensure audio plays even in silent mode on iOS
+        Audio.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+        }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (hasUnlockedSpecialDeal) {
@@ -1250,7 +1259,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     chipItem: {
-        width: 56,
+        width: 62,
         alignItems: 'center',
     },
     chipImage: {
