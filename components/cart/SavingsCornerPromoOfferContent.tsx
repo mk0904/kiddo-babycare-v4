@@ -708,7 +708,7 @@ export function SavingsCornerPromoOfferContent({
                 })}
             </View>
 
-            {showOfferCountdown && !hasUnlockedSpecialDeal ? (
+            {showOfferCountdown ? (
                 <View style={styles.countdownRow}>
                     <View style={styles.countdownHairline} />
                     <View style={styles.countdownTextRow}>
