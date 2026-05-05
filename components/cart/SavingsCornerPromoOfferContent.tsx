@@ -390,7 +390,7 @@ export function SavingsCornerPromoOfferContent({
             playsInSilentModeIOS: true,
             staysActiveInBackground: false,
             shouldDuckAndroid: true,
-        }).catch(() => {});
+        }).catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -1066,7 +1066,7 @@ const styles = StyleSheet.create({
         maxWidth: '100%',
     },
     conditionText: {
-        fontSize: Fonts.ExtraSmallFontSize,
+        fontSize: 10,
         fontFamily: Fonts.LexendMedium,
         color: '#6B7280',
     },
@@ -1076,9 +1076,10 @@ const styles = StyleSheet.create({
     countdownRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 4,
+        marginTop: 0,
         paddingHorizontal: 12,
         gap: 10,
+        marginBottom: 2,
     },
     countdownHairline: {
         flex: 1,

@@ -277,7 +277,6 @@ async function mergeShopifyCartLineIdsFromRemote(cartId: string, lines: CartItem
 
     const used = new Set<string>();
     return lines.map((li) => {
-        if (!li.id?.startsWith('gid://shopify/CartLine/')) return li;
         const lk = canonicalVariantKeyForMerge(li.variantId);
         if (!lk) return li;
         const bd = li.bookingDate ?? '';
@@ -1027,14 +1026,15 @@ export const useCartStore = create<CartState>()(
                         error: null,
                     });
 
-                    // Trigger sync in background to keep UI instant
+                    // Trigger sync in background to keep UI instant.
+                    // Consolidate into a single background chain to avoid concurrent syncDealPricing races.
                     Promise.resolve()
                         .then(() => get().validateAppliedDiscountCodes())
                         .then(() => get().syncDeliveryFeeToShopify())
                         .then(() => get().syncDealPricing())
                         .then(() => get().refreshComputedDiscountFromCodes())
                         .finally(() => set({ status: 'idle' }));
-
+ 
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
                         trackEvent('Add to Cart', {
@@ -1048,10 +1048,9 @@ export const useCartStore = create<CartState>()(
                     } catch (e) {
                         console.warn('Analytics tracking error:', e);
                     }
-
+ 
                     // Check for eligible gifts after adding item
                     get().applyEligibleGifts();
-                    get().syncDealPricing();
                 } catch (error: any) {
                     set({ status: 'error', error: error.message });
                 }
@@ -1084,6 +1083,18 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         error: null,
                     });
+
+                    // Sync with Shopify if the item has a CartLine ID
+                    const cartId = state.id;
+                    if (itemToRemove?.id?.startsWith('gid://shopify/CartLine/') && cartId?.startsWith('gid://shopify/Cart/')) {
+                        try {
+                            const { shopifyApi } = await import('@/services/shopifyApi');
+                            await shopifyApi.cartLinesRemove(cartId, [itemToRemove.id]);
+                        } catch (e) {
+                            console.warn('[CartStore] Failed to remove line from Shopify:', e);
+                        }
+                    }
+
                     await get().validateAppliedDiscountCodes();
                     await get().syncDealPricing();
                     await get().refreshComputedDiscountFromCodes();
@@ -1121,6 +1132,25 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         error: null,
                     });
+
+                    // Sync with Shopify if the item has a CartLine ID
+                    const cartId = state.id;
+                    const itemToUpdate = newLineItems.find(li => li.id === itemId);
+                    if (itemToUpdate?.id?.startsWith('gid://shopify/CartLine/') && cartId?.startsWith('gid://shopify/Cart/')) {
+                        try {
+                            const { shopifyApi } = await import('@/services/shopifyApi');
+                            await shopifyApi.cartLinesUpdate(cartId, [{
+                                id: itemToUpdate.id,
+                                quantity: itemToUpdate.quantity,
+                                attributes: Object.entries(itemToUpdate.customAttributes || {}).map(([k, v]) => ({
+                                    key: k,
+                                    value: String(v),
+                                })),
+                            }]);
+                        } catch (e) {
+                            console.warn('[CartStore] Failed to update line on Shopify:', e);
+                        }
+                    }
 
                     // Trigger sync in background to keep UI instant
                     Promise.resolve()
@@ -2589,22 +2619,31 @@ export const useCartStore = create<CartState>()(
                     const hadDealProducts = state.dealProducts.length > 0;
                     if (linesChanged || hadDealProducts) {
                         const cartId = await get().ensureCart();
-                        let toPersist = next;
+                        let remoteMapped = next;
                         if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                             const storeId = get().id;
                             const resolvedCartId =
                                 typeof storeId === 'string' && storeId.startsWith('gid://shopify/Cart/')
                                     ? storeId
                                     : cartId;
-                            toPersist = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
+                            remoteMapped = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
                         }
-                        set({ lineItems: toPersist, dealProducts: [] });
+                        
+                        set((s) => {
+                            // Merge remote IDs into the LATEST local state to avoid race condition with concurrent removals
+                            const updatedLines = s.lineItems.map(localItem => {
+                                const match = remoteMapped.find(r => cartItemSameLineIdentity(r, localItem));
+                                return match ? { ...localItem, id: match.id } : localItem;
+                            });
+                            return { lineItems: updatedLines, dealProducts: [] };
+                        });
+
                         if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                             const shopifyCodes = discountCodesForShopifyApply(get().discountCodes);
-                            const allHaveIds = toPersist.every((li) => li.id && li.id.startsWith('gid://shopify/CartLine/'));
+                            const allHaveIds = remoteMapped.every((li) => li.id && li.id.startsWith('gid://shopify/CartLine/'));
                             if (allHaveIds) {
                                 try {
-                                    const updateLines = toPersist.map((li) => ({
+                                    const updateLines = remoteMapped.map((li) => ({
                                         id: li.id,
                                         quantity: li.quantity,
                                         attributes: Object.entries(li.customAttributes || {}).map(([k, v]) => ({
@@ -2615,14 +2654,14 @@ export const useCartStore = create<CartState>()(
                                     await shopifyApi.cartLinesUpdate(cartId, updateLines);
                                 } catch (e) {
                                     console.warn('[CartStore] syncDealPricing (no config) update failed, falling back to create', e);
-                                    const lines = toPersist.map(shopifyLineFromCartItem);
+                                    const lines = remoteMapped.map(shopifyLineFromCartItem);
                                     const updated = await shopifyApi.createCart(lines, undefined, shopifyCodes);
                                     if (updated?.id) {
                                         set({ id: updated.id, webUrl: updated.checkoutUrl, checkoutUrl: updated.checkoutUrl });
                                     }
                                 }
                             } else {
-                                const lines = toPersist.map(shopifyLineFromCartItem);
+                                const lines = remoteMapped.map(shopifyLineFromCartItem);
                                 const updated = await shopifyApi.createCart(lines, undefined, shopifyCodes);
                                 if (updated?.id) {
                                     set({ id: updated.id, webUrl: updated.checkoutUrl, checkoutUrl: updated.checkoutUrl });
@@ -2677,25 +2716,34 @@ export const useCartStore = create<CartState>()(
 
                 if (JSON.stringify(next) !== JSON.stringify(state.lineItems)) {
                     const cartId = await get().ensureCart();
-                    let toPersist = next;
+                    let remoteMapped = next;
                     if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                         const storeId = get().id;
                         const resolvedCartId =
                             typeof storeId === 'string' && storeId.startsWith('gid://shopify/Cart/')
                                 ? storeId
                                 : cartId;
-                        toPersist = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
+                        remoteMapped = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
                     }
-                    set({ lineItems: toPersist });
+                    
+                    set((s) => {
+                        // Merge remote IDs into the LATEST local state to avoid race condition with concurrent removals
+                        const updatedLines = s.lineItems.map(localItem => {
+                            const match = remoteMapped.find(r => cartItemSameLineIdentity(r, localItem));
+                            return match ? { ...localItem, id: match.id } : localItem;
+                        });
+                        return { lineItems: updatedLines };
+                    });
+
                     if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                         const shopifyCodes = discountCodesForShopifyApply(get().discountCodes);
-                        const allHaveIds = toPersist.every(
+                        const allHaveIds = remoteMapped.every(
                             (li) => li.id && li.id.startsWith('gid://shopify/CartLine/'),
                         );
 
                         if (allHaveIds) {
                             try {
-                                const updateLines = toPersist.map((li) => ({
+                                const updateLines = remoteMapped.map((li) => ({
                                     id: li.id,
                                     quantity: li.quantity,
                                     attributes: Object.entries(li.customAttributes || {}).map(([k, v]) => ({
@@ -2706,14 +2754,14 @@ export const useCartStore = create<CartState>()(
                                 await shopifyApi.cartLinesUpdate(cartId, updateLines);
                             } catch (e) {
                                 console.warn('[CartStore] syncDealPricing update failed, falling back to create', e);
-                                const lines = toPersist.map(shopifyLineFromCartItem);
+                                const lines = remoteMapped.map(shopifyLineFromCartItem);
                                 const updated = await shopifyApi.createCart(lines, undefined, shopifyCodes);
                                 if (updated?.id) {
                                     set({ id: updated.id, webUrl: updated.checkoutUrl, checkoutUrl: updated.checkoutUrl });
                                 }
                             }
                         } else {
-                            const lines = toPersist.map(shopifyLineFromCartItem);
+                            const lines = remoteMapped.map(shopifyLineFromCartItem);
                             const updated = await shopifyApi.createCart(lines, undefined, shopifyCodes);
                             if (updated?.id) {
                                 set({ id: updated.id, webUrl: updated.checkoutUrl, checkoutUrl: updated.checkoutUrl });

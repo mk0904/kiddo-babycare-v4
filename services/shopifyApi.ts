@@ -967,6 +967,20 @@ const CART_LINES_UPDATE_MUTATION = `
   }
 `;
 
+const CART_LINES_REMOVE_MUTATION = `
+  mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+      cart {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 const GET_CART_QUERY = `
   query getCart($cartId: ID!) {
     cart(id: $cartId) {
@@ -1737,6 +1751,38 @@ export const shopifyApi = {
       return result.cart;
     } catch (error: any) {
       console.error('Error adding lines to cart:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Remove lines from cart
+   */
+  cartLinesRemove: async (cartId: string, lineIds: string[]) => {
+    try {
+      const response = await client.post('', {
+        query: CART_LINES_REMOVE_MUTATION,
+        variables: {
+          cartId,
+          lineIds,
+        },
+      });
+
+      if (response.data.errors) {
+        console.error('Shopify API errors:', response.data.errors);
+        throw new Error(response.data.errors[0]?.message || 'Failed to remove items from cart');
+      }
+
+      const result = response.data.data.cartLinesRemove;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        const error = result.userErrors[0];
+        throw new Error(error.message || 'Failed to remove items from cart');
+      }
+
+      return result.cart;
+    } catch (error: any) {
+      console.error('Error removing lines from cart:', error);
       throw error;
     }
   },
