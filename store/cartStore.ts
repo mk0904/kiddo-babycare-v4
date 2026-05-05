@@ -162,31 +162,43 @@ export async function getSubtotalForDealEligibleLines(
     couponAllowedCategories: string[],
     options: { limitToOne?: boolean } = {},
 ): Promise<number> {
-    if (dc.isDealCoupon !== true) return 0;
-    const tabCollectionGids = collectSpecialDealTabCollectionGids();
-    if (tabCollectionGids.length === 0) return 0;
 
-    // HIGH-PERFORMANCE: Batch all items into one single network request
-    const productIds = lineItems.map(item => item.productId).filter(Boolean);
-    const eligibilityMap = await shopifyApi.batchGetProductsCollectionEligibility(productIds, tabCollectionGids);
+    if (!dc?.isDealCoupon) return 0;
 
-    const results = lineItems.map((item) => {
-        const isEligible = eligibilityMap.get(item.productId) === true;
+    const normalize = (str?: string) => str?.toLowerCase().trim();
 
-        if (__DEV__) {
-            console.log(`[DealEligibility] Item: "${item.title}" | Eligible: ${isEligible}`);
+    const allKits = appConfigService.getSpecialDealConfig()?.allKits || [];
+
+    const allKitsSet = new Set(allKits.map(normalize));
+    const allowedSet = new Set(couponAllowedCategories.map(normalize));
+
+    let subtotal = 0;
+
+    for (const item of lineItems || []) {
+        const price = Number(item?.price ?? 0);
+        const quantity = Number(item?.quantity ?? 0);
+        if (!price || !quantity) continue;
+
+        const itemTags = (item?.tags || []).map(normalize);
+
+        const isKit = itemTags.some(tag => allKitsSet.has(tag));
+        const isAllowed = itemTags.some(tag => allowedSet.has(tag));
+
+        // ✅ Case 1: KIT items
+        if (isKit) {
+            // include ONLY if allowed
+            if (isAllowed) {
+                subtotal += price;
+            }
+            continue;
         }
 
-        if (!isEligible) return 0;
-        const exists = item?.tags?.some(tag => couponAllowedCategories.includes(tag));
-        const qty = exists ? (Number(item.quantity ?? 0) > 0 ? 1 : 0) : Number(item.quantity ?? 0);
-        return Number(item.price ?? 0) * qty;
-    });
+        // ✅ Case 2: NON-KIT items (always included)
+        subtotal += price * quantity;
 
-    const subtotal = results.reduce((a, b) => a + b, 0);
-    if (__DEV__) {
-        console.log(`[DealEligibility] Final Eligible Subtotal: ${subtotal}`);
+
     }
+
     return subtotal;
 }
 
@@ -422,6 +434,12 @@ interface CartState {
     /** Hydrated products from deal collections (isDealCoupon). Used to automatically discount cart items. */
     dealProducts: any[];
 
+    /** True if the user has watched the special deal promo video. Hides the floating video player. */
+    hasWatchedPromoVideo: boolean;
+
+    /** True if the user has already waited through the special deal offer timer. Unlocks close buttons immediately. */
+    hasUnlockedSpecialDeal: boolean;
+
     /** Last async discount breakdown (deal lines resolved via Storefront API). Kept in sync by {@link refreshComputedDiscountFromCodes}. */
     discountBreakdownSnapshot: DiscountBreakdown;
 
@@ -478,6 +496,10 @@ interface CartState {
 
     // School Coupon
     setSchoolCouponData: (data: CartState['schoolCouponData']) => void;
+
+    setHasWatchedPromoVideo: (watched: boolean) => void;
+
+    setHasUnlockedSpecialDeal: (unlocked: boolean) => void;
 
     // Cart management
     ensureCart: () => Promise<string | null>;
@@ -606,8 +628,8 @@ export async function computeDiscountBreakdown(
         if (isDeal) {
             // Eligible deal-line selling subtotal (same lines as baseAmount for deal codes).
             console.log("baseAmount", baseAmount);
-            const eligibleSubtotal = baseAmount + dealFixedRupee;
-            const remainderAfterFixed = Math.max(0, eligibleSubtotal - dealFixedRupee);
+            const eligibleSubtotal = baseAmount - dealFixedRupee;
+            const remainderAfterFixed = Math.max(0, eligibleSubtotal);
             codeDiscount = (0.5 * remainderAfterFixed) + dealFixedRupee;
             if (dc.maxDiscountAmount != null && dc.maxDiscountAmount > 0) {
                 codeDiscount = Math.min(codeDiscount, dc.maxDiscountAmount);
@@ -738,6 +760,8 @@ export const useCartStore = create<CartState>()(
             schoolCouponData: null,
             deliverySchedule: null,
             dealProducts: [],
+            hasWatchedPromoVideo: false,
+            hasUnlockedSpecialDeal: false,
             discountBreakdownSnapshot: { total: 0, perCode: [] },
 
             refreshComputedDiscountFromCodes: async () => {
@@ -1002,7 +1026,7 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         error: null,
                     });
-                    
+
                     // Trigger sync in background to keep UI instant
                     Promise.resolve()
                         .then(() => get().validateAppliedDiscountCodes())
@@ -1097,7 +1121,7 @@ export const useCartStore = create<CartState>()(
                         lineItems: newLineItems,
                         error: null,
                     });
-                    
+
                     // Trigger sync in background to keep UI instant
                     Promise.resolve()
                         .then(() => get().validateAppliedDiscountCodes())
@@ -2513,6 +2537,10 @@ export const useCartStore = create<CartState>()(
 
             // School Coupon
             setSchoolCouponData: (data) => set({ schoolCouponData: data }),
+
+            setHasWatchedPromoVideo: (watched) => set({ hasWatchedPromoVideo: watched }),
+
+            setHasUnlockedSpecialDeal: (unlocked) => set({ hasUnlockedSpecialDeal: unlocked }),
 
             syncDeliveryFeeToShopify: async () => {
                 const state = get();

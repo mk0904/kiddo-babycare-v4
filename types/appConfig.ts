@@ -208,6 +208,7 @@ export interface SpecialDealConfig {
   thirdLineText?: string;
   title?: string;
   videoUrl?: string;
+  allKits?: string[];
 }
 
 export interface CartConfig {

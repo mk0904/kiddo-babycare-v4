@@ -323,11 +323,10 @@ export function SavingsCornerPromoOfferContent({
     const videoUri = useMemo(() => (
         cfg.videoUrl != null && String(cfg.videoUrl).trim() !== '' ? String(cfg.videoUrl).trim() : null
     ), [cfg.videoUrl]);
-    const [videoVisible, setVideoVisible] = useState(true);
-
-    useEffect(() => {
-        setVideoVisible(true);
-    }, [videoUri]);
+    const hasWatchedPromoVideo = useCartStore((s) => s.hasWatchedPromoVideo);
+    const setHasWatchedPromoVideo = useCartStore((s) => s.setHasWatchedPromoVideo);
+    const hasUnlockedSpecialDeal = useCartStore((s) => s.hasUnlockedSpecialDeal);
+    const setHasUnlockedSpecialDeal = useCartStore((s) => s.setHasUnlockedSpecialDeal);
 
     const collectionGidRef = useRef<string | null>(null);
     const loadingMoreRef = useRef(false);
@@ -386,11 +385,21 @@ export function SavingsCornerPromoOfferContent({
     }, [offerDurationSec]);
 
     useEffect(() => {
+        if (hasUnlockedSpecialDeal) {
+            setOfferRemainingSec(0);
+            return;
+        }
         const t = setInterval(() => {
-            setOfferRemainingSec((s) => (s <= 0 ? 0 : s - 1));
+            setOfferRemainingSec((s) => {
+                if (s <= 1) {
+                    setHasUnlockedSpecialDeal(true);
+                    return 0;
+                }
+                return s - 1;
+            });
         }, 1000);
         return () => clearInterval(t);
-    }, []);
+    }, [hasUnlockedSpecialDeal, setHasUnlockedSpecialDeal]);
 
     useEffect(() => {
         setActiveSideTabIndex((i) => {
@@ -568,7 +577,7 @@ export function SavingsCornerPromoOfferContent({
     const gridPad = 12;
     const contentInnerWidth = useSideTabsLayout ? cardMaxWidth - SIDE_RAIL_WIDTH : cardMaxWidth;
     const productCardWidth = Math.floor(
-        (contentInnerWidth - gridPad * 2 - gridGap * (GRID_COLUMNS - 1)) / GRID_COLUMNS
+        (contentInnerWidth - gridPad * 2 - gridGap * GRID_COLUMNS) / GRID_COLUMNS
     );
 
     const promoGridMatchingLineItems = useMemo(() => {
@@ -664,11 +673,18 @@ export function SavingsCornerPromoOfferContent({
                 },
             ]}
         >
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={14} accessibilityRole="button">
-                <View style={styles.closeBtnInner}>
-                    <Ionicons name="close" size={18} color="#6B7280" />
-                </View>
-            </TouchableOpacity>
+            {(offerRemainingSec <= 0 || hasUnlockedSpecialDeal) && (
+                <TouchableOpacity
+                    style={styles.closeBtn}
+                    onPress={onClose}
+                    hitSlop={14}
+                    accessibilityRole="button"
+                >
+                    <View style={styles.closeBtnInner}>
+                        <Ionicons name="close" size={18} color="#6B7280" />
+                    </View>
+                </TouchableOpacity>
+            )}
 
             <View style={styles.titleContainer}>
                 <Text style={styles.heroTitle}>{titleText}</Text>
@@ -683,7 +699,7 @@ export function SavingsCornerPromoOfferContent({
                 })}
             </View>
 
-            {showOfferCountdown ? (
+            {showOfferCountdown && !hasUnlockedSpecialDeal ? (
                 <View style={styles.countdownRow}>
                     <View style={styles.countdownHairline} />
                     <View style={styles.countdownTextRow}>
@@ -873,12 +889,17 @@ export function SavingsCornerPromoOfferContent({
                         {primaryCtaLabel}
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={onSkip} style={styles.skipWrap}>
-                    <Text style={styles.skipText}>Skip for now</Text>
-                </TouchableOpacity>
+                {(offerRemainingSec <= 0 || hasUnlockedSpecialDeal) && (
+                    <TouchableOpacity
+                        onPress={onSkip}
+                        style={styles.skipWrap}
+                    >
+                        <Text style={styles.skipText}>Skip for now</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
-            {videoUri && videoVisible && (
+            {videoUri && !hasWatchedPromoVideo && (
                 <View style={styles.floatingVideoContainer}>
                     <Video
                         source={{ uri: videoUri }}
@@ -890,7 +911,7 @@ export function SavingsCornerPromoOfferContent({
                         useNativeControls={false}
                         onPlaybackStatusUpdate={(status) => {
                             if (status.isLoaded && status.didJustFinish) {
-                                setVideoVisible(false);
+                                setHasWatchedPromoVideo(true);
                             }
                         }}
                     />
@@ -990,6 +1011,7 @@ const styles = StyleSheet.create({
         color: '#111827',
     },
     scrollContent: {
+        paddingHorizontal: 12,
         paddingTop: 8,
         paddingBottom: 16,
     },
@@ -1218,17 +1240,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         gap: 16,
         alignItems: 'flex-end',
-        paddingBottom: 4,
+        paddingBottom: 0,
     },
     chipsRow: {
         paddingHorizontal: 8,
         paddingTop: 8,
-        paddingBottom: 6,
-        gap: 14,
+        paddingBottom: 0,
+        gap: 8,
         alignItems: 'flex-start',
     },
     chipItem: {
-        width: 68,
+        width: 56,
         alignItems: 'center',
     },
     chipImage: {
@@ -1377,7 +1399,7 @@ const styles = StyleSheet.create({
     },
     floatingVideoContainer: {
         position: 'absolute',
-        bottom: 130,
+        bottom: 100,
         right: 16,
         width: 150,
         height: 180,

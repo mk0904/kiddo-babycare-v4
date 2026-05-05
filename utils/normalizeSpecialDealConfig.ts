@@ -120,6 +120,7 @@ export function normalizeSpecialDealConfig(raw: unknown): SpecialDealConfig {
         dealCouponFixedAmount:
             pickNum(r, 'dealCouponFixedAmount', 'deal_coupon_fixed_amount') ?? base.dealCouponFixedAmount,
         videoUrl: pickStr(r, 'videoUrl', 'video_url') ?? base.videoUrl,
+        allKits: Array.isArray(r.allKits ?? r.all_kits) ? (r.allKits ?? r.all_kits) as string[] : base.allKits,
         isEnabled,
     };
 }
