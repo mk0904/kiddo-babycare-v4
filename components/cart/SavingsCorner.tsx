@@ -32,6 +32,7 @@ const FALLBACK_SPECIAL_DEAL_CONFIG: SpecialDealConfig = {
     title: 'Special offer',
     bannerText: 'Offer unlocked!',
     footerCta: 'Add products to unlock offer',
+    /** Seconds for promo countdown when using fallback config. */
     offerTime: 30,
 };
 
@@ -785,19 +786,20 @@ export function SavingsCorner({
             {/* Available coupons modal with manual code entry */}
             <Modal
                 visible={showCouponsModal}
-                animationType="fade"
+                animationType={showPromoOfferSheet ? 'slide' : 'fade'}
                 transparent
                 onRequestClose={closeModal}
             >
-                <View style={styles.modalOverlay}>
+                <View style={[styles.modalOverlay, showPromoOfferSheet && styles.modalOverlayDrawer]}>
                     <TouchableOpacity
                         style={StyleSheet.absoluteFill}
                         activeOpacity={1}
                         onPress={closeModal}
                     />
                     {showPromoOfferSheet ? (
-                        <View style={styles.promoModalCenter} pointerEvents="box-none">
+                        <View style={styles.promoDrawerShell} pointerEvents="box-none">
                             <SavingsCornerPromoOfferContent
+                                presentation="bottomSheet"
                                 dealConfig={resolvedDealConfig}
                                 formatCurrency={formatCurrency}
                                 onClose={closeModal}
@@ -1242,12 +1244,15 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.SemiBold,
         color: '#6D28D9',
     },
-    // Modal
-    promoModalCenter: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 24,
+    // Modal — promo upsell as bottom sheet (slide-up)
+    modalOverlayDrawer: {
+        justifyContent: 'flex-end',
+        alignItems: 'stretch',
+        paddingBottom: 0,
+    },
+    promoDrawerShell: {
+        width: '100%',
+        maxHeight: '92%',
     },
     modalBackHit: {
         marginRight: 4,

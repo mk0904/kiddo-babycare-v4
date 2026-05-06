@@ -264,8 +264,10 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 variantIdMatch &&
                 productIdMatch[1] === variantIdMatch[1] &&
                 variantIdStr.startsWith('gid://shopify/ProductVariant/')) ||
-            (!item.variants?.edges || (Array.isArray(item.variants) && item.variants.length === 0)) ||
-            (item.variants?.edges?.length === 1 && item.variants.edges[0]?.node?.title === 'Default');
+            (!item.variants?.edges && (!Array.isArray(item.variants) || item.variants.length === 0)) ||
+            (item.variants?.edges?.length === 1 &&
+                item.variants.edges[0]?.node?.title?.toLowerCase() === 'default' &&
+                !item.variants.edges[0]?.node?.price);
 
         // If it's a search result, we MUST fetch full product data to check for variants and availability
         if (isSearchResultVariant && productId && !variantToUse && !fullProductData) {

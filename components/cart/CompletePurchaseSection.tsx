@@ -10,16 +10,20 @@ const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/511203115297';
 export function CompletePurchaseSection() {
     const router = useRouter();
     const [hasProducts, setHasProducts] = useState<boolean | null>(null);
+    const cartItems = useCartStore(s => s.lineItems);
 
     const handleProductsLoaded = (products: any[]) => {
-        setHasProducts(products.length > 0);
+        // Filter out items already in the cart
+        const filtered = products.filter(p => !cartItems.some(ci => ci.productId === p.id));
+        setHasProducts(filtered.length > 0);
     };
 
     const list = (
         <HorizontalProductList
             collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
-            config={{ limit: 8, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
+            config={{ limit: 40, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
             title=""
+            refreshKey={cartItems.length}
             onProductsLoaded={handleProductsLoaded}
             onProductPress={(p) => p?.id && router.push({ pathname: '/products/[id]', params: { id: p.id } } as any)}
             onAddToCart={(p) => {
