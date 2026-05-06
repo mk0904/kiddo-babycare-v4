@@ -2794,7 +2794,6 @@ export const useCartStore = create<CartState>()(
                 deliverySchedule: state.deliverySchedule,
                 discountBreakdownSnapshot: state.discountBreakdownSnapshot,
                 dealProducts: state.dealProducts,
-                hasWatchedPromoVideo: state.hasWatchedPromoVideo,
                 hasUnlockedSpecialDeal: state.hasUnlockedSpecialDeal,
             }),
         }
