@@ -7,7 +7,7 @@ import { specialDealPromoPercentFromItem, useCartItems, useCartStore } from '@/s
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
@@ -656,7 +656,6 @@ export function SavingsCorner({
                             <View style={styles.applyCouponHeaderRow}>
                                 <TouchableOpacity
                                     style={styles.applyCouponHeaderLeft}
-                                    onPress={openApplyCouponsModal}
                                     activeOpacity={0.7}
                                     disabled={couponBusy}
                                 >

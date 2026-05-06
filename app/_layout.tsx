@@ -91,6 +91,12 @@ export default function RootLayout() {
 
   const currentVersion = getAppVersionForApi();
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+
+  React.useEffect(() => {
+    if (__DEV__) {
+      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
+    }
+  }, [currentVersion, updateRequired]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
