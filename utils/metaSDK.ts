@@ -10,6 +10,7 @@
 import { Platform } from 'react-native';
 
 let initialized = false;
+const eventQueue: Array<{ eventName: string; properties?: Record<string, unknown>; eventId?: string }> = [];
 
 /** Lazy-load Meta SDK; returns null in Expo Go or when native module is missing. */
 function getMetaSDK(): { Settings: typeof import('react-native-fbsdk-next').Settings; AppEventsLogger: typeof import('react-native-fbsdk-next').AppEventsLogger } | null {
@@ -19,6 +20,52 @@ function getMetaSDK(): { Settings: typeof import('react-native-fbsdk-next').Sett
     return sdk;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Checks for deferred deep links (links from ads that were clicked before app install).
+ * Should be called once on app startup.
+ */
+export async function checkForDeferredAppLink(): Promise<string | null> {
+  try {
+    const sdk = getMetaSDK();
+    if (!sdk) return null;
+    
+    // The correct method name is getDeferredAppLink (capital L)
+    const url = await (sdk.AppEventsLogger as any).getDeferredAppLink();
+    if (url) {
+      if (__DEV__) console.log('[MetaSDK] Deferred App Link found:', url);
+      return url;
+    }
+  } catch (error) {
+    if (__DEV__) console.warn('[MetaSDK] Error checking deferred app link:', error);
+  }
+  return null;
+}
+
+/**
+ * Capture attribution IDs from a URL (e.g., fbclid) and store them for future events.
+ */
+export function captureAttributionDataFromUrl(url: string) {
+  try {
+    const query = url.split('?')[1];
+    if (!query) return;
+
+    const params = new URLSearchParams(query);
+    const fbclid = params.get('fbclid');
+    const campaignId = params.get('campaign_id') || params.get('campaignId');
+
+    if (fbclid) {
+      // Store in memory or local storage for the session
+      // This will be picked up by logMetaEvent's mapping logic
+      (global as any)._meta_fbclid = fbclid;
+    }
+    if (campaignId) {
+      (global as any)._meta_campaignId = campaignId;
+    }
+  } catch (e) {
+    // Silent fail
   }
 }
 
@@ -52,6 +99,8 @@ export function initMetaSDK(): void {
       if (__DEV__) console.log('[Meta SDK] iOS detected, ATE will be set after ATT prompt');
     } else {
       if (__DEV__) console.log('[Meta SDK] Android detected, ensuring advertiser ID collection is enabled');
+      // On Android we can safely enable this if the user hasn't opted out via system settings
+      Settings.setAdvertiserTrackingEnabled(true);
     }
 
     // Enable debug logs in dev if the method exists
@@ -67,8 +116,16 @@ export function initMetaSDK(): void {
     Settings.initializeSDK();
     
     initialized = true;
-    if (__DEV__) console.log('[Meta SDK] Initialized successfully');
+    if (__DEV__) console.log('[Meta SDK] Initialized successfully. Processing queue:', eventQueue.length);
     
+    // Process buffered events
+    while (eventQueue.length > 0) {
+      const queued = eventQueue.shift();
+      if (queued) {
+        logMetaEvent(queued.eventName, queued.properties, queued.eventId);
+      }
+    }
+
     // Optional: flush any queued events
     try {
       AppEventsLogger.flush();
@@ -129,6 +186,7 @@ export async function requestMetaTrackingPermission(): Promise<void> {
 
 /**
  * Map our event names to Meta standard events where applicable.
+ * Priority given to Meta Standard Events for algorithm optimization (Part 2 & 13 of guide).
  */
 const META_STANDARD_EVENTS: Record<string, string> = {
   'Purchase': 'Purchase',
@@ -147,6 +205,10 @@ const META_STANDARD_EVENTS: Record<string, string> = {
   'AddToWishlist': 'AddToWishlist',
   'Signup Completed': 'CompleteRegistration',
   'Login Success': 'CompleteRegistration',
+  'Add Payment Info': 'AddPaymentInfo',
+  'AddPaymentInfo': 'AddPaymentInfo',
+  'Lead Generated': 'Lead',
+  'Lead': 'Lead',
 };
 
 /**
@@ -170,7 +232,8 @@ export function logMetaEvent(
   eventId?: string
 ): void {
   if (!initialized) {
-    if (__DEV__) console.warn(`[Meta SDK] logMetaEvent dropped (not yet initialized): ${eventName}`);
+    if (__DEV__) console.log(`[Meta SDK] logMetaEvent buffered (not yet initialized): ${eventName}`);
+    eventQueue.push({ eventName, properties, eventId });
     return;
   }
   const sdk = getMetaSDK();
@@ -198,19 +261,6 @@ export function logMetaEvent(
       }
     }
 
-    // Handle Purchase events specially (Meta dashboard requirement)
-    if (metaEventName === 'Purchase') {
-      const value = Number(params.value || params.amount || params.revenue || 0);
-      const currency = String(params.currency || 'INR');
-      
-      if (dedupId) {
-        sanitized.event_id = String(dedupId);
-      }
-      
-      AppEventsLogger.logPurchase(value, currency, sanitized);
-      AppEventsLogger.flush();
-      return;
-    }
 
     const metaParams: Record<string, any> = { ...sanitized };
 
@@ -237,12 +287,38 @@ export function logMetaEvent(
       metaParams.value = sanitized.value;
     }
 
+    // Attribution & Match Quality IDs (for CAPI dedup and better matching)
+    if (sanitized.fbc || params.fbclid || (global as any)._meta_fbclid) {
+      metaParams.fbc = sanitized.fbc || params.fbclid || (global as any)._meta_fbclid;
+    }
+    if (sanitized.fbp) {
+      metaParams.fbp = sanitized.fbp;
+    }
+    if (sanitized.campaign_id || sanitized.campaignId || (global as any)._meta_campaignId) {
+      metaParams.campaign_id = sanitized.campaign_id || sanitized.campaignId || (global as any)._meta_campaignId;
+    }
+    if (sanitized.ad_id || sanitized.adId) {
+      metaParams.ad_id = sanitized.ad_id || sanitized.adId;
+    }
+    if (sanitized.adset_id || sanitized.adsetId) {
+      metaParams.adset_id = sanitized.adset_id || sanitized.adsetId;
+    }
+
     if (dedupId) {
       metaParams.event_id = String(dedupId);
     }
 
     if (__DEV__) {
       console.log(`[MetaSDK] Logging ${metaEventName}:`, metaParams);
+    }
+
+    // Re-check for Purchase to ensure metaParams (with fbc/fbp) are used
+    if (metaEventName === 'Purchase') {
+      const value = Number(params.value || params.amount || params.revenue || 0);
+      const currency = String(params.currency || 'INR');
+      AppEventsLogger.logPurchase(value, currency, metaParams);
+      AppEventsLogger.flush();
+      return;
     }
 
     AppEventsLogger.logEvent(metaEventName, metaParams);

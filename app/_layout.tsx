@@ -36,8 +36,14 @@ import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
-import type { EntryScreenItem } from '@/types/appConfig';
-import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
+import { 
+  initMetaSDK, 
+  requestMetaTrackingPermission, 
+  checkForDeferredAppLink,
+  captureAttributionDataFromUrl
+} from '../utils/metaSDK';
+import * as ExpoLinking from 'expo-linking';
 import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
@@ -225,8 +231,27 @@ export default function RootLayout() {
           if (Platform.OS === 'ios') {
             await requestMetaTrackingPermission();
           }
-          initMetaSDK();
+          await initMetaSDK();
           if (Platform.OS === 'ios') metaReadyRef.current = true;
+
+          // Check for initial URL (from a cold start deep link)
+          const initialUrl = await ExpoLinking.getInitialURL();
+          if (initialUrl) {
+            captureAttributionDataFromUrl(initialUrl);
+          }
+
+          // Check for Deferred Deep Link (Part 8 of guide)
+          const deferredUrl = await checkForDeferredAppLink();
+          if (deferredUrl) {
+            // Handle navigation for deferred link if needed
+            // captureAttributionDataFromUrl(deferredUrl);
+          }
+
+          // Listen for incoming URLs while the app is open
+          const subscription = ExpoLinking.addEventListener('url', (event) => {
+            captureAttributionDataFromUrl(event.url);
+          });
+
         } catch (e) {
           if (__DEV__) console.warn('[Meta SDK] early init error:', e);
           if (Platform.OS === 'ios') metaReadyRef.current = true;
