@@ -27,10 +27,10 @@ export function getAppVersionForApi(): string {
 }
 
 /** Minimum iOS app version (CFBundleShortVersionString). Older builds see "Update required". */
-export const MIN_APP_VERSION_IOS = '3.2.0';
+export const MIN_APP_VERSION_IOS = '3.2.1';
 
 /** Minimum Android app version (versionName). Older builds see "Update required". */
-export const MIN_APP_VERSION_ANDROID = '1.9.8';
+export const MIN_APP_VERSION_ANDROID = '1.9.9';
 
 /** Play Store URL (Android). Uses app package from app.json. */
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';

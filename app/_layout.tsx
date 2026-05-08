@@ -140,7 +140,10 @@ export default function RootLayout() {
       if (screens.length === 0) {
         await Promise.race([
           appConfigService.loadAppConfig(false, appConfigPayload),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+          new Promise<null>((resolve) => setTimeout(() => {
+            if (__DEV__) console.log('[RootLayout] appConfigService.loadAppConfig timed out');
+            resolve(null);
+          }, 3000)),
         ]);
         screens = appConfigService.getEntryScreens();
       }
@@ -180,6 +183,7 @@ export default function RootLayout() {
   // This happens before the custom splash renders
   React.useEffect(() => {
     let fontTimeout: ReturnType<typeof setTimeout> | null = null;
+    let entryDecisionTimeout: ReturnType<typeof setTimeout> | null = null;
     let isReadySet = false;
 
     const setReady = () => {
@@ -409,14 +413,22 @@ export default function RootLayout() {
     
     // Set app ready if fonts loaded OR if there was an error (don't block on font errors)
     if (fontsLoaded || fontError) {
+      if (__DEV__) console.log('[RootLayout] Fonts resolved, trying to set ready');
       trySetReady();
     }
 
+    // Safety timeout for entry screens decision
+    entryDecisionTimeout = setTimeout(() => {
+      if (isEntryScreensDecisionPending) {
+        console.warn('⚠️ Entry screens decision timed out - forcing continue');
+        resolveEntryScreensDecision([]);
+      }
+    }, 4000);
+
     // Cleanup timeout
     return () => {
-      if (fontTimeout) {
-        clearTimeout(fontTimeout);
-      }
+      if (fontTimeout) clearTimeout(fontTimeout);
+      if (entryDecisionTimeout) clearTimeout(entryDecisionTimeout);
     };
   }, [fontsLoaded, fontError, appConfigPayload]);
 
