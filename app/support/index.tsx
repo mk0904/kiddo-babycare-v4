@@ -5,29 +5,35 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { appConfigService } from '@/services/appConfigService';
 
 export default function SupportScreen() {
     const router = useRouter();
 
+    const helpConfig = appConfigService.getHelpSupportConfig();
+    const phone = helpConfig?.phone || '9310993990';
+    const email = helpConfig?.email || 'hi@allforkiddo.com';
+
     const handleCall = () => {
-        Linking.openURL('tel:+919310993990');
+        Linking.openURL(`tel:+91${phone}`);
     };
 
     const handleEmail = () => {
-        Linking.openURL('mailto:hi@allforkiddo.com');
+        Linking.openURL(`mailto:${email}`);
     };
 
     const handleWhatsApp = () => {
         const text = "Hi, I need help with my order.";
-        const url = `whatsapp://send?phone=+919310993990&text=${encodeURIComponent(text)}`;
+        const url = `whatsapp://send?phone=+91${phone}&text=${encodeURIComponent(text)}`;
         Linking.canOpenURL(url).then(supported => {
             if (supported) {
                 Linking.openURL(url);
             } else {
-                Linking.openURL(`https://wa.me/919310993990?text=${encodeURIComponent(text)}`);
+                Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(text)}`);
             }
         });
     };
+
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -53,7 +59,7 @@ export default function SupportScreen() {
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionTitle}>Call Us</Text>
-                        <Text style={styles.optionSubtitle}>+91 93109 93990</Text>
+                        <Text style={styles.optionSubtitle}>+91 {phone}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -64,10 +70,11 @@ export default function SupportScreen() {
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionTitle}>Email Us</Text>
-                        <Text style={styles.optionSubtitle}>hi@allforkiddo.com</Text>
+                        <Text style={styles.optionSubtitle}>{email}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
+
 
             </View>
         </SafeAreaView>

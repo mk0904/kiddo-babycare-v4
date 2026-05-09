@@ -15,6 +15,7 @@ import type {
   FreeShoesOfferConfig,
   FreeShoesPickerConfig,
   GiftWrapConfig,
+  HelpSupportConfig,
   MilestoneUIConfig,
   MysteryGiftOfferConfig,
   OrderDetailConfig,
@@ -165,6 +166,10 @@ class AppConfigService {
 
   getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
     return this.config?.hotWheelConfig ?? null;
+  }
+
+  getHelpSupportConfig(): HelpSupportConfig | null {
+    return this.config?.helpSupportConfig ?? null;
   }
 
   getCartConfig(): CartConfig | null {
