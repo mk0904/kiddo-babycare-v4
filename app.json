@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "1.9.8",
+    "version": "1.9.9",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "app",
@@ -15,6 +15,10 @@
       "associatedDomains": [
         "applinks:allforkiddo.com",
         "applinks:www.allforkiddo.com"
+      ],
+      "skAdNetworkIdentifiers": [
+        "v9wttpbfk9.skadnetwork",
+        "n38lu8286q.skadnetwork"
       ],
       "config": {
         "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
@@ -58,12 +62,12 @@
             {
               "scheme": "https",
               "host": "allforkiddo.com",
-              "pathPrefix": "/"
+              "pathPattern": ".*"
             },
             {
               "scheme": "https",
               "host": "www.allforkiddo.com",
-              "pathPrefix": "/"
+              "pathPattern": ".*"
             }
           ],
           "category": [
@@ -75,7 +79,8 @@
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "googleServicesFile": "./android/app/google-services.json",
       "config": {
@@ -130,8 +135,8 @@
           "clientToken": "04a657781e5dd2df8704fd3292d74e3d",
           "displayName": "kiddo-babycare",
           "advertiserIDCollectionEnabled": true,
-          "autoLogAppEventsEnabled": false,
-          "isAutoInitEnabled": false,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
           "iosUserTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
         }
       ],
@@ -174,7 +179,7 @@
     },
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     }
   }
 }

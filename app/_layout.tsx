@@ -36,8 +36,14 @@ import { configService } from '@/services/configService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
-import type { EntryScreenItem } from '@/types/appConfig';
-import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
+import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
+import { 
+  initMetaSDK, 
+  requestMetaTrackingPermission, 
+  checkForDeferredAppLink,
+  captureAttributionDataFromUrl
+} from '../utils/metaSDK';
+import * as ExpoLinking from 'expo-linking';
 import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
@@ -91,6 +97,12 @@ export default function RootLayout() {
 
   const currentVersion = getAppVersionForApi();
   const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+
+  React.useEffect(() => {
+    if (__DEV__) {
+      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
+    }
+  }, [currentVersion, updateRequired]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
@@ -128,7 +140,10 @@ export default function RootLayout() {
       if (screens.length === 0) {
         await Promise.race([
           appConfigService.loadAppConfig(false, appConfigPayload),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+          new Promise<null>((resolve) => setTimeout(() => {
+            if (__DEV__) console.log('[RootLayout] appConfigService.loadAppConfig timed out');
+            resolve(null);
+          }, 3000)),
         ]);
         screens = appConfigService.getEntryScreens();
       }
@@ -168,6 +183,7 @@ export default function RootLayout() {
   // This happens before the custom splash renders
   React.useEffect(() => {
     let fontTimeout: ReturnType<typeof setTimeout> | null = null;
+    let entryDecisionTimeout: ReturnType<typeof setTimeout> | null = null;
     let isReadySet = false;
 
     const setReady = () => {
@@ -219,8 +235,27 @@ export default function RootLayout() {
           if (Platform.OS === 'ios') {
             await requestMetaTrackingPermission();
           }
-          initMetaSDK();
+          await initMetaSDK();
           if (Platform.OS === 'ios') metaReadyRef.current = true;
+
+          // Check for initial URL (from a cold start deep link)
+          const initialUrl = await ExpoLinking.getInitialURL();
+          if (initialUrl) {
+            captureAttributionDataFromUrl(initialUrl);
+          }
+
+          // Check for Deferred Deep Link (Part 8 of guide)
+          const deferredUrl = await checkForDeferredAppLink();
+          if (deferredUrl) {
+            // Handle navigation for deferred link if needed
+            // captureAttributionDataFromUrl(deferredUrl);
+          }
+
+          // Listen for incoming URLs while the app is open
+          const subscription = ExpoLinking.addEventListener('url', (event) => {
+            captureAttributionDataFromUrl(event.url);
+          });
+
         } catch (e) {
           if (__DEV__) console.warn('[Meta SDK] early init error:', e);
           if (Platform.OS === 'ios') metaReadyRef.current = true;
@@ -378,14 +413,22 @@ export default function RootLayout() {
     
     // Set app ready if fonts loaded OR if there was an error (don't block on font errors)
     if (fontsLoaded || fontError) {
+      if (__DEV__) console.log('[RootLayout] Fonts resolved, trying to set ready');
       trySetReady();
     }
 
+    // Safety timeout for entry screens decision
+    entryDecisionTimeout = setTimeout(() => {
+      if (isEntryScreensDecisionPending) {
+        console.warn('⚠️ Entry screens decision timed out - forcing continue');
+        resolveEntryScreensDecision([]);
+      }
+    }, 4000);
+
     // Cleanup timeout
     return () => {
-      if (fontTimeout) {
-        clearTimeout(fontTimeout);
-      }
+      if (fontTimeout) clearTimeout(fontTimeout);
+      if (entryDecisionTimeout) clearTimeout(entryDecisionTimeout);
     };
   }, [fontsLoaded, fontError, appConfigPayload]);
 

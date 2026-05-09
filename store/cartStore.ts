@@ -2774,6 +2774,13 @@ export const useCartStore = create<CartState>()(
         {
             name: 'cart-storage',
             storage: createJSONStorage(() => AsyncStorage),
+            onRehydrateStorage: (state) => {
+                return (hydratedState, error) => {
+                    if (!error && hydratedState && hydratedState.discountCodes.length > 0) {
+                        void hydratedState.refreshComputedDiscountFromCodes();
+                    }
+                };
+            },
             partialize: (state) => ({
                 lineItems: state.lineItems,
                 giftItems: state.giftItems,
@@ -2785,6 +2792,9 @@ export const useCartStore = create<CartState>()(
                 giftWrapping: state.giftWrapping,
                 schoolCouponData: state.schoolCouponData,
                 deliverySchedule: state.deliverySchedule,
+                discountBreakdownSnapshot: state.discountBreakdownSnapshot,
+                dealProducts: state.dealProducts,
+                hasUnlockedSpecialDeal: state.hasUnlockedSpecialDeal,
             }),
         }
     )
