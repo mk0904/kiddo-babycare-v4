@@ -34,7 +34,8 @@
           "whatsapp",
           "razorpay"
         ]
-      }
+      },
+      "googleServicesFile": "./ios/Kiddo/GoogleService-Info.plist"
     },
     "android": {
       "splash": {
@@ -163,6 +164,25 @@
               "enablePushInForeground": true,
               "iosPushAppGroup": "group.com.kiddo.ak"
             }
+          }
+        }
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "googleServicesFile": "./ios/Kiddo/GoogleService-Info.plist"
+          },
+          "android": {
+            "googleServicesFile": "./android/app/google-services.json"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ]

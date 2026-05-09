@@ -40,6 +40,7 @@ import type { EntryScreenItem } from '@/types/appConfig';
 import { initMetaSDK, requestMetaTrackingPermission } from '@/utils/metaSDK';
 import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
+import { errorService } from '@/services/errorService';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -194,11 +195,15 @@ export default function RootLayout() {
         const u = useUserStore.getState().user;
         if (u) {
           const uid = u.id || u.customerId || u.email || u.phone;
-          if (uid) identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+          if (uid) {
+            identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+            // Identify in Crashlytics
+            errorService.setUserInfo(uid, u.email);
+          }
         }
         trackEvent('App Opened');
       } catch (e) {
-        console.warn('Analytics tracking error:', e);
+        errorService.logError(e, { section: 'RootLayout_Open' });
       }
     };
 
