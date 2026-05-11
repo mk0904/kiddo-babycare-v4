@@ -360,6 +360,12 @@ export interface MilestoneUIConfig {
   fourthMilestoneIcon?: string;
 }
 
+export interface HelpSupportConfig {
+  email?: string;
+  isSupportEnabled?: boolean;
+  phone?: string;
+}
+
 /**
  * Delivery zone hints from GET app/config.
  * When `servicableDistance` is set (km), the app compares it to distance (km) from POST /eta;
@@ -395,5 +401,6 @@ export interface AppConfigResponse {
   entryScreens?: EntryScreenItem[];
   milestoneUI?: MilestoneUIConfig;
   hotWheelConfig?: HotWheelConfig;
+  helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
 }

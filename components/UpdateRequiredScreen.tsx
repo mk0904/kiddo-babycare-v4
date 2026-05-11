@@ -3,11 +3,14 @@ import { Colors } from '@/constants/theme';
 import React from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-const storeUrl = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
-
 export function UpdateRequiredScreen() {
+  const storeUrl = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+
   const openStore = () => {
-    Linking.openURL(storeUrl);
+    console.log(`[UpdateRequired] Opening store: ${storeUrl}`);
+    Linking.openURL(storeUrl).catch(err => {
+      console.error('[UpdateRequired] Failed to open store URL:', err);
+    });
   };
 
   return (
@@ -16,8 +19,13 @@ export function UpdateRequiredScreen() {
       <Text style={styles.message}>
         A new version of Kiddo is available. Please update the app to continue.
       </Text>
-      <Pressable onPress={openStore} style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-        <Text style={styles.buttonText}>Update</Text>
+      <Pressable 
+        onPress={openStore} 
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Update app"
+      >
+        <Text style={styles.buttonText}>Update Now</Text>
       </Pressable>
     </View>
   );

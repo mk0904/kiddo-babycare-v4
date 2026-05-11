@@ -27,10 +27,10 @@ export function getAppVersionForApi(): string {
 }
 
 /** Minimum iOS app version (CFBundleShortVersionString). Older builds see "Update required". */
-export const MIN_APP_VERSION_IOS = '3.1.8';
+export const MIN_APP_VERSION_IOS = '3.2.0';
 
 /** Minimum Android app version (versionName). Older builds see "Update required". */
-export const MIN_APP_VERSION_ANDROID = '1.9.6';
+export const MIN_APP_VERSION_ANDROID = '1.9.8';
 
 /** Play Store URL (Android). Uses app package from app.json. */
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
@@ -67,8 +67,13 @@ export function minimumAppVersionForPlatform(os: typeof Platform.OS): string | n
 /** True when this binary is older than the minimum allowed for the current platform (iOS vs Android). */
 export function isAppUpdateRequired(currentVersion: string): boolean {
   const minVersion = minimumAppVersionForPlatform(Platform.OS);
-  if (minVersion == null || minVersion === '') return false;
-  return isVersionBelowMinimum(currentVersion, minVersion);
+  const result = minVersion != null && minVersion !== '' && isVersionBelowMinimum(currentVersion, minVersion);
+
+  if (__DEV__) {
+    console.log(`[VersionCheck] OS: ${Platform.OS}, Current: "${currentVersion}", Min: "${minVersion}", Required: ${result}`);
+  }
+
+  return result;
 }
 
 export function supportsTryBuyPostDeliveryOrderSummary(): boolean {
