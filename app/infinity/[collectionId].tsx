@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
     Dimensions,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -549,13 +550,14 @@ export default function InfinityScreen() {
 
     // Age filter options - matching actual tag formats
     const AGE_OPTIONS = [
-        { label: '3-6 months', value: '3-6m' },
-        { label: '6-12 months', value: '6-12m' },
-        { label: '1-2 years', value: '1-2y' },
-        { label: '2-3 years', value: '2-3y' },
-        { label: '3-4 years', value: '3-4y' },
-        { label: '4-5 years', value: '4-5y' },
-        { label: '5+ years', value: '5+y' },
+        { label: '0 - 6M', value: '0-6m' },
+        { label: '6 - 12M', value: '6-12m' },
+        { label: '1 - 2Y', value: '1-2y' },
+        { label: '2 - 3Y', value: '2-3y' },
+        { label: '3 - 4Y', value: '3-4y' },
+        { label: '4 - 5Y', value: '4-5y' },
+        { label: '5 - 6Y', value: '5-6y' },
+        { label: '6 - 7Y', value: '6-7y' },
     ];
 
     const handleGenderSelect = (gender: string) => {
@@ -600,6 +602,19 @@ export default function InfinityScreen() {
         setShowAgeModal(false);
     };
 
+    const handleSharePress = async () => {
+        try {
+            const numericId = collectionId?.replace('gid://shopify/Collection/', '').split('?')[0];
+            const url = `https://allforkiddo.com/infinity/${numericId}`;
+            await Share.share({
+                message: `Check out this collection on Kiddo: ${effectiveTitle}\n${url}`,
+                url: url,
+            });
+        } catch (error) {
+            console.error('Error sharing collection:', error);
+        }
+    };
+
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
@@ -614,7 +629,13 @@ export default function InfinityScreen() {
                             {effectiveTitle}
                         </Text>
                     </View>
-                    <View style={styles.headerRightPlaceholder} />
+                    <TouchableOpacity 
+                        style={styles.shareButton} 
+                        onPress={handleSharePress}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Ionicons name="share-social-outline" size={24} color="#000" />
+                    </TouchableOpacity>
                 </View>
 
                 {!shouldHideFilters && (
@@ -745,7 +766,17 @@ export default function InfinityScreen() {
                                 max: bucket.max,
                                 input: bucket.input, // CRITICAL: Preserve the input field - this contains the exact filter format
                                 id: bucket.id, // Preserve id for matching
-                            })).filter((b: any) => b.value || b.label);
+                            })).filter((b: any) => {
+                                if (!b.value && !b.label) return false;
+                                
+                                const val = (b.value || b.label || '').toLowerCase().replace(/\s+/g, '');
+                                const IGNORE_LIST = [
+                                    'defaulttitle', 'allages', 'onesize', 's', 'm', 'l', 'xl', 'xxl',
+                                    '8-9y', '9-10y', '11-12y', '12-18y', '13-14y'
+                                ];
+                                
+                                return !IGNORE_LIST.includes(val);
+                            });
                         }
                         
                         return {
@@ -935,8 +966,8 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendSemiBold,
         color: '#000',
     },
-    headerRightPlaceholder: {
-        width: 40, // Match back button width for centering
+    shareButton: {
+        padding: 8,
     },
     pills: {
         zIndex: 10,
