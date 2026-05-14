@@ -172,6 +172,10 @@ class AppConfigService {
     return this.config?.helpSupportConfig ?? null;
   }
 
+  getForceUpdateConfig(): import('@/types/appConfig').ForceUpdateConfig | null {
+    return this.config?.forceUpdateConfig ?? null;
+  }
+
   getCartConfig(): CartConfig | null {
     return this.config?.cart ?? null;
   }

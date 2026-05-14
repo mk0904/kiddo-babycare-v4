@@ -1,7 +1,7 @@
 /**
- * Force update and force re-login configuration (in-code only, no remote config).
+ * Force re-login configuration.
  * Bump AUTH_SCHEMA_VERSION to force all users to re-login once.
- * Set MIN_APP_VERSION_IOS / MIN_APP_VERSION_ANDROID so older builds see "Update required".
+ * Force update is now handled via remote config in appConfigService.
  */
 
 import Constants from 'expo-constants';
@@ -26,11 +26,6 @@ export function getAppVersionForApi(): string {
   return Constants.expoConfig?.version ?? '0.0.0';
 }
 
-/** Minimum iOS app version (CFBundleShortVersionString). Older builds see "Update required". */
-export const MIN_APP_VERSION_IOS = '3.2.0';
-
-/** Minimum Android app version (versionName). Older builds see "Update required". */
-export const MIN_APP_VERSION_ANDROID = '1.9.8';
 
 /** Play Store URL (Android). Uses app package from app.json. */
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
@@ -38,14 +33,14 @@ export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com
 /** App Store URL (iOS). */
 export const APP_STORE_URL = 'https://apps.apple.com/in/app/kiddo-baby-care-in-minutes/id6755881583';
 
-/**
- * Compare two semver-like strings (e.g. "1.8.3"). Returns true if current < minimum.
- */
 function parseVersion(v: string): number[] {
   return v.split('.').map((n) => parseInt(n, 10) || 0);
 }
 
-function isVersionBelowMinimum(currentVersion: string, minVersion: string): boolean {
+/**
+ * Compare two semver-like strings (e.g. "1.8.3"). Returns true if current < minimum.
+ */
+export function isVersionBelowMinimum(currentVersion: string, minVersion: string): boolean {
   if (!currentVersion || !minVersion) return false;
   const cur = parseVersion(currentVersion);
   const min = parseVersion(minVersion);
@@ -58,24 +53,5 @@ function isVersionBelowMinimum(currentVersion: string, minVersion: string): bool
   return false;
 }
 
-export function minimumAppVersionForPlatform(os: typeof Platform.OS): string | null {
-  if (os === 'ios') return MIN_APP_VERSION_IOS;
-  if (os === 'android') return MIN_APP_VERSION_ANDROID;
-  return null;
-}
 
-/** True when this binary is older than the minimum allowed for the current platform (iOS vs Android). */
-export function isAppUpdateRequired(currentVersion: string): boolean {
-  const minVersion = minimumAppVersionForPlatform(Platform.OS);
-  const result = minVersion != null && minVersion !== '' && isVersionBelowMinimum(currentVersion, minVersion);
 
-  if (__DEV__) {
-    console.log(`[VersionCheck] OS: ${Platform.OS}, Current: "${currentVersion}", Min: "${minVersion}", Required: ${result}`);
-  }
-
-  return result;
-}
-
-export function supportsTryBuyPostDeliveryOrderSummary(): boolean {
-  return true;
-}

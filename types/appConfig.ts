@@ -380,6 +380,12 @@ export interface DeliveryZoneConfig {
   maxServiceRadiusKm?: number;
 }
 
+export interface ForceUpdateConfig {
+  isForceUpdateEnabled: boolean;
+  minAndroidAppVersion: string;
+  minIosAppVersion: string;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
@@ -403,4 +409,5 @@ export interface AppConfigResponse {
   hotWheelConfig?: HotWheelConfig;
   helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
+  forceUpdateConfig?: ForceUpdateConfig;
 }
