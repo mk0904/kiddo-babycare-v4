@@ -54,6 +54,7 @@ export interface ProductCollectionProps {
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
 }
 
 interface Page {
@@ -97,6 +98,7 @@ export function ProductCollection({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  pageCategory,
 }: ProductCollectionProps) {
   const { width: windowWidth } = useDeviceDimensions();
 
@@ -210,6 +212,9 @@ export function ProductCollection({
       } else if (filter.productCollection) {
         if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
         groupedFilters.productCollection.push(filter);
+      } else if (filter.productMetafield) {
+        if (!groupedFilters.productMetafield) groupedFilters.productMetafield = [];
+        groupedFilters.productMetafield.push(filter);
       }
     });
     
@@ -329,7 +334,6 @@ export function ProductCollection({
         });
         if (!variantMatch) return false;
       }
-      
       // Collection filter group - match ANY selected collection (OR logic)
       if (groupedFilters.productCollection) {
         const collections = product.collections?.edges || product.collections || [];
@@ -342,6 +346,32 @@ export function ProductCollection({
           return collectionIds.includes(filterCollection);
         });
         if (!collectionMatch) return false;
+      }
+      
+      // Product Metafield filter group - match ANY selected metafield value (OR logic)
+      if (groupedFilters.productMetafield) {
+        const metafields = product.metafields || [];
+        const metafieldMatch = groupedFilters.productMetafield.some((filter: any) => {
+          const filterNamespace = (filter.productMetafield.namespace || '').toLowerCase().trim();
+          const filterKey = (filter.productMetafield.key || '').toLowerCase().trim();
+          const filterValue = String(filter.productMetafield.value || '').toLowerCase().trim();
+          
+          return metafields.some((mf: any) => {
+            if (!mf) return false;
+            const mfNamespace = (mf.namespace || '').toLowerCase().trim();
+            const mfKey = (mf.key || '').toLowerCase().trim();
+            const mfValue = String(mf.value || '').toLowerCase().trim();
+            
+            // Handle both exact match and comma-separated lists in metafield value
+            const isMatch = mfNamespace === filterNamespace && mfKey === filterKey;
+            if (!isMatch) return false;
+            
+            const mfValues = mfValue.split(',').map(v => v.trim().toLowerCase());
+            return mfValues.includes(filterValue);
+          });
+        });
+        
+        if (!metafieldMatch) return false;
       }
       
       return true;
@@ -470,9 +500,10 @@ export function ProductCollection({
     // Apply age filter (Toy-aware filtering)
     if (ageFilter) {
       products = products.filter((product: any) => {
-        const isToy = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
+        const isToyCategory = pageCategory === 'toys';
+        const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
         
-        if (isToy) {
+        if (isToyCategory || isToyProduct) {
           // Toys: Tag matching only (e.g., "Toys for 6 - 12 M")
           const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
           const toyPattern = `toysfor${ageFilter}`;
@@ -530,9 +561,10 @@ export function ProductCollection({
     // Apply age filter (Toy-aware filtering)
     if (ageFilter) {
       filteredProducts = filteredProducts.filter((product: any) => {
-        const isToy = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
+        const isToyCategory = pageCategory === 'toys';
+        const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
         
-        if (isToy) {
+        if (isToyCategory || isToyProduct) {
           // Toys: Tag matching only
           const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
           const toyPattern = `toysfor${ageFilter}`;

@@ -13,24 +13,21 @@ import { Colors, Fonts } from '@/constants/theme';
 import { FastFilters } from './FastFilters';
 
 interface FilterSortPillsProps {
-    totalItems: number;
-    activeFiltersCount: number;
-    onFiltersPress: () => void;
-    onSortPress: () => void;
-    onGenderPress?: () => void;
-    onAgePress?: () => void;
-    selectedGender?: string | null;
-    selectedAge?: string | null;
-    facets?: any[];
-    selectedFilters?: any;
-    onFastFilterToggle?: (attribute: string, value: any) => void;
-    style?: StyleProp<ViewStyle>;
-    showGenderFilter?: boolean; // Control whether gender filter is shown
+    totalItems?: number;
+    showBrandFilter?: boolean;
+    showSizeFilter?: boolean;
+    showStageFilter?: boolean;
+    onBrandPress?: () => void;
+    onSizePress?: () => void;
+    onStagePress?: () => void;
+    selectedBrand?: string | null;
+    selectedSize?: string | null;
+    selectedStage?: string | null;
 }
 
 export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     totalItems,
-    activeFiltersCount,
+    activeFiltersCount = 0,
     onFiltersPress,
     onSortPress,
     onGenderPress,
@@ -41,7 +38,17 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     selectedFilters = {},
     onFastFilterToggle,
     style,
-    showGenderFilter = true, // Default to true for backward compatibility
+    showGenderFilter = true,
+    showAgeFilter = true,
+    showBrandFilter = false,
+    showSizeFilter = false,
+    showStageFilter = false,
+    onBrandPress,
+    onSizePress,
+    onStagePress,
+    selectedBrand,
+    selectedSize,
+    selectedStage,
 }) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -293,7 +300,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                     </Animated.View>
                 )}
 
-                {onAgePress && (
+                {onAgePress && showAgeFilter && (
                     <Animated.View
                         style={[
                             styles.actionButton,
@@ -337,6 +344,156 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 selectedAge && styles.actionButtonTextActive
                             ]}>
                                 Age
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {onBrandPress && showBrandFilter && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedBrand && styles.actionButtonActive,
+                            {
+                                width: buttonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onBrandPress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="pricetag-outline" 
+                                    size={16} 
+                                    color={selectedBrand ? Colors.variantSelection : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: textWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedBrand && styles.actionButtonTextActive
+                            ]}>
+                                Brand
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {onSizePress && showSizeFilter && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedSize && styles.actionButtonActive,
+                            {
+                                width: buttonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onSizePress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="resize-outline" 
+                                    size={16} 
+                                    color={selectedSize ? Colors.variantSelection : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: textWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedSize && styles.actionButtonTextActive
+                            ]}>
+                                Size
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {onStagePress && showStageFilter && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedStage && styles.actionButtonActive,
+                            {
+                                width: buttonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onStagePress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="layers-outline" 
+                                    size={16} 
+                                    color={selectedStage ? Colors.variantSelection : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: textWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedStage && styles.actionButtonTextActive
+                            ]}>
+                                Stage
                             </Text>
                         </Animated.View>
                         </TouchableOpacity>

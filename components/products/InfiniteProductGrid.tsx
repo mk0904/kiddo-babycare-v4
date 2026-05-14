@@ -168,6 +168,7 @@ export interface InfiniteProductGridProps
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
 }
 
 export function InfiniteProductGrid({
@@ -196,6 +197,7 @@ export function InfiniteProductGrid({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  pageCategory,
 }: InfiniteProductGridProps) {
   return (
     <ProductCollection
@@ -223,6 +225,7 @@ export function InfiniteProductGrid({
       contentContainerStyle={contentContainerStyle}
       genderFilter={genderFilter}
       ageFilter={ageFilter}
+      pageCategory={pageCategory}
     />
   );
 }

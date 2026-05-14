@@ -2,8 +2,9 @@ import { customerService } from '@/services/customerService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState, AppStateStatus } from 'react-native';
 import { useAuth } from './AuthContext';
+import * as Location from 'expo-location';
 
 export interface Address {
     id: string;
@@ -79,6 +80,9 @@ interface AddressContextType {
     detectedLocationStatus: DetectedLocationStatus;
     detectedEta: number | null;
     setDetectedLocation: (status: DetectedLocationStatus, eta?: number | null) => void;
+    currentLocationStatus: DetectedLocationStatus;
+    isCurrentLocationServiceable: boolean | null;
+    checkCurrentLocationServiceability: () => Promise<void>;
     addAddress: (addressData: Partial<Address>) => Promise<Address>;
     updateAddress: (addressId: string, addressData: Partial<Address>) => Promise<void>;
     deleteAddress: (addressId: string) => Promise<void>;
@@ -109,9 +113,76 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
         setDetectedEta(eta ?? null);
     }, []);
 
+    const [currentLocationStatus, setCurrentLocationStatus] = useState<DetectedLocationStatus>('idle');
+    const [isCurrentLocationServiceable, setIsCurrentLocationServiceable] = useState<boolean | null>(null);
+
+    const hasShownUnserviceableAlert = React.useRef(false);
+
+    const checkCurrentLocationServiceability = useCallback(async () => {
+        try {
+            // 1. Wait for App Config to ensure we have the correct serviceableDistance
+            const { appConfigService } = require('@/services/appConfigService');
+            if (!appConfigService.isConfigLoaded()) {
+                await appConfigService.loadAppConfig();
+            }
+
+            const { status } = await Location.getForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setCurrentLocationStatus('denied');
+                return;
+            }
+
+            setCurrentLocationStatus('loading');
+            
+            // 2. Force a fresh location check with higher accuracy
+            const position = await Location.getCurrentPositionAsync({ 
+                accuracy: Location.Accuracy.High 
+            });
+            const { latitude, longitude } = position.coords;
+
+            const { getDeliveryEta } = require('@/config/deliveryConfig');
+            const { resolveDeliveryServiceable } = require('@/utils/deliveryServiceability');
+
+            const eta = await getDeliveryEta(latitude, longitude);
+            const threshold = appConfigService.getServicableDistanceKm();
+            const serviceable = resolveDeliveryServiceable(eta, threshold);
+
+            setIsCurrentLocationServiceable(serviceable);
+            setCurrentLocationStatus(serviceable ? 'serviceable' : 'unserviceable');
+
+            // 3. Trigger Notification/Alert if unserviceable
+            if (!serviceable && !hasShownUnserviceableAlert.current) {
+                Alert.alert(
+                    'Area Unserviceable',
+                    'We noticed you are currently outside our delivery zone. Delivery to your current location is not available.',
+                    [{ text: 'OK', onPress: () => { hasShownUnserviceableAlert.current = true; } }]
+                );
+            } else if (serviceable) {
+                // Reset alert flag if they move back into a serviceable zone
+                hasShownUnserviceableAlert.current = false;
+            }
+        } catch (error) {
+            console.error('[AddressContext] Error checking current location serviceability:', error);
+            setCurrentLocationStatus('error');
+        }
+    }, []);
+
     useEffect(() => {
         loadAddresses();
-    }, [user]);
+        checkCurrentLocationServiceability();
+
+        // Listen for AppState changes to re-check when user returns to the app
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                console.log('[AddressContext] App became active, re-checking location serviceability...');
+                checkCurrentLocationServiceability();
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [user, checkCurrentLocationServiceability]);
 
     const loadAddresses = useCallback(async () => {
         try {
@@ -429,6 +500,9 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 detectedLocationStatus,
                 detectedEta,
                 setDetectedLocation,
+                currentLocationStatus,
+                isCurrentLocationServiceable,
+                checkCurrentLocationServiceability,
                 addAddress,
                 updateAddress,
                 deleteAddress,

@@ -25,6 +25,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Gender filter options
+const GENDER_OPTIONS = [
+    { label: 'Boys', value: 'boys' },
+    { label: 'Girls', value: 'girls' },
+    { label: 'Unisex', value: 'unisex' },
+];
+
+// Age filter options
+const AGE_OPTIONS = [
+    { label: '0 - 6M', value: '0-6m' },
+    { label: '6 - 12M', value: '6-12m' },
+    { label: '1 - 2Y', value: '1-2y' },
+    { label: '2 - 3Y', value: '2-3y' },
+    { label: '3 - 4Y', value: '3-4y' },
+    { label: '4 - 5Y', value: '4-5y' },
+    { label: '5 - 6Y', value: '5-6y' },
+    { label: '6 - 7Y', value: '6-7y' },
+];
+
+// Diaper size options in specific order
+const DIAPER_SIZE_OPTIONS = [
+    { label: 'New Born', value: 'New Born' },
+    { label: 'XXS', value: 'XXS' },
+    { label: 'XS', value: 'XS' },
+    { label: 'Small', value: 'Small' },
+    { label: 'Medium', value: 'Medium' },
+    { label: 'Large', value: 'Large' },
+    { label: 'XL', value: 'XL' },
+    { label: 'XXL', value: 'XXL' },
+    { label: 'XXXL', value: 'XXXL' },
+];
+
 export default function InfinityScreen() {
     const { collectionId, title, hideFilters } = useLocalSearchParams<{ collectionId: string; title: string; hideFilters?: string }>();
     const router = useRouter();
@@ -71,6 +103,25 @@ export default function InfinityScreen() {
 
     const [totalItems, setTotalItems] = useState(0);
 
+    const [pageCategory, setPageCategory] = useState<'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null>(null);
+
+    // Brand Filter State
+    const [showBrandModal, setShowBrandModal] = useState(false);
+    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+    const [brandOptions, setBrandOptions] = useState<{ label: string; value: string }[]>([]);
+
+    // Size Filter State
+    const [showSizeModal, setShowSizeModal] = useState(false);
+    const [selectedSize, setSelectedSize] = useState<string | null>(null);
+    const [sizeOptions, setSizeOptions] = useState<{ label: string; value: string }[]>([]);
+
+    // Stage Filter State
+    const [showStageModal, setShowStageModal] = useState(false);
+    const [selectedStage, setSelectedStage] = useState<string | null>(null);
+    const [stageOptions, setStageOptions] = useState<{ label: string; value: string }[]>([]);
+
+
+
     // Transform local filters to Shopify API format
     const [apiFilters, setApiFilters] = useState<any[]>([]);
 
@@ -110,71 +161,171 @@ export default function InfinityScreen() {
         
         const collectionTitle = (collection.title || '').toLowerCase();
         const collectionHandle = (collection.handle || '').toLowerCase();
-        const titleParam = (title || '').toLowerCase();
+        if (shouldHideFilters) return false;
         
-        // Combine all text sources for checking
-        const allText = `${collectionTitle} ${collectionHandle} ${titleParam}`.toLowerCase();
-        
-        // Check if collection is already gender-specific (girls/boys specific carousel)
-        // This includes collections with "girls", "boys", "girl's", "boy's" in the title
-        const isGenderSpecific = 
-            allText.includes('girls') || 
-            allText.includes('boys') ||
-            allText.includes("girl's") ||
-            allText.includes("boy's") ||
-            allText.includes("girl ") ||
-            allText.includes("boy ");
-        
-        // If it's already gender-specific, don't show gender filter
-        if (isGenderSpecific) {
-            return false;
+        // Show gender filter ONLY for fashion category
+        if (pageCategory === 'fashion') {
+            const allText = (effectiveTitle || '').toLowerCase();
+            const isGenderSpecific = 
+                allText.includes('girls') || 
+                allText.includes('boys') ||
+                allText.includes("girl's") ||
+                allText.includes("boy's") ||
+                allText.includes("girl ") ||
+                allText.includes("boy ");
+            
+            // If it's already gender-specific (e.g. "Girls Tops"), don't show the filter
+            if (isGenderSpecific) return false;
+            return true;
         }
         
-        // Check if it's a non-clothing category (babycare, toys, babygear)
-        // Gender filter should only be available in clothing category
-        const isNonClothingCategory = 
-            allText.includes('babycare') ||
-            allText.includes('baby care') ||
-            allText.includes('toys') ||
-            allText.includes('toy') ||
-            allText.includes('babygear') ||
-            allText.includes('baby gear') ||
-            allText.includes('diaper') ||
-            allText.includes('feeding') ||
-            allText.includes('stroller') ||
-            allText.includes('car seat');
+        // Hide for Toys, Essentials, and others
+        return false;
+    };
+
+    const shouldShowAgeFilter = () => {
+        if (shouldHideFilters) return false;
         
-        // If it's a non-clothing category, don't show gender filter
-        if (isNonClothingCategory) {
-            return false;
-        }
-        
-        // Show gender filter only for clothing categories (not non-clothing, not gender-specific)
-        // Default to true for clothing items (assumes clothing unless proven otherwise)
-        return true;
+        // Show age filter for Fashion and Toys
+        // (Essentials/Other usually use different sizing like weight or volume)
+        return pageCategory === 'fashion' || pageCategory === 'toys';
+    };
+
+    const shouldShowBrandFilter = () => {
+        if (shouldHideFilters) return false;
+        // Show Brand filter for Essentials, Diapers, and Formula
+        return pageCategory === 'essentials' || pageCategory === 'diapers' || pageCategory === 'formula';
+    };
+
+    const shouldShowSizeFilter = () => {
+        if (shouldHideFilters) return false;
+        // Show Size filter specifically for Diapers
+        return pageCategory === 'diapers';
+    };
+
+    const shouldShowStageFilter = () => {
+        if (shouldHideFilters) return false;
+        // Show Stage filter specifically for Formula
+        return pageCategory === 'formula';
     };
 
     useEffect(() => {
         async function fetchCollectionInfo() {
-            if (collectionId) {
+            if (effectiveCollectionId) {
                 setLoading(true);
                 try {
-                    // Format ID if needed
-                    const formattedId = collectionId.startsWith('gid://')
-                        ? collectionId
-                        : `gid://shopify/Collection/${collectionId}`;
-
-                    const data = await shopifyApi.getCollectionById(formattedId);
-                    setCollection(data);
-                } catch (e) {
-                    console.error(e);
+                    const info = await shopifyApi.getCollectionById(effectiveCollectionId);
+                    setCollection(info);
+                    
+                    // Identify category from "Category" metafield
+                    const categoryValue = info?.categoryMetafield?.value?.toLowerCase();
+                    if (categoryValue === 'fashion') {
+                        setPageCategory('fashion');
+                    } else if (categoryValue === 'toys') {
+                        setPageCategory('toys');
+                    } else if (categoryValue === 'essentials') {
+                        setPageCategory('essentials');
+                    } else if (categoryValue === 'diapers') {
+                        setPageCategory('diapers');
+                    } else if (categoryValue === 'formula') {
+                        setPageCategory('formula');
+                    } else {
+                        // Fallback logic if metafield is missing
+                        const allText = (info?.title || info?.handle || '').toLowerCase();
+                        if (allText.includes('toys') || allText.includes('toy')) {
+                            setPageCategory('toys');
+                        } else if (allText.includes('formula')) {
+                            setPageCategory('formula');
+                        } else if (allText.includes('diaper')) {
+                            setPageCategory('diapers');
+                        } else if (allText.includes('babycare') || allText.includes('feeding')) {
+                            setPageCategory('essentials');
+                        } else {
+                            setPageCategory('fashion'); // Default to fashion
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching collection info:', error);
                 } finally {
                     setLoading(false);
                 }
             }
         }
         fetchCollectionInfo();
-    }, [collectionId]);
+    }, [effectiveCollectionId]);
+
+    const handleBrandSelect = (brand: string) => {
+        if (selectedBrand === brand) {
+            setSelectedBrand(null);
+            const { vendor: _, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            handleApplyFilters(rest);
+        } else {
+            setSelectedBrand(brand);
+            const newFilters = { ...selectedFilters, vendor: [brand] };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        }
+        setShowBrandModal(false);
+    };
+
+    const handleSizeSelect = (size: string) => {
+        if (selectedSize === size) {
+            setSelectedSize(null);
+            // Clear all possible size filter keys
+            const { size: _, 'custom.sizes': __, 'custom.Sizes': ___, 'filter.p.m.custom.sizes': ____, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            handleApplyFilters(rest);
+        } else {
+            setSelectedSize(size);
+            
+            // For Diapers, we want to EXCLUSIVELY use the Sizes metafield facet
+            let sizeKey = 'size';
+            if (pageCategory === 'diapers') {
+                const diaperFacet = facets.find((f: any) => {
+                    const attr = (f.attribute || f.id || '').toLowerCase();
+                    const title = (f.title || f.label || '').toLowerCase();
+                    return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
+                });
+                sizeKey = diaperFacet?.attribute || diaperFacet?.id || 'filter.p.m.custom.sizes';
+            } else {
+                // Identify the correct filter key from facets for other categories
+                const sizeFacet = facets.find((f: any) => {
+                    const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                    const title = (f.title || f.label || '').toLowerCase();
+                    return attr.includes('size') || title.includes('size');
+                });
+                sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
+            }
+            
+            const newFilters = { ...selectedFilters, [sizeKey]: [size] };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        }
+        setShowSizeModal(false);
+    };
+
+    const handleStageSelect = (stage: string) => {
+        if (selectedStage === stage) {
+            setSelectedStage(null);
+            const { 'custom.pack_size': _, 'custom.stage': __, 'custom.Stage': ___, 'custom.Pack Size': ____, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            handleApplyFilters(rest);
+        } else {
+            setSelectedStage(stage);
+            // Identify the correct filter key from facets (look for Pack Size or Stage)
+            const stageFacet = facets.find((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
+            });
+            const stageKey = stageFacet?.attribute || stageFacet?.id || 'custom.stage';
+            const newFilters = { ...selectedFilters, [stageKey]: [stage] };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        }
+        setShowStageModal(false);
+    };
 
     // Sync gender and age from selectedFilters
     useEffect(() => {
@@ -192,31 +343,89 @@ export default function InfinityScreen() {
 
     // Handle facets loaded from the product query
     const handleFacetsLoaded = (loadedFacets: any[]) => {
-        if (loadedFacets && loadedFacets.length > 0) {
-            if (__DEV__) {
-                console.log('[Facets] Loaded facets:', loadedFacets.length);
-                const brandFacet = loadedFacets.find((f: any) => 
-                    (f.attribute || f.id || f.title || f.label || '').toLowerCase().includes('brand') ||
-                    (f.attribute || f.id || f.title || f.label || '').toLowerCase().includes('vendor')
-                );
-                if (brandFacet) {
-                    console.log('[Facets] Brand/Vendor facet found:', {
-                        attribute: brandFacet.attribute || brandFacet.id,
-                        title: brandFacet.title || brandFacet.label,
-                        buckets: brandFacet.buckets?.length || brandFacet.values?.length,
-                        firstBucket: brandFacet.buckets?.[0] || brandFacet.values?.[0]
+            setFacets(loadedFacets);
+
+            // Extract brand options from vendor facet for the quick-filter bubble
+            const vendorFacet = loadedFacets.find((f: any) => 
+                (f.attribute || f.id || f.field || f.name || '').toLowerCase() === 'vendor' ||
+                (f.title || f.label || '').toLowerCase().includes('brand')
+            );
+            if (vendorFacet) {
+                const options = (vendorFacet.buckets || vendorFacet.values || []).map((b: any) => ({
+                    label: b.label || b.title || b.value,
+                    value: b.value || b.id || b.label
+                }));
+                setBrandOptions(options);
+            }
+
+            // For Diapers, we specifically look for the "Sizes" metafield facet
+            if (pageCategory === 'diapers') {
+                const diaperFacet = loadedFacets.find((f: any) => {
+                    const attr = (f.attribute || f.id || '').toLowerCase();
+                    const title = (f.title || f.label || '').toLowerCase();
+                    return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
+                });
+
+                const uniqueOptionsMap = new Map();
+                if (diaperFacet) {
+                    const buckets = (diaperFacet.buckets || diaperFacet.values || []);
+                    buckets.forEach((b: any) => {
+                        const label = b.label || b.title || b.value;
+                        const value = b.value || b.id || b.label;
+                        if (label) uniqueOptionsMap.set(label.toLowerCase(), { label, value });
                     });
-                } else {
-                    console.log('[Facets] No brand/vendor facet found. Available facets:', loadedFacets.map((f: any) => ({
-                        attribute: f.attribute || f.id,
-                        title: f.title || f.label
-                    })));
+                }
+
+                // Show the FULL standardized list but map to facet values if they exist
+                const options = DIAPER_SIZE_OPTIONS.map(opt => {
+                    const facetMatch = uniqueOptionsMap.get(opt.label.toLowerCase());
+                    return {
+                        ...opt,
+                        value: facetMatch ? facetMatch.value : opt.value,
+                        available: !!facetMatch
+                    };
+                });
+                setSizeOptions(options);
+            } else {
+                // For other categories, extract size options from all Size/Sizes related facets
+                const sizeFacets = loadedFacets.filter((f: any) => {
+                    const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                    const title = (f.title || f.label || '').toLowerCase();
+                    return attr.includes('size') || title.includes('size');
+                });
+
+                if (sizeFacets.length > 0) {
+                    const allBuckets = sizeFacets.reduce((acc: any[], facet: any) => {
+                        const buckets = (facet.buckets || facet.values || []);
+                        return [...acc, ...buckets];
+                    }, []);
+
+                    const uniqueOptionsMap = new Map();
+                    allBuckets.forEach((b: any) => {
+                        const label = b.label || b.title || b.value;
+                        const value = b.value || b.id || b.label;
+                        if (label && !uniqueOptionsMap.has(label.toLowerCase())) {
+                            uniqueOptionsMap.set(label.toLowerCase(), { label, value });
+                        }
+                    });
+                    setSizeOptions(Array.from(uniqueOptionsMap.values()));
                 }
             }
-            setFacets(loadedFacets);
-        }
-    };
 
+            // Extract stage options from Pack Size/Stage facet for the quick-filter bubble
+            const stageFacet = loadedFacets.find((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
+            });
+            if (stageFacet) {
+                const options = (stageFacet.buckets || stageFacet.values || []).map((b: any) => ({
+                    label: b.label || b.title || b.value,
+                    value: b.value || b.id || b.label
+                }));
+                setStageOptions(options);
+            }
+        };
     const handleApplyFilters = (filters: any) => {
         setSelectedFilters(filters);
         setIsFilterPanelVisible(false);
@@ -260,7 +469,6 @@ export default function InfinityScreen() {
                             if (!isNaN(min) && !isNaN(max)) {
                                 const priceFilter = { price: { min: min, max: max } };
                                 newApiFilters.push(priceFilter);
-                                console.log('[Filter] ✅ Created price filter:', priceFilter);
                                 filterAdded = true;
                             }
                         }
@@ -268,53 +476,27 @@ export default function InfinityScreen() {
                     
                     if (!filterAdded) {
                         try {
-                            // Try to parse if it's a JSON string value (from some implementations)
-                            // checking if val matches price range structure
                             newApiFilters.push(JSON.parse(val));
                             filterAdded = true;
                         } catch (e) {
-                        // It's likely a simple value, find the input in facets
-                        // CRITICAL: Shopify provides the exact filter format in bucket.input - we MUST use it
-                        
-                        // If val is an ID format (like "filter.p.vendor.bumzee"), we need to search ALL facets
-                        // because the ID contains the attribute info
                         const isIdFormat = typeof val === 'string' && val.includes('filter.p.');
                         
                         let facet = null;
                         if (isIdFormat) {
-                            // Extract attribute from ID: "filter.p.vendor.bumzee" -> "filter.p.vendor"
                             const idParts = val.split('.');
                             if (idParts.length >= 3) {
-                                const idAttribute = idParts.slice(0, 3).join('.'); // "filter.p.vendor"
-                                console.log('[Filter] ID format detected, searching for attribute:', idAttribute);
-                                console.log('[Filter] Available facets:', facets.map((f: any) => ({ 
-                                    attribute: f.attribute, 
-                                    id: f.id, 
-                                    title: f.title,
-                                    buckets: f.buckets?.length 
-                                })));
-                                
+                                const idAttribute = idParts.slice(0, 3).join('.');
                                 facet = facets.find(f => {
                                     const facetAttr = f.attribute || f.id || f.field || f.name;
-                                    const matches = facetAttr === idAttribute || facetAttr === key || facetAttr === filterKey;
-                                    if (matches) {
-                                        console.log('[Filter] ✅ Matched facet by attribute:', facetAttr);
-                                    }
-                                    return matches;
+                                    return facetAttr === idAttribute || facetAttr === key || facetAttr === filterKey;
                                 });
-                                
-                                if (!facet) {
-                                    console.log('[Filter] ⚠️ No facet found for ID attribute:', idAttribute);
-                                }
                             }
                         }
                         
-                        // If not found by ID or not ID format, use normal lookup
                         if (!facet) {
                             facet = facets.find(f => {
                                 const facetAttr = f.attribute || f.id || f.field || f.name;
                                 const facetTitle = f.title || f.label || f.name || '';
-                                // Check both original key and mapped filterKey (for brand->vendor mapping, product_type mapping)
                                 const isBrandKey = key?.toLowerCase().includes('brand') || key === 'brand';
                                 const isVendorKey = filterKey === 'vendor' || facetAttr?.toLowerCase().includes('vendor');
                                 const isBrandFacet = facetTitle?.toLowerCase().includes('brand') || facetTitle?.toLowerCase().includes('vendor');
@@ -333,156 +515,100 @@ export default function InfinityScreen() {
                         }
                         
                         if (facet) {
-                            console.log('[Filter] Found facet (raw):', facet);
-                            
-                            // Shopify GraphQL returns facets with either "buckets" or "values" array
                             const bucketArray = facet.buckets || facet.values || [];
-                            console.log('[Filter] Found facet (parsed):', { 
-                                attribute: facet.attribute, 
-                                id: facet.id,
-                                field: facet.field,
-                                name: facet.name,
-                                title: facet.title || facet.label,
-                                buckets: facet.buckets?.length,
-                                values: facet.values?.length,
-                                bucketArray: bucketArray.length,
-                                hasBuckets: !!facet.buckets,
-                                hasValues: !!facet.values
-                            });
-                            
-                            if (bucketArray.length === 0) {
-                                console.log('[Filter] ⚠️ No buckets/values found in facet');
-                            }
-                            
-                            // Find the matching bucket by label, value, or id
-                            // PRIORITY: ID match first (for ID format values), then label/value
                             const bucket = bucketArray.find((b: any) => {
-                                // Exact ID match (highest priority for ID format values)
-                                if (b.id && b.id === val) {
-                                    console.log('[Filter] ✅ Matched bucket by ID:', b.id);
-                                    return true;
-                                }
-                                // Exact label/value match
-                                if (b.label === val || b.value === val) {
-                                    console.log('[Filter] ✅ Matched bucket by label/value:', b.label || b.value);
-                                    return true;
-                                }
-                                // Case-insensitive match
+                                if (b.id && b.id === val) return true;
+                                if (b.label === val || b.value === val) return true;
                                 if (typeof val === 'string') {
-                                    if (b.label?.toLowerCase() === val.toLowerCase() || b.value?.toLowerCase() === val.toLowerCase()) {
-                                        console.log('[Filter] ✅ Matched bucket by case-insensitive label/value');
-                                        return true;
-                                    }
+                                    if (b.label?.toLowerCase() === val.toLowerCase() || b.value?.toLowerCase() === val.toLowerCase()) return true;
                                 }
                                 return false;
                             });
                             
-                            if (!bucket && isIdFormat) {
-                                const bucketArray = facet.buckets || facet.values || [];
-                                console.log('[Filter] ⚠️ Bucket not found for ID:', val, 'Available buckets/values:', bucketArray.map((b: any) => ({ id: b.id, label: b.label })));
-                            }
-                            
                             if (bucket) {
-                                console.log('[Filter] Found bucket:', { label: bucket.label, value: bucket.value, id: bucket.id, input: bucket.input });
-                                
-                                // PRIORITY 1: Use bucket.input if available (Shopify's exact filter format)
                                 if (bucket.input && !filterAdded) {
                                     try {
-                                        // Try parsing as JSON first
                                         const parsed = typeof bucket.input === 'string' ? JSON.parse(bucket.input) : bucket.input;
                                         if (parsed && typeof parsed === 'object') {
                                             newApiFilters.push(parsed);
-                                            console.log('[Filter] ✅ Using bucket.input:', parsed);
                                             filterAdded = true;
                                         }
                                     } catch (err) {
-                                        console.log('[Filter] ⚠️ Failed to parse bucket.input as JSON:', err);
-                                        // If not JSON, use the input directly if it's an object
                                         if (typeof bucket.input === 'object' && bucket.input !== null) {
                                             newApiFilters.push(bucket.input);
-                                            console.log('[Filter] ✅ Using bucket.input (object):', bucket.input);
                                             filterAdded = true;
                                         }
                                     }
                                 }
                                 
-                                // PRIORITY 2: For brand/vendor filters, create productVendor filter using bucket value
                                 if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand') || facet.title?.toLowerCase().includes('brand'))) {
-                                    // Use bucket.label (e.g., "Bumzee") or bucket.value, NOT bucket.id
-                                    // bucket.id is like "filter.p.vendor.bumzee" which is wrong
                                     const vendorValue = bucket.label || bucket.value || val;
-                                    // Only use if it's not the ID format (doesn't contain "filter.p.")
                                     if (!vendorValue.includes('filter.p.')) {
                                         const vendorFilter = { productVendor: vendorValue };
                                         newApiFilters.push(vendorFilter);
-                                        console.log('[Filter] Created productVendor filter:', vendorFilter);
                                         filterAdded = true;
                                     }
                                 }
                                 
-                                // PRIORITY 3: For product type filters, create productType filter using bucket value
                                 if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype') || facet.title?.toLowerCase().includes('product type') || facet.id?.includes('product_type') || facet.label?.toLowerCase().includes('product type'))) {
-                                    // Use bucket.label (e.g., "Accessories") or bucket.value, NOT bucket.id
                                     const productTypeValue = bucket.label || bucket.value || val;
-                                    // Only use if it's not the ID format (doesn't contain "filter.p.")
                                     if (!productTypeValue.includes('filter.p.')) {
                                         const productTypeFilter = { productType: productTypeValue };
                                         newApiFilters.push(productTypeFilter);
-                                        console.log('[Filter] ✅ Created productType filter:', productTypeFilter);
                                         filterAdded = true;
                                     }
                                 }
                             }
                         }
                         
-                        // FALLBACK: For brand/vendor filters without facet match, create filter directly
-                        // BUT only if val is not an ID format (doesn't contain "filter.p.")
                         if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand'))) {
-                            // Don't use ID format - skip if it looks like an ID
                             if (!val.includes('filter.p.')) {
                                 const vendorFilter = { productVendor: val };
                                 newApiFilters.push(vendorFilter);
-                                console.log('[Filter] Fallback productVendor filter:', vendorFilter);
                                 filterAdded = true;
-                            } else {
-                                console.log('[Filter] ⚠️ Skipping ID format value:', val, '- Need to find bucket.label instead');
                             }
                         }
                         
-                        // FALLBACK: For product type filters without facet match, create filter directly
-                        // BUT only if val is not an ID format (doesn't contain "filter.p.")
                         if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype'))) {
-                            // Don't use ID format - skip if it looks like an ID
                             if (!val.includes('filter.p.')) {
                                 const productTypeFilter = { productType: val };
                                 newApiFilters.push(productTypeFilter);
-                                console.log('[Filter] Fallback productType filter:', productTypeFilter);
                                 filterAdded = true;
-                            } else {
-                                console.log('[Filter] ⚠️ Skipping ID format value:', val, '- Need to find bucket.label instead');
                             }
                         }
-                        
-                        if (!filterAdded) {
-                            if (__DEV__) console.warn('[Filter] Could not create filter for:', key, val, 'Facets:', facets.length);
+
+                        // RIGID DIAPER SIZE FILTERING:
+                        // If it's a size filter in the diapers category, and not yet added, 
+                        // force a productMetafield filter for the "Sizes" metafield.
+                        if (!filterAdded && pageCategory === 'diapers' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
+                            // Only apply if it matches our standardized list values
+                            const isStandardSize = DIAPER_SIZE_OPTIONS.some(o => 
+                                o.label.toLowerCase() === val.toLowerCase() || 
+                                o.value.toLowerCase() === val.toLowerCase()
+                            );
+                            
+                            if (isStandardSize) {
+                                // Construct a rigid metafield filter for Shopify
+                                // We use 'custom' namespace and 'sizes' key as specified by user
+                                const rigidSizeFilter = {
+                                    productMetafield: {
+                                        namespace: "custom",
+                                        key: "sizes",
+                                        value: val
+                                    }
+                                };
+                                newApiFilters.push(rigidSizeFilter);
+                                filterAdded = true;
+                            }
                         }
-                        // Note: Gender and age filters are handled separately via tag filtering
-                        // They are not added to ProductFilter array as productTag is not a valid field
                         }
                     }
                 });
             }
         });
         
-        console.log('🎯 [Filter] Applied filters:', filters);
-        console.log('🎯 [Filter] API filters:', newApiFilters);
-        console.log('🎯 [Filter] API filters count:', newApiFilters.length);
-        console.log('🎯 [Filter] API filters JSON:', JSON.stringify(newApiFilters, null, 2));
-        
         setActiveFiltersCount(count);
-        // Store filters for client-side filtering (don't send to API)
         setApiFilters(newApiFilters);
-        console.log('🎯 [Filter] ✅ apiFilters state updated');
     };
 
     const [showSortModal, setShowSortModal] = useState(false);
@@ -507,98 +633,33 @@ export default function InfinityScreen() {
         setShowSortModal(false);
     };
 
-    const sortLabel = () => {
-        const option = SORT_OPTIONS.find(opt => opt.key === sortKey && opt.reverse === reverse);
-        return option?.label || 'Sort';
-    };
-
-    const handleFastFilterToggle = (attribute: string, value: any) => {
-        const currentFilters = { ...selectedFilters };
-        const currentValues = currentFilters[attribute] || [];
-        
-        // For price/range filters, replace instead of add (single selection)
-        const isPriceFilter = attribute === 'price' || 
-                             attribute === 'price_range' || 
-                             attribute?.toLowerCase().includes('price');
-        
-        if (Array.isArray(currentValues)) {
-            const isSelected = currentValues.includes(value);
-            
-            if (isSelected) {
-                // Remove filter
-                const { [attribute]: _, ...rest } = currentFilters;
-                handleApplyFilters(rest);
-            } else {
-                // For price filters, replace; for others, add
-                if (isPriceFilter) {
-                    handleApplyFilters({ ...currentFilters, [attribute]: [value] });
-                } else {
-                    handleApplyFilters({ ...currentFilters, [attribute]: [...currentValues, value] });
-                }
-            }
-        } else {
-            handleApplyFilters({ ...currentFilters, [attribute]: [value] });
-        }
-    };
-
-    // Gender filter options - matching actual tag formats
-    const GENDER_OPTIONS = [
-        { label: 'Boys', value: 'boys' },
-        { label: 'Girls', value: 'girls' },
-        { label: 'Unisex', value: 'unisex' },
-    ];
-
-    // Age filter options - matching actual tag formats
-    const AGE_OPTIONS = [
-        { label: '0 - 6M', value: '0-6m' },
-        { label: '6 - 12M', value: '6-12m' },
-        { label: '1 - 2Y', value: '1-2y' },
-        { label: '2 - 3Y', value: '2-3y' },
-        { label: '3 - 4Y', value: '3-4y' },
-        { label: '4 - 5Y', value: '4-5y' },
-        { label: '5 - 6Y', value: '5-6y' },
-        { label: '6 - 7Y', value: '6-7y' },
-    ];
-
     const handleGenderSelect = (gender: string) => {
         if (selectedGender === gender) {
-            // Deselect if already selected (toggle off)
             setSelectedGender(null);
-            // Remove gender filter from selectedFilters
             const { gender: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
-            // Recalculate filter count and API filters
             handleApplyFilters(rest);
         } else {
-            // Select new gender (toggle on)
             setSelectedGender(gender);
-            // Add gender filter to selectedFilters
             const newFilters = { ...selectedFilters, gender: [gender] };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
         }
-        // Close modal after selection/deselection
         setShowGenderModal(false);
     };
 
     const handleAgeSelect = (age: string) => {
         if (selectedAge === age) {
-            // Deselect if already selected (toggle off)
             setSelectedAge(null);
-            // Remove age filter from selectedFilters
             const { age: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
-            // Recalculate filter count and API filters
             handleApplyFilters(rest);
         } else {
-            // Select new age (toggle on)
             setSelectedAge(age);
-            // Add age filter to selectedFilters
             const newFilters = { ...selectedFilters, age: [age] };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
         }
-        // Close modal after selection/deselection
         setShowAgeModal(false);
     };
 
@@ -619,7 +680,6 @@ export default function InfinityScreen() {
         <>
             <Stack.Screen options={{ headerShown: false }} />
             <SafeAreaView style={styles.container} edges={['top']}>
-                {/* Custom Header matching PDP style */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
@@ -646,12 +706,22 @@ export default function InfinityScreen() {
                         onSortPress={handleSortPress}
                         onGenderPress={() => setShowGenderModal(true)}
                         onAgePress={() => setShowAgeModal(true)}
+                        onBrandPress={() => setShowBrandModal(true)}
+                        onSizePress={() => setShowSizeModal(true)}
+                        onStagePress={() => setShowStageModal(true)}
                         selectedGender={selectedGender}
                         selectedAge={selectedAge}
-                        facets={[]}
+                        selectedBrand={selectedBrand}
+                        selectedSize={selectedSize}
+                        selectedStage={selectedStage}
+                        facets={facets}
                         selectedFilters={selectedFilters}
                         style={styles.pills}
                         showGenderFilter={shouldShowGenderFilter()}
+                        showAgeFilter={shouldShowAgeFilter()}
+                        showBrandFilter={shouldShowBrandFilter()}
+                        showSizeFilter={shouldShowSizeFilter()}
+                        showStageFilter={shouldShowStageFilter()}
                     />
                 )}
 
@@ -729,6 +799,7 @@ export default function InfinityScreen() {
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGender}
                         ageFilter={selectedAge}
+                        pageCategory={pageCategory}
                     />
                     </View>
                 </View>
@@ -771,9 +842,13 @@ export default function InfinityScreen() {
                                 
                                 const val = (b.value || b.label || '').toLowerCase().replace(/\s+/g, '');
                                 const IGNORE_LIST = [
-                                    'defaulttitle', 'allages', 'onesize', 's', 'm', 'l', 'xl', 'xxl',
-                                    '8-9y', '9-10y', '11-12y', '12-18y', '13-14y'
+                                    'defaulttitle', 'allages', 'onesize'
                                 ];
+                                
+                                // For Fashion, we might want to hide specific technical sizes that are handled by the top Age bar
+                                if (pageCategory === 'fashion') {
+                                    IGNORE_LIST.push('s', 'm', 'l', 'xl', 'xxl', '8-9y', '9-10y', '11-12y', '12-18y', '13-14y');
+                                }
                                 
                                 return !IGNORE_LIST.includes(val);
                             });
@@ -903,6 +978,126 @@ export default function InfinityScreen() {
                                     key={index}
                                     style={styles.sortListItem}
                                     onPress={() => handleAgeSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+                {/* Brand Filter Modal */}
+                <BaseModal
+                    visible={showBrandModal}
+                    onClose={() => setShowBrandModal(false)}
+                    title="Select Brand"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {brandOptions.map((option, index) => {
+                            const isSelected = selectedBrand === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleBrandSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+                {/* Size Filter Modal */}
+                <BaseModal
+                    visible={showSizeModal}
+                    onClose={() => setShowSizeModal(false)}
+                    title="Select Size"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {sizeOptions.map((option, index) => {
+                            const isSelected = selectedSize === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleSizeSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+                {/* Stage Filter Modal */}
+                <BaseModal
+                    visible={showStageModal}
+                    onClose={() => setShowStageModal(false)}
+                    title="Select Stage"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {stageOptions.map((option, index) => {
+                            const isSelected = selectedStage === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleStageSelect(option.value)}
                                 >
                                     <Text style={[
                                         styles.sortListItemText,

@@ -681,30 +681,6 @@
         }
       ]
     },
-    "510769824033": {
-      "subcategories": [
-        {
-          "collectionId": "gid://shopify/Collection/510769824033",
-          "label": "Lunch Boxes",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_2.jpg?v=1773931584"
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510769791265",
-          "label": "School Bags",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_1.jpg?v=1773931358"
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510769889569",
-          "label": "Water Bottles",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.00.36_PM.jpg?v=1773931215"
-        },
-        {
-          "collectionId": "gid://shopify/Collection/510769955105",
-          "label": "Stationery",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.03_PM.jpg?v=1773931525"
-        }
-      ]
-    },
     "512843055393": {
       "subcategories": [
         {
@@ -967,37 +943,37 @@
         {
           "collectionId": "gid://shopify/Collection/512843317537",
           "label": "Honesty",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_1.png?v=1776618419"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/honesty.jpg?v=1776855696"
         },
         {
           "collectionId": "gid://shopify/Collection/512843415841",
           "label": "Kindness",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_879f49e3-b30e-4f08-ad2f-a46c15acc41f.png?v=1776619097"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/kindness.jpg?v=1776855766"
         },
         {
           "collectionId": "gid://shopify/Collection/512843481377",
           "label": "Responsibility",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_879f49e3-b30e-4f08-ad2f-a46c15acc41f.png?v=1776619523"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/responsiblity.jpg?v=1776855851"
         },
         {
           "collectionId": "gid://shopify/Collection/512843612449",
           "label": "Discipline & Habits",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/discipline.png?v=1776619722"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/v4.jpg?v=1776855926"
         },
         {
           "collectionId": "gid://shopify/Collection/512843776289",
           "label": "Gratitude",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/gratitude.png?v=1776619788"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/gratitude.jpg?v=1776856010"
         },
         {
           "collectionId": "gid://shopify/Collection/512843809057",
           "label": "Perseverance",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/perseverance_hard_work.png?v=1776619943"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/hardwork.jpg?v=1776856083"
         },
         {
           "collectionId": "gid://shopify/Collection/512843907361",
           "label": "Respect",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/respect.png?v=1776620023"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/respect_1.jpg?v=1776856266"
         }
       ]
     },
@@ -1006,32 +982,32 @@
         {
           "collectionId": "gid://shopify/Collection/512844071201",
           "label": "Self-Confidence / Self-Esteem",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/self_esteem.png?v=1776620302"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/self_confidence.jpg?v=1776856531"
         },
         {
           "collectionId": "gid://shopify/Collection/512844103969",
           "label": "Managing Anger",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/managing_anger.png?v=1776620372"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/managing_anger.jpg?v=1776856662"
         },
         {
           "collectionId": "gid://shopify/Collection/512844169505",
           "label": "Overcoming Fear",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fear.png?v=1776620424"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/overcoming_fear.jpg?v=1776856754"
         },
         {
           "collectionId": "gid://shopify/Collection/512844235041",
           "label": "Dealing with Anxiety",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/dealing_with_anxiety.png?v=1776620495"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/dealing_with_anxiety.jpg?v=1776856824"
         },
         {
           "collectionId": "gid://shopify/Collection/512844267809",
           "label": "Patience",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_2.png?v=1776620572"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/paience.jpg?v=1776857116"
         },
         {
           "collectionId": "gid://shopify/Collection/512844431649",
           "label": "Emotional Awareness",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_3.png?v=1776620666"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/emotional_awareness.jpg?v=1776857190"
         }
       ]
     },
@@ -1040,37 +1016,37 @@
         {
           "collectionId": "gid://shopify/Collection/512844628257",
           "label": "Sharing",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_5.png?v=1776620891"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/sharing.jpg?v=1776857382"
         },
         {
           "collectionId": "gid://shopify/Collection/512844726561",
           "label": "Making Friends",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_6.png?v=1776620936"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/makr_freinds.jpg?v=1776857419"
         },
         {
           "collectionId": "gid://shopify/Collection/512844890401",
           "label": "Empathy",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_7.png?v=1776620989"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/empathy.jpg?v=1776857501"
         },
         {
           "collectionId": "gid://shopify/Collection/512845021473",
           "label": "Communication",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_8.png?v=1776621042"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/communication.jpg?v=1776857551"
         },
         {
           "collectionId": "gid://shopify/Collection/512845054241",
           "label": "Teamwork",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_9.png?v=1776621120"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/teamwork.jpg?v=1776857619"
         },
         {
           "collectionId": "gid://shopify/Collection/512845119777",
           "label": "Conflict Resolution",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_10.png?v=1776621227"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/conflict_resolution.jpg?v=1776857685"
         },
         {
           "collectionId": "gid://shopify/Collection/512845185313",
           "label": "Family Relationships",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_11.png?v=1776621399"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/family_realtionship.jpg?v=1776857745"
         }
       ]
     },
@@ -1079,32 +1055,32 @@
         {
           "collectionId": "gid://shopify/Collection/512845250849",
           "label": "Adventure Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_13.png?v=1776621556"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/adventure.jpg?v=1776858745"
         },
         {
           "collectionId": "gid://shopify/Collection/512845349153",
           "label": "Magical Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_14.png?v=1776621616"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/magic_story.jpg?v=1776858815"
         },
         {
           "collectionId": "gid://shopify/Collection/512845414689",
           "label": "Animal Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_15.png?v=1776621664"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/animal_story.jpg?v=1776858853"
         },
         {
           "collectionId": "gid://shopify/Collection/512845512993",
           "label": "Everyday Life Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_16.png?v=1776621849"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/every_day_life.jpg?v=1776858899"
         },
         {
           "collectionId": "gid://shopify/Collection/512845611297",
           "label": "Bedtime Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_17.png?v=1776621940"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/bedtime_story.jpg?v=1776858999"
         },
         {
           "collectionId": "gid://shopify/Collection/512845676833",
           "label": "Funny Stories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Emotionsl_Awareness_18.png?v=1776622010"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/funny_story.jpg?v=1776859078"
         }
       ]
     },
@@ -1205,8 +1181,13 @@
         },
         {
           "collectionId": "gid://shopify/Collection/512847905057",
-          "label": "Sound books Book",
+          "label": "Sound books",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_hfg3zhhfg3zhhfg3.png?v=1776580503"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512976945441",
+          "label": "Sticker Books",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Honesty.png?v=1776924249"
         }
       ]
     },
@@ -1646,6 +1627,796 @@
           "collectionId": "gid://shopify/Collection/512674988321",
           "label": "Hair Accessories",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_odoh1yodoh1yodoh.png?v=1776147999"
+        }
+      ]
+    },
+    "509520085281": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512843055393",
+          "label": "0-6M",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_m.webp?v=1776954808"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844202273",
+          "label": "6-12M",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6-12_m.webp?v=1776954857"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512844988705",
+          "label": "1-2Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1-2_y.webp?v=1776954916"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846004513",
+          "label": "2-3Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2-3_y.webp?v=1776954924"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846954785",
+          "label": "3-4Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3-4_y.webp?v=1776955008"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512847216929",
+          "label": "4-5Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4-5_y.webp?v=1776955012"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512846430497",
+          "label": "5-6Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5-6_y.webp?v=1776955016"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512894599457",
+          "label": "6+Y",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6-7.webp?v=1776955020"
+        }
+      ]
+    },
+    "512333087009": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335511841",
+          "label": "Rattles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Rattles.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335610145",
+          "label": "Early Development",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335675681",
+          "label": "Teethers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Baby_Teethers.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333152545": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Early Development",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335806753",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335511841",
+          "label": "Rattles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Rattles.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335675681",
+          "label": "Teethers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Baby_Teethers.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335905057",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335970593",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        }
+      ]
+    },
+    "512422183201": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512335249697",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335446305",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335937825",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336199969",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336396577",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336593185",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336822561",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337051937",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337674529",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337936673",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338133281",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333218081": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512337150241",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335577377",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336003361",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336232737",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336429345",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336625953",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336888097",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337084705",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337707297",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337969441",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338166049",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333250849": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512337248545",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335642913",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336036129",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336265505",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336462113",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336658721",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336920865",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337117473",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337772833",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338002209",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338198817",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333349153": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512337412385",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335708449",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336101665",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336298273",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336494881",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336691489",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336953633",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337215777",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337805601",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338034977",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338231585",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333381921": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512337314081",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335773985",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336134433",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336331041",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336527649",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336757025",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336986401",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337281313",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337838369",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338067745",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338264353",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512333414689": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/512337477921",
+          "label": "Educational & STEM",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6_M-_Educational_Toys_and_STEM.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335151393",
+          "label": "Soft & Plush Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M_Soft_and_Plush_Toys.webp?v=1775417624"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335839521",
+          "label": "Building Blocks & Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Building_Blocks_and_Puzzles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336167201",
+          "label": "Art - Craft and DIY",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Craft_and_DIY.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336363809",
+          "label": "Cars & Vehicles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Cars_and_Vehicles.webp?v=1775417904"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336560417",
+          "label": "Action Figues and Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Action_Figures_and_Guns.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512336789793",
+          "label": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Dolls.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337019169",
+          "label": "Pretend Play and Play Sets and tents",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Pretend_Play.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337346849",
+          "label": "Board Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Board_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337543457",
+          "label": "Active Play - Slides, Jungle gyms, picklers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slides_Jungle_Gyms_and_Picklers.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512337903905",
+          "label": "Sports & Outdoor Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Sports_and_Outdoor.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338100513",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Musical_Toys.webp?v=1775417903"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512338297121",
+          "label": "Card Games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Card_Games.webp?v=1775418101"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512335741217",
+          "label": "Playmats",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0-6M-_Playmat.webp?v=1775417624"
+        }
+      ]
+    },
+    "512979566881": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/510762418465",
+          "label": "Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.47.42_PM.png?v=1772562077"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510762123553",
+          "label": "Top Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.34.40_PM.png?v=1772561973"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510762221857",
+          "label": "Bottom wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.38.38_PM.png?v=1772561998"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510762320161",
+          "label": "Sets / One-Piece",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.44.55_PM.png?v=1772562044"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510762352929",
+          "label": "Nightsuits & Innerwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.55.11_PM.png?v=1772562354"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510762451233",
+          "label": "Ethnic & Party wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-03_at_11.51.42_PM.png?v=1772562153"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/509514449185",
+          "label": "Footwear & Socks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Footwear_F.png?v=1772562867"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513105789217",
+          "label": "Accessories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_5a3fu45a3fu45a3f.webp?v=1777368270"
+        }
+      ]
+    },
+    "513082589473": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/508372615457",
+          "label": "STEM Learning",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-07_at_6.29.01_AM.png?v=1769804878"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507747369249",
+          "label": "Dolls & Play Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_jvsd0mjvsd0mjvsd.png?v=1769805204"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507747303713",
+          "label": "Cars & RC Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.24.02_AM.png?v=1769804438"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507747238177",
+          "label": "Softtoys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.38.50_AM.png?v=1769804016"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507748483361",
+          "label": "Puzzles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.44.27_AM.png?v=1769805541"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507747402017",
+          "label": "Building Blocks",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.32.59_AM.png?v=1769803516"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/507747172641",
+          "label": "Arts and Crafts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Art_and_crafts.png?v=1769805917"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/509519757601",
+          "label": "Pretend play",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/pretend_play.png?v=1769798579"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/509548265761",
+          "label": "Infant Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Infant_Toys.png?v=1770570185"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/509519921441",
+          "label": "Ride Ons & Outdoors",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Ride_on_scooters.png?v=1769798630"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/509520675105",
+          "label": "Board & Card games",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Board_and_Card_Games.png?v=1769798397"
+        }
+      ]
+    },
+    "513167851809": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/511117197601",
+          "label": "Diapering",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/HIGGIES.png?v=1777533781"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510759829793",
+          "label": "Infant Formula",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3844e49e-b322-4dcc-939a-9424431c6af3.png?v=1777533877"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512148603169",
+          "label": "Bottles & Nipples",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/0fa62e6b-3ccc-4fab-a9d4-f37cd114fc25.png?v=1777533983"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/508371206433",
+          "label": "Skincare & Bath",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/188f783e-774a-4be7-afee-0b36f4e4d01d.png?v=1777534151"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513082818849",
+          "label": "Snacks and Cereals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4f75bba5-0ddb-47fb-bae3-c318b703ce64.png?v=1777534236"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510756815137",
+          "label": "Mosquito Patches",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/d952b79c-4c13-4450-b16c-739246cbf7e9.png?v=1777534350"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510566564129",
+          "label": "Detergents & Cleaners",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/40ce9777-ba9b-4efe-9fa5-cdd4a5e18212.png?v=1777534485"
+        }
+      ]
+    },
+    "510757175585": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/510769824033",
+          "label": "Lunch Boxes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_2.jpg?v=1773931584"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769791265",
+          "label": "School Bags",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.15_PM_1.jpg?v=1773931358"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769889569",
+          "label": "Water Bottles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.00.36_PM.jpg?v=1773931215"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/510769955105",
+          "label": "Stationery",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-03-19_at_8.02.03_PM.jpg?v=1773931525"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512202932513",
+          "label": "School Outfits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/schooloutfits.webp?v=1774948394"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/512203096353",
+          "label": "School Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/schoolshoes.webp?v=1774948336"
+        }
+      ]
+    },
+    "507797111073": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/513381007649",
+          "label": "New Swimming Caps",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/41618940-f9c9-425d-bc71-0850a535f070.jpg?v=1778052685"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513376813345",
+          "label": "New Swimming Goggles",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/e787fe0a-d898-488b-9f19-ad90a8ab3a9c.jpg?v=1778046354"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513377272097",
+          "label": "New Swimming Floaties & Pools",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/0b4b501d-b1e7-482a-8fae-6adfc137ed74.jpg?v=1778046554"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513376682273",
+          "label": "New Swimming Costumes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8be649f9-38d9-4514-98bc-5405099707ee.jpg?v=1778046940"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513381073185",
+          "label": "New Swimming Vests & Arm Bands",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/354129e0-2d2f-4e54-beba-ec7825efa6d9.jpg?v=1778052893"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513377599777",
+          "label": "Swimming Pools & Tubs",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/06a127df-d2d7-43ec-a93c-ae7f41edc81e.jpg?v=1778047190"
+        }
+      ]
+    },
+    "513605337377": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/513325859105",
+          "label": "Matching PJs",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_May_8_2026_02_39_11_PM.png?v=1778231472"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513604452641",
+          "label": "Matching Tees",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/WhatsApp_Image_2026-05-08_at_14.31.13.jpg?v=1778231181"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513605140769",
+          "label": "Fun Activities",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_May_8_2026_03_03_49_PM_f5fa84dc-2de3-4806-9423-6037b260ed0c.png?v=1778233201"
         }
       ]
     }
@@ -2144,11 +2915,11 @@
       "type": "carousel",
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_New_Banner_1.png?v=1774001165",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Homepage_GIF_27_April_2026.gif?v=1777275024",
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/510769824033"
+              "id": "gid://shopify/Collection/512979566881"
             }
           }
         }
@@ -2157,13 +2928,15 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.6,
+        "height": 0.5,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
-          "marginTop": -10,
-          "backgroundColor": "#F5F5F5"
+          "marginTop": 0,
+          "backgroundColor": "#F5F5F5",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
         "imageContainer": {},
         "image": {
@@ -2176,6 +2949,71 @@
         "img": {}
       },
       "order": 3
+    },
+    {
+      "id": "category-grid-summer",
+      "type": "categoryGrid",
+      "order": 4,
+      "visible": true,
+      "title": "Summer Collection",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 2,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1.5,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512979566881",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1._Final_Fashion_Banner_Homepage.png?v=1777291011",
+          "name": "Fashion"
+        },
+        {
+          "id": "gid://shopify/Collection/513082589473",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2._Final_Toys_Banner_Homepage.png?v=1777291011",
+          "name": "Toys"
+        },
+        {
+          "id": "gid://shopify/Collection/509520085281",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3._Final_Books_Banner_Homepage.png?v=1777291011",
+          "name": "Books"
+        },
+        {
+          "id": "gid://shopify/Collection/513167851809",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4._Final_Essentials_Banner_Homepage.png?v=1777291011",
+          "name": "Essentials"
+        }
+      ],
+      "styles": {
+        "container": {
+          "marginTop": 15,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
     },
     {
       "id": "category-grid-trending",
@@ -2197,30 +3035,30 @@
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/507797111073",
-          "name": "Summer Collection"
+          "name": "Swimwear"
         },
         {
           "id": "gid://shopify/Collection/511688900897",
           "name": "Hopscotch"
         },
         {
-          "id": "gid://shopify/Collection/509520085281",
-          "name": "Books"
+          "id": "gid://shopify/Collection/513106018593",
+          "name": "Footwear"
         },
         {
-          "id": "gid://shopify/Collection/509514514721",
-          "name": "Gifting"
+          "id": "gid://shopify/Collection/513806434593",
+          "name": "Adidas"
         }
       ],
       "styles": {
         "container": {
+          "marginTop": -5,
           "paddingHorizontal": 16,
-          "paddingTop": 10,
+          "paddingTop": 0,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3170,7 +4008,7 @@
       },
       "styles": {
         "container": {
-          "marginTop": -8,
+          "marginTop": 0,
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -3380,7 +4218,7 @@
       ],
       "styles": {
         "container": {
-          "marginTop": -15
+          "marginTop": 0
         },
         "imageContainer": {},
         "image": {
@@ -3955,6 +4793,374 @@
       }
     }
   ],
+  "newmoms": [
+    {
+      "id": "newmoms-banner-main",
+      "type": "imageBanner",
+      "title": "New Moms",
+      "visible": true,
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Moms_Page_Banner.png?v=1775122263",
+        "height": 250,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0,
+          "marginBottom": 0
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "newmoms-main-pillars-2x2",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Shop by Category",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 2,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1.5,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512147849505",
+          "name": "Maternity Wear & Essentials"
+        },
+        {
+          "id": "gid://shopify/Collection/512148209953",
+          "name": "Postpartum Care & Wellness"
+        },
+        {
+          "id": "gid://shopify/Collection/512148439329",
+          "name": "Feeding Essentials"
+        },
+        {
+          "id": "gid://shopify/Collection/512149225761",
+          "name": "Baby Feeding Accessories"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "newmoms-shop-by-brands",
+      "type": "grid",
+      "visible": false,
+      "title": "Shop by Brands",
+      "collectionIds": [],
+      "gridConfig": {
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderColor": "#E8B4BC",
+          "borderWidth": 0.2,
+          "backgroundColor": "#FFFFFF"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": 12,
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "newmoms-sub-maternity-wear-essentials",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Maternity Wear & Essentials",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512147980577",
+          "name": "Maternity Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/512148046113",
+          "name": "Nursing Bras and Cover"
+        },
+        {
+          "id": "gid://shopify/Collection/512148111649",
+          "name": "Nipple Covers & Breast Pads"
+        },
+        {
+          "id": "gid://shopify/Collection/512148177185",
+          "name": "Maternity Accessories & Pillows"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "newmoms-sub-postpartum-care",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Postpartum Care & Wellness",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512148275489",
+          "name": "Mother Adult Diaper"
+        },
+        {
+          "id": "gid://shopify/Collection/512148308257",
+          "name": "Skin Care and Stretch Marks"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "newmoms-sub-feeding-essentials",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Feeding Essentials",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512148603169",
+          "name": "Feeding Bottles & Nipples"
+        },
+        {
+          "id": "gid://shopify/Collection/512148635937",
+          "name": "Breast Pumps Manual"
+        },
+        {
+          "id": "gid://shopify/Collection/512148668705",
+          "name": "Breast Pumps Electric"
+        },
+        {
+          "id": "gid://shopify/Collection/512148734241",
+          "name": "Milk Storage Bags"
+        },
+        {
+          "id": "gid://shopify/Collection/512148767009",
+          "name": "Bottle Sterilizers & Warmers"
+        },
+        {
+          "id": "gid://shopify/Collection/512148898081",
+          "name": "Bottle Wash Brush"
+        },
+        {
+          "id": "gid://shopify/Collection/512149094689",
+          "name": "Bottle Wash Soap"
+        },
+        {
+          "id": "gid://shopify/Collection/512149127457",
+          "name": "Bottle Covers"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "newmoms-sub-baby-feeding-accessories",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Baby Feeding Accessories",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512149258529",
+          "name": "Sippy Cups"
+        },
+        {
+          "id": "gid://shopify/Collection/512149324065",
+          "name": "Baby Tableware & Containers"
+        },
+        {
+          "id": "gid://shopify/Collection/512149356833",
+          "name": "Bibs & Wash Cloths"
+        },
+        {
+          "id": "gid://shopify/Collection/512149389601",
+          "name": "Pacifiers & Feeders"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    }
+  ],
   "books": [
     {
       "id": "books-banner-1",
@@ -3962,7 +5168,7 @@
       "title": "Featured",
       "visible": true,
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm.png?v=1776686806",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Books_Main_Banner.png?v=1776949656",
         "height": 250,
         "borderRadius": 0,
         "borderBottomLeftRadius": 20,
@@ -4024,7 +5230,7 @@
           "name": "5 - 6 Y"
         },
         {
-          "id": "gid://shopify/Collection/512846430497",
+          "id": "gid://shopify/Collection/512894599457",
           "name": "6 - 7 Y"
         }
       ],
@@ -4043,7 +5249,6 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display": "none",
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
@@ -4085,10 +5290,6 @@
         {
           "id": "gid://shopify/Collection/512845218081",
           "name": "Stories & Imagination"
-        },
-        {
-          "id": "gid://shopify/Collection/512845807905",
-          "name": "Build Foundations"
         }
       ],
       "styles": {
@@ -4106,7 +5307,6 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display": "none",
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
@@ -4181,7 +5381,72 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "books-Early-Learning",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Early Learning",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512845906209",
+          "name": "ABC & 123"
+        },
+        {
+          "id": "gid://shopify/Collection/512845971745",
+          "name": "Colors & Shapes"
+        },
+        {
+          "id": "gid://shopify/Collection/512846037281",
+          "name": "Animals & Vehicles"
+        },
+        {
+          "id": "gid://shopify/Collection/512846070049",
+          "name": "Fruits & Veggies"
+        },
+        {
+          "id": "gid://shopify/Collection/512846201121",
+          "name": "Phonics & Vocabulary"
+        },
+        {
+          "id": "gid://shopify/Collection/512846266657",
+          "name": "School Concepts"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
@@ -4347,6 +5612,7 @@
       "babycare",
       "toys",
       "babygear",
+      "newmoms",
       "books"
     ],
     "items": {
@@ -4435,13 +5701,27 @@
       "books": {
         "label": "Books",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Book_Icon_Final.png?v=1776677847",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Apr_24_2026_12_30_30_PM.png?v=1777014092",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#F5F5F5",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm_34a6c8fe-683e-4b34-aebf-9c04f4b9d7b0.png?v=1773980641",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Books_Header.png?v=1776949655",
           "labelColors": {
             "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "newmoms": {
+        "label": "New Moms",
+        "pageBackgroundColor": "#F5F5F5",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Moms.png?v=1775484570",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#FFF5F7",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Moms_Page_Header.png?v=1775122262",
+          "labelColors": {
+            "selected": "#C2185B",
             "unselected": "#363636"
           }
         }
@@ -5479,24 +6759,21 @@
     "enabled": true,
     "codes": [
       {
-        "code": "Free Shoes",
-        "title": "Free Shoes",
-        "description": "Free Shoes above ₹799",
+        "code": "HEYKIDDO",
+        "title": "free shoes",
+        "description": "Special discount on shoes",
         "value": 0,
         "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 999,
-        "maxDiscountAmount": null,
+        "minimumPurchaseAmount": 500,
         "minimumItemCount": null,
         "startsAt": null,
         "endsAt": null,
         "usageLimitPerUser": 1,
         "firstOrderOnly": false,
         "ticketingOnly": false,
-        "clothingOnly": false,
+        "clothingOnly": true,
         "nonCombinable": false,
-        "isVisible": false,
-        "minAndroidVersion": "1.8.8",
-        "minIOSVersion": "3.1.1"
+        "isVisible": true
       },
       {
         "code": "FIRSTKIDDOTICKET",
@@ -5830,7 +7107,6 @@
   },
   "freeShoesOffer": {
     "enabled": true,
-    "discountCode": "3rd order reward - Free Shoes",
     "shoes": [
       {
         "id": "shoe-1",

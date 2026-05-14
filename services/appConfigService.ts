@@ -138,6 +138,10 @@ class AppConfigService {
     return this.config;
   }
 
+  isConfigLoaded(): boolean {
+    return this.config !== null;
+  }
+
   /** Subscribe to successful app-config loads (same tick as `getConfig()` update). */
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
