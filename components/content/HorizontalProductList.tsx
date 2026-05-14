@@ -38,6 +38,8 @@ interface HorizontalProductListProps {
     onProductsLoaded?: (products: any[]) => void;
     /** External value that triggers a re-render when it changes (e.g. cart items length). */
     refreshKey?: any;
+    /** If true, only products that are in stock will be shown. */
+    onlyInStock?: boolean;
 }
 
 const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
@@ -53,6 +55,7 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
     showSeeMore = false,
     onProductsLoaded,
     refreshKey,
+    onlyInStock = false,
 }) => {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -131,7 +134,12 @@ const HorizontalProductList: React.FC<HorizontalProductListProps> = ({
             });
 
             setCollections(loadedCollections);
-            const sortedProducts = sortInStockFirst(allProducts);
+            let filteredProducts = allProducts;
+            if (onlyInStock) {
+                const { isProductAvailable } = require('@/utils/availability');
+                filteredProducts = allProducts.filter(p => isProductAvailable(p));
+            }
+            const sortedProducts = sortInStockFirst(filteredProducts);
             const limitedProducts = limit > 0 ? sortedProducts.slice(0, limit) : sortedProducts;
             setProducts(limitedProducts);
             onProductsLoaded?.(limitedProducts);

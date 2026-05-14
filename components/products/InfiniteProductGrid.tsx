@@ -83,9 +83,17 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
     );
   }
 
+  const listRef = React.useRef<FlatList>(null);
+
+  // Scroll to top when collection changes
+  React.useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [collectionId]);
+
   // When contentWidth is set, wrap FlatList in a View with that width so the list is constrained and cards don't get cropped
   const listContent = (
     <FlatList
+      ref={listRef}
       data={products}
       numColumns={2}
       keyExtractor={keyExtractor}
@@ -199,13 +207,18 @@ export function InfiniteProductGrid({
   ageFilter,
   pageCategory,
 }: InfiniteProductGridProps) {
+  const MemoizedCollectionComponent = React.useMemo(
+    () => (props: CollectionComponentProps) => <InfiniteGrid {...props} scrollable={scrollable} />,
+    [scrollable]
+  );
+
   return (
     <ProductCollection
       collectionId={collectionId}
       collectionHandle={collectionHandle}
       searchQuery={searchQuery}
       products={products}
-      CollectionComponent={(props) => <InfiniteGrid {...props} scrollable={scrollable} />}
+      CollectionComponent={MemoizedCollectionComponent}
       showHeading={showHeading}
       title={title}
       subTitle={subTitle}

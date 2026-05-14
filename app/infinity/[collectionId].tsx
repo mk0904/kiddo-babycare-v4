@@ -131,9 +131,15 @@ export default function InfinityScreen() {
         [collectionId]
     );
 
+    const formatCollectionId = (id: string | undefined) => {
+        if (!id) return null;
+        if (id.startsWith('gid://')) return id;
+        return `gid://shopify/Collection/${id}`;
+    };
+
     // When sidebar is shown, subcategory tap updates content in place (no navigation)
-    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
-    const [activeTitle, setActiveTitle] = useState<string | null>(null);
+    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(formatCollectionId(collectionId));
+    const [activeTitle, setActiveTitle] = useState<string | null>(title || null);
     // Measured width of the grid container (so product cards adapt and don't get cropped when sidebar is present)
     const [gridContainerWidth, setGridContainerWidth] = useState<number | null>(null);
     const effectiveCollectionId = (sidebarSubcategories?.length && activeCollectionId) ? activeCollectionId : (collectionId || '');
@@ -141,17 +147,16 @@ export default function InfinityScreen() {
 
     useEffect(() => {
         if (collectionId && sidebarSubcategories?.length) {
-            setActiveCollectionId(collectionId.startsWith('gid://') ? collectionId : `gid://shopify/Collection/${collectionId}`);
-            setActiveTitle(title || '');
+            const formattedId = collectionId.startsWith('gid://') ? collectionId : `gid://shopify/Collection/${collectionId}`;
+            if (activeCollectionId !== formattedId) {
+                setActiveCollectionId(formattedId);
+            }
+            if (activeTitle !== (title || '')) {
+                setActiveTitle(title || '');
+            }
         }
     }, [collectionId, title, sidebarSubcategories?.length]);
 
-    useEffect(() => {
-        if (effectiveCollectionId && sidebarSubcategories?.length) {
-            const formattedId = effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`;
-            shopifyApi.getCollectionById(formattedId).then(setCollection).catch(() => setCollection(null));
-        }
-    }, [effectiveCollectionId, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
     // Gender filter should only be available in clothing category (girls/boys)
@@ -777,7 +782,6 @@ export default function InfinityScreen() {
                         onLayout={(e) => setGridContainerWidth(e.nativeEvent.layout.width)}
                     >
                     <InfiniteProductGrid
-                        key={effectiveCollectionId}
                         collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
                         contentWidth={sidebarSubcategories?.length ? (gridContainerWidth != null && gridContainerWidth > 0 ? gridContainerWidth : Dimensions.get('window').width - 50) : undefined}
                         sortKey={sortKey}

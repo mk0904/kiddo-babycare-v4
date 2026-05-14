@@ -4,7 +4,7 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -439,6 +439,7 @@ export function ProductCollection({
     },
     enabled: !!collectionIdToUse, // Only fetch when we have a collection ID
     staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: keepPreviousData,
   });
 
   // Automatically load more pages initially to show more products upfront (like search results)
@@ -461,14 +462,16 @@ export function ProductCollection({
   }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
   // Effect to notify parent about loaded facets (fetch once without filters to get all facets)
+  const lastFacetsRef = React.useRef<any>(null);
   React.useEffect(() => {
     // Get facets from first page (we fetch without filters, so facets show all available options)
     const firstPage = data?.pages?.[0];
-    if (firstPage?.filters) {
+    if (firstPage?.filters && firstPage.filters !== lastFacetsRef.current) {
+      lastFacetsRef.current = firstPage.filters;
       // @ts-ignore
       onFacetsLoaded?.(firstPage.filters);
     }
-  }, [data?.pages]);
+  }, [data?.pages, onFacetsLoaded]);
 
   // Flatten all pages into a single array of product objects
   const allProducts = React.useMemo(() => {
