@@ -169,7 +169,8 @@ class OTPService {
     phoneNumber: string,
     code: string,
     firstName?: string,
-    lastName?: string
+    lastName?: string,
+    referralCode?: string
   ): Promise<VerifyAndLoginResponse> {
     const url = this.getVerifyAndLoginUrl();
     const formattedPhone = this.formatPhoneNumber(phoneNumber);
@@ -178,6 +179,7 @@ class OTPService {
       code,
       ...(firstName !== undefined && { firstName }),
       ...(lastName !== undefined && { lastName }),
+      ...(referralCode !== undefined && { referralCode }),
     };
     console.log('[OTP Service] verifyOTPAndLogin request', { url, phone: formattedPhone, codeLength: code?.length });
 
