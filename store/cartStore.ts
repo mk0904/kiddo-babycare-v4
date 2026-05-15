@@ -607,7 +607,7 @@ export async function computeDiscountBreakdown(
             baseAmount = await getSubtotalForDealEligibleLines(lineItems, dc, dealProducts, couponAllowedCategories, { limitToOne: true });
         } else {
             if (dc.allowedCategories?.length) {
-                baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories, { limitToOne: true });
+                baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories);
             } else if (categoryKey) {
                 // Calculate subtotal for single applicableCategory, capping to 1 unit TOTAL (highest price)
                 const { lineItemMatchesApplicableCategory } = require('@/services/couponService');
@@ -1034,7 +1034,7 @@ export const useCartStore = create<CartState>()(
                         .then(() => get().syncDealPricing())
                         .then(() => get().refreshComputedDiscountFromCodes())
                         .finally(() => set({ status: 'idle' }));
- 
+
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
                         trackEvent('Add to Cart', {
@@ -1048,7 +1048,7 @@ export const useCartStore = create<CartState>()(
                     } catch (e) {
                         console.warn('Analytics tracking error:', e);
                     }
- 
+
                     // Check for eligible gifts after adding item
                     get().applyEligibleGifts();
                 } catch (error: any) {
@@ -2628,7 +2628,7 @@ export const useCartStore = create<CartState>()(
                                     : cartId;
                             remoteMapped = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
                         }
-                        
+
                         set((s) => {
                             // Merge remote IDs into the LATEST local state to avoid race condition with concurrent removals
                             const updatedLines = s.lineItems.map(localItem => {
@@ -2725,7 +2725,7 @@ export const useCartStore = create<CartState>()(
                                 : cartId;
                         remoteMapped = await mergeShopifyCartLineIdsFromRemote(resolvedCartId, next);
                     }
-                    
+
                     set((s) => {
                         // Merge remote IDs into the LATEST local state to avoid race condition with concurrent removals
                         const updatedLines = s.lineItems.map(localItem => {
