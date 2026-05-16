@@ -1,6 +1,8 @@
 import { Colors } from '@/constants/theme';
 import { ImageBannerBlock } from '@/types/content';
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { analyticsService } from '@/services/analyticsService';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -90,6 +92,17 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
     />
   );
 
+  // Firebase Ecommerce Tracking - View Promotion
+  useEffect(() => {
+    if (imageUrl) {
+      analyticsService.track('view_promotion', {
+        promotion_id: String(block.id || imageUrl),
+        promotion_name: block.id || 'Image Banner',
+        items: [],
+      });
+    }
+  }, [imageUrl, block.id]);
+
   // Priority: onPress > link > nothing (Kiddo pattern)
   const handlePress = () => {
     if (onPress) {
@@ -111,6 +124,13 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
         onPress(link as any);
       }
     }
+
+    // Firebase Ecommerce Tracking - Select Promotion
+    analyticsService.track('select_promotion', {
+      promotion_id: String(block.id || imageUrl),
+      promotion_name: block.id || 'Image Banner',
+      items: [],
+    });
   };
 
   const hasPressHandler = onPress || link;

@@ -11,6 +11,7 @@ import {
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
+import { analyticsService } from '@/services/analyticsService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -234,6 +235,20 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     await AsyncStorage.setItem('has_added_to_cart', 'true');
                 }
                 trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+
+                // Firebase Ecommerce Tracking
+                analyticsService.logAddToCart({
+                    items: [{
+                        item_id: cartItem.productId,
+                        item_name: cartItem.title,
+                        item_category: cartItem.tags?.[0],
+                        price: cartItem.price,
+                        quantity: cartItem.quantity,
+                        currency: cartItem.currencyCode,
+                    }],
+                    value: cartItem.price * cartItem.quantity,
+                    currency: cartItem.currencyCode,
+                });
             } catch (e) {
                 console.warn('[UniversalAdd] Tracking error:', e);
             }

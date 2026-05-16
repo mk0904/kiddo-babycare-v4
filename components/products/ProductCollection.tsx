@@ -1,6 +1,7 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
+import { analyticsService } from '@/services/analyticsService';
 import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
@@ -531,6 +532,22 @@ export function ProductCollection({
   React.useEffect(() => {
     onResultsCount?.(allProducts.length);
   }, [allProducts.length, onResultsCount]);
+
+  // Firebase Ecommerce Tracking - View Item List
+  React.useEffect(() => {
+    if (allProducts.length > 0) {
+      analyticsService.logViewItemList({
+        item_list_id: typeof collectionId === 'string' ? collectionId : undefined,
+        item_list_name: title || (typeof collectionId === 'string' ? collectionId : 'Collection'),
+        items: allProducts.slice(0, 10).map(product => ({
+          item_id: product.id,
+          item_name: product.title,
+          item_category: product.tags?.[0],
+          price: parseFloat(product.priceRange?.minVariantPrice?.amount || '0'),
+        })),
+      });
+    }
+  }, [allProducts.length, title, collectionId]);
 
   // Handle fetch more callback (must be before conditional returns)
   const handleFetchMore = React.useCallback(() => {

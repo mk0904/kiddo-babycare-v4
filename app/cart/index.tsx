@@ -27,6 +27,7 @@ import { getAppVersionForApi } from '@/constants/versionConfig';
 import { tagToAddressType, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
+import { analyticsService } from '@/services/analyticsService';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import PaymentService from '@/services/paymentService';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -112,6 +113,19 @@ export default function CartScreen() {
                 const itemCount = cartItems.length;
                 const cartValue = itemSubtotal;
                 trackCartViewed(itemCount, cartValue);
+
+                // Firebase Ecommerce Tracking
+                analyticsService.logViewCart({
+                    items: cartItems.map(item => ({
+                        item_id: item.productId,
+                        item_name: item.title,
+                        item_category: item.tags?.[0],
+                        price: item.price,
+                        quantity: item.quantity,
+                    })),
+                    value: cartValue,
+                    currency: 'INR',
+                });
             } catch (e) {
                 console.warn('Mixpanel tracking error:', e);
             }
@@ -1049,7 +1063,23 @@ export default function CartScreen() {
 
     const handleRemoveItem = async (itemId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        const itemToRemove = cartItems.find(i => i.id === itemId);
         await removeItem(itemId);
+
+        // Firebase Ecommerce Tracking
+        if (itemToRemove) {
+            analyticsService.logRemoveFromCart({
+                items: [{
+                    item_id: itemToRemove.productId,
+                    item_name: itemToRemove.title,
+                    item_category: itemToRemove.tags?.[0],
+                    price: itemToRemove.price,
+                    quantity: itemToRemove.quantity,
+                }],
+                value: itemToRemove.price * itemToRemove.quantity,
+                currency: itemToRemove.currencyCode || 'INR',
+            });
+        }
     };
 
     const handlePlaceOrder = async () => {
@@ -1109,6 +1139,20 @@ export default function CartScreen() {
         try {
             const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
             trackCheckoutStarted(latestTotal, latestCartItems.length, latestCartItems.map(item => item.productId).filter(Boolean));
+
+            // Firebase Ecommerce Tracking
+            analyticsService.logBeginCheckout({
+                items: latestCartItems.map(item => ({
+                    item_id: item.productId,
+                    item_name: item.title,
+                    item_category: item.tags?.[0],
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+                value: latestTotal,
+                currency: 'INR',
+                coupon: latestCheckoutCouponCode,
+            });
         } catch (e) {
             console.warn('Checkout started tracking error:', e);
         }
@@ -1199,6 +1243,35 @@ export default function CartScreen() {
                 itemCount: latestCartItems.length,
                 hasCoupon: latestDiscountCodes.length > 0,
                 paymentMethod: paymentMethod || 'not_selected',
+            });
+
+            // Firebase Ecommerce Tracking
+            analyticsService.logAddPaymentInfo({
+                payment_type: paymentMethod,
+                value: latestToPay,
+                currency: 'INR',
+                items: latestCartItems.map(item => ({
+                    item_id: item.productId,
+                    item_name: item.title,
+                    item_category: item.tags?.[0],
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+            });
+
+            // Firebase Ecommerce Tracking - Shipping Info
+            analyticsService.logAddShippingInfo({
+                shipping_tier: 'Standard',
+                value: latestToPay,
+                currency: 'INR',
+                items: latestCartItems.map(item => ({
+                    item_id: item.productId,
+                    item_name: item.title,
+                    item_category: item.tags?.[0],
+                    price: item.price,
+                    quantity: item.quantity,
+                })),
+                coupon: latestCheckoutCouponCode,
             });
         } catch (e) {
             console.warn('Analytics tracking error:', e);
@@ -1685,6 +1758,25 @@ export default function CartScreen() {
                 } catch (_verifyError) {
                     // Verification is best-effort; do not fail or warn—backend already confirmed creation.
                 }
+            }
+
+            // Firebase Ecommerce Tracking - Purchase
+            try {
+                analyticsService.logPurchase({
+                    transaction_id: orderIdForDisplay,
+                    value: cartTotal,
+                    currency: 'INR',
+                    items: cartItems.map(item => ({
+                        item_id: item.productId,
+                        item_name: item.title,
+                        item_category: item.tags?.[0],
+                        price: item.price,
+                        quantity: item.quantity,
+                    })),
+                    coupon: appliedDiscountCode || undefined,
+                });
+            } catch (e) {
+                console.warn('[Cart] logPurchase failed:', e);
             }
 
             // Increment coupon usage for applied discount codes
