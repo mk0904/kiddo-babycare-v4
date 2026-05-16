@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>3.2.1</string>
+    <string>1.9.9</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -39,16 +39,34 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>5</string>
-
+    <string>1</string>
+    <key>CTExpoLogLevel</key>
+    <integer>-1</integer>
+    <key>CTExpoNotificationProps</key>
+    <dict>
+      <key>EnablePushInForeground</key>
+      <true/>
+    </dict>
+    <key>CTExpoPushAppGroup</key>
+    <string>group.com.kiddo.ak</string>
+    <key>CleverTapAccountID</key>
+    <string>69R-748-Z77Z</string>
+    <key>CleverTapIdentifiers</key>
+    <array>
+      <string>Email,Phone</string>
+    </array>
+    <key>CleverTapRegion</key>
+    <string>eu1</string>
+    <key>CleverTapToken</key>
+    <string>b4a-2c6</string>
     <key>FacebookAdvertiserIDCollectionEnabled</key>
     <true/>
     <key>FacebookAppID</key>
     <string>1494379925573507</string>
     <key>FacebookAutoInitEnabled</key>
-    <false/>
+    <true/>
     <key>FacebookAutoLogAppEventsEnabled</key>
-    <false/>
+    <true/>
     <key>FacebookClientToken</key>
     <string>04a657781e5dd2df8704fd3292d74e3d</string>
     <key>FacebookDisplayName</key>
@@ -120,7 +138,10 @@
       <string>Lexend-SemiBold.ttf</string>
       <string>Lexend-Bold.ttf</string>
     </array>
-
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>remote-notification</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
@@ -140,29 +161,5 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>UIBackgroundModes</key>
-    <array>
-      <string>remote-notification</string>
-    </array>
-    <key>CleverTapAccountID</key>
-    <string>69R-748-Z77Z</string>
-    <key>CleverTapToken</key>
-    <string>b4a-2c6</string>
-    <key>CleverTapRegion</key>
-    <string>eu1</string>
-    <key>CleverTapIdentifiers</key>
-    <array>
-      <string>Email</string>
-      <string>Phone</string>
-    </array>
-    <key>CTExpoLogLevel</key>
-    <integer>-1</integer>
-    <key>CTExpoNotificationProps</key>
-    <dict>
-      <key>EnablePushInForeground</key>
-      <true/>
-    </dict>
-    <key>CTExpoPushAppGroup</key>
-    <string>group.com.kiddo.ak</string>
   </dict>
 </plist>

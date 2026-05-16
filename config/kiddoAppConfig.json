@@ -2254,7 +2254,7 @@
         },
         {
           "collectionId": "gid://shopify/Collection/507747238177",
-          "label": "Softtoys",
+          "label": "Soft Toys",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.38.50_AM.png?v=1769804016"
         },
         {
@@ -2417,6 +2417,30 @@
           "collectionId": "gid://shopify/Collection/513605140769",
           "label": "Fun Activities",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_May_8_2026_03_03_49_PM_f5fa84dc-2de3-4806-9423-6037b260ed0c.png?v=1778233201"
+        }
+      ]
+    },
+    "513806434593": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/513877377313",
+          "label": "Shorts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_May_15_2026_12_38_16_PM.png?v=1778828917"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513877639457",
+          "label": "T-shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_May_15_2026_12_43_00_PM.png?v=1778829204"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513877672225",
+          "label": "Shoes",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_May_15_2026_12_49_44_PM.png?v=1778829600"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/513877901601",
+          "label": "Sets/Jerseys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_May_15_2026_12_56_47_PM.png?v=1778830023"
         }
       ]
     }
