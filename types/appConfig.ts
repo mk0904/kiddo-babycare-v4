@@ -403,4 +403,39 @@ export interface AppConfigResponse {
   hotWheelConfig?: HotWheelConfig;
   helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
+  referralConfig?: ReferralConfig;
+}
+
+export interface ReferralStep {
+  id: number;
+  stepText: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  cta?: string;
+}
+
+export interface ReferralHowItWorks {
+  themeColor: string;
+  title: string;
+  steps: ReferralStep[];
+}
+
+export interface ReferralScreenConfig {
+  title: string;
+  description: string;
+  youGetAmt: number;
+  theyGetAmt: number;
+  ctaText: string;
+}
+
+export interface ReferralFAQ {
+  question: string;
+  answer: string;
+}
+
+export interface ReferralConfig {
+  howItWorks?: ReferralHowItWorks;
+  faqs?: ReferralFAQ[];
+  referralScreen?: ReferralScreenConfig;
 }

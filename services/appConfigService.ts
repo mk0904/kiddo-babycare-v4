@@ -19,6 +19,7 @@ import type {
   MilestoneUIConfig,
   MysteryGiftOfferConfig,
   OrderDetailConfig,
+  ReferralConfig,
   SpecialDealConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
@@ -292,6 +293,10 @@ class AppConfigService {
   /** When true, show "Events" in address Save as and sync addressType to Shopify. */
   isEventEnabled(): boolean {
     return this.config?.isEvent === true;
+  }
+
+  getReferralConfig(): ReferralConfig | null {
+    return this.config?.referralConfig ?? null;
   }
 }
 

@@ -1,13 +1,19 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useNector } from '@/context/NectorContext';
+import { appConfigService } from '@/services/appConfigService';
+import { referralService, ReferralStatusResponse } from '@/services/referralService';
 import { Ionicons } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Clipboard,
     Dimensions,
+    Image,
+    Modal,
     ScrollView,
     Share,
     StyleSheet,
@@ -26,11 +32,70 @@ export default function ReferralScreen() {
     const { user: authUser, isAuthenticated } = useAuth();
     const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
     const [copied, setCopied] = useState(false);
+    const [howItWorksVisible, setHowItWorksVisible] = useState(false);
+    const [activeStep, setActiveStep] = useState(0);
 
-    const referralCode = nectorUser?.referral_code || 'KIDDOX7Q';
-    const referralReward = rules?.referral_config?.referrer_reward || 25;
-    const friendReward = rules?.referral_config?.referee_reward || 25;
-    const totalEarned = nectorUser?.lifetime || 0;
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    const [referralStatus, setReferralStatus] = useState<ReferralStatusResponse | null>(null);
+    const [fetchingStatus, setFetchingStatus] = useState(false);
+
+    useEffect(() => {
+        if (isAuthenticated && authUser?.phone) {
+            setFetchingStatus(true);
+            referralService.getReferralStatus(authUser.phone)
+                .then(status => {
+                    setReferralStatus(status);
+                })
+                .catch(err => {
+                    console.error('Failed to load referral status:', err);
+                })
+                .finally(() => {
+                    setFetchingStatus(false);
+                });
+        }
+    }, [isAuthenticated, authUser?.phone]);
+
+    const config = appConfigService.getReferralConfig();
+
+    const referralReward = config?.referralScreen?.youGetAmt ?? rules?.referral_config?.referrer_reward ?? 25;
+    const friendReward = config?.referralScreen?.theyGetAmt ?? rules?.referral_config?.referee_reward ?? 25;
+
+    const howItWorks = config?.howItWorks;
+    const steps = howItWorks?.steps || [];
+    const themeColor = howItWorks?.themeColor || '#0CB6FF';
+    const modalTitle = howItWorks?.title || 'How it works';
+
+    // Auto-scroll logic for carousel modal
+    useEffect(() => {
+        let interval: any;
+        if (howItWorksVisible) {
+            interval = setInterval(() => {
+                setActiveStep((prevStep) => {
+                    const nextStep = (prevStep + 1) % steps.length;
+                    scrollViewRef.current?.scrollTo({
+                        x: nextStep * (width - 40),
+                        animated: true,
+                    });
+                    return nextStep;
+                });
+            }, 3000); // Scroll automatically every 3 seconds
+        }
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [howItWorksVisible, steps.length]);
+
+    const handleCloseModal = () => {
+        setHowItWorksVisible(false);
+        setActiveStep(0);
+        scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+    };
+
+    const referralCode = referralStatus?.profile?.referral_code || 'KIDDO';
+    const totalEarned = referralStatus?.wallet?.referral_amount ?? 0;
 
     const onShare = async () => {
         try {
@@ -49,24 +114,7 @@ export default function ReferralScreen() {
         Alert.alert('Copied!', 'Referral code copied to clipboard.');
     };
 
-    const faqs = [
-        {
-            question: "How does the referral program work?",
-            answer: `Invite your friends to Kiddo Cash and earn ₹${referralReward} for every successful referral. Your friend also receives ₹${friendReward}.`
-        },
-        {
-            question: "When will the referral reward be credited?",
-            answer: "The referral reward will be credited to your account as soon as your friend completes their first purchase and the order is delivered."
-        },
-        {
-            question: "Will cancelled orders qualify for referral rewards?",
-            answer: "No, if the order is cancelled or returned, the referral reward will not be credited."
-        },
-        {
-            question: "Is there a limit to the number of referrals I can make?",
-            answer: "No, you can refer as many friends as you like and earn rewards for each one!"
-        }
-    ];
+    const faqs = config?.faqs || [];
 
     if (!isAuthenticated) {
         return (
@@ -103,15 +151,15 @@ export default function ReferralScreen() {
                 bounces={false}
             >
                 {/* Blue Header Section */}
-                <View style={styles.blueBackground}>
+                <View style={[styles.blueBackground, { backgroundColor: themeColor }]}>
                     <SafeAreaView edges={['top']}>
                         <View style={styles.header}>
                             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                                 <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                             <View>
-                                <Text style={styles.headerTitle}>Refer & Earn</Text>
-                                <TouchableOpacity>
+                                <Text style={styles.headerTitle}>{config?.referralScreen?.title ?? 'Refer & Earn'}</Text>
+                                <TouchableOpacity onPress={() => setHowItWorksVisible(true)}>
                                     <Text style={styles.howItWorksLink}>How does it work?</Text>
                                 </TouchableOpacity>
                             </View>
@@ -119,7 +167,27 @@ export default function ReferralScreen() {
 
                         <View style={styles.heroContent}>
                             <View style={styles.codeRow}>
-                                <Text style={styles.codeText}>#{referralCode}</Text>
+                                <MaskedView
+                                    maskElement={
+                                        <Text style={styles.codeText}>
+                                            #{referralCode}
+                                        </Text>
+                                    }
+                                >
+                                    <LinearGradient
+                                        colors={[
+                                            'rgba(255,255,255,0.45)',
+                                            'rgba(255,255,255,1)',
+                                            'rgba(255,255,255,0.4)',
+                                        ]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                    >
+                                        <Text style={[styles.codeText, { opacity: 0 }]}>
+                                            #{referralCode}
+                                        </Text>
+                                    </LinearGradient>
+                                </MaskedView>
                                 <TouchableOpacity onPress={copyToClipboard} style={styles.copyIcon}>
                                     <Ionicons
                                         name={copied ? "checkmark" : "copy-outline"}
@@ -130,7 +198,7 @@ export default function ReferralScreen() {
                             </View>
 
                             <Text style={styles.heroSubtitle} numberOfLines={2}>
-                                Invite a friend using your unique referral link
+                                {config?.referralScreen?.description ?? 'Invite a friend using your unique referral link'}
                             </Text>
 
                             <View style={styles.rewardContainer}>
@@ -149,7 +217,7 @@ export default function ReferralScreen() {
 
                     {/* Convex Blue Arch */}
                     <View style={styles.curveContainer}>
-                        <View style={styles.blueCurve} />
+                        <View style={[styles.blueCurve, { backgroundColor: themeColor }]} />
                     </View>
                 </View>
 
@@ -190,9 +258,110 @@ export default function ReferralScreen() {
             {/* Sticky Footer */}
             <SafeAreaView edges={['bottom']} style={styles.footer}>
                 <TouchableOpacity style={styles.shareButton} onPress={onShare} activeOpacity={0.9}>
-                    <Text style={styles.shareButtonText}>Share via WhatsApp</Text>
+                    <Text style={styles.shareButtonText}>{config?.referralScreen?.ctaText ?? 'Share via WhatsApp'}</Text>
                 </TouchableOpacity>
             </SafeAreaView>
+
+            {/* How It Works Carousel Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={howItWorksVisible}
+                onRequestClose={handleCloseModal}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={handleCloseModal}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={[styles.modalContainer, { backgroundColor: themeColor }]}
+                    >
+                        {/* Header Row */}
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.howItWorksTitle}>{modalTitle}</Text>
+                            <TouchableOpacity
+                                onPress={handleCloseModal}
+                                style={styles.modalCloseButton}
+                                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="close" size={28} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Step Indicators */}
+                        <View style={styles.indicatorContainer}>
+                            {steps.map((step) => (
+                                <View
+                                    key={step.id}
+                                    style={[
+                                        styles.indicatorBar,
+                                        {
+                                            backgroundColor:
+                                                activeStep === step.id
+                                                    ? 'rgba(255, 255, 255, 1)'
+                                                    : 'rgba(255, 255, 255, 0.4)',
+                                        },
+                                    ]}
+                                />
+                            ))}
+                        </View>
+
+                        {/* Carousel ScrollView */}
+                        <ScrollView
+                            ref={scrollViewRef}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onScroll={(event) => {
+                                const slideWidth = event.nativeEvent.layoutMeasurement.width;
+                                const offset = event.nativeEvent.contentOffset.x;
+                                const index = Math.round(offset / slideWidth);
+                                if (index !== activeStep) {
+                                    setActiveStep(index);
+                                }
+                            }}
+                            scrollEventThrottle={16}
+                            style={styles.modalScrollView}
+                            contentContainerStyle={styles.modalScrollContent}
+                        >
+                            {steps.map((step) => (
+                                <View key={step.id} style={styles.slideContainer}>
+                                    <View style={styles.imageContainer}>
+                                        <Image
+                                            source={{ uri: step.image }}
+                                            style={styles.slideImage}
+                                        />
+                                        {step.cta && (
+                                            <TouchableOpacity
+                                                activeOpacity={0.8}
+                                                onPress={() => {
+                                                    if (step.id === 0) {
+                                                        onShare();
+                                                    } else {
+                                                        handleCloseModal();
+                                                    }
+                                                }}
+                                                style={styles.ctaButton}
+                                            >
+                                                <Image
+                                                    source={{ uri: step.cta }}
+                                                    style={styles.ctaImage}
+                                                />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                    <Text style={styles.stepText}>{step.stepText}</Text>
+                                    <Text style={styles.slideTitle}>{step.title}</Text>
+                                    <Text style={styles.slideSubtitle}>{step.subtitle}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
@@ -423,5 +592,104 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 12,
         lineHeight: 22,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: width - 40,
+        height: Dimensions.get('window').height * 0.83,
+        backgroundColor: '#0CB6FF',
+        borderRadius: 24,
+        overflow: 'hidden',
+        paddingBottom: 24,
+        paddingTop: 12,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 8,
+    },
+    howItWorksTitle: {
+        color: '#FFFFFF',
+        fontSize: 30,
+        fontFamily: 'Fredoka_600SemiBold',
+    },
+    modalCloseButton: {
+        padding: 4,
+    },
+    indicatorContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        marginTop: 10,
+        marginBottom: 16,
+    },
+    indicatorBar: {
+        flex: 1,
+        height: 8,
+        borderRadius: 3,
+        marginHorizontal: 4,
+    },
+    modalScrollView: {
+        flex: 1,
+    },
+    modalScrollContent: {
+        alignItems: 'center',
+    },
+    slideContainer: {
+        width: width - 40,
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    imageContainer: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    slideImage: {
+        width: (width - 40) * 0.58,
+        height: (width - 40) * 1.05,
+        resizeMode: 'contain',
+    },
+    ctaButton: {
+        position: 'absolute',
+        bottom: -30,
+        alignSelf: 'center',
+    },
+    ctaImage: {
+        width: (width - 40) * 0.62,
+        height: (width - 40) * 0.3,
+        resizeMode: 'contain',
+    },
+    stepText: {
+        color: '#FFFFFFCC',
+        fontSize: 16,
+        fontFamily: Fonts.LexendMedium,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        marginTop: 12,
+    },
+    slideTitle: {
+        color: '#FFFFFF',
+        fontSize: 40,
+        fontFamily: 'Fredoka_600SemiBold',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    slideSubtitle: {
+        color: '#FFFFFFCC',
+        fontSize: 12,
+        fontFamily: Fonts.LexendMedium,
+        textAlign: 'center',
+        paddingHorizontal: 20,
+        lineHeight: 20,
     },
 });
