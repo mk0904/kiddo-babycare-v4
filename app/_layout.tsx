@@ -18,7 +18,7 @@ import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
 import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
-import { getAppVersionForApi, isAppUpdateRequired } from '@/constants/versionConfig';
+import { getAppVersionForApi, isVersionBelowMinimum } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { NectorProvider } from '@/context/NectorContext';
@@ -97,7 +97,8 @@ export default function RootLayout() {
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
   const currentVersion = getAppVersionForApi();
-  const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+  const [remoteUpdateRequired, setRemoteUpdateRequired] = React.useState(false);
+  const updateRequired = remoteUpdateRequired;
 
   React.useEffect(() => {
     if (__DEV__) {
@@ -198,7 +199,17 @@ export default function RootLayout() {
       
       // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
       configService.loadConfig().then(() => {
-        appConfigService.loadAppConfig(false, appConfigPayload).catch((error) => {
+        appConfigService.loadAppConfig(false, appConfigPayload).then((config) => {
+          if (config?.forceUpdateConfig?.isForceUpdateEnabled) {
+            const minVersion = Platform.OS === 'ios' 
+              ? config.forceUpdateConfig.minIosAppVersion 
+              : config.forceUpdateConfig.minAndroidAppVersion;
+            
+            if (minVersion && isVersionBelowMinimum(currentVersion, minVersion)) {
+              setRemoteUpdateRequired(true);
+            }
+          }
+        }).catch((error) => {
           if (__DEV__) console.warn('[RootLayout] Failed to load app config from backend:', error);
         });
       }).catch((error) => {
