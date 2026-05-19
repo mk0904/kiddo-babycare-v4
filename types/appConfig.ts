@@ -404,6 +404,17 @@ export interface AppConfigResponse {
   helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
   referralConfig?: ReferralConfig;
+  appDownloadConfig?: AppDownloadConfig;
+}
+
+export interface AppDownloadPlatformConfig {
+  url: string;
+  version: string;
+}
+
+export interface AppDownloadConfig {
+  android?: AppDownloadPlatformConfig;
+  ios?: AppDownloadPlatformConfig;
 }
 
 export interface ReferralStep {

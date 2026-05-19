@@ -99,8 +99,12 @@ export default function ReferralScreen() {
 
     const onShare = async () => {
         try {
+            const appDownloadConfig = appConfigService.getAppDownloadConfig();
+            const iosUrl = appDownloadConfig?.ios?.url || 'https://apps.apple.com/in/app/kiddo-baby-care-in-minutes/id6755881583';
+            const androidUrl = appDownloadConfig?.android?.url || 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
+
             await Share.share({
-                message: `Hey! Download Kiddo App and use my referral code ${referralCode} to get ₹${friendReward} off on your first order! \n\nDownload here: https://kiddo.app/download`,
+                message: `Hey! Download Kiddo App and use my referral code ${referralCode} to get ₹${friendReward} off on your first order! \n\nDownload here:\nAndroid: ${androidUrl}\niOS: ${iosUrl}`,
             });
         } catch (error: any) {
             Alert.alert(error.message);

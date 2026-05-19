@@ -21,6 +21,7 @@ import type {
   OrderDetailConfig,
   ReferralConfig,
   SpecialDealConfig,
+  AppDownloadConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { getBackendApiPath } from './backendBase';
@@ -297,6 +298,10 @@ class AppConfigService {
 
   getReferralConfig(): ReferralConfig | null {
     return this.config?.referralConfig ?? null;
+  }
+
+  getAppDownloadConfig(): AppDownloadConfig | null {
+    return this.config?.appDownloadConfig ?? null;
   }
 }
 
