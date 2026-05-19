@@ -9,6 +9,7 @@ interface ButtonProps {
   loading?: boolean;
   variant?: 'primary' | 'secondary';
   style?: any;
+  textStyle?: any;
 }
 
 export function Button({
@@ -18,6 +19,7 @@ export function Button({
   loading = false,
   variant = 'primary',
   style,
+  textStyle,
 }: ButtonProps) {
   return (
     <TouchableOpacity
@@ -41,6 +43,7 @@ export function Button({
             styles.buttonText,
             variant === 'primary' ? styles.primaryButtonText : styles.secondaryButtonText,
             (disabled || loading) && styles.buttonTextDisabled,
+            textStyle,
           ]}
         >
           {title}
