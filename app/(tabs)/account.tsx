@@ -226,6 +226,7 @@ export default function AccountScreen() {
                         'Loyalty': '/loyalty',
                         'Rewards': '/rewards',
                         'Referral': '/referral',
+                        'Wallet': '/wallet',
                         'Returns': '/returns',
                         'Addresses': '/address',
                         'Wishlist': '/wishlist',

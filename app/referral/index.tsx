@@ -1,3 +1,5 @@
+import { FaqSection } from '@/components/referral/FaqSection';
+import { HowItWorksModal } from '@/components/referral/HowItWorksModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useNector } from '@/context/NectorContext';
@@ -7,13 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Alert,
     Clipboard,
     Dimensions,
-    Image,
-    Modal,
     ScrollView,
     Share,
     StyleSheet,
@@ -30,12 +30,8 @@ export default function ReferralScreen() {
     const router = useRouter();
     const { user: nectorUser, isLoading, rules } = useNector();
     const { user: authUser, isAuthenticated } = useAuth();
-    const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
     const [copied, setCopied] = useState(false);
     const [howItWorksVisible, setHowItWorksVisible] = useState(false);
-    const [activeStep, setActiveStep] = useState(0);
-
-    const scrollViewRef = useRef<ScrollView>(null);
 
     const [referralStatus, setReferralStatus] = useState<ReferralStatusResponse | null>(null);
     const [fetchingStatus, setFetchingStatus] = useState(false);
@@ -64,36 +60,6 @@ export default function ReferralScreen() {
     const howItWorks = config?.howItWorks;
     const steps = howItWorks?.steps || [];
     const themeColor = howItWorks?.themeColor || '#0CB6FF';
-    const modalTitle = howItWorks?.title || 'How it works';
-
-    // Auto-scroll logic for carousel modal
-    useEffect(() => {
-        let interval: any;
-        if (howItWorksVisible) {
-            interval = setInterval(() => {
-                setActiveStep((prevStep) => {
-                    const nextStep = (prevStep + 1) % steps.length;
-                    scrollViewRef.current?.scrollTo({
-                        x: nextStep * (width - 40),
-                        animated: true,
-                    });
-                    return nextStep;
-                });
-            }, 3000); // Scroll automatically every 3 seconds
-        }
-        return () => {
-            if (interval) {
-                clearInterval(interval);
-            }
-        };
-    }, [howItWorksVisible, steps.length]);
-
-    const handleCloseModal = () => {
-        setHowItWorksVisible(false);
-        setActiveStep(0);
-        scrollViewRef.current?.scrollTo({ x: 0, animated: false });
-    };
-
     const referralCode = referralStatus?.profile?.referral_code || 'KIDDO';
     const totalEarned = referralStatus?.wallet?.referral_amount ?? 0;
 
@@ -233,29 +199,7 @@ export default function ReferralScreen() {
                         <Text style={styles.totalEarnedAmount}>₹{totalEarned}</Text>
                     </View>
 
-                    {/* FAQs */}
-                    <View style={styles.faqSection}>
-                        <Text style={styles.faqTitle}>FAQs</Text>
-                        {faqs.map((faq, index) => (
-                            <View key={index} style={styles.faqItem}>
-                                <TouchableOpacity
-                                    style={styles.faqHeader}
-                                    onPress={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={styles.faqQuestion}>{faq.question}</Text>
-                                    <Ionicons
-                                        name={expandedFaq === index ? "remove-circle-outline" : "add-circle-outline"}
-                                        size={24}
-                                        color={Colors.textSecondary}
-                                    />
-                                </TouchableOpacity>
-                                {expandedFaq === index && (
-                                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
-                                )}
-                            </View>
-                        ))}
-                    </View>
+                    <FaqSection faqs={faqs} />
                 </View>
             </ScrollView>
 
@@ -266,106 +210,20 @@ export default function ReferralScreen() {
                 </TouchableOpacity>
             </SafeAreaView>
 
-            {/* How It Works Carousel Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
+            <HowItWorksModal
                 visible={howItWorksVisible}
-                onRequestClose={handleCloseModal}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={handleCloseModal}
-                >
-                    <TouchableOpacity
-                        activeOpacity={1}
-                        style={[styles.modalContainer, { backgroundColor: themeColor }]}
-                    >
-                        {/* Header Row */}
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.howItWorksTitle}>{modalTitle}</Text>
-                            <TouchableOpacity
-                                onPress={handleCloseModal}
-                                style={styles.modalCloseButton}
-                                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="close" size={28} color="#FFFFFF" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Step Indicators */}
-                        <View style={styles.indicatorContainer}>
-                            {steps.map((step) => (
-                                <View
-                                    key={step.id}
-                                    style={[
-                                        styles.indicatorBar,
-                                        {
-                                            backgroundColor:
-                                                activeStep === step.id
-                                                    ? 'rgba(255, 255, 255, 1)'
-                                                    : 'rgba(255, 255, 255, 0.4)',
-                                        },
-                                    ]}
-                                />
-                            ))}
-                        </View>
-
-                        {/* Carousel ScrollView */}
-                        <ScrollView
-                            ref={scrollViewRef}
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={false}
-                            onScroll={(event) => {
-                                const slideWidth = event.nativeEvent.layoutMeasurement.width;
-                                const offset = event.nativeEvent.contentOffset.x;
-                                const index = Math.round(offset / slideWidth);
-                                if (index !== activeStep) {
-                                    setActiveStep(index);
-                                }
-                            }}
-                            scrollEventThrottle={16}
-                            style={styles.modalScrollView}
-                            contentContainerStyle={styles.modalScrollContent}
-                        >
-                            {steps.map((step) => (
-                                <View key={step.id} style={styles.slideContainer}>
-                                    <View style={styles.imageContainer}>
-                                        <Image
-                                            source={{ uri: step.image }}
-                                            style={styles.slideImage}
-                                        />
-                                        {step.cta && (
-                                            <TouchableOpacity
-                                                activeOpacity={0.8}
-                                                onPress={() => {
-                                                    if (step.id === 0) {
-                                                        onShare();
-                                                    } else {
-                                                        handleCloseModal();
-                                                    }
-                                                }}
-                                                style={styles.ctaButton}
-                                            >
-                                                <Image
-                                                    source={{ uri: step.cta }}
-                                                    style={styles.ctaImage}
-                                                />
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
-                                    <Text style={styles.stepText}>{step.stepText}</Text>
-                                    <Text style={styles.slideTitle}>{step.title}</Text>
-                                    <Text style={styles.slideSubtitle}>{step.subtitle}</Text>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </Modal>
+                onClose={() => setHowItWorksVisible(false)}
+                themeColor={themeColor}
+                modalTitle={howItWorks?.title || 'How it works'}
+                steps={steps}
+                onStepCtaPress={(stepId) => {
+                    if (stepId === 0) {
+                        onShare();
+                    } else {
+                        setHowItWorksVisible(false);
+                    }
+                }}
+            />
         </View>
     );
 }
@@ -509,44 +367,6 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendMedium,
         color: BRAND_BLUE,
     },
-    faqSection: {
-        marginBottom: 20,
-    },
-    faqTitle: {
-        fontSize: 24,
-        fontFamily: 'Fredoka_600SemiBold',
-        color: '#181D27',
-        marginBottom: 20,
-    },
-    faqItem: {
-        marginBottom: 10,
-    },
-    faqHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 12,
-    },
-    faqQuestion: {
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendSemiBold,
-        color: '#181D27',
-        flex: 1,
-        marginRight: 10,
-    },
-    faqAnswer: {
-        fontSize: Fonts.ExtraSmallFontSize,
-        fontFamily: Fonts.Regular,
-        color: '#535862',
-        lineHeight: 20,
-        paddingBottom: 15,
-        paddingRight: 50,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#F3F4F6',
-        marginTop: 5,
-    },
     footer: {
         position: 'absolute',
         bottom: 0,
@@ -596,104 +416,5 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 12,
         lineHeight: 22,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        width: width - 40,
-        height: Dimensions.get('window').height * 0.83,
-        backgroundColor: '#0CB6FF',
-        borderRadius: 24,
-        overflow: 'hidden',
-        paddingBottom: 24,
-        paddingTop: 12,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 8,
-        paddingBottom: 8,
-    },
-    howItWorksTitle: {
-        color: '#FFFFFF',
-        fontSize: 30,
-        fontFamily: 'Fredoka_600SemiBold',
-    },
-    modalCloseButton: {
-        padding: 4,
-    },
-    indicatorContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        marginTop: 10,
-        marginBottom: 16,
-    },
-    indicatorBar: {
-        flex: 1,
-        height: 8,
-        borderRadius: 3,
-        marginHorizontal: 4,
-    },
-    modalScrollView: {
-        flex: 1,
-    },
-    modalScrollContent: {
-        alignItems: 'center',
-    },
-    slideContainer: {
-        width: width - 40,
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    imageContainer: {
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-    },
-    slideImage: {
-        width: (width - 40) * 0.58,
-        height: (width - 40) * 1.05,
-        resizeMode: 'contain',
-    },
-    ctaButton: {
-        position: 'absolute',
-        bottom: -30,
-        alignSelf: 'center',
-    },
-    ctaImage: {
-        width: (width - 40) * 0.62,
-        height: (width - 40) * 0.3,
-        resizeMode: 'contain',
-    },
-    stepText: {
-        color: '#FFFFFFCC',
-        fontSize: 16,
-        fontFamily: Fonts.LexendMedium,
-        textTransform: 'uppercase',
-        marginBottom: 8,
-        marginTop: 12,
-    },
-    slideTitle: {
-        color: '#FFFFFF',
-        fontSize: 40,
-        fontFamily: 'Fredoka_600SemiBold',
-        textAlign: 'center',
-        marginBottom: 12,
-    },
-    slideSubtitle: {
-        color: '#FFFFFFCC',
-        fontSize: 12,
-        fontFamily: Fonts.LexendMedium,
-        textAlign: 'center',
-        paddingHorizontal: 20,
-        lineHeight: 20,
     },
 });

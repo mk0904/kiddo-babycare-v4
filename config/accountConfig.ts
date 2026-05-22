@@ -51,6 +51,19 @@ export const accountConfig = {
                 screen: "Referral",
             },
         },
+        {
+            id: "wallet",
+            title: "Kiddo\nCash",
+            icon: "wallet-outline",
+            showBadge: false,
+            badgeSource: "static",
+            badgeValue: 0,
+            actionType: "navigate",
+            action: {
+                type: "navigate",
+                screen: "Wallet",
+            },
+        },
     ],
 
     // Menu Items Configuration

@@ -404,6 +404,7 @@ export interface AppConfigResponse {
   helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
   referralConfig?: ReferralConfig;
+  walletConfig?: WalletConfig;
   appDownloadConfig?: AppDownloadConfig;
 }
 
@@ -424,6 +425,9 @@ export interface ReferralStep {
   subtitle: string;
   image: string;
   cta?: string;
+  color?: string;
+  isCta?: boolean;
+  isGradient?: boolean;
 }
 
 export interface ReferralHowItWorks {
@@ -449,4 +453,25 @@ export interface ReferralConfig {
   howItWorks?: ReferralHowItWorks;
   faqs?: ReferralFAQ[];
   referralScreen?: ReferralScreenConfig;
+}
+
+export interface WalletScreenConfig {
+  title: string;
+  balanceLabel: string;
+  earnedLabel: string;
+  ctaText: string;
+  bgImage?: string;
+  moneyPot?: string;
+}
+
+export interface WalletCarouselItem {
+  imageUrl: string;
+}
+
+export interface WalletConfig {
+  howItWorks?: ReferralHowItWorks;
+  faqs?: ReferralFAQ[];
+  walletScreen?: WalletScreenConfig;
+  carousel?: WalletCarouselItem[];
+  notes?: string[];
 }

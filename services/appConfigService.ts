@@ -20,6 +20,7 @@ import type {
   MysteryGiftOfferConfig,
   OrderDetailConfig,
   ReferralConfig,
+  WalletConfig,
   SpecialDealConfig,
   AppDownloadConfig,
 } from '@/types/appConfig';
@@ -298,6 +299,10 @@ class AppConfigService {
 
   getReferralConfig(): ReferralConfig | null {
     return this.config?.referralConfig ?? null;
+  }
+
+  getWalletConfig(): WalletConfig | null {
+    return this.config?.walletConfig ?? null;
   }
 
   getAppDownloadConfig(): AppDownloadConfig | null {
