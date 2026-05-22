@@ -1,10 +1,12 @@
 import { getMergedWalletConfig, WALLET_PRESET_AMOUNTS } from '@/config/walletDefaults';
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { initiateRazorpayPayment } from '@/services/paymentService';
+import { walletService } from '@/services/walletService';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -13,7 +15,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +38,7 @@ const FOOTER_HEIGHT = 76;
 export default function AddBalanceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
     const params = useLocalSearchParams<{ balance?: string }>();
     const currentBalance = Math.max(0, parseInt(params.balance ?? '0', 10) || 0);
     const notes = getMergedWalletConfig().notes ?? [];
@@ -46,10 +49,11 @@ export default function AddBalanceScreen() {
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [headerHeight, setHeaderHeight] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     const amountValue = useMemo(() => parseAmountInput(amountText), [amountText]);
-    const isValid = amountValue > 0;
-    const ctaLabel = isValid ? `Add ${formatCurrency(amountValue)}` : 'Add Balance';
+    const isValid = amountValue > 0 && !isLoading;
+    const ctaLabel = isLoading ? 'Processing...' : isValid ? `Add ${formatCurrency(amountValue)}` : 'Add Balance';
 
     useEffect(() => {
         const showSub = Keyboard.addListener(
@@ -92,13 +96,61 @@ export default function AddBalanceScreen() {
         setAmountText(formatAmountDisplay(preset));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!isValid) return;
-        Alert.alert(
-            'Add Balance',
-            `You are adding ${formatCurrency(amountValue)} to your Kiddo Cash wallet. Payment integration will be available soon.`,
-            [{ text: 'OK' }],
-        );
+
+        // if (__DEV__) {
+        //     router.replace({
+        //         pathname: '/wallet/payment-failure',
+        //         params: { balance: String(currentBalance) },
+        //     } as never);
+        //     return;
+        // }
+
+        setIsLoading(true);
+
+        try {
+            // 1. Initiate Topup via Backend
+            const customerId = user?.id || '';
+            const phone = user?.phone || '';
+            const res = await walletService.initiateTopup(amountValue, customerId, phone);
+
+            if (!res.razorpay_order_id) {
+                throw new Error('Failed to generate payment order. Please try again.');
+            }
+
+            // 2. Open Razorpay Checkout
+            const paymentResult = await initiateRazorpayPayment(amountValue, 'INR', {
+                razorpayOrderId: res.razorpay_order_id,
+                email: user?.email ?? undefined,
+                phone: user?.phone ?? undefined,
+                name: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : undefined,
+                customerId,
+            });
+
+            if (paymentResult.success) {
+                router.replace({
+                    pathname: '/wallet/payment-success',
+                    params: { balance: String(currentBalance) },
+                } as never);
+                return;
+            }
+            if (!paymentResult.cancelled) {
+                router.replace({
+                    pathname: '/wallet/payment-failure',
+                    params: { balance: String(currentBalance) },
+                } as never);
+                return;
+            }
+        } catch (error: any) {
+            router.replace({
+                pathname: '/wallet/payment-failure',
+                params: { balance: String(currentBalance) },
+            } as never);
+            return;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

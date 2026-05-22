@@ -1,5 +1,5 @@
 import { FaqSection } from '@/components/referral/FaqSection';
-import { HowItWorksModal } from '@/components/referral/HowItWorksModal';
+import { WalletHowItWorksModal } from '@/components/wallet/WalletHowItWorksModal';
 import { defaultWalletConfig, getMergedWalletConfig, WALLET_THEME_COLOR } from '@/config/walletDefaults';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -123,9 +123,9 @@ export default function WalletScreen() {
     };
 
     const handleHowItWorksCta = (stepId: number) => {
-        const step = steps.find((s) => s.id === stepId);
         setHowItWorksVisible(false);
-        if (step?.isCta) {
+        const step = steps.find((s) => s.id === stepId);
+        if (step?.cta) {
             onAddBalance();
         }
     };
@@ -368,7 +368,7 @@ export default function WalletScreen() {
                 </TouchableOpacity>
             </SafeAreaView>
 
-            <HowItWorksModal
+            <WalletHowItWorksModal
                 visible={howItWorksVisible}
                 onClose={() => setHowItWorksVisible(false)}
                 themeColor={themeColor}
