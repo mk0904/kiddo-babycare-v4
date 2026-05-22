@@ -2,7 +2,16 @@ import { WalletPaymentResultScreen } from '@/components/wallet/WalletPaymentResu
 import { useLocalSearchParams } from 'expo-router';
 
 export default function WalletPaymentSuccessScreen() {
-    const { balance } = useLocalSearchParams<{ balance?: string }>();
+    const { balance, addedAmount } = useLocalSearchParams<{
+        balance?: string;
+        addedAmount?: string;
+    }>();
 
-    return <WalletPaymentResultScreen variant="success" balance={balance} />;
+    return (
+        <WalletPaymentResultScreen
+            variant="success"
+            balance={balance}
+            addedAmount={addedAmount}
+        />
+    );
 }

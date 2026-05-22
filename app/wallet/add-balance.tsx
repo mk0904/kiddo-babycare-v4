@@ -5,7 +5,7 @@ import { initiateRazorpayPayment } from '@/services/paymentService';
 import { walletService } from '@/services/walletService';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Keyboard,
     KeyboardAvoidingView,
@@ -33,8 +33,6 @@ function formatCurrency(amount: number) {
     return `₹${amount.toLocaleString('en-IN')}`;
 }
 
-const FOOTER_HEIGHT = 76;
-
 export default function AddBalanceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -43,11 +41,9 @@ export default function AddBalanceScreen() {
     const currentBalance = Math.max(0, parseInt(params.balance ?? '0', 10) || 0);
     const notes = getMergedWalletConfig().notes ?? [];
 
-    const scrollRef = useRef<ScrollView>(null);
     const [amountText, setAmountText] = useState('');
     const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [headerHeight, setHeaderHeight] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -58,32 +54,17 @@ export default function AddBalanceScreen() {
     useEffect(() => {
         const showSub = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            (event) => {
-                setKeyboardVisible(true);
-                setKeyboardHeight(event.endCoordinates.height);
-                setTimeout(() => {
-                    scrollRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-            },
+            () => setKeyboardVisible(true),
         );
         const hideSub = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                setKeyboardVisible(false);
-                setKeyboardHeight(0);
-            },
+            () => setKeyboardVisible(false),
         );
         return () => {
             showSub.remove();
             hideSub.remove();
         };
     }, []);
-
-    const scrollBottomPadding =
-        32 +
-        FOOTER_HEIGHT +
-        Math.max(insets.bottom, 16) +
-        (Platform.OS === 'android' && keyboardVisible ? keyboardHeight : 0);
 
     const handleAmountChange = (text: string) => {
         const parsed = parseAmountInput(text);
@@ -131,7 +112,10 @@ export default function AddBalanceScreen() {
             if (paymentResult.success) {
                 router.replace({
                     pathname: '/wallet/payment-success',
-                    params: { balance: String(currentBalance) },
+                    params: {
+                        balance: String(currentBalance),
+                        addedAmount: String(amountValue),
+                    },
                 } as never);
                 return;
             }
@@ -172,20 +156,15 @@ export default function AddBalanceScreen() {
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+                behavior="padding"
+                keyboardVerticalOffset={headerHeight}
             >
                 <ScrollView
-                    ref={scrollRef}
                     style={styles.scrollView}
-                    contentContainerStyle={[
-                        styles.scrollContent,
-                        { paddingBottom: scrollBottomPadding },
-                    ]}
+                    contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
                     showsVerticalScrollIndicator={false}
-                    automaticallyAdjustKeyboardInsets
                 >
                     <Text style={styles.inputLabel}>Enter amount</Text>
                     <View style={styles.inputRow}>
@@ -194,11 +173,6 @@ export default function AddBalanceScreen() {
                             style={styles.amountInput}
                             value={amountText}
                             onChangeText={handleAmountChange}
-                            onFocus={() => {
-                                setTimeout(() => {
-                                    scrollRef.current?.scrollToEnd({ animated: true });
-                                }, 100);
-                            }}
                             placeholder=""
                             placeholderTextColor="#9CA3AF"
                             keyboardType="number-pad"
@@ -244,7 +218,7 @@ export default function AddBalanceScreen() {
                     style={[
                         styles.footer,
                         {
-                            paddingBottom: Math.max(insets.bottom, 16),
+                            paddingBottom: keyboardVisible ? 12 : Math.max(insets.bottom, 16),
                             borderTopWidth: keyboardVisible ? 0 : StyleSheet.hairlineWidth,
                         },
                     ]}
@@ -314,7 +288,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        flexGrow: 1,
+        paddingBottom: 16,
     },
     inputLabel: {
         fontSize: Fonts.SmallFontSize,

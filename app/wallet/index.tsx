@@ -12,7 +12,7 @@ import { WalletCarouselItem } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
     Dimensions,
     FlatList,
@@ -81,13 +81,19 @@ export default function WalletScreen() {
     const bgImage = screen.bgImage;
     const moneyPot = screen.moneyPot;
 
-    useEffect(() => {
+    const fetchWalletStatus = useCallback(() => {
         if (!isAuthenticated || !authUser?.phone) return;
         referralService
             .getReferralStatus(authUser.phone)
             .then(setWalletStatus)
             .catch((err) => console.error('[Wallet] Failed to load wallet status:', err));
     }, [isAuthenticated, authUser?.phone]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchWalletStatus();
+        }, [fetchWalletStatus]),
+    );
 
     useFocusEffect(
         useCallback(() => {

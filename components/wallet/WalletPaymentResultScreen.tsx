@@ -1,10 +1,12 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { referralService } from '@/services/referralService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +19,8 @@ export type WalletPaymentResultVariant = 'success' | 'failure';
 type WalletPaymentResultScreenProps = {
     variant: WalletPaymentResultVariant;
     balance?: string;
+    /** Amount added on success — used to refresh wallet before redirect. */
+    addedAmount?: string;
     onClose?: () => void;
     onTryAgain?: () => void;
 };
@@ -66,21 +70,45 @@ function StatusIcon({ variant }: { variant: WalletPaymentResultVariant }) {
 export function WalletPaymentResultScreen({
     variant,
     balance,
+    addedAmount,
     onClose,
     onTryAgain,
 }: WalletPaymentResultScreenProps) {
     const router = useRouter();
+    const { user } = useAuth();
     const isSuccess = variant === 'success';
+
+    const goToWallet = useCallback(async () => {
+        if (user?.phone) {
+            try {
+                await referralService.getReferralStatus(user.phone);
+            } catch (err) {
+                console.warn('[WalletPaymentResult] Failed to refresh balance:', err);
+            }
+        }
+        router.replace({
+            pathname: '/wallet',
+            params: {
+                refreshed: '1',
+                ...(addedAmount ? { addedAmount } : {}),
+            },
+        } as never);
+    }, [user?.phone, addedAmount, router]);
 
     useEffect(() => {
         if (!isSuccess || onClose) return;
 
+        let cancelled = false;
         const timer = setTimeout(() => {
-            router.replace('/referral');
+            if (cancelled) return;
+            void goToWallet();
         }, SUCCESS_AUTO_REDIRECT_MS);
 
-        return () => clearTimeout(timer);
-    }, [isSuccess, onClose, router]);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [isSuccess, onClose, goToWallet]);
 
     const handleClose = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -88,7 +116,7 @@ export function WalletPaymentResultScreen({
             onClose();
             return;
         }
-        router.replace('/wallet');
+        void goToWallet();
     };
 
     const handleTryAgain = () => {
