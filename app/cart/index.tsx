@@ -29,6 +29,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTryAndBuy } from '@/context/TryAndBuyContext';
 import { appConfigService, type AppConfigPayload } from '@/services/appConfigService';
 import PaymentService from '@/services/paymentService';
+import { referralService } from '@/services/referralService';
 import { shopifyApi } from '@/services/shopifyApi';
 import {
     computeDiscountBreakdown,
@@ -466,6 +467,26 @@ export default function CartScreen() {
         });
         return () => { cancelled = true; };
     }, [user?.phone, user?.customerId, user?.id, cartCategoryTags.join(','), itemSubtotalForOffers]);
+
+    const fetchWalletBalance = useCallback(() => {
+        if (!isAuthenticated || !user?.phone) {
+            setWalletBalance(null);
+            return;
+        }
+        referralService
+            .getReferralStatus(user.phone)
+            .then((status) => setWalletBalance(status.wallet?.total_amount ?? 0))
+            .catch((err) => {
+                if (__DEV__) console.warn('[Cart] Failed to load wallet balance:', err);
+            });
+    }, [isAuthenticated, user?.phone]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchWalletBalance();
+        }, [fetchWalletBalance]),
+    );
+
     const freeShoesOfferConfig = useMemo(
         () => appConfigService.getCartConfig()?.freeShoesOffer,
         [appConfigRefresh]
@@ -562,6 +583,7 @@ export default function CartScreen() {
     const deliverySchedule = useCartStore(state => state.deliverySchedule);
     const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
+    const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
     const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
     const [tryBuyEditProduct, setTryBuyEditProduct] = useState<any>(null);
@@ -994,15 +1016,17 @@ export default function CartScreen() {
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, itemMrpTotal - subtotalAfterDiscount);
 
-    // Bill details display constants (for UX only; Kiddo Cash is dummy)
+    // Bill details display constants
     const HANDLING_FEE_ORIGINAL = 10;
     const DELIVERY_FEE_ORIGINAL = 50;
-    const KIDDO_CASH_APPLIED = 250;
-    const toPay = Math.max(0, total - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
+    const kiddoCashApplied = kiddoCashEnabled
+        ? Math.min(walletBalance ?? 0, total)
+        : 0;
+    const toPay = Math.max(0, total - kiddoCashApplied);
     const displaySavings =
         totalSavings +
         (isTicketingOnly ? PLATFORM_FEE_DISPLAY : HANDLING_FEE_ORIGINAL + DELIVERY_FEE_ORIGINAL) +
-        (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0);
+        kiddoCashApplied;
 
     // Debug log to verify calculation
     if (__DEV__) {
@@ -1068,7 +1092,21 @@ export default function CartScreen() {
         const latestGiftWrappingFee = latestStore.getGiftWrappingPrice();
         const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount);
         const latestTotal = latestSubtotalAfterDiscount + latestDeliveryFee + latestGiftWrappingFee;
-        const latestToPay = Math.max(0, latestTotal - (kiddoCashEnabled ? KIDDO_CASH_APPLIED : 0));
+
+        let balanceForKiddo = walletBalance ?? 0;
+        if (kiddoCashEnabled && user?.phone) {
+            try {
+                const status = await referralService.getReferralStatus(user.phone);
+                balanceForKiddo = status.wallet?.total_amount ?? 0;
+                setWalletBalance(balanceForKiddo);
+            } catch (err) {
+                if (__DEV__) console.warn('[Cart] Failed to refresh wallet before checkout:', err);
+            }
+        }
+        const latestKiddoCashApplied = kiddoCashEnabled
+            ? Math.min(balanceForKiddo, latestTotal)
+            : 0;
+        const latestToPay = Math.max(0, latestTotal - latestKiddoCashApplied);
 
         // Re-calculate derived values using latest state
         const latestAppliedDiscountCode = latestDiscountCodes.filter((dc) => dc.applicable !== false).map((dc) => dc.code)[0] || null;
@@ -1437,9 +1475,11 @@ export default function CartScreen() {
                     deliveryFee: latestDeliveryFee,
                     giftWrappingFee: latestGiftWrappingFee,
                     discount: latestDiscount,
+                    ...(latestKiddoCashApplied > 0 ? { kiddoCashUsed: latestKiddoCashApplied } : {}),
                     total: latestToPay,
                     currencyCode: 'INR',
                 },
+                ...(latestKiddoCashApplied > 0 ? { kiddoCashUsed: latestKiddoCashApplied } : {}),
                 selectedShoe: selectedShoe || undefined,
                 selectedShoeSize: selectedShoeSize || undefined,
                 selectedPuzzleId: selectedPuzzleId || undefined,
@@ -1715,10 +1755,15 @@ export default function CartScreen() {
                         params: {
                             orderId: orderIdForDisplay,
                             orderGraphId: finalOrder?.id || '',
-                            total: total.toString(),
-                            subtotal: itemSubtotal.toString(),
+                            total: latestToPay.toString(),
+                            subtotal: latestItemSubtotal.toString(),
                             milestoneStep: String(milestoneStepSnapshot),
                             appliedCouponCode: appliedDiscountCode || '',
+                            ...(latestKiddoCashApplied > 0 && {
+                                kiddoCashUsed: String(latestKiddoCashApplied),
+                                couponDiscountAmount: String(latestDiscount),
+                                checkoutTotal: String(latestToPay),
+                            }),
                             ...(resolvedEta != null && { estimatedDeliveryMinutes: String(resolvedEta) }),
                             ...(selectedAddress &&
                                 typeof selectedAddress.latitude === 'number' &&
@@ -2211,6 +2256,8 @@ export default function CartScreen() {
                                 hasTicketingProducts={hasTicketingProducts}
                                 hasFashionItems={hasFashionItems}
                                 kiddoCashEnabled={kiddoCashEnabled}
+                                walletBalance={walletBalance}
+                                toPay={toPay}
                                 formatCurrency={formatCurrency}
                                 onLoginPress={() => router.push('/(auth)/login')}
                                 onKiddoCashChange={setKiddoCashEnabled}
@@ -2253,7 +2300,7 @@ export default function CartScreen() {
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}
-                            kiddoCashApplied={KIDDO_CASH_APPLIED}
+                            kiddoCashApplied={kiddoCashApplied}
                             total={total}
                             toPay={toPay}
                             displaySavings={displaySavings}

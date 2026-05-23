@@ -85,6 +85,8 @@ export interface OrderBillDetails {
     deliveryFee: number;
     giftWrappingFee: number;
     discount: number;
+    /** Kiddo Cash / wallet amount applied at checkout (INR). */
+    kiddoCashUsed?: number;
     total: number;
     currencyCode: string;
 }
@@ -136,6 +138,8 @@ export interface OrderData {
     paymentMethod?: 'razorpay' | 'cod' | 'free' | 'try_and_buy';
     /** Full bill breakdown for backend to store in Shopify order. */
     billDetails?: OrderBillDetails;
+    /** Kiddo Cash / wallet amount applied — backend logs on Shopify draft order. */
+    kiddoCashUsed?: number;
     /** School coupon data for Shopify order attributes. */
     schoolCouponData?: {
         childName: string;
@@ -188,6 +192,7 @@ function orderDataToCheckoutDraftRequest(
         deliveryType: orderData.deliveryType ?? (orderData.deliverySchedule?.date && orderData.deliverySchedule?.time ? 'scheduled' : 'instant'),
         paymentMethod: (orderData.paymentMethod ?? paymentMethod) as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
         billDetails: orderData.billDetails,
+        kiddoCashUsed: orderData.kiddoCashUsed,
         selectedShoe: orderData.selectedShoe ?? '',
         selectedShoeSize: orderData.selectedShoeSize ?? '',
         selectedPuzzleId: orderData.selectedPuzzleId ?? '',

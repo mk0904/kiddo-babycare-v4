@@ -13,6 +13,8 @@ export interface CheckoutBillDetails {
   deliveryFee: number;
   giftWrappingFee: number;
   discount: number;
+  /** Kiddo Cash / wallet amount applied at checkout (INR). */
+  kiddoCashUsed?: number;
   total: number;
   currencyCode: string;
 }
@@ -89,6 +91,8 @@ export interface CheckoutDraftRequest {
   appVersion: string;
   /** Device type for coupon/eligibility ('ios' | 'android'). Required for checkout/draft (same as get coupon by phone). */
   deviceType: string;
+  /** Kiddo Cash / wallet amount applied — backend should log on Shopify draft order. */
+  kiddoCashUsed?: number;
 }
 
 export interface CheckoutDraftResponse {
@@ -193,6 +197,9 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     selected_puzzle_age: puzzleAge,
     schoolCouponData: body.schoolCouponData,
     isTryAndBuy: body.isTryAndBuy ?? false,
+    ...(body.kiddoCashUsed != null && body.kiddoCashUsed > 0
+      ? { kiddoCashUsed: body.kiddoCashUsed, kiddo_cash_used: body.kiddoCashUsed }
+      : {}),
     // Always send non-empty appVersion and deviceType (same as get coupon by phone)
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
     deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,

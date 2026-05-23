@@ -16,6 +16,7 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -44,6 +45,10 @@ export interface SavingsCornerProps {
     hasTicketingProducts: boolean;
     hasFashionItems: boolean;
     kiddoCashEnabled: boolean;
+    /** Wallet balance from referral status API (`wallet.total_amount`). */
+    walletBalance?: number | null;
+    /** Amount customer pays after discounts, fees, and Kiddo Cash — used for coins earn estimate. */
+    toPay: number;
     formatCurrency: (amount: number) => string;
     onLoginPress: () => void;
     onKiddoCashChange: (value: boolean) => void;
@@ -57,6 +62,8 @@ export function SavingsCorner({
     hasTicketingProducts,
     hasFashionItems,
     kiddoCashEnabled,
+    walletBalance = null,
+    toPay,
     formatCurrency,
     onLoginPress,
     onKiddoCashChange,
@@ -514,6 +521,13 @@ export function SavingsCorner({
 
     const canSubmitInlineCode = isAuthenticated && !!manualCode.trim() && applyUiSource === null;
 
+    const cartKiddoCashEnabled = useMemo(
+        () => appConfigService.getCartConfig()?.kiddoCashEnabled === true,
+        [configRefreshKey],
+    );
+
+    const kiddoCoinsEarned = useMemo(() => Math.round(Math.max(0, toPay) * 0.01), [toPay]);
+
     return (
         <View style={styles.wrapper}>
             <SchoolCouponModal
@@ -762,25 +776,42 @@ export function SavingsCorner({
                     />
                 </View>
 
-                {/* <View style={styles.kiddoCashRow}>
-                <View style={styles.kiddoCashIconWrap}>
-                    <Ionicons name="cash-outline" size={20} color="#5B21B6" />
-                </View>
-                <View style={styles.kiddoCashTextWrap}>
-                    <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
-                    <Text style={styles.kiddoCashSub}>₹250 available</Text>
-                </View>
-                <Switch
-                    value={kiddoCashEnabled}
-                    onValueChange={onKiddoCashChange}
-                    trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
-                    thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
-                />
+
             </View>
-            <View style={styles.kiddoCoinsBar}>
-                <Text style={styles.kiddoCoinsBarText}>You will earn 20 Kiddo Coins with this order</Text>
-            </View> */}
-            </View>
+
+            {cartKiddoCashEnabled && (
+                <View style={styles.kiddoCashContainer}>
+                    <View style={styles.kiddoCashRow}>
+                        <View style={styles.kiddoCashIconWrap}>
+                            <Ionicons name="cash" size={20} color="#5B21B6" />
+                        </View>
+                        <View style={styles.kiddoCashTextWrap}>
+                            <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
+                            <Text style={styles.kiddoCashSub}>
+                                {walletBalance != null
+                                    ? `${formatCurrency(walletBalance)} available`
+                                    : '—'}
+                            </Text>
+                        </View>
+                        <View style={styles.kiddoCashSwitchWrap}>
+                            <Switch
+                                value={kiddoCashEnabled}
+                                onValueChange={onKiddoCashChange}
+                                trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
+                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
+                                style={styles.kiddoCashSwitch}
+                            />
+                        </View>
+                    </View>
+                    <View style={styles.kiddoCoinsBar}>
+                        <Text style={styles.kiddoCoinsBarText}>
+                            You will earn {kiddoCoinsEarned} Kiddo Coin{kiddoCoinsEarned === 1 ? '' : 's'} with this order
+                        </Text>
+                    </View>
+                </View>
+            )}
+
+
 
             {/* Available coupons modal with manual code entry */}
             <Modal
@@ -1206,13 +1237,12 @@ const styles = StyleSheet.create({
     kiddoCashRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        padding: 12,
+        justifyContent: 'space-between',
     },
     kiddoCashIconWrap: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F5F3FF',
+        width: 20,
+        height: 20,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -1222,26 +1252,35 @@ const styles = StyleSheet.create({
     },
     kiddoCashTitle: {
         fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#181D27',
     },
     kiddoCashSub: {
         fontSize: 12,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
+        color: '#535862',
+        fontFamily: Fonts.LexendMedium,
         marginTop: 2,
+    },
+    kiddoCashSwitchWrap: {
+        
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    kiddoCashSwitch: {
+        transform: [{ scaleX: 0.77 }, { scaleY: 0.80 }],
     },
     kiddoCoinsBar: {
         backgroundColor: '#EDE9FE',
-        borderRadius: 10,
-        paddingVertical: 12,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         alignItems: 'center',
     },
     kiddoCoinsBarText: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#6D28D9',
+        fontSize: 12,
+        fontFamily: Fonts.LexendMedium,
+        color: '#7A5AF8',
     },
     // Modal — promo upsell as bottom sheet (slide-up)
     modalOverlayDrawer: {
@@ -1524,5 +1563,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
         color: '#9CA3AF',
+    },
+    kiddoCashContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        marginTop: 16,
     },
 });

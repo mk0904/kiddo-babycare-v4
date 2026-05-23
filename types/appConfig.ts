@@ -229,6 +229,8 @@ export interface CartConfig {
   freeShoesOffer?: FreeShoesOfferConfig;
   freeShoesPicker?: FreeShoesPickerConfig;
   savingsCorner?: { title?: string; applyCta?: string };
+  /** When true, show Kiddo Cash toggle and coins earn bar in Savings Corner. */
+  kiddoCashEnabled?: boolean;
   billDetails?: {
     subtotalLabel?: string;
     deliveryLabel?: string;

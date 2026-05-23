@@ -341,7 +341,7 @@ export function BillDetails({
                             )}
 
                             {/* Kiddo Cash */}
-                            {kiddoCashEnabled && (
+                            {kiddoCashApplied > 0 && (
                                 <View style={styles.row}>
                                     <Text style={styles.label}>Kiddo Cash</Text>
                                     <Text style={[styles.value, styles.kiddoCashDeduction]}>
