@@ -112,6 +112,7 @@ export default function HomeScreen() {
     // Background image / copy can follow category; backgroundColor stays global so it does not shift per tab.
     const backgroundImage = categoryHeader?.backgroundImage || globalHeader?.backgroundImage;
     const backgroundColor = globalHeader?.backgroundColor || 'transparent';
+    const walletConfig = appConfigService.getWalletConfig();
 
     return {
       backgroundColor,
@@ -119,8 +120,9 @@ export default function HomeScreen() {
       primaryColor: globalHeader?.primaryColor || '#FFFFFF',
       backgroundImage,
       hasImage: !!backgroundImage, // Automatically set based on backgroundImage existence
+      iconUrl: walletConfig?.walletScreen?.iconUrl,
     };
-  }, [selectedCategory, configLoading]);
+  }, [selectedCategory, configLoading, milestoneUiRev]);
 
   /** Main scroll area fill — from kiddo config (categories.defaultPageBackgroundColor / items.*.pageBackgroundColor) */
   const pageBackgroundColor = useMemo(

@@ -138,24 +138,25 @@ export default function WalletScreen() {
 
     if (!isAuthenticated) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={[styles.headerBar, { backgroundColor: themeColor }]}>
+            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                <View style={styles.customHeader}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                        <Ionicons name="arrow-back" size={24} color={Colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{screen.title}</Text>
+                    <Text style={[styles.headerTitle, { color: Colors.text }]}>{screen.title}</Text>
                 </View>
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="wallet-outline" size={80} color="#E5E7EB" />
-                    <Text style={styles.emptyTitle}>Login to view Kiddo Cash</Text>
-                    <Text style={styles.emptySubtitle}>
-                        Track your balance, cashback, and wallet history after you sign in.
+                <View style={styles.loginRequiredWrapper}>
+                    <Text style={styles.loginTitle}>Login to access Kiddo Cash</Text>
+                    <Text style={styles.loginSubtitle}>
+                        View your balance, cashback, and wallet history after you login.
                     </Text>
                     <TouchableOpacity
-                        style={[styles.ctaButton, { width: '80%', marginTop: 24, backgroundColor: themeColor }]}
+                        style={styles.loginCTA}
                         onPress={() => router.push('/(auth)/login' as any)}
+                        activeOpacity={0.85}
                     >
-                        <Text style={styles.ctaButtonText}>Login Now</Text>
+                        <Ionicons name="log-in" size={20} color={Colors.backgroundWhite} style={{ marginRight: 8 }} />
+                        <Text style={styles.loginCTAText}>Login</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -689,5 +690,47 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 12,
         lineHeight: 22,
+    },
+    customHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFFFFF',
+    },
+    loginRequiredWrapper: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+        backgroundColor: '#FFFFFF',
+    },
+    loginTitle: {
+        fontSize: 20,
+        color: Colors.text,
+        fontFamily: Fonts.Bold,
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    loginSubtitle: {
+        fontSize: 14,
+        color: Colors.textSecondary,
+        fontFamily: Fonts.Regular,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 20,
+    },
+    loginCTA: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+    },
+    loginCTAText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: Fonts.Bold,
     },
 });

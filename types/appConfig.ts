@@ -464,6 +464,7 @@ export interface WalletScreenConfig {
   ctaText: string;
   bgImage?: string;
   moneyPot?: string;
+  iconUrl?: string;
 }
 
 export interface WalletCarouselItem {

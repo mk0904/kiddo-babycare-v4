@@ -72,13 +72,13 @@ export default function LoginScreen() {
     };
   }, []);
 
-  // Auto-submit when 10 digits are entered
-  useEffect(() => {
-    const cleanedPhone = phoneNumber.replace(/\D/g, '');
-    if (cleanedPhone.length === 10 && !loading) {
-      handleSendOTP();
-    }
-  }, [phoneNumber]);
+  // // Auto-submit when 10 digits are entered
+  // useEffect(() => {
+  //   const cleanedPhone = phoneNumber.replace(/\D/g, '');
+  //   if (cleanedPhone.length === 10 && !loading) {
+  //     handleSendOTP();
+  //   }
+  // }, [phoneNumber]);
 
   const formatPhoneNumber = (text: string) => {
     const cleaned = text.replace(/\D/g, '');

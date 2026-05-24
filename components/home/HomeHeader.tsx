@@ -33,6 +33,7 @@ interface HomeHeaderProps {
     primaryColor?: string;
     backgroundImage?: string;
     hasImage?: boolean;
+    iconUrl?: string;
   };
   searchSuggestions?: string[];
   onSearchPress?: () => void;
@@ -270,13 +271,28 @@ export function HomeHeader({
                   />
                 </View>
               </View>
-              <TouchableOpacity
-                onPress={() => router.push('/wishlist')}
-                style={styles.wishlistButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="heart-outline" size={24} color={textColor} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {headerConfig?.iconUrl && (
+                  <TouchableOpacity
+                    onPress={() => router.push('/wallet')}
+                    style={styles.wishlistButton}
+                    activeOpacity={0.7}
+                  >
+                    <Image
+                      source={{ uri: headerConfig.iconUrl }}
+                      style={{ width: 24, height: 24 }}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => router.push('/wishlist')}
+                  style={styles.wishlistButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="heart-outline" size={24} color={textColor} />
+                </TouchableOpacity>
+              </View>
             </View>
           </Animated.View>
 
