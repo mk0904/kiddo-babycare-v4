@@ -4,6 +4,7 @@ import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { otpService } from '@/services/otpService';
+import { useReferralAttributionStore } from '@/store/referralAttributionStore';
 import { trackSignupStarted } from '@/utils/mixpanelHelpers';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -39,6 +40,14 @@ export default function LoginScreen() {
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Auto-fill referral code from AppsFlyer invite / OneLink (if captured at app open)
+  useEffect(() => {
+    const pending = useReferralAttributionStore.getState().consumePendingReferralCode();
+    if (pending) {
+      setReferralCode(pending);
+    }
+  }, []);
 
   // Keyboard listeners
   useEffect(() => {

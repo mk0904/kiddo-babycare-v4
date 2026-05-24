@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNector } from '@/context/NectorContext';
 import { appConfigService } from '@/services/appConfigService';
 import { referralService, ReferralStatusResponse } from '@/services/referralService';
+import { generateAndShareReferralLink } from '@/utils/sharing';
 import { Ionicons } from '@expo/vector-icons';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,7 +16,6 @@ import {
     Clipboard,
     Dimensions,
     ScrollView,
-    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -65,15 +65,18 @@ export default function ReferralScreen() {
 
     const onShare = async () => {
         try {
-            const appDownloadConfig = appConfigService.getAppDownloadConfig();
-            const iosUrl = appDownloadConfig?.ios?.url || 'https://apps.apple.com/in/app/kiddo-baby-care-in-minutes/id6755881583';
-            const androidUrl = appDownloadConfig?.android?.url || 'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
-
-            await Share.share({
-                message: `Hey! Download Kiddo App and use my referral code ${referralCode} to get ₹${friendReward} off on your first order! \n\nDownload here:\nAndroid: ${androidUrl}\niOS: ${iosUrl}`,
+            const currentUserId =
+                authUser?.id ||
+                authUser?.customerId ||
+                authUser?.phone ||
+                '';
+            await generateAndShareReferralLink({
+                currentUserId,
+                uniqueReferralCode: referralCode,
+                friendRewardAmount: friendReward,
             });
         } catch (error: any) {
-            Alert.alert(error.message);
+            Alert.alert(error?.message || 'Unable to share referral link');
         }
     };
 

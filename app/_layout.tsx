@@ -37,6 +37,7 @@ import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
 import { clevertapService } from '@/services/clevertapService';
+import { initializeAppsFlyer } from '@/services/appsflyerService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
@@ -84,6 +85,7 @@ export default function RootLayout() {
   const [appIsReady, setAppIsReady] = React.useState(false);
   const attReadyRef = React.useRef(Platform.OS !== 'ios');
   const attInitStartedRef = React.useRef(false);
+  const appsFlyerUnsubRef = React.useRef<(() => void) | null>(null);
   const entryPrefetchStartedRef = React.useRef(false);
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
@@ -235,6 +237,11 @@ export default function RootLayout() {
           if (__DEV__) console.warn('[ATT] request failed:', e);
         } finally {
           if (Platform.OS === 'ios') attReadyRef.current = true;
+          try {
+            appsFlyerUnsubRef.current = initializeAppsFlyer();
+          } catch (e) {
+            if (__DEV__) console.warn('[AppsFlyer] init failed:', e);
+          }
           trySetReady();
         }
       })();
@@ -404,6 +411,8 @@ export default function RootLayout() {
     return () => {
       if (fontTimeout) clearTimeout(fontTimeout);
       if (entryDecisionTimeout) clearTimeout(entryDecisionTimeout);
+      appsFlyerUnsubRef.current?.();
+      appsFlyerUnsubRef.current = null;
     };
   }, [fontsLoaded, fontError, appConfigPayload]);
 

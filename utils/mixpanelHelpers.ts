@@ -2,6 +2,12 @@ import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
 import { clevertapService } from '@/services/clevertapService';
 import { extractNumericId } from '@/utils/shopifyIds';
+import {
+  associateUserSession,
+  trackAddToCartAction,
+  trackInitiatedCheckoutAction,
+  trackPurchaseCompletion,
+} from '@/utils/appsFlyerAnalytics';
 
 /**
  * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
@@ -51,6 +57,7 @@ export const identifyUser = (userId: string, userProperties?: {
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
+    associateUserSession(userId);
   } catch (error) {
     console.error('Analytics identify error:', error);
   }
@@ -115,6 +122,9 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     value: price,
     currency: 'INR',
   });
+  if (price != null && Number.isFinite(price)) {
+    trackAddToCartAction(productId, 'product', price, quantity || 1);
+  }
 };
 
 export const trackCheckoutStarted = (cartValue: number, itemCount: number, productIds?: string[]) => {
@@ -127,6 +137,7 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number, produ
     content_type: 'product',
     num_items: itemCount,
   });
+  trackInitiatedCheckoutAction(cartValue, 'INR');
 };
 
 export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string, productIds?: string[]) => {
@@ -315,6 +326,7 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     content_type: 'product',
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
+  trackPurchaseCompletion(orderId, amount, 'INR');
 };
 
 export const trackOrderConfirmed = (orderId: string, amount: number) => {

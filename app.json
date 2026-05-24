@@ -5,7 +5,7 @@
     "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "scheme": ["app", "kiddo"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -14,7 +14,8 @@
       "bundleIdentifier": "com.kiddo.ak",
       "associatedDomains": [
         "applinks:allforkiddo.com",
-        "applinks:www.allforkiddo.com"
+        "applinks:www.allforkiddo.com",
+        "applinks:kiddo-app.onelink.me"
       ],
       "skAdNetworkIdentifiers": [
         "v9wttpbfk9.skadnetwork",
@@ -67,6 +68,11 @@
             {
               "scheme": "https",
               "host": "www.allforkiddo.com",
+              "pathPattern": ".*"
+            },
+            {
+              "scheme": "https",
+              "host": "kiddo-app.onelink.me",
               "pathPattern": ".*"
             }
           ],

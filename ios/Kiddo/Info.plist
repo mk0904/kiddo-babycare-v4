@@ -27,6 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
+          <string>kiddo</string>
           <string>app</string>
           <string>com.kiddo.ak</string>
         </array>
