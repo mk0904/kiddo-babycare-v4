@@ -1,11 +1,10 @@
 import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
 import { clevertapService } from '@/services/clevertapService';
-import { logMetaEvent, setMetaUserData, extractNumericId } from '@/utils/metaSDK';
+import { extractNumericId } from '@/utils/shopifyIds';
 
 /**
- * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap, Meta CAPI)
- * and to Meta SDK in-app for attribution and dedup. Same event_id on both for CAPI dedup.
+ * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
  */
 
 function getDistinctId(): string {
@@ -24,7 +23,6 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   try {
     const props = properties ?? {};
     analyticsService.track(eventName, props, getDistinctId());
-    logMetaEvent(eventName, props, props.event_id ?? props.orderId);
     // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
     const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
     clevertapService.recordEvent(ctEventName, props);
@@ -53,15 +51,6 @@ export const identifyUser = (userId: string, userProperties?: {
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
-
-    // Also set Meta user data for advanced matching
-    setMetaUserData({
-      userId,
-      email: userProperties?.email,
-      phone: userProperties?.phone,
-      firstName: userProperties?.name?.split(' ')[0],
-      lastName: userProperties?.name?.split(' ').slice(1).join(' '),
-    });
   } catch (error) {
     console.error('Analytics identify error:', error);
   }

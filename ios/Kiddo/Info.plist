@@ -31,27 +31,9 @@
           <string>com.kiddo.ak</string>
         </array>
       </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>fb1494379925573507</string>
-        </array>
-      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>5</string>
-    <key>FacebookAdvertiserIDCollectionEnabled</key>
-    <true/>
-    <key>FacebookAppID</key>
-    <string>1494379925573507</string>
-    <key>FacebookAutoInitEnabled</key>
-    <false/>
-    <key>FacebookAutoLogAppEventsEnabled</key>
-    <false/>
-    <key>FacebookClientToken</key>
-    <string>04a657781e5dd2df8704fd3292d74e3d</string>
-    <key>FacebookDisplayName</key>
-    <string>kiddo-babycare</string>
     <key>GMSApiKey</key>
     <string>PLACEHOLDER_GOOGLE_MAPS_KEY</string>
     <key>LSApplicationQueriesSchemes</key>
@@ -65,10 +47,6 @@
       <string>tez</string>
       <string>whatsapp</string>
       <string>razorpay</string>
-      <string>fbapi</string>
-      <string>fb-messenger-api</string>
-      <string>fbauth2</string>
-      <string>fbshareextension</string>
     </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>

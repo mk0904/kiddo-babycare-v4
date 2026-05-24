@@ -1675,7 +1675,7 @@ export default function CartScreen() {
             // Track Payment Success and Order Placed
             try {
                 const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
-                const { extractNumericId } = require('@/utils/metaSDK');
+                const { extractNumericId } = require('@/utils/shopifyIds');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
