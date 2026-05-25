@@ -83,11 +83,13 @@ export default function OTPScreen() {
       inputRefs.current.forEach(ref => ref?.blur());
       hiddenInputRef.current?.blur();
 
-      // Auto-verify
-      handleVerifyOtp({
-        otpInput: retrievedCode,
-        otpPinCount,
-      });
+      // Auto-verify with a slight delay to allow UI to render filled state and enabled CTA
+      setTimeout(() => {
+        handleVerifyOtp({
+          otpInput: retrievedCode,
+          otpPinCount,
+        });
+      }, 300);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retrievedCode, otpPinCount]);
@@ -112,11 +114,13 @@ export default function OTPScreen() {
           // Blur all inputs
           inputRefs.current.forEach(ref => ref?.blur());
 
-          // Auto-verify
-          handleVerifyOtp({
-            otpInput: otpString,
-            otpPinCount,
-          });
+          // Auto-verify with a slight delay
+          setTimeout(() => {
+            handleVerifyOtp({
+              otpInput: otpString,
+              otpPinCount,
+            });
+          }, 300);
 
           // Reset flag after a delay
           setTimeout(() => {
@@ -333,11 +337,13 @@ export default function OTPScreen() {
                       inputRefs.current.forEach(ref => ref?.blur());
                       hiddenInputRef.current?.blur();
 
-                      // Auto-verify
-                      handleVerifyOtp({
-                        otpInput: digits.slice(0, otpPinCount),
-                        otpPinCount,
-                      });
+                      // Auto-verify with a slight delay
+                      setTimeout(() => {
+                        handleVerifyOtp({
+                          otpInput: digits.slice(0, otpPinCount),
+                          otpPinCount,
+                        });
+                      }, 300);
                     }
                   }}
                   keyboardType="number-pad"
@@ -383,11 +389,13 @@ export default function OTPScreen() {
                         // Blur all inputs
                         inputRefs.current.forEach(ref => ref?.blur());
 
-                        // Auto-verify
-                        handleVerifyOtp({
-                          otpInput: digits,
-                          otpPinCount,
-                        });
+                        // Auto-verify with a slight delay
+                        setTimeout(() => {
+                          handleVerifyOtp({
+                            otpInput: digits,
+                            otpPinCount,
+                          });
+                        }, 300);
 
                         // Reset flag after a delay
                         setTimeout(() => {
@@ -411,13 +419,15 @@ export default function OTPScreen() {
                       inputRefs.current[index + 1]?.focus();
                     }
 
-                    // Auto-verify when all digits are entered
+                    // Auto-verify when all digits are entered with a slight delay
                     const otpString = newOtp.join('');
                     if (otpString.length === otpPinCount) {
-                      handleVerifyOtp({
-                        otpInput: otpString,
-                        otpPinCount,
-                      });
+                      setTimeout(() => {
+                        handleVerifyOtp({
+                          otpInput: otpString,
+                          otpPinCount,
+                        });
+                      }, 300);
                     }
                   }}
                   onKeyPress={(e) => {
@@ -455,11 +465,11 @@ export default function OTPScreen() {
             loading={loading}
             style={[
               styles.verifyButton,
-              (otpInput.join('').length < otpPinCount || loading) && styles.verifyButtonDisabled
+              (otpInput.join('').length < otpPinCount) && styles.verifyButtonDisabled
             ]}
             textStyle={[
               styles.verifyButtonText,
-              (otpInput.join('').length < otpPinCount || loading) && styles.verifyButtonTextDisabled
+              (otpInput.join('').length < otpPinCount) && styles.verifyButtonTextDisabled
             ]}
           />
 

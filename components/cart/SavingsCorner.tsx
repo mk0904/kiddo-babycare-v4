@@ -797,8 +797,8 @@ export function SavingsCorner({
                             <Switch
                                 value={kiddoCashEnabled}
                                 onValueChange={onKiddoCashChange}
-                                trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
-                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
+                                trackColor={{ false: '#2b323aff', true: '#5B21B6' }}
+                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#FFFFFF'}
                                 style={styles.kiddoCashSwitch}
                             />
                         </View>
@@ -1262,12 +1262,12 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     kiddoCashSwitchWrap: {
-        
+
         alignItems: 'flex-end',
         justifyContent: 'center',
     },
     kiddoCashSwitch: {
-        transform: [{ scaleX: 0.77 }, { scaleY: 0.80 }],
+        transform: [{ scaleX: 0.8 }, { scaleY: 0.85 }],
     },
     kiddoCoinsBar: {
         backgroundColor: '#EDE9FE',

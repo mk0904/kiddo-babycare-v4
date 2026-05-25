@@ -41,23 +41,25 @@ export function WalletHowItWorksModal({
     const slideBackground = steps[activeStep]?.color ?? themeColor;
 
     useEffect(() => {
-        let interval: ReturnType<typeof setInterval> | undefined;
-        if (visible && steps.length > 1 && autoAdvanceMs > 0) {
-            interval = setInterval(() => {
-                setActiveStep((prevStep) => {
-                    const nextStep = (prevStep + 1) % steps.length;
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        if (visible && steps.length > 0 && autoAdvanceMs > 0) {
+            timeout = setTimeout(() => {
+                if (activeStep + 1 >= steps.length) {
+                    handleClose();
+                } else {
+                    const nextStep = activeStep + 1;
+                    setActiveStep(nextStep);
                     scrollViewRef.current?.scrollTo({
                         x: nextStep * SLIDE_WIDTH,
                         animated: true,
                     });
-                    return nextStep;
-                });
+                }
             }, autoAdvanceMs);
         }
         return () => {
-            if (interval) clearInterval(interval);
+            if (timeout) clearTimeout(timeout);
         };
-    }, [visible, steps.length, autoAdvanceMs]);
+    }, [visible, steps.length, autoAdvanceMs, activeStep]);
 
     const handleClose = () => {
         setActiveStep(0);

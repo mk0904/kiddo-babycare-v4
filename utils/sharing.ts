@@ -20,7 +20,7 @@ function buildShareMessage(shortLinkUrl: string, uniqueReferralCode: string, fri
   return (
     `Hey! 👋 Try out Kiddo—everything is carefully picked for kids! 🎁 ` +
     `Use my personal link to sign up and get ₹${friendRewardAmount} wallet credit instantly:\n\n` +
-    `${shortLinkUrl}\n\nReferral Code: ${uniqueReferralCode}`
+    `${shortLinkUrl}`
   );
 }
 
@@ -38,7 +38,7 @@ export async function shareReferralFallback(
     'https://play.google.com/store/apps/details?id=com.barereactnativeapp072';
 
   const message =
-    `Hey! Download Kiddo App and use my referral code ${uniqueReferralCode} ` +
+    `Hey! Download Kiddo App and use my link ` +
     `to get ₹${friendRewardAmount} off on your first order!\n\n` +
     `Download here:\nAndroid: ${androidUrl}\niOS: ${iosUrl}`;
 

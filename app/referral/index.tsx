@@ -11,6 +11,7 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Alert,
     Clipboard,
@@ -35,6 +36,21 @@ export default function ReferralScreen() {
 
     const [referralStatus, setReferralStatus] = useState<ReferralStatusResponse | null>(null);
     const [fetchingStatus, setFetchingStatus] = useState(false);
+
+    useEffect(() => {
+        const checkFirstTime = async () => {
+            try {
+                const hasViewed = await AsyncStorage.getItem('has_viewed_referral_how_it_works');
+                if (!hasViewed) {
+                    setHowItWorksVisible(true);
+                    await AsyncStorage.setItem('has_viewed_referral_how_it_works', 'true');
+                }
+            } catch (error) {
+                console.error('Error checking first time referral view:', error);
+            }
+        };
+        checkFirstTime();
+    }, []);
 
     useEffect(() => {
         if (isAuthenticated && authUser?.phone) {

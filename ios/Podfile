@@ -43,12 +43,6 @@ target 'Kiddo' do
   pod 'react-native-google-maps', path: File.dirname(`node --print "require.resolve('react-native-maps/package.json')"`)
 # @generated end react-native-maps
 
-  # Meta (Facebook) SDK for iOS - official doc shows ~> 8.0.0; react-native-fbsdk-next 13.x requires ~> 18.0 (see META_SDK_SETUP.md)
-  pod 'FBSDKCoreKit', '~> 18.0.0'
-  pod 'FBSDKLoginKit', '~> 18.0.0'
-  pod 'FBSDKShareKit', '~> 18.0.0'
-  pod 'FBSDKGamingServicesKit', '~> 18.0.0'
-
   config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
@@ -69,5 +63,14 @@ target 'Kiddo' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Force c++20 for clevertap-react-native to fix Xcode build errors with RN 0.74+
+    installer.pods_project.targets.each do |target|
+      if target.name == 'clevertap-react-native'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        end
+      end
+    end
   end
 end

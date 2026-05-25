@@ -139,10 +139,7 @@ export default function AddBalanceScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <View
-                style={styles.header}
-                onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
-            >
+            <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
                     <Ionicons name="arrow-back" size={24} color="#181D27" />
                 </TouchableOpacity>
@@ -156,8 +153,7 @@ export default function AddBalanceScreen() {
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior="padding"
-                keyboardVerticalOffset={headerHeight}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <ScrollView
                     style={styles.scrollView}
@@ -173,8 +169,8 @@ export default function AddBalanceScreen() {
                             style={styles.amountInput}
                             value={amountText}
                             onChangeText={handleAmountChange}
-                            placeholder=""
-                            placeholderTextColor="#9CA3AF"
+                            placeholder="1000"
+                            placeholderTextColor="#ced0d2ff"
                             keyboardType="number-pad"
                             maxLength={12}
                         />

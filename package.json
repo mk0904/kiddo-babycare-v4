@@ -6,9 +6,13 @@
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
+    "android:fast": "expo run:android -- -PreactNativeArchitectures=arm64-v8a",
+    "android:device": "expo run:android --device",
+    "android:dev": "expo start --dev-client",
     "android:clean": "rm -rf android/app/build android/app/.cxx android/build android/.gradle && expo run:android",
     "android:release": "cd android && ./gradlew assembleRelease",
     "ios": "expo run:ios",
+    "ios:pods": "cd ios && pod install",
     "web": "expo start --web",
     "lint": "expo lint"
   },

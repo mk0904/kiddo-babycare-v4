@@ -10,9 +10,10 @@ import {
 } from '@/services/referralService';
 import { WalletCarouselItem } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Dimensions,
     FlatList,
@@ -30,11 +31,11 @@ const WALLET_SECTION_BG = '#F4F3FF';
 const WHITE_SECTION_PADDING = 20;
 const CAROUSEL_SIDE_INSET = 20;
 const CAROUSEL_PEEK_WIDTH = 52;
-const CAROUSEL_CARD_GAP = 0;
+const CAROUSEL_CARD_GAP = 12;
 /** Active card uses full width minus inset and peek of the next slide. */
 const CAROUSEL_ITEM_WIDTH = width - CAROUSEL_SIDE_INSET - CAROUSEL_PEEK_WIDTH;
 const CAROUSEL_SNAP_INTERVAL = CAROUSEL_ITEM_WIDTH + CAROUSEL_CARD_GAP;
-const CAROUSEL_CARD_HEIGHT = CAROUSEL_ITEM_WIDTH * 0.38;
+const CAROUSEL_CARD_HEIGHT = CAROUSEL_ITEM_WIDTH * 0.48;
 const CAROUSEL_AUTO_SCROLL_MS = 3500;
 const HEADER_MIN_HEIGHT = 300;
 
@@ -80,6 +81,21 @@ export default function WalletScreen() {
     const carousel = config.carousel ?? [];
     const bgImage = screen.bgImage;
     const moneyPot = screen.moneyPot;
+
+    useEffect(() => {
+        const checkFirstTime = async () => {
+            try {
+                const hasViewed = await AsyncStorage.getItem('has_viewed_wallet_how_it_works');
+                if (!hasViewed) {
+                    setHowItWorksVisible(true);
+                    await AsyncStorage.setItem('has_viewed_wallet_how_it_works', 'true');
+                }
+            } catch (error) {
+                console.error('Error checking first time wallet view:', error);
+            }
+        };
+        checkFirstTime();
+    }, []);
 
     const fetchWalletStatus = useCallback(() => {
         if (!isAuthenticated || !authUser?.phone) return;
