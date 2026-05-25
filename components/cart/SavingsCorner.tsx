@@ -797,7 +797,7 @@ export function SavingsCorner({
                             <Switch
                                 value={kiddoCashEnabled}
                                 onValueChange={onKiddoCashChange}
-                                trackColor={{ false: '#2b323aff', true: '#5B21B6' }}
+                                trackColor={{ false: '#575a5eff', true: '#5B21B6' }}
                                 thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#FFFFFF'}
                                 style={styles.kiddoCashSwitch}
                             />

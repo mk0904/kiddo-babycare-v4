@@ -153,7 +153,7 @@ export default function AddBalanceScreen() {
 
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior="padding"
             >
                 <ScrollView
                     style={styles.scrollView}
