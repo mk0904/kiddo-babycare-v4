@@ -48,6 +48,14 @@ export interface DeliveryPartnerOrderStatus {
   assignedAt?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
+  /** Billing details from delivery-partner-service */
+  subtotal_amount?: string | number | null;
+  delivery_fee?: string | number | null;
+  discount_amount?: string | number | null;
+  total_amount?: string | number | null;
+  kiddo_cash_spent?: string | number | null;
+  coupon_code?: string | null;
+  couponCode?: string | null;
   /**
    * Normalized map for Try & Buy outcomes + thumbnails. Built from `tryBuyPostDelivery`,
    * and merged with the **`items`** array from GET delivery-status (kiddo-service forwards this
@@ -456,6 +464,15 @@ function normalizeDeliveryPartnerOrderStatusPayload(data: unknown): DeliveryPart
   } else {
     delete (out as { isSchoolsDeliveredEventOrder?: boolean }).isSchoolsDeliveredEventOrder;
   }
+
+  // Normalize billing fields (handle both snake_case and camelCase)
+  if (out.subtotal_amount == null && o.subtotalAmount != null) out.subtotal_amount = o.subtotalAmount as any;
+  if (out.total_amount == null && o.totalAmount != null) out.total_amount = o.totalAmount as any;
+  if (out.discount_amount == null && o.discountAmount != null) out.discount_amount = o.discountAmount as any;
+  if (out.delivery_fee == null && o.deliveryFee != null) out.delivery_fee = o.deliveryFee as any;
+  if (out.kiddo_cash_spent == null && o.kiddoCashSpent != null) out.kiddo_cash_spent = o.kiddoCashSpent as any;
+  if (out.coupon_code == null && o.couponCode != null) out.coupon_code = o.couponCode as any;
+
   return out;
 }
 

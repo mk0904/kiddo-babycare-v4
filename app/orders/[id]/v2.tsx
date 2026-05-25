@@ -1828,22 +1828,32 @@ export default function OrderDetailV2Screen() {
                     })}
                 </View>
 
-                {/* Bill details – subtotal = items before discount; discount = derived or from API; total = order total */}
+                {/* Bill details – fetched from delivery partner system */}
                 {(() => {
-                    const discountAmount = Math.max(0, subtotalDisplay + shipping + tax - total);
                     const freeShoesGiftUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
                     const freePuzzleGiftUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
                     const mysteryGiftUc = appConfigService.getMysteryGiftDiscountCodeUppercase();
 
+                    const dps = deliveryPartnerStatus;
+                    
+                    const billSubtotal = dps ? parseFloat(String(dps.subtotal_amount || 0)) : subtotalDisplay;
+                    const billShipping = dps ? parseFloat(String(dps.delivery_fee || 0)) : shipping;
+                    const billTotal = dps ? parseFloat(String(dps.total_amount || 0)) : total;
+                    const billDiscount = dps ? parseFloat(String(dps.discount_amount || 0)) : Math.max(0, subtotalDisplay + shipping + tax - total);
+                    const billKiddoCash = dps ? parseFloat(String(dps.kiddo_cash_spent || 0)) : 0;
+                    
+                    let billCouponCode = dps ? (dps.coupon_code || dps.couponCode || null) : couponCode;
+
                     const isFreeShoesGiftCoupon =
-                        Boolean(freeShoesGiftUc) && couponCode?.toUpperCase() === freeShoesGiftUc;
+                        Boolean(freeShoesGiftUc) && billCouponCode?.toUpperCase() === freeShoesGiftUc;
                     const isFreePuzzleGiftCoupon =
-                        Boolean(freePuzzleGiftUc) && couponCode?.toUpperCase() === freePuzzleGiftUc;
+                        Boolean(freePuzzleGiftUc) && billCouponCode?.toUpperCase() === freePuzzleGiftUc;
                     const isMysteryGiftCoupon =
-                        Boolean(mysteryGiftUc) && couponCode?.toUpperCase() === mysteryGiftUc;
+                        Boolean(mysteryGiftUc) && billCouponCode?.toUpperCase() === mysteryGiftUc;
 
                     const isGiftCoupon = isFreeShoesGiftCoupon || isFreePuzzleGiftCoupon || isMysteryGiftCoupon;
-                    const displayDiscount = isGiftCoupon ? 0 : (couponValue > 0 ? couponValue : discountAmount);
+                    
+                    const displayDiscount = isGiftCoupon ? 0 : billDiscount;
 
                     let giftText = '';
                     if (isFreeShoesGiftCoupon) giftText = 'Free Shoe';
@@ -1855,22 +1865,40 @@ export default function OrderDetailV2Screen() {
                             <Text style={styles.billTitle}>Bill details</Text>
                             <View style={styles.billRow}>
                                 <Text style={styles.billLabel}>Subtotal</Text>
-                                <Text style={styles.billValue}>{formatCurrency(subtotalDisplay)}</Text>
+                                <Text style={styles.billValue}>{formatCurrency(billSubtotal)}</Text>
                             </View>
-                            {(displayDiscount > 0 || couponCode) && (
+                            
+                            {billShipping > 0 && (
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Delivery Fee</Text>
+                                    <Text style={styles.billValue}>{formatCurrency(billShipping)}</Text>
+                                </View>
+                            )}
+
+                            {(displayDiscount > 0 || billCouponCode) && (
                                 <View style={styles.billRow}>
                                     <Text style={styles.billLabel}>
-                                        {couponCode ? `Coupon (${couponCode})` : 'Discount'}
+                                        {billCouponCode ? `Coupon (${billCouponCode})` : 'Coupon Discount'}
                                     </Text>
-                                    <Text style={[styles.billValue, (displayDiscount > 0 || (couponValue > 0 && !isGiftCoupon) || isGiftCoupon) && styles.billDiscountValue]}>
+                                    <Text style={[styles.billValue, (displayDiscount > 0 || isGiftCoupon) && styles.billDiscountValue]}>
                                         {isGiftCoupon ? giftText : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
                                     </Text>
                                 </View>
                             )}
+                            
+                            {billKiddoCash > 0 && (
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>Kiddo Cash</Text>
+                                    <Text style={[styles.billValue, styles.billDiscountValue]}>
+                                        -{formatCurrency(billKiddoCash)}
+                                    </Text>
+                                </View>
+                            )}
+
                             <View style={styles.billDivider} />
                             <View style={styles.billRow}>
                                 <Text style={styles.billTotalLabel}>Total</Text>
-                                <Text style={styles.billTotalValue}>{formatCurrency(total)}</Text>
+                                <Text style={styles.billTotalValue}>{formatCurrency(billTotal)}</Text>
                             </View>
                         </View>
                     );

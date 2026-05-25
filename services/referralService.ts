@@ -59,10 +59,10 @@ class ReferralService {
     return cleaned;
   }
 
-  async getReferralStatus(phone: string): Promise<ReferralStatusResponse> {
+  async getReferralStatus(phone: string, page: number = 1): Promise<ReferralStatusResponse> {
     try {
       const cleaned = this.cleanPhone(phone);
-      const url = getBackendApiPath(`referral/status?phone=${cleaned}`);
+      const url = getBackendApiPath(`referral/status?phone=${cleaned}&page=${page}`);
       console.log(`[Referral Service] Fetching status for ${cleaned} from ${url}`);
       const response = await axios.get<ReferralStatusResponse>(url);
       return response.data;

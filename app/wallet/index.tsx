@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     FlatList,
     ScrollView,
@@ -73,6 +74,12 @@ export default function WalletScreen() {
     const [activeCarousel, setActiveCarousel] = useState(0);
     const carouselRef = useRef<FlatList<WalletCarouselItem>>(null);
 
+    const [page, setPage] = useState(1);
+    const [transactions, setTransactions] = useState<ReferralTransaction[]>([]);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(4);
+
     const config = getMergedWalletConfig();
     const screen = { ...defaultWalletConfig.walletScreen, ...config.walletScreen };
     const themeColor = config.howItWorks?.themeColor ?? WALLET_THEME_COLOR;
@@ -97,17 +104,39 @@ export default function WalletScreen() {
         checkFirstTime();
     }, []);
 
-    const fetchWalletStatus = useCallback(() => {
+    const fetchWalletStatus = useCallback(async (pageNum = 1) => {
         if (!isAuthenticated || !authUser?.phone) return;
-        referralService
-            .getReferralStatus(authUser.phone)
-            .then(setWalletStatus)
-            .catch((err) => console.error('[Wallet] Failed to load wallet status:', err));
+        try {
+            if (pageNum > 1) setLoadingMore(true);
+            const data = await referralService.getReferralStatus(authUser.phone, pageNum);
+            if (pageNum === 1) {
+                setWalletStatus(data);
+                setTransactions(data.transactions ?? []);
+            } else {
+                setTransactions((prev) => {
+                    // avoid duplicates by ID
+                    const newTxs = data.transactions ?? [];
+                    const prevIds = new Set(prev.map(t => t.id));
+                    const toAdd = newTxs.filter(t => !prevIds.has(t.id));
+                    return [...prev, ...toAdd];
+                });
+            }
+            if (!data.transactions || data.transactions.length === 0) {
+                setHasMore(false);
+            } else {
+                setHasMore(true);
+            }
+        } catch (err) {
+            console.error('[Wallet] Failed to load wallet status:', err);
+        } finally {
+            if (pageNum > 1) setLoadingMore(false);
+        }
     }, [isAuthenticated, authUser?.phone]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchWalletStatus();
+            setPage(1);
+            fetchWalletStatus(1);
         }, [fetchWalletStatus]),
     );
 
@@ -132,10 +161,20 @@ export default function WalletScreen() {
 
     const balance = walletStatus?.wallet?.total_amount ?? 0;
     const totalEarned = walletStatus?.wallet?.earn_amount ?? 0;
-    const transactions = walletStatus?.transactions ?? [];
     const filteredTransactions = transactions.filter((tx) =>
         historyTab === 'earned' ? isEarnedTransaction(tx) : !isEarnedTransaction(tx),
     );
+
+    const handleLoadMore = () => {
+        if (visibleCount < filteredTransactions.length) {
+            setVisibleCount(prev => prev + 4);
+        } else if (hasMore && !loadingMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchWalletStatus(nextPage);
+            setVisibleCount(prev => prev + 4);
+        }
+    };
 
     const onAddBalance = () => {
         router.push({
@@ -311,7 +350,7 @@ export default function WalletScreen() {
                                     styles.historyTab,
                                     historyTab === 'earned' && styles.historyTabActive,
                                 ]}
-                                onPress={() => setHistoryTab('earned')}
+                                onPress={() => { setHistoryTab('earned'); setVisibleCount(4); }}
                             >
                                 <Text
                                     style={[
@@ -327,7 +366,7 @@ export default function WalletScreen() {
                                     styles.historyTab,
                                     historyTab === 'spent' && styles.historyTabActive,
                                 ]}
-                                onPress={() => setHistoryTab('spent')}
+                                onPress={() => { setHistoryTab('spent'); setVisibleCount(4); }}
                             >
                                 <Text
                                     style={[
@@ -345,29 +384,44 @@ export default function WalletScreen() {
                                 <Text style={styles.emptyHistoryText}>No activity here!</Text>
                             </View>
                         ) : (
-                            filteredTransactions.map((tx) => (
-                                <View key={tx.id} style={styles.transactionRow}>
-                                    <View style={styles.transactionInfo}>
-                                        <Text style={styles.transactionDesc} numberOfLines={2}>
-                                            {tx.description || 'Wallet transaction'}
-                                        </Text>
-                                        <Text style={styles.transactionDate}>
-                                            {formatTransactionDate(tx.created_at)}
+                            <>
+                                {filteredTransactions.slice(0, visibleCount).map((tx) => (
+                                    <View key={tx.id} style={styles.transactionRow}>
+                                        <View style={styles.transactionInfo}>
+                                            <Text style={styles.transactionDesc} numberOfLines={2}>
+                                                {tx.description || 'Wallet transaction'}
+                                            </Text>
+                                            <Text style={styles.transactionDate}>
+                                                {formatTransactionDate(tx.created_at)}
+                                            </Text>
+                                        </View>
+                                        <Text
+                                            style={[
+                                                styles.transactionAmount,
+                                                isEarnedTransaction(tx)
+                                                    ? styles.transactionAmountEarned
+                                                    : styles.transactionAmountSpent,
+                                            ]}
+                                        >
+                                            {isEarnedTransaction(tx) ? '+' : '-'}
+                                            {formatCurrency(Math.abs(tx.amount))}
                                         </Text>
                                     </View>
-                                    <Text
-                                        style={[
-                                            styles.transactionAmount,
-                                            isEarnedTransaction(tx)
-                                                ? styles.transactionAmountEarned
-                                                : styles.transactionAmountSpent,
-                                        ]}
+                                ))}
+                                {(visibleCount < filteredTransactions.length || hasMore) && (
+                                    <TouchableOpacity
+                                        style={styles.loadMoreButton}
+                                        onPress={handleLoadMore}
+                                        disabled={loadingMore}
                                     >
-                                        {isEarnedTransaction(tx) ? '+' : '-'}
-                                        {formatCurrency(Math.abs(tx.amount))}
-                                    </Text>
-                                </View>
-                            ))
+                                        {loadingMore ? (
+                                            <ActivityIndicator size="small" color="#F15E5E" />
+                                        ) : (
+                                            <Text style={[styles.loadMoreText, { color: '#F15E5E' }]}>View more</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                )}
+                            </>
                         )}
                     </View>
 
@@ -658,6 +712,15 @@ const styles = StyleSheet.create({
     },
     transactionAmountSpent: {
         color: '#181D27',
+    },
+    loadMoreButton: {
+        paddingTop: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadMoreText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
     },
     footer: {
         position: 'absolute',

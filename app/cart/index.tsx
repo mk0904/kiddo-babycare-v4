@@ -2258,6 +2258,7 @@ export default function CartScreen() {
                                 kiddoCashEnabled={kiddoCashEnabled}
                                 walletBalance={walletBalance}
                                 toPay={toPay}
+                                kiddoCashApplied={kiddoCashApplied}
                                 formatCurrency={formatCurrency}
                                 onLoginPress={() => router.push('/(auth)/login')}
                                 onKiddoCashChange={setKiddoCashEnabled}

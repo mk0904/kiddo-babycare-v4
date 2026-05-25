@@ -49,6 +49,8 @@ export interface SavingsCornerProps {
     walletBalance?: number | null;
     /** Amount customer pays after discounts, fees, and Kiddo Cash — used for coins earn estimate. */
     toPay: number;
+    /** Amount deducted from Kiddo Cash (if any). */
+    kiddoCashApplied?: number;
     formatCurrency: (amount: number) => string;
     onLoginPress: () => void;
     onKiddoCashChange: (value: boolean) => void;
@@ -64,6 +66,7 @@ export function SavingsCorner({
     kiddoCashEnabled,
     walletBalance = null,
     toPay,
+    kiddoCashApplied = 0,
     formatCurrency,
     onLoginPress,
     onKiddoCashChange,
@@ -526,7 +529,7 @@ export function SavingsCorner({
         [configRefreshKey],
     );
 
-    const kiddoCoinsEarned = useMemo(() => Math.round(Math.max(0, toPay) * 0.01), [toPay]);
+    const kiddoCoinsEarned = useMemo(() => Math.round(Math.max(0, toPay + kiddoCashApplied) * 0.01), [toPay, kiddoCashApplied]);
 
     return (
         <View style={styles.wrapper}>
