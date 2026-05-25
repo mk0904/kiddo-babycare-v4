@@ -2353,7 +2353,7 @@
     },
     "remoteConfig": {
       "url": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/appConfig.json",
-      "useLocalConfig": false,
+      "useLocalConfig": true,
       "cacheDuration": 3600000
     }
   }

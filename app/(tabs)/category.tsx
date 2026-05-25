@@ -6,6 +6,7 @@ import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
+import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -15,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const DEFAULT_HEADER = { title: 'Category', showSearch: true, showWishlist: true };
+const DEFAULT_HEADER = { title: 'Categories', showSearch: true, showWishlist: true };
 
 export default function CategoryScreen() {
   const router = useRouter();
@@ -34,10 +35,10 @@ export default function CategoryScreen() {
 
   const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
-  const tabBarStackBottom = useMemo(() => {
-    const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
-    return Math.max(insets.bottom, 0) + tabBarHeight;
-  }, [insets.bottom]);
+  const tabBarStackBottom = useMemo(
+    () => getTabBarStackBottom(insets.bottom),
+    [insets.bottom]
+  );
 
   const scrollBottomPad = useMemo(() => Math.max(80, tabBarStackBottom + 130), [tabBarStackBottom]);
 

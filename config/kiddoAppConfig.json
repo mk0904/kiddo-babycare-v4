@@ -13,18 +13,18 @@
         "label": "Home"
       },
       "category": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-inactive-fill.svg",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active.svg",
-        "label": "Category"
+        "icon": "",
+        "activeIcon": "",
+        "label": "Categories"
       },
       "ticketing": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-inactive-fill.svg",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-active-fill.svg",
-        "label": "Ticketing"
+        "icon": "",
+        "activeIcon": "",
+        "label": "Tickets"
       },
       "account": {
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-inactive-fill.svg",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-active-fill.svg",
+        "icon": "",
+        "activeIcon": "",
         "label": "Account"
       }
     },
@@ -32,6 +32,7 @@
       "backgroundColor": "#FFFFFF",
       "activeTintColor": "#E84E4B",
       "inactiveTintColor": "#999999",
+      "lensPreset": "water",
       "shadowColor": "#363636",
       "shadowOpacity": 0.2,
       "shadowRadius": 10,
@@ -2371,27 +2372,27 @@
       "subcategories": [
         {
           "collectionId": "gid://shopify/Collection/513381007649",
-          "label": "New Swimming Caps",
+          "label": "Swimming Caps",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/41618940-f9c9-425d-bc71-0850a535f070.jpg?v=1778052685"
         },
         {
           "collectionId": "gid://shopify/Collection/513376813345",
-          "label": "New Swimming Goggles",
+          "label": "Swimming Goggles",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/e787fe0a-d898-488b-9f19-ad90a8ab3a9c.jpg?v=1778046354"
         },
         {
           "collectionId": "gid://shopify/Collection/513377272097",
-          "label": "New Swimming Floaties & Pools",
+          "label": "Swimming Floaties & Pools",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/0b4b501d-b1e7-482a-8fae-6adfc137ed74.jpg?v=1778046554"
         },
         {
           "collectionId": "gid://shopify/Collection/513376682273",
-          "label": "New Swimming Costumes",
+          "label": "Swimming Costumes",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8be649f9-38d9-4514-98bc-5405099707ee.jpg?v=1778046940"
         },
         {
           "collectionId": "gid://shopify/Collection/513381073185",
-          "label": "New Swimming Vests & Arm Bands",
+          "label": "Swimming Vests & Arm Bands",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/354129e0-2d2f-4e54-beba-ec7825efa6d9.jpg?v=1778052893"
         },
         {
@@ -2895,6 +2896,73 @@
   },
   "all": [
     {
+      "id": "all-hero-video-banner",
+      "type": "videoBanner",
+      "order": 1,
+      "visible": true,
+      "data": {
+        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/c1102ae625aa4dcf841a97ad50fc18d9.mp4"
+      },
+      "videoConfig": {
+        "autoPlay": true,
+        "muted": true,
+        "loop": true,
+        "aspectRatio": 1.777
+      },
+      "overlayGrid": {
+        "gridConfig": {
+          "layout": "uniform",
+          "numColumns": 2,
+          "colGap": 12,
+          "rowGap": 12,
+          "limit": 2,
+          "aspectRatio": 1.5,
+          "resizeMode": "cover",
+          "showLabels": false,
+          "borderRadius": 16
+        },
+        "collectionIds": [
+          {
+            "id": "gid://shopify/Collection/512979566881",
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1._Final_Fashion_Banner_Homepage.png?v=1777291011",
+            "name": "Fashion"
+          },
+          {
+            "id": "gid://shopify/Collection/513082589473",
+            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2._Final_Toys_Banner_Homepage.png?v=1777291011",
+            "name": "Toys"
+          }
+        ],
+        "styles": {
+          "container": {
+            "paddingHorizontal": 16,
+            "paddingTop": 0,
+            "paddingBottom": 16,
+            "backgroundColor": "transparent"
+          },
+          "title": {
+            "display": "none"
+          },
+          "text": {
+            "fontFamily": "lexend-semibold",
+            "color": "#FFFFFF",
+            "fontSize": 13,
+            "lineHeight": 18,
+            "textAlign": "center",
+            "marginTop": 8
+          }
+        }
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 0,
+          "paddingTop": 0,
+          "paddingBottom": 0,
+          "backgroundColor": "#F5F5F5"
+        }
+      }
+    },
+    {
       "id": "home-rail-top",
       "type": "rail",
       "title": "",
@@ -2914,7 +2982,7 @@
         }
       ],
       "railConfig": {
-        "bgImageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-promo.png",
+        "bgImageUrl": "",
         "height": 80,
         "gap": 16,
         "showLabel": true,
@@ -2937,9 +3005,10 @@
     {
       "id": "all-banner-1",
       "type": "carousel",
+      "visible": false,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Homepage_GIF_27_April_2026.gif?v=1777275024",
+          "imageUrl": "",
           "link": {
             "type": "collection",
             "collection": {

@@ -1,5 +1,7 @@
 // Content block types - similar to gauntlet's block system
 
+import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
+
 /**
  * Block styles (e.g. styles.title, styles.text, styles.heading) support config-driven typography:
  * - fontFamily: alias ("bold" | "medium" | "semiBold" | "regular") or exact name ("Metropolis-Bold")
@@ -369,6 +371,8 @@ export interface VideoBannerBlock extends BaseBlock {
     resultVolume?: number; // 0 to 1
     aspectRatio?: number;
   };
+  /** Optional 1×N grid overlaid on the video (e.g. Fashion + Toys). */
+  overlayGrid?: Pick<CategoryGridBlock, 'title' | 'collectionIds' | 'gridConfig' | 'styles'>;
 }
 
 export interface NoInternetBlock extends BaseBlock {
@@ -414,6 +418,7 @@ export interface AppConfig {
     primaryColor?: string;
     backgroundColor?: string;
     backgroundImage?: string;
+    glass?: HeaderGlassConfig;
   };
   categories?: {
     order?: string[];
@@ -425,6 +430,7 @@ export interface AppConfig {
         textColor?: string;
         backgroundColor?: string;
         backgroundImage?: string;
+        glass?: HeaderGlassConfig;
         labelColors?: {
           selected?: string;
           unselected?: string;
