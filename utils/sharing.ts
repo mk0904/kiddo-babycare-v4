@@ -18,9 +18,9 @@ function canGenerateInviteLink(): boolean {
 
 function buildShareMessage(shortLinkUrl: string, uniqueReferralCode: string, friendRewardAmount: number) {
   return (
-    `Hey! 👋 Try out Kiddo—everything is carefully picked for kids! 🎁 ` +
-    `Use my personal link to sign up and get ₹${friendRewardAmount} wallet credit instantly:\n\n` +
-    `${shortLinkUrl}`
+    `Hey! 👋 Download Kiddo — your go-to app for everything kids, babies & new moms with delivery in just 30 minutes ⚡️ Shop toys, fashion, diapers, books, baby gear, skincare & more from 200+ trusted brands.\n\n` +
+    `🎁 Use my personal link to sign up and get ₹${friendRewardAmount} wallet credit instantly: ${shortLinkUrl}\n\n` +
+    `Referral Code: ${uniqueReferralCode}`
   );
 }
 

@@ -1012,18 +1012,18 @@ export default function OrderDetailV2Screen() {
         isRiderAtCustomer && !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey)
             ? 'arrived'
             : deliveryStatusKey
-              ? deliveryStatusKey
-              : isPhysicalDeliveryOrder
-                ? 'placed'
-                : isEventOrder
-                  ? 'placed'
-                  : '';
+                ? deliveryStatusKey
+                : isPhysicalDeliveryOrder
+                    ? 'placed'
+                    : isEventOrder
+                        ? 'placed'
+                        : '';
     const deliveryStatusLabel = !statusKeyForHeaderPill
         ? ''
         : (DELIVERY_STATUS_LABELS[statusKeyForHeaderPill] ??
-              (deliveryPartnerStatus?.status
-                  ? String(deliveryPartnerStatus.status).replace(/_/g, ' ')
-                  : '')) || 'Placed';
+            (deliveryPartnerStatus?.status
+                ? String(deliveryPartnerStatus.status).replace(/_/g, ' ')
+                : '')) || 'Placed';
     const deliveryStatusColors: { bg: string; text: string } = statusKeyForHeaderPill
         ? (DELIVERY_STATUS_COLORS[statusKeyForHeaderPill] ?? { bg: '#F3F4F6', text: '#374151' })
         : { bg: '#F3F4F6', text: '#374151' };
@@ -1641,7 +1641,7 @@ export default function OrderDetailV2Screen() {
                                 <Ionicons name="expand-outline" size={18} color="#111827" />
                             </TouchableOpacity>
                         </View>
-                       
+
                     </View>
                 ) : null}
 
@@ -1835,13 +1835,13 @@ export default function OrderDetailV2Screen() {
                     const mysteryGiftUc = appConfigService.getMysteryGiftDiscountCodeUppercase();
 
                     const dps = deliveryPartnerStatus;
-                    
+
                     const billSubtotal = dps ? parseFloat(String(dps.subtotal_amount || 0)) : subtotalDisplay;
                     const billShipping = dps ? parseFloat(String(dps.delivery_fee || 0)) : shipping;
                     const billTotal = dps ? parseFloat(String(dps.total_amount || 0)) : total;
                     const billDiscount = dps ? parseFloat(String(dps.discount_amount || 0)) : Math.max(0, subtotalDisplay + shipping + tax - total);
                     const billKiddoCash = dps ? parseFloat(String(dps.kiddo_cash_spent || 0)) : 0;
-                    
+
                     let billCouponCode = dps ? (dps.coupon_code || dps.couponCode || null) : couponCode;
 
                     const isFreeShoesGiftCoupon =
@@ -1852,7 +1852,7 @@ export default function OrderDetailV2Screen() {
                         Boolean(mysteryGiftUc) && billCouponCode?.toUpperCase() === mysteryGiftUc;
 
                     const isGiftCoupon = isFreeShoesGiftCoupon || isFreePuzzleGiftCoupon || isMysteryGiftCoupon;
-                    
+
                     const displayDiscount = isGiftCoupon ? 0 : billDiscount;
 
                     let giftText = '';
@@ -1864,10 +1864,10 @@ export default function OrderDetailV2Screen() {
                         <View style={styles.billCard}>
                             <Text style={styles.billTitle}>Bill details</Text>
                             <View style={styles.billRow}>
-                                <Text style={styles.billLabel}>Subtotal</Text>
-                                <Text style={styles.billValue}>{formatCurrency(billSubtotal)}</Text>
+                                <Text style={styles.billLabel}>Total</Text>
+                                <Text style={styles.billValue}>{formatCurrency(billTotal)}</Text>
                             </View>
-                            
+
                             {billShipping > 0 && (
                                 <View style={styles.billRow}>
                                     <Text style={styles.billLabel}>Delivery Fee</Text>
@@ -1885,7 +1885,7 @@ export default function OrderDetailV2Screen() {
                                     </Text>
                                 </View>
                             )}
-                            
+
                             {billKiddoCash > 0 && (
                                 <View style={styles.billRow}>
                                     <Text style={styles.billLabel}>Kiddo Cash</Text>
@@ -1897,8 +1897,8 @@ export default function OrderDetailV2Screen() {
 
                             <View style={styles.billDivider} />
                             <View style={styles.billRow}>
-                                <Text style={styles.billTotalLabel}>Total</Text>
-                                <Text style={styles.billTotalValue}>{formatCurrency(billTotal)}</Text>
+                                <Text style={styles.billTotalLabel}>Amount Paid</Text>
+                                <Text style={styles.billTotalValue}>{formatCurrency(billSubtotal)}</Text>
                             </View>
                         </View>
                     );
@@ -1944,7 +1944,7 @@ export default function OrderDetailV2Screen() {
                                     </Text>
                                 ))}
                         </View>
-                        
+
                     </View>
                 )}
 
@@ -2531,7 +2531,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 12,
     },
-    
+
     deliveryPartnerAvatarImage: {
         width: '100%',
         height: '100%',
