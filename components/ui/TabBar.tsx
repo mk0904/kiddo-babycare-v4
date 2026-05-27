@@ -40,8 +40,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAV_BAR_WIDTH = 345;
-const NAV_BAR_HEIGHT = 60;
+const NAV_BAR_WIDTH = 368;
+const NAV_BAR_HEIGHT = 68;
 /** Same gap on all sides between outer nav bar and inner active pill. */
 const PILL_OUTER_INSET = 3;
 const LABEL_COLOR = GLASS_PILL_TEXT_COLOR;
@@ -311,7 +311,7 @@ export const TabBar = (props: BottomTabBarProps) => {
 
     const playTravelIndicatorAnimation = () => {
         if (Platform.OS === 'android') return;
-        
+
         const travel = getIndicatorTravelMetrics(tabBarHeight);
         const rest = getIndicatorRestMetrics(tabBarHeight);
 
@@ -341,7 +341,7 @@ export const TabBar = (props: BottomTabBarProps) => {
         indicatorTargetX.value = metrics.x;
         playNavPopAnimation();
         playTravelIndicatorAnimation();
-        
+
         if (Platform.OS === 'android') {
             indicatorX.value = withSpring(metrics.x, SLIDE_SPRING);
             indicatorWidth.value = metrics.width; // Snap width instantly on Android to avoid layout thrashing
@@ -696,35 +696,35 @@ export const TabBar = (props: BottomTabBarProps) => {
                             ]}
                         >
                             {Platform.OS === 'android' ? (
-                            <View
-                                style={[
-                                    StyleSheet.absoluteFill,
-                                    { borderRadius: navBarBorderRadius, overflow: 'hidden' },
-                                ]}
-                                pointerEvents="box-none"
-                            >
-                                {renderNavGlassBackground(navBarBorderRadius)}
-                                <View style={styles.tabsRow} pointerEvents="box-none">
-                                    {renderTabButtons()}
-                                    {renderSlidingIndicator()}
+                                <View
+                                    style={[
+                                        StyleSheet.absoluteFill,
+                                        { borderRadius: navBarBorderRadius, overflow: 'hidden' },
+                                    ]}
+                                    pointerEvents="box-none"
+                                >
+                                    {renderNavGlassBackground(navBarBorderRadius)}
+                                    <View style={styles.tabsRow} pointerEvents="box-none">
+                                        {renderTabButtons()}
+                                        {renderSlidingIndicator()}
+                                    </View>
                                 </View>
-                            </View>
-                        ) : (
-                            <GlassContainer
-                                style={[
-                                    StyleSheet.absoluteFill,
-                                    { borderRadius: navBarBorderRadius },
-                                ]}
-                                spacing={GLASS_CONTAINER_SPACING}
-                                pointerEvents="box-none"
-                            >
-                                {renderNavGlassBackground(navBarBorderRadius)}
-                                <View style={styles.tabsRow} pointerEvents="box-none">
-                                    {renderTabButtons()}
-                                    {renderSlidingIndicator()}
-                                </View>
-                            </GlassContainer>
-                        )}
+                            ) : (
+                                <GlassContainer
+                                    style={[
+                                        StyleSheet.absoluteFill,
+                                        { borderRadius: navBarBorderRadius },
+                                    ]}
+                                    spacing={GLASS_CONTAINER_SPACING}
+                                    pointerEvents="box-none"
+                                >
+                                    {renderNavGlassBackground(navBarBorderRadius)}
+                                    <View style={styles.tabsRow} pointerEvents="box-none">
+                                        {renderTabButtons()}
+                                        {renderSlidingIndicator()}
+                                    </View>
+                                </GlassContainer>
+                            )}
                         </Reanimated.View>
                     </View>
                 </Animated.View>

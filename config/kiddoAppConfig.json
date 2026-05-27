@@ -13,18 +13,18 @@
         "label": "Home"
       },
       "category": {
-        "icon": "",
-        "activeIcon": "",
-        "label": "Categories"
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active.svg",
+        "label": "Category"
       },
       "ticketing": {
-        "icon": "",
-        "activeIcon": "",
-        "label": "Tickets"
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-active-fill.svg",
+        "label": "Ticketing"
       },
       "account": {
-        "icon": "",
-        "activeIcon": "",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-inactive-fill.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/profile-active-fill.svg",
         "label": "Account"
       }
     },
@@ -32,7 +32,6 @@
       "backgroundColor": "#FFFFFF",
       "activeTintColor": "#E84E4B",
       "inactiveTintColor": "#999999",
-      "lensPreset": "water",
       "shadowColor": "#363636",
       "shadowOpacity": 0.2,
       "shadowRadius": 10,
@@ -2909,40 +2908,6 @@
         "loop": true,
         "aspectRatio": 1.777
       },
-      "overlayGrid": {
-        "gridConfig": {
-          "layout": "uniform",
-          "numColumns": 3,
-          "colGap": 12,
-          "rowGap": 12,
-          "limit": 0,
-          "scrollable": true,
-          "itemHeight": 150,
-          "resizeMode": "cover",
-          "showLabels": false,
-          "borderRadius": 16
-        },
-        "collectionIds": [],
-        "styles": {
-          "container": {
-            "paddingHorizontal": 16,
-            "paddingTop": 0,
-            "paddingBottom": 16,
-            "backgroundColor": "transparent"
-          },
-          "title": {
-            "display": "none"
-          },
-          "text": {
-            "fontFamily": "lexend-semibold",
-            "color": "#FFFFFF",
-            "fontSize": 13,
-            "lineHeight": 18,
-            "textAlign": "center",
-            "marginTop": 8
-          }
-        }
-      },
       "styles": {
         "container": {
           "paddingHorizontal": 0,
@@ -2972,7 +2937,7 @@
         }
       ],
       "railConfig": {
-        "bgImageUrl": "",
+        "bgImageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/home-all-promo.png",
         "height": 80,
         "gap": 16,
         "showLabel": true,
@@ -5859,7 +5824,7 @@
       },
       "description": {
         "fontSize": 14,
-        "fontFamily": "Fredoka-Regular",
+        "fontFamily": "fredoka-semibold",
         "color": "#333333",
         "lineHeight": 20
       },
@@ -7237,35 +7202,5 @@
       "useAndroidHash": false,
       "countryCode": "91"
     }
-  },
-  "giftWrap": {
-    "enabled": true,
-    "perItemPrice": 30,
-    "options": [
-      {
-        "id": "standard",
-        "name": "Wrap-1",
-        "description": "Beautiful paper wrapping with a ribbon.",
-        "price": 30,
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/wrapping_paper_kiddo_red_1.png?v=1779608809",
-        "color": "#FF6B6B"
-      },
-      {
-        "id": "premium",
-        "name": "Wrap-2",
-        "description": "Hardcase premium box with satin ribbon.",
-        "price": 30,
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap2.jpeg",
-        "color": "#FFD700"
-      },
-      {
-        "id": "deluxe",
-        "name": "Wrap-3",
-        "description": "Luxury velvet box with personalized note.",
-        "price": 30,
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap3.jpeg",
-        "color": "#9C27B0"
-      }
-    ]
   }
 }
