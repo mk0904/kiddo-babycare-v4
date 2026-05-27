@@ -1,11 +1,13 @@
+import { triggerTabPressHaptic } from '@/components/haptic-tab';
 import { Fonts } from '@/constants/theme';
 import {
     computeTabBarLensFromSharedValues,
     LensPresetParams,
 } from '@/utils/tabBarLensMath';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     AccessibilityRole,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
@@ -14,9 +16,13 @@ import {
 import Reanimated, {
     SharedValue,
     useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
 } from 'react-native-reanimated';
 
 type TabBarTabButtonProps = {
+    isFocused: boolean;
     tabSlotX: SharedValue<number>;
     tabSlotWidth: SharedValue<number>;
     tabIconCenterX: SharedValue<number>;
@@ -34,6 +40,7 @@ type TabBarTabButtonProps = {
     accessibilityLabel?: string;
     testID?: string;
     onPress: () => void;
+    onPressIn?: () => void;
     onLongPress: () => void;
     onLayout: (event: {
         nativeEvent: { layout: { x: number; width: number } };
@@ -62,7 +69,12 @@ function buildLensTransform(
     ];
 }
 
+// Snappy spring config for Android tab transitions — runs entirely on the UI thread.
+const ANDROID_ICON_SPRING = { damping: 18, stiffness: 280, mass: 0.6 };
+const ANDROID_LABEL_SPRING = { damping: 20, stiffness: 280, mass: 0.6 };
+
 export function TabBarTabButton({
+    isFocused,
     tabSlotX,
     tabSlotWidth,
     tabIconCenterX,
@@ -78,6 +90,7 @@ export function TabBarTabButton({
     icon,
     label,
     onPress,
+    onPressIn,
     onLongPress,
     onLayout,
     onIconLayout,
@@ -88,7 +101,21 @@ export function TabBarTabButton({
 }: TabBarTabButtonProps) {
     const { maxScale, minScaleY, skew, pull, rotate, fadeTravelPx } = lensPreset;
 
+    // SharedValue mirror of `isFocused` — lets animations run 100% on the UI thread
+    // without waiting for a JS-side re-render to cross the bridge.
+    const focusedSV = useSharedValue(isFocused ? 1 : 0);
+    useEffect(() => {
+        focusedSV.value = isFocused ? 1 : 0;
+    }, [isFocused, focusedSV]);
+
     const iconLensStyle = useAnimatedStyle(() => {
+        if (Platform.OS === 'android') {
+            const focused = focusedSV.value;
+            return {
+                opacity: withTiming(focused > 0.5 ? 1 : 0.75, { duration: 120 }),
+            };
+        }
+
         const lens = computeTabBarLensFromSharedValues(
             tabSlotX,
             tabSlotWidth,
@@ -112,9 +139,16 @@ export function TabBarTabButton({
         return {
             transform: buildLensTransform(lens, 1),
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
 
     const labelLensStyle = useAnimatedStyle(() => {
+        if (Platform.OS === 'android') {
+            const focused = focusedSV.value;
+            return {
+                opacity: withTiming(focused > 0.5 ? 1 : 0.65, { duration: 120 }),
+            };
+        }
+
         const lens = computeTabBarLensFromSharedValues(
             tabSlotX,
             tabSlotWidth,
@@ -138,7 +172,7 @@ export function TabBarTabButton({
         return {
             transform: buildLensTransform(lens, 0.72),
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
 
     return (
         <Pressable
@@ -146,6 +180,10 @@ export function TabBarTabButton({
             accessibilityState={accessibilityState}
             accessibilityLabel={accessibilityLabel}
             testID={testID}
+            onPressIn={(e) => {
+                triggerTabPressHaptic();
+                onPressIn?.();
+            }}
             onPress={onPress}
             onLongPress={onLongPress}
             onLayout={onLayout}

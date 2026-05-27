@@ -14,6 +14,8 @@ interface CollectionItem {
   id: string;
   name: string;
   imageUrl: string;
+  aspectRatio?: number;
+  widthFraction?: number;
 }
 
 interface CategoryGridProps extends Omit<BaseContentBlockProps, 'onPress'> {
@@ -56,11 +58,20 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
             const collectionDef = typeof collectionIds[index] === 'object'
               ? collectionIds[index]
               : { id: collectionIds[index], name: '' };
-            return {
+            const item: CollectionItem = {
               id: result.value.id,
               name: collectionDef.name || result.value.title,
               imageUrl: collectionDef.imageUrl || result.value.image?.url || '',
             };
+            if (typeof collectionDef === 'object') {
+              if (collectionDef.aspectRatio != null) {
+                item.aspectRatio = collectionDef.aspectRatio;
+              }
+              if (collectionDef.widthFraction != null) {
+                item.widthFraction = collectionDef.widthFraction;
+              }
+            }
+            return item;
           }
           return null;
         })
@@ -143,6 +154,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
           label: collection.name,
           imageUrl: collection.imageUrl,
           imageSource: undefined,
+          aspectRatio: collection.aspectRatio,
+          widthFraction: collection.widthFraction,
           onPress: () => {
             // Pass collection info to onPress handler (let parent handleBlockPress handle navigation)
             // This ensures consistent navigation behavior across home and category pages
@@ -270,6 +283,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         borderRadius={borderRadius}
         labelStyle={textStyle}
         firstItemSpan={gridConfig.firstItemSpan}
+        rowAlign={gridConfig.rowAlign}
+        itemHeight={gridConfig.itemHeight}
       />
     </BaseContentBlock>
   );

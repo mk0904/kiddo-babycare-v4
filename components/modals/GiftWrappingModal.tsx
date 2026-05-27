@@ -1,8 +1,9 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import { useCartItems, useCartStore, useGiftWrapping } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Dimensions,
     Modal,
@@ -33,7 +34,8 @@ interface GiftWrappingModalProps {
     onClose: () => void;
 }
 
-const GIFT_WRAP_OPTIONS = [
+/** Hardcoded fallback — used only when kiddoAppConfig.json has no giftWrap section. */
+const FALLBACK_GIFT_WRAP_OPTIONS = [
     {
         id: 'standard',
         name: 'Wrap-1',
@@ -60,13 +62,44 @@ const GIFT_WRAP_OPTIONS = [
     },
 ];
 
+type WrapOption = {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    image: any; // require() source or { uri: string }
+    color: string;
+};
+
+function resolveGiftWrapOptions(): WrapOption[] {
+    const cfg = configService.getGiftWrapConfig();
+    if (!cfg?.options?.length) return FALLBACK_GIFT_WRAP_OPTIONS;
+
+    return cfg.options.map((opt: any) => ({
+        id: opt.id ?? opt.name ?? 'wrap',
+        name: opt.name ?? opt.id ?? 'Wrap',
+        description: opt.description ?? '',
+        price: opt.price ?? cfg.perItemPrice ?? 30,
+        image: opt.imageUrl ? { uri: opt.imageUrl } : FALLBACK_GIFT_WRAP_OPTIONS[0]?.image,
+        color: opt.color ?? '#FF6B6B',
+    }));
+}
+
 export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) => {
     const insets = useSafeAreaInsets();
     const cartItems = useCartItems();
     const giftWrapping = useGiftWrapping();
     const setGiftWrapping = useCartStore(state => state.setGiftWrapping);
-    const [selectedWrap, setSelectedWrap] = useState<typeof GIFT_WRAP_OPTIONS[0] | null>(null);
+    const [selectedWrap, setSelectedWrap] = useState<WrapOption | null>(null);
     const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+
+    // Config-driven options and copy
+    const GIFT_WRAP_OPTIONS = useMemo(() => resolveGiftWrapOptions(), []);
+    const cfg = useMemo(() => configService.getGiftWrapConfig(), []);
+    const modalCopy = cfg?.modalCopy ?? {};
+    const headerImageSource = cfg?.modalHeaderImageUrl
+        ? { uri: cfg.modalHeaderImageUrl }
+        : require('@/assets/images/giftWrapperHeader.png');
 
     const eligibleItems = React.useMemo(
         () => cartItems.filter(item => !isTicketingItem(item)),
@@ -86,9 +119,9 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                 : eligibleIds;
             setSelectedProducts(defaultIds);
         }
-    }, [visible, giftWrapping, eligibleIds]);
+    }, [visible, giftWrapping, eligibleIds, GIFT_WRAP_OPTIONS]);
 
-    const handleWrapSelect = (wrap: typeof GIFT_WRAP_OPTIONS[0]) => {
+    const handleWrapSelect = (wrap: WrapOption) => {
         setSelectedWrap(wrap);
     };
 
@@ -120,7 +153,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
         onClose();
     };
 
-    const perItemPrice = selectedWrap?.price ?? GIFT_WRAP_OPTIONS[0]?.price ?? 30;
+    const perItemPrice = selectedWrap?.price ?? cfg?.perItemPrice ?? GIFT_WRAP_OPTIONS[0]?.price ?? 30;
     const giftWrapTotal = selectedProducts.length * perItemPrice;
 
     return (
@@ -135,7 +168,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                     {/* Header with gift wrapper image (red + ribbon) - extends under status bar */}
                     <View style={[styles.header, { paddingTop: 12 + insets.top }]}>
                         <Image
-                            source={require('@/assets/images/giftWrapperHeader.png')}
+                            source={headerImageSource}
                             style={styles.headerImage}
                             contentFit="fill"
                         />
@@ -143,9 +176,9 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                             <Ionicons name="chevron-back" size={28} color="#fff" />
                         </TouchableOpacity>
                         <View style={styles.headerTextWrap}>
-                            <Text style={styles.headerTitle}>Make this a gift</Text>
+                            <Text style={styles.headerTitle}>{modalCopy.headerTitle ?? 'Make this a gift'}</Text>
                             <Text style={styles.headerSubtitle}>
-                                Get items gift wrapped for ₹{perItemPrice} per item
+                                {(modalCopy.headerSubtitle ?? 'Get items gift wrapped for ₹{perItemPrice} per item').replace('{perItemPrice}', String(perItemPrice))}
                             </Text>
                         </View>
                     </View>
@@ -156,10 +189,10 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                         showsVerticalScrollIndicator={false}
                     >
                         {/* Eligible items - first */}
-                        <Text style={styles.sectionTitle}>Eligible items</Text>
+                        <Text style={styles.sectionTitle}>{modalCopy.eligibleItemsTitle ?? 'Eligible items'}</Text>
                         {eligibleItems.length === 0 ? (
                             <View style={styles.ineligibleNotice}>
-                                <Text style={styles.ineligibleNoticeText}>No items in your cart are eligible for gift wrap.</Text>
+                                <Text style={styles.ineligibleNoticeText}>{modalCopy.noEligibleItemsText ?? 'No items in your cart are eligible for gift wrap.'}</Text>
                             </View>
                         ) : (
                             <>
@@ -195,13 +228,13 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                                     })}
                                 </View>
                                 <View style={styles.footnoteContainer}>
-                                    <Text style={styles.footnote}>Larger items may not be eligible for gift wrap</Text>
+                                    <Text style={styles.footnote}>{modalCopy.footnote ?? 'Larger items may not be eligible for gift wrap'}</Text>
                                 </View>
                             </>
                         )}
 
                         {/* Choose gift wrap - second */}
-                        <Text style={[styles.sectionTitle, styles.sectionTitleSecond]}>Choose gift wrap</Text>
+                        <Text style={[styles.sectionTitle, styles.sectionTitleSecond]}>{modalCopy.chooseWrapTitle ?? 'Choose gift wrap'}</Text>
                         <View style={styles.wrapRow}>
                             {GIFT_WRAP_OPTIONS.map((wrap) => {
                                 const isSelected = selectedWrap?.id === wrap.id;
@@ -223,16 +256,16 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                             })}
                         </View>
                         <View style={styles.footnoteContainer}>
-                            <Text style={styles.footnote}>All items selected are wrapped separately</Text>
+                            <Text style={styles.footnote}>{modalCopy.allItemsFootnote ?? 'All items selected are wrapped separately'}</Text>
                         </View>
                     </ScrollView>
 
-                    {/* Sticky footer - Add for ₹20 */}
+                    {/* Sticky footer */}
                     <View style={styles.footer}>
                         {giftWrapping != null && (
                             <TouchableOpacity style={styles.removeButton} onPress={handleRemove}>
                                 <Ionicons name="trash-outline" size={18} color="#FF4444" />
-                                <Text style={styles.removeButtonText}>Remove</Text>
+                                <Text style={styles.removeButtonText}>{modalCopy.removeButtonText ?? 'Remove'}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
@@ -244,7 +277,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                             disabled={!selectedWrap || selectedProducts.length === 0}
                             activeOpacity={0.9}
                         >
-                            <Text style={styles.addButtonText}>Add for ₹{giftWrapTotal}</Text>
+                            <Text style={styles.addButtonText}>{(modalCopy.addButtonText ?? 'Add for ₹{total}').replace('{total}', String(giftWrapTotal))}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

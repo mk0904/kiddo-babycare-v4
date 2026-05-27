@@ -1,7 +1,9 @@
+import NoInternetScreen from "@/components/NoInternetScreen";
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from "@react-native-community/netinfo";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
@@ -11,8 +13,6 @@ import React, { useCallback, useMemo } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import NetInfo from "@react-native-community/netinfo";
-import NoInternetScreen from "@/components/NoInternetScreen";
 
 import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
@@ -21,32 +21,31 @@ import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
 import { getAppVersionForApi, isVersionBelowMinimum } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
-import { NectorProvider } from '@/context/NectorContext';
-import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
 import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
 import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
+import { NectorProvider } from '@/context/NectorContext';
+import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
+import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
+import { errorService } from '@/services/errorService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
-import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
-import { 
-  initMetaSDK, 
-  requestMetaTrackingPermission, 
-  checkForDeferredAppLink,
-  captureAttributionDataFromUrl
-} from '../utils/metaSDK';
-import * as ExpoLinking from 'expo-linking';
-import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
-import { errorService } from '@/services/errorService';
+import * as ExpoLinking from 'expo-linking';
+import {
+    captureAttributionDataFromUrl,
+    checkForDeferredAppLink,
+    initMetaSDK,
+    requestMetaTrackingPermission
+} from '../utils/metaSDK';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({

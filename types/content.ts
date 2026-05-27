@@ -60,6 +60,8 @@ export interface ImageGridBlock extends BaseBlock {
     id: string;
     name?: string;
     imageUrl?: string;
+    aspectRatio?: number;
+    widthFraction?: number;
   }>;
   data?: Array<{
     imageUrl: string;
@@ -87,6 +89,10 @@ export interface CategoryGridBlock extends BaseBlock {
     id: string;
     name?: string;
     imageUrl?: string;
+    /** Cell width ÷ height. Used when `gridConfig.itemHeight` is not set. */
+    aspectRatio?: number;
+    /** Share of row width (e.g. 0.6 + 0.4). Use with `gridConfig.itemHeight` for same-height cells. */
+    widthFraction?: number;
   }>; // Collections to display (similar to ImageGrid)
   gridConfig?: {
     // Layout options
@@ -99,7 +105,15 @@ export interface CategoryGridBlock extends BaseBlock {
     limit?: number; // Limit number of items to show (0 = show all)
     
     // Item sizing
-    aspectRatio?: number; // Aspect ratio for items (default: 1 for square)
+    aspectRatio?: number; // Default width ÷ height when `itemHeight` is not set
+    /** Fixed image area height (px). Same height for all cells; pair with `widthFraction` per cell. */
+    itemHeight?: number;
+    /** Fixed cell width (px). Used when `scrollable` is true. */
+    itemWidth?: number;
+    /** Horizontal scroll for overflow cells (e.g. video banner overlay). Default false on category grids. */
+    scrollable?: boolean;
+    /** Align cells within a row when heights differ (default: top). */
+    rowAlign?: 'top' | 'bottom';
     resizeMode?: 'cover' | 'contain'; // Image resize mode (matching ImageGrid)
     
     // Legacy/FlexibleGrid specific options (for backwards compatibility)

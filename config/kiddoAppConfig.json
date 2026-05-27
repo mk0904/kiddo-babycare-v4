@@ -2899,7 +2899,7 @@
       "id": "all-hero-video-banner",
       "type": "videoBanner",
       "order": 1,
-      "visible": true,
+      "visible": false,
       "data": {
         "videoUrl": "https://cdn.shopify.com/videos/c/o/v/c1102ae625aa4dcf841a97ad50fc18d9.mp4"
       },
@@ -2912,27 +2912,17 @@
       "overlayGrid": {
         "gridConfig": {
           "layout": "uniform",
-          "numColumns": 2,
+          "numColumns": 3,
           "colGap": 12,
           "rowGap": 12,
-          "limit": 2,
-          "aspectRatio": 1.5,
+          "limit": 0,
+          "scrollable": true,
+          "itemHeight": 150,
           "resizeMode": "cover",
           "showLabels": false,
           "borderRadius": 16
         },
-        "collectionIds": [
-          {
-            "id": "gid://shopify/Collection/512979566881",
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1._Final_Fashion_Banner_Homepage.png?v=1777291011",
-            "name": "Fashion"
-          },
-          {
-            "id": "gid://shopify/Collection/513082589473",
-            "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2._Final_Toys_Banner_Homepage.png?v=1777291011",
-            "name": "Toys"
-          }
-        ],
+        "collectionIds": [],
         "styles": {
           "container": {
             "paddingHorizontal": 16,
@@ -3005,10 +2995,10 @@
     {
       "id": "all-banner-1",
       "type": "carousel",
-      "visible": false,
+      "visible": true,
       "data": [
         {
-          "imageUrl": "",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Homepage_GIF_27_April_2026.gif?v=1777275024",
           "link": {
             "type": "collection",
             "collection": {
@@ -3063,22 +3053,22 @@
       "collectionIds": [
         {
           "id": "gid://shopify/Collection/512979566881",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1._Final_Fashion_Banner_Homepage.png?v=1777291011",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestsummerfashionbanner.jpg?v=1779862326",
           "name": "Fashion"
         },
         {
           "id": "gid://shopify/Collection/513082589473",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2._Final_Toys_Banner_Homepage.png?v=1777291011",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latesttoysbanner.jpg?v=1779862306",
           "name": "Toys"
         },
         {
           "id": "gid://shopify/Collection/509520085281",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3._Final_Books_Banner_Homepage.png?v=1777291011",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestbookbanner.jpg?v=1779859231",
           "name": "Books"
         },
         {
           "id": "gid://shopify/Collection/513167851809",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4._Final_Essentials_Banner_Homepage.png?v=1777291011",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestessentialbanner.jpg?v=1779862332",
           "name": "Essentials"
         }
       ],
@@ -5869,7 +5859,7 @@
       },
       "description": {
         "fontSize": 14,
-        "fontFamily": "fredoka-semibold",
+        "fontFamily": "Fredoka-Regular",
         "color": "#333333",
         "lineHeight": 20
       },
@@ -7247,5 +7237,35 @@
       "useAndroidHash": false,
       "countryCode": "91"
     }
+  },
+  "giftWrap": {
+    "enabled": true,
+    "perItemPrice": 30,
+    "options": [
+      {
+        "id": "standard",
+        "name": "Wrap-1",
+        "description": "Beautiful paper wrapping with a ribbon.",
+        "price": 30,
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/wrapping_paper_kiddo_red_1.png?v=1779608809",
+        "color": "#FF6B6B"
+      },
+      {
+        "id": "premium",
+        "name": "Wrap-2",
+        "description": "Hardcase premium box with satin ribbon.",
+        "price": 30,
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap2.jpeg",
+        "color": "#FFD700"
+      },
+      {
+        "id": "deluxe",
+        "name": "Wrap-3",
+        "description": "Luxury velvet box with personalized note.",
+        "price": 30,
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/giftwrap3.jpeg",
+        "color": "#9C27B0"
+      }
+    ]
   }
 }

@@ -23,6 +23,7 @@ import { GlassContainer, GlassView } from 'expo-glass-effect';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
+    Platform,
     StyleSheet,
     View,
     useWindowDimensions,
@@ -39,8 +40,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAV_BAR_WIDTH = 368;
-const NAV_BAR_HEIGHT = 68;
+const NAV_BAR_WIDTH = 345;
+const NAV_BAR_HEIGHT = 60;
 /** Same gap on all sides between outer nav bar and inner active pill. */
 const PILL_OUTER_INSET = 3;
 const LABEL_COLOR = GLASS_PILL_TEXT_COLOR;
@@ -48,7 +49,7 @@ const TAB_ITEM_CONTENT_PADDING = 0;
 const FLOATING_BOTTOM_MARGIN = FLOATING_TAB_BAR_BOTTOM_MARGIN;
 const TAB_ICON_LABEL_GAP = 4;
 const TAB_LABEL_LINE_HEIGHT = 18;
-const TAB_ICON_SIZE = 24;
+const TAB_ICON_SIZE = 18;
 const TAB_CONTENT_HEIGHT = TAB_ICON_SIZE + TAB_ICON_LABEL_GAP + TAB_LABEL_LINE_HEIGHT;
 
 function getNavBarBorderRadius(barHeight: number) {
@@ -297,6 +298,7 @@ export const TabBar = (props: BottomTabBarProps) => {
     };
 
     const playNavPopAnimation = () => {
+        if (Platform.OS === 'android') return; // Disable full-bar scaling on Android to eliminate blur flicker!
         navPopX.value = withSequence(
             withTiming(1.05, { duration: 140, easing: Easing.out(Easing.cubic) }),
             withSpring(1, POP_SPRING)
@@ -308,6 +310,8 @@ export const TabBar = (props: BottomTabBarProps) => {
     };
 
     const playTravelIndicatorAnimation = () => {
+        if (Platform.OS === 'android') return;
+        
         const travel = getIndicatorTravelMetrics(tabBarHeight);
         const rest = getIndicatorRestMetrics(tabBarHeight);
 
@@ -337,8 +341,14 @@ export const TabBar = (props: BottomTabBarProps) => {
         indicatorTargetX.value = metrics.x;
         playNavPopAnimation();
         playTravelIndicatorAnimation();
-        indicatorX.value = withSpring(metrics.x, SLIDE_SPRING);
-        indicatorWidth.value = withSpring(metrics.width, SLIDE_SPRING);
+        
+        if (Platform.OS === 'android') {
+            indicatorX.value = withSpring(metrics.x, SLIDE_SPRING);
+            indicatorWidth.value = metrics.width; // Snap width instantly on Android to avoid layout thrashing
+        } else {
+            indicatorX.value = withSpring(metrics.x, SLIDE_SPRING);
+            indicatorWidth.value = withSpring(metrics.width, SLIDE_SPRING);
+        }
     }, [indicatorBorderRadius, indicatorHeight, indicatorStartX, indicatorTargetX, indicatorTop, indicatorWidth, indicatorX, navPopX, navPopY, tabBarHeight]);
 
     const updateDragBounds = useCallback(() => {
@@ -495,16 +505,32 @@ export const TabBar = (props: BottomTabBarProps) => {
 
     const navBarBorderRadius = getNavBarBorderRadius(tabBarHeight);
 
-    const indicatorGlassAnimatedStyle = useAnimatedStyle(() => ({
-        position: 'absolute',
-        left: indicatorX.value,
-        width: indicatorWidth.value,
-        top: indicatorTop.value,
-        height: indicatorHeight.value,
-        borderRadius: indicatorBorderRadius.value,
-        overflow: 'hidden',
-        zIndex: 3,
-    }));
+    const indicatorGlassAnimatedStyle = useAnimatedStyle(() => {
+        if (Platform.OS === 'android') {
+            // Use translateX instead of left — avoids native layout recalculation every frame
+            return {
+                position: 'absolute',
+                left: 0,
+                transform: [{ translateX: indicatorX.value }],
+                width: indicatorWidth.value,
+                top: indicatorTop.value,
+                height: indicatorHeight.value,
+                borderRadius: indicatorBorderRadius.value,
+                overflow: 'hidden',
+                zIndex: 3,
+            };
+        }
+        return {
+            position: 'absolute',
+            left: indicatorX.value,
+            width: indicatorWidth.value,
+            top: indicatorTop.value,
+            height: indicatorHeight.value,
+            borderRadius: indicatorBorderRadius.value,
+            overflow: 'hidden',
+            zIndex: 3,
+        };
+    });
 
     const restIndicatorShape = getIndicatorVerticalMetrics(tabBarHeight);
 
@@ -512,21 +538,39 @@ export const TabBar = (props: BottomTabBarProps) => {
         <GlassPillSurface borderRadius={borderRadius} glassEffectStyle="regular" />
     );
 
-    const renderSlidingIndicator = () => (
-        <GestureDetector gesture={pillPanGesture}>
-            <Reanimated.View style={indicatorGlassAnimatedStyle}>
-                <AnimatedGlassView
+    const renderSlidingIndicator = () => {
+        if (Platform.OS === 'android') {
+            return (
+                <Reanimated.View
                     pointerEvents="none"
-                    {...glassShapeProps(restIndicatorShape.borderRadius)}
-                    style={StyleSheet.absoluteFill}
-                    glassEffectStyle={indicatorReady ? 'clear' : 'none'}
-                    isInteractive={false}
-                    tintColor="transparent"
-                    colorScheme="light"
+                    style={[
+                        indicatorGlassAnimatedStyle,
+                        {
+                            backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                            borderWidth: 1.5,
+                            borderColor: 'rgba(255, 255, 255, 0.45)',
+                        }
+                    ]}
                 />
-            </Reanimated.View>
-        </GestureDetector>
-    );
+            );
+        }
+
+        return (
+            <GestureDetector gesture={pillPanGesture}>
+                <Reanimated.View style={indicatorGlassAnimatedStyle}>
+                    <AnimatedGlassView
+                        pointerEvents="none"
+                        {...glassShapeProps(restIndicatorShape.borderRadius)}
+                        style={StyleSheet.absoluteFill}
+                        glassEffectStyle={indicatorReady ? 'clear' : 'none'}
+                        isInteractive={false}
+                        tintColor="transparent"
+                        colorScheme="light"
+                    />
+                </Reanimated.View>
+            </GestureDetector>
+        );
+    };
 
     const renderTabIcon = (routeName: string) => {
         const IconComponent = TAB_ICONS[routeName];
@@ -554,6 +598,14 @@ export const TabBar = (props: BottomTabBarProps) => {
                 const isFocused = props.state.index === originalIndex;
                 const slot = tabSlots[visibleIndex];
 
+                // Android: fire pill animation on touch-down (onPressIn) for zero-delay response
+                const onPressIn = () => {
+                    if (Platform.OS === 'android' && !isFocused) {
+                        animateToTab(visibleIndex);
+                        prevActiveIndexRef.current = visibleIndex;
+                    }
+                };
+
                 const onPress = () => {
                     const event = props.navigation.emit({
                         type: 'tabPress',
@@ -576,6 +628,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                 return (
                     <TabBarTabButton
                         key={route.key}
+                        isFocused={isFocused}
                         tabSlotX={slot.x}
                         tabSlotWidth={slot.w}
                         tabIconCenterX={slot.iconCx}
@@ -593,6 +646,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                         accessibilityLabel={options.tabBarAccessibilityLabel}
                         testID={(options as { tabBarTestID?: string }).tabBarTestID}
                         onPress={onPress}
+                        onPressIn={onPressIn}
                         onLongPress={onLongPress}
                         onLayout={handleTabLayout(visibleIndex)}
                         onIconLayout={handleIconLayout(visibleIndex)}
@@ -602,7 +656,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                 );
             });
 
-  return (
+    return (
         <View style={styles.wrapper} pointerEvents="box-none">
             <LiveDeliveryTabBanner
                 showTabBar={shouldShowTabBar}
@@ -641,6 +695,21 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 },
                             ]}
                         >
+                            {Platform.OS === 'android' ? (
+                            <View
+                                style={[
+                                    StyleSheet.absoluteFill,
+                                    { borderRadius: navBarBorderRadius, overflow: 'hidden' },
+                                ]}
+                                pointerEvents="box-none"
+                            >
+                                {renderNavGlassBackground(navBarBorderRadius)}
+                                <View style={styles.tabsRow} pointerEvents="box-none">
+                                    {renderTabButtons()}
+                                    {renderSlidingIndicator()}
+                                </View>
+                            </View>
+                        ) : (
                             <GlassContainer
                                 style={[
                                     StyleSheet.absoluteFill,
@@ -655,6 +724,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                                     {renderSlidingIndicator()}
                                 </View>
                             </GlassContainer>
+                        )}
                         </Reanimated.View>
                     </View>
                 </Animated.View>

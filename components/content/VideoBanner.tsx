@@ -2,12 +2,18 @@ import { Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { VideoBannerBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import {
+    resolveFixedImageHeight,
+    resolveImageHeightFromAspect,
+    resolveRowWidths,
+} from '@/utils/gridCellSizing';
 import { Image } from 'expo-image';
 import { ResizeMode, Video } from 'expo-av';
 import React, { useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image as RNImage,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -24,6 +30,8 @@ type OverlayCollection = {
     id: string;
     name?: string;
     imageUrl?: string;
+    aspectRatio?: number;
+    widthFraction?: number;
 };
 
 function VideoBannerOverlayGrid({
@@ -59,6 +67,12 @@ function VideoBannerOverlayGrid({
     const textDisplay = overlayGrid.styles?.text?.display;
     const shouldHideLabels = textDisplay === 'none' || textDisplay === 'hidden';
     const showLabels = !shouldHideLabels && gridConfig.showLabels !== false;
+    const labelSpace = showLabels ? 32 : 0;
+    const fixedImageHeight = resolveFixedImageHeight(
+        gridConfig.itemHeight,
+        labelSpace,
+        showLabels
+    );
 
     const items = useMemo((): OverlayCollection[] => {
         const raw = overlayGrid.collectionIds ?? [];
@@ -69,8 +83,42 @@ function VideoBannerOverlayGrid({
     }, [overlayGrid.collectionIds, limit]);
 
     const availableWidth = bannerWidth - paddingH * 2;
-    const itemWidth = (availableWidth - colGap * (numColumns - 1)) / numColumns;
-    const imageHeight = itemWidth / aspectRatio;
+    const scrollable = gridConfig.scrollable === true;
+    const fixedItemWidth =
+        typeof gridConfig.itemWidth === 'number' && gridConfig.itemWidth > 0
+            ? gridConfig.itemWidth
+            : null;
+
+    const getCellWidth = (item: OverlayCollection) => {
+        if (fixedItemWidth != null) return fixedItemWidth;
+        if (typeof item.widthFraction === 'number' && item.widthFraction > 0) {
+            return availableWidth * item.widthFraction;
+        }
+        return availableWidth / Math.max(numColumns, 2);
+    };
+
+    const cellWidths = useMemo(
+        () => items.map((item) => getCellWidth(item)),
+        [items, availableWidth, fixedItemWidth, numColumns]
+    );
+
+    const rowWidths = useMemo(
+        () => (scrollable ? cellWidths : resolveRowWidths(items, availableWidth, colGap)),
+        [scrollable, cellWidths, items, availableWidth, colGap]
+    );
+
+    const getImageHeight = (item: OverlayCollection, cellWidth: number) => {
+        if (fixedImageHeight != null) {
+            return fixedImageHeight;
+        }
+        return resolveImageHeightFromAspect(
+            cellWidth,
+            item.aspectRatio,
+            aspectRatio,
+            labelSpace,
+            showLabels
+        );
+    };
 
     const { fontWeight: _fw, fontFamily: _ff, ...textStyleRest } = overlayGrid.styles?.text || {};
     const labelStyle = {
@@ -84,69 +132,95 @@ function VideoBannerOverlayGrid({
 
     if (items.length === 0) return null;
 
-    return (
-        <View
-            style={[
-                styles.overlayRoot,
-                {
-                    paddingHorizontal: paddingH,
-                    paddingBottom,
-                },
-                containerStyles.backgroundColor != null && {
-                    backgroundColor: containerStyles.backgroundColor,
-                },
-            ]}
-            pointerEvents="box-none"
-        >
-            <View style={[styles.overlayRow, { columnGap: colGap, rowGap: colGap }]}>
-                {items.map((item) => (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={{ width: itemWidth }}
-                        activeOpacity={0.85}
-                        onPress={() => {
-                            onPress?.(`/collections/${item.id}`, {
-                                ...item,
-                                collectionId: item.id,
-                                collectionName: item.name,
-                                name: item.name,
-                            });
-                        }}
-                    >
+    const renderCell = (item: OverlayCollection, index: number) => {
+        const cellWidth = rowWidths[index] ?? availableWidth / items.length;
+        const imageHeight = getImageHeight(item, cellWidth);
+        const isLast = index === items.length - 1;
+
+        return (
+            <TouchableOpacity
+                key={`${item.id}-${index}`}
+                style={[
+                    { width: cellWidth },
+                    scrollable && !isLast && { marginRight: colGap },
+                ]}
+                activeOpacity={0.85}
+                onPress={() => {
+                    onPress?.(`/collections/${item.id}`, {
+                        ...item,
+                        collectionId: item.id,
+                        collectionName: item.name,
+                        name: item.name,
+                    });
+                }}
+            >
+                <View
+                    style={[
+                        styles.overlayImageWrap,
+                        {
+                            width: cellWidth,
+                            height: imageHeight,
+                            borderRadius,
+                        },
+                    ]}
+                >
+                    {item.imageUrl ? (
+                        <Image
+                            source={{ uri: item.imageUrl }}
+                            style={[styles.overlayImage, { borderRadius }]}
+                            contentFit={
+                                resizeMode === 'stretch' ? 'fill' : resizeMode
+                            }
+                        />
+                    ) : (
                         <View
-                            style={[
-                                styles.overlayImageWrap,
-                                {
-                                    width: itemWidth,
-                                    height: imageHeight,
-                                    borderRadius,
-                                },
-                            ]}
-                        >
-                            {item.imageUrl ? (
-                                <Image
-                                    source={{ uri: item.imageUrl }}
-                                    style={[styles.overlayImage, { borderRadius }]}
-                                    contentFit={
-                                        resizeMode === 'stretch' ? 'fill' : resizeMode
-                                    }
-                                />
-                            ) : (
-                                <View
-                                    style={[
-                                        styles.overlayPlaceholder,
-                                        { borderRadius },
-                                    ]}
-                                />
-                            )}
-                        </View>
-                        {showLabels && item.name ? (
-                            <Text style={labelStyle} numberOfLines={2}>
-                                {item.name}
-                            </Text>
-                        ) : null}
-                    </TouchableOpacity>
-                ))}
+                            style={[styles.overlayPlaceholder, { borderRadius }]}
+                        />
+                    )}
+                </View>
+                {showLabels && item.name ? (
+                    <Text style={labelStyle} numberOfLines={2}>
+                        {item.name}
+                    </Text>
+                ) : null}
+            </TouchableOpacity>
+        );
+    };
+
+    const overlayContainerStyle = [
+        styles.overlayRoot,
+        { paddingBottom },
+        !scrollable && { paddingHorizontal: paddingH },
+        containerStyles.backgroundColor != null && {
+            backgroundColor: containerStyles.backgroundColor,
+        },
+    ];
+
+    if (scrollable) {
+        return (
+            <View style={overlayContainerStyle} pointerEvents="box-none">
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    nestedScrollEnabled
+                    directionalLockEnabled
+                    bounces
+                    style={styles.overlayScroll}
+                    contentContainerStyle={[
+                        styles.overlayScrollContent,
+                        { paddingHorizontal: paddingH },
+                    ]}
+                >
+                    {items.map((item, index) => renderCell(item, index))}
+                </ScrollView>
+            </View>
+        );
+    }
+
+    return (
+        <View style={overlayContainerStyle} pointerEvents="box-none">
+            <View style={[styles.overlayRow, { columnGap: colGap, rowGap: colGap }]}>
+                {items.map((item, index) => renderCell(item, index))}
             </View>
         </View>
     );
@@ -256,6 +330,13 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: 10,
+    },
+    overlayScroll: {
+        flexGrow: 0,
+    },
+    overlayScrollContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
     },
     overlayRow: {
         flexDirection: 'row',

@@ -2320,16 +2320,17 @@ const styles = StyleSheet.create({
         color: '#4CAF50',
     },
     priceComparisonContainer: {
-        marginTop: 0,
+        marginTop: 8,
         marginBottom: 0,
         paddingHorizontal: 16,
-        paddingTop: 0,
+        paddingTop: 16,
     },
     priceComparisonTitle: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
         color: Colors.text,
         textAlign: 'center',
+        marginTop: 8,
         marginBottom: 16,
     },
     priceComparisonTable: {

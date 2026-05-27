@@ -116,13 +116,29 @@ export function HomeHeader({
 
   const renderGlassOverlay = () => {
     if (!glass.enabled) return null;
+
+    // Define Android fallback underlay color based on glass tint
+    const androidFallbackBg = glass.blurTint === 'dark'
+      ? 'rgba(30, 30, 30, 0.85)'
+      : 'rgba(255, 255, 255, 0.85)';
+
     return (
       <>
+        {Platform.OS === 'android' && (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: androidFallbackBg }
+            ]}
+            pointerEvents="none"
+          />
+        )}
         <BlurView
           intensity={
             Platform.OS === 'ios' ? glass.blurIntensityIos : glass.blurIntensityAndroid
           }
           tint={glass.blurTint}
+          experimentalBlurMethod={Platform.OS === 'android' ? 'oem' : undefined}
           style={StyleSheet.absoluteFill}
         />
         {headerGlassTintIsVisible(glass.tintColor) ? (
@@ -348,7 +364,12 @@ export function HomeHeader({
           <Animated.View
             style={[
               styles.stickyGlassLayer,
-              { top: -insets.top, opacity: stickyGlassOpacity },
+              {
+                top: -insets.top,
+                bottom: Platform.OS === 'ios' ? 0 : undefined,
+                height: Platform.OS === 'android' ? (insets.top + 150) : undefined,
+                opacity: stickyGlassOpacity
+              },
             ]}
             pointerEvents="none"
           >

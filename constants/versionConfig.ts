@@ -5,7 +5,6 @@
  */
 
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 
 /** Bump this to force re-login and clear auth/checkout/cart for all users once. */
 export const AUTH_SCHEMA_VERSION = 4;

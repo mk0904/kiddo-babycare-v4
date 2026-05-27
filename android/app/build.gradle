@@ -265,7 +265,6 @@ dependencies {
 }
 
 apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'
 
 // Disable lint vital analyze for release to avoid Metaspace OOM in lint worker
 tasks.configureEach { task ->

@@ -7,6 +7,7 @@ import {
 } from 'expo-glass-effect';
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 const GLASS_CONTAINER_SPACING = 8;
 
@@ -36,6 +37,31 @@ export function GlassPillSurface({
     tintColor = GLASS_PILL_TINT,
     useContainer = false,
 }: GlassPillSurfaceProps) {
+    if (Platform.OS === 'android') {
+        return (
+            <View
+                pointerEvents="none"
+                style={[
+                    StyleSheet.absoluteFill,
+                    { borderRadius, overflow: 'hidden' },
+                ]}
+            >
+                <BlurView
+                    intensity={65}
+                    tint="default"
+                    experimentalBlurMethod="dimezn"
+                    style={StyleSheet.absoluteFill}
+                />
+                <View
+                    style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: tintColor },
+                    ]}
+                />
+            </View>
+        );
+    }
+
     if (!isNativeGlassAvailable()) {
         return (
             <View

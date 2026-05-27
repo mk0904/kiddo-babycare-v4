@@ -28,7 +28,7 @@ function getRemoteConfigApiUrl(): string {
 }
 
 /** TEMP: bundled `config/kiddoAppConfig.json` instead of kiddo-service → CDN. Set false before release. */
-const USE_LOCAL_KIDDO_APP_CONFIG = true;
+const USE_LOCAL_KIDDO_APP_CONFIG = false;
 
 /** Fallback JSON URL if remote-config API fails (offline / timeout). */
 export const KIDDO_APP_CONFIG_CDN_URL =
@@ -128,7 +128,7 @@ class ConfigService {
               if (__DEV__) {
                 console.warn('[ConfigService] Background remote-config resolved:', url);
               }
-              this._loadRemoteConfig(url).catch(() => {});
+              this._loadRemoteConfig(url).catch(() => { });
             })
             .catch((bgError) => {
               console.warn('[ConfigService] Background remote-config resolution failed:', bgError);
@@ -214,6 +214,10 @@ class ConfigService {
 
   getRawConfig(): any {
     return this.rawConfig;
+  }
+
+  getGiftWrapConfig(): any | null {
+    return this.rawConfig?.giftWrap ?? null;
   }
 
   getTabBarConfig(): TabBarConfig | null {
