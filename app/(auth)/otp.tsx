@@ -1,11 +1,10 @@
 import { Button } from '@/components/ui/Button';
 import { ErrorText } from '@/components/ui/ErrorText';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { Customer } from '@/services/customerService';
 import { otpService } from '@/services/otpService';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,10 +25,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OTPScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phoneNumber: string, referralCode?: string }>();
-  const { phoneNumber, referralCode: referralCodeParam } = params;
+  const params = useLocalSearchParams<{ phoneNumber: string }>();
+  const { phoneNumber } = params;
   const { login, isAuthenticated, user } = useAuth();
-
+  
   // Use array for OTP input (separate fields for each digit)
   const otpPinCount = 6;
   const [otpInput, setOtpInput] = useState<string[]>(['', '', '', '', '', '']);
@@ -37,34 +36,14 @@ export default function OTPScreen() {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
-  const [timer, setTimer] = useState(30);
-  const [canResend, setCanResend] = useState(false);
-
+  // Removed name input screen - accounts are created with default name
+  
   // Refs for OTP inputs and preventing duplicate verifications
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const hiddenInputRef = useRef<TextInput>(null);
   const verifyingRef = useRef(false);
   const iosAutofillDetected = useRef(false);
   const lastOtpUpdateTime = useRef<number>(0);
-
-  // Timer logic
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (timer > 0 && !canResend) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    } else {
-      setCanResend(true);
-    }
-    return () => clearInterval(interval);
-  }, [timer, canResend]);
-
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Use SMS User Consent hook for Android (hook must be called unconditionally)
   // The hook should handle platform checks internally, but we'll only use it on Android
@@ -78,11 +57,11 @@ export default function OTPScreen() {
       // OTP auto-detected from SMS (not logged for security/privacy compliance)
       const otpArray = retrievedCode.split('');
       setOtpInput(otpArray);
-
+      
       // Blur all inputs
       inputRefs.current.forEach(ref => ref?.blur());
       hiddenInputRef.current?.blur();
-
+            
       // Auto-verify
       handleVerifyOtp({
         otpInput: retrievedCode,
@@ -100,31 +79,31 @@ export default function OTPScreen() {
     if (Platform.OS === 'ios') {
       const otpString = otpInput.join('');
       const now = Date.now();
-
+      
       // If all 6 digits are filled and it happened very quickly (within 500ms), it's likely autofill
       if (otpString.length === otpPinCount && !iosAutofillDetected.current) {
         const timeSinceLastUpdate = now - lastOtpUpdateTime.current;
-
+        
         // If all fields filled within 500ms, treat as autofill
         if (timeSinceLastUpdate < 500 || lastOtpUpdateTime.current === 0) {
           iosAutofillDetected.current = true;
-
+          
           // Blur all inputs
           inputRefs.current.forEach(ref => ref?.blur());
-
+          
           // Auto-verify
           handleVerifyOtp({
             otpInput: otpString,
             otpPinCount,
           });
-
+          
           // Reset flag after a delay
           setTimeout(() => {
             iosAutofillDetected.current = false;
           }, 1000);
         }
       }
-
+      
       lastOtpUpdateTime.current = now;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,8 +154,7 @@ export default function OTPScreen() {
         phoneNumber,
         otpToVerify,
         'User',
-        '',
-        referralCodeParam || undefined
+        ''
       );
 
       if (!result.success || !result.accessToken) {
@@ -249,7 +227,7 @@ export default function OTPScreen() {
   }, [phoneNumber, login]);
 
   // Removed handleCreateAccount - account creation now happens automatically after OTP verification
-
+  
   const handleResendOtp = async () => {
     if (resending) {
       return;
@@ -265,8 +243,6 @@ export default function OTPScreen() {
         Alert.alert('Success', 'OTP has been resent to your phone number');
         setOtpInput(['', '', '', '', '', '']);
         setError('');
-        setTimer(30);
-        setCanResend(false);
         verifyingRef.current = false;
       } else {
         const errorMsg = result?.message || 'Failed to resend OTP';
@@ -306,145 +282,150 @@ export default function OTPScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Log in</Text>
+            <Text style={styles.title}>Enter OTP</Text>
             <Text style={styles.subtitle}>
-              We've sent a 6 digit code to{'\n'}
+              We've sent a 6-digit code to{'\n'}
               <Text style={styles.phoneNumber}>{phoneNumber.replace(/^\+/, '')}</Text>
             </Text>
+            
+            {/* Auto-detection indicator - Android only */}
+            {Platform.OS === 'android' && retrievedCode && (
+              <View style={styles.autoDetectIndicator}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.autoDetectText}>OTP detected from SMS</Text>
+              </View>
+            )}
           </View>
 
-          {/* OTP Input Section */}
-          <View style={styles.otpSection}>
-            <Text style={styles.otpLabel}>Enter OTP</Text>
-            <View style={styles.otpContainer}>
-              {/* Hidden input for SMS autofill - Android uses this */}
-              {Platform.OS === 'android' && (
-                <TextInput
-                  ref={hiddenInputRef}
-                  style={styles.hiddenInput}
-                  value=""
-                  onChangeText={(text) => {
-                    const digits = text.replace(/\D/g, '');
-                    if (digits.length >= otpPinCount) {
-                      const otpArray = digits.slice(0, otpPinCount).split('');
-                      setOtpInput(otpArray);
-
-                      // Blur all inputs
-                      inputRefs.current.forEach(ref => ref?.blur());
-                      hiddenInputRef.current?.blur();
-
-                      // Auto-verify
-                      handleVerifyOtp({
-                        otpInput: digits.slice(0, otpPinCount),
-                        otpPinCount,
-                      });
-                    }
-                  }}
-                  keyboardType="number-pad"
-                  textContentType="oneTimeCode"
-                  autoComplete="sms-otp"
-                  autoFocus={false}
-                  maxLength={otpPinCount}
-                  editable={!loading}
-                  importantForAutofill="yes"
-                  autoCorrect={false}
-                  spellCheck={false}
-                  secureTextEntry={false}
-                />
-              )}
-
-              {/* Visible OTP inputs - one for each digit */}
-              {Array.from({ length: otpPinCount }).map((_, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  style={[
-                    styles.otpDigitInput,
-                    otpInput[index] && styles.otpDigitInputFilled,
-                    error && styles.otpDigitInputError,
-                  ]}
-                  value={otpInput[index]}
-                  onChangeText={(text) => {
-                    // For iOS: Handle autofill/paste of full OTP in the first input
-                    if (Platform.OS === 'ios' && index === 0 && text.length > 1) {
-                      const digits = text.replace(/\D/g, '').slice(0, otpPinCount);
-                      if (digits.length === otpPinCount) {
-                        // Prevent duplicate processing
-                        if (iosAutofillDetected.current) {
-                          return;
-                        }
-                        iosAutofillDetected.current = true;
-
-                        const otpArray = digits.split('');
-                        setOtpInput(otpArray);
-
-                        // Blur all inputs
-                        inputRefs.current.forEach(ref => ref?.blur());
-
-                        // Auto-verify
-                        handleVerifyOtp({
-                          otpInput: digits,
-                          otpPinCount,
-                        });
-
-                        // Reset flag after a delay
-                        setTimeout(() => {
-                          iosAutofillDetected.current = false;
-                        }, 1000);
+          {/* OTP Input - Separate fields for each digit */}
+          <View style={styles.otpContainer}>
+            {/* Hidden input for SMS autofill - Android uses this */}
+            {Platform.OS === 'android' && (
+              <TextInput
+                ref={hiddenInputRef}
+                style={styles.hiddenInput}
+                value=""
+                onChangeText={(text) => {
+                  const digits = text.replace(/\D/g, '');
+                  if (digits.length >= otpPinCount) {
+                    const otpArray = digits.slice(0, otpPinCount).split('');
+                    setOtpInput(otpArray);
+                    
+                    // Blur all inputs
+                    inputRefs.current.forEach(ref => ref?.blur());
+                    hiddenInputRef.current?.blur();
+                    
+                    // Auto-verify
+                    handleVerifyOtp({
+                      otpInput: digits.slice(0, otpPinCount),
+                      otpPinCount,
+                    });
+                  }
+                }}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                autoFocus={false}
+                maxLength={otpPinCount}
+                editable={!loading}
+                importantForAutofill="yes"
+                autoCorrect={false}
+                spellCheck={false}
+                secureTextEntry={false}
+              />
+            )}
+            
+            {/* Visible OTP inputs - one for each digit */}
+            {Array.from({ length: otpPinCount }).map((_, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputRefs.current[index] = ref;
+                }}
+                style={[
+                  styles.otpDigitInput,
+                  otpInput[index] && styles.otpDigitInputFilled,
+                  error && styles.otpDigitInputError,
+                ]}
+                value={otpInput[index]}
+                onChangeText={(text) => {
+                  // For iOS: Handle autofill/paste of full OTP in the first input
+                  if (Platform.OS === 'ios' && index === 0 && text.length > 1) {
+                    const digits = text.replace(/\D/g, '').slice(0, otpPinCount);
+                    if (digits.length === otpPinCount) {
+                      // Prevent duplicate processing
+                      if (iosAutofillDetected.current) {
                         return;
                       }
-                    }
-
-                    // Only allow single digit for normal input
-                    if (text && !/^\d$/.test(text)) {
-                      return;
-                    }
-
-                    const newOtp = [...otpInput];
-                    newOtp[index] = text;
-                    setOtpInput(newOtp);
-
-                    // Auto-focus next input
-                    if (text && index < otpPinCount - 1) {
-                      inputRefs.current[index + 1]?.focus();
-                    }
-
-                    // Auto-verify when all digits are entered
-                    const otpString = newOtp.join('');
-                    if (otpString.length === otpPinCount) {
+                      iosAutofillDetected.current = true;
+                      
+                      const otpArray = digits.split('');
+                      setOtpInput(otpArray);
+                      
+                      // Blur all inputs
+                      inputRefs.current.forEach(ref => ref?.blur());
+                      
+                      // Auto-verify
                       handleVerifyOtp({
-                        otpInput: otpString,
+                        otpInput: digits,
                         otpPinCount,
                       });
+                      
+                      // Reset flag after a delay
+                      setTimeout(() => {
+                        iosAutofillDetected.current = false;
+                      }, 1000);
+                      return;
                     }
-                  }}
-                  onKeyPress={(e) => {
-                    // Handle backspace
-                    if (e.nativeEvent.key === 'Backspace' && !otpInput[index] && index > 0) {
-                      inputRefs.current[index - 1]?.focus();
-                    }
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={Platform.OS === 'ios' && index === 0 ? otpPinCount : 1}
-                  selectTextOnFocus
-                  editable={!loading}
-                  textContentType={Platform.OS === 'ios' && index === 0 ? 'oneTimeCode' : 'none'}
-                  autoComplete={Platform.OS === 'ios' && index === 0 ? 'one-time-code' : 'off'}
-                  importantForAutofill={Platform.OS === 'ios' && index === 0 ? 'yes' : 'no'}
-                  autoCorrect={false}
-                  spellCheck={false}
-                />
-              ))}
-            </View>
+                  }
+                  
+                  // Only allow single digit for normal input
+                  if (text && !/^\d$/.test(text)) {
+                    return;
+                  }
+                  
+                  const newOtp = [...otpInput];
+                  newOtp[index] = text;
+                  setOtpInput(newOtp);
+                  
+                  // Auto-focus next input
+                  if (text && index < otpPinCount - 1) {
+                    inputRefs.current[index + 1]?.focus();
+                  }
+                  
+                  // Auto-verify when all digits are entered
+                  const otpString = newOtp.join('');
+                  if (otpString.length === otpPinCount) {
+                    handleVerifyOtp({
+                      otpInput: otpString,
+                      otpPinCount,
+                    });
+                  }
+                }}
+                onKeyPress={(e) => {
+                  // Handle backspace
+                  if (e.nativeEvent.key === 'Backspace' && !otpInput[index] && index > 0) {
+                    inputRefs.current[index - 1]?.focus();
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={Platform.OS === 'ios' && index === 0 ? otpPinCount : 1}
+                selectTextOnFocus
+                editable={!loading}
+                textContentType={Platform.OS === 'ios' && index === 0 ? 'oneTimeCode' : 'none'}
+                autoComplete={Platform.OS === 'ios' && index === 0 ? 'one-time-code' : 'off'}
+                importantForAutofill={Platform.OS === 'ios' && index === 0 ? 'yes' : 'no'}
+                autoCorrect={false}
+                spellCheck={false}
+              />
+            ))}
           </View>
 
           <ErrorText message={error} visible={!!error} />
 
           {/* Verify Button */}
           <Button
-            title="Verify"
+            title="Verify OTP"
             onPress={() =>
               handleVerifyOtp({
                 otpInput: otpInput.join(''),
@@ -453,45 +434,27 @@ export default function OTPScreen() {
             }
             disabled={otpInput.join('').length < otpPinCount || loading}
             loading={loading}
-            style={[
-              styles.verifyButton,
-              (otpInput.join('').length < otpPinCount || loading) && styles.verifyButtonDisabled
-            ]}
-            textStyle={[
-              styles.verifyButtonText,
-              (otpInput.join('').length < otpPinCount || loading) && styles.verifyButtonTextDisabled
-            ]}
+            style={styles.verifyButton}
           />
 
-          {/* Resend Row */}
-          <View style={styles.resendRow}>
-            <Text style={styles.resendPrompt}>Didn't receive OTP? </Text>
-            <Text style={styles.timerText}>{formatTimer(timer)} </Text>
+          {/* Resend OTP */}
+          <View style={styles.resendContainer}>
+            <Text style={styles.resendText}>Didn't receive the code? </Text>
             <TouchableOpacity
               onPress={handleResendOtp}
-              disabled={!canResend || resending || loading}
+              disabled={resending || loading}
               activeOpacity={0.7}
             >
               {resending ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (
-                <Text style={[
-                  styles.resendLink,
-                  (!canResend || loading) && styles.resendLinkDisabled
-                ]}>Resend</Text>
+                <Text style={styles.resendLink}>Resend OTP</Text>
               )}
             </TouchableOpacity>
           </View>
 
         </View>
       </KeyboardAvoidingView>
-      <View style={styles.footerBackground}>
-        <Image
-          source={require('@/assets/images/order-success-footer.png')}
-          style={styles.footerImage}
-          contentFit="cover"
-        />
-      </View>
     </SafeAreaView>
   );
 }
@@ -506,7 +469,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 20,
   },
   backButton: {
@@ -515,44 +478,44 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   header: {
-    marginTop: 20,
-    marginBottom: 32,
+    marginBottom: 40,
     alignItems: 'center',
   },
   title: {
-    fontSize: 40,
-    fontFamily: 'Fredoka_600SemiBold',
-    color: Colors.primary,
-    letterSpacing: 0.3,
-    marginBottom: 16,
+    fontSize: 28,
+    fontFamily: 'Metropolis-Bold',
+    color: Colors.text,
+    marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: Fonts.MediumFontSize,
-    color: '#717680',
+    fontSize: 16,
+    color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
-    fontFamily: Fonts.LexendMedium,
+    lineHeight: 24,
+    fontFamily: 'Metropolis-Regular',
   },
   phoneNumber: {
     color: Colors.primary,
-    fontFamily: Fonts.LexendMedium,
+    fontFamily: 'Metropolis-SemiBold',
+    fontWeight: '600',
   },
-  otpSection: {
-    marginTop: 0,
+  autoDetectIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
   },
-  otpLabel: {
-    fontSize: Fonts.SmallFontSize,
-    fontFamily: Fonts.LexendMedium,
-    color: '#414651',
-    marginBottom: 6,
-    marginLeft: 4,
+  autoDetectText: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontFamily: 'Metropolis-Medium',
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingHorizontal: 0,
+    marginBottom: 24,
+    paddingHorizontal: 8,
     gap: 8,
   },
   hiddenInput: {
@@ -564,84 +527,74 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   otpDigitInput: {
-    flex: 1,
-    height: 60,
-    borderWidth: 2,
-    borderColor: '#D5D7DA',
-    borderRadius: 16,
+    width: 48,
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
     textAlign: 'center',
-    fontSize: 18,
-    fontFamily: Fonts.LexendSemiBold,
-    color: '#181D27',
-    backgroundColor: '#FFFFFF',
+    fontSize: 24,
+    fontFamily: 'Metropolis-SemiBold',
+    color: Colors.text,
+    backgroundColor: '#F9FAFB',
   },
   otpDigitInputFilled: {
-    borderColor: '#D5D7DA',
+    borderColor: Colors.primary,
     backgroundColor: '#FFFFFF',
+    borderWidth: 2,
   },
   otpDigitInputError: {
-    borderColor: '#F04438',
-    justifyContent: 'flex-start'
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   verifyButton: {
-    marginTop: 16,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
+    marginTop: 8,
   },
-  verifyButtonDisabled: {
-    backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  verifyButtonText: {
-    fontSize: Fonts.MediumFontSize,
-    fontFamily: Fonts.LexendSemiBold,
-    color: '#FFFFFF',
-  },
-  verifyButtonTextDisabled: {
-    fontSize: Fonts.MediumFontSize,
-    fontFamily: Fonts.LexendSemiBold,
-    color: '#A4A7AE',
-  },
-  resendRow: {
+  resendContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    paddingLeft: 4,
+    marginTop: 24,
+    gap: 4,
   },
-  resendPrompt: {
+  resendText: {
     fontSize: 14,
-    color: '#717680',
-    fontFamily: Fonts.LexendMedium,
-  },
-  timerText: {
-    fontSize: 14,
-    color: '#535862',
-    fontFamily: Fonts.LexendRegular,
-    marginRight: 4,
+    color: Colors.textSecondary,
+    fontFamily: 'Metropolis-Regular',
   },
   resendLink: {
     fontSize: 14,
     color: Colors.primary,
-    fontFamily: Fonts.LexendBold,
+    fontFamily: 'Metropolis-SemiBold',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
-  resendLinkDisabled: {
-    color: '#F69393',
+  devInfo: {
+    marginTop: 32,
+    padding: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  footerBackground: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 180,
-    zIndex: -1,
+  devInfoTitle: {
+    fontSize: 12,
+    fontFamily: 'Metropolis-SemiBold',
+    color: Colors.text,
+    marginBottom: 8,
   },
-  footerImage: {
-    width: '100%',
-    height: '100%',
-  }
+  devInfoText: {
+    fontSize: 11,
+    fontFamily: 'Monaco',
+    color: '#666',
+    marginBottom: 4,
+  },
+  devInfoNote: {
+    fontSize: 10,
+    fontFamily: 'Metropolis-Regular',
+    color: Colors.textSecondary,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  // Removed unused styles for name input screen
 });

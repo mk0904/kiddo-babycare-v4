@@ -1,3 +1,4 @@
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { accountConfig } from '@/config/accountConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,7 @@ import {
     ActivityIndicator,
     Alert,
     Linking,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -225,7 +227,6 @@ export default function AccountScreen() {
                         'Orders': '/orders',
                         'Loyalty': '/loyalty',
                         'Rewards': '/rewards',
-                        'Referral': '/referral',
                         'Returns': '/returns',
                         'Addresses': '/address',
                         'Wishlist': '/wishlist',
@@ -308,14 +309,7 @@ export default function AccountScreen() {
         }
 
         // Default fallback
-        return null;
-    };
-
-    const getUserInitials = () => {
-        if (!user) return 'U';
-        const first = user.firstName && user.firstName !== 'user' ? user.firstName.charAt(0) : '';
-        const last = user.lastName && user.lastName !== '_' ? user.lastName.charAt(0) : '';
-        return (first + last).toUpperCase() || 'U';
+        return null; // Show nothing if no valid name
     };
 
     const userName = getUserDisplayName();
@@ -325,12 +319,7 @@ export default function AccountScreen() {
     if (isGuest || !user) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <View style={styles.customHeader}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Account</Text>
-                </View>
+                <ScreenHeader title="Account" showBack={true} showSearch={false} />
                 <View style={styles.loginRequiredWrapper}>
                     <Text style={styles.loginTitle}>Login to access your account</Text>
                     <Text style={styles.loginSubtitle}>
@@ -351,16 +340,11 @@ export default function AccountScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <View style={styles.customHeader}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Account</Text>
-            </View>
+            <ScreenHeader title="Account" showBack={true} showSearch={false} />
             <ScrollView
                 ref={scrollViewRef}
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
+                style={[styles.scrollView, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}
+                contentContainerStyle={[styles.scrollContent, Platform.OS === 'android' && { backgroundColor: Colors.backgroundWhite }]}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
                 scrollEventThrottle={16}
@@ -375,7 +359,7 @@ export default function AccountScreen() {
             >
                 {/* Header Section */}
                 {config.profile && (
-                    <View style={styles.header}>
+                    <View style={[styles.header, config.styles?.header]}>
                         <View style={styles.profileSection}>
                             {config.profile.showAvatar && (
                                 <View style={styles.avatarContainer}>
@@ -383,9 +367,16 @@ export default function AccountScreen() {
                                         styles.avatar,
                                         { width: config.profile.avatarSize, height: config.profile.avatarSize, borderRadius: config.profile.avatarSize / 2 }
                                     ]}>
-                                        <Text style={styles.avatarText}>
-                                            {getUserInitials()}
-                                        </Text>
+                                        {userName ? (
+                                            <Text style={[
+                                                styles.avatarText,
+                                                { fontSize: config.profile.avatarSize * 0.4 }
+                                            ]}>
+                                                {userName.charAt(0).toUpperCase()}
+                                            </Text>
+                                        ) : (
+                                            <Ionicons name="person-outline" size={config.profile.avatarSize * 0.5} color={Colors.backgroundWhite} />
+                                        )}
                                     </View>
                                 </View>
                             )}
@@ -401,9 +392,11 @@ export default function AccountScreen() {
 
                 {/* Quick Actions */}
                 {config.quickActions && config.quickActions.length > 0 && (
-                    <View style={styles.quickActionsContainer}>
+                    <View style={[styles.quickActionsContainer, config.styles?.quickActions]}>
                         {config.quickActions.map((action) => {
                             const badgeCount = getBadgeCount(action);
+                            const isLoyaltyAction = action.id === 'loyalty';
+                            // Check if icon exists in Ionicons, otherwise fallback
                             const iconName = action.icon as any;
 
                             return (
@@ -414,17 +407,37 @@ export default function AccountScreen() {
                                     activeOpacity={0.8}
                                 >
                                     <View style={styles.quickActionCardInner}>
-                                        <View style={styles.quickActionIconCircle}>
+                                        <View style={styles.quickActionIconContainer}>
                                             <Ionicons
                                                 name={iconName}
-                                                size={24}
+                                                size={20}
                                                 color={Colors.primary}
                                             />
+                                            {action.showBadge && badgeCount > 0 && (
+                                                <View style={styles.badge}>
+                                                    <Text style={styles.badgeText}>
+                                                        {badgeCount > 99 ? '99+' : badgeCount}
+                                                    </Text>
+                                                </View>
+                                            )}
                                         </View>
-                                        <Text style={styles.quickActionTitle}>
-                                            {action.title}
-                                        </Text>
-
+                                        <View style={styles.quickActionTitleContainer}>
+                                            <Text style={styles.quickActionTitle} numberOfLines={2}>
+                                                {action.title}
+                                            </Text>
+                                            {/* Show Kiddo Cash balance for loyalty action */}
+                                            {isLoyaltyAction && (
+                                                <View style={styles.loyaltyBalanceContainer}>
+                                                    {loadingPoints ? (
+                                                        <Text style={styles.loyaltyBalanceText}>...</Text>
+                                                    ) : (
+                                                        <Text style={styles.loyaltyBalanceText}>
+                                                            ₹{Math.round(pointsBalance)}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -433,108 +446,120 @@ export default function AccountScreen() {
                 )}
 
                 {/* Menu Items */}
-                <View style={styles.menuCard}>
-                    {config.menuItems && config.menuItems.length > 0 && config.menuItems.map((item, index) => {
-                        const iconName = item.icon as any;
+                {config.menuItems && config.menuItems.length > 0 && (
+                    <View style={styles.menuContainer}>
+                        {config.menuItems.map((item, index) => {
+                            const iconName = item.icon as any;
 
-                        return (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={[
-                                    styles.menuItem,
-                                    index === 0 && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-                                ]}
-                                onPress={() => handleAction(item)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.menuItemLeft}>
+                            return (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[
+                                        styles.menuItem,
+                                        index === config.menuItems.length - 1 && styles.menuItemLast,
+                                    ]}
+                                    onPress={() => handleAction(item)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.menuItemLeft}>
+                                        <Ionicons
+                                            name={iconName}
+                                            size={22}
+                                            color={Colors.text}
+                                            style={styles.menuIcon}
+                                        />
+                                        <Text style={styles.menuItemText}>
+                                            {item.title}
+                                        </Text>
+                                    </View>
                                     <Ionicons
-                                        name={iconName}
+                                        name="chevron-forward"
                                         size={20}
-                                        color={'#181D27'}
-                                        style={styles.menuIcon}
+                                        color={Colors.textSecondary}
                                     />
-                                    <Text style={styles.menuItemText}>
-                                        {item.title}
-                                    </Text>
-                                </View>
-                                <Ionicons
-                                    name="chevron-forward"
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                        );
-                    })}
+                                </TouchableOpacity>
+                            );
+                        })}
+                        
+                        {/* Logout Button inside menu container */}
+                        {config.logout && config.logout.enabled && (
+                            <>
+                                <View style={styles.menuDivider} />
+                                <TouchableOpacity
+                                    style={styles.menuItemLogout}
+                                    onPress={handleLogout}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.menuItemLeft}>
+                                        <Ionicons
+                                            name="log-out-outline"
+                                            size={22}
+                                            color="#ff4444"
+                                            style={styles.menuIcon}
+                                        />
+                                        <Text style={styles.menuItemTextLogout}>
+                                            {config.logout.confirmText}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                )}
 
-                    {/* Logout Button inside menu card */}
-                    {config.logout && config.logout.enabled && (
+                {/* Notification Permission Button */}
+                {oneSignalService.isAvailable() && (
+                    <View style={styles.settingsSection}>
                         <TouchableOpacity
-                            style={[styles.menuItem, { borderBottomWidth: 0, borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }]}
-                            onPress={handleLogout}
+                            style={styles.settingsButton}
+                            onPress={handleRequestNotificationPermission}
                             activeOpacity={0.7}
                         >
-                            <View style={styles.menuItemLeft}>
+                            <View style={styles.settingsButtonLeft}>
                                 <Ionicons
-                                    name="log-out-outline"
+                                    name="notifications-outline"
                                     size={22}
                                     color={Colors.primary}
                                     style={styles.menuIcon}
                                 />
-                                <Text style={[styles.menuItemText, { color: Colors.primary }]}>
-                                    {config.logout.confirmText}
+                                <Text style={styles.settingsButtonText}>
+                                    Enable Notifications
                                 </Text>
                             </View>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Notification Permission Card */}
-                {oneSignalService.isAvailable() && (
-                    <TouchableOpacity
-                        style={styles.notificationCard}
-                        onPress={handleRequestNotificationPermission}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.menuItemLeft}>
                             <Ionicons
-                                name="notifications-outline"
-                                size={22}
-                                color={Colors.text}
-                                style={styles.menuIcon}
+                                name="chevron-forward"
+                                size={20}
+                                color={Colors.textSecondary}
                             />
-                            <Text style={styles.menuItemText}>
-                                Enable notifications
-                            </Text>
-                        </View>
-                        <Ionicons
-                            name="chevron-forward"
-                            size={20}
-                            color={Colors.textSecondary}
-                        />
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Delete Account Button */}
-                <TouchableOpacity
-                    style={styles.deleteAccountWrapper}
-                    onPress={handleDeleteAccount}
-                    activeOpacity={0.7}
-                    disabled={deletingAccount}
-                >
-                    {deletingAccount ? (
-                        <ActivityIndicator size="small" color={Colors.textSecondary} />
-                    ) : (
-                        <>
-                            <Ionicons name="trash-outline" size={20} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                            <Text style={styles.deleteAccountText}>Delete account</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+                <View style={styles.dangerZone}>
+                    <TouchableOpacity
+                        style={[styles.deleteAccountButton, deletingAccount && styles.deleteAccountButtonDisabled]}
+                        onPress={handleDeleteAccount}
+                        activeOpacity={0.7}
+                        disabled={deletingAccount}
+                    >
+                        {deletingAccount ? (
+                            <>
+                                <ActivityIndicator size="small" color="#ff4444" />
+                                <Text style={styles.deleteAccountText}>Deleting...</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Ionicons name="trash-outline" size={20} color="#ff4444" />
+                                <Text style={styles.deleteAccountText}>Delete Account</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
 
                 {/* App Version */}
                 {config.version && config.version.enabled && (
-                    <View style={styles.versionContainer}>
+                    <View style={[styles.versionContainer, config.styles?.version]}>
                         <Text style={styles.versionText}>{config.version.text}</Text>
                     </View>
                 )}
@@ -546,34 +571,30 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FB',
-    },
-    customHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        backgroundColor: '#FFFFFF',
-    },
-    backButton: {
-        padding: 4,
-        marginRight: 15,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontFamily: Fonts.Bold,
-        color: Colors.text,
+        backgroundColor: Colors.backgroundWhite,
     },
     scrollView: {
         flex: 1,
+        backgroundColor: Colors.backgroundWhite,
+        ...Platform.select({
+            android: {
+                elevation: 0,
+            },
+        }),
     },
     scrollContent: {
-        paddingBottom: 40,
+        paddingBottom: 80, // Extra padding for tab bar (60px + safe area)
+        flexGrow: 1,
+        backgroundColor: Colors.backgroundWhite,
+        ...Platform.select({
+            android: {
+                minHeight: '100%',
+            },
+        }),
     },
     header: {
-        paddingTop: 30,
-        paddingBottom: 20,
-        backgroundColor: '#F8F9FB',
+        backgroundColor: Colors.backgroundWhite,
+        borderBottomColor: Colors.grey,
     },
     profileSection: {
         alignItems: 'center',
@@ -583,14 +604,13 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     avatar: {
-        backgroundColor: '#EEEEEE',
+        backgroundColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatarText: {
-        color: Colors.primary,
+        color: Colors.backgroundWhite,
         fontFamily: Fonts.Bold,
-        fontSize: 32,
     },
     userInfo: {
         alignItems: 'center',
@@ -599,66 +619,125 @@ const styles = StyleSheet.create({
         fontSize: 22,
         color: Colors.text,
         fontFamily: Fonts.Bold,
-        marginBottom: 4,
+        marginBottom: 8,
         textAlign: 'center',
     },
     userPhone: {
-        fontSize: 16,
+        fontSize: 15,
         color: Colors.textSecondary,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.Regular,
         textAlign: 'center',
     },
     quickActionsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingVertical: 20,
+        gap: 12,
     },
     quickActionCard: {
         flex: 1,
-        marginHorizontal: 6,
+        minWidth: 0,
+        aspectRatio: 1,
     },
     quickActionCardInner: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Colors.backgroundWhite,
         borderRadius: 16,
-        paddingVertical: 20,
-        paddingHorizontal: 10,
+        padding: 16,
         alignItems: 'center',
         justifyContent: 'center',
-
+        borderWidth: 1,
+        borderColor: Colors.border,
+        width: '100%',
+        height: '100%',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
-    quickActionIconCircle: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#0000000D',
+    quickActionIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: Colors.backgroundSecondary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        
+        position: 'relative',
+    },
+    badge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: Colors.primary,
+        borderRadius: 12,
+        minWidth: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        borderWidth: 2,
+        borderColor: Colors.backgroundWhite,
+    },
+    badgeText: {
+        color: Colors.backgroundWhite,
+        fontSize: 11,
+        fontFamily: Fonts.Bold,
+        fontWeight: '700',
+    },
+    quickActionTitleContainer: {
+        minHeight: 56,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
     },
     quickActionTitle: {
-        fontSize: 12,
-        color: '#181D27',
-        fontFamily: Fonts.LexendMedium,
+        fontSize: 14,
+        color: Colors.text,
+        fontFamily: Fonts.SemiBold,
+        fontWeight: '600',
         textAlign: 'center',
-        lineHeight: 18,
+        lineHeight: 20,
     },
-
-    menuCard: {
-        backgroundColor: '#FFFFFF',
+    loyaltyBalanceContainer: {
+        marginTop: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: Colors.primary,
+        borderRadius: 12,
+    },
+    loyaltyBalanceText: {
+        fontSize: 12,
+        color: Colors.backgroundWhite,
+        fontFamily: Fonts.Bold,
+        fontWeight: '700',
+    },
+    menuContainer: {
+        backgroundColor: '#fafafa',
         borderRadius: 16,
-        marginHorizontal: 16,
-        marginBottom: 20,
+        marginHorizontal: 20,
+        marginTop: 8,
         overflow: 'hidden',
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 18,
+        paddingVertical: 16,
         paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F2F2F2',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: Colors.border,
+        backgroundColor: '#fafafa',
+    },
+    menuItemLast: {
+        borderBottomWidth: 0,
     },
     menuItemLeft: {
         flexDirection: 'row',
@@ -666,52 +745,37 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     menuIcon: {
-        marginRight: 14,
-        color: '#181D27',
+        marginRight: 16,
     },
     menuItemText: {
-        fontSize: Fonts.SmallFontSize,
-        color: '#181D27',
-        fontFamily: Fonts.LexendMedium,
+        fontSize: 16,
+        color: Colors.text,
+        fontFamily: Fonts.Medium,
     },
-    notificationCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        marginHorizontal: 16,
+    menuDivider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: Colors.border,
+    },
+    menuItemLogout: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 18,
+        paddingVertical: 16,
         paddingHorizontal: 20,
-        marginBottom: 30,
+        backgroundColor: '#fafafa',
     },
-    deleteAccountWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-    },
-    deleteAccountText: {
+    menuItemTextLogout: {
         fontSize: 16,
-        color: Colors.textSecondary,
-        fontFamily: Fonts.Medium,
-    },
-    versionContainer: {
-        alignItems: 'center',
-        marginTop: 20,
-        paddingBottom: 20,
-    },
-    versionText: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-        fontFamily: Fonts.Regular,
+        color: '#ff4444',
+        fontFamily: Fonts.SemiBold,
+        fontWeight: '600',
     },
     loginRequiredWrapper: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Colors.backgroundWhite,
     },
     loginTitle: {
         fontSize: 20,
@@ -737,8 +801,67 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     loginCTAText: {
-        color: '#FFFFFF',
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        color: '#fff',
+        fontFamily: Fonts.SemiBold,
+    },
+    versionContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    versionText: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+        fontFamily: Fonts.Regular,
+    },
+    dangerZone: {
+        marginHorizontal: 20,
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    deleteAccountButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#ffcccc',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+    },
+    deleteAccountText: {
+        fontSize: 16,
+        color: '#ff4444',
+        fontFamily: Fonts.SemiBold,
+        marginLeft: 8,
+    },
+    deleteAccountButtonDisabled: {
+        opacity: 0.6,
+    },
+    settingsSection: {
+        backgroundColor: '#fafafa',
+        borderRadius: 16,
+        marginHorizontal: 20,
+        marginTop: 8,
+        overflow: 'hidden',
+    },
+    settingsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: '#fafafa',
+    },
+    settingsButtonLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    settingsButtonText: {
+        fontSize: 16,
+        color: Colors.text,
+        fontFamily: Fonts.Medium,
     },
 });
