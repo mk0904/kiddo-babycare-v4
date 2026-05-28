@@ -6,6 +6,8 @@
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
+    "android:fix-generated": "rm -f \"node_modules/expo/android/build/generated/expo/src/main/java/expo/modules/ExpoModulesPackageList 2.java\"",
+    "android:fix-cxx": "rm -rf node_modules/*/android/.cxx node_modules/@*/*/android/.cxx android/.cxx android/app/.cxx",
     "android:clean": "rm -rf android/app/build android/app/.cxx android/build android/.gradle && expo run:android",
     "android:release": "cd android && ./gradlew assembleRelease",
     "ios": "expo run:ios",
