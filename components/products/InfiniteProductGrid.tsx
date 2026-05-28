@@ -70,6 +70,13 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
     return item.id || item.handle || item;
   }, []);
 
+  const listRef = React.useRef<FlatList>(null);
+
+  // Scroll to top when collection changes
+  React.useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [collectionId]);
+
   // Handle empty state
   if (!Array.isArray(products) || products.length === 0) {
     return (
@@ -86,6 +93,7 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
   // When contentWidth is set, wrap FlatList in a View with that width so the list is constrained and cards don't get cropped
   const listContent = (
     <FlatList
+      ref={listRef}
       data={products}
       numColumns={2}
       keyExtractor={keyExtractor}
@@ -168,6 +176,7 @@ export interface InfiniteProductGridProps
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
 }
 
 export function InfiniteProductGrid({
@@ -196,14 +205,20 @@ export function InfiniteProductGrid({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  pageCategory,
 }: InfiniteProductGridProps) {
+  const MemoizedCollectionComponent = React.useMemo(
+    () => (props: CollectionComponentProps) => <InfiniteGrid {...props} scrollable={scrollable} />,
+    [scrollable]
+  );
+
   return (
     <ProductCollection
       collectionId={collectionId}
       collectionHandle={collectionHandle}
       searchQuery={searchQuery}
       products={products}
-      CollectionComponent={(props) => <InfiniteGrid {...props} scrollable={scrollable} />}
+      CollectionComponent={MemoizedCollectionComponent}
       showHeading={showHeading}
       title={title}
       subTitle={subTitle}
@@ -223,6 +238,7 @@ export function InfiniteProductGrid({
       contentContainerStyle={contentContainerStyle}
       genderFilter={genderFilter}
       ageFilter={ageFilter}
+      pageCategory={pageCategory}
     />
   );
 }

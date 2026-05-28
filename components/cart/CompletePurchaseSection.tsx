@@ -23,6 +23,7 @@ export function CompletePurchaseSection() {
             collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
             config={{ limit: 40, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
             title=""
+            onlyInStock={true}
             refreshKey={cartItems.length}
             onProductsLoaded={handleProductsLoaded}
             onProductPress={(p) => p?.id && router.push({ pathname: '/products/[id]', params: { id: p.id } } as any)}

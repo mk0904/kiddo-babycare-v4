@@ -63,6 +63,13 @@
         <data android:host="www.allforkiddo.com"/>
         <data android:pathPrefix="/"/>
       </intent-filter>
+      <intent-filter android:autoVerify="true" data-generated="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="https" android:host="allforkiddo.com" android:pathPattern=".*"/>
+        <data android:scheme="https" android:host="www.allforkiddo.com" android:pathPattern=".*"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
       <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>

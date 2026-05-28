@@ -2,5 +2,8 @@
   "expo.jsEngine": "hermes",
   "EX_DEV_CLIENT_NETWORK_INSPECTOR": "true",
   "newArchEnabled": "true",
-  "ios.buildReactNativeFromSource": "false"
+  "ios.buildReactNativeFromSource": "false",
+  "ios.useFrameworks": "static",
+  "ios.forceStaticLinking": "[]",
+  "apple.privacyManifestAggregationEnabled": "true"
 }

@@ -1,8 +1,9 @@
 import { customerService } from '@/services/customerService';
 import { shopifyApi } from '@/services/shopifyApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState, AppStateStatus } from 'react-native';
 import { useAuth } from './AuthContext';
 
 export interface Address {
@@ -30,17 +31,17 @@ export type AddressTag = Address['tag'];
 
 /** Map our tag to addressType value (Home/Work/Other/Events) for backend and for Shopify. */
 export function tagToAddressType(tag: AddressTag): string {
-  const m: Record<AddressTag, string> = { home: 'Home', work: 'Work', other: 'Other', events: 'Events' };
-  return m[tag] ?? 'Home';
+    const m: Record<AddressTag, string> = { home: 'Home', work: 'Work', other: 'Other', events: 'Events' };
+    return m[tag] ?? 'Home';
 }
 
 /** Map addressType value from Shopify response back to our tag when loading addresses. */
 function addressTypeToTag(value: string | null | undefined): AddressTag {
-  const s = (value ?? '').trim().toLowerCase();
-  if (s === 'work') return 'work';
-  if (s === 'other') return 'other';
-  if (s === 'events') return 'events';
-  return 'home';
+    const s = (value ?? '').trim().toLowerCase();
+    if (s === 'work') return 'work';
+    if (s === 'other') return 'other';
+    if (s === 'events') return 'events';
+    return 'home';
 }
 
 /** Shopify Customer Address API uses this key for address type; we send our addressType value here. */
@@ -79,7 +80,10 @@ interface AddressContextType {
     detectedLocationStatus: DetectedLocationStatus;
     detectedEta: number | null;
     setDetectedLocation: (status: DetectedLocationStatus, eta?: number | null) => void;
-    addAddress: (addressData: Partial<Address>) => Promise<Address>;
+    currentLocationStatus: DetectedLocationStatus;
+    isCurrentLocationServiceable: boolean | null;
+    checkCurrentLocationServiceability: () => Promise<void>;
+    addAddress: (addressData: Partial<Address>, makeDefault?: boolean) => Promise<Address>;
     updateAddress: (addressId: string, addressData: Partial<Address>) => Promise<void>;
     deleteAddress: (addressId: string) => Promise<void>;
     setDefaultAddressById: (addressId: string) => Promise<void>;
@@ -109,9 +113,76 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
         setDetectedEta(eta ?? null);
     }, []);
 
+    const [currentLocationStatus, setCurrentLocationStatus] = useState<DetectedLocationStatus>('idle');
+    const [isCurrentLocationServiceable, setIsCurrentLocationServiceable] = useState<boolean | null>(null);
+
+    const hasShownUnserviceableAlert = React.useRef(false);
+
+    const checkCurrentLocationServiceability = useCallback(async () => {
+        try {
+            // 1. Wait for App Config to ensure we have the correct serviceableDistance
+            const { appConfigService } = require('@/services/appConfigService');
+            if (!appConfigService.isConfigLoaded()) {
+                await appConfigService.loadAppConfig();
+            }
+
+            const { status } = await Location.getForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setCurrentLocationStatus('denied');
+                return;
+            }
+
+            setCurrentLocationStatus('loading');
+
+            // 2. Force a fresh location check with higher accuracy
+            const position = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High
+            });
+            const { latitude, longitude } = position.coords;
+
+            const { getDeliveryEta } = require('@/config/deliveryConfig');
+            const { resolveDeliveryServiceable } = require('@/utils/deliveryServiceability');
+
+            const eta = await getDeliveryEta(latitude, longitude);
+            const threshold = appConfigService.getServicableDistanceKm();
+            const serviceable = resolveDeliveryServiceable(eta, threshold);
+
+            setIsCurrentLocationServiceable(serviceable);
+            setCurrentLocationStatus(serviceable ? 'serviceable' : 'unserviceable');
+
+            // 3. Trigger Notification/Alert if unserviceable
+            if (!serviceable && !hasShownUnserviceableAlert.current) {
+                Alert.alert(
+                    'Area Unserviceable',
+                    'We noticed you are currently outside our delivery zone. Delivery to your current location is not available.',
+                    [{ text: 'OK', onPress: () => { hasShownUnserviceableAlert.current = true; } }]
+                );
+            } else if (serviceable) {
+                // Reset alert flag if they move back into a serviceable zone
+                hasShownUnserviceableAlert.current = false;
+            }
+        } catch (error) {
+            console.error('[AddressContext] Error checking current location serviceability:', error);
+            setCurrentLocationStatus('error');
+        }
+    }, []);
+
     useEffect(() => {
         loadAddresses();
-    }, [user]);
+        checkCurrentLocationServiceability();
+
+        // Listen for AppState changes to re-check when user returns to the app
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                console.log('[AddressContext] App became active, re-checking location serviceability...');
+                checkCurrentLocationServiceability();
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [user, checkCurrentLocationServiceability]);
 
     const loadAddresses = useCallback(async () => {
         try {
@@ -212,16 +283,16 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [user]);
 
-    const addAddress = useCallback(async (addressData: Partial<Address>): Promise<Address> => {
+    const addAddress = useCallback(async (addressData: Partial<Address>, makeDefault: boolean = true): Promise<Address> => {
         let shopifyAddressId: string | undefined;
 
         // First, save to Shopify
         const customerAccessToken = user?.customerAccessToken;
         if (customerAccessToken) {
             try {
-                // Set as default if this is the first address
-                const setAsDefault = addresses.length === 0;
-                
+                // Set as default if makeDefault is true
+                const setAsDefault = makeDefault;
+
                 // Format address data for Shopify (addressType sent on Shopify's required key)
                 const shopifyAddressData: Record<string, string> = {
                     firstName: addressData.firstName || '',
@@ -241,7 +312,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 );
 
                 console.log('[AddressContext] Creating address in Shopify:', shopifyAddressData);
-                
+
                 const result = await customerService.createCustomerAddress(
                     customerAccessToken,
                     shopifyAddressData,
@@ -285,16 +356,19 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
             pincode: addressData.pincode || addressData.zip || '',
             country: addressData.country || 'India',
             tag: addressData.tag || 'home',
-            isDefault: addresses.length === 0, // First address is default
+            isDefault: makeDefault,
             latitude: addressData.latitude,
             longitude: addressData.longitude,
         };
 
-        const updatedAddresses = [...addresses, newAddress];
+        const updatedAddresses = makeDefault
+            ? addresses.map(addr => ({ ...addr, isDefault: false })).concat(newAddress)
+            : [...addresses, newAddress];
+
         await AsyncStorage.setItem('user_addresses', JSON.stringify(updatedAddresses));
         setAddresses(updatedAddresses);
 
-        if (newAddress.isDefault || addresses.length === 0) {
+        if (makeDefault) {
             setDefaultAddress(newAddress);
             await AsyncStorage.setItem('default_address_id', newAddress.id);
         }
@@ -329,7 +403,7 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 );
 
                 console.log('[AddressContext] Updating address in Shopify:', shopifyId, shopifyAddressData);
-                
+
                 const result = await customerService.updateCustomerAddress(customerAccessToken, shopifyId, shopifyAddressData);
                 if (result.success && result.address) {
                     console.log('[AddressContext] Address updated successfully in Shopify');
@@ -429,6 +503,9 @@ export const AddressProvider = ({ children }: { children: ReactNode }) => {
                 detectedLocationStatus,
                 detectedEta,
                 setDetectedLocation,
+                currentLocationStatus,
+                isCurrentLocationServiceable,
+                checkCurrentLocationServiceability,
                 addAddress,
                 updateAddress,
                 deleteAddress,

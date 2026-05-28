@@ -382,6 +382,12 @@ export interface DeliveryZoneConfig {
   maxServiceRadiusKm?: number;
 }
 
+export interface ForceUpdateConfig {
+  isForceUpdateEnabled: boolean;
+  minAndroidAppVersion: string;
+  minIosAppVersion: string;
+}
+
 export interface AppConfigResponse {
   version?: number;
   updatedAt?: string;
@@ -477,4 +483,5 @@ export interface WalletConfig {
   walletScreen?: WalletScreenConfig;
   carousel?: WalletCarouselItem[];
   notes?: string[];
+  forceUpdateConfig?: ForceUpdateConfig;
 }

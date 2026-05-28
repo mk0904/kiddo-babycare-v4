@@ -4,6 +4,7 @@ import { configService } from '@/services/configService';
 import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout, MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
+import { getMilestoneDockBottom } from '@/utils/tabBarLayout';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
@@ -119,10 +120,10 @@ export function MilestoneTracker({
     const showAllDoneMilestoneIcons =
         allDoneTrackerLayoutW === 0 || allDoneTrackerLayoutW >= allDoneMilestoneIconsMinW;
     /** Match Home `milestoneDock` + `index` so the sheet does not sit over the tab when it is shown. */
-    const tabBarStackBottom = useMemo(() => {
-        const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
-        return Math.max(insets.bottom, 0) + tabBarHeight;
-    }, [insets.bottom]);
+    const milestoneDockBottom = useMemo(
+        () => getMilestoneDockBottom(insets.bottom),
+        [insets.bottom]
+    );
     /** Use subtotal (line items) for milestone thresholds — matches merchandising “min cart” rules better than order total. */
     const cartSubtotal = useCartSubtotal();
 
@@ -437,7 +438,8 @@ export function MilestoneTracker({
         : Math.min(windowWidth - 40, 420);
     /** Home: `MILESTONE_CART_ROW_PILL_HEIGHT` (64) — bottom of modal sits level with the strip in `MilestoneCartRow` / `getHomeMilestoneRowLayout`. */
     const homeStripBottomOffset =
-        (isTabBarVisible ? tabBarStackBottom : Math.max(insets.bottom, 0) + 4) + MILESTONE_CART_ROW_PILL_HEIGHT;
+        (isTabBarVisible ? milestoneDockBottom : Math.max(insets.bottom, 0) + 4) +
+        MILESTONE_CART_ROW_PILL_HEIGHT;
     const homeModalBottomPad = Math.max(0, homeStripBottomOffset - HOME_MILESTONE_MODAL_NUDGE_DOWN);
     const modalScrollMaxHeight = isDock
         ? Math.max(200, windowHeight - insets.top - 20 - homeModalBottomPad)

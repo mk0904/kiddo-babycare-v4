@@ -1,5 +1,5 @@
-import { Fonts } from '@/constants/theme';
-import { StyleSheet, Text } from 'react-native';
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
 
 interface ErrorTextProps {
   message: string;
@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     fontSize: 14,
     marginBottom: 20,
-    fontFamily: Fonts.LexendSemiBold,
+    textAlign: 'center',
   },
 });
 

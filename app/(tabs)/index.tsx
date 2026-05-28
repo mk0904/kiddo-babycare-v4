@@ -19,6 +19,7 @@ import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
+import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter, useSegments } from 'expo-router';
@@ -107,7 +108,7 @@ export default function HomeScreen() {
 
   const headerConfig = useMemo(() => {
     const categoryHeader = configService.getCategoryHeaderConfig(selectedCategory);
-    const globalHeader = configService.getConfig().header;
+    const globalHeader = configService.getGlobalHeaderConfig();
 
     // Background image / copy can follow category; backgroundColor stays global so it does not shift per tab.
     const backgroundImage = categoryHeader?.backgroundImage || globalHeader?.backgroundImage;
@@ -119,7 +120,9 @@ export default function HomeScreen() {
       textColor: categoryHeader?.textColor || globalHeader?.textColor || '#FFFFFF',
       primaryColor: globalHeader?.primaryColor || '#FFFFFF',
       backgroundImage,
-      hasImage: !!backgroundImage, // Automatically set based on backgroundImage existence
+      hasImage: !!backgroundImage,
+      globalGlass: globalHeader?.glass,
+      categoryGlass: categoryHeader?.glass,
       iconUrl: walletConfig?.walletScreen?.iconUrl,
     };
   }, [selectedCategory, configLoading, milestoneUiRev]);
@@ -255,10 +258,10 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
-  const tabBarStackBottom = useMemo(() => {
-    const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
-    return Math.max(insets.bottom, 0) + tabBarHeight;
-  }, [insets.bottom, configLoading]);
+  const tabBarStackBottom = useMemo(
+    () => getTabBarStackBottom(insets.bottom),
+    [insets.bottom, configLoading]
+  );
 
   const { stackExtraPx: liveDeliveryStackExtra } = useLiveDeliveryStackOffset();
 
@@ -273,9 +276,9 @@ export default function HomeScreen() {
   // - Top info bar: ~60px (paddingTop: 8 + text content + marginBottom: 4)
   // - Search bar: ~70px (paddingVertical: 10 + search bar height ~50px)
   // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
-  // Total content: ~220px, using conservative estimate
+  // Total content: ~232px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 220 : 220;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 232 : 232;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 

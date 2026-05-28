@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { otpService } from '@/services/otpService';
 import { useReferralAttributionStore } from '@/store/referralAttributionStore';
 import { trackSignupStarted } from '@/utils/mixpanelHelpers';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -20,7 +19,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   UIManager,
   View
@@ -31,15 +29,37 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// Carousel data with images
+const getCarouselData = () => {
+  return [
+    {
+      imageUrl: require('@/assets/images/kiddo.png'),
+      title: 'Welcome to Kiddo',
+      subtitle: 'Your trusted partner in baby care, delivering 24/7',
+    },
+    {
+      imageUrl: require('@/assets/images/kiddo_with_parents.png'),
+      title: 'Quality You Can Trust',
+      subtitle: 'Curated products, you can trust for your little ones',
+    },
+    {
+      imageUrl: require('@/assets/images/kiddo_scooter.png'),
+      title: 'Fast Delivery',
+      subtitle: 'Get essentials delivered right to your door, Try & Buy, Gift options and Schedule a Delivery',
+    },
+  ];
+};
+
 export default function LoginScreen() {
   const router = useRouter();
   const { login, skipLogin } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const carouselData = getCarouselData();
 
   // Auto-fill referral code from AppsFlyer invite / OneLink (if captured at app open)
   useEffect(() => {
@@ -86,7 +106,9 @@ export default function LoginScreen() {
   };
 
   const handleSendOTP = async () => {
+    // Track signup started
     trackSignupStarted('phone');
+    
     const cleanedPhone = phoneNumber.replace(/\D/g, '');
 
     if (cleanedPhone.length !== 10) {
@@ -103,9 +125,12 @@ export default function LoginScreen() {
       const result = await otpService.sendOTP(cleanedPhone);
 
       if (result.success) {
+        // In dev mode, OTP is available in result.devOtp but not logged for security/privacy compliance
+
+        // Navigate to OTP verification screen
         router.push({
           pathname: '/(auth)/otp',
-          params: { phoneNumber: cleanedPhone, referralCode: referralCode || '' },
+          params: { phoneNumber: cleanedPhone },
         });
       } else {
         setError(result.message || 'Failed to send OTP. Please try again.');
@@ -132,7 +157,11 @@ export default function LoginScreen() {
     try {
       setSkipping(true);
       setError('');
+
+      // Use skipLogin from Zustand store via AuthContext
       skipLogin();
+
+      // Navigate to home
       router.replace('/(tabs)');
     } catch (error) {
       setSkipping(false);
@@ -178,40 +207,65 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           scrollEnabled={true}
         >
-
+          {/* Top Section - Carousel */}
+          {/* <View style={[styles.topSection, { flex: isKeyboardVisible ? 0 : 1 }]}>
+            <View style={[styles.carouselContainer, isKeyboardVisible && { marginBottom: 0 }]}>
+              <Carousel
+                data={carouselData}
+                config={{
+                  autoPlay: !isKeyboardVisible,
+                  autoPlayInterval: 3000,
+                  loop: true,
+                  height: isKeyboardVisible ? 0.5 : 0.95,
+                  resizeMode: 'contain',
+                  showTextOverlay: false,
+                }}
+                styles={{
+                  container: {
+                    width: '100%',
+                    alignSelf: 'stretch',
+                  },
+                  imageContainer: {
+                    paddingHorizontal: 0,
+                  },
+                  img: {
+                    width: '100%',
+                  },
+                }}
+                onIndexChange={setCurrentCarouselIndex}
+              />
+              {carouselData[currentCarouselIndex] && (
+                <View style={[styles.carouselTextContainer, { marginTop: isKeyboardVisible ? 0 : 16 }]}>
+                  {carouselData[currentCarouselIndex].title && (
+                    <Text style={[styles.carouselTitle, isKeyboardVisible && { fontSize: 18, marginBottom: 2 }]}>
+                      {carouselData[currentCarouselIndex].title}
+                    </Text>
+                  )}
+                  {carouselData[currentCarouselIndex].subtitle && (
+                    <Text style={[styles.carouselSubtitle, isKeyboardVisible && { fontSize: 12, lineHeight: 16 }]}>
+                      {carouselData[currentCarouselIndex].subtitle}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          </View> */}
           <View style={styles.topSection}>
             <Text style={styles.loginHeading}>Login</Text>
           </View>
-
+            
           {/* Bottom Section - Phone Input */}
-          <View style={styles.bottomSection}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>
-                Phone number <Text style={{ color: '#EF4444' }}>*</Text>
-              </Text>
-              <PhoneInput
-                value={phoneNumber}
-                onChangeText={(text) => {
-                  setPhoneNumber(formatPhoneNumber(text));
-                  setError('');
-                }}
-                editable={!loading}
-                error={!!error}
-              />
-            </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Referral code</Text>
-              <TextInput
-                style={styles.referralInput}
-                placeholder="Enter code"
-                placeholderTextColor={Colors.textSecondary}
-                value={referralCode}
-                onChangeText={setReferralCode}
-                autoCapitalize="characters"
-                editable={!loading}
-              />
-            </View>
+          <View style={styles.bottomSection}>
+            <PhoneInput
+              value={phoneNumber}
+              onChangeText={(text) => {
+                setPhoneNumber(formatPhoneNumber(text));
+                setError('');
+              }}
+              editable={!loading}
+              error={!!error}
+            />
 
             <ErrorText message={error} visible={!!error} />
 
@@ -220,35 +274,20 @@ export default function LoginScreen() {
               onPress={handleSendOTP}
               disabled={!isPhoneValid || loading}
               loading={loading}
-              style={[
-                styles.submitButton,
-                (!isPhoneValid || loading) && styles.submitButtonDisabled
-              ]}
-              textStyle={[
-                styles.submitButtonText,
-                (!isPhoneValid || loading) && styles.submitButtonTextDisabled
-              ]}
             />
 
             {/* Legal Text */}
-            {/* <View style={styles.legalSection}>
+            <View style={styles.legalSection}>
               <Text style={styles.legalText}>
                 By continuing, you agree to our{' '}
                 <Text style={styles.legalLink}>Terms of Service</Text>
                 {' '}and{' '}
                 <Text style={styles.legalLink}>Privacy Policy.</Text>
               </Text>
-            </View> */}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <View style={styles.footerBackground}>
-        <Image
-          source={require('@/assets/images/order-success-footer.png')}
-          style={styles.footerImage}
-          contentFit="cover"
-        />
-      </View>
     </SafeAreaView>
   );
 }
@@ -287,11 +326,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     alignItems: 'center',
-    marginBottom: 0,
+    marginBottom: 32,
     paddingHorizontal: 24,
-  },
-  textContainer: {
-    alignItems: 'center',
   },
   loginHeading: {
     fontSize: 40,
@@ -300,76 +336,72 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   loginSubheading: {
-    marginTop: 8,
-    fontSize: 15,
-    fontFamily: Fonts.LexendRegular,
+    marginTop: 6,
+    fontSize: 14,
+    fontFamily: Fonts.Regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  carouselContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  carouselTextContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  carouselTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.Bold,
+    color: Colors.primary,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  carouselSubtitle: {
+    fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: 20,
+    fontFamily: Fonts.Regular,
   },
   bottomSection: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     backgroundColor: Colors.backgroundWhite,
     justifyContent: 'flex-start',
-    paddingTop: 30,
-    paddingBottom: 40,
+    paddingTop: 24,
+    paddingBottom: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    borderBottomWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -3,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: Fonts.SmallFontSize,
-    fontFamily: Fonts.LexendMedium,
-    color: '#414651',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  referralInput: {
-    height: 52,
-    borderWidth: 2,
-    borderColor: '#D5D7DA',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    fontSize: Fonts.MediumFontSize,
-    fontFamily: Fonts.LexendRegular,
-    color: '#181D27',
-    backgroundColor: '#FFFFFF',
-  },
-  submitButton: {
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
+  legalSection: {
+    paddingHorizontal: 10,
     marginTop: 20,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-    shadowOpacity: 0,
-    elevation: 0,
+  legalText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
+    fontFamily: Fonts.Regular,
   },
-  submitButtonText: {
-    fontSize: Fonts.MediumFontSize,
-    fontFamily: Fonts.LexendSemiBold,
-    color: '#FFFFFF',
+  legalLink: {
+    color: Colors.primary,
+    fontFamily: Fonts.SemiBold,
+    textDecorationLine: 'underline',
   },
-  submitButtonTextDisabled: {
-    fontSize: Fonts.MediumFontSize,
-    fontFamily: Fonts.LexendSemiBold,
-    color: '#A4A7AE',
-  },
-  footerBackground: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 180,
-    zIndex: 1,
-  },
-  footerImage: {
-    width: '100%',
-    height: '100%',
-  }
 });
 

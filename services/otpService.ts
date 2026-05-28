@@ -1,7 +1,7 @@
 // OTP Service - Handles OTP generation, sending, and verification via backend API
 import axios from 'axios';
-import { configService } from './configService';
 import { getBackendApiPath, getBackendBase } from './backendBase';
+import { configService } from './configService';
 
 
 interface OTPResponse {
@@ -171,8 +171,7 @@ class OTPService {
     phoneNumber: string,
     code: string,
     firstName?: string,
-    lastName?: string,
-    referralCode?: string
+    lastName?: string
   ): Promise<VerifyAndLoginResponse> {
     const url = this.getVerifyAndLoginUrl();
     const formattedPhone = this.formatPhoneNumber(phoneNumber);

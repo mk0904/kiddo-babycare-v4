@@ -1,7 +1,7 @@
 import { MilestoneCartRow } from '@/components/ui/MilestoneCartRow';
 import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { configService } from '@/services/configService';
+import { getMilestoneDockBottom } from '@/utils/tabBarLayout';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -37,10 +37,10 @@ export function MilestoneTabDock({
     const { setMilestoneDockHeight } = useMilestoneDock();
     const { isVisible: isTabBarVisible } = useTabBarVisibility();
 
-    const tabBarStackBottom = useMemo(() => {
-        const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
-        return Math.max(insets.bottom, 0) + tabBarHeight;
-    }, [insets.bottom]);
+    const tabBarStackBottom = useMemo(
+        () => getMilestoneDockBottom(insets.bottom),
+        [insets.bottom]
+    );
 
     const milestoneDockWhenTabHidden = useMemo(() => Math.max(insets.bottom, 0) + 4, [insets.bottom]);
     const safeAreaOnlyBottom = useMemo(() => Math.max(insets.bottom, 0) + 8, [insets.bottom]);

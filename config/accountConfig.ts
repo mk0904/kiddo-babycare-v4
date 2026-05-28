@@ -2,9 +2,9 @@ export const accountConfig = {
     // Profile Section Configuration
     profile: {
         showAvatar: true,
-        avatarSize: 100,
+        avatarSize: 80,
         showPhone: true,
-        showEmail: false,
+        showEmail: true,
         defaultUserName: "User",
         defaultPhoneText: "Not available",
         defaultEmailText: "Not available",
@@ -14,10 +14,10 @@ export const accountConfig = {
     quickActions: [
         {
             id: "orders",
-            title: "My\norders",
-            icon: "list-outline",
+            title: "My Orders",
+            icon: "receipt",
             showBadge: false,
-            badgeSource: "static",
+            badgeSource: "static", // "static" | "cart" | "custom"
             badgeValue: 0,
             actionType: "navigate",
             action: {
@@ -26,9 +26,22 @@ export const accountConfig = {
             },
         },
         {
+            id: "loyalty",
+            title: "Rewards",
+            icon: "wallet",
+            showBadge: false,
+            badgeSource: "static",
+            badgeValue: 0,
+            actionType: "navigate",
+            action: {
+                type: "navigate",
+                screen: "Rewards",
+            },
+        },
+        {
             id: "addresses",
-            title: "Saved\naddresses",
-            icon: "location-outline",
+            title: "Saved Addresses",
+            icon: "location",
             showBadge: false,
             badgeSource: "static",
             badgeValue: 0,
@@ -36,19 +49,6 @@ export const accountConfig = {
             action: {
                 type: "navigate",
                 screen: "Addresses",
-            },
-        },
-        {
-            id: "refer",
-            title: "Refer &\nEarn",
-            icon: "person-add-outline",
-            showBadge: false,
-            badgeSource: "static",
-            badgeValue: 0,
-            actionType: "navigate",
-            action: {
-                type: "navigate",
-                screen: "Referral",
             },
         },
         // {
@@ -80,35 +80,35 @@ export const accountConfig = {
         },
         {
             id: "about",
-            title: "About us",
-            icon: "happy-outline",
+            title: "About Us",
+            icon: "information-circle-outline",
             actionType: "webview",
             action: {
                 type: "webview",
                 url: "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/about-us",
-                title: "About us",
+                title: "About Us",
             },
         },
         {
             id: "terms",
-            title: "Terms & conditions",
+            title: "Terms & Conditions",
             icon: "document-text-outline",
             actionType: "webview",
             action: {
                 type: "webview",
                 url: "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/terms-and-conditions",
-                title: "Terms & conditions",
+                title: "Terms & Conditions",
             },
         },
         {
             id: "privacy",
-            title: "Privacy policy",
+            title: "Privacy Policy",
             icon: "shield-checkmark-outline",
             actionType: "webview",
             action: {
                 type: "webview",
                 url: "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/privacy-policy",
-                title: "Privacy policy",
+                title: "Privacy Policy",
             },
         },
     ],
@@ -116,9 +116,9 @@ export const accountConfig = {
     // Logout Configuration
     logout: {
         enabled: true,
-        title: "Log out",
-        message: "Are you sure you want to log out?",
-        confirmText: "Log out",
+        title: "Logout",
+        message: "Are you sure you want to logout?",
+        confirmText: "Logout",
         cancelText: "Cancel",
     },
 
@@ -131,13 +131,13 @@ export const accountConfig = {
     // Styles Configuration
     styles: {
         header: {
-            paddingTop: 40,
+            paddingTop: 60,
             paddingBottom: 20,
             paddingHorizontal: 20,
         },
         quickActions: {
             paddingHorizontal: 20,
-            paddingVertical: 10,
+            paddingVertical: 20,
         },
         menuContainer: {
             marginTop: 10,

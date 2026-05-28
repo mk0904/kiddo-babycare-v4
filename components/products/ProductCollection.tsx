@@ -1,10 +1,11 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
+import { analyticsService } from '@/services/analyticsService';
 import { sortInStockFirst } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -54,6 +55,7 @@ export interface ProductCollectionProps {
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
 }
 
 interface Page {
@@ -97,6 +99,7 @@ export function ProductCollection({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  pageCategory,
 }: ProductCollectionProps) {
   const { width: windowWidth } = useDeviceDimensions();
 
@@ -123,21 +126,6 @@ export function ProductCollection({
     return false;
   }, []);
 
-  // Helper function to check if product has variants with age/size options
-  const hasAgeSizeVariants = React.useCallback((variants: any[]) => {
-    if (!variants || variants.length === 0) return false;
-    
-    return variants.some((variant: any) => {
-      const selectedOptions = variant.selectedOptions || [];
-      return selectedOptions.some((option: any) => {
-        const optionName = (option.name || '').toLowerCase();
-        return optionName.includes('age') || 
-               optionName.includes('size') ||
-               optionName === 'size' ||
-               optionName === 'age';
-      });
-    });
-  }, []);
 
   // Helper function to check if variants match age (variant-based filtering)
   const matchesAgeByVariant = React.useCallback((variants: any[], age: string) => {
@@ -149,13 +137,14 @@ export function ProductCollection({
     };
     
     const ageMappings: { [key: string]: string[] } = {
-      '3-6m': ['3-6m', '3-6 m', '3-6 months', '3-6M', '3-6 M', '3 - 6 M', '3-6M'],
-      '6-12m': ['6-12m', '6-12 m', '6-12 months', '6-12M', '6-12 M', '6 - 12 M', '6-12M'],
-      '1-2y': ['1-2y', '1-2 y', '1-2 years', '1-2Y', '1-2 Y', '1 - 2 Y', '12-24m', '12-24 m', '18-24m', '18-24 m'],
-      '2-3y': ['2-3y', '2-3 y', '2-3 years', '2-3Y', '2-3 Y', '2 - 3 Y', '24-36m', '24-36 m'],
-      '3-4y': ['3-4y', '3-4 y', '3-4 years', '3-4Y', '3-4 Y', '3 - 4 Y', '36-48m', '36-48 m'],
-      '4-5y': ['4-5y', '4-5 y', '4-5 years', '4-5Y', '4-5 Y', '4 - 5 Y', '48-60m', '48-60 m'],
-      '5+y': ['5+y', '5+ y', '5+ years', '5y+', '5 y+', '5Y+', '5 Y+', '5 - 6 Y', '60m+', '60 m+', '5-6y', '5-6 y'],
+      '0-6m': ['0-1m', '0-2m', '0-3m', '1-3m', '3m', '3-6m', '6m', 'n/b', 'nb'],
+      '6-12m': ['6-9m', '9-12m', '9m', '12m', '6-12m', '12-15m', '15-18m', '18m'],
+      '1-2y': ['12-18m', '18-24m', '24m', '1y', '1-1.5y', '1.5-2y', '2y'],
+      '2-3y': ['24-36m', '36m', '2-2.5y', '2.5-3y', '2-3y', '3y'],
+      '3-4y': ['3-3.5y', '3.5-4y', '3-4y', '4y'],
+      '4-5y': ['4-4.5y', '4.5-5y', '4-5y', '5y'],
+      '5-6y': ['5-5.5y', '5.5-6y', '5-6y', '6y'],
+      '6-7y': ['6-7y', '7y'],
     };
     
     const targetPatterns = ageMappings[ageLower] || [];
@@ -187,25 +176,6 @@ export function ProductCollection({
         return false;
       });
     });
-  }, []);
-
-  // Helper function to check if tags match age (fallback for tag-based filtering)
-  const matchesAgeByTags = React.useCallback((tags: string[], age: string) => {
-    const ageLower = age.toLowerCase();
-    const tagStrings = tags.map(t => t.toLowerCase());
-    
-    const agePatterns: { [key: string]: string[] } = {
-      '3-6m': ['3-6m', '3-6 m', '3-6 months', 'girls 3-6m', 'boys 3-6m', 'girl 3-6m', 'boy 3-6m'],
-      '6-12m': ['6-12m', '6-12 m', '6-12 months', 'girls 6-12m', 'boys 6-12m', 'girl 6-12m', 'boy 6-12m'],
-      '1-2y': ['1-2y', '1-2 y', '1-2 years', 'girls 1-2y', 'boys 1-2y', 'girl 1-2y', 'boy 1-2y', 'girls 1-2 y', 'boys 1-2 y'],
-      '2-3y': ['2-3y', '2-3 y', '2-3 years', 'girls 2-3y', 'boys 2-3y', 'girl 2-3y', 'boy 2-3y', 'girls 2-3 y', 'boys 2-3 y'],
-      '3-4y': ['3-4y', '3-4 y', '3-4 years', 'girls 3-4y', 'boys 3-4y', 'girl 3-4y', 'boy 3-4y', 'girls 3-4 y', 'boys 3-4 y'],
-      '4-5y': ['4-5y', '4-5 y', '4-5 years', 'girls 4-5y', 'boys 4-5y', 'girl 4-5y', 'boy 4-5y', 'girls 4-5 y', 'boys 4-5 y'],
-      '5+y': ['5+y', '5+ y', '5+ years', '5y+', '5 y+', 'girls 5y+', 'boys 5y+', 'girl 5+ y', 'boy 5+ y', 'girls 5+ y', 'boys 5+ y'],
-    };
-    
-    const patterns = agePatterns[ageLower] || [];
-    return patterns.some(pattern => tagStrings.some(tag => tag === pattern || tag.includes(pattern)));
   }, []);
 
   // Client-side filter functions for API filters (Price, Brand, Product Type, Tags, etc.)
@@ -243,6 +213,9 @@ export function ProductCollection({
       } else if (filter.productCollection) {
         if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
         groupedFilters.productCollection.push(filter);
+      } else if (filter.productMetafield) {
+        if (!groupedFilters.productMetafield) groupedFilters.productMetafield = [];
+        groupedFilters.productMetafield.push(filter);
       }
     });
     
@@ -362,7 +335,6 @@ export function ProductCollection({
         });
         if (!variantMatch) return false;
       }
-      
       // Collection filter group - match ANY selected collection (OR logic)
       if (groupedFilters.productCollection) {
         const collections = product.collections?.edges || product.collections || [];
@@ -375,6 +347,32 @@ export function ProductCollection({
           return collectionIds.includes(filterCollection);
         });
         if (!collectionMatch) return false;
+      }
+      
+      // Product Metafield filter group - match ANY selected metafield value (OR logic)
+      if (groupedFilters.productMetafield) {
+        const metafields = product.metafields || [];
+        const metafieldMatch = groupedFilters.productMetafield.some((filter: any) => {
+          const filterNamespace = (filter.productMetafield.namespace || '').toLowerCase().trim();
+          const filterKey = (filter.productMetafield.key || '').toLowerCase().trim();
+          const filterValue = String(filter.productMetafield.value || '').toLowerCase().trim();
+          
+          return metafields.some((mf: any) => {
+            if (!mf) return false;
+            const mfNamespace = (mf.namespace || '').toLowerCase().trim();
+            const mfKey = (mf.key || '').toLowerCase().trim();
+            const mfValue = String(mf.value || '').toLowerCase().trim();
+            
+            // Handle both exact match and comma-separated lists in metafield value
+            const isMatch = mfNamespace === filterNamespace && mfKey === filterKey;
+            if (!isMatch) return false;
+            
+            const mfValues = mfValue.split(',').map(v => v.trim().toLowerCase());
+            return mfValues.includes(filterValue);
+          });
+        });
+        
+        if (!metafieldMatch) return false;
       }
       
       return true;
@@ -442,6 +440,7 @@ export function ProductCollection({
     },
     enabled: !!collectionIdToUse, // Only fetch when we have a collection ID
     staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: keepPreviousData,
   });
 
   // Automatically load more pages initially to show more products upfront (like search results)
@@ -464,14 +463,16 @@ export function ProductCollection({
   }, [data?.pages, hasNextPage, isFetchingNextPage, fetchNextPage, pageSize, limit]);
 
   // Effect to notify parent about loaded facets (fetch once without filters to get all facets)
+  const lastFacetsRef = React.useRef<any>(null);
   React.useEffect(() => {
     // Get facets from first page (we fetch without filters, so facets show all available options)
     const firstPage = data?.pages?.[0];
-    if (firstPage?.filters) {
+    if (firstPage?.filters && firstPage.filters !== lastFacetsRef.current) {
+      lastFacetsRef.current = firstPage.filters;
       // @ts-ignore
       onFacetsLoaded?.(firstPage.filters);
     }
-  }, [data?.pages]);
+  }, [data?.pages, onFacetsLoaded]);
 
   // Flatten all pages into a single array of product objects
   const allProducts = React.useMemo(() => {
@@ -500,19 +501,22 @@ export function ProductCollection({
       });
     }
     
-    // Apply age filter (variant-based with tag fallback)
+    // Apply age filter (Toy-aware filtering)
     if (ageFilter) {
       products = products.filter((product: any) => {
-        const variants = product.variants?.edges || product.variants || [];
-        const variantList = variants.map((v: any) => v.node || v);
+        const isToyCategory = pageCategory === 'toys';
+        const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
         
-        const hasAgeSizeData = hasAgeSizeVariants(variantList);
-        
-        if (hasAgeSizeData) {
-          return matchesAgeByVariant(variantList, ageFilter);
+        if (isToyCategory || isToyProduct) {
+          // Toys: Tag matching only (e.g., "Toys for 6 - 12 M")
+          const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
+          const toyPattern = `toysfor${ageFilter}`;
+          return tags.includes(toyPattern);
         } else {
-          const tags = product.tags || [];
-          return matchesAgeByTags(tags, ageFilter);
+          // Others: Variant matching only (Size/Age options)
+          const variants = product.variants?.edges || product.variants || [];
+          const variantList = variants.map((v: any) => v.node || v);
+          return matchesAgeByVariant(variantList, ageFilter);
         }
       });
     }
@@ -522,12 +526,28 @@ export function ProductCollection({
 
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
-  }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, matchesAgeByTags, hasAgeSizeVariants, applyClientSideFilters]);
+  }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, applyClientSideFilters]);
 
   // Notify parent about result count
   React.useEffect(() => {
     onResultsCount?.(allProducts.length);
   }, [allProducts.length, onResultsCount]);
+
+  // Firebase Ecommerce Tracking - View Item List
+  React.useEffect(() => {
+    if (allProducts.length > 0) {
+      analyticsService.logViewItemList({
+        item_list_id: typeof collectionId === 'string' ? collectionId : undefined,
+        item_list_name: title || (typeof collectionId === 'string' ? collectionId : 'Collection'),
+        items: allProducts.slice(0, 10).map(product => ({
+          item_id: product.id,
+          item_name: product.title,
+          item_category: product.tags?.[0],
+          price: parseFloat(product.priceRange?.minVariantPrice?.amount || '0'),
+        })),
+      });
+    }
+  }, [allProducts.length, title, collectionId]);
 
   // Handle fetch more callback (must be before conditional returns)
   const handleFetchMore = React.useCallback(() => {
@@ -558,19 +578,22 @@ export function ProductCollection({
       });
     }
     
-    // Apply age filter (variant-based with tag fallback)
+    // Apply age filter (Toy-aware filtering)
     if (ageFilter) {
       filteredProducts = filteredProducts.filter((product: any) => {
-        const variants = product.variants?.edges || product.variants || [];
-        const variantList = variants.map((v: any) => v.node || v);
+        const isToyCategory = pageCategory === 'toys';
+        const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
         
-        const hasAgeSizeData = hasAgeSizeVariants(variantList);
-        
-        if (hasAgeSizeData) {
-          return matchesAgeByVariant(variantList, ageFilter);
+        if (isToyCategory || isToyProduct) {
+          // Toys: Tag matching only
+          const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
+          const toyPattern = `toysfor${ageFilter}`;
+          return tags.includes(toyPattern);
         } else {
-          const tags = product.tags || [];
-          return matchesAgeByTags(tags, ageFilter);
+          // Others: Variant matching only
+          const variants = product.variants?.edges || product.variants || [];
+          const variantList = variants.map((v: any) => v.node || v);
+          return matchesAgeByVariant(variantList, ageFilter);
         }
       });
     }
