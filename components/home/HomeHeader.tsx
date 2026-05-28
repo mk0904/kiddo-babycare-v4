@@ -287,7 +287,7 @@ export function HomeHeader({
           <Animated.View
             style={[
               styles.topInfoClip,
-              { 
+              {
                 opacity: topInfoOpacity,
                 transform: [{ translateY: contentTranslateY }]
               }
@@ -343,7 +343,7 @@ export function HomeHeader({
                   >
                     <Image
                       source={{ uri: headerConfig.iconUrl }}
-                      style={{ width: 24, height: 24 }}
+                      style={{ width: 28, height: 28 }}
                       resizeMode="contain"
                     />
                   </TouchableOpacity>
@@ -353,7 +353,7 @@ export function HomeHeader({
                   style={styles.wishlistButton}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="heart-outline" size={24} color={textColor} />
+                  <Ionicons name="heart-outline" size={28} color={textColor} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -499,8 +499,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   wishlistButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: 8,
+    marginLeft: 10,
+    backgroundColor: '#0000000f',
+    borderRadius: 24,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stickySearchCategoryBlock: {
     position: 'relative',

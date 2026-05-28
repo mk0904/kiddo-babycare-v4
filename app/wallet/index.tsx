@@ -104,11 +104,12 @@ export default function WalletScreen() {
         checkFirstTime();
     }, []);
 
-    const fetchWalletStatus = useCallback(async (pageNum = 1) => {
+    const fetchWalletStatus = useCallback(async (pageNum = 1, tabType: HistoryTab = 'earned') => {
         if (!isAuthenticated || !authUser?.phone) return;
         try {
             if (pageNum > 1) setLoadingMore(true);
-            const data = await referralService.getReferralStatus(authUser.phone, pageNum);
+            const apiType = tabType === 'earned' ? 'credit' : 'debit';
+            const data = await referralService.getReferralStatus(authUser.phone, pageNum, apiType);
             if (pageNum === 1) {
                 setWalletStatus(data);
                 setTransactions(data.transactions ?? []);
@@ -136,8 +137,8 @@ export default function WalletScreen() {
     useFocusEffect(
         useCallback(() => {
             setPage(1);
-            fetchWalletStatus(1);
-        }, [fetchWalletStatus]),
+            fetchWalletStatus(1, historyTab);
+        }, [fetchWalletStatus, historyTab]),
     );
 
     useFocusEffect(
@@ -161,9 +162,7 @@ export default function WalletScreen() {
 
     const balance = walletStatus?.wallet?.total_amount ?? 0;
     const totalEarned = walletStatus?.wallet?.earn_amount ?? 0;
-    const filteredTransactions = transactions.filter((tx) =>
-        historyTab === 'earned' ? isEarnedTransaction(tx) : !isEarnedTransaction(tx),
-    );
+    const filteredTransactions = transactions;
 
     const handleLoadMore = () => {
         if (visibleCount < filteredTransactions.length) {
@@ -171,7 +170,7 @@ export default function WalletScreen() {
         } else if (hasMore && !loadingMore) {
             const nextPage = page + 1;
             setPage(nextPage);
-            fetchWalletStatus(nextPage);
+            fetchWalletStatus(nextPage, historyTab);
             setVisibleCount(prev => prev + 4);
         }
     };
@@ -350,7 +349,7 @@ export default function WalletScreen() {
                                     styles.historyTab,
                                     historyTab === 'earned' && styles.historyTabActive,
                                 ]}
-                                onPress={() => { setHistoryTab('earned'); setVisibleCount(4); }}
+                                onPress={() => { setTransactions([]); setHistoryTab('earned'); setVisibleCount(4); }}
                             >
                                 <Text
                                     style={[
@@ -366,7 +365,7 @@ export default function WalletScreen() {
                                     styles.historyTab,
                                     historyTab === 'spent' && styles.historyTabActive,
                                 ]}
-                                onPress={() => { setHistoryTab('spent'); setVisibleCount(4); }}
+                                onPress={() => { setTransactions([]); setHistoryTab('spent'); setVisibleCount(4); }}
                             >
                                 <Text
                                     style={[
