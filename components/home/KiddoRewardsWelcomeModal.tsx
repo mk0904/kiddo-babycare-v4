@@ -3,6 +3,7 @@ import { configService } from '@/services/configService';
 import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
+import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -87,10 +88,10 @@ export function KiddoRewardsWelcomeModal({
         return Math.min(1, Math.max(0, ct / minV));
     }, [activeSlot, cartSubtotal]);
 
-    const tabBarStackBottom = useMemo(() => {
-        const tabBarHeight = configService.getTabBarConfig()?.styles?.height ?? 60;
-        return Math.max(insets.bottom, 0) + tabBarHeight;
-    }, [insets.bottom]);
+    const tabBarStackBottom = useMemo(
+        () => getTabBarStackBottom(insets.bottom),
+        [insets.bottom]
+    );
 
     const homeMilestoneLayout = getHomeMilestoneRowLayout(windowWidth);
     const cardMaxWidth = Math.min(homeMilestoneLayout.innerWidth, 420);

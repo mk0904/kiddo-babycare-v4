@@ -1,6 +1,11 @@
+import { GlassPillSurface } from '@/components/ui/GlassPillSurface';
 import { Fonts } from '@/constants/theme';
 import { useCartItemCount } from '@/store/cartStore';
 import { MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
+import {
+    GLASS_PILL_BRAND_RED,
+    GLASS_PILL_TEXT_COLOR,
+} from '@/utils/tabBarLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
@@ -13,12 +18,11 @@ export type FloatingCartCtaProps = {
     testID?: string;
 };
 
-/** Solid coral; matches the floating “Cart” pill. */
-const CART_PILL_BG = '#F15E5E';
+const CART_PILL_RADIUS = MILESTONE_CART_ROW_PILL_HEIGHT / 2;
 
 /**
- * Shared floating “Cart” control. Used by `FloatingCartButton` and `MilestoneCartRow`.
- * Layout: [count in white disc] — “Cart” — [outlined white arrow]
+ * Shared “View Cart” control. Used by `FloatingCartButton` and `MilestoneCartRow`.
+ * Layout: [count in white disc] — “View Cart” — [outlined white arrow]
  */
 export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: FloatingCartCtaProps) {
     const router = useRouter();
@@ -41,32 +45,44 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
         <TouchableOpacity
             testID={testID}
             style={[
-                styles.button,
-                inMilestoneRow ? styles.buttonInMilestoneRow : styles.buttonFloating,
+                styles.buttonOuter,
+                inMilestoneRow ? styles.buttonOuterInMilestoneRow : styles.buttonOuterFloating,
             ]}
             onPress={handlePress}
             activeOpacity={0.92}
         >
-            <View style={[styles.content, inMilestoneRow && styles.contentInMilestoneRow]}>
-                <View style={styles.startSlot}>
-                    <View
-                        style={styles.countBadge}
-                        accessibilityLabel={`${itemCount} items in cart`}
-                    >
-                        <Text style={styles.countText} numberOfLines={1} allowFontScaling>
-                            {countLabel}
-                        </Text>
+            <View
+                style={[
+                    styles.glassPill,
+                    inMilestoneRow ? styles.glassPillInMilestoneRow : styles.glassPillFloating,
+                ]}
+            >
+                <GlassPillSurface
+                    borderRadius={CART_PILL_RADIUS}
+                    glassEffectStyle="regular"
+                    useContainer
+                />
+                <View style={[styles.content, inMilestoneRow && styles.contentInMilestoneRow]}>
+                    <View style={styles.startSlot}>
+                        <View
+                            style={styles.countBadge}
+                            accessibilityLabel={`${itemCount} items in cart`}
+                        >
+                            <Text style={styles.countText} numberOfLines={1} allowFontScaling>
+                                {countLabel}
+                            </Text>
+                        </View>
+                        <View style={styles.labelSlot}>
+                            <Text style={styles.cartLabel} numberOfLines={1}>
+                                Cart
+                            </Text>
+                        </View>
                     </View>
-                    <View style={styles.labelSlot}>
-                        <Text style={styles.cartLabel} numberOfLines={1}>
-                            Cart
-                        </Text>
-                    </View>
-                </View>
 
-                <View style={styles.endSlot} pointerEvents="none">
-                    <View style={styles.arrowRing}>
-                        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                    <View style={styles.endSlot} pointerEvents="none">
+                        <View style={styles.arrowRing}>
+                            <Ionicons name="arrow-forward" size={14} color={GLASS_PILL_TEXT_COLOR} />
+                        </View>
                     </View>
                 </View>
             </View>
@@ -75,46 +91,55 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
 }
 
 const styles = StyleSheet.create({
-    button: {
-        minWidth: 140,
-        height: MILESTONE_CART_ROW_PILL_HEIGHT,
-        borderRadius: 24,
-        backgroundColor: CART_PILL_BG,
-        justifyContent: 'center',
-        overflow: 'hidden',
-        paddingHorizontal: 10,
+    buttonOuter: {
+        minWidth: 168,
     },
-    /** Space above the tab bar when the pill is `FloatingCartButton` (not in `MilestoneCartRow`). */
-    buttonFloating: {
+    buttonOuterFloating: {
         marginBottom: 10,
     },
-    buttonInMilestoneRow: {
+    buttonOuterInMilestoneRow: {
         minWidth: 0,
         width: '100%',
         maxWidth: '100%',
-        height: MILESTONE_CART_ROW_PILL_HEIGHT,
-        minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
-        maxHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
         alignSelf: 'stretch',
         marginBottom: 0,
+    },
+    glassPill: {
+        height: MILESTONE_CART_ROW_PILL_HEIGHT,
+        borderRadius: CART_PILL_RADIUS,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 12,
+    },
+    glassPillFloating: {
+        minWidth: 168,
+        paddingHorizontal: 4,
+    },
+    glassPillInMilestoneRow: {
+        width: '100%',
+        minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
+        maxHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
     },
     content: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 6,
+        paddingHorizontal: 14,
         height: '100%',
+        zIndex: 1,
     },
     contentInMilestoneRow: {
-        paddingHorizontal: 4,
+        paddingHorizontal: 10,
         minWidth: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     startSlot: {
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'flex-start',
         alignItems: 'center',
+        gap: 10,
     },
     labelSlot: {
         flex: 1,
@@ -122,34 +147,38 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     endSlot: {
-        width: 34,
+        width: 28,
         alignItems: 'flex-end',
         justifyContent: 'center',
     },
     countBadge: {
-        width: 20,
-        height: 20,
-        borderRadius: 16,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     countText: {
-        fontSize: 14,
-        fontFamily: Fonts.LexendBold,
-        color: CART_PILL_BG,
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: Fonts.LexendSemiBold,
+        fontWeight: '600',
+        color: GLASS_PILL_BRAND_RED,
     },
     cartLabel: {
-        fontSize: 16,
-        fontFamily: Fonts.LexendBold,
-        color: '#FFFFFF',
+        fontSize: 18,
+        lineHeight: 18,
+        fontFamily: Fonts.LexendSemiBold,
+        fontWeight: '600',
+        color: GLASS_PILL_TEXT_COLOR,
     },
     arrowRing: {
-        width: 20,
-        height: 20,
-        borderRadius: 15,
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 1.5,
+        borderColor: GLASS_PILL_TEXT_COLOR,
         backgroundColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'center',

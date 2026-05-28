@@ -1,4 +1,5 @@
 import { Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import type { GiftWrapping } from '@/store/cartStore';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -14,6 +15,7 @@ export interface GiftWrappingCardProps {
 
 export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }: GiftWrappingCardProps) {
     const isApplied = giftWrapping != null && (giftWrapping.productIds?.length ?? 0) > 0;
+    const cardCopy = configService.getGiftWrapConfig()?.cardCopy ?? {};
 
     if (isApplied) {
         return (
@@ -23,8 +25,8 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
                     <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
                     </View>
                     <View style={styles.info}>
-                        <Text style={styles.appliedTitle}>Gift wrap applied!</Text>
-                        <Text style={styles.appliedSubtitle}>Your order will be gift wrapped</Text>
+                        <Text style={styles.appliedTitle}>{cardCopy.appliedTitle ?? 'Gift wrap applied!'}</Text>
+                        <Text style={styles.appliedSubtitle}>{cardCopy.appliedSubtitle ?? 'Your order will be gift wrapped'}</Text>
                     </View>
                 </View>
                 <TouchableOpacity onPress={onRemovePress} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
@@ -40,11 +42,11 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
                 <View style={styles.left}>
                     <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
                     <View style={styles.info}>
-                        <Text style={styles.title}>Make this a gift?</Text>
-                        <Text style={styles.description}>Get items gift wrapped</Text>
+                        <Text style={styles.title}>{cardCopy.title ?? 'Make this a gift?'}</Text>
+                        <Text style={styles.description}>{cardCopy.description ?? 'Get items gift wrapped'}</Text>
                     </View>
                 </View>
-                <Text style={styles.select}>Select</Text>
+                <Text style={styles.select}>{cardCopy.cta ?? 'Select'}</Text>
             </TouchableOpacity>
         </View>
     );

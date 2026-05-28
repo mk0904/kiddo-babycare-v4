@@ -34,15 +34,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="category"
         options={{
-          title: 'Category',
+          title: 'Categories',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="grid.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="ticketing"
         options={{
-          title: 'Ticketing',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
+          title: 'Tickets',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="ticket.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -50,6 +50,18 @@ export default function TabLayout() {
         options={{
           title: 'Account',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wishlist"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="curated"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

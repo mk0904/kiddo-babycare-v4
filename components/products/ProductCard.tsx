@@ -5,6 +5,7 @@ import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { analyticsService } from '@/services/analyticsService';
 import { configService } from '@/services/configService';
 import { isProductOutOfStock } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
@@ -504,6 +505,18 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   }, [collectionId, tags, product.collections]);
 
   const handlePress = useCallback(() => {
+    // Firebase Ecommerce Tracking - Select Item
+    analyticsService.logSelectItem({
+      item_list_id: typeof collectionId === 'string' ? collectionId : undefined,
+      item_list_name: typeof collectionId === 'string' ? collectionId : 'Collection',
+      items: [{
+        item_id: productId,
+        item_name: product.title || product.name || 'Product',
+        item_category: product.tags?.[0],
+        price: priceNumber,
+      }],
+    });
+
     if (onPress) {
       onPress(product);
     } else {
@@ -518,7 +531,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         } as any);
       }
     }
-  }, [onPress, product, router, productHandle, collectionId]);
+  }, [onPress, product, router, productHandle, collectionId, productId, priceNumber]);
 
   const showCompareAtRow =
     displayCompareAtAmount != null &&

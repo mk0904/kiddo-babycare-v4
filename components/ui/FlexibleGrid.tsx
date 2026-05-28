@@ -1,4 +1,9 @@
 import { Colors, Fonts } from '@/constants/theme';
+import {
+  resolveFixedImageHeight,
+  resolveImageHeightFromAspect,
+  resolveRowWidths,
+} from '@/utils/gridCellSizing';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo } from 'react';
 import {
@@ -12,6 +17,21 @@ import {
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function resolveItemAspectRatio(item: GridItem, defaultAspectRatio: number): number {
+  return typeof item.aspectRatio === 'number' && item.aspectRatio > 0
+    ? item.aspectRatio
+    : defaultAspectRatio;
+}
+
+function resolveItemHeight(
+  item: GridItem,
+  itemWidth: number,
+  defaultAspectRatio: number,
+  labelSpace: number
+): number {
+  return itemWidth / resolveItemAspectRatio(item, defaultAspectRatio) + labelSpace;
+}
 
 /**
  * FlexibleGrid - A flexible grid component with multiple layout patterns
@@ -52,6 +72,10 @@ export interface GridItem {
   imageUrl?: string;
   imageSource?: any; // require() image
   label?: string;
+  /** Cell width ÷ height when `itemHeight` is not set. */
+  aspectRatio?: number;
+  /** Row width share (e.g. 0.6). Use with grid `itemHeight` for same-height cells. */
+  widthFraction?: number;
   onPress?: () => void;
   [key: string]: any; // Allow additional properties
 }
@@ -65,6 +89,8 @@ export interface FlexibleGridProps {
   rowGap?: number; // Row gap (vertical spacing) - overrides gap if specified
   padding?: number; // Container padding (default: 16)
   aspectRatio?: number; // Aspect ratio for square items (default: 1)
+  /** Fixed image height (px). Same for all cells; use with per-item `widthFraction`. */
+  itemHeight?: number;
   renderItem?: (item: GridItem, index: number, size: { width: number; height: number }) => React.ReactNode;
   imageResizeMode?: 'cover' | 'contain' | 'stretch';
   showLabels?: boolean;
@@ -74,6 +100,8 @@ export interface FlexibleGridProps {
     colSpan?: number; // How many columns the first item should span (default: based on layout)
     rowSpan?: number; // How many rows the first item should span (default: based on layout)
   };
+  /** When cells in a row have different heights, align within the row (default: top). */
+  rowAlign?: 'top' | 'bottom';
 }
 
 export function FlexibleGrid({
@@ -85,12 +113,14 @@ export function FlexibleGrid({
   rowGap,
   padding = 16,
   aspectRatio = 1,
+  itemHeight: fixedItemHeight,
   renderItem,
   imageResizeMode = 'cover',
   showLabels = true,
   borderRadius = 12,
   labelStyle,
   firstItemSpan,
+  rowAlign = 'top',
 }: FlexibleGridProps) {
   // Use colGap/rowGap if specified, otherwise fall back to gap
   const finalColGap = colGap ?? gap;
@@ -104,6 +134,61 @@ export function FlexibleGrid({
   // Add space for label if showing labels
   const labelSpace = showLabels ? 40 : 0;
   const baseItemHeight = (baseItemWidth / aspectRatio) + labelSpace;
+  const fixedImageHeight = resolveFixedImageHeight(fixedItemHeight, labelSpace, showLabels);
+
+  const resolveCellHeight = (item: GridItem, itemWidth: number) => {
+    if (fixedImageHeight != null) {
+      return fixedImageHeight + labelSpace;
+    }
+    return (
+      resolveImageHeightFromAspect(
+        itemWidth,
+        item.aspectRatio,
+        aspectRatio,
+        labelSpace,
+        showLabels
+      ) + labelSpace
+    );
+  };
+
+  const uniformRowMetrics = useMemo(() => {
+    if (layout !== 'uniform' && layout !== 'masonry') {
+      return null;
+    }
+    const rowCount = Math.ceil(items.length / numColumns) || 0;
+    const rowStartY: number[] = [];
+    const rowMaxHeight: number[] = [];
+    const rowWidths: number[][] = [];
+    let y = 0;
+    for (let row = 0; row < rowCount; row += 1) {
+      rowStartY[row] = y;
+      const rowStartIndex = row * numColumns;
+      const rowItems = items.slice(rowStartIndex, rowStartIndex + numColumns);
+      const widths = resolveRowWidths(rowItems, availableWidth, finalColGap);
+      rowWidths[row] = widths;
+
+      let maxH = 0;
+      rowItems.forEach((item, col) => {
+        const w = widths[col] ?? baseItemWidth;
+        maxH = Math.max(maxH, resolveCellHeight(item, w));
+      });
+      rowMaxHeight[row] = maxH;
+      y += maxH + finalRowGap;
+    }
+    return { rowStartY, rowMaxHeight, rowWidths };
+  }, [
+    layout,
+    items,
+    numColumns,
+    baseItemWidth,
+    aspectRatio,
+    labelSpace,
+    finalRowGap,
+    availableWidth,
+    finalColGap,
+    fixedImageHeight,
+    showLabels,
+  ]);
 
   // Calculate item positions and sizes based on layout
   const itemLayouts = useMemo(() => {
@@ -129,7 +214,7 @@ export function FlexibleGrid({
 
     items.forEach((item, index) => {
       let itemWidth = baseItemWidth;
-      let itemHeight = baseItemHeight;
+      let itemHeight = resolveItemHeight(item, baseItemWidth, aspectRatio, labelSpace);
       let colSpan = 1;
       let rowSpan = 1;
       let x = 0;
@@ -140,7 +225,9 @@ export function FlexibleGrid({
         colSpan = firstItemColSpan;
         rowSpan = firstItemRowSpan;
         itemWidth = baseItemWidth * colSpan + finalColGap * (colSpan - 1);
-        itemHeight = baseItemHeight * rowSpan + finalRowGap * (rowSpan - 1);
+        itemHeight =
+          resolveItemHeight(item, itemWidth, aspectRatio, labelSpace) * rowSpan +
+          finalRowGap * (rowSpan - 1);
         x = 0;
         y = 0;
       } else if (index === 0 && layout !== 'uniform' && layout !== 'masonry') {
@@ -154,13 +241,15 @@ export function FlexibleGrid({
           case 'first-item-2-row':
           case 'featured-left':
             rowSpan = 2;
-            itemHeight = baseItemHeight * 2 + finalRowGap;
+            itemHeight =
+              resolveItemHeight(item, itemWidth, aspectRatio, labelSpace) * 2 + finalRowGap;
             break;
           case 'first-item-2x2':
             colSpan = 2;
             rowSpan = 2;
             itemWidth = baseItemWidth * 2 + finalColGap;
-            itemHeight = baseItemHeight * 2 + finalRowGap;
+            itemHeight =
+              resolveItemHeight(item, itemWidth, aspectRatio, labelSpace) * 2 + finalRowGap;
             break;
         }
         x = 0;
@@ -193,12 +282,27 @@ export function FlexibleGrid({
             x = targetCol * (baseItemWidth + finalColGap);
             y = targetRow * (baseItemHeight + finalRowGap);
           }
+        } else if (uniformRowMetrics) {
+          const col = index % numColumns;
+          const row = Math.floor(index / numColumns);
+          const rowWidthList = uniformRowMetrics.rowWidths[row] ?? [];
+          itemWidth = rowWidthList[col] ?? baseItemWidth;
+          itemHeight = resolveCellHeight(item, itemWidth);
+          x =
+            rowWidthList.slice(0, col).reduce((acc, w) => acc + w, 0) +
+            col * finalColGap;
+          const rowY = uniformRowMetrics.rowStartY[row] ?? 0;
+          const rowMax = uniformRowMetrics.rowMaxHeight[row] ?? itemHeight;
+          y =
+            rowAlign === 'bottom'
+              ? rowY + Math.max(0, rowMax - itemHeight)
+              : rowY;
         } else {
-          // Uniform grid - standard positioning
           const col = index % numColumns;
           const row = Math.floor(index / numColumns);
           x = col * (baseItemWidth + finalColGap);
           y = row * (baseItemHeight + finalRowGap);
+          itemHeight = resolveItemHeight(item, baseItemWidth, aspectRatio, labelSpace);
         }
       }
 
@@ -215,7 +319,20 @@ export function FlexibleGrid({
     });
 
     return layouts;
-  }, [items, layout, numColumns, finalColGap, finalRowGap, baseItemWidth, baseItemHeight, firstItemSpan]);
+  }, [
+    items,
+    layout,
+    numColumns,
+    finalColGap,
+    finalRowGap,
+    baseItemWidth,
+    baseItemHeight,
+    aspectRatio,
+    labelSpace,
+    firstItemSpan,
+    uniformRowMetrics,
+    rowAlign,
+  ]);
 
   const defaultRenderItem = (
     item: GridItem,

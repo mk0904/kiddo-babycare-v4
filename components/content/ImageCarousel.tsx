@@ -1,6 +1,8 @@
 import { Carousel } from '@/components/ui/Carousel';
 import { ImageCarouselBlock } from '@/types/content';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { analyticsService } from '@/services/analyticsService';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {
@@ -48,6 +50,17 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
     };
   });
 
+  // Firebase Ecommerce Tracking - View Promotion
+  useEffect(() => {
+    if (carouselData.length > 0) {
+      analyticsService.track('view_promotion', {
+        promotion_id: block.id || 'image_carousel',
+        promotion_name: block.id || 'Image Carousel',
+        items: [],
+      });
+    }
+  }, [carouselData.length, block.id]);
+
   // Horizontal padding on `styles.container` is consumed by Carousel for slide insets.
   // BaseContentBlock also applies `styles.container`, which would double the inset — strip
   // horizontal padding from the outer wrapper only.
@@ -87,6 +100,13 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
         onPress?.(link as any);
       }
     }
+
+    // Firebase Ecommerce Tracking - Select Promotion
+    analyticsService.track('select_promotion', {
+      promotion_id: block.id || 'image_carousel',
+      promotion_name: block.id || 'Image Carousel',
+      items: [],
+    });
   };
 
   return (

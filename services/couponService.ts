@@ -325,8 +325,7 @@ export interface LineItemForCategory {
  */
 export function getSubtotalForAllowedCategories(
   items: LineItemForCategory[],
-  allowedCategories: string[] | null | undefined,
-  options: { limitToOne?: boolean } = {}
+  allowedCategories: string[] | null | undefined
 ): number {
   if (!allowedCategories?.length) return 0;
   const allowedLower = allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
@@ -334,22 +333,18 @@ export function getSubtotalForAllowedCategories(
   for (const item of items) {
     const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
     const title = (item.title ?? '').toLowerCase();
-    
+
     const isEligible = allowedLower.some((cat) => {
-        if (tags.includes(cat)) return true;
-        if (title.includes(cat)) return true;
-        // Handle singular/plural common cases (e.g. "plant kit" vs "plant kits")
-        if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
-        if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
-        return false;
+      if (tags.includes(cat)) return true;
+      if (title.includes(cat)) return true;
+      // Handle singular/plural common cases (e.g. "plant kit" vs "plant kits")
+      if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+      if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+      return false;
     });
 
     if (isEligible && Number(item.quantity ?? 0) > 0) {
-      if (options.limitToOne) {
-        sum = Math.max(sum, Number(item.price ?? 0));
-      } else {
-        sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
-      }
+      sum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
     }
   }
   return sum;
@@ -357,27 +352,27 @@ export function getSubtotalForAllowedCategories(
 
 /** Single-line check for allowedCategories (same rules as {@link getSubtotalForAllowedCategories}). */
 export function lineItemMatchesAllowedCategories(
-    item: LineItemForCategory,
-    allowedCategories: string[] | null | undefined,
+  item: LineItemForCategory,
+  allowedCategories: string[] | null | undefined,
 ): boolean {
-    if (!allowedCategories?.length) return true;
-    return getSubtotalForAllowedCategories([item], allowedCategories) > 0;
+  if (!allowedCategories?.length) return true;
+  return getSubtotalForAllowedCategories([item], allowedCategories) > 0;
 }
 
 /** Single-line check for one applicableCategory key (tags + title, mirrors allowed-category matching). */
 export function lineItemMatchesApplicableCategory(
-    item: LineItemForCategory,
-    applicableCategory: string | null | undefined,
+  item: LineItemForCategory,
+  applicableCategory: string | null | undefined,
 ): boolean {
-    if (!applicableCategory?.trim()) return true;
-    const cat = applicableCategory.trim().toLowerCase();
-    const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-    if (tags.includes(cat)) return true;
-    const title = (item.title ?? '').toLowerCase();
-    if (title.includes(cat)) return true;
-    if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
-    if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
-    return false;
+  if (!applicableCategory?.trim()) return true;
+  const cat = applicableCategory.trim().toLowerCase();
+  const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+  if (tags.includes(cat)) return true;
+  const title = (item.title ?? '').toLowerCase();
+  if (title.includes(cat)) return true;
+  if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+  if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+  return false;
 }
 
 function formatCategoryLabel(categories: string[] | null | undefined): string {
@@ -578,13 +573,13 @@ const getCouponUsageForUser = async (
   userId: string | null
 ): Promise<number> => {
   if (!userId) return 0; // Guest users can't have usage limits tracked
-  
+
   try {
     // Check actual completed orders instead of just AsyncStorage
     // This ensures cancelled orders don't count towards usage limit
     const { orderService } = await import('./orderService');
     const allOrders = await orderService.getAllOrders();
-    
+
     // Filter orders that:
     // 1. Have the matching coupon code
     // 2. Belong to this user (order.userId === userId; legacy orders without userId are not counted)
@@ -599,7 +594,7 @@ const getCouponUsageForUser = async (
     });
 
     const usageCount = completedOrdersWithCoupon.length;
-    
+
     // Always prioritize actual orders over AsyncStorage
     // If we have actual orders, use that count and sync AsyncStorage
     if (usageCount > 0) {
@@ -613,7 +608,7 @@ const getCouponUsageForUser = async (
       );
       return usageCount;
     }
-    
+
     // No local orders for this user+coupon: use AsyncStorage (orders may exist only in Shopify)
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     const data = await AsyncStorage.getItem(storageKey);
@@ -662,7 +657,7 @@ export const incrementCouponUsage = async (
   userId: string | null
 ): Promise<void> => {
   if (!userId) return; // Don't track for guest users
-  
+
   try {
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     const currentUsage = await getCouponUsageForUser(couponCode, userId);
@@ -733,7 +728,7 @@ export const validateCouponConditions = async (
 
     // Check if coupon is active (date range)
     const now = new Date();
-    
+
     if (coupon.startsAt) {
       const startDate = new Date(coupon.startsAt);
       if (now < startDate) {
@@ -743,7 +738,7 @@ export const validateCouponConditions = async (
         };
       }
     }
-    
+
     if (coupon.endsAt) {
       const endDate = new Date(coupon.endsAt);
       // Set end date to end of day
@@ -755,10 +750,10 @@ export const validateCouponConditions = async (
         };
       }
     }
-    
+
     // Check minimum purchase amount (for category coupons, applies to allowed/effective subtotal)
     if (coupon.minimumPurchaseAmount) {
-      const minAmount = typeof coupon.minimumPurchaseAmount === 'string' 
+      const minAmount = typeof coupon.minimumPurchaseAmount === 'string'
         ? parseFloat(coupon.minimumPurchaseAmount)
         : coupon.minimumPurchaseAmount;
       if (!isNaN(minAmount) && minAmount > 0) {
@@ -778,7 +773,7 @@ export const validateCouponConditions = async (
         }
       }
     }
-    
+
     // Check minimum item count
     if (coupon.minimumItemCount && cartItemCount !== undefined) {
       const minItems = typeof coupon.minimumItemCount === 'number' ? coupon.minimumItemCount : parseInt(String(coupon.minimumItemCount));
@@ -792,7 +787,7 @@ export const validateCouponConditions = async (
         }
       }
     }
-    
+
     // Check usage limit per user
     if (coupon.usageLimitPerUser && userId) {
       const userUsage = await getCouponUsageForUser(coupon.code, userId);
@@ -839,7 +834,7 @@ export const validateCouponConditions = async (
         };
       }
     }
-    
+
     return { isValid: true };
   } catch (error: any) {
     console.error('[CouponService] Error validating coupon conditions:', error);
@@ -860,7 +855,7 @@ export const resetCouponUsage = async (
   userId: string | null
 ): Promise<void> => {
   if (!userId) return;
-  
+
   try {
     const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
     await AsyncStorage.setItem(
@@ -883,13 +878,13 @@ export const resetCouponUsage = async (
  */
 export const getCouponConditionsText = (coupon: CouponCode): string[] => {
   const conditions: string[] = [];
-  
+
   // For ticketing coupons, show only essential condition
   if (coupon.ticketingOnly) {
     conditions.push('Valid for Events, Playhouses & Petting Farms');
     return conditions; // Return early for ticketing coupons
   }
-  
+
   // For clothing-only coupons, add apparel condition
   if (coupon.clothingOnly) {
     conditions.push('Only for apparel');
@@ -903,9 +898,9 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
   } else if (singleLabel) {
     conditions.push(`Discount on ${singleLabel} only`);
   }
-  
+
   if (coupon.minimumPurchaseAmount) {
-    const minAmount = typeof coupon.minimumPurchaseAmount === 'string' 
+    const minAmount = typeof coupon.minimumPurchaseAmount === 'string'
       ? parseFloat(coupon.minimumPurchaseAmount)
       : coupon.minimumPurchaseAmount;
     if (!isNaN(minAmount) && minAmount > 0) {
@@ -916,7 +911,7 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
           : `Min. purchase: ₹${minAmount.toFixed(0)}`);
     }
   }
-  
+
   if (coupon.usageLimitPerUser) {
     if (coupon.usageLimitPerUser === 1) {
       conditions.push('One-time use per user');
@@ -932,12 +927,12 @@ export const getCouponConditionsText = (coupon: CouponCode): string[] => {
   if (coupon.firstOrderOnly) {
     conditions.push('Valid for first order only');
   }
-  
+
   if (coupon.endsAt) {
     const endDate = new Date(coupon.endsAt);
     conditions.push(`Valid until ${endDate.toLocaleDateString()}`);
   }
-  
+
   return conditions;
 };
 

@@ -2,17 +2,24 @@ import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-  Animated,
-  Image,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    headerGlassTintIsVisible,
+    resolveHeaderGlassConfig,
+} from '@/utils/headerGlassConfig';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import {
+    Animated,
+    Image,
+    ImageBackground,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +40,10 @@ interface HomeHeaderProps {
     primaryColor?: string;
     backgroundImage?: string;
     hasImage?: boolean;
+    /** Remote config: `header.glass` */
+    globalGlass?: HeaderGlassConfig | null;
+    /** Remote config: `categories.items.<key>.header.glass` */
+    categoryGlass?: HeaderGlassConfig | null;
   };
   searchSuggestions?: string[];
   onSearchPress?: () => void;
@@ -82,6 +93,64 @@ export function HomeHeader({
     return !!(backgroundImage || hasImage);
   }, [backgroundImage, hasImage]);
 
+  const glass = useMemo(
+    () =>
+      resolveHeaderGlassConfig(
+        headerConfig.globalGlass,
+        headerConfig.categoryGlass
+      ),
+    [headerConfig.globalGlass, headerConfig.categoryGlass]
+  );
+
+  const imageSource = useMemo(() => {
+    if (!backgroundImage) return null;
+    if (typeof backgroundImage === 'string' && backgroundImage.startsWith('assets/')) {
+      const assetMap: Record<string, number> = {
+        'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
+        'assets/images/Baby-Gear.png': require('@/assets/images/Baby-Gear.png'),
+      };
+      return assetMap[backgroundImage] ?? { uri: backgroundImage };
+    }
+    return { uri: backgroundImage };
+  }, [backgroundImage]);
+
+  const renderGlassOverlay = () => {
+    if (!glass.enabled) return null;
+
+    // Define Android fallback underlay color based on glass tint
+    const androidFallbackBg = glass.blurTint === 'dark'
+      ? 'rgba(30, 30, 30, 0.85)'
+      : 'rgba(255, 255, 255, 0.85)';
+
+    return (
+      <>
+        {Platform.OS === 'android' && (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: androidFallbackBg }
+            ]}
+            pointerEvents="none"
+          />
+        )}
+        <BlurView
+          intensity={
+            Platform.OS === 'ios' ? glass.blurIntensityIos : glass.blurIntensityAndroid
+          }
+          tint={glass.blurTint}
+          experimentalBlurMethod={Platform.OS === 'android' ? 'oem' : undefined}
+          style={StyleSheet.absoluteFill}
+        />
+        {headerGlassTintIsVisible(glass.tintColor) ? (
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: glass.tintColor }]}
+            pointerEvents="none"
+          />
+        ) : null}
+      </>
+    );
+  };
+
   const headerTopHeight = useMemo(() => {
     return insets.top + 60;
   }, [insets.top]);
@@ -97,8 +166,9 @@ export function HomeHeader({
    * SIMPLE COLLAPSE LOGIC:
    * We use translateY to move the content.
    */
-  const ADDRESS_BAR_HEIGHT = 80;
-  const TOTAL_HEADER_HEIGHT = 220;
+  const ADDRESS_BOTTOM_MARGIN = 12;
+  const ADDRESS_BAR_HEIGHT = 80 + ADDRESS_BOTTOM_MARGIN;
+  const TOTAL_HEADER_HEIGHT = 220 + ADDRESS_BOTTOM_MARGIN;
 
   const contentTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
@@ -106,10 +176,22 @@ export function HomeHeader({
     extrapolate: 'clamp',
   });
 
-  // This controls the position of the sticky Search/Category part
+  /** Hero image slides up and fades out as the sticky header takes over. */
+  const headerBackgroundTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, -TOTAL_HEADER_HEIGHT * 0.5],
+    extrapolate: 'clamp',
+  });
+
+  const headerBackgroundOpacity = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT * 0.45, ADDRESS_BAR_HEIGHT],
+    outputRange: [1, 0.2, 0],
+    extrapolate: 'clamp',
+  });
+
   const stickyTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [ADDRESS_BAR_HEIGHT, 0], // Starts below Address bar, slides to top
+    outputRange: [ADDRESS_BAR_HEIGHT, 0],
     extrapolate: 'clamp',
   });
 
@@ -119,56 +201,27 @@ export function HomeHeader({
     extrapolate: 'clamp',
   });
 
+  /** Frosted glass only while collapsing — at scroll 0 the header image stays visible. */
+  const stickyGlassOpacity = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT * 0.35, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, 0.85, 1],
+    extrapolate: 'clamp',
+  });
+
+  const [stickyGlassMounted, setStickyGlassMounted] = useState(false);
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      const active = value > 2;
+      setStickyGlassMounted((prev) => (prev === active ? prev : active));
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY]);
+
   const headerBorderBottomOpacity = scrollY.interpolate({
     inputRange: [0, stickyThreshold * 0.8, stickyThreshold],
     outputRange: [0, 0.5, 1],
     extrapolate: 'clamp',
   });
-
-  const HeaderWrapper = useMemo(() => {
-    const BaseComponent = (shouldUseImage && backgroundImage ? ImageBackground : View);
-    return Animated.createAnimatedComponent(BaseComponent as React.ComponentType<any>);
-  }, [shouldUseImage, backgroundImage]);
-
-  const headerWrapperProps = useMemo(() => {
-    if (!shouldUseImage || !backgroundImage) return {};
-
-    // Helper function to resolve local asset paths
-    const getImageSource = () => {
-      // Check if it's a local asset path (starts with "assets/")
-      if (typeof backgroundImage === 'string' && backgroundImage.startsWith('assets/')) {
-        // Map asset paths to require statements
-        const assetMap: Record<string, any> = {
-          'assets/images/BabyGearBanner.png': require('@/assets/images/BabyGearBanner.png'),
-          'assets/images/Baby-Gear.png': require('@/assets/images/Baby-Gear.png'),
-        };
-        return assetMap[backgroundImage] || { uri: backgroundImage };
-      }
-      // Remote URL
-      return { uri: backgroundImage };
-    };
-
-    return {
-      source: getImageSource(),
-      imageStyle: {
-        resizeMode: 'cover' as const,
-        width: '100%',
-        flex: 1,
-      },
-    };
-  }, [shouldUseImage, backgroundImage]);
-
-  const headerContainerStyle = useMemo(
-    () => [
-      styles.headerContainer,
-      {
-        backgroundColor: shouldUseImage ? 'transparent' : backgroundColor,
-        paddingTop: insets.top,
-        overflow: 'hidden' as const,
-      },
-    ],
-    [shouldUseImage, backgroundColor, insets.top]
-  );
 
   return (
     <Animated.View
@@ -178,6 +231,7 @@ export function HomeHeader({
           transform: [{ translateY: headerTranslateY }],
           zIndex: 1000,
           backgroundColor: 'transparent',
+          overflow: 'hidden',
         },
       ]}
       collapsable={false}
@@ -192,23 +246,32 @@ export function HomeHeader({
         }
       }}
     >
-      <HeaderWrapper
-        {...headerWrapperProps}
+      <Animated.View
         style={[
-          styles.headerContainer,
-          { 
-            position: 'absolute', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            zIndex: -1,
-            transform: [{ translateY: contentTranslateY }] // Synchronize background move
-          }
+          styles.headerBackgroundLayer,
+          {
+            opacity: headerBackgroundOpacity,
+            transform: [{ translateY: headerBackgroundTranslateY }],
+          },
         ]}
         collapsable={false}
         pointerEvents="none"
-      />
+      >
+        {shouldUseImage && imageSource ? (
+          <ImageBackground
+            source={imageSource}
+            style={styles.headerBackgroundFill}
+            imageStyle={styles.headerBackgroundImage}
+          />
+        ) : (
+          <View
+            style={[
+              styles.headerBackgroundFill,
+              { backgroundColor: backgroundColor || 'transparent' },
+            ]}
+          />
+        )}
+      </Animated.View>
 
       <View style={{ flex: 1, paddingTop: insets.top }} pointerEvents="box-none">
         <Animated.View
@@ -283,42 +346,79 @@ export function HomeHeader({
         </Animated.View>
       </View>
 
-      {/* Sticky Section - Now positioned exactly where it belongs for better touch detection */}
-      <Animated.View 
+      {/* One BlurView; static top: -insets.top reaches status bar (no animated paddingTop). */}
+      <Animated.View
         style={[
-          styles.stickySearchCategoryBlock, 
-          { 
+          styles.stickySearchCategoryBlock,
+          {
             position: 'absolute',
             top: insets.top,
             left: 0,
             right: 0,
-            transform: [{ translateY: stickyTranslateY }] 
-          } 
-        ]} 
+            transform: [{ translateY: stickyTranslateY }],
+          },
+        ]}
         collapsable={false}
       >
-        <View style={styles.searchContainer}>
-          <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
-        </View>
-        {categories && categories.length > 0 ? (
-          <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
-            <CategoryNavigationBar
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategorySelect={onCategorySelect}
-            />
-          </View>
+        {glass.enabled && stickyGlassMounted ? (
+          <Animated.View
+            style={[
+              styles.stickyGlassLayer,
+              {
+                top: -insets.top,
+                bottom: Platform.OS === 'ios' ? 0 : undefined,
+                height: Platform.OS === 'android' ? (insets.top + 150) : undefined,
+                opacity: stickyGlassOpacity
+              },
+            ]}
+            pointerEvents="none"
+          >
+            {renderGlassOverlay()}
+          </Animated.View>
         ) : null}
+        <View pointerEvents="box-none">
+          <View style={styles.searchContainer}>
+            <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+          </View>
+          {categories && categories.length > 0 ? (
+            <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
+              <CategoryNavigationBar
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategorySelect={onCategorySelect}
+              />
+            </View>
+          ) : null}
+        </View>
       </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    width: '100%',
-    height: '100%', // Cover the full outer container height
+  headerBackgroundLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
     overflow: 'hidden',
+  },
+  headerBackgroundFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerBackgroundImage: {
+    resizeMode: 'cover',
+    width: '100%',
+  },
+  stickyGlassLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    zIndex: 0,
   },
   topInfoClip: {
     overflow: 'hidden',
@@ -342,6 +442,7 @@ const styles = StyleSheet.create({
   },
   addressRow: {
     marginTop: -5,
+    marginBottom: 12,
   },
   kiddoHeaderText: {
     fontSize: 15,
@@ -388,6 +489,7 @@ const styles = StyleSheet.create({
   stickySearchCategoryBlock: {
     position: 'relative',
     zIndex: 2,
+    overflow: 'visible',
   },
   categoryBarAboveUnderlay: {
     position: 'relative',

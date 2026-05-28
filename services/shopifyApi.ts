@@ -104,6 +104,9 @@ const GET_COLLECTION_BY_ID_QUERY = `
         url
         altText
       }
+      categoryMetafield: metafield(namespace: "custom", key: "Category") {
+        value
+      }
     }
   }
 `;
@@ -159,6 +162,9 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
     collection(id: $id) {
       id
       title
+      categoryMetafield: metafield(namespace: "custom", key: "Category") {
+        value
+      }
       products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
         pageInfo {
           hasNextPage

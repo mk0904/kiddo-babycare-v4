@@ -1,7 +1,9 @@
+import NoInternetScreen from "@/components/NoInternetScreen";
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from "@react-native-community/netinfo";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
@@ -11,41 +13,39 @@ import React, { useCallback, useMemo } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import NetInfo from "@react-native-community/netinfo";
-import NoInternetScreen from "@/components/NoInternetScreen";
 
 import { ForceReloginCheck } from '@/components/ForceReloginCheck';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { AnimatedSplashScreen } from '@/components/ui/AnimatedSplashScreen';
 import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
-import { getAppVersionForApi, isAppUpdateRequired } from '@/constants/versionConfig';
+import { getAppVersionForApi, isVersionBelowMinimum } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
-import { NectorProvider } from '@/context/NectorContext';
-import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
 import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
 import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
+import { NectorProvider } from '@/context/NectorContext';
+import { RecentlyViewedProvider } from '@/context/RecentlyViewedContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { TryAndBuyProvider } from '@/context/TryAndBuyContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
+import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
+import { errorService } from '@/services/errorService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
-import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
-import { 
-  initMetaSDK, 
-  requestMetaTrackingPermission, 
-  checkForDeferredAppLink,
-  captureAttributionDataFromUrl
-} from '../utils/metaSDK';
-import * as ExpoLinking from 'expo-linking';
-import { clevertapService } from '@/services/clevertapService';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
+import * as ExpoLinking from 'expo-linking';
+import {
+    captureAttributionDataFromUrl,
+    checkForDeferredAppLink,
+    initMetaSDK,
+    requestMetaTrackingPermission
+} from '../utils/metaSDK';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -96,7 +96,8 @@ export default function RootLayout() {
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
   const currentVersion = getAppVersionForApi();
-  const updateRequired = useMemo(() => isAppUpdateRequired(currentVersion), [currentVersion]);
+  const [remoteUpdateRequired, setRemoteUpdateRequired] = React.useState(false);
+  const updateRequired = remoteUpdateRequired;
 
   React.useEffect(() => {
     if (__DEV__) {
@@ -197,7 +198,17 @@ export default function RootLayout() {
       
       // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
       configService.loadConfig().then(() => {
-        appConfigService.loadAppConfig(false, appConfigPayload).catch((error) => {
+        appConfigService.loadAppConfig(false, appConfigPayload).then((config) => {
+          if (config?.forceUpdateConfig?.isForceUpdateEnabled) {
+            const minVersion = Platform.OS === 'ios' 
+              ? config.forceUpdateConfig.minIosAppVersion 
+              : config.forceUpdateConfig.minAndroidAppVersion;
+            
+            if (minVersion && isVersionBelowMinimum(currentVersion, minVersion)) {
+              setRemoteUpdateRequired(true);
+            }
+          }
+        }).catch((error) => {
           if (__DEV__) console.warn('[RootLayout] Failed to load app config from backend:', error);
         });
       }).catch((error) => {
@@ -210,11 +221,15 @@ export default function RootLayout() {
         const u = useUserStore.getState().user;
         if (u) {
           const uid = u.id || u.customerId || u.email || u.phone;
-          if (uid) identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+          if (uid) {
+            identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+            // Identify in Crashlytics
+            errorService.setUserInfo(uid, u.email);
+          }
         }
         trackEvent('App Opened');
       } catch (e) {
-        console.warn('Analytics tracking error:', e);
+        errorService.logError(e, { section: 'RootLayout_Open' });
       }
     };
 

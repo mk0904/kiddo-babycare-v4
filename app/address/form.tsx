@@ -47,8 +47,8 @@ export default function AddressFormScreen() {
     let locationData = null;
     try {
         if (params.locationData) {
-            locationData = typeof params.locationData === 'string' 
-                ? JSON.parse(params.locationData) 
+            locationData = typeof params.locationData === 'string'
+                ? JSON.parse(params.locationData)
                 : params.locationData;
         }
     } catch (error) {
@@ -176,151 +176,151 @@ export default function AddressFormScreen() {
                     keyboardDismissMode="on-drag"
                     nestedScrollEnabled={true}
                 >
-                {/* Location Summary */}
-                {locationData && (
-                    <View style={styles.locationSummary}>
-                        <View style={styles.locationHeader}>
-                            <Ionicons name="location" size={20} color={Colors.primary} />
-                            <Text style={styles.locationSummaryTitle}>Selected Location</Text>
-                        </View>
-                        <Text style={styles.locationSummaryText}>{locationData.formattedAddress}</Text>
-                        {!loadingDeliveryTime && deliveryTime !== null ? (
-                            <View style={styles.deliveryTimeContainer}>
-                                <Ionicons
-                                    name="time-outline"
-                                    size={16}
-                                    color={isServiceable ? Colors.primary : Colors.secondary}
-                                />
-                                <Text style={[
-                                    styles.deliveryTimeText,
-                                    !isServiceable && styles.deliveryTimeTextError
-                                ]}>
-                                    {!isServiceable
-                                        ? 'Area unserviceable — choose a location closer to our store'
-                                        : `Delivery available in ${deliveryTime} mins`}
-                                </Text>
+                    {/* Location Summary */}
+                    {locationData && (
+                        <View style={styles.locationSummary}>
+                            <View style={styles.locationHeader}>
+                                <Ionicons name="location" size={20} color={Colors.primary} />
+                                <Text style={styles.locationSummaryTitle}>Selected Location</Text>
                             </View>
-                        ) : null}
-                        {!loadingDeliveryTime && deliveryTime !== null && !isServiceable && (
-                            <View style={styles.warningContainer}>
-                                <Ionicons name="information-circle-outline" size={16} color={Colors.secondary} />
-                                <Text style={styles.warningText}>
-                                    This pin is outside our delivery zone. Go back and move the map closer to our store.
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {/* Form Fields */}
-                <View style={styles.formContainer}>
-
-                    {/* Full Name */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Full Name *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your full name"
-                            placeholderTextColor="#999"
-                            value={fullName}
-                            onChangeText={setFullName}
-                            autoCapitalize="words"
-                        />
-                    </View>
-
-                    {/* Phone */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Phone Number *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your phone number"
-                            placeholderTextColor="#999"
-                            value={phone}
-                            onChangeText={setPhone}
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                        />
-                    </View>
-
-                    {/* Flat / Building */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Flat / House No / Floor *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="e.g. Apt 4B, 2nd Floor"
-                            placeholderTextColor="#999"
-                            value={flat}
-                            onChangeText={setFlat}
-                        />
-                    </View>
-
-                    {/* Area / Street */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Area / Colony / Street *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter area or street name"
-                            placeholderTextColor="#999"
-                            value={street}
-                            onChangeText={setStreet}
-                            multiline
-                        />
-                    </View>
-
-                    {/* Landmark (Optional) */}
-                    {/* Could add landmark here if needed, keeping it simple for now matching Kiddo */}
-
-                    {/* Save As Tag */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Save as</Text>
-                        <View style={styles.tagContainer}>
-                            {addressTags.map((tag) => (
-                                <TouchableOpacity
-                                    key={tag.id}
-                                    style={[
-                                        styles.tagButton,
-                                        selectedTag === tag.id && styles.tagButtonActive,
-                                    ]}
-                                    onPress={() => setSelectedTag(tag.id)}
-                                >
+                            <Text style={styles.locationSummaryText}>{locationData.formattedAddress}</Text>
+                            {!loadingDeliveryTime && deliveryTime !== null ? (
+                                <View style={styles.deliveryTimeContainer}>
                                     <Ionicons
-                                        name={tag.icon}
-                                        size={20}
-                                        color={selectedTag === tag.id ? '#FFF' : '#000'}
+                                        name="time-outline"
+                                        size={16}
+                                        color={isServiceable ? Colors.primary : Colors.secondary}
                                     />
-                                    <Text
-                                        style={[
-                                            styles.tagButtonText,
-                                            selectedTag === tag.id && styles.tagButtonTextActive,
-                                        ]}
-                                    >
-                                        {tag.label}
+                                    <Text style={[
+                                        styles.deliveryTimeText,
+                                        !isServiceable && styles.deliveryTimeTextError
+                                    ]}>
+                                        {!isServiceable
+                                            ? 'Area unserviceable — choose a location closer to our store'
+                                            : `Delivery available in ${deliveryTime} mins`}
                                     </Text>
-                                </TouchableOpacity>
-                            ))}
+                                </View>
+                            ) : null}
+                            {!loadingDeliveryTime && deliveryTime !== null && !isServiceable && (
+                                <View style={styles.warningContainer}>
+                                    <Ionicons name="information-circle-outline" size={16} color={Colors.secondary} />
+                                    <Text style={styles.warningText}>
+                                        This pin is outside our delivery zone. Go back and move the map closer to our store.
+                                    </Text>
+                                </View>
+                            )}
                         </View>
+                    )}
+
+                    {/* Form Fields */}
+                    <View style={styles.formContainer}>
+
+                        {/* Full Name */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Full Name *</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your full name"
+                                placeholderTextColor="#999"
+                                value={fullName}
+                                onChangeText={setFullName}
+                                autoCapitalize="words"
+                            />
+                        </View>
+
+                        {/* Phone */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Phone Number *</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your phone number"
+                                placeholderTextColor="#999"
+                                value={phone}
+                                onChangeText={setPhone}
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                            />
+                        </View>
+
+                        {/* Flat / Building */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>House no. & Floor*</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="e.g. Apt 4B, 2nd Floor"
+                                placeholderTextColor="#999"
+                                value={flat}
+                                onChangeText={setFlat}
+                            />
+                        </View>
+
+                        {/* Area / Street */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Building and block number</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter area or street name"
+                                placeholderTextColor="#999"
+                                value={street}
+                                onChangeText={setStreet}
+                                multiline
+                            />
+                        </View>
+
+                        {/* Landmark (Optional) */}
+                        {/* Could add landmark here if needed, keeping it simple for now matching Kiddo */}
+
+                        {/* Save As Tag */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Save as</Text>
+                            <View style={styles.tagContainer}>
+                                {addressTags.map((tag) => (
+                                    <TouchableOpacity
+                                        key={tag.id}
+                                        style={[
+                                            styles.tagButton,
+                                            selectedTag === tag.id && styles.tagButtonActive,
+                                        ]}
+                                        onPress={() => setSelectedTag(tag.id)}
+                                    >
+                                        <Ionicons
+                                            name={tag.icon}
+                                            size={20}
+                                            color={selectedTag === tag.id ? '#FFF' : '#000'}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.tagButtonText,
+                                                selectedTag === tag.id && styles.tagButtonTextActive,
+                                            ]}
+                                        >
+                                            {tag.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        {/* Save Button */}
+                        <TouchableOpacity
+                            style={[
+                                styles.saveButton,
+                                (saving || loadingDeliveryTime || !isServiceable) && styles.saveButtonDisabled
+                            ]}
+                            onPress={handleSaveAddress}
+                            disabled={saving || loadingDeliveryTime || !isServiceable}
+                        >
+                            {saving ? (
+                                <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                                <>
+                                    <Text style={styles.saveButtonText}>Save Address</Text>
+                                    <Ionicons name="checkmark" size={20} color="#FFF" />
+                                </>
+                            )}
+                        </TouchableOpacity>
+
                     </View>
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                        style={[
-                            styles.saveButton,
-                            (saving || loadingDeliveryTime || !isServiceable) && styles.saveButtonDisabled
-                        ]}
-                        onPress={handleSaveAddress}
-                        disabled={saving || loadingDeliveryTime || !isServiceable}
-                    >
-                        {saving ? (
-                            <ActivityIndicator size="small" color="#FFF" />
-                        ) : (
-                            <>
-                                <Text style={styles.saveButtonText}>Save Address</Text>
-                                <Ionicons name="checkmark" size={20} color="#FFF" />
-                            </>
-                        )}
-                    </TouchableOpacity>
-
-                </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>

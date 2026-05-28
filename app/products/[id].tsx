@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { analyticsService } from '@/services/analyticsService';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
@@ -655,6 +656,19 @@ const ProductDetailScreen = () => {
                         await AsyncStorage.setItem('has_viewed_product', 'true');
                     }
                     trackProductViewed(fullProduct.id, fullProduct.title, price);
+
+                    // Firebase Ecommerce Tracking
+                    analyticsService.logViewItem({
+                        items: [{
+                            item_id: fullProduct.id,
+                            item_name: fullProduct.title,
+                            item_category: fullProduct.tags?.[0],
+                            price: price,
+                            quantity: 1,
+                        }],
+                        value: price,
+                        currency: 'INR',
+                    });
                 } catch (e) {
                     console.warn('Mixpanel tracking error:', e);
                 }
@@ -825,6 +839,20 @@ const ProductDetailScreen = () => {
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
                     trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+
+                    // Firebase Ecommerce Tracking
+                    analyticsService.logAddToCart({
+                        items: [{
+                            item_id: cartItem.productId,
+                            item_name: cartItem.title,
+                            item_category: cartItem.tags?.[0],
+                            price: cartItem.price,
+                            quantity: cartItem.quantity,
+                            currency: cartItem.currencyCode,
+                        }],
+                        value: cartItem.price * cartItem.quantity,
+                        currency: cartItem.currencyCode,
+                    });
                 } catch (e) {
                     console.warn('[PDP] AddToCart tracking error:', e);
                 }
@@ -924,6 +952,20 @@ const ProductDetailScreen = () => {
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
                     trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+
+                    // Firebase Ecommerce Tracking
+                    analyticsService.logAddToCart({
+                        items: [{
+                            item_id: cartItem.productId,
+                            item_name: cartItem.title,
+                            item_category: cartItem.tags?.[0],
+                            price: cartItem.price,
+                            quantity: cartItem.quantity,
+                            currency: cartItem.currencyCode,
+                        }],
+                        value: cartItem.price * cartItem.quantity,
+                        currency: cartItem.currencyCode,
+                    });
                 } catch (e) {
                     console.warn('[PDP] Ticketing AddToCart tracking error:', e);
                 }
@@ -1291,6 +1333,19 @@ const ProductDetailScreen = () => {
                         '0'
                     );
                     trackWishlistAdded(product.id, product.title, price);
+
+                    // Firebase Ecommerce Tracking
+                    analyticsService.logAddToWishlist({
+                        items: [{
+                            item_id: product.id,
+                            item_name: product.title,
+                            item_category: product.tags?.[0],
+                            price: price,
+                            quantity: 1,
+                        }],
+                        value: price,
+                        currency: 'INR',
+                    });
                 } catch (e) {
                     console.warn('[PDP] Wishlist tracking error:', e);
                 }
@@ -2265,16 +2320,17 @@ const styles = StyleSheet.create({
         color: '#4CAF50',
     },
     priceComparisonContainer: {
-        marginTop: 0,
+        marginTop: 8,
         marginBottom: 0,
         paddingHorizontal: 16,
-        paddingTop: 0,
+        paddingTop: 16,
     },
     priceComparisonTitle: {
         fontSize: 18,
         fontFamily: Fonts.Bold,
         color: Colors.text,
         textAlign: 'center',
+        marginTop: 8,
         marginBottom: 16,
     },
     priceComparisonTable: {
