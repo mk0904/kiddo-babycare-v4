@@ -50,16 +50,8 @@ export interface SavingsCornerCouponCarouselProps {
     /** When false, renders nothing. */
     visible: boolean;
     loading: boolean;
-    coupons: SavingsCornerCouponItem[];
+    coupons: { coupon: SavingsCornerCouponItem; applicability: { applicable: boolean; reason?: string }; conditions: string[] }[];
     couponApplying: boolean;
-    hasTicketingProducts: boolean;
-    hasFashionItems: boolean;
-    cartSubtotal: number;
-    cartItemCount: number;
-    userOrderCount: number;
-    couponUsages: Record<string, number>;
-    categorySubtotals: Record<string, number>;
-    lineItems: { tags?: string[]; price?: number; quantity?: number }[];
     appliedCouponCode?: string | null;
     onApplyCoupon: (coupon: SavingsCornerCouponItem) => void;
     /** Fired when the whole coupon ticket is pressed (e.g. to open deal modal). */
@@ -106,14 +98,6 @@ export function SavingsCornerCouponCarousel({
     loading,
     coupons,
     couponApplying,
-    hasTicketingProducts,
-    hasFashionItems,
-    cartSubtotal,
-    cartItemCount,
-    userOrderCount,
-    couponUsages,
-    categorySubtotals,
-    lineItems,
     appliedCouponCode,
     onApplyCoupon,
     onCouponPress,
@@ -136,34 +120,9 @@ export function SavingsCornerCouponCarousel({
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
             >
-                {coupons.map((coupon, index) => {
-                    const applicability = coupon.code
-                        ? couponService.getCouponApplicabilityForDisplay(
-                            {
-                                ...coupon,
-                                code: coupon.code,
-                                valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
-                            } as CouponCode,
-                            {
-                                hasTicketingProducts,
-                                hasFashionItems,
-                                cartSubtotal,
-                                cartItemCount,
-                                userOrderCount,
-                                couponUsageCount: couponUsages[coupon.code?.toUpperCase() ?? ''] ?? 0,
-                                categorySubtotals,
-                                lineItems,
-                            },
-                        )
-                        : { applicable: true };
+                {coupons.map((item, index) => {
+                    const { coupon, applicability, conditions } = item;
                     const isDisabled = !applicability.applicable;
-                    const conditions = coupon.code
-                        ? couponService.getCouponConditionsText({
-                            ...coupon,
-                            code: coupon.code,
-                            valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
-                        } as CouponCode)
-                        : [];
                     const codeStr = (coupon.code || '—').toUpperCase();
                     const headline = getCouponHeadline(coupon);
                     const subline = getCouponSubline(coupon);

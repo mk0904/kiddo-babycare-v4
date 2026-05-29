@@ -155,13 +155,13 @@ export async function variantBelongsToSpecialDealTabCollections(
 }
 
 /** Selling subtotal of cart lines eligible for the active deal coupon (hydrated tab collection products). */
-export async function getSubtotalForDealEligibleLines(
+export function getSubtotalForDealEligibleLines(
     lineItems: CartItem[],
     dc: DiscountCode,
     dealProducts: any[],
     couponAllowedCategories: string[],
     options: { limitToOne?: boolean } = {},
-): Promise<number> {
+): number {
 
     if (!dc?.isDealCoupon) return 0;
 
@@ -400,6 +400,7 @@ interface CartState {
     note: string;
     payment: CartPayment | null;
     status: CartStatus;
+    isApplyingCoupon: boolean;
     error: string | null;
     lastSyncedAt: number | null;
 
@@ -513,7 +514,7 @@ interface CartState {
     syncDealPricing: (options?: { forceFetch?: boolean }) => Promise<void>;
 
     /** Recompute {@link discountBreakdownSnapshot} from current line items + codes (await deal collection checks via Shopify). */
-    refreshComputedDiscountFromCodes: () => Promise<void>;
+    refreshComputedDiscountFromCodes: () => void;
 }
 
 // Available gift items (configure based on your store)
@@ -576,11 +577,11 @@ function dealCouponFixedAmountFromConfig(): number {
     return DEFAULT_DEAL_COUPON_FIXED_AMOUNT;
 }
 
-export async function computeDiscountBreakdown(
+export function computeDiscountBreakdown(
     lineItems: CartItem[],
     codes: DiscountCode[],
     dealProducts: any[] = [],
-): Promise<DiscountBreakdown> {
+): DiscountBreakdown {
     const subtotalVal = lineItems.reduce(
         (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 0),
         0,
@@ -604,7 +605,7 @@ export async function computeDiscountBreakdown(
         if (isDeal) {
             // Requirement: "discount should be calculated from 1 only" for deal/category products
             const couponAllowedCategories = dc.allowedCategories || [];
-            baseAmount = await getSubtotalForDealEligibleLines(lineItems, dc, dealProducts, couponAllowedCategories, { limitToOne: true });
+            baseAmount = getSubtotalForDealEligibleLines(lineItems, dc, dealProducts, couponAllowedCategories, { limitToOne: true });
         } else {
             if (dc.allowedCategories?.length) {
                 baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories);
@@ -667,12 +668,12 @@ export async function computeDiscountBreakdown(
 }
 
 /** Total only; same as {@link computeDiscountBreakdown}(...).total — kept for existing call sites. */
-export async function computeNonDealDiscountFromCodes(
+export function computeNonDealDiscountFromCodes(
     lineItems: CartItem[],
     codes: DiscountCode[],
     dealProducts: any[] = [],
-): Promise<number> {
-    const res = await computeDiscountBreakdown(lineItems, codes, dealProducts);
+): number {
+    const res = computeDiscountBreakdown(lineItems, codes, dealProducts);
     return res.total;
 }
 
@@ -748,6 +749,7 @@ export const useCartStore = create<CartState>()(
             note: '',
             payment: null,
             status: 'init',
+            isApplyingCoupon: false,
             error: null,
             lastSyncedAt: null,
             isTryAndBuy: false,
@@ -763,9 +765,9 @@ export const useCartStore = create<CartState>()(
             hasUnlockedSpecialDeal: false,
             discountBreakdownSnapshot: { total: 0, perCode: [] },
 
-            refreshComputedDiscountFromCodes: async () => {
+            refreshComputedDiscountFromCodes: () => {
                 const state = get();
-                const breakdown = await computeDiscountBreakdown(
+                const breakdown = computeDiscountBreakdown(
                     state.lineItems,
                     state.discountCodes,
                     state.dealProducts,
@@ -974,7 +976,7 @@ export const useCartStore = create<CartState>()(
 
                     const maxQty = typeof item.quantityAvailable === 'number' ? item.quantityAvailable : undefined;
                     if (maxQty !== undefined && maxQty < 1) {
-                        set({ status: 'idle', error: null });
+                        set({ status: 'idle', isApplyingCoupon: false, error: null });
                         throw new Error('This item is currently out of stock.');
                     }
 
@@ -986,11 +988,11 @@ export const useCartStore = create<CartState>()(
                         const effectiveMax = typeof maxQty === 'number' ? maxQty : (existing.quantityAvailable ?? requestedTotal);
                         const cappedQty = Math.min(requestedTotal, effectiveMax);
                         if (cappedQty <= 0) {
-                            set({ status: 'idle', error: null });
+                            set({ status: 'idle', isApplyingCoupon: false, error: null });
                             throw new Error('This item is currently out of stock.');
                         }
                         if (cappedQty < requestedTotal) {
-                            set({ status: 'idle', error: null });
+                            set({ status: 'idle', isApplyingCoupon: false, error: null });
                             throw new Error(`Only ${effectiveMax} item(s) available. You already have ${existing.quantity} in cart.`);
                         }
                         newLineItems = state.lineItems.map((li, idx) =>
@@ -1005,11 +1007,11 @@ export const useCartStore = create<CartState>()(
                     } else {
                         const addQty = maxQty !== undefined ? Math.min(item.quantity, maxQty) : item.quantity;
                         if (addQty < 1) {
-                            set({ status: 'idle', error: null });
+                            set({ status: 'idle', isApplyingCoupon: false, error: null });
                             throw new Error('This item is currently out of stock.');
                         }
                         if (maxQty !== undefined && item.quantity > maxQty) {
-                            set({ status: 'idle', error: null });
+                            set({ status: 'idle', isApplyingCoupon: false, error: null });
                             throw new Error(`Only ${maxQty} item(s) available.`);
                         }
                         const newItem: CartItem = {
@@ -1028,12 +1030,16 @@ export const useCartStore = create<CartState>()(
 
                     // Trigger sync in background to keep UI instant.
                     // Consolidate into a single background chain to avoid concurrent syncDealPricing races.
-                    Promise.resolve()
+                    get().refreshComputedDiscountFromCodes();
+                    set({ status: 'idle', isApplyingCoupon: false });
+                    setTimeout(() => {
+                        Promise.resolve()
                         .then(() => get().validateAppliedDiscountCodes())
                         .then(() => get().syncDeliveryFeeToShopify())
                         .then(() => get().syncDealPricing())
                         .then(() => get().refreshComputedDiscountFromCodes())
-                        .finally(() => set({ status: 'idle' }));
+                            .catch(e => console.error('[CartStore] add background sync error', e));
+                    }, 150);
 
                     try {
                         const { trackEvent } = require('@/utils/mixpanelHelpers');
@@ -1052,7 +1058,7 @@ export const useCartStore = create<CartState>()(
                     // Check for eligible gifts after adding item
                     get().applyEligibleGifts();
                 } catch (error: any) {
-                    set({ status: 'error', error: error.message });
+                    set({ status: 'error', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -1095,16 +1101,21 @@ export const useCartStore = create<CartState>()(
                         }
                     }
 
-                    await get().validateAppliedDiscountCodes();
-                    await get().syncDealPricing();
-                    await get().refreshComputedDiscountFromCodes();
-                    await get().syncDeliveryFeeToShopify();
-                    set({ status: 'idle' });
+                    get().refreshComputedDiscountFromCodes();
+                    set({ status: 'idle', isApplyingCoupon: false });
+                    setTimeout(() => {
+                        Promise.resolve()
+                        .then(() => get().validateAppliedDiscountCodes())
+                        .then(() => get().syncDealPricing())
+                        .then(() => get().refreshComputedDiscountFromCodes())
+                        .then(() => get().syncDeliveryFeeToShopify())
+                        .catch(e => console.error('[CartStore] remove background sync error', e));
+                    }, 150);
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
                 } catch (error: any) {
-                    set({ status: 'error', error: error.message });
+                    set({ status: 'error', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -1153,17 +1164,21 @@ export const useCartStore = create<CartState>()(
                     }
 
                     // Trigger sync in background to keep UI instant
-                    Promise.resolve()
+                    get().refreshComputedDiscountFromCodes();
+                    set({ status: 'idle', isApplyingCoupon: false });
+                    setTimeout(() => {
+                        Promise.resolve()
                         .then(() => get().validateAppliedDiscountCodes())
                         .then(() => get().syncDeliveryFeeToShopify())
                         .then(() => get().syncDealPricing())
                         .then(() => get().refreshComputedDiscountFromCodes())
-                        .finally(() => set({ status: 'idle' }));
+                        .catch(e => console.error('[CartStore] updateQty background sync error', e));
+                    }, 150);
 
                     // Re-check gift eligibility
                     get().applyEligibleGifts();
                 } catch (error: any) {
-                    set({ status: 'error', error: error.message });
+                    set({ status: 'error', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -1193,9 +1208,9 @@ export const useCartStore = create<CartState>()(
                     });
                     await get().validateAppliedDiscountCodes();
                     await get().applyEligibleGifts();
-                    set({ status: 'idle' });
+                    set({ status: 'idle', isApplyingCoupon: false });
                 } catch (error: any) {
-                    set({ status: 'error', error: error.message });
+                    set({ status: 'error', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -1209,7 +1224,7 @@ export const useCartStore = create<CartState>()(
                     discountCodes: [],
                     note: '',
                     payment: null,
-                    status: 'idle',
+                    status: 'idle', isApplyingCoupon: false,
                     error: null,
                     selectedShoe: null,
                     selectedShoeSize: null,
@@ -1265,7 +1280,7 @@ export const useCartStore = create<CartState>()(
             },
 
             // Discount codes
-            applyDiscountCode: async (code, options) => {
+            applyDiscountCode: async (code, options) => { set({ isApplyingCoupon: true });
                 const state = get();
                 const normalizedCode = code.trim().toUpperCase();
                 console.log('[CartStore] Normalized code:', normalizedCode);
@@ -1304,6 +1319,7 @@ export const useCartStore = create<CartState>()(
                     }
                 } catch (error) {
                     console.error('[CartStore] Error checking authentication:', error);
+                    set({ isApplyingCoupon: false });
                     return { success: false, error: 'Failed to verify authentication.' };
                 }
 
@@ -1331,10 +1347,12 @@ export const useCartStore = create<CartState>()(
                     configDiscount = await couponService.validateCouponCode(normalizedCode, couponParams, { useVisibleCoupons: true });
                 } catch (error) {
                     console.error('[CartStore] Error validating code:', error);
+                    set({ isApplyingCoupon: false });
                     return { success: false, error: 'Failed to validate discount code.' };
                 }
 
                 if (!configDiscount) {
+                    set({ isApplyingCoupon: false });
                     return { success: false, error: 'This discount code is not valid.' };
                 }
 
@@ -1345,6 +1363,7 @@ export const useCartStore = create<CartState>()(
                     (dc) => dc.code.toUpperCase() === normalizedCode && dc.applicable !== false
                 );
                 if (isAlreadyApplied) {
+                    set({ isApplyingCoupon: false });
                     return { success: false, error: 'Discount code already applied' };
                 }
 
@@ -1386,6 +1405,7 @@ export const useCartStore = create<CartState>()(
                         lineItems: state.lineItems,
                     });
                     if (!dealApplicability.applicable) {
+                        set({ isApplyingCoupon: false });
                         return {
                             success: false,
                             error: dealApplicability.reason || 'This offer is not applicable to your cart.',
@@ -1402,6 +1422,7 @@ export const useCartStore = create<CartState>()(
                         state.lineItems,
                     );
                     if (!dealConditions.isValid) {
+                        set({ isApplyingCoupon: false });
                         return {
                             success: false,
                             error: dealConditions.error || 'This offer is not valid for your cart.',
@@ -1410,6 +1431,7 @@ export const useCartStore = create<CartState>()(
 
                     const cartId = await get().ensureCart();
                     if (!cartId) {
+                        set({ isApplyingCoupon: false });
                         return { success: false, error: 'Cart not found. Please add items to cart first.' };
                     }
 
@@ -1483,9 +1505,15 @@ export const useCartStore = create<CartState>()(
                             error: null,
                             lastSyncedAt: Date.now(),
                         });
-                        await get().syncDeliveryFeeToShopify();
-                        // Trigger sync in background so modal opens instantly
-                        get().syncDealPricing({ forceFetch: true }).finally(() => set({ status: 'idle' }));
+                        get().refreshComputedDiscountFromCodes();
+                        set({ status: 'idle', isApplyingCoupon: false });
+                        setTimeout(() => {
+                            Promise.resolve()
+                            .then(() => get().syncDeliveryFeeToShopify())
+                            // Trigger sync in background so modal opens instantly
+                            .then(() => get().syncDealPricing({ forceFetch: true }))
+                                .catch(e => console.error('[CartStore] deal coupon sync error', e));
+                        }, 150);
                         return { success: true };
                     }
 
@@ -1520,13 +1548,19 @@ export const useCartStore = create<CartState>()(
                                 currencyCode,
                             },
                         });
-                        await get().syncDeliveryFeeToShopify();
-                        // fetchCart in background to avoid delaying modal opening
-                        get().fetchCart().finally(() => set({ status: 'idle' }));
+                        get().refreshComputedDiscountFromCodes();
+                        set({ status: 'idle', isApplyingCoupon: false });
+                        setTimeout(() => {
+                            Promise.resolve()
+                            .then(() => get().syncDeliveryFeeToShopify())
+                            // fetchCart in background to avoid delaying modal opening
+                            .then(() => get().fetchCart())
+                                .catch(e => console.error('[CartStore] deal coupon fetch error', e));
+                        }, 150);
                         return { success: true };
                     } catch (error: any) {
                         console.error('[CartStore] Deal coupon apply error:', error);
-                        set({ status: 'idle', error: error?.message });
+                        set({ status: 'idle', isApplyingCoupon: false, error: error?.message });
                         return { success: false, error: error?.message || 'Failed to apply offer code.' };
                     }
                 }
@@ -1569,6 +1603,7 @@ export const useCartStore = create<CartState>()(
                         lineItems: state.lineItems,
                     });
                     if (!displayApply.applicable) {
+                        set({ isApplyingCoupon: false });
                         return {
                             success: false,
                             error: displayApply.reason || 'This coupon is not applicable to your cart.',
@@ -1585,6 +1620,7 @@ export const useCartStore = create<CartState>()(
                         state.lineItems,
                     );
                     if (!conditionsApply.isValid) {
+                        set({ isApplyingCoupon: false });
                         return {
                             success: false,
                             error: conditionsApply.error || 'This coupon is not valid for your cart.',
@@ -1606,6 +1642,7 @@ export const useCartStore = create<CartState>()(
 
                 const cartId = await get().ensureCart();
                 if (!cartId) {
+                    set({ isApplyingCoupon: false });
                     return { success: false, error: 'Cart not found. Please add items to cart first.' };
                 }
 
@@ -1645,55 +1682,16 @@ export const useCartStore = create<CartState>()(
                 set({ status: 'loading' });
 
                 try {
-                    // Get current cart to see existing discount codes
-                    let currentCart;
-                    try {
-                        currentCart = await shopifyApi.getCart(cartId);
-                    } catch (cartError: any) {
-                        // If cart fetch fails, it might be expired or invalid
-                        // Try to recreate the cart if we have items
-                        if (state.lineItems.length > 0) {
-                            let lines = state.lineItems.map(shopifyLineFromCartItem);
-                            let newCart = null;
-                            try {
-                                newCart = await shopifyApi.createCart(lines);
-                            } catch (createErr: any) {
-                                const invalidVariantId = parseInvalidVariantFromError(createErr?.message || '');
-                                if (invalidVariantId) {
-                                    const kept = state.lineItems.filter((item) => !lineItemMatchesVariant(item, invalidVariantId));
-                                    if (kept.length < state.lineItems.length) {
-                                        set({ lineItems: kept });
-                                        lines = kept.map(shopifyLineFromCartItem);
-                                        if (lines.length > 0) newCart = await shopifyApi.createCart(lines);
-                                    }
-                                }
-                                if (!newCart) throw createErr;
-                            }
-                            if (newCart?.id) {
-                                set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
-                                currentCart = newCart;
-                            } else {
-                                throw new Error('Failed to recreate cart. Please try again.');
-                            }
-                        } else {
-                            throw new Error(cartError.message || 'Failed to fetch cart. Please try again.');
-                        }
-                    }
-
-                    if (!currentCart) {
-                        throw new Error('Failed to fetch cart');
-                    }
-
-                    // Get already applied applicable codes (Shopify return casing preserved for re-submit)
-                    const alreadyAppliedRaw = (currentCart.discountCodes || [])
-                        .filter((dc: any) => dc.applicable && dc.code)
+                    // Use local state to see existing discount codes to avoid a redundant network fetch!
+                    const alreadyAppliedRaw = state.discountCodes
+                        .filter((dc: any) => dc.applicable !== false && dc.code)
                         .map((dc: any) => String(dc.code).trim());
                     console.log('[CartStore] Already applied codes:', alreadyAppliedRaw);
 
                     // Check if code is already applied
                     if (alreadyAppliedRaw.some((c) => c.toUpperCase() === normalizedCode)) {
                         console.log('[CartStore] ❌ Code already applied');
-                        set({ status: 'idle' });
+                        set({ status: 'idle', isApplyingCoupon: false });
                         return { success: false, error: 'Discount code already applied' };
                     }
 
@@ -1779,7 +1777,7 @@ export const useCartStore = create<CartState>()(
                                 total: Math.max(0, lineItemsSubtotalRev - discountRev) + taxRev,
                                 currencyCode: updatedCart.cost?.totalAmount?.currencyCode || 'INR',
                             },
-                            status: 'idle',
+                            status: 'idle', isApplyingCoupon: false,
                             error: null,
                             lastSyncedAt: Date.now(),
                         });
@@ -2032,21 +2030,26 @@ export const useCartStore = create<CartState>()(
                         lastSyncedAt: Date.now(),
                         ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
                     });
-                    await get().syncDeliveryFeeToShopify();
-                    await get().syncDealPricing();
-                    await get().validateAppliedDiscountCodes();
-                    set({ status: 'idle' });
+                    get().refreshComputedDiscountFromCodes();
+                    set({ status: 'idle', isApplyingCoupon: false });
+                    setTimeout(() => {
+                        Promise.resolve()
+                        .then(() => get().syncDeliveryFeeToShopify())
+                        .then(() => get().syncDealPricing())
+                        .then(() => get().validateAppliedDiscountCodes())
+                            .catch(e => console.error('[CartStore] apply sync error', e));
+                    }, 150);
                     console.log('[CartStore] ✅ Code successfully applied (existing cart path)');
                     return { success: true };
                 } catch (error: any) {
                     console.error('[CartStore] Error applying discount code to existing cart:', error);
-                    set({ status: 'idle', error: error.message });
+                    set({ status: 'idle', isApplyingCoupon: false, error: error.message });
                     return { success: false, error: error.message || 'Failed to apply discount code' };
                 }
 
             },
 
-            removeDiscountCode: async (code) => {
+            removeDiscountCode: async (code) => { set({ isApplyingCoupon: true });
                 set({ status: 'loading' });
                 const state = get();
                 const normalizedCode = code.toUpperCase();
@@ -2067,11 +2070,12 @@ export const useCartStore = create<CartState>()(
                 }
 
                 const cartId = await get().ensureCart();
+                let updatedShopifyCart: any = null;
                 // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
                 if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                     try {
                         const codesToApply = discountCodesForShopifyApply(updatedDiscountCodes);
-                        await shopifyApi.applyDiscountCodes(cartId, codesToApply);
+                        updatedShopifyCart = await shopifyApi.applyDiscountCodes(cartId, codesToApply);
                     } catch (e) {
                         console.warn('[CartStore] Failed to sync discount codes to Shopify cart after remove', e);
                     }
@@ -2082,7 +2086,7 @@ export const useCartStore = create<CartState>()(
 
 
                 await get().syncDealPricing();
-                await get().refreshComputedDiscountFromCodes();
+                get().refreshComputedDiscountFromCodes();
                 const itemsNow = get().lineItems;
                 const lineItemsSubtotal = itemsNow.reduce(
                     (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 0),
@@ -2090,7 +2094,10 @@ export const useCartStore = create<CartState>()(
                 );
                 let tax = state.payment?.tax ?? 0;
                 let currencyCode = state.payment?.currencyCode || 'INR';
-                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
+                if (updatedShopifyCart) {
+                    tax = parseFloat(updatedShopifyCart.cost?.totalTaxAmount?.amount || '0');
+                    currencyCode = updatedShopifyCart.cost?.totalAmount?.currencyCode || currencyCode;
+                } else if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
                     try {
                         const cart = await shopifyApi.getCart(cartId);
                         tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
@@ -2116,11 +2123,14 @@ export const useCartStore = create<CartState>()(
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
-                await get().syncDeliveryFeeToShopify();
-                set({ status: 'idle' });
+                get().refreshComputedDiscountFromCodes();
+                set({ status: 'idle', isApplyingCoupon: false });
+                setTimeout(() => {
+                    Promise.resolve().then(() => get().syncDeliveryFeeToShopify()).catch(console.error);
+                }, 150);
             },
 
-            removeAllDiscountCodes: async () => {
+            removeAllDiscountCodes: async () => { set({ isApplyingCoupon: true });
                 set({ status: 'loading' });
                 const state = get();
                 const lineSnapshot = state.lineItems;
@@ -2175,8 +2185,11 @@ export const useCartStore = create<CartState>()(
                     error: null,
                     lastSyncedAt: Date.now(),
                 });
-                await get().syncDeliveryFeeToShopify();
-                set({ status: 'idle' });
+                get().refreshComputedDiscountFromCodes();
+                set({ status: 'idle', isApplyingCoupon: false });
+                setTimeout(() => {
+                    Promise.resolve().then(() => get().syncDeliveryFeeToShopify()).catch(console.error);
+                }, 150);
             },
 
             // Sync cart prices
@@ -2225,14 +2238,14 @@ export const useCartStore = create<CartState>()(
                         set({
                             lineItems: updatedLineItems,
                             lastSyncedAt: Date.now(),
-                            status: 'idle',
+                            status: 'idle', isApplyingCoupon: false,
                         });
                     } else {
-                        set({ status: 'idle' });
+                        set({ status: 'idle', isApplyingCoupon: false });
                     }
                 } catch (error: any) {
                     console.error('[CartStore] syncCartPrices error:', error);
-                    set({ status: 'idle', error: error.message });
+                    set({ status: 'idle', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -2240,7 +2253,7 @@ export const useCartStore = create<CartState>()(
             fetchCart: async () => {
                 const state = get();
                 if (!state.id) {
-                    set({ status: 'idle' });
+                    set({ status: 'idle', isApplyingCoupon: false });
                     return;
                 }
 
@@ -2466,14 +2479,19 @@ export const useCartStore = create<CartState>()(
                             checkoutUrl: cart.checkoutUrl,
                             lastSyncedAt: Date.now(),
                         });
-                        await get().syncDeliveryFeeToShopify();
-                        await get().syncDealPricing();
-                        await get().validateAppliedDiscountCodes();
-                        set({ status: 'idle' });
+                        get().refreshComputedDiscountFromCodes();
+                        set({ status: 'idle', isApplyingCoupon: false });
+                        setTimeout(() => {
+                            Promise.resolve()
+                            .then(() => get().syncDeliveryFeeToShopify())
+                            .then(() => get().syncDealPricing())
+                            .then(() => get().validateAppliedDiscountCodes())
+                                .catch(e => console.error('[CartStore] existing sync error', e));
+                        }, 150);
                     }
                 } catch (error: any) {
                     console.error('[CartStore] fetchCart error:', error);
-                    set({ status: 'error', error: error.message });
+                    set({ status: 'error', isApplyingCoupon: false, error: error.message });
                 }
             },
 
@@ -2691,7 +2709,7 @@ export const useCartStore = create<CartState>()(
                     } catch (e) {
                         console.warn('[CartStore] syncDealPricing fetch error:', e);
                     } finally {
-                        set({ status: 'idle' });
+                        set({ status: 'idle', isApplyingCoupon: false });
                     }
                 }
 
@@ -2777,7 +2795,7 @@ export const useCartStore = create<CartState>()(
             onRehydrateStorage: (state) => {
                 return (hydratedState, error) => {
                     if (!error && hydratedState && hydratedState.discountCodes.length > 0) {
-                        void hydratedState.refreshComputedDiscountFromCodes();
+                        hydratedState.refreshComputedDiscountFromCodes();
                     }
                 };
             },
@@ -2806,6 +2824,7 @@ export const useCartItemCount = () => useCartStore((s) => s.itemCount());
 export const useCartSubtotal = () => useCartStore((s) => s.subtotal());
 export const useCartTotal = () => useCartStore((s) => s.total());
 export const useCartStatus = () => useCartStore((s) => s.status);
+export const useCartIsApplyingCoupon = () => useCartStore((s) => s.isApplyingCoupon);
 export const useCartGifts = () => useCartStore((s) => s.giftItems);
 export const useCartDiscounts = () => useCartStore((s) => s.discountCodes);
 export const useCartId = () => useCartStore((s) => s.id);

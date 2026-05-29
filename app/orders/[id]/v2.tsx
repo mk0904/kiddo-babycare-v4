@@ -1,10 +1,15 @@
+import { DeliveryPartnerCard } from '@/components/orders/DeliveryPartnerCard';
+import { OrderDetailsSection } from '@/components/orders/OrderDetailsSection';
+import { OrderSummaryDetails } from '@/components/orders/OrderSummaryDetails';
 import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
 import {
+    ExternalOrderStatusResponse,
     getDeliveryPartnerOrderStatus,
     getDeliveryRouteForOrder,
+    getExternalOrderStatus,
     hasTryBuyPostDeliveryResolution,
     isDeliveryStatusDelivered,
     resolveTryBuyPostDeliveryLineForKeys,
@@ -324,6 +329,7 @@ export default function OrderDetailV2Screen() {
     const [error, setError] = useState<string | null>(null);
     const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(null);
     const [deliveryPartnerStatus, setDeliveryPartnerStatus] = useState<DeliveryPartnerOrderStatus | null>(null);
+    const [limechatStatus, setLimechatStatus] = useState<ExternalOrderStatusResponse | null>(null);
     /**
      * Until GET delivery-status returns, avoid showing map / partner / post-checkout delivery strip so
      * event orders do not flash last-mile UI before `isEventOrder: true`. After a short timeout, show
@@ -362,8 +368,14 @@ export default function OrderDetailV2Screen() {
                         : '');
                 if (!numeric || cancelled) return;
                 try {
-                    const st = await getDeliveryPartnerOrderStatus(numeric);
-                    if (cancelled || !st) return;
+                    const [st, extSt] = await Promise.all([
+                        getDeliveryPartnerOrderStatus(numeric),
+                        getExternalOrderStatus(numeric)
+                    ]);
+                    if (cancelled) return;
+                    if (extSt) setLimechatStatus(extSt);
+                    if (!st) return;
+
                     setDeliveryPartnerStatus(st);
                     const hasRiderOnPoll =
                         st.rider_lat != null ||
@@ -446,8 +458,12 @@ export default function OrderDetailV2Screen() {
         const tick = async () => {
             if (cancelled) return;
             try {
-                const result = await getDeliveryPartnerOrderStatus(routeNumericForDeliveryPoll);
+                const [result, extSt] = await Promise.all([
+                    getDeliveryPartnerOrderStatus(routeNumericForDeliveryPoll),
+                    getExternalOrderStatus(routeNumericForDeliveryPoll)
+                ]);
                 if (cancelled) return;
+                if (extSt) setLimechatStatus(extSt);
                 apply(result);
             } catch {
                 /* non-fatal */
@@ -718,12 +734,17 @@ export default function OrderDetailV2Screen() {
         const pollDeliveryStatus = async () => {
             if (cancelled) return;
             let result: DeliveryPartnerOrderStatus | null = null;
+            let extSt: ExternalOrderStatusResponse | null = null;
             try {
-                result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+                [result, extSt] = await Promise.all([
+                    getDeliveryPartnerOrderStatus(shopifyOrderId),
+                    getExternalOrderStatus(shopifyOrderId)
+                ]);
             } catch {
                 /* transient network — retry on next tick */
             }
             if (cancelled) return;
+            if (extSt) setLimechatStatus(extSt);
 
             if (result) {
                 setDeliveryPartnerStatus(result);
@@ -786,8 +807,12 @@ export default function OrderDetailV2Screen() {
         const fetchRiderLocation = async () => {
             if (cancelled) return;
             try {
-                const result = await getDeliveryPartnerOrderStatus(shopifyOrderId);
+                const [result, extSt] = await Promise.all([
+                    getDeliveryPartnerOrderStatus(shopifyOrderId),
+                    getExternalOrderStatus(shopifyOrderId)
+                ]);
                 if (cancelled) return;
+                if (extSt) setLimechatStatus(extSt);
                 const coords = riderCoordsFromDeliveryStatus(result);
                 if (coords) setRiderCoords(coords);
             } catch (_) {
@@ -995,14 +1020,42 @@ export default function OrderDetailV2Screen() {
         !isDelivered &&
         (ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) || isRiderNearDropoff);
 
-    const headerStatusText = computeDeliveryHeaderStatusText({
-        order,
-        paramEta,
-        deliveryPartnerStatus,
-        liveEtaMinutes,
-        riderCoords,
-        destinationCoords,
-    });
+    let headerStatusText = '';
+    if (isDelivered || isRiderAtCustomer) {
+        headerStatusText = computeDeliveryHeaderStatusText({
+            order,
+            paramEta,
+            deliveryPartnerStatus,
+            liveEtaMinutes,
+            riderCoords,
+            destinationCoords,
+        });
+    } else if (limechatStatus?.order) {
+        if (limechatStatus.order.exact_time) {
+            headerStatusText = `Arriving by ${limechatStatus.order.exact_time}`;
+            // if (limechatStatus.order.is_delayed && limechatStatus.order.delayed_by) {
+            //     headerStatusText += ` (Delayed by ${limechatStatus.order.delayed_by})`;
+            // }
+        } else if (limechatStatus.order.eta) {
+            headerStatusText = `Arriving in ${limechatStatus.order.eta} mins`;
+            // if (limechatStatus.order.is_delayed && limechatStatus.order.delayed_by) {
+            //     headerStatusText += ` (Delayed by ${limechatStatus.order.delayed_by})`;
+            // }
+        } else if (limechatStatus.order.is_delayed && limechatStatus.order.delayed_by) {
+            headerStatusText = `Delayed by ${limechatStatus.order.delayed_by}`;
+        }
+    }
+
+    if (!headerStatusText) {
+        headerStatusText = computeDeliveryHeaderStatusText({
+            order,
+            paramEta,
+            deliveryPartnerStatus,
+            liveEtaMinutes,
+            riderCoords,
+            destinationCoords,
+        });
+    }
     const isPhysicalDeliveryOrder = !!order && !isOnlyTicketingOrder(order);
     const statusKeyForHeaderPill =
         isRiderAtCustomer && !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey)
@@ -1641,71 +1694,14 @@ export default function OrderDetailV2Screen() {
                     </View>
                 ) : null}
 
-                {isRiderAtCustomer && destinationCoords && showLastMileDeliveryUi ? (
-                    <View style={styles.arrivedAtCard}>
-                        <View style={styles.arrivedAtIconWrap}>
-                            <Ionicons name="checkmark-circle" size={28} color="#15803D" />
-                        </View>
-                        <View style={styles.arrivedAtTextWrap}>
-                            <Text style={styles.arrivedAtTitle}>Rider has arrived</Text>
-                            <Text style={styles.arrivedAtSubtitle}>
-                                Your delivery partner is at your location. Please collect your order.
-                            </Text>
-                        </View>
-                    </View>
-                ) : null}
-
-                {shouldShowAssignSoonMessage && (
-                    <View style={styles.deliveryPartnerCard}>
-                        <View style={styles.deliveryPartnerContent}>
-                            <View style={styles.deliveryPartnerAvatar}>
-                                <Ionicons name="time-outline" size={26} color="#8B5E00" />
-                            </View>
-                            <View style={styles.deliveryPartnerTextWrap}>
-                                <Text style={styles.deliveryPartnerIntro}>Your delivery partner will be assigned soon</Text>
-                                <Text style={styles.deliveryPartnerPendingText}>We will share the rider details here shortly</Text>
-                            </View>
-                            <View style={styles.deliveryPartnerPendingBadge}>
-                                <Ionicons name="hourglass-outline" size={18} color="#9CA3AF" />
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {shouldShowDeliveryPartnerDetails && (
-                    <View style={styles.deliveryPartnerCard}>
-                        <View style={styles.deliveryPartnerContent}>
-                            <View style={styles.deliveryPartnerAvatar}>
-                                <Image
-                                    source={partnerAvatarSrc}
-                                    style={styles.deliveryPartnerAvatarImage}
-                                    contentFit="cover"
-                                />
-                            </View>
-                            <View style={styles.deliveryPartnerTextWrap}>
-                                <Text style={styles.deliveryPartnerIntro}>
-                                    {`I'm ${deliveryPartnerStatus.deliveryPartner.name || 'your delivery partner'}, your delivery partner`}
-                                </Text>
-                                <Text style={styles.deliveryPartnerContactText}>
-                                    {isRiderAtCustomer
-                                        ? "I've arrived at your location. Please meet me for your delivery."
-                                        : 'I have picked up your order, and I am on the way'}
-                                </Text>
-                            </View>
-                            {!!deliveryPartnerStatus.deliveryPartner.contact && (
-                                <TouchableOpacity
-                                    style={styles.deliveryPartnerCallButton}
-                                    onPress={handleDeliveryPartnerCall}
-                                    activeOpacity={0.8}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Call ${deliveryPartnerStatus.deliveryPartner.name || 'delivery partner'}`}
-                                >
-                                    <Ionicons name="call" size={20} color="#16A34A" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                )}
+                <DeliveryPartnerCard
+                    isRiderAtCustomer={isRiderAtCustomer}
+                    shouldShowAssignSoonMessage={shouldShowAssignSoonMessage}
+                    shouldShowDeliveryPartnerDetails={shouldShowDeliveryPartnerDetails}
+                    partnerAvatarSrc={partnerAvatarSrc}
+                    deliveryPartnerStatus={deliveryPartnerStatus}
+                    handleDeliveryPartnerCall={handleDeliveryPartnerCall}
+                />
 
                 {/* Line items – single card like cart */}
                 <View style={styles.orderItemsSection}>
@@ -1825,124 +1821,21 @@ export default function OrderDetailV2Screen() {
                 </View>
 
                 {/* Bill details – fetched from delivery partner system */}
-                {(() => {
-                    const freeShoesGiftUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
-                    const freePuzzleGiftUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
-                    const mysteryGiftUc = appConfigService.getMysteryGiftDiscountCodeUppercase();
+                <OrderSummaryDetails
+                    deliveryPartnerStatus={deliveryPartnerStatus}
+                    subtotalDisplay={subtotalDisplay}
+                    shipping={shipping}
+                    total={total}
+                    tax={tax}
+                    couponCode={couponCode}
+                />
 
-                    const dps = deliveryPartnerStatus;
-
-                    const billSubtotal = dps ? parseFloat(String(dps.subtotal_amount || 0)) : subtotalDisplay;
-                    const billShipping = dps ? parseFloat(String(dps.delivery_fee || 0)) : shipping;
-                    const billTotal = dps ? parseFloat(String(dps.total_amount || 0)) : total;
-                    const billDiscount = dps ? parseFloat(String(dps.discount_amount || 0)) : Math.max(0, subtotalDisplay + shipping + tax - total);
-                    const billKiddoCash = dps ? parseFloat(String(dps.kiddo_cash_spent || 0)) : 0;
-
-                    let billCouponCode = dps ? (dps.coupon_code || dps.couponCode || null) : couponCode;
-
-                    const isFreeShoesGiftCoupon =
-                        Boolean(freeShoesGiftUc) && billCouponCode?.toUpperCase() === freeShoesGiftUc;
-                    const isFreePuzzleGiftCoupon =
-                        Boolean(freePuzzleGiftUc) && billCouponCode?.toUpperCase() === freePuzzleGiftUc;
-                    const isMysteryGiftCoupon =
-                        Boolean(mysteryGiftUc) && billCouponCode?.toUpperCase() === mysteryGiftUc;
-
-                    const isGiftCoupon = isFreeShoesGiftCoupon || isFreePuzzleGiftCoupon || isMysteryGiftCoupon;
-
-                    const displayDiscount = isGiftCoupon ? 0 : billDiscount;
-
-                    let giftText = '';
-                    if (isFreeShoesGiftCoupon) giftText = 'Free Shoe';
-                    else if (isFreePuzzleGiftCoupon) giftText = 'Free Puzzle';
-                    else if (isMysteryGiftCoupon) giftText = 'Mystery Gift';
-
-                    return (
-                        <View style={styles.billCard}>
-                            <Text style={styles.billTitle}>Bill details</Text>
-                            <View style={styles.billRow}>
-                                <Text style={styles.billLabel}>Total</Text>
-                                <Text style={styles.billValue}>{formatCurrency(billTotal)}</Text>
-                            </View>
-
-                            {billShipping > 0 && (
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Delivery Fee</Text>
-                                    <Text style={styles.billValue}>{formatCurrency(billShipping)}</Text>
-                                </View>
-                            )}
-
-                            {(displayDiscount > 0 || billCouponCode) && (
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>
-                                        {billCouponCode ? `Coupon (${billCouponCode})` : 'Coupon Discount'}
-                                    </Text>
-                                    <Text style={[styles.billValue, (displayDiscount > 0 || isGiftCoupon) && styles.billDiscountValue]}>
-                                        {isGiftCoupon ? giftText : (displayDiscount > 0 ? `-${formatCurrency(displayDiscount)}` : formatCurrency(0))}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {billKiddoCash > 0 && (
-                                <View style={styles.billRow}>
-                                    <Text style={styles.billLabel}>Kiddo Cash</Text>
-                                    <Text style={[styles.billValue, styles.billDiscountValue]}>
-                                        -{formatCurrency(billKiddoCash)}
-                                    </Text>
-                                </View>
-                            )}
-
-                            <View style={styles.billDivider} />
-                            <View style={styles.billRow}>
-                                <Text style={styles.billTotalLabel}>Amount Paid</Text>
-                                <Text style={styles.billTotalValue}>{formatCurrency(billSubtotal)}</Text>
-                            </View>
-                        </View>
-                    );
-                })()}
-
-                {/* Payment method */}
-                <View style={styles.paymentMethodCard}>
-                    <Text style={styles.billTitle}>Payment method</Text>
-                    <Text style={styles.paymentMethodLabel}>
-                        {order?.financialStatus === 'PENDING'
-                            ? 'Cash on Delivery (COD)'
-                            : 'Paid online'}
-                    </Text>
-                </View>
-
-                {/* Delivery address – hide when order has only ticketing products */}
-                {order?.shippingAddress && !isOnlyTicketingOrder(order) && (
-                    <View style={styles.addressCard}>
-                        {showLastMileDeliveryUi ? <Text style={styles.billTitle}>Order Details</Text> : null}
-
-                        {/* Arrival / ETA line — same gate as map (no flash before DPS classifies order). */}
-                        {showLastMileDeliveryUi && !!headerStatusText.trim() ? (
-                            <View style={styles.belowBillSection}>
-                                <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
-                            </View>
-                        ) : null}
-                        <Text style={styles.billTitle}>Delivery address</Text>
-                        <View style={styles.addressBlock}>
-                            {[
-                                order.shippingAddress.firstName || order.shippingAddress.lastName
-                                    ? [order.shippingAddress.firstName, order.shippingAddress.lastName].filter(Boolean).join(' ').replace(/_+$/, '')
-                                    : null,
-                                order.shippingAddress.address1,
-                                order.shippingAddress.address2,
-                                [order.shippingAddress.city, order.shippingAddress.province].filter(Boolean).join(', '),
-                                order.shippingAddress.zip,
-                                order.shippingAddress.country,
-                            ]
-                                .filter(Boolean)
-                                .map((line, i) => (
-                                    <Text key={i} style={styles.addressLine}>
-                                        {line}
-                                    </Text>
-                                ))}
-                        </View>
-
-                    </View>
-                )}
+                <OrderDetailsSection
+                    order={order}
+                    isTicketingOnly={isOnlyTicketingOrder(order)}
+                    showLastMileDeliveryUi={showLastMileDeliveryUi}
+                    headerStatusText={headerStatusText}
+                />
 
 
 

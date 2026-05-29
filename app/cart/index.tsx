@@ -36,9 +36,11 @@ import {
     computeDiscountBreakdown,
     specialDealPromoPercentFromItem,
     useCartId,
+    useCartIsApplyingCoupon,
     useCartItemCount,
     useCartItems,
     useCartStatus,
+    useCartSubtotal,
     useCartStore,
     useCartTotal,
     useCheckoutUrl,
@@ -244,6 +246,7 @@ export default function CartScreen() {
     const isTryAndBuy = useIsTryAndBuy();
     const status = useCartStatus();
     const cartId = useCartId();
+    const isApplyingCoupon = useCartIsApplyingCoupon();
     const checkoutUrl = useCheckoutUrl();
 
     // Store actions
@@ -2132,7 +2135,9 @@ export default function CartScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
-                <View style={styles.headerSpacer} />
+                <View style={styles.headerSpacer}>
+                    {status === 'loading' && <ActivityIndicator color={Colors.primary} size="small" />}
+                </View>
             </View>
 
             {cartItems.length > 0 && (
@@ -2484,8 +2489,7 @@ export default function CartScreen() {
                             paymentMethod={paymentMethod}
                             toPay={toPay}
                             formatCurrency={formatCurrency}
-                            orderLoading={orderLoading}
-                            isSyncing={status === 'loading'}
+                            orderLoading={orderLoading || isApplyingCoupon}
                             isAuthenticated={isAuthenticated}
                             onPlaceOrder={handlePlaceOrder}
                             onAddAddress={handleAddressSelection}
@@ -2587,6 +2591,8 @@ const styles = StyleSheet.create({
     },
     headerSpacer: {
         width: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerCenter: {
         flex: 1,

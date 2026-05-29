@@ -151,9 +151,10 @@ export const SavingsCorner = React.memo(function SavingsCorner({
     // Sort: eligible (applicable) first, then non-eligible
     const sortedDisplayCoupons = useMemo(() => {
         const mapped = displayCoupons.map((c) => {
-            const applicable = c.code
+            const codeObj = { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType } as CouponCode;
+            const applicability = c.code
                 ? couponService.getCouponApplicabilityForDisplay(
-                    { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType } as CouponCode,
+                    codeObj,
                     {
                         hasTicketingProducts,
                         hasFashionItems,
@@ -164,14 +165,13 @@ export const SavingsCorner = React.memo(function SavingsCorner({
                         categorySubtotals,
                         lineItems: cartItems,
                     }
-                ).applicable
-                : true;
-            return { coupon: c, applicable };
+                )
+                : { applicable: true };
+            const conditions = c.code ? couponService.getCouponConditionsText(codeObj) : [];
+            return { coupon: c, applicability, conditions, applicable: applicability.applicable };
         });
 
-        return mapped
-            .sort((a, b) => (a.applicable ? 0 : 1) - (b.applicable ? 0 : 1))
-            .map((item) => item.coupon);
+        return mapped.sort((a, b) => (a.applicable ? 0 : 1) - (b.applicable ? 0 : 1));
     }, [
         displayCoupons,
         hasTicketingProducts,
@@ -754,14 +754,6 @@ export const SavingsCorner = React.memo(function SavingsCorner({
                         loading={loadingCoupons}
                         coupons={sortedDisplayCoupons}
                         couponApplying={applyUiSource === 'carousel'}
-                        hasTicketingProducts={hasTicketingProducts}
-                        hasFashionItems={hasFashionItems}
-                        cartSubtotal={cartSubtotal}
-                        cartItemCount={cartItemCount}
-                        userOrderCount={userOrderCount}
-                        couponUsages={couponUsages}
-                        categorySubtotals={categorySubtotals}
-                        lineItems={cartItems}
                         appliedCouponCode={appliedDiscountCode}
                         onApplyCoupon={(c) => void handleApplyCouponFromList(c, 'carousel')}
                         onCouponPress={handleCouponPress}
@@ -933,30 +925,9 @@ export const SavingsCorner = React.memo(function SavingsCorner({
                                             ) : displayCoupons.length === 0 ? (
                                                 <Text style={styles.noCouponsText}>No coupons available</Text>
                                             ) : (
-                                                sortedDisplayCoupons.map((coupon, index) => {
-                                                    const applicability = coupon.code
-                                                        ? couponService.getCouponApplicabilityForDisplay(
-                                                            { ...coupon, code: coupon.code, valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType } as CouponCode,
-                                                            {
-                                                                hasTicketingProducts: hasTicketingProducts,
-                                                                hasFashionItems: hasFashionItems,
-                                                                cartSubtotal,
-                                                                cartItemCount,
-                                                                userOrderCount,
-                                                                couponUsageCount: couponUsages[coupon.code?.toUpperCase() ?? ''] ?? 0,
-                                                                categorySubtotals,
-                                                                lineItems: cartItems,
-                                                            }
-                                                        )
-                                                        : { applicable: true };
+                                                sortedDisplayCoupons.map((item, index) => {
+                                                    const { coupon, applicability, conditions } = item;
                                                     const isDisabled = !applicability.applicable;
-                                                    const conditions = coupon.code
-                                                        ? couponService.getCouponConditionsText({
-                                                            ...coupon,
-                                                            code: coupon.code,
-                                                            valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
-                                                        } as CouponCode)
-                                                        : [];
                                                     const offerTitle =
                                                         coupon.title ||
                                                         (coupon.value != null && coupon.value !== 0

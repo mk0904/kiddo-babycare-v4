@@ -930,3 +930,40 @@ export function subscribeToDeliveryTracking(
     }
   };
 }
+
+export interface ExternalOrderStatusResponse {
+    ok: boolean;
+    order: {
+        id: string;
+        status: string;
+        rider_name: string | null;
+        rider_contact: string | null;
+        eta: string;
+        exact_time: string;
+        is_delayed: boolean;
+        delayed_by: string;
+    };
+}
+
+export async function getExternalOrderStatus(orderId: string): Promise<ExternalOrderStatusResponse | null> {
+    const normalized = String(orderId || '').trim();
+    if (!normalized) return null;
+
+    try {
+        const response = await fetch(`https://delivery-partner-service-874125225773.asia-south1.run.app/api/limechat/orders/status?shopify_order_id=${encodeURIComponent(normalized)}`, {
+            headers: {
+                'X-Kiddo-secret': 'PLACEHOLDER_KIDDO_SECRET'
+            }
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+
+        const body = await response.json();
+        return body as ExternalOrderStatusResponse;
+    } catch (e) {
+        console.error('[deliveryPartnerService] getExternalOrderStatus error:', e);
+        return null;
+    }
+}
