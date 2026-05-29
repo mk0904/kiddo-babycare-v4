@@ -216,29 +216,18 @@ function lineItemShopifyIdKeys(node: any): string[] {
 }
 
 /** Refetch road-snapped rider → customer route on this interval while tracking (ms). */
-const DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 10_000;
-
-/**
- * How often to poll the backend for the rider's current GPS position.
- * Polling is more reliable than WebSocket for continuous path updates —
- * WS reconnections cause brief gaps where riderCoords becomes stale.
- */
-const RIDER_LOCATION_POLL_MS = 4_000;
-
-/**
- * First minute on order detail: re-fetch delivery-status as soon as the previous request finishes
- * (`setTimeout(0)` between polls — no fixed ms delay). After the window, poll every 25s.
- */
-const DELIVERY_STATUS_POLL_FAST_MS = 0;
-const DELIVERY_STATUS_POLL_FAST_WINDOW_MS = 60_000;
-const DELIVERY_STATUS_POLL_SLOW_MS = 25_000;
+const DEFAULT_DELIVERY_ROUTE_REFRESH_INTERVAL_MS = 30_000;
+const DEFAULT_RIDER_LOCATION_POLL_MS = 30_000;
+const DEFAULT_DELIVERY_STATUS_POLL_FAST_MS = 15000;
+const DEFAULT_DELIVERY_STATUS_POLL_FAST_WINDOW_MS = 60_000;
+const DEFAULT_DELIVERY_STATUS_POLL_SLOW_MS = 25_000;
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
     placed: 'Placed',
     confirmed: 'Confirmed',
     packing: 'Packing',
     packed: 'Packed',
-    rider_assigned: 'Out for Delivery',
+    rider_assigned: 'Rider assigned',
     out_for_delivery: 'Out for Delivery',
     arrived: 'Arrived',
     at_destination: 'Arrived',
@@ -271,6 +260,13 @@ export default function OrderDetailV2Screen() {
     /** Re-read app-config icons when screen is focused (config may load after first paint). */
     const [orderDetailCfgRev, setOrderDetailCfgRev] = useState(0);
     const orderDetailCfg = useMemo(() => appConfigService.getOrderDetailConfig(), [orderDetailCfgRev]);
+    const pollingConfig = useMemo(() => appConfigService.getOrderSummaryConfig()?.pollingConfig, [orderDetailCfgRev]);
+    const deliveryRouteRefreshIntervalMs = pollingConfig?.deliveryRouteRefreshIntervalMs ?? DEFAULT_DELIVERY_ROUTE_REFRESH_INTERVAL_MS;
+    const riderLocationPollMs = pollingConfig?.riderLocationPollMs ?? DEFAULT_RIDER_LOCATION_POLL_MS;
+    const deliveryStatusPollFastMs = pollingConfig?.deliveryStatusPollFastMs ?? DEFAULT_DELIVERY_STATUS_POLL_FAST_MS;
+    const deliveryStatusPollFastWindowMs = pollingConfig?.deliveryStatusPollFastWindowMs ?? DEFAULT_DELIVERY_STATUS_POLL_FAST_WINDOW_MS;
+    const deliveryStatusPollSlowMs = pollingConfig?.deliveryStatusPollSlowMs ?? DEFAULT_DELIVERY_STATUS_POLL_SLOW_MS;
+
     const cusLocUrl = orderDetailCfg?.cusLocUrl?.trim() || '';
     const darkStoreIconUrl = orderDetailCfg?.darkStoreIconUrl?.trim() || '';
     const riderMapIconUri = orderDetailRiderMarkerUri(orderDetailCfg);
@@ -456,7 +452,7 @@ export default function OrderDetailV2Screen() {
             } catch {
                 /* non-fatal */
             }
-            if (!cancelled) tid = setTimeout(tick, DELIVERY_STATUS_POLL_FAST_MS);
+            if (!cancelled) tid = setTimeout(tick, deliveryStatusPollFastMs);
         };
 
         void tick();
@@ -717,7 +713,7 @@ export default function OrderDetailV2Screen() {
         let cancelled = false;
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
         const TERMINAL_DELIVERY_POLL_STATUSES = new Set(['delivered', 'cancelled', 'returned']);
-        const fastWindowEnd = Date.now() + DELIVERY_STATUS_POLL_FAST_WINDOW_MS;
+        const fastWindowEnd = Date.now() + deliveryStatusPollFastWindowMs;
 
         const pollDeliveryStatus = async () => {
             if (cancelled) return;
@@ -750,7 +746,7 @@ export default function OrderDetailV2Screen() {
 
             if (cancelled) return;
             const nextMs =
-                Date.now() < fastWindowEnd ? DELIVERY_STATUS_POLL_FAST_MS : DELIVERY_STATUS_POLL_SLOW_MS;
+                Date.now() < fastWindowEnd ? deliveryStatusPollFastMs : deliveryStatusPollSlowMs;
             timeoutId = setTimeout(() => {
                 void pollDeliveryStatus();
             }, nextMs);
@@ -800,7 +796,7 @@ export default function OrderDetailV2Screen() {
         };
 
         void fetchRiderLocation();
-        const intervalId = setInterval(fetchRiderLocation, RIDER_LOCATION_POLL_MS);
+        const intervalId = setInterval(fetchRiderLocation, riderLocationPollMs);
 
         return () => {
             cancelled = true;
@@ -893,7 +889,7 @@ export default function OrderDetailV2Screen() {
         void runFetch();
         const intervalId = setInterval(() => {
             void runFetch();
-        }, DELIVERY_ROUTE_REFRESH_INTERVAL_MS);
+        }, deliveryRouteRefreshIntervalMs);
 
         return () => {
             cancelled = true;

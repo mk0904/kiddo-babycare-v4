@@ -279,6 +279,10 @@ class AppConfigService {
     return this.config?.orderDetail ?? null;
   }
 
+  getOrderSummaryConfig() {
+    return this.config?.orderSummaryConfig ?? null;
+  }
+
   /**
    * Max straight-line km from dark store (`delivery.servicableDistance` or root-level alias).
    * Returns null when unset or invalid — ETA `isServiceable` is used alone in that case.

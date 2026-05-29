@@ -7,7 +7,7 @@ import { specialDealPromoPercentFromItem, useCartItems, useCartStore } from '@/s
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
@@ -58,7 +58,7 @@ export interface SavingsCornerProps {
     configRefreshKey?: number;
 }
 
-export function SavingsCorner({
+export const SavingsCorner = React.memo(function SavingsCorner({
     itemSubtotal,
     isAuthenticated,
     hasTicketingProducts,
@@ -150,39 +150,28 @@ export function SavingsCorner({
 
     // Sort: eligible (applicable) first, then non-eligible
     const sortedDisplayCoupons = useMemo(() => {
-        return [...displayCoupons].sort((a, b) => {
-            const appA = a.code
+        const mapped = displayCoupons.map((c) => {
+            const applicable = c.code
                 ? couponService.getCouponApplicabilityForDisplay(
-                    { ...a, code: a.code, valueType: a.valueType === 'fixed' ? 'fixed_amount' : a.valueType } as CouponCode,
+                    { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType } as CouponCode,
                     {
-                        hasTicketingProducts: hasTicketingProducts,
-                        hasFashionItems: hasFashionItems,
+                        hasTicketingProducts,
+                        hasFashionItems,
                         cartSubtotal,
                         cartItemCount,
                         userOrderCount,
-                        couponUsageCount: couponUsages[a.code?.toUpperCase() ?? ''] ?? 0,
+                        couponUsageCount: couponUsages[c.code?.toUpperCase() ?? ''] ?? 0,
                         categorySubtotals,
                         lineItems: cartItems,
                     }
                 ).applicable
                 : true;
-            const appB = b.code
-                ? couponService.getCouponApplicabilityForDisplay(
-                    { ...b, code: b.code, valueType: b.valueType === 'fixed' ? 'fixed_amount' : b.valueType } as CouponCode,
-                    {
-                        hasTicketingProducts: hasTicketingProducts,
-                        hasFashionItems: hasFashionItems,
-                        cartSubtotal,
-                        cartItemCount,
-                        userOrderCount,
-                        couponUsageCount: couponUsages[b.code?.toUpperCase() ?? ''] ?? 0,
-                        categorySubtotals,
-                        lineItems: cartItems,
-                    }
-                ).applicable
-                : true;
-            return (appA ? 0 : 1) - (appB ? 0 : 1);
+            return { coupon: c, applicable };
         });
+
+        return mapped
+            .sort((a, b) => (a.applicable ? 0 : 1) - (b.applicable ? 0 : 1))
+            .map((item) => item.coupon);
     }, [
         displayCoupons,
         hasTicketingProducts,
@@ -1055,7 +1044,7 @@ export function SavingsCorner({
             </Modal>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     wrapper: {

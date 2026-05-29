@@ -1,6 +1,7 @@
 import { Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import type { GiftWrapping } from '@/store/cartStore';
+import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const REMOVE_RED = '#E85D5B';
@@ -12,7 +13,7 @@ export interface GiftWrappingCardProps {
     onRemovePress?: () => void;
 }
 
-export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }: GiftWrappingCardProps) {
+export const GiftWrappingCard = React.memo(function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }: GiftWrappingCardProps) {
     const isApplied = giftWrapping != null && (giftWrapping.productIds?.length ?? 0) > 0;
     const cardCopy = configService.getGiftWrapConfig()?.cardCopy ?? {};
 
@@ -49,7 +50,7 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
             </TouchableOpacity>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     section: {

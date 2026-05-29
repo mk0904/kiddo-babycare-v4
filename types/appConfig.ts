@@ -281,6 +281,18 @@ export interface OrderDetailConfig {
   partnerImageUrl?: string;
 }
 
+export interface PollingConfig {
+  deliveryRouteRefreshIntervalMs?: number;
+  riderLocationPollMs?: number;
+  deliveryStatusPollFastMs?: number;
+  deliveryStatusPollFastWindowMs?: number;
+  deliveryStatusPollSlowMs?: number;
+}
+
+export interface OrderSummaryConfig {
+  pollingConfig?: PollingConfig;
+}
+
 export interface EntryScreenItem {
   imageUrl: string;
   title?: string;
@@ -419,6 +431,7 @@ export interface AppConfigResponse {
   cart?: CartConfig;
   checkout?: CheckoutConfig;
   orderDetail?: OrderDetailConfig;
+  orderSummaryConfig?: OrderSummaryConfig;
   entryScreens?: EntryScreenItem[];
   milestoneUI?: MilestoneUIConfig;
   hotWheelConfig?: HotWheelConfig;

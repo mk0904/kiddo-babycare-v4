@@ -237,11 +237,8 @@ export default function CartScreen() {
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
 
     // Use Zustand store
-    const cartStore = useCartStore();
-    const {
-        dealProducts,
-        discountBreakdownSnapshot: discountBreakdown,
-    } = cartStore;
+    const dealProducts = useCartStore(state => state.dealProducts);
+    const discountBreakdown = useCartStore(state => state.discountBreakdownSnapshot);
     const cartItems = useCartItems();
     const cartTotal = useCartTotal();
     const isTryAndBuy = useIsTryAndBuy();
@@ -270,6 +267,7 @@ export default function CartScreen() {
     const ensureCart = useCartStore(state => state.ensureCart);
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
     const updateCartItem = useCartStore(state => state.updateCartItem);
+    const shippingFee = useCartStore(state => state.shippingFee);
 
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
@@ -1015,7 +1013,7 @@ export default function CartScreen() {
     // Subtotal after discount
     const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
 
-    const deliveryFee = cartStore.shippingFee();
+    const deliveryFee = shippingFee();
     // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
     const giftWrappingFee = isTicketingOnly
         ? 0
@@ -2486,7 +2484,8 @@ export default function CartScreen() {
                             paymentMethod={paymentMethod}
                             toPay={toPay}
                             formatCurrency={formatCurrency}
-                            orderLoading={orderLoading || status === 'loading'}
+                            orderLoading={orderLoading}
+                            isSyncing={status === 'loading'}
                             isAuthenticated={isAuthenticated}
                             onPlaceOrder={handlePlaceOrder}
                             onAddAddress={handleAddressSelection}

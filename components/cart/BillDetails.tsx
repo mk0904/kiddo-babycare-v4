@@ -85,7 +85,7 @@ export interface BillDetailsProps {
     formatCurrency: (amount: number) => string;
 }
 
-export function BillDetails({
+export const BillDetails = React.memo(function BillDetails({
     mrp,
     itemTotal,
     isTicketingOnly = false,
@@ -384,7 +384,7 @@ export function BillDetails({
             </View>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     wrapper: {
