@@ -17,7 +17,7 @@ export const APPSFLYER_DEV_KEY = (process.env.EXPO_PUBLIC_APPSFLYER_DEV_KEY || '
  * iOS App Store numeric ID (not bundle id), e.g. 1234567890.
  * Required for iOS attribution; omit on Android-only runs.
  */
-export const APPSFLYER_IOS_APP_ID = (process.env.EXPO_PUBLIC_APPSFLYER_IOS_APP_ID || 'ANK22C64TH').trim();
+export const APPSFLYER_IOS_APP_ID = (process.env.EXPO_PUBLIC_APPSFLYER_IOS_APP_ID || '6755881583').trim();
 
 /** Deep link path value for referral invite OneLinks */
 export const APPSFLYER_REFERRAL_DEEP_LINK_VALUE = 'referral_signup';
