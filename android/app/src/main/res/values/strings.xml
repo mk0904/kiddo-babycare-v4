@@ -6,4 +6,5 @@
   <string name="expo_clevertap_register_activity_lifecycle_callbacks" translatable="false">true</string>
   <string name="expo_clevertap_enable_push_templates" translatable="false">false</string>
   <string name="expo_clevertap_log_level" translatable="false">-1</string>
+  <string name="freshchat_file_provider_authority">com.barereactnativeapp072.provider</string>
 </resources>

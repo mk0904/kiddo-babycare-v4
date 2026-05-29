@@ -79,6 +79,15 @@ export const accountConfig = {
             },
         },
         {
+            id: "chat",
+            title: "Chat with us",
+            icon: "chatbubbles-outline",
+            actionType: "freshchat",
+            action: {
+                type: "freshchat",
+            },
+        },
+        {
             id: "about",
             title: "About us",
             icon: "happy-outline",

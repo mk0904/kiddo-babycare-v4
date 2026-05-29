@@ -33,6 +33,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
 import { initializeAppsFlyer } from '@/services/appsflyerService';
+import { initializeFreshchat } from '@/services/freshchatService';
 import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
 import { errorService } from '@/services/errorService';
@@ -257,6 +258,11 @@ export default function RootLayout() {
             appsFlyerUnsubRef.current = initializeAppsFlyer();
           } catch (e) {
             if (__DEV__) console.warn('[AppsFlyer] init failed:', e);
+          }
+          try {
+            initializeFreshchat();
+          } catch (e) {
+            if (__DEV__) console.warn('[Freshchat] init failed:', e);
           }
           trySetReady();
         }
