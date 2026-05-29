@@ -25,6 +25,15 @@ export const initializeFreshchat = () => {
         freshchatConfig.domain = FRESHCHAT_DOMAIN;
     }
     
+    freshchatConfig.teamMemberInfoVisible = true;
+    freshchatConfig.cameraCaptureEnabled = true;
+    freshchatConfig.gallerySelectionEnabled = true;
+    freshchatConfig.responseExpectationEnabled = true;
+    freshchatConfig.showNotificationBanner = true; //iOS only
+    freshchatConfig.notificationSoundEnabled = true; //iOS only
+    freshchatConfig.themeName = "CustomTheme.plist"; //iOS only
+    freshchatConfig.stringsBundle = "FCCustomLocalizable"; //iOS only
+    
     Freshchat.init(freshchatConfig);
     
     if (__DEV__) console.log('[Freshchat] SDK initialization triggered.');

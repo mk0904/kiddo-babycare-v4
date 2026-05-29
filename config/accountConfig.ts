@@ -78,15 +78,15 @@ export const accountConfig = {
                 screen: "ContactSupport",
             },
         },
-        {
-            id: "chat",
-            title: "Chat with us",
-            icon: "chatbubbles-outline",
-            actionType: "freshchat",
-            action: {
-                type: "freshchat",
-            },
-        },
+        // {
+        //     id: "chat",
+        //     title: "Chat with us",
+        //     icon: "chatbubbles-outline",
+        //     actionType: "freshchat",
+        //     action: {
+        //         type: "freshchat",
+        //     },
+        // },
         {
             id: "about",
             title: "About us",

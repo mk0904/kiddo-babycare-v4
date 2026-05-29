@@ -92,3 +92,10 @@ export function initializeAppsFlyer(): () => void {
     unsubscribeDeepLink?.();
   };
 }
+
+export function logCompleteRegistration(params?: Record<string, any>): void {
+  if (!isAppsFlyerReady()) return;
+  appsFlyer.logEvent('af_complete_registration', params || {}).catch((e) => {
+    if (__DEV__) console.warn('[AppsFlyer] Failed to log af_complete_registration:', e);
+  });
+}

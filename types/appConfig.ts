@@ -126,9 +126,22 @@ export interface GiftWrapConfig {
   perItemPrice?: number;
   options: GiftWrapOption[];
   cardCopy?: {
+    title?: string;
+    description?: string;
     cta?: string;
     appliedTitle?: string;
     appliedSubtitle?: string;
+  };
+  modalCopy?: {
+    headerTitle?: string;
+    headerSubtitle?: string;
+    eligibleItemsTitle?: string;
+    noEligibleItemsText?: string;
+    chooseWrapTitle?: string;
+    footnote?: string;
+    allItemsFootnote?: string;
+    removeButtonText?: string;
+    addButtonText?: string;
   };
   ribbonImageUrl?: string;
   modalHeaderImageUrl?: string;

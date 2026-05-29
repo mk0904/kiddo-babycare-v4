@@ -25,6 +25,7 @@
         "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
       },
       "infoPlist": {
+        "NSAdvertisingAttributionReportEndpoint": "https://appsflyer-skadnetwork.com/",
         "NSLocationWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to upload images for your profile and orders",
@@ -162,6 +163,14 @@
               "enablePushInForeground": true,
               "iosPushAppGroup": "group.com.kiddo.ak"
             }
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
           }
         }
       ]

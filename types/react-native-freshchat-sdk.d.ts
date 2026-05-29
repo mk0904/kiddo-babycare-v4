@@ -2,6 +2,14 @@ declare module 'react-native-freshchat-sdk' {
   export class FreshchatConfig {
     constructor(appId: string, appKey: string);
     domain: string;
+    teamMemberInfoVisible: boolean;
+    cameraCaptureEnabled: boolean;
+    gallerySelectionEnabled: boolean;
+    responseExpectationEnabled: boolean;
+    showNotificationBanner: boolean;
+    notificationSoundEnabled: boolean;
+    themeName: string;
+    stringsBundle: string;
   }
 
   export class FreshchatUser {

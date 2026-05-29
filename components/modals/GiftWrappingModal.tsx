@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { configService } from '@/services/configService';
+import { appConfigService } from '@/services/appConfigService';
 import { useCartItems, useCartStore, useGiftWrapping } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -71,20 +71,6 @@ type WrapOption = {
     color: string;
 };
 
-function resolveGiftWrapOptions(): WrapOption[] {
-    const cfg = configService.getGiftWrapConfig();
-    if (!cfg?.options?.length) return FALLBACK_GIFT_WRAP_OPTIONS;
-
-    return cfg.options.map((opt: any) => ({
-        id: opt.id ?? opt.name ?? 'wrap',
-        name: opt.name ?? opt.id ?? 'Wrap',
-        description: opt.description ?? '',
-        price: opt.price ?? cfg.perItemPrice ?? 30,
-        image: opt.imageUrl ? { uri: opt.imageUrl } : FALLBACK_GIFT_WRAP_OPTIONS[0]?.image,
-        color: opt.color ?? '#FF6B6B',
-    }));
-}
-
 export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) => {
     const insets = useSafeAreaInsets();
     const cartItems = useCartItems();
@@ -94,12 +80,21 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
     const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
     // Config-driven options and copy
-    const GIFT_WRAP_OPTIONS = useMemo(() => resolveGiftWrapOptions(), []);
-    const cfg = useMemo(() => configService.getGiftWrapConfig(), []);
+    const cfg = useMemo(() => appConfigService.getGiftWrapConfig(), [visible]);
+    const GIFT_WRAP_OPTIONS = useMemo(() => {
+        if (!cfg?.options?.length) return FALLBACK_GIFT_WRAP_OPTIONS;
+        return cfg.options.map((opt: any) => ({
+            id: opt.id ?? opt.name ?? 'wrap',
+            name: opt.name ?? opt.id ?? 'Wrap',
+            description: opt.description ?? '',
+            price: opt.price ?? cfg.perItemPrice ?? 30,
+            image: opt.imageUrl ? { uri: opt.imageUrl } : FALLBACK_GIFT_WRAP_OPTIONS[0]?.image,
+            color: opt.color ?? '#FF6B6B',
+        }));
+    }, [cfg]);
+
     const modalCopy = cfg?.modalCopy ?? {};
-    const headerImageSource = cfg?.modalHeaderImageUrl
-        ? { uri: cfg.modalHeaderImageUrl }
-        : require('@/assets/images/giftWrapperHeader.png');
+    const headerImageSource = require('@/assets/images/giftWrapperHeader.png')
 
     const eligibleItems = React.useMemo(
         () => cartItems.filter(item => !isTicketingItem(item)),
@@ -203,7 +198,7 @@ export const GiftWrappingModal = ({ visible, onClose }: GiftWrappingModalProps) 
                                         return (
                                             <TouchableOpacity
                                                 key={item.id}
-                                                style={[styles.productRow ]}
+                                                style={[styles.productRow]}
                                                 onPress={() => toggleProductSelection(item.id)}
                                                 activeOpacity={0.8}
                                             >

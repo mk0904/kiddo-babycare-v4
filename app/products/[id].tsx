@@ -1560,17 +1560,26 @@ const ProductDetailScreen = () => {
                                             {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
                                         </Text>
                                         <View style={styles.variantsList}>
-                                            {option.values.map((value: string) => {
-                                                const isSelected = selectedOptions[option.name] === value;
-                                                // Check if this option value is available in any variant
-                                                const isOptionAvailable = variants.some((variant: any) => {
-                                                    if (!variant.selectedOptions) return false;
-                                                    return variant.selectedOptions.some(
-                                                        (opt: any) => opt.name === option.name && opt.value === value
-                                                    ) && variant.availableForSale !== false;
+                                            {(() => {
+                                                const availableValues: string[] = [];
+                                                const unavailableValues: string[] = [];
+                                                
+                                                option.values.forEach((value: string) => {
+                                                    const isAvail = variants.some((variant: any) => {
+                                                        if (!variant.selectedOptions) return false;
+                                                        return variant.selectedOptions.some(
+                                                            (opt: any) => opt.name === option.name && opt.value === value
+                                                        ) && isVariantAvailable(variant) !== false;
+                                                    });
+                                                    if (isAvail) availableValues.push(value);
+                                                    else unavailableValues.push(value);
                                                 });
+                                                
+                                                return [...availableValues, ...unavailableValues].map((value: string) => {
+                                                    const isSelected = selectedOptions[option.name] === value;
+                                                    const isOptionAvailable = availableValues.includes(value);
 
-                                                return (
+                                                    return (
                                                     <TouchableOpacity
                                                         key={value}
                                                         style={[
@@ -1595,7 +1604,8 @@ const ProductDetailScreen = () => {
                                                         </Text>
                                                     </TouchableOpacity>
                                                 );
-                                            })}
+                                            });
+                                            })()}
                                         </View>
                                     </View>
                                 ))}

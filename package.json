@@ -33,6 +33,7 @@
     "@shopify/react-native-skia": "2.2.12",
     "@tanstack/react-query": "^5.90.14",
     "axios": "^1.13.2",
+    "babel-preset-expo": "~54.0.10",
     "clevertap-react-native": "^3.7.0",
     "dotenv-expand": "^12.0.3",
     "expo": "~54.0.30",

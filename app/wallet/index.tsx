@@ -407,7 +407,7 @@ export default function WalletScreen() {
                                         </Text>
                                     </View>
                                 ))}
-                                {(visibleCount < filteredTransactions.length || hasMore) && (
+                                {filteredTransactions.length > 4 && (visibleCount < filteredTransactions.length || hasMore) && (
                                     <TouchableOpacity
                                         style={styles.loadMoreButton}
                                         onPress={handleLoadMore}

@@ -28,6 +28,19 @@ export function TryBuyPdpVariantSection({
     onTryValueChange,
 }: TryBuyPdpVariantSectionProps) {
     const { name: optionName, values } = mainOption;
+
+    const sortedValues = React.useMemo(() => {
+        if (!optionName || !productVariants || values.length === 0) return values;
+        const available: string[] = [];
+        const unavailable: string[] = [];
+        values.forEach((val) => {
+            const isAvail = valueAvailableForTryBuyOption(productVariants, optionName, val);
+            if (isAvail) available.push(val);
+            else unavailable.push(val);
+        });
+        return [...available, ...unavailable];
+    }, [values, optionName, productVariants]);
+
     const showTryBlock = !!primaryValue;
     const tryRowSelection =
         primaryValue && tryValue && tryValue !== primaryValue ? tryValue : null;
@@ -40,7 +53,7 @@ export function TryBuyPdpVariantSection({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.chipRow}
             >
-                {values.map((val) => {
+                {sortedValues.map((val) => {
                     const unavailable = !valueAvailableForTryBuyOption(productVariants, optionName, val);
                     const isSelected = primaryValue === val;
                     const disabled = unavailable;
@@ -81,7 +94,7 @@ export function TryBuyPdpVariantSection({
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.chipRow}
                     >
-                        {values.map((val) => {
+                        {sortedValues.map((val) => {
                             const unavailable = !valueAvailableForTryBuyOption(productVariants, optionName, val);
                             const disabledByPrimary = primaryValue === val;
                             const disabled = unavailable || disabledByPrimary;

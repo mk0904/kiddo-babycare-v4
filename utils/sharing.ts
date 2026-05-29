@@ -17,9 +17,13 @@ function canGenerateInviteLink(): boolean {
 }
 
 function buildShareMessage(shortLinkUrl: string, uniqueReferralCode: string, friendRewardAmount: number) {
+  // Append referral code as a URL param safely
+  const separator = shortLinkUrl.includes('?') ? '&' : '?';
+  const finalUrl = `${shortLinkUrl}${separator}rc=${uniqueReferralCode}`;
+
   return (
     `Hey! 👋 Download Kiddo — your go-to app for everything kids, babies & new moms with delivery in just 30 minutes ⚡️ Shop toys, fashion, diapers, books, baby gear, skincare & more from 200+ trusted brands.\n\n` +
-    `🎁 Use my personal link to sign up and get ₹${friendRewardAmount} wallet credit instantly: ${shortLinkUrl}\n\n` +
+    `🎁 Use my personal link to sign up and get ₹${friendRewardAmount} wallet credit instantly: ${finalUrl}\n\n` +
     `Referral Code: ${uniqueReferralCode}`
   );
 }

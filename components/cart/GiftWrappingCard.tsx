@@ -1,7 +1,6 @@
 import { Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import type { GiftWrapping } from '@/store/cartStore';
-import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const REMOVE_RED = '#E85D5B';
@@ -22,7 +21,7 @@ export function GiftWrappingCard({ onSelectPress, giftWrapping, onRemovePress }:
             <View style={[styles.section, styles.sectionApplied]}>
                 <View style={styles.appliedLeft}>
                     <View style={styles.giftIconWrap}>
-                    <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
+                        <Image source={require('@/assets/icons/gift.png')} style={styles.giftIcon} resizeMode="contain" />
                     </View>
                     <View style={styles.info}>
                         <Text style={styles.appliedTitle}>{cardCopy.appliedTitle ?? 'Gift wrap applied!'}</Text>
@@ -59,7 +58,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         marginBottom: 16,
-        
+
     },
     sectionApplied: {
         backgroundColor: '#FFFFFF',
@@ -80,7 +79,7 @@ const styles = StyleSheet.create({
     giftIconWrap: {
         width: 44,
         height: 44,
-        
+
         alignItems: 'center',
         justifyContent: 'center',
     },

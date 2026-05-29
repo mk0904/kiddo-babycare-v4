@@ -134,5 +134,7 @@
     </dict>
     <key>CTExpoPushAppGroup</key>
     <string>group.com.kiddo.ak</string>
+    <key>NSAdvertisingAttributionReportEndpoint</key>
+    <string>https://appsflyer-skadnetwork.com/</string>
   </dict>
 </plist>
