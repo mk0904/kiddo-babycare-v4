@@ -1,0 +1,12 @@
+diff --git a/node_modules/react-native-freshchat-sdk/android/build.gradle b/node_modules/react-native-freshchat-sdk/android/build.gradle
+index 22f09cd..9f81892 100755
+--- a/node_modules/react-native-freshchat-sdk/android/build.gradle
++++ b/node_modules/react-native-freshchat-sdk/android/build.gradle
+@@ -22,6 +22,7 @@ repositories {
+ }
+ 
+ dependencies {
++    implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
+     implementation "com.facebook.react:react-native:+"
+     implementation 'com.google.android.gms:play-services-gcm:11.+'
+     implementation 'com.github.freshworks:freshchat-android:6.5.4'

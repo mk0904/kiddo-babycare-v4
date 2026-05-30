@@ -33,23 +33,21 @@ import PaymentService from '@/services/paymentService';
 import { referralService } from '@/services/referralService';
 import { shopifyApi } from '@/services/shopifyApi';
 import {
-    computeDiscountBreakdown,
     specialDealPromoPercentFromItem,
     useCartId,
     useCartIsApplyingCoupon,
     useCartItemCount,
     useCartItems,
     useCartStatus,
-    useCartSubtotal,
     useCartStore,
     useCartTotal,
     useCheckoutUrl,
     useGiftWrapping,
-    useIsTryAndBuy,
+    useIsTryAndBuy
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
-import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
+import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import {
     getActiveMilestoneSlotRaw,
     isMilestoneMinCartUnlocked,
@@ -1141,12 +1139,12 @@ export default function CartScreen() {
 
         // Re-calculate derived values using latest state
         const latestAppliedDiscountCode = latestDiscountCodes.filter((dc) => dc.applicable !== false).map((dc) => dc.code)[0] || null;
-        
+
         // Re-calculate milestone coupon using latest state
         const hasFreeShoesAppliedLatest = Boolean(freeShoesGiftCodeUc) && latestDiscountCodes.some(dc => dc.code.toUpperCase() === freeShoesGiftCodeUc && dc.applicable !== false);
         const hasKidPuzzleAppliedLatest = latestDiscountCodes.some(dc => dc.code.toUpperCase() === freePuzzleGiftCodeUc && dc.applicable !== false);
         const hasMysteryGiftAppliedLatest = latestDiscountCodes.some(dc => dc.code.toUpperCase() === freeMysteryGiftCodeUc && dc.applicable !== false);
-        
+
         let latestMilestoneConfigDiscountAmount = 0;
         const latestDiscountBreakdown = latestStore.discountBreakdownSnapshot;
         for (const row of latestDiscountBreakdown.perCode) {
@@ -1171,7 +1169,7 @@ export default function CartScreen() {
         } else if (hasMysteryGiftAppliedLatest) {
             latestMilestoneCouponCode = freeMysteryGiftCodeUc || 'FOURTHMILESTONE';
         }
-        
+
         const latestCheckoutCouponCode = latestAppliedDiscountCode || latestMilestoneCouponCode;
 
         // Track Checkout Started event
@@ -2135,9 +2133,9 @@ export default function CartScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
-                <View style={styles.headerSpacer}>
+                {/* <View style={styles.headerSpacer}>
                     {status === 'loading' && <ActivityIndicator color={Colors.primary} size="small" />}
-                </View>
+                </View> */}
             </View>
 
             {cartItems.length > 0 && (

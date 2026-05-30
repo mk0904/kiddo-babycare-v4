@@ -367,7 +367,8 @@ function couponIsDealCouponFromApi(c: { isDealCoupon?: boolean; is_deal_coupon?:
 
 /** Deal coupons are client-only (modal trigger); never sent to Shopify discount APIs. */
 function discountCodesForShopifyApply(codes: DiscountCode[]): string[] {
-    return codes.filter((dc) => dc.applicable !== false && dc.isDealCoupon !== true).map((dc) => dc.code);
+    // User requested to stop syncing coupons to Shopify since they are backend-only
+    return [];
 }
 
 export interface GiftWrapping {
@@ -1312,6 +1313,7 @@ export const useCartStore = create<CartState>()(
 
                     if (!isAuthenticated) {
                         console.log('[CartStore] ❌ User not logged in - cannot apply coupon');
+                        set({ isApplyingCoupon: false });
                         return {
                             success: false,
                             error: 'Please login or create an account to use discount coupons.'
@@ -1671,375 +1673,87 @@ export const useCartStore = create<CartState>()(
                 let cartForCost: { cost?: { subtotalAmount?: { amount: string }; totalTaxAmount?: { amount: string }; totalAmount?: { amount: string; currencyCode: string } }; checkoutUrl?: string } | null = null;
                 const isShopifyCartId = cartId.startsWith('gid://shopify/Cart/');
                 if (!isShopifyCartId && state.lineItems.length > 0) {
-                    const lines = state.lineItems.map(shopifyLineFromCartItem);
-                    const newCart = await shopifyApi.createCart(lines);
-                    if (newCart?.id) {
-                        set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
+                    try {
+                        const lines = state.lineItems.map(shopifyLineFromCartItem);
+                        const newCart = await shopifyApi.createCart(lines);
+                        if (newCart?.id) {
+                            set({ id: newCart.id, webUrl: newCart.checkoutUrl, checkoutUrl: newCart.checkoutUrl });
+                        }
+                    } catch (error) {
+                        console.error('[CartStore] Error creating Shopify cart:', error);
+                        set({ isApplyingCoupon: false });
+                        return { success: false, error: 'Failed to sync cart with Shopify. Please try again.' };
                     }
                 }
 
-                let codesToApply: string[] = [];
-                set({ status: 'loading' });
-
+                
                 try {
-                    // Use local state to see existing discount codes to avoid a redundant network fetch!
+                    // Check if code is already applied
                     const alreadyAppliedRaw = state.discountCodes
                         .filter((dc: any) => dc.applicable !== false && dc.code)
                         .map((dc: any) => String(dc.code).trim());
-                    console.log('[CartStore] Already applied codes:', alreadyAppliedRaw);
-
-                    // Check if code is already applied
+                    
                     if (alreadyAppliedRaw.some((c) => c.toUpperCase() === normalizedCode)) {
                         console.log('[CartStore] ❌ Code already applied');
                         set({ status: 'idle', isApplyingCoupon: false });
                         return { success: false, error: 'Discount code already applied' };
                     }
 
-                    const shopifyCodesBeforeApply = [...alreadyAppliedRaw];
+                    // Create local discount code entry
+                    const backendValue = Number(configDiscount.value ?? 0);
+                    const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
+                    const backendType: 'percentage' | 'fixed' = (bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount') ? 'fixed' : 'percentage';
+                    const backendOrig = typeof (configDiscount as any).originalPrice === 'number' ? (configDiscount as any).originalPrice : undefined;
+                    const cT = (configDiscount as any).title?.trim();
+                    const cD = (configDiscount as any).description?.trim();
+                    const backendSchool = (configDiscount as any).schoolName || (configDiscount as any).school_name;
 
-                    // Only apply the new code
-                    codesToApply = [codeToApply];
-                    console.log('[CartStore] Codes to apply to Shopify:', codesToApply);
-
-                    const lineItemsForCoupons = get().lineItems;
-                    const categorySubtotalsEligible = getCartCategorySubtotalsFromLineItems(lineItemsForCoupons);
-                    const { couponService } = await import('@/services/couponService');
-                    const { useUserStore } = await import('@/store/userStore');
-                    const phone = useUserStore.getState().user?.phone ?? null;
-
-                    /** Runs in parallel with Shopify apply — sequential was doubling perceived latency for manual entry. */
-                    const eligibleCouponsPromise = couponService.getEligibleCouponsFromBackend({
-                        phone,
-                        cartSubTotal: cartSubtotal,
-                        cartItemCount,
-                        hasTicketing: hasTicketingProducts,
-                        hasClothing: hasClothingItems,
-                        cartCategories: getCartCategoriesFromLineItems(lineItemsForCoupons),
-                        ...(Object.keys(categorySubtotalsEligible).length > 0
-                            ? { categorySubtotals: categorySubtotalsEligible }
-                            : {}),
-                        appVersion: getAppVersionForApi(),
-                        deviceType: Platform.OS ?? '',
-                        includeHiddenCoupons: true,
-                    });
-
-                    const resolvedCartId = get().id;
-                    const shopifyCartIdForApply: string =
-                        resolvedCartId != null &&
-                            resolvedCartId.startsWith('gid://shopify/Cart/')
-                            ? resolvedCartId
-                            : cartId;
-
-                    console.log('[CartStore] Calling shopifyApi.applyDiscountCodes with:', {
-                        cartId: shopifyCartIdForApply,
-                        codesToApply,
-                    });
-                    const updatedCart = await shopifyApi.applyDiscountCodes(shopifyCartIdForApply, codesToApply);
-                    console.log('[CartStore] Shopify API response:', {
-                        hasCart: !!updatedCart,
-                        discountCodes: updatedCart?.discountCodes,
-                        discountAllocations: updatedCart?.discountAllocations,
-                        cost: updatedCart?.cost,
-                    });
-
-                    if (!updatedCart) {
-                        throw new Error('Failed to apply discount code');
-                    }
-
-                    const revertShopifyDiscountAndRestoreLocal = async (
-                        errorMessage: string,
-                    ): Promise<{ success: false; error: string }> => {
-                        const rid = get().id;
-                        const cartIdRev: string =
-                            rid != null && rid.startsWith('gid://shopify/Cart/') ? rid : cartId;
-                        try {
-                            await shopifyApi.applyDiscountCodes(cartIdRev, shopifyCodesBeforeApply);
-                        } catch (e) {
-                            console.warn('[CartStore] Failed to revert Shopify discount after rejected apply', e);
-                        }
-                        const lineItemsSubtotalRev = state.lineItems.reduce(
-                            (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity),
-                            0,
-                        );
-                        const discountRev = await computeNonDealDiscountFromCodes(
-                            state.lineItems,
-                            state.discountCodes,
-                            state.dealProducts,
-                        );
-                        const taxRev = parseFloat(updatedCart.cost?.totalTaxAmount?.amount || '0');
-                        set({
-                            discountCodes: state.discountCodes,
-                            payment: {
-                                subtotal: lineItemsSubtotalRev,
-                                discount: discountRev,
-                                shipping: 0,
-                                tax: taxRev,
-                                total: Math.max(0, lineItemsSubtotalRev - discountRev) + taxRev,
-                                currencyCode: updatedCart.cost?.totalAmount?.currencyCode || 'INR',
-                            },
-                            status: 'idle', isApplyingCoupon: false,
-                            error: null,
-                            lastSyncedAt: Date.now(),
-                        });
-                        return { success: false, error: errorMessage };
+                    const backendEntry: any = {
+                        code: codeToApply,
+                        type: backendType,
+                        value: backendValue,
+                        applicable: true,
+                        appliedAt: Date.now(),
+                        maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
+                        ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
+                        ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                        isSchoolCoupon: configDiscount.isSchoolCoupon === true,
+                        isMilestone: configDiscount.isMilestone === true || codeToApply.toUpperCase() === 'FOURTHMILESTONE',
+                        isDealCoupon: false, // Since this is the regular coupon path
+                        ...(cT ? { couponTitle: cT } : {}),
+                        ...(cD ? { couponDescription: cD } : {}),
+                        ...(backendSchool != null ? { schoolName: backendSchool } : {}),
                     };
 
-                    let eligibleCoupons: import('@/services/couponService').CouponCode[] = [];
-                    try {
-                        eligibleCoupons = await eligibleCouponsPromise;
-                    } catch (e) {
-                        console.warn(
-                            '[CartStore] getEligibleCouponsFromBackend failed after Shopify apply; using validation payload where needed',
-                            e,
-                        );
-                    }
-                    const backendCouponMap = new Map(eligibleCoupons.map((c: any) => [c.code?.toUpperCase(), c]));
-                    const validatedCodeUpper = String(configDiscount?.code ?? codeToApply).trim().toUpperCase();
-                    if (validatedCodeUpper && !backendCouponMap.has(validatedCodeUpper)) {
-                        backendCouponMap.set(validatedCodeUpper, configDiscount as import('@/services/couponService').CouponCode);
-                    }
-
-                    // Calculate total discount from all allocations (sum all discountAllocations)
-                    const totalDiscountAmount = (updatedCart.discountAllocations || []).reduce((sum: number, allocation: any) => {
-                        return sum + parseFloat(allocation.discountedAmount?.amount || '0');
-                    }, 0);
-                    console.log('[CartStore] Total discount from allocations:', totalDiscountAmount);
-
-                    // subtotalAmount from Shopify is the subtotal BEFORE discount (current selling prices)
-                    const subtotalBeforeDiscount = parseFloat(updatedCart.cost?.subtotalAmount?.amount || '0');
-                    const subtotalAfterDiscount = subtotalBeforeDiscount - totalDiscountAmount;
-                    console.log('[CartStore] Subtotal calculations:', {
-                        subtotalBeforeDiscount,
-                        subtotalAfterDiscount,
-                        totalDiscountAmount,
-                    });
-
-                    // Extract discount codes from response
-                    console.log('[CartStore] Processing discount codes from cart response...');
-                    const discountCodesFromCart = (updatedCart.discountCodes || []).map((dc: any) => {
-                        console.log(`[CartStore] Processing code: ${dc.code}, Shopify applicable: ${dc.applicable}`);
-
-                        const matchingAllocation = (updatedCart.discountAllocations || []).find((alloc: any) => {
-                            return alloc.code?.toUpperCase() === dc.code.toUpperCase();
-                        });
-                        console.log(`[CartStore] Matching allocation for ${dc.code}:`, matchingAllocation);
-
-                        let discountType: 'percentage' | 'fixed' | 'shipping' | 'bogo' = 'percentage';
-                        let discountValue = 0;
-                        let isApplicable = dc.applicable !== false;
-                        let foundInBackend = false;
-
-                        const backendCoupon = backendCouponMap.get(dc.code?.toUpperCase());
-                        if (backendCoupon) {
-                            foundInBackend = true;
-                            discountValue = Number(backendCoupon.value ?? 0);
-                            const bt = (backendCoupon.valueType ?? 'percentage').toString().toLowerCase();
-                            discountType = (bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount') ? 'fixed' : 'percentage';
-                            isApplicable = true;
-                            console.log(`[CartStore] ${dc.code}: Using backend coupon - type: ${discountType}, value: ${discountValue}`);
-                        }
-
-                        if (!foundInBackend && discountValue === 0 && matchingAllocation) {
-                            const discountApp = matchingAllocation.discountApplication;
-                            console.log(`[CartStore] Discount application for ${dc.code}:`, discountApp);
-                            if (discountApp?.value?.percentage !== undefined) {
-                                // Percentage discount
-                                discountValue = discountApp.value.percentage;
-                                discountType = 'percentage';
-                                console.log(`[CartStore] ${dc.code}: Using Shopify percentage discount ${discountValue}%`);
-                            } else if (discountApp?.value?.amount) {
-                                // Fixed amount discount
-                                discountValue = parseFloat(discountApp.value.amount);
-                                discountType = 'fixed';
-                                console.log(`[CartStore] ${dc.code}: Using Shopify fixed discount ${discountValue}`);
-                            } else if (matchingAllocation.discountedAmount?.amount) {
-                                // Fallback: try to infer from discounted amount
-                                // Note: subtotalAmount is AFTER discounts, so we need to add discount back to get original subtotal
-                                const discountAmount = parseFloat(matchingAllocation.discountedAmount.amount);
-
-                                if (subtotalBeforeDiscount > 0 && discountAmount > 0) {
-                                    // Calculate percentage from original subtotal (before discount)
-                                    discountValue = Math.round((discountAmount / subtotalBeforeDiscount) * 100);
-                                    discountType = 'percentage';
-                                    console.log(`[CartStore] ${dc.code}: Calculated percentage ${discountValue}% from amount ${discountAmount}`);
-                                } else {
-                                    discountValue = discountAmount;
-                                    discountType = 'fixed';
-                                    console.log(`[CartStore] ${dc.code}: Fixed discount ${discountValue} (fallback)`);
-                                }
-                            }
-                        }
-
-                        if (discountValue === 0) {
-                            console.log(`[CartStore] ⚠️ No discount value found for ${dc.code}`);
-                        }
-                        const existing2 = state.discountCodes.find((d) => d.code.toUpperCase() === dc.code?.toUpperCase());
-                        const maxCap2 =
-                            backendCoupon?.maxDiscountAmount != null
-                                ? Number(backendCoupon.maxDiscountAmount)
-                                : existing2?.maxDiscountAmount != null
-                                    ? Number(existing2.maxDiscountAmount)
-                                    : undefined;
-                        const rawOrig2 = backendCoupon?.originalPrice ?? (backendCoupon as any)?.original_price;
-                        const origPrice2 = typeof rawOrig2 === 'number' && Number.isFinite(rawOrig2) ? rawOrig2 : typeof rawOrig2 === 'string' ? parseFloat(rawOrig2) : undefined;
-                        const originalPrice2 = options?.originalPrice ?? origPrice2 ?? existing2?.originalPrice;
-                        const bT2 = (backendCoupon as { title?: string } | undefined)?.title;
-                        const bD2 = (backendCoupon as { description?: string } | undefined)?.description;
-                        const cTitle2 =
-                            (bT2 != null && String(bT2).trim() !== '' ? String(bT2).trim() : undefined) ?? existing2?.couponTitle;
-                        const cDesc2 =
-                            (bD2 != null && String(bD2).trim() !== '' ? String(bD2).trim() : undefined)
-                            ?? existing2?.couponDescription;
-                        const schoolFromBackend = schoolNameFromCouponApi(backendCoupon as { schoolName?: string | null; school_name?: string | null });
-                        const schoolLine = schoolFromBackend ?? existing2?.schoolName;
-                        return {
-                            code: String(dc.code ?? '').trim(),
-                            type: discountType,
-                            value: discountValue,
-                            applicable: isApplicable,
-                            appliedAt: Date.now(),
-                            maxDiscountAmount: maxCap2,
-                            ...(originalPrice2 != null ? { originalPrice: originalPrice2 } : {}),
-                            ...(backendCoupon?.applicableCategory != null
-                                ? { applicableCategory: backendCoupon.applicableCategory }
-                                : existing2?.applicableCategory != null
-                                    ? { applicableCategory: existing2.applicableCategory }
-                                    : {}),
-                            ...(backendCoupon?.allowedCategories?.length
-                                ? { allowedCategories: backendCoupon.allowedCategories }
-                                : existing2?.allowedCategories?.length
-                                    ? { allowedCategories: existing2.allowedCategories }
-                                    : {}),
-                            ...(cTitle2 != null && cTitle2 !== '' ? { couponTitle: cTitle2 } : {}),
-                            ...(cDesc2 != null && cDesc2 !== '' ? { couponDescription: cDesc2 } : {}),
-                            ...(schoolLine != null && String(schoolLine).trim() !== ''
-                                ? { schoolName: String(schoolLine).trim() }
-                                : {}),
-                        };
-                    });
-
-                    // If code is missing from Shopify response or marked inapplicable, do not force-apply from backend
-                    // (category / minimum purchase must be respected).
-                    const codeInResponse = discountCodesFromCart.find(
-                        (dc: DiscountCode) => dc.code.toUpperCase() === normalizedCode
-                    );
-
-                    if (configDiscount) {
-                        const backendValue = Number(configDiscount.value ?? 0);
-                        const bt = (configDiscount.valueType ?? 'percentage').toString().toLowerCase();
-                        const backendType: 'percentage' | 'fixed' =
-                            bt === 'fixed' || bt === 'fixed_amount' || bt === 'fixed amount' ? 'fixed' : 'percentage';
-                        const rawBackendOrig = options?.originalPrice ?? configDiscount.originalPrice ?? (configDiscount as any).original_price;
-                        const backendOrig = typeof rawBackendOrig === 'number' && Number.isFinite(rawBackendOrig) ? rawBackendOrig : typeof rawBackendOrig === 'string' ? parseFloat(rawBackendOrig) : undefined;
-                        const cfgT2 = (configDiscount as { title?: string }).title;
-                        const cfgD2 = (configDiscount as { description?: string }).description;
-                        const cT2 = cfgT2 != null && String(cfgT2).trim() !== '' ? String(cfgT2).trim() : undefined;
-                        const cD2 = cfgD2 != null && String(cfgD2).trim() !== '' ? String(cfgD2).trim() : undefined;
-                        const backendSchool = schoolNameFromCouponApi(configDiscount);
-                        const backendEntry: DiscountCode = {
-                            code: codeToApply,
-                            type: backendType,
-                            value: backendValue,
-                            applicable: true,
-                            appliedAt: Date.now(),
-                            maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
-                            ...(backendOrig != null ? { originalPrice: backendOrig } : {}),
-                            ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
-                            ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
-                            isSchoolCoupon: configDiscount.isSchoolCoupon === true,
-                            isMilestone: configDiscount.isMilestone === true || codeToApply.toUpperCase() === 'FOURTHMILESTONE',
-                            isDealCoupon: couponIsDealCouponFromApi(configDiscount, codeToApply),
-                            ...(cT2 != null ? { couponTitle: cT2 } : {}),
-                            ...(cD2 != null ? { couponDescription: cD2 } : {}),
-                            ...(backendSchool != null ? { schoolName: backendSchool } : {}),
-                        };
-                        if (!codeInResponse) {
-                            console.warn(
-                                '[CartStore] Code not in Shopify response after apply (not injecting from backend):',
-                                normalizedCode,
-                            );
-                        } else if (codeInResponse.applicable === false) {
-                            // Keep Shopify row; revert happens below — never replace with backend applicable: true.
-                        } else if (codeInResponse.value === 0) {
-                            console.log('[CartStore] Code in response with zero value, filling from backend:', normalizedCode);
-                            const idx = discountCodesFromCart.findIndex(
-                                (dc: DiscountCode) => dc.code.toUpperCase() === normalizedCode
-                            );
-                            if (idx !== -1) discountCodesFromCart[idx] = backendEntry;
-                        } else {
-                            const idx = discountCodesFromCart.findIndex(
-                                (dc: DiscountCode) => dc.code.toUpperCase() === normalizedCode
-                            );
-                            if (idx !== -1) {
-                                const t2 = (configDiscount as { title?: string }).title;
-                                const d2 = (configDiscount as { description?: string }).description;
-                                const ct2 = t2 != null && String(t2).trim() !== '' ? String(t2).trim() : undefined;
-                                const cd2 = d2 != null && String(d2).trim() !== '' ? String(d2).trim() : undefined;
-                                const mergeSchool = schoolNameFromCouponApi(configDiscount);
-                                discountCodesFromCart[idx] = {
-                                    ...discountCodesFromCart[idx],
-                                    ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
-                                    ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
-                                    isSchoolCoupon: configDiscount.isSchoolCoupon === true,
-                                    isMilestone: configDiscount.isMilestone === true || codeToApply.toUpperCase() === 'FOURTHMILESTONE',
-                                    isDealCoupon: couponIsDealCouponFromApi(configDiscount, codeToApply),
-                                    ...(ct2 != null ? { couponTitle: ct2 } : {}),
-                                    ...(cd2 != null ? { couponDescription: cd2 } : {}),
-                                    ...(mergeSchool != null ? { schoolName: mergeSchool } : {}),
-                                };
-                            }
-                        }
-                    }
-
-                    const appliedNormRow = discountCodesFromCart.find(
-                        (dc: DiscountCode) => dc.code.toUpperCase() === normalizedCode,
-                    );
-                    if (!appliedNormRow) {
-                        return await revertShopifyDiscountAndRestoreLocal(
-                            'This discount code could not be applied to your cart.',
-                        );
-                    }
-                    if (appliedNormRow.applicable === false) {
-                        return await revertShopifyDiscountAndRestoreLocal(
-                            'This coupon does not apply to your cart. Check eligible categories and minimum purchase.',
-                        );
-                    }
-
-                    const lineItemsSubtotal = state.lineItems.reduce((sum, item) => {
-                        return sum + (Number(item.price ?? 0) * Number(item.quantity));
-                    }, 0);
-                    const recalcDiscount = await computeNonDealDiscountFromCodes(state.lineItems, discountCodesFromCart, state.dealProducts);
-                    const taxAmount = parseFloat(updatedCart.cost?.totalTaxAmount?.amount || '0');
-                    const updatedPayment: CartPayment = {
+                    const nextDiscountCodes = [backendEntry];
+                    
+                    const lineItemsSubtotal = state.lineItems.reduce((sum, item) => sum + (Number(item.price ?? 0) * Number(item.quantity)), 0);
+                    const recalcDiscount = await computeNonDealDiscountFromCodes(state.lineItems, nextDiscountCodes, state.dealProducts);
+                    
+                    // We keep tax logic simple or use existing since user says "we are not calculating tax and all for now"
+                    const taxAmount = state.payment?.tax ?? 0;
+                    
+                    const updatedPayment: any = {
                         subtotal: lineItemsSubtotal,
                         discount: recalcDiscount,
-                        shipping: 0,
+                        shipping: state.payment?.shipping ?? 0,
                         tax: taxAmount,
-                        total: Math.max(0, lineItemsSubtotal - recalcDiscount) + taxAmount,
-                        currencyCode: updatedCart.cost?.totalAmount?.currencyCode || 'INR',
+                        total: Math.max(0, lineItemsSubtotal - recalcDiscount) + taxAmount + (state.payment?.shipping ?? 0),
+                        currencyCode: state.payment?.currencyCode || 'INR',
                     };
 
-                    // Real Shopify coupons replace client-only deal stubs — do not re-attach isDealCoupon rows.
-
-                    const hasSchoolCoupon = discountCodesFromCart.some((dc: any) => dc.isSchoolCoupon);
+                    const hasSchoolCoupon = nextDiscountCodes.some((dc: any) => dc.isSchoolCoupon);
                     set({
-                        discountCodes: discountCodesFromCart,
+                        discountCodes: nextDiscountCodes,
                         payment: updatedPayment,
-                        checkoutUrl: updatedCart.checkoutUrl || state.checkoutUrl,
                         error: null,
                         lastSyncedAt: Date.now(),
                         ...(!hasSchoolCoupon ? { schoolCouponData: null } : {}),
                     });
+                    
                     get().refreshComputedDiscountFromCodes();
                     set({ status: 'idle', isApplyingCoupon: false });
-                    setTimeout(() => {
-                        Promise.resolve()
-                        .then(() => get().syncDeliveryFeeToShopify())
-                        .then(() => get().syncDealPricing())
-                        .then(() => get().validateAppliedDiscountCodes())
-                            .catch(e => console.error('[CartStore] apply sync error', e));
-                    }, 150);
-                    console.log('[CartStore] ✅ Code successfully applied (existing cart path)');
+                    console.log('[CartStore] ✅ Code successfully applied locally (Shopify bypassed)');
                     return { success: true };
                 } catch (error: any) {
                     console.error('[CartStore] Error applying discount code to existing cart:', error);
@@ -2069,17 +1783,7 @@ export const useCartStore = create<CartState>()(
                     });
                 }
 
-                const cartId = await get().ensureCart();
-                let updatedShopifyCart: any = null;
-                // Sync Shopify cart so backend (e.g. Pay Online draft) doesn't see stale discount codes
-                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
-                    try {
-                        const codesToApply = discountCodesForShopifyApply(updatedDiscountCodes);
-                        updatedShopifyCart = await shopifyApi.applyDiscountCodes(cartId, codesToApply);
-                    } catch (e) {
-                        console.warn('[CartStore] Failed to sync discount codes to Shopify cart after remove', e);
-                    }
-                }
+                
 
                 const lineSnapshot = state.lineItems;
                 const hadSpecialDealPromoLines = lineSnapshot.some((li) => specialDealPromoPercentFromItem(li) != null);
@@ -2094,18 +1798,7 @@ export const useCartStore = create<CartState>()(
                 );
                 let tax = state.payment?.tax ?? 0;
                 let currencyCode = state.payment?.currencyCode || 'INR';
-                if (updatedShopifyCart) {
-                    tax = parseFloat(updatedShopifyCart.cost?.totalTaxAmount?.amount || '0');
-                    currencyCode = updatedShopifyCart.cost?.totalAmount?.currencyCode || currencyCode;
-                } else if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
-                    try {
-                        const cart = await shopifyApi.getCart(cartId);
-                        tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
-                        currencyCode = cart.cost?.totalAmount?.currencyCode || currencyCode;
-                    } catch {
-                        // keep tax/currency from state
-                    }
-                }
+
 
                 const discount = await computeNonDealDiscountFromCodes(itemsNow, updatedDiscountCodes, state.dealProducts);
                 const currentShipping = get().shippingFee();
@@ -2162,15 +1855,7 @@ export const useCartStore = create<CartState>()(
                 let subtotal = get().subtotal();
                 let tax = state.payment?.tax ?? 0;
                 const currencyCode = state.payment?.currencyCode || 'INR';
-                if (cartId && cartId.startsWith('gid://shopify/Cart/')) {
-                    try {
-                        const cart = await shopifyApi.getCart(cartId);
-                        subtotal = parseFloat(cart.cost?.subtotalAmount?.amount || '0');
-                        tax = parseFloat(cart.cost?.totalTaxAmount?.amount || '0');
-                    } catch {
-                        // keep from state
-                    }
-                }
+
 
                 const currentShipping = state.shippingFee();
                 set({
