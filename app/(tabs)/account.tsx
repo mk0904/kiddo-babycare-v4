@@ -167,6 +167,13 @@ export default function AccountScreen() {
     };
 
     const handleDeleteAccount = () => {
+        try {
+            const { trackTappedInProfile } = require('@/utils/mixpanelHelpers');
+            trackTappedInProfile('Delete account');
+        } catch (e) {
+            console.warn('Analytics tracking error:', e);
+        }
+
         Alert.alert(
             'Delete Account',
             'Are you sure you want to delete your account? This action cannot be undone. All your data, orders, and information will be permanently deleted.',
@@ -216,6 +223,13 @@ export default function AccountScreen() {
     };
 
     const handleAction = (actionConfig: any) => {
+        try {
+            const { trackTappedInProfile } = require('@/utils/mixpanelHelpers');
+            trackTappedInProfile(actionConfig.title || actionConfig.action?.type || 'unknown_option');
+        } catch (e) {
+            console.warn('Analytics tracking error:', e);
+        }
+
         const { type, ...params } = actionConfig.action;
 
         switch (type) {

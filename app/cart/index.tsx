@@ -1712,17 +1712,19 @@ export default function CartScreen() {
                     return;
                 }
 
-                // Track Payment Failed
-                try {
-                    const { trackEvent } = require('@/utils/mixpanelHelpers');
-                    trackEvent('Payment Failed', {
-                        orderId: result.order?.id || 'unknown',
-                        amount: cartTotal,
-                        paymentMethod: paymentMethod || 'cod',
-                        reason: result.error || 'Order creation failed',
-                    });
-                } catch (e) {
-                    console.warn('Analytics tracking error:', e);
+                // Track Payment Failed only for Razorpay
+                if (effectivePaymentMethod === 'razorpay') {
+                    try {
+                        const { trackEvent } = require('@/utils/mixpanelHelpers');
+                        trackEvent('Payment Failed', {
+                            orderId: result.order?.id || 'unknown',
+                            amount: cartTotal,
+                            paymentMethod: effectivePaymentMethod,
+                            reason: result.error || 'Order creation failed',
+                        });
+                    } catch (e) {
+                        console.warn('Analytics tracking error:', e);
+                    }
                 }
 
                 throw new Error(result.error || 'Order creation failed');

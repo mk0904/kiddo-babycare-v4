@@ -44,6 +44,14 @@ export default function TicketingScreen() {
 
   const handleBlockPress = useCallback(
     (block: ContentBlock, link?: string, item?: any) => {
+      try {
+        const { trackTappedInTicketing } = require('@/utils/mixpanelHelpers');
+        const ticketName = item?.title || item?.name || item?.label || block.title || 'unknown_ticket';
+        trackTappedInTicketing(ticketName);
+      } catch (e) {
+        console.warn('Analytics tracking error:', e);
+      }
+
       if (!link && !item?.collectionId && !item?.id) return;
 
       const isCollection =

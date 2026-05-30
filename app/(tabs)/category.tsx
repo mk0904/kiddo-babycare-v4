@@ -66,6 +66,14 @@ export default function CategoryScreen() {
   }, []);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
+    try {
+      const { trackTappedInCategory } = require('@/utils/mixpanelHelpers');
+      const categoryName = item?.title || item?.name || item?.label || block.title || 'unknown_category';
+      trackTappedInCategory(categoryName);
+    } catch (e) {
+      console.warn('Analytics tracking error:', e);
+    }
+
     if (!link && !item?.collectionId && !item?.id) {
       return;
     }

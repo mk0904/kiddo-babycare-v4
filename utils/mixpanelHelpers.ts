@@ -218,6 +218,36 @@ export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
 // BROWSING & ENGAGEMENT EVENTS
 // ============================================
 
+export const trackOpenedWishlist = (itemCount: number, wishlistedCategories: string[], wishlistedItems: string[], wishlistValue: number, availability: string[]) => {
+  trackEvent('opened_wishlist', {
+    item_count: itemCount,
+    wishlisted_categories: wishlistedCategories,
+    wishlisted_items: wishlistedItems,
+    wishlist_value: wishlistValue,
+    availability: availability,
+  });
+};
+
+export const trackTappedInHomescreen = (icon: string) => {
+  trackEvent('tapped_in_homescreen', { icon });
+};
+
+export const trackNavbarTapped = (icon: string) => {
+  trackEvent('navbar_tapped', { icon });
+};
+
+export const trackTappedInCategory = (category: string) => {
+  trackEvent('tapped_in_category', { category });
+};
+
+export const trackTappedInTicketing = (ticket: string) => {
+  trackEvent('tapped_in_ticketing', { ticket });
+};
+
+export const trackTappedInProfile = (option: string) => {
+  trackEvent('tapped_in_profile', { Option: option });
+};
+
 export const trackCategoryViewed = (categoryName: string, categoryId?: string) => {
   trackEvent('Category Viewed', {
     categoryName,
@@ -265,6 +295,7 @@ export const trackWishlistAdded = (productId: string, productName?: string, pric
 export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
   trackEvent('Product Share Clicked', {
     productId,
+    'product id': extractNumericId(productId) || productId,
     productName,
     shareMethod,
   });
@@ -293,6 +324,7 @@ export const trackCouponApplied = (couponCode: string, discountAmount?: number) 
   trackEvent('Coupon Applied', {
     couponCode,
     discountAmount,
+    value: discountAmount,
   });
 };
 

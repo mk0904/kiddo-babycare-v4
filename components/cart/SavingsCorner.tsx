@@ -274,7 +274,16 @@ export const SavingsCorner = React.memo(function SavingsCorner({
         try {
             const result = await applyDiscountCode(trimmed, { preloadedCoupons: availableCoupons });
             if (result.success) {
-                const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                const state = useCartStore.getState();
+                const applied = state.discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                
+                try {
+                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
+                    trackCouponApplied(trimmed, state.payment?.discount || 0);
+                } catch (e) {
+                    console.warn('Analytics tracking error:', e);
+                }
+
                 if (applied?.isSchoolCoupon) {
                     setShowSchoolModal(true);
                     return { success: true };
@@ -318,6 +327,13 @@ export const SavingsCorner = React.memo(function SavingsCorner({
                 setManualCodeMessage(err);
                 setLastApplyError(err);
             } else {
+                try {
+                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
+                    trackCouponApplied(code, useCartStore.getState().payment?.discount || 0);
+                } catch (e) {
+                    console.warn('Analytics tracking error:', e);
+                }
+
                 if (coupon.isSchoolCoupon) {
                     setShowSchoolModal(true);
                 } else if (coupon.isDealCoupon) {

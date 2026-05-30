@@ -212,6 +212,15 @@ export default function HomeScreen() {
   }, [selectedCategory]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
+    try {
+      const { trackTappedInHomescreen } = require('@/utils/mixpanelHelpers');
+      const sectionName = block.title || block.id || block.type || 'unknown_section';
+      const iconName = item?.title || item?.label || item?.id || 'unknown_icon';
+      trackTappedInHomescreen(`${sectionName}_${iconName}`);
+    } catch (e) {
+      console.warn('Analytics tracking error:', e);
+    }
+
     if (!link && !item?.collectionId) {
       return;
     }
