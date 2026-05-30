@@ -1269,7 +1269,9 @@ export default function CartScreen() {
             province: 'Delhi',
             zip: '110001',
             country: 'India',
-            phone: user?.phone || '9999999999'
+            phone: user?.phone || '9999999999',
+            latitude: 0,
+            longitude: 0
         };
 
         // Track Checkout Started
@@ -1528,6 +1530,8 @@ export default function CartScreen() {
                         state: billingAddress.province,
                         pincode: billingAddress.zip,
                         phone: billingAddress.phone,
+                        latitude: billingAddress.latitude,
+                        longitude: billingAddress.longitude,
                     };
                     const addressType = selectedAddress?.tag != null ? tagToAddressType(selectedAddress.tag) : undefined;
                     return addressType ? { ...base, addressType } : base;

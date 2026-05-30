@@ -52,6 +52,8 @@ export interface CheckoutDraftRequest {
     phone: string;
     /** Save as: Home/Work/Other/Events – backend sets on Shopify draft order shipping address */
     addressType?: string;
+    latitude?: number;
+    longitude?: number;
   };
   giftWrapping?: { name: string; price: number };
   couponCode?: string;
@@ -174,6 +176,8 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
           pincode: body.address.pincode,
           phone: body.address.phone,
           ...(body.address.addressType != null && body.address.addressType !== '' && { addressType: body.address.addressType }),
+          ...(body.address.latitude != null && { latitude: body.address.latitude }),
+          ...(body.address.longitude != null && { longitude: body.address.longitude }),
         }
       : undefined,
     giftWrapping: body.giftWrapping,

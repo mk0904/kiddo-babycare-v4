@@ -165,14 +165,14 @@ export default function MapAddressScreen() {
                 // Start geocoding immediately
                 performReverseGeocode(newRegion.latitude, newRegion.longitude);
                 
-                // Animate map after a short delay (non-blocking)
+                // Animate map after a short delay to ensure MapView is mounted
                 setTimeout(() => {
                     try {
-                    mapRef.current?.animateToRegion(newRegion, 1000);
+                        mapRef.current?.animateToRegion(newRegion, 1000);
                     } catch (error) {
                         console.error('Error animating to region:', error);
                     }
-                }, Platform.OS === 'android' ? 500 : 0);
+                }, 500);
             } catch (error: any) {
                 console.error('Error getting location:', error);
                 setMapError(error?.message || 'Could not get your location. Please try again.');
@@ -503,13 +503,13 @@ export default function MapAddressScreen() {
                     provider={PROVIDER_GOOGLE}
                     initialRegion={initialRegion}
                     onRegionChangeComplete={onRegionChangeComplete}
-                    showsUserLocation={false}
-                    showsMyLocationButton={false}
+                    showsUserLocation={true}
+                    showsMyLocationButton={true}
                     onMapReady={() => {
                         // Ensure map is ready before operations
-                        if (Platform.OS === 'android' && mapRef.current) {
+                        if (mapRef.current) {
                                 try {
-                            mapRef.current.animateToRegion(initialRegion, 0);
+                            mapRef.current.animateToRegion(initialRegion, 1000);
                                 } catch (error) {
                                     console.error('Error animating map:', error);
                                 }

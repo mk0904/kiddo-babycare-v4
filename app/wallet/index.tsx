@@ -165,14 +165,12 @@ export default function WalletScreen() {
     const filteredTransactions = transactions;
 
     const handleLoadMore = () => {
-        if (visibleCount < filteredTransactions.length) {
-            setVisibleCount(prev => prev + 4);
-        } else if (hasMore && !loadingMore) {
+        if (visibleCount + 4 > filteredTransactions.length && hasMore && !loadingMore) {
             const nextPage = page + 1;
             setPage(nextPage);
             fetchWalletStatus(nextPage, historyTab);
-            setVisibleCount(prev => prev + 4);
         }
+        setVisibleCount(prev => prev + 4);
     };
 
     const onAddBalance = () => {
