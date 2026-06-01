@@ -1594,7 +1594,6 @@ export const shopifyApi = {
 
       return result.cart;
     } catch (error: any) {
-      console.error('Error updating cart lines:', error);
       throw error;
     }
   },

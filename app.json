@@ -2,10 +2,10 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "scheme": ["app", "kiddo"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -14,7 +14,8 @@
       "bundleIdentifier": "com.kiddo.ak",
       "associatedDomains": [
         "applinks:allforkiddo.com",
-        "applinks:www.allforkiddo.com"
+        "applinks:www.allforkiddo.com",
+        "applinks:kiddo-app.onelink.me"
       ],
       "skAdNetworkIdentifiers": [
         "v9wttpbfk9.skadnetwork",
@@ -24,6 +25,7 @@
         "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
       },
       "infoPlist": {
+        "NSAdvertisingAttributionReportEndpoint": "https://appsflyer-skadnetwork.com/",
         "NSLocationWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to upload images for your profile and orders",
@@ -67,6 +69,11 @@
             {
               "scheme": "https",
               "host": "www.allforkiddo.com",
+              "pathPattern": ".*"
+            },
+            {
+              "scheme": "https",
+              "host": "kiddo-app.onelink.me",
               "pathPattern": ".*"
             }
           ],
@@ -129,21 +136,9 @@
         }
       ],
       [
-        "react-native-fbsdk-next",
-        {
-          "appID": "1494379925573507",
-          "clientToken": "04a657781e5dd2df8704fd3292d74e3d",
-          "displayName": "kiddo-babycare",
-          "advertiserIDCollectionEnabled": true,
-          "autoLogAppEventsEnabled": true,
-          "isAutoInitEnabled": true,
-          "iosUserTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
-        }
-      ],
-      [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "Allow tracking to help us show you baby products, deals and recommendations that are most relevant to your little one's age and needs."
+          "userTrackingPermission": "Allow tracking to help us measure ads and show you relevant offers."
         }
       ],
       [
@@ -168,6 +163,14 @@
               "enablePushInForeground": true,
               "iosPushAppGroup": "group.com.kiddo.ak"
             }
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
           }
         }
       ]

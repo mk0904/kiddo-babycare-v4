@@ -1,11 +1,16 @@
 import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
 import { clevertapService } from '@/services/clevertapService';
-import { logMetaEvent, setMetaUserData, extractNumericId } from '@/utils/metaSDK';
+import { extractNumericId } from '@/utils/shopifyIds';
+import {
+  associateUserSession,
+  trackAddToCartAction,
+  trackInitiatedCheckoutAction,
+  trackPurchaseCompletion,
+} from '@/utils/appsFlyerAnalytics';
 
 /**
- * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap, Meta CAPI)
- * and to Meta SDK in-app for attribution and dedup. Same event_id on both for CAPI dedup.
+ * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
  */
 
 function getDistinctId(): string {
@@ -24,7 +29,6 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   try {
     const props = properties ?? {};
     analyticsService.track(eventName, props, getDistinctId());
-    logMetaEvent(eventName, props, props.event_id ?? props.orderId);
     // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
     const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
     clevertapService.recordEvent(ctEventName, props);
@@ -53,15 +57,7 @@ export const identifyUser = (userId: string, userProperties?: {
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
-
-    // Also set Meta user data for advanced matching
-    setMetaUserData({
-      userId,
-      email: userProperties?.email,
-      phone: userProperties?.phone,
-      firstName: userProperties?.name?.split(' ')[0],
-      lastName: userProperties?.name?.split(' ').slice(1).join(' '),
-    });
+    associateUserSession(userId);
   } catch (error) {
     console.error('Analytics identify error:', error);
   }
@@ -126,6 +122,9 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     value: price,
     currency: 'INR',
   });
+  if (price != null && Number.isFinite(price)) {
+    trackAddToCartAction(productId, 'product', price, quantity || 1);
+  }
 };
 
 export const trackCheckoutStarted = (cartValue: number, itemCount: number, productIds?: string[]) => {
@@ -138,6 +137,7 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number, produ
     content_type: 'product',
     num_items: itemCount,
   });
+  trackInitiatedCheckoutAction(cartValue, 'INR');
 };
 
 export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string, productIds?: string[]) => {
@@ -218,6 +218,36 @@ export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
 // BROWSING & ENGAGEMENT EVENTS
 // ============================================
 
+export const trackOpenedWishlist = (itemCount: number, wishlistedCategories: string[], wishlistedItems: string[], wishlistValue: number, availability: string[]) => {
+  trackEvent('opened_wishlist', {
+    item_count: itemCount,
+    wishlisted_categories: wishlistedCategories,
+    wishlisted_items: wishlistedItems,
+    wishlist_value: wishlistValue,
+    availability: availability,
+  });
+};
+
+export const trackTappedInHomescreen = (icon: string) => {
+  trackEvent('tapped_in_homescreen', { icon });
+};
+
+export const trackNavbarTapped = (icon: string) => {
+  trackEvent('navbar_tapped', { icon });
+};
+
+export const trackTappedInCategory = (category: string) => {
+  trackEvent('tapped_in_category', { category });
+};
+
+export const trackTappedInTicketing = (ticket: string) => {
+  trackEvent('tapped_in_ticketing', { ticket });
+};
+
+export const trackTappedInProfile = (option: string) => {
+  trackEvent('tapped_in_profile', { Option: option });
+};
+
 export const trackCategoryViewed = (categoryName: string, categoryId?: string) => {
   trackEvent('Category Viewed', {
     categoryName,
@@ -265,6 +295,7 @@ export const trackWishlistAdded = (productId: string, productName?: string, pric
 export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
   trackEvent('Product Share Clicked', {
     productId,
+    'product id': extractNumericId(productId) || productId,
     productName,
     shareMethod,
   });
@@ -293,6 +324,7 @@ export const trackCouponApplied = (couponCode: string, discountAmount?: number) 
   trackEvent('Coupon Applied', {
     couponCode,
     discountAmount,
+    value: discountAmount,
   });
 };
 
@@ -326,6 +358,7 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     content_type: 'product',
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
+  trackPurchaseCompletion(orderId, amount, 'INR');
 };
 
 export const trackOrderConfirmed = (orderId: string, amount: number) => {

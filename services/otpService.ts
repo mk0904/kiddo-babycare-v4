@@ -30,6 +30,7 @@ export interface VerifyAndLoginResponse {
   success: boolean;
   accessToken: string;
   user?: VerifyAndLoginUser | null;
+  message?: string;
 }
 
 class OTPService {
@@ -114,7 +115,7 @@ class OTPService {
     }
   }
 
-  async verifyOTP(phoneNumber: string, enteredOTP: string): Promise<OTPResponse> {
+  async verifyOTP(phoneNumber: string, enteredOTP: string, referralCode?: string): Promise<OTPResponse> {
     try {
       const url = this.getApiPath('verify-otp');
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
@@ -123,7 +124,8 @@ class OTPService {
 
       const response = await axios.post(url, {
         phone: formattedPhone,
-        code: enteredOTP
+        code: enteredOTP,
+        ...(referralCode !== undefined && { referral_code: referralCode }),
       });
 
       const data = response.data;
@@ -169,7 +171,8 @@ class OTPService {
     phoneNumber: string,
     code: string,
     firstName?: string,
-    lastName?: string
+    lastName?: string,
+    referralCode?: string
   ): Promise<VerifyAndLoginResponse> {
     const url = this.getVerifyAndLoginUrl();
     const formattedPhone = this.formatPhoneNumber(phoneNumber);
@@ -178,6 +181,7 @@ class OTPService {
       code,
       ...(firstName !== undefined && { firstName }),
       ...(lastName !== undefined && { lastName }),
+      ...(referralCode !== undefined && { referral_code: referralCode }),
     };
     console.log('[OTP Service] verifyOTPAndLogin request', { url, phone: formattedPhone, codeLength: code?.length });
 

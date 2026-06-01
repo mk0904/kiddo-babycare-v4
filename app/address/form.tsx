@@ -3,6 +3,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { appConfigService } from '@/services/appConfigService';
+import { getBackendApiPath } from '@/services/backendBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -110,12 +111,36 @@ export default function AddressFormScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
+            let refinedLat = locationData?.latitude;
+            let refinedLng = locationData?.longitude;
+
+            try {
+                const fullAddressString = `${flat.trim()}, ${street.trim()}, ${area.trim()}, ${locationData?.city || ''}`;
+                const etaUrl = getBackendApiPath('eta');
+                const etaResponse = await fetch(etaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: fullAddressString, hasGiftWrap: false })
+                });
+                
+                if (etaResponse.ok) {
+                    const etaData = await etaResponse.json();
+                    if (etaData && typeof etaData.lat === 'number' && typeof etaData.lng === 'number') {
+                        refinedLat = etaData.lat;
+                        refinedLng = etaData.lng;
+                        console.log('Refined coordinates via /api/v1/eta:', refinedLat, refinedLng);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to forward geocode via ETA endpoint:', e);
+            }
+
             const addressData = {
                 name: tagToName(selectedTag),
                 firstName: fullName.trim(),
                 lastName: '_',
                 phone: phone.trim(),
-                address1: `${flat.trim()}, ${street.trim()}`.trim(), // Combine flat and street for full address line 1
+                address1: [flat.trim(), street.trim()].filter(Boolean).join(', '), // Safely combine flat and street
                 address2: area.trim(),
                 city: locationData?.city || area.trim(),
                 province: locationData?.state || '',
@@ -124,8 +149,8 @@ export default function AddressFormScreen() {
                 pincode: locationData?.pincode || '',
                 country: 'India',
                 tag: selectedTag,
-                latitude: locationData?.latitude,
-                longitude: locationData?.longitude,
+                latitude: refinedLat,
+                longitude: refinedLng,
             };
 
             await addAddress(addressData);

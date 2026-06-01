@@ -19,7 +19,10 @@ import type {
   MilestoneUIConfig,
   MysteryGiftOfferConfig,
   OrderDetailConfig,
+  ReferralConfig,
+  WalletConfig,
   SpecialDealConfig,
+  AppDownloadConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
 import { getBackendApiPath } from './backendBase';
@@ -276,6 +279,10 @@ class AppConfigService {
     return this.config?.orderDetail ?? null;
   }
 
+  getOrderSummaryConfig() {
+    return this.config?.orderSummaryConfig ?? null;
+  }
+
   /**
    * Max straight-line km from dark store (`delivery.servicableDistance` or root-level alias).
    * Returns null when unset or invalid — ETA `isServiceable` is used alone in that case.
@@ -300,6 +307,18 @@ class AppConfigService {
   /** When true, show "Events" in address Save as and sync addressType to Shopify. */
   isEventEnabled(): boolean {
     return this.config?.isEvent === true;
+  }
+
+  getReferralConfig(): ReferralConfig | null {
+    return this.config?.referralConfig ?? null;
+  }
+
+  getWalletConfig(): WalletConfig | null {
+    return this.config?.walletConfig ?? null;
+  }
+
+  getAppDownloadConfig(): AppDownloadConfig | null {
+    return this.config?.appDownloadConfig ?? null;
   }
 }
 

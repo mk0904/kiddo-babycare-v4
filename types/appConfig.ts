@@ -126,9 +126,22 @@ export interface GiftWrapConfig {
   perItemPrice?: number;
   options: GiftWrapOption[];
   cardCopy?: {
+    title?: string;
+    description?: string;
     cta?: string;
     appliedTitle?: string;
     appliedSubtitle?: string;
+  };
+  modalCopy?: {
+    headerTitle?: string;
+    headerSubtitle?: string;
+    eligibleItemsTitle?: string;
+    noEligibleItemsText?: string;
+    chooseWrapTitle?: string;
+    footnote?: string;
+    allItemsFootnote?: string;
+    removeButtonText?: string;
+    addButtonText?: string;
   };
   ribbonImageUrl?: string;
   modalHeaderImageUrl?: string;
@@ -229,6 +242,8 @@ export interface CartConfig {
   freeShoesOffer?: FreeShoesOfferConfig;
   freeShoesPicker?: FreeShoesPickerConfig;
   savingsCorner?: { title?: string; applyCta?: string };
+  /** When true, show Kiddo Cash toggle and coins earn bar in Savings Corner. */
+  kiddoCashEnabled?: boolean;
   billDetails?: {
     subtotalLabel?: string;
     deliveryLabel?: string;
@@ -264,6 +279,18 @@ export interface OrderDetailConfig {
   partnerIconUrl?: string;
   /** Partner avatar in delivery card (PNG preferred). */
   partnerImageUrl?: string;
+}
+
+export interface PollingConfig {
+  deliveryRouteRefreshIntervalMs?: number;
+  riderLocationPollMs?: number;
+  deliveryStatusPollFastMs?: number;
+  deliveryStatusPollFastWindowMs?: number;
+  deliveryStatusPollSlowMs?: number;
+}
+
+export interface OrderSummaryConfig {
+  pollingConfig?: PollingConfig;
 }
 
 export interface EntryScreenItem {
@@ -404,10 +431,83 @@ export interface AppConfigResponse {
   cart?: CartConfig;
   checkout?: CheckoutConfig;
   orderDetail?: OrderDetailConfig;
+  orderSummaryConfig?: OrderSummaryConfig;
   entryScreens?: EntryScreenItem[];
   milestoneUI?: MilestoneUIConfig;
   hotWheelConfig?: HotWheelConfig;
   helpSupportConfig?: HelpSupportConfig;
   delivery?: DeliveryZoneConfig;
+  referralConfig?: ReferralConfig;
+  walletConfig?: WalletConfig;
+  appDownloadConfig?: AppDownloadConfig;
+}
+
+export interface AppDownloadPlatformConfig {
+  url: string;
+  version: string;
+}
+
+export interface AppDownloadConfig {
+  android?: AppDownloadPlatformConfig;
+  ios?: AppDownloadPlatformConfig;
+}
+
+export interface ReferralStep {
+  id: number;
+  stepText: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  cta?: string;
+  color?: string;
+  isCta?: boolean;
+  isGradient?: boolean;
+}
+
+export interface ReferralHowItWorks {
+  themeColor: string;
+  title: string;
+  steps: ReferralStep[];
+}
+
+export interface ReferralScreenConfig {
+  title: string;
+  description: string;
+  youGetAmt: number;
+  theyGetAmt: number;
+  ctaText: string;
+}
+
+export interface ReferralFAQ {
+  question: string;
+  answer: string;
+}
+
+export interface ReferralConfig {
+  howItWorks?: ReferralHowItWorks;
+  faqs?: ReferralFAQ[];
+  referralScreen?: ReferralScreenConfig;
+}
+
+export interface WalletScreenConfig {
+  title: string;
+  balanceLabel: string;
+  earnedLabel: string;
+  ctaText: string;
+  bgImage?: string;
+  moneyPot?: string;
+  iconUrl?: string;
+}
+
+export interface WalletCarouselItem {
+  imageUrl: string;
+}
+
+export interface WalletConfig {
+  howItWorks?: ReferralHowItWorks;
+  faqs?: ReferralFAQ[];
+  walletScreen?: WalletScreenConfig;
+  carousel?: WalletCarouselItem[];
+  notes?: string[];
   forceUpdateConfig?: ForceUpdateConfig;
 }

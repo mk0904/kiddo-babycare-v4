@@ -88,6 +88,21 @@ export const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     const mainOptionName = mainOption?.name ?? '';
     const mainValues: string[] = Array.isArray(mainOption?.values) ? mainOption.values : [];
 
+    const sortedMainValues = useMemo(() => {
+        if (!mainOptionName || !variants || mainValues.length === 0) return mainValues;
+        const available: string[] = [];
+        const unavailable: string[] = [];
+        mainValues.forEach((val) => {
+            const isAvail = valueAvailableForTryBuyOption(variants, mainOptionName, val);
+            if (isAvail) {
+                available.push(val);
+            } else {
+                unavailable.push(val);
+            }
+        });
+        return [...available, ...unavailable];
+    }, [mainValues, mainOptionName, variants]);
+
     const isTryAndBuy = hasTryAndBuyProduct(product);
 
     const lockedPrimaryValue = useMemo(() => {
@@ -243,7 +258,7 @@ export const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         keyboardShouldPersistTaps="handled"
                     >
                         {renderChipRow({
-                            values: mainValues,
+                            values: sortedMainValues,
                             selected: primaryValue,
                             onSelect: setPrimaryValue,
                             disabledValues: new Set(),
@@ -274,7 +289,7 @@ export const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                 Test different sizes at home for free and instantly return the products you don’t keep
                                 </Text>
                                 {renderChipRow({
-                                    values: mainValues,
+                                    values: sortedMainValues,
                                     selected: tryRowSelected,
                                     onSelect: (v) => setTryValue((prev) => (prev === v ? null : v)),
                                     disabledValues: new Set(primaryValue ? [primaryValue] : []),

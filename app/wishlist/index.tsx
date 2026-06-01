@@ -65,6 +65,25 @@ export default function WishlistScreen() {
                 return;
             }
 
+            // Track opened_wishlist
+            if (!wasOnDetailScreen.current) {
+                try {
+                    const { trackOpenedWishlist } = require('@/utils/mixpanelHelpers');
+                    const itemCount = wishlistItems.length;
+                    const wishlistedItems = wishlistItems.map(item => item.id || item.productId || '');
+                    const wishlistedCategories = Array.from(new Set(wishlistItems.map(item => item.productType || item.category || '').filter(Boolean)));
+                    const wishlistValue = wishlistItems.reduce((sum, item) => {
+                        const price = parseFloat(item.priceRange?.minVariantPrice?.amount || item.price || '0');
+                        return sum + (isNaN(price) ? 0 : price);
+                    }, 0);
+                    const availability = wishlistItems.map(item => item.availableForSale !== false ? 'in_stock' : 'out_of_stock');
+                    
+                    trackOpenedWishlist(itemCount, wishlistedCategories, wishlistedItems, wishlistValue, availability);
+                } catch (e) {
+                    console.warn('Analytics tracking error:', e);
+                }
+            }
+
             const shouldScrollToTop = isInitialMount.current || (isTabSwitch && !wasOnDetailScreen.current);
 
             if (shouldScrollToTop && flatListRef.current) {

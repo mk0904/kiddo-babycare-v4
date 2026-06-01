@@ -1,6 +1,7 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { Address, useAddress } from '@/context/AddressContext';
 import { appConfigService } from '@/services/appConfigService';
+import { getBackendApiPath } from '@/services/backendBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -100,6 +101,38 @@ export default function EditAddressScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
+            let refinedLat = existingAddress?.latitude;
+            let refinedLng = existingAddress?.longitude;
+
+            try {
+                const fullAddressString = `${address1.trim()}, ${address2.trim()}, ${city.trim()}`;
+                const etaUrl = getBackendApiPath('eta');
+                const etaResponse = await fetch(etaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: fullAddressString, hasGiftWrap: false })
+                });
+                
+                if (etaResponse.ok) {
+                    const etaData = await etaResponse.json();
+                    if (etaData && etaData.isServiceable === false) {
+                        setSaving(false);
+                        Alert.alert(
+                            'Area unserviceable',
+                            'This address is outside our delivery zone.',
+                            [{ text: 'OK' }]
+                        );
+                        return;
+                    }
+                    if (etaData && typeof etaData.lat === 'number' && typeof etaData.lng === 'number') {
+                        refinedLat = etaData.lat;
+                        refinedLng = etaData.lng;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to forward geocode via ETA endpoint:', e);
+            }
+
             const addressData = {
                 name: tagToName(selectedTag),
                 firstName: fullName.trim(),
@@ -114,8 +147,8 @@ export default function EditAddressScreen() {
                 pincode: pincode.trim(),
                 country: 'India',
                 tag: selectedTag,
-                latitude: existingAddress.latitude,
-                longitude: existingAddress.longitude,
+                latitude: refinedLat,
+                longitude: refinedLng,
             };
 
             await updateAddress(addressId, addressData);
@@ -260,21 +293,23 @@ export default function EditAddressScreen() {
                     <View style={[styles.inputContainer, styles.halfWidth]}>
                         <Text style={styles.label}>City *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, styles.disabledInput]}
                             placeholder="City"
                             placeholderTextColor="#999"
                             value={city}
                             onChangeText={setCity}
+                            editable={false}
                         />
                     </View>
                     <View style={[styles.inputContainer, styles.halfWidth]}>
                         <Text style={styles.label}>State</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, styles.disabledInput]}
                             placeholder="State"
                             placeholderTextColor="#999"
                             value={state}
                             onChangeText={setState}
+                            editable={false}
                         />
                     </View>
                 </View>
@@ -283,13 +318,14 @@ export default function EditAddressScreen() {
                 <View style={styles.inputContainer}>
                     <Text style={styles.label}>Pincode *</Text>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, styles.disabledInput]}
                         placeholder="6-digit pincode"
                         placeholderTextColor="#999"
                         value={pincode}
                         onChangeText={setPincode}
                         keyboardType="number-pad"
                         maxLength={6}
+                        editable={false}
                     />
                 </View>
 
@@ -412,6 +448,10 @@ const styles = StyleSheet.create({
         color: '#000',
         borderWidth: 1,
         borderColor: '#E0E0E0',
+    },
+    disabledInput: {
+        backgroundColor: '#EAEAEA',
+        color: '#888',
     },
     tagContainer: {
         flexDirection: 'row',

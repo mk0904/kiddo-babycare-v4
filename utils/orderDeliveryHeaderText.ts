@@ -149,18 +149,8 @@ export function computeDeliveryHeaderStatusText(input: DeliveryHeaderStatusInput
     !isRiderNearDropoff &&
     !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey);
 
-  const shouldUseNowBasedFallbackEta =
-    hasPartnerStatus &&
-    DELIVERY_ACTIVE_STATUSES.has(deliveryStatusKey) &&
-    !ARRIVED_AT_CUSTOMER_STATUSES.has(deliveryStatusKey) &&
-    !showLiveEtaInHeader;
-
   const orderPlacedAt = order?.processedAt || order?.createdAt;
-  const baseTime = shouldUseNowBasedFallbackEta
-    ? new Date()
-    : orderPlacedAt
-      ? new Date(orderPlacedAt)
-      : new Date();
+  const baseTime = orderPlacedAt ? new Date(orderPlacedAt) : new Date();
   const deliveryByDate = showLiveEtaInHeader
     ? new Date(Date.now() + Math.max(1, Math.round(liveEtaMinutes!)) * 60 * 1000)
     : new Date(baseTime.getTime() + staticEtaMinutes * 60 * 1000);

@@ -612,6 +612,13 @@ export const TabBar = (props: BottomTabBarProps) => {
                         target: route.key,
                         canPreventDefault: true,
                     });
+                    
+                    try {
+                        const { trackNavbarTapped } = require('@/utils/mixpanelHelpers');
+                        trackNavbarTapped(route.name);
+                    } catch (e) {
+                        console.warn('Analytics tracking error:', e);
+                    }
 
                     if (!isFocused && !event.defaultPrevented) {
                         props.navigation.navigate(route.name, route.params);

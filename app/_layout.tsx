@@ -32,6 +32,8 @@ import { WishlistProvider } from '@/context/WishlistContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
+import { initializeAppsFlyer } from '@/services/appsflyerService';
+import { initializeFreshchat } from '@/services/freshchatService';
 import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
 import { errorService } from '@/services/errorService';
@@ -39,13 +41,6 @@ import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
-import * as ExpoLinking from 'expo-linking';
-import {
-    captureAttributionDataFromUrl,
-    checkForDeferredAppLink,
-    initMetaSDK,
-    requestMetaTrackingPermission
-} from '../utils/metaSDK';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -90,8 +85,9 @@ export default function RootLayout() {
   );
   const [isStartupGateOpen, setIsStartupGateOpen] = React.useState(bootExperienceCompletedForSession);
   const [appIsReady, setAppIsReady] = React.useState(false);
-  const metaReadyRef = React.useRef(Platform.OS !== 'ios');
-  const metaInitStartedRef = React.useRef(false);
+  const attReadyRef = React.useRef(Platform.OS !== 'ios');
+  const attInitStartedRef = React.useRef(false);
+  const appsFlyerUnsubRef = React.useRef<(() => void) | null>(null);
   const entryPrefetchStartedRef = React.useRef(false);
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
@@ -233,49 +229,43 @@ export default function RootLayout() {
       }
     };
 
-    // On iOS: only set ready (and thus send events) after ATT + ATE flag + Meta init.
+    // On iOS: wait for ATT before sending events that depend on tracking consent.
     const trySetReady = () => {
       if (isReadySet) return;
-      if (Platform.OS === 'ios' && !metaReadyRef.current) return;
+      if (Platform.OS === 'ios' && !attReadyRef.current) return;
       if (!fontsLoaded && !fontError) return;
       setReady();
     };
 
-    // Meta order on iOS: request ATT → set ATE flag → init SDK → then send events.
-    // Guard with a ref so this only runs once, even if the effect re-runs due to font state changes.
-    if (!metaInitStartedRef.current) {
-      metaInitStartedRef.current = true;
+    if (!attInitStartedRef.current) {
+      attInitStartedRef.current = true;
       (async () => {
         try {
           if (Platform.OS === 'ios') {
-            await requestMetaTrackingPermission();
+            const { getTrackingPermissionsAsync, requestTrackingPermissionsAsync } = await import(
+              'expo-tracking-transparency'
+            );
+            const current = await getTrackingPermissionsAsync();
+            if (current.status !== 'granted' && current.status !== 'denied') {
+              await requestTrackingPermissionsAsync();
+            }
           }
-          await initMetaSDK();
-          if (Platform.OS === 'ios') metaReadyRef.current = true;
-
-          // Check for initial URL (from a cold start deep link)
-          const initialUrl = await ExpoLinking.getInitialURL();
-          if (initialUrl) {
-            captureAttributionDataFromUrl(initialUrl);
-          }
-
-          // Check for Deferred Deep Link (Part 8 of guide)
-          const deferredUrl = await checkForDeferredAppLink();
-          if (deferredUrl) {
-            // Handle navigation for deferred link if needed
-            // captureAttributionDataFromUrl(deferredUrl);
-          }
-
-          // Listen for incoming URLs while the app is open
-          const subscription = ExpoLinking.addEventListener('url', (event) => {
-            captureAttributionDataFromUrl(event.url);
-          });
-
         } catch (e) {
-          if (__DEV__) console.warn('[Meta SDK] early init error:', e);
-          if (Platform.OS === 'ios') metaReadyRef.current = true;
+          if (__DEV__) console.warn('[ATT] request failed:', e);
+        } finally {
+          if (Platform.OS === 'ios') attReadyRef.current = true;
+          try {
+            appsFlyerUnsubRef.current = initializeAppsFlyer();
+          } catch (e) {
+            if (__DEV__) console.warn('[AppsFlyer] init failed:', e);
+          }
+          try {
+            initializeFreshchat();
+          } catch (e) {
+            if (__DEV__) console.warn('[Freshchat] init failed:', e);
+          }
+          trySetReady();
         }
-        trySetReady();
       })();
     }
 
@@ -286,7 +276,7 @@ export default function RootLayout() {
     }, 5000); // 5 second timeout
 
     // Initialize OneSignal in background with delay (non-blocking).
-    // On iOS, wait for ATT to finish (metaReadyRef) so dialogs don't stack.
+    // On iOS, wait for ATT to finish (attReadyRef) so dialogs don't stack.
     const startOneSignalInit = () => {
       const initOneSignal = async () => {
         try {
@@ -402,10 +392,9 @@ export default function RootLayout() {
     };
 
     // On iOS, wait for ATT dialog to resolve before showing notification permission.
-    // This prevents permission dialogs from stacking on top of each other.
     if (Platform.OS === 'ios') {
       const waitForATT = () => {
-        if (metaReadyRef.current) {
+        if (attReadyRef.current) {
           setTimeout(startOneSignalInit, 300);
         } else {
           setTimeout(waitForATT, 200);
@@ -444,6 +433,8 @@ export default function RootLayout() {
     return () => {
       if (fontTimeout) clearTimeout(fontTimeout);
       if (entryDecisionTimeout) clearTimeout(entryDecisionTimeout);
+      appsFlyerUnsubRef.current?.();
+      appsFlyerUnsubRef.current = null;
     };
   }, [fontsLoaded, fontError, appConfigPayload]);
 

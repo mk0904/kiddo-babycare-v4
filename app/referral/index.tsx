@@ -1,0 +1,439 @@
+import { FaqSection } from '@/components/referral/FaqSection';
+import { HowItWorksModal } from '@/components/referral/HowItWorksModal';
+import { Colors, Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useNector } from '@/context/NectorContext';
+import { appConfigService } from '@/services/appConfigService';
+import { referralService, ReferralStatusResponse } from '@/services/referralService';
+import { generateAndShareReferralLink } from '@/utils/sharing';
+import { Ionicons } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+    Alert,
+    Clipboard,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
+const BRAND_BLUE = '#0CB6FF';
+
+export default function ReferralScreen() {
+    const router = useRouter();
+    const { user: nectorUser, isLoading, rules } = useNector();
+    const { user: authUser, isAuthenticated } = useAuth();
+    const [copied, setCopied] = useState(false);
+    const [howItWorksVisible, setHowItWorksVisible] = useState(false);
+
+    const [referralStatus, setReferralStatus] = useState<ReferralStatusResponse | null>(null);
+    const [fetchingStatus, setFetchingStatus] = useState(false);
+
+    useEffect(() => {
+        const checkFirstTime = async () => {
+            try {
+                const hasViewed = await AsyncStorage.getItem('has_viewed_referral_how_it_works');
+                if (!hasViewed) {
+                    setHowItWorksVisible(true);
+                    await AsyncStorage.setItem('has_viewed_referral_how_it_works', 'true');
+                }
+            } catch (error) {
+                console.error('Error checking first time referral view:', error);
+            }
+        };
+        checkFirstTime();
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated && authUser?.phone) {
+            setFetchingStatus(true);
+            referralService.getReferralStatus(authUser.phone)
+                .then(status => {
+                    setReferralStatus(status);
+                })
+                .catch(err => {
+                    console.error('Failed to load referral status:', err);
+                })
+                .finally(() => {
+                    setFetchingStatus(false);
+                });
+        }
+    }, [isAuthenticated, authUser?.phone]);
+
+    const config = appConfigService.getReferralConfig();
+
+    const referralReward = config?.referralScreen?.youGetAmt ?? rules?.referral_config?.referrer_reward ?? 25;
+    const friendReward = config?.referralScreen?.theyGetAmt ?? rules?.referral_config?.referee_reward ?? 25;
+
+    const howItWorks = config?.howItWorks;
+    const steps = howItWorks?.steps || [];
+    const themeColor = howItWorks?.themeColor || '#0CB6FF';
+    const referralCode = referralStatus?.profile?.referral_code || 'KIDDO';
+    const totalEarned = referralStatus?.wallet?.referral_amount ?? 0;
+
+    const onShare = async () => {
+        try {
+            const currentUserId =
+                authUser?.id ||
+                authUser?.customerId ||
+                authUser?.phone ||
+                '';
+            await generateAndShareReferralLink({
+                currentUserId,
+                uniqueReferralCode: referralCode,
+                friendRewardAmount: friendReward,
+            });
+        } catch (error: any) {
+            Alert.alert(error?.message || 'Unable to share referral link');
+        }
+    };
+
+    const copyToClipboard = () => {
+        Clipboard.setString(referralCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        Alert.alert('Copied!', 'Referral code copied to clipboard.');
+    };
+
+    const faqs = config?.faqs || [];
+
+    if (!isAuthenticated) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={[styles.header]}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Refer & Earn</Text>
+                </View>
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="people-outline" size={80} color="#E5E7EB" />
+                    <Text style={styles.emptyTitle}>Login to Refer Friends</Text>
+                    <Text style={styles.emptySubtitle}>
+                        Share your love for Kiddo and earn rewards for every friend you invite!
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.shareButton, { width: '80%', marginTop: 24 }]}
+                        onPress={() => router.push('/(auth)/login' as any)}
+                    >
+                        <Text style={styles.shareButtonText}>Login Now</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+            >
+                {/* Blue Header Section */}
+                <View style={[styles.blueBackground, { backgroundColor: themeColor }]}>
+                    <SafeAreaView edges={['top']}>
+                        <View style={styles.header}>
+                            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <View>
+                                <Text style={styles.headerTitle}>{config?.referralScreen?.title ?? 'Refer & Earn'}</Text>
+                                <TouchableOpacity onPress={() => setHowItWorksVisible(true)}>
+                                    <Text style={styles.howItWorksLink}>How does it work?</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.heroContent}>
+                            <View style={styles.codeRow}>
+                                <MaskedView
+                                    maskElement={
+                                        <Text style={styles.codeText}>
+                                            #{referralCode}
+                                        </Text>
+                                    }
+                                >
+                                    <LinearGradient
+                                        colors={[
+                                            'rgba(255,255,255,0.45)',
+                                            'rgba(255,255,255,1)',
+                                            'rgba(255,255,255,0.4)',
+                                        ]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                    >
+                                        <Text style={[styles.codeText, { opacity: 0 }]}>
+                                            #{referralCode}
+                                        </Text>
+                                    </LinearGradient>
+                                </MaskedView>
+                                <TouchableOpacity onPress={copyToClipboard} style={styles.copyIcon}>
+                                    <Ionicons
+                                        name={copied ? "checkmark" : "copy-outline"}
+                                        size={20}
+                                        color="#FFFFFF"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+
+                            <Text style={styles.heroSubtitle} numberOfLines={2}>
+                                {config?.referralScreen?.description ?? 'Invite a friend using your unique referral link'}
+                            </Text>
+
+                            <View style={styles.rewardContainer}>
+                                <View style={styles.rewardItem}>
+                                    <Text style={styles.rewardLabel}>You get</Text>
+                                    <Text style={styles.rewardAmount}>₹{referralReward}</Text>
+                                </View>
+                                <View style={styles.verticalDivider} />
+                                <View style={styles.rewardItem}>
+                                    <Text style={styles.rewardLabel}>They get</Text>
+                                    <Text style={styles.rewardAmount}>₹{friendReward}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </SafeAreaView>
+
+                    {/* Convex Blue Arch */}
+                    <View style={styles.curveContainer}>
+                        <View style={[styles.blueCurve, { backgroundColor: themeColor }]} />
+                    </View>
+                </View>
+
+                {/* White Content Section */}
+                <View style={styles.whiteSection}>
+                    {/* Total Earned Card */}
+                    <View style={styles.totalEarnedCard}>
+                        <Text style={styles.totalEarnedText}>Total earned</Text>
+                        <Text style={styles.totalEarnedAmount}>₹{totalEarned}</Text>
+                    </View>
+
+                    <FaqSection faqs={faqs} />
+                </View>
+            </ScrollView>
+
+            {/* Sticky Footer */}
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
+                <TouchableOpacity style={styles.shareButton} onPress={onShare} activeOpacity={0.9}>
+                    <Text style={styles.shareButtonText}>{config?.referralScreen?.ctaText ?? 'Share via WhatsApp'}</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+
+            <HowItWorksModal
+                visible={howItWorksVisible}
+                onClose={() => setHowItWorksVisible(false)}
+                themeColor={themeColor}
+                modalTitle={howItWorks?.title || 'How it works'}
+                steps={steps}
+                onStepCtaPress={(stepId) => {
+                    if (stepId === 0) {
+                        onShare();
+                    } else {
+                        setHowItWorksVisible(false);
+                    }
+                }}
+            />
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 140, // Space for sticky footer
+    },
+    blueBackground: {
+        backgroundColor: BRAND_BLUE,
+
+        zIndex: 1,
+    },
+    curveContainer: {
+        position: 'absolute',
+        bottom: -70,
+        left: 0,
+        right: 0,
+        height: 80,
+        overflow: 'hidden',
+    },
+    blueCurve: {
+        position: 'absolute',
+        top: -width * 1.8,
+        width: width * 2,
+        height: width * 2,
+        borderRadius: width,
+        backgroundColor: BRAND_BLUE,
+        left: -width / 2,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
+    backButton: {
+        padding: 4,
+        marginRight: 16,
+        marginTop: 2,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontFamily: 'Fredoka_600SemiBold',
+        color: '#FFFFFF',
+    },
+    howItWorksLink: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#FFFFFF',
+        marginTop: 2,
+        borderBottomWidth: 1,
+        borderBottomColor: '#FFFFFF',
+        alignSelf: 'flex-start',
+        paddingBottom: 0.5,
+    },
+    heroContent: {
+        alignItems: 'center',
+        marginTop: 60,
+        paddingHorizontal: 20,
+    },
+    codeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    codeText: {
+        fontSize: 40,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#FFFFFF',
+        letterSpacing: 1,
+    },
+    copyIcon: {
+        marginLeft: 12,
+        padding: 4,
+    },
+    heroSubtitle: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#FFFFFF',
+        textAlign: 'center',
+        marginTop: 16,
+        opacity: 0.9,
+        paddingHorizontal: 40,
+    },
+    rewardContainer: {
+        flexDirection: 'row',
+        marginTop: 40,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    rewardItem: {
+        alignItems: 'center',
+        paddingHorizontal: 30,
+    },
+    rewardLabel: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendMedium,
+        color: '#FFFFFF',
+        opacity: 0.8,
+    },
+    rewardAmount: {
+        fontSize: 32,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#FFFFFF',
+    },
+    verticalDivider: {
+        width: 2,
+        height: 80,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    whiteSection: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 20,
+        paddingTop: 90,
+    },
+    totalEarnedCard: {
+        backgroundColor: '#36BFFA1A',
+        borderRadius: 24,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    totalEarnedText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: BRAND_BLUE,
+    },
+    totalEarnedAmount: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: BRAND_BLUE,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        paddingHorizontal: 30,
+        paddingBottom: 0,
+        paddingTop: 20,
+        borderTopWidth: 2,
+        borderTopColor: '#F3F4F6',
+    },
+    shareButton: {
+        backgroundColor: BRAND_BLUE,
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: BRAND_BLUE,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    shareButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: Fonts.LexendSemiBold,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+        marginTop: 24,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        fontSize: 15,
+        fontFamily: Fonts.Regular,
+        color: Colors.textSecondary,
+        textAlign: 'center',
+        marginTop: 12,
+        lineHeight: 22,
+    },
+});

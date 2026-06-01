@@ -306,5 +306,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
+const areEqual = (prevProps: CartItemProps, nextProps: CartItemProps) => {
+    // Check if the item reference is identical
+    if (prevProps.item === nextProps.item) {
+        return true;
+    }
+    // Deep comparison of essential properties to avoid unnecessary re-renders
+    return (
+        prevProps.item.id === nextProps.item.id &&
+        prevProps.item.quantity === nextProps.item.quantity &&
+        prevProps.item.price === nextProps.item.price &&
+        prevProps.item.variantTitle === nextProps.item.variantTitle &&
+        prevProps.item.image === nextProps.item.image
+    );
+};
 
-export default CartItem;
+export default React.memo(CartItem, areEqual);

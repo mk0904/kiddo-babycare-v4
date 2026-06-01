@@ -1,5 +1,5 @@
 import Expo
-import FirebaseCore
+
 import React
 import ReactAppDependencyProvider
 
@@ -29,9 +29,7 @@ public class AppDelegate: ExpoAppDelegate {
 
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
-// @generated begin @react-native-firebase/app-didFinishLaunchingWithOptions - expo prebuild (DO NOT MODIFY) sync-10e8520570672fd76b2403b7e1e27f5198a6349a
-FirebaseApp.configure()
-// @generated end @react-native-firebase/app-didFinishLaunchingWithOptions
+
     factory.startReactNative(
       withModuleName: "main",
       in: window,
@@ -76,7 +74,11 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 
   override func bundleURL() -> URL? {
 #if DEBUG
-    return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
+    let settings = RCTBundleURLProvider.sharedSettings()
+    #if targetEnvironment(simulator)
+    settings.jsLocation = "127.0.0.1"
+    #endif
+    return settings.jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
 #else
     return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif

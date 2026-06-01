@@ -18,6 +18,7 @@ export interface CartFooterPaymentProps {
     toPay: number;
     formatCurrency: (amount: number) => string;
     orderLoading: boolean;
+    isSyncing?: boolean;
     isAuthenticated: boolean;
     onPlaceOrder: () => void;
     onAddAddress: () => void;
@@ -34,6 +35,7 @@ export function CartFooterPayment({
     toPay,
     formatCurrency,
     orderLoading,
+    isSyncing = false,
     isAuthenticated,
     onPlaceOrder,
     onAddAddress,
@@ -64,9 +66,9 @@ export function CartFooterPayment({
 
             {showPayButton ? (
                 <TouchableOpacity
-                    style={[styles.payButton, orderLoading && styles.payButtonDisabled]}
+                    style={[styles.payButton, (orderLoading || isSyncing) && styles.payButtonDisabled]}
                     onPress={isAuthenticated ? onPlaceOrder : (onLoginPress ?? onPlaceOrder)}
-                    disabled={orderLoading}
+                    disabled={orderLoading || isSyncing}
                     activeOpacity={0.85}
                 >
                     {orderLoading ? (

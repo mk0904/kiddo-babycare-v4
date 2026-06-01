@@ -4,22 +4,22 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-    headerGlassTintIsVisible,
-    resolveHeaderGlassConfig,
+  headerGlassTintIsVisible,
+  resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Animated,
-    Image,
-    ImageBackground,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,6 +40,7 @@ interface HomeHeaderProps {
     primaryColor?: string;
     backgroundImage?: string;
     hasImage?: boolean;
+    iconUrl?: string;
     /** Remote config: `header.glass` */
     globalGlass?: HeaderGlassConfig | null;
     /** Remote config: `categories.items.<key>.header.glass` */
@@ -286,7 +287,7 @@ export function HomeHeader({
           <Animated.View
             style={[
               styles.topInfoClip,
-              { 
+              {
                 opacity: topInfoOpacity,
                 transform: [{ translateY: contentTranslateY }]
               }
@@ -333,13 +334,28 @@ export function HomeHeader({
                   />
                 </View>
               </View>
-              <TouchableOpacity
-                onPress={() => router.push('/wishlist')}
-                style={styles.wishlistButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="heart-outline" size={24} color={textColor} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {headerConfig?.iconUrl && (
+                  <TouchableOpacity
+                    onPress={() => router.push('/wallet')}
+                    style={styles.wishlistButton}
+                    activeOpacity={0.7}
+                  >
+                    <Image
+                      source={{ uri: headerConfig.iconUrl }}
+                      style={{ width: 28, height: 28 }}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => router.push('/wishlist')}
+                  style={styles.wishlistButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="heart-outline" size={28} color={textColor} />
+                </TouchableOpacity>
+              </View>
             </View>
           </Animated.View>
 
@@ -483,8 +499,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   wishlistButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: 8,
+    marginLeft: 10,
+    backgroundColor: '#0000000f',
+    borderRadius: 24,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stickySearchCategoryBlock: {
     position: 'relative',

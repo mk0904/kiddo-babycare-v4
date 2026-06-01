@@ -7,7 +7,7 @@ import { specialDealPromoPercentFromItem, useCartItems, useCartStore } from '@/s
 import type { SpecialDealConfig } from '@/types/appConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
@@ -16,6 +16,7 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -44,6 +45,12 @@ export interface SavingsCornerProps {
     hasTicketingProducts: boolean;
     hasFashionItems: boolean;
     kiddoCashEnabled: boolean;
+    /** Wallet balance from referral status API (`wallet.total_amount`). */
+    walletBalance?: number | null;
+    /** Amount customer pays after discounts, fees, and Kiddo Cash — used for coins earn estimate. */
+    toPay: number;
+    /** Amount deducted from Kiddo Cash (if any). */
+    kiddoCashApplied?: number;
     formatCurrency: (amount: number) => string;
     onLoginPress: () => void;
     onKiddoCashChange: (value: boolean) => void;
@@ -51,12 +58,15 @@ export interface SavingsCornerProps {
     configRefreshKey?: number;
 }
 
-export function SavingsCorner({
+export const SavingsCorner = React.memo(function SavingsCorner({
     itemSubtotal,
     isAuthenticated,
     hasTicketingProducts,
     hasFashionItems,
     kiddoCashEnabled,
+    walletBalance = null,
+    toPay,
+    kiddoCashApplied = 0,
     formatCurrency,
     onLoginPress,
     onKiddoCashChange,
@@ -140,39 +150,28 @@ export function SavingsCorner({
 
     // Sort: eligible (applicable) first, then non-eligible
     const sortedDisplayCoupons = useMemo(() => {
-        return [...displayCoupons].sort((a, b) => {
-            const appA = a.code
+        const mapped = displayCoupons.map((c) => {
+            const codeObj = { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType } as CouponCode;
+            const applicability = c.code
                 ? couponService.getCouponApplicabilityForDisplay(
-                    { ...a, code: a.code, valueType: a.valueType === 'fixed' ? 'fixed_amount' : a.valueType } as CouponCode,
+                    codeObj,
                     {
-                        hasTicketingProducts: hasTicketingProducts,
-                        hasFashionItems: hasFashionItems,
+                        hasTicketingProducts,
+                        hasFashionItems,
                         cartSubtotal,
                         cartItemCount,
                         userOrderCount,
-                        couponUsageCount: couponUsages[a.code?.toUpperCase() ?? ''] ?? 0,
+                        couponUsageCount: couponUsages[c.code?.toUpperCase() ?? ''] ?? 0,
                         categorySubtotals,
                         lineItems: cartItems,
                     }
-                ).applicable
-                : true;
-            const appB = b.code
-                ? couponService.getCouponApplicabilityForDisplay(
-                    { ...b, code: b.code, valueType: b.valueType === 'fixed' ? 'fixed_amount' : b.valueType } as CouponCode,
-                    {
-                        hasTicketingProducts: hasTicketingProducts,
-                        hasFashionItems: hasFashionItems,
-                        cartSubtotal,
-                        cartItemCount,
-                        userOrderCount,
-                        couponUsageCount: couponUsages[b.code?.toUpperCase() ?? ''] ?? 0,
-                        categorySubtotals,
-                        lineItems: cartItems,
-                    }
-                ).applicable
-                : true;
-            return (appA ? 0 : 1) - (appB ? 0 : 1);
+                )
+                : { applicable: true };
+            const conditions = c.code ? couponService.getCouponConditionsText(codeObj) : [];
+            return { coupon: c, applicability, conditions, applicable: applicability.applicable };
         });
+
+        return mapped.sort((a, b) => (a.applicable ? 0 : 1) - (b.applicable ? 0 : 1));
     }, [
         displayCoupons,
         hasTicketingProducts,
@@ -275,7 +274,16 @@ export function SavingsCorner({
         try {
             const result = await applyDiscountCode(trimmed, { preloadedCoupons: availableCoupons });
             if (result.success) {
-                const applied = useCartStore.getState().discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                const state = useCartStore.getState();
+                const applied = state.discountCodes.find(dc => dc.code.toUpperCase() === trimmed);
+                
+                try {
+                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
+                    trackCouponApplied(trimmed, state.payment?.discount || 0);
+                } catch (e) {
+                    console.warn('Analytics tracking error:', e);
+                }
+
                 if (applied?.isSchoolCoupon) {
                     setShowSchoolModal(true);
                     return { success: true };
@@ -319,6 +327,13 @@ export function SavingsCorner({
                 setManualCodeMessage(err);
                 setLastApplyError(err);
             } else {
+                try {
+                    const { trackCouponApplied } = require('@/utils/mixpanelHelpers');
+                    trackCouponApplied(code, useCartStore.getState().payment?.discount || 0);
+                } catch (e) {
+                    console.warn('Analytics tracking error:', e);
+                }
+
                 if (coupon.isSchoolCoupon) {
                     setShowSchoolModal(true);
                 } else if (coupon.isDealCoupon) {
@@ -513,6 +528,13 @@ export function SavingsCorner({
         : '';
 
     const canSubmitInlineCode = isAuthenticated && !!manualCode.trim() && applyUiSource === null;
+
+    const cartKiddoCashEnabled = useMemo(
+        () => appConfigService.getCartConfig()?.kiddoCashEnabled === true,
+        [configRefreshKey],
+    );
+
+    const kiddoCoinsEarned = useMemo(() => Math.round(Math.max(0, toPay + kiddoCashApplied) * 0.01), [toPay, kiddoCashApplied]);
 
     return (
         <View style={styles.wrapper}>
@@ -748,39 +770,48 @@ export function SavingsCorner({
                         loading={loadingCoupons}
                         coupons={sortedDisplayCoupons}
                         couponApplying={applyUiSource === 'carousel'}
-                        hasTicketingProducts={hasTicketingProducts}
-                        hasFashionItems={hasFashionItems}
-                        cartSubtotal={cartSubtotal}
-                        cartItemCount={cartItemCount}
-                        userOrderCount={userOrderCount}
-                        couponUsages={couponUsages}
-                        categorySubtotals={categorySubtotals}
-                        lineItems={cartItems}
                         appliedCouponCode={appliedDiscountCode}
                         onApplyCoupon={(c) => void handleApplyCouponFromList(c, 'carousel')}
                         onCouponPress={handleCouponPress}
                     />
                 </View>
 
-                {/* <View style={styles.kiddoCashRow}>
-                <View style={styles.kiddoCashIconWrap}>
-                    <Ionicons name="cash-outline" size={20} color="#5B21B6" />
-                </View>
-                <View style={styles.kiddoCashTextWrap}>
-                    <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
-                    <Text style={styles.kiddoCashSub}>₹250 available</Text>
-                </View>
-                <Switch
-                    value={kiddoCashEnabled}
-                    onValueChange={onKiddoCashChange}
-                    trackColor={{ false: '#E5E7EB', true: '#5B21B6' }}
-                    thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#f4f3f4'}
-                />
+
             </View>
-            <View style={styles.kiddoCoinsBar}>
-                <Text style={styles.kiddoCoinsBarText}>You will earn 20 Kiddo Coins with this order</Text>
-            </View> */}
-            </View>
+
+            {cartKiddoCashEnabled && (
+                <View style={styles.kiddoCashContainer}>
+                    <View style={styles.kiddoCashRow}>
+                        <View style={styles.kiddoCashIconWrap}>
+                            <Ionicons name="cash" size={20} color="#5B21B6" />
+                        </View>
+                        <View style={styles.kiddoCashTextWrap}>
+                            <Text style={styles.kiddoCashTitle}>Use Kiddo Cash</Text>
+                            <Text style={styles.kiddoCashSub}>
+                                {walletBalance != null
+                                    ? `${formatCurrency(walletBalance)} available`
+                                    : '—'}
+                            </Text>
+                        </View>
+                        <View style={styles.kiddoCashSwitchWrap}>
+                            <Switch
+                                value={kiddoCashEnabled}
+                                onValueChange={onKiddoCashChange}
+                                trackColor={{ false: '#575a5eff', true: '#5B21B6' }}
+                                thumbColor={kiddoCashEnabled ? '#FFFFFF' : '#FFFFFF'}
+                                style={styles.kiddoCashSwitch}
+                            />
+                        </View>
+                    </View>
+                    <View style={styles.kiddoCoinsBar}>
+                        <Text style={styles.kiddoCoinsBarText}>
+                            You will earn {kiddoCoinsEarned} Kiddo Coin{kiddoCoinsEarned === 1 ? '' : 's'} with this order
+                        </Text>
+                    </View>
+                </View>
+            )}
+
+
 
             {/* Available coupons modal with manual code entry */}
             <Modal
@@ -910,30 +941,9 @@ export function SavingsCorner({
                                             ) : displayCoupons.length === 0 ? (
                                                 <Text style={styles.noCouponsText}>No coupons available</Text>
                                             ) : (
-                                                sortedDisplayCoupons.map((coupon, index) => {
-                                                    const applicability = coupon.code
-                                                        ? couponService.getCouponApplicabilityForDisplay(
-                                                            { ...coupon, code: coupon.code, valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType } as CouponCode,
-                                                            {
-                                                                hasTicketingProducts: hasTicketingProducts,
-                                                                hasFashionItems: hasFashionItems,
-                                                                cartSubtotal,
-                                                                cartItemCount,
-                                                                userOrderCount,
-                                                                couponUsageCount: couponUsages[coupon.code?.toUpperCase() ?? ''] ?? 0,
-                                                                categorySubtotals,
-                                                                lineItems: cartItems,
-                                                            }
-                                                        )
-                                                        : { applicable: true };
+                                                sortedDisplayCoupons.map((item, index) => {
+                                                    const { coupon, applicability, conditions } = item;
                                                     const isDisabled = !applicability.applicable;
-                                                    const conditions = coupon.code
-                                                        ? couponService.getCouponConditionsText({
-                                                            ...coupon,
-                                                            code: coupon.code,
-                                                            valueType: coupon.valueType === 'fixed' ? 'fixed_amount' : coupon.valueType,
-                                                        } as CouponCode)
-                                                        : [];
                                                     const offerTitle =
                                                         coupon.title ||
                                                         (coupon.value != null && coupon.value !== 0
@@ -1021,7 +1031,7 @@ export function SavingsCorner({
             </Modal>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     wrapper: {
@@ -1206,13 +1216,12 @@ const styles = StyleSheet.create({
     kiddoCashRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        padding: 12,
+        justifyContent: 'space-between',
     },
     kiddoCashIconWrap: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F5F3FF',
+        width: 20,
+        height: 20,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -1222,26 +1231,35 @@ const styles = StyleSheet.create({
     },
     kiddoCashTitle: {
         fontSize: 14,
-        fontFamily: Fonts.SemiBold,
-        color: '#1A1A1A',
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#181D27',
     },
     kiddoCashSub: {
         fontSize: 12,
-        color: '#9CA3AF',
-        fontFamily: Fonts.Regular,
+        color: '#535862',
+        fontFamily: Fonts.LexendMedium,
         marginTop: 2,
+    },
+    kiddoCashSwitchWrap: {
+
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    kiddoCashSwitch: {
+        transform: [{ scaleX: 0.8 }, { scaleY: 0.85 }],
     },
     kiddoCoinsBar: {
         backgroundColor: '#EDE9FE',
-        borderRadius: 10,
-        paddingVertical: 12,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         alignItems: 'center',
     },
     kiddoCoinsBarText: {
-        fontSize: 13,
-        fontFamily: Fonts.SemiBold,
-        color: '#6D28D9',
+        fontSize: 12,
+        fontFamily: Fonts.LexendMedium,
+        color: '#7A5AF8',
     },
     // Modal — promo upsell as bottom sheet (slide-up)
     modalOverlayDrawer: {
@@ -1524,5 +1542,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
         color: '#9CA3AF',
+    },
+    kiddoCashContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        marginTop: 16,
     },
 });

@@ -4,8 +4,10 @@ import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import {
   getDeliveryPartnerOrderStatus,
+  getExternalOrderStatus,
   liveTabBannerPhaseFromPartnerStatus,
   type DeliveryPartnerOrderStatus,
+  type ExternalOrderStatusResponse,
   type LiveTabBannerPhase
 } from '@/services/deliveryPartnerService';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -15,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { usePathname, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppState,
   LayoutChangeEvent,
@@ -29,7 +31,9 @@ const RIDER_ICON = require('@/assets/icons/riderIcon.png');
 const ARRIVED_ICON = require('@/assets/icons/arrivedIcon.png');
 const PARTNER_FALLBACK = require('@/assets/icons/partnerIcon.png');
 
-const POLL_MS = 25_000;
+const DEFAULT_POLL_FAST_MS = 25000;
+const DEFAULT_POLL_SLOW_MS = 25000;
+const DEFAULT_POLL_FAST_WINDOW_MS = 60000;
 /**
  * Pixels to sit the delivery pill closer to the tab stack (subtracted from `bottom`).
  * Same value is subtracted from floating View cart + scroll-to-top `anchorExtraOffset` (`TabBar`, Home).
@@ -90,6 +94,7 @@ type BannerModel = {
   phase: LiveTabBannerPhase;
   order: any;
   partnerStatus: DeliveryPartnerOrderStatus;
+  limechatStatus?: ExternalOrderStatusResponse | null;
   headerPrimary: string;
 };
 
@@ -120,6 +125,12 @@ export function LiveDeliveryTabBanner({
   const [seenOrderIdsInSession] = useState(() => new Set<string>());
   const [dismissedStateKeys, setDismissedStateKeys] = useState<Set<string>>(() => new Set());
   const cfg = useMemo(() => appConfigService.getOrderDetailConfig(), []);
+  const pollingConfig = useMemo(() => appConfigService.getOrderSummaryConfig()?.pollingConfig, []);
+
+  const pollFastMs = pollingConfig?.deliveryStatusPollFastMs ?? DEFAULT_POLL_FAST_MS;
+  const pollSlowMs = pollingConfig?.deliveryStatusPollSlowMs ?? DEFAULT_POLL_SLOW_MS;
+  const pollFastWindowMs = pollingConfig?.deliveryStatusPollFastWindowMs ?? DEFAULT_POLL_FAST_WINDOW_MS;
+
   const partnerUri = partnerAvatarSource(cfg);
 
   const hideForRoute =
@@ -194,8 +205,12 @@ export function LiveDeliveryTabBanner({
     const orderIsNewInSession = !seenOrderIdsInSession.has(numericId);
 
     let st: DeliveryPartnerOrderStatus | null = null;
+    let extSt: ExternalOrderStatusResponse | null = null;
     try {
-      st = await getDeliveryPartnerOrderStatus(numericId);
+      [st, extSt] = await Promise.all([
+        getDeliveryPartnerOrderStatus(numericId),
+        getExternalOrderStatus(numericId)
+      ]);
     } catch {
       if (pollActiveRef.current) setModel(null);
       return;
@@ -254,16 +269,29 @@ export function LiveDeliveryTabBanner({
     }
 
     let headerPrimary = '';
-    if (phase === 'packing') {
-      headerPrimary = 'Your order is getting packed';
-    } else if (phase === 'tracking') {
-      headerPrimary = 'Your delivery partner is out for delivery';
-    } else if (phase === 'delivered') {
-      headerPrimary = 'Your order has been delivered';
+
+    // if (extSt?.order && phase !== 'delivered') {
+    //   if (extSt.order.exact_time) {
+    //     headerPrimary = `Arriving by ${extSt.order.exact_time}`;
+    //   } else if (extSt.order.eta) {
+    //     headerPrimary = `Arriving in ${extSt.order.eta} mins`;
+    //   } else if (extSt.order.is_delayed && extSt.order.delayed_by) {
+    //     headerPrimary = `Delayed by ${extSt.order.delayed_by}`;
+    //   }
+    // }
+
+    if (!headerPrimary) {
+      if (phase === 'packing') {
+        headerPrimary = 'Your order is getting packed';
+      } else if (phase === 'tracking') {
+        headerPrimary = 'Your delivery partner is out for delivery';
+      } else if (phase === 'delivered') {
+        headerPrimary = 'Your order has been delivered';
+      }
     }
 
     if (!pollActiveRef.current) return;
-    setModel({ phase, order: fullOrder, partnerStatus: st, headerPrimary });
+    setModel({ phase, order: fullOrder, partnerStatus: st, limechatStatus: extSt, headerPrimary });
   }, [
     isAuthenticated,
     user?.customerAccessToken,
@@ -282,23 +310,33 @@ export function LiveDeliveryTabBanner({
     }
     pollActiveRef.current = true;
     let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+    const fastWindowEnd = Date.now() + pollFastWindowMs;
+
     const gen = ++fetchGen.current;
-    const run = () => {
+
+    const tick = async () => {
       if (cancelled || gen !== fetchGen.current) return;
-      void fetchLive();
+      await fetchLive();
+      if (cancelled || gen !== fetchGen.current) return;
+
+      const interval = Date.now() < fastWindowEnd ? pollFastMs : pollSlowMs;
+      timerId = setTimeout(tick, interval);
     };
-    run();
-    const t = setInterval(run, POLL_MS);
+
+    tick();
+
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') run();
+      if (s === 'active' && !timerId) tick();
     });
+
     return () => {
       cancelled = true;
       pollActiveRef.current = false;
-      clearInterval(t);
+      if (timerId) clearTimeout(timerId);
       sub.remove();
     };
-  }, [showTabBar, tabBarVisible, hideForRoute, fetchLive]);
+  }, [showTabBar, tabBarVisible, hideForRoute, fetchLive, pollFastMs, pollSlowMs, pollFastWindowMs]);
 
   const visible = !!model && showTabBar && tabBarVisible && !hideForRoute;
 

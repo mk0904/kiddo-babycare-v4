@@ -113,6 +113,7 @@ export default function HomeScreen() {
     // Background image / copy can follow category; backgroundColor stays global so it does not shift per tab.
     const backgroundImage = categoryHeader?.backgroundImage || globalHeader?.backgroundImage;
     const backgroundColor = globalHeader?.backgroundColor || 'transparent';
+    const walletConfig = appConfigService.getWalletConfig();
 
     return {
       backgroundColor,
@@ -122,8 +123,9 @@ export default function HomeScreen() {
       hasImage: !!backgroundImage,
       globalGlass: globalHeader?.glass,
       categoryGlass: categoryHeader?.glass,
+      iconUrl: walletConfig?.walletScreen?.iconUrl,
     };
-  }, [selectedCategory, configLoading]);
+  }, [selectedCategory, configLoading, milestoneUiRev]);
 
   /** Main scroll area fill — from kiddo config (categories.defaultPageBackgroundColor / items.*.pageBackgroundColor) */
   const pageBackgroundColor = useMemo(
@@ -210,6 +212,15 @@ export default function HomeScreen() {
   }, [selectedCategory]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
+    try {
+      const { trackTappedInHomescreen } = require('@/utils/mixpanelHelpers');
+      const sectionName = block.title || block.id || block.type || 'unknown_section';
+      const iconName = item?.title || item?.label || item?.id || 'unknown_icon';
+      trackTappedInHomescreen(`${sectionName}_${iconName}`);
+    } catch (e) {
+      console.warn('Analytics tracking error:', e);
+    }
+
     if (!link && !item?.collectionId) {
       return;
     }

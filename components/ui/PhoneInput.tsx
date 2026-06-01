@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 interface PhoneInputProps {
   value: string;
@@ -14,18 +13,21 @@ interface PhoneInputProps {
 export function PhoneInput({
   value,
   onChangeText,
-  placeholder = 'Enter 10-digit phone number',
+  placeholder = 'Your number here',
   editable = true,
   error = false,
 }: PhoneInputProps) {
   return (
     <View style={[styles.wrapper, error && styles.wrapperError]}>
-      <Ionicons
-        name="call-outline"
-        size={20}
-        color={Colors.textSecondary}
-        style={styles.icon}
-      />
+      <View style={styles.countrySelector}>
+        <Text style={styles.countryText}>IN +91</Text>
+        <Ionicons
+          name="chevron-down"
+          size={16}
+          color={Colors.textSecondary}
+          style={styles.chevronIcon}
+        />
+      </View>
       <TextInput
         style={styles.input}
         placeholder={placeholder}
@@ -37,18 +39,6 @@ export function PhoneInput({
         autoFocus={false}
         editable={editable}
       />
-      {value.length > 0 && (
-        <TouchableOpacity
-          onPress={() => onChangeText('')}
-          style={styles.clearButton}
-        >
-          <Ionicons
-            name="close-circle"
-            size={20}
-            color={Colors.textSecondary}
-          />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -57,33 +47,40 @@ const styles = StyleSheet.create({
   wrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 25,
-    paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 20,
-    borderWidth: 0.5,
-    borderColor: '#E5E7EB',
-    minHeight: 50,
+    borderWidth: 2,
+    borderColor: '#D5D7DA',
+    minHeight: 52,
   },
   wrapperError: {
-    borderColor: '#EF4444',
+    borderColor: '#F04438',
     backgroundColor: '#FEF2F2',
   },
-  icon: {
-    marginRight: 10,
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+    paddingRight: 12,
+    borderRightWidth: 0, // In screenshot there is no separator line, just a gap
+  },
+  countryText: {
+    fontSize: Fonts.MediumFontSize,
+    fontFamily: Fonts.LexendRegular,
+    color: '#535862',
+    marginRight: 4,
+  },
+  chevronIcon: {
+    marginTop: 2,
   },
   input: {
     flex: 1,
-    fontSize: 18,
-    color: Colors.text,
+    fontSize: Fonts.MediumFontSize,
+    color: '#181D27',
     padding: 0,
-    minHeight: 24,
-    fontFamily: Fonts.Medium,
-  },
-  clearButton: {
-    marginLeft: 10,
-    padding: 4,
+    fontFamily: Fonts.LexendSemiBold,
   },
 });
 
