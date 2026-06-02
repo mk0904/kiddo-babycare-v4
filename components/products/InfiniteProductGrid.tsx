@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, View, FlatList } from 'react-native';
+import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { ProductCard } from './ProductCard';
 import { CollectionComponentProps, ProductCollection, ProductCollectionProps } from './ProductCollection';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -49,28 +50,40 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
     };
   }, [productCardWidth, productStyle]);
 
-  // Match gauntlet: simple renderItem, no wrapper Views
-  const renderItem = React.useCallback(
-    ({ item }: { item: any }) => {
+  // Transform data into rows of 2 for FlashList
+  const rowData = React.useMemo(() => {
+    const rows: any[][] = [];
+    if (!products) return rows;
+    for (let i = 0; i < products.length; i += 2) {
+      rows.push(products.slice(i, i + 2));
+    }
+    return rows;
+  }, [products]);
+
+  // Render a row of products
+  const renderRow = React.useCallback(
+    ({ item: rowItems }: { item: any[] }) => {
       return (
-        <ProductCard
-          product={item}
-          containerStyle={productCardStyle?.root}
-          numColumns={productOptions?.numColumns}
-          width={productCardWidth}
-          collectionId={collectionId}
-        />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: rowGap, width: availableWidth }}>
+          {rowItems.map((item, index) => (
+            <ProductCard
+              key={item.id || item.handle || index.toString()}
+              product={item}
+              containerStyle={productCardStyle?.root}
+              numColumns={productOptions?.numColumns || 2}
+              width={productCardWidth}
+              collectionId={collectionId}
+            />
+          ))}
+          {/* Fill empty space if odd number of items */}
+          {rowItems.length === 1 && <View style={{ width: productCardWidth }} />}
+        </View>
       );
     },
-    [productCardStyle, productOptions, productCardWidth, collectionId]
+    [productCardStyle, productOptions, productCardWidth, collectionId, rowGap, availableWidth]
   );
 
-  // Match gauntlet: simple keyExtractor
-  const keyExtractor = React.useCallback((item: any) => {
-    return item.id || item.handle || item;
-  }, []);
-
-  const listRef = React.useRef<FlatList>(null);
+  const listRef = React.useRef<FlashList<any>>(null);
 
   // Scroll to top when collection changes
   React.useEffect(() => {
@@ -90,15 +103,15 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
     );
   }
 
-  // When contentWidth is set, wrap FlatList in a View with that width so the list is constrained and cards don't get cropped
+  // When contentWidth is set, wrap FlashList in a View with that width so the list is constrained and cards don't get cropped
   const listContent = (
-    <FlatList
+    <FlashList
       ref={listRef}
-      data={products}
-      numColumns={2}
-      keyExtractor={keyExtractor}
+      data={rowData}
+      estimatedItemSize={380} // Estimated height of a row
+      keyExtractor={(_, index) => `row-${index}`}
       showsVerticalScrollIndicator={false}
-      renderItem={renderItem}
+      renderItem={renderRow}
       refreshControl={
         refetch ? (
           <RefreshControl
@@ -109,9 +122,8 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
         ) : undefined
       }
       scrollEnabled={scrollable}
-      initialNumToRender={6}
-      windowSize={4}
-      maxToRenderPerBatch={6}
+      // Android performance optimizations
+      drawDistance={760}
       contentContainerStyle={[
         {
           paddingHorizontal: paddingHorizontal,
@@ -120,11 +132,6 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
         },
         listStyle?.contentContainer,
       ]}
-      columnWrapperStyle={{
-        justifyContent: 'space-between',
-        width: availableWidth, // Match exactly with card calculation
-        marginBottom: rowGap, // Add row gap between rows
-      }}
       onEndReached={(d) => {
         if (hasNextPage && fetchMore) {
           const id = Array.isArray(collectionId) ? collectionId[0] : collectionId;

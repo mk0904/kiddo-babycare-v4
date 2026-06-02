@@ -151,6 +151,14 @@ export const useUserStore = create<UserStore>()(
                 } catch (e) {
                     console.warn('Analytics reset error:', e);
                 }
+
+                // Reset Freshchat user on logout
+                try {
+                    const { resetFreshchatUser } = require('@/services/freshchatService');
+                    resetFreshchatUser();
+                } catch (e) {
+                    console.warn('[UserStore] Freshchat reset error:', e);
+                }
             },
 
             // Skip login (guest mode)

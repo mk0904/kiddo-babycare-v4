@@ -89,6 +89,7 @@ export default function MapAddressScreen() {
     const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
     const [loadingAddress, setLoadingAddress] = useState(false);
     const [mapError, setMapError] = useState<string | null>(null);
+    const [isMapMoving, setIsMapMoving] = useState(false);
 
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -208,15 +209,45 @@ export default function MapAddressScreen() {
 
                 let streetNumber = '';
                 let route = '';
+                let newArea = '';
                 let newCity = '';
                 let newState = '';
                 let newPincode = '';
+                
+                // Collect specific building/society/sector components
+                const granularParts: string[] = [];
 
                 addressComponents.forEach((component: any) => {
                     const types = component.types;
+                    
+                    // Building / Apartment / Society
+                    if (types.includes('premise') || types.includes('subpremise') || types.includes('point_of_interest')) {
+                        if (!granularParts.includes(component.long_name)) granularParts.push(component.long_name);
+                    }
+                    
+                    // Street
+                    if (types.includes('route')) {
+                        if (!granularParts.includes(component.long_name)) granularParts.push(component.long_name);
+                    }
+
+                    // Sector / Block / Neighborhood
+                    if (types.includes('neighborhood') || types.includes('sublocality_level_3') || types.includes('sublocality_level_2')) {
+                        if (!granularParts.includes(component.long_name)) granularParts.push(component.long_name);
+                    }
+                    
+                    // General Area
+                    if (types.includes('sublocality') || types.includes('sublocality_level_1')) {
+                        if (!newArea) newArea = component.long_name;
+                        if (!granularParts.includes(component.long_name)) granularParts.push(component.long_name);
+                    }
+                    
                     if (types.includes('street_number')) streetNumber = component.long_name;
-                    if (types.includes('route')) route = component.long_name;
-                    if (types.includes('locality')) newCity = component.long_name;
+                    
+                    if (types.includes('locality')) {
+                        newCity = component.long_name;
+                    } else if (!newCity && (types.includes('administrative_area_level_2') || types.includes('administrative_area_level_3'))) {
+                        newCity = component.long_name;
+                    }
                     if (types.includes('administrative_area_level_1')) newState = component.long_name;
                     if (types.includes('postal_code')) newPincode = component.long_name;
                 });
@@ -225,10 +256,12 @@ export default function MapAddressScreen() {
                     formattedAddress,
                     latitude,
                     longitude,
+                    area: newArea,
                     city: newCity,
                     state: newState,
                     pincode: newPincode,
                     address1: `${streetNumber} ${route}`.trim(),
+                    buildingAndSector: granularParts.join(', '),
                 };
 
                 setSelectedLocation(locData);
@@ -250,7 +283,14 @@ export default function MapAddressScreen() {
         }
     };
 
+    const onRegionChange = () => {
+        if (!isMapMoving) {
+            setIsMapMoving(true);
+        }
+    };
+
     const onRegionChangeComplete = (newRegion: Region) => {
+        setIsMapMoving(false);
         // Debounce reverse geocoding on drag (reduced delay for faster response)
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
@@ -502,6 +542,7 @@ export default function MapAddressScreen() {
                     style={styles.map}
                     provider={PROVIDER_GOOGLE}
                     initialRegion={initialRegion}
+                    onRegionChange={onRegionChange}
                     onRegionChangeComplete={onRegionChangeComplete}
                     showsUserLocation={true}
                     showsMyLocationButton={true}
@@ -553,12 +594,12 @@ export default function MapAddressScreen() {
                     <TouchableOpacity
                         style={[
                             styles.confirmButton, 
-                            (!selectedLocation || loadingAddress || etaLoading || !isServiceable) && styles.disabledButton
+                            (!selectedLocation || loadingAddress || isMapMoving || etaLoading || !isServiceable) && styles.disabledButton
                         ]}
                         onPress={handleConfirmLocation}
-                        disabled={!selectedLocation || loadingAddress || etaLoading || !isServiceable}
+                        disabled={!selectedLocation || loadingAddress || isMapMoving || etaLoading || !isServiceable}
                     >
-                        {loadingAddress ? (
+                        {loadingAddress || isMapMoving ? (
                             <ActivityIndicator size="small" color="#FFF" />
                         ) : (
                             <Text style={styles.confirmButtonText}>

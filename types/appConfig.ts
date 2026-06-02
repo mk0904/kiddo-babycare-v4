@@ -421,6 +421,7 @@ export interface AppConfigResponse {
   serviceableDistance?: number;
   /** When true, show "Events" in address Save as (Home/Work/Other/Events) and persist in Shopify. */
   isEvent?: boolean;
+  isFreshChatEnabled?: boolean;
   /** Some backends send special-deal promo at root instead of under `cart`. */
   speacialDealConfig?: SpecialDealConfig;
   specialDealConfig?: SpecialDealConfig;

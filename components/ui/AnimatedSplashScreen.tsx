@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-    View,
-    StyleSheet,
-    Image,
-    Dimensions,
-    Animated,
-    Platform,
-    StatusBar,
-} from 'react-native';
 import { ResizeMode, Video } from 'expo-av';
 import * as NavigationBar from 'expo-navigation-bar'; // Added NavigationBar import
+import { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Image,
+    Platform,
+    StatusBar,
+    StyleSheet
+} from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 

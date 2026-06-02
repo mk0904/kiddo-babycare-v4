@@ -41,14 +41,18 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     try {
       setLoading(true);
       // Use Promise.allSettled to handle individual failures
-      const collectionPromises = collectionIds.map((collection) =>
-        shopifyApi.getCollectionById(
+      const collectionPromises = collectionIds.map((collection) => {
+        // Skip network fetch if config already provides the name and image!
+        if (typeof collection === 'object' && collection.name && collection.imageUrl) {
+          return Promise.resolve(collection);
+        }
+        return shopifyApi.getCollectionById(
           typeof collection === 'object' ? collection.id : collection
         ).catch((error) => {
           console.error(`[CategoryGrid] Error loading collection:`, error);
           return null;
-        })
-      );
+        });
+      });
 
       const results = await Promise.allSettled(collectionPromises);
 
@@ -58,6 +62,12 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
             const collectionDef = typeof collectionIds[index] === 'object'
               ? collectionIds[index]
               : { id: collectionIds[index], name: '' };
+              
+            // If the result was mocked from the config above, use it directly
+            if (result.value.imageUrl && typeof result.value.title === 'undefined') {
+                return result.value as CollectionItem;
+            }
+
             const item: CollectionItem = {
               id: result.value.id,
               name: collectionDef.name || result.value.title,

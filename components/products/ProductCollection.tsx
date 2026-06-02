@@ -7,7 +7,10 @@ import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
+import { ProductCardSkeleton } from '@/components/ui/SkeletonLoader';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export interface CollectionComponentProps {
   products: any[]; // Full product objects
@@ -650,12 +653,29 @@ export function ProductCollection({
     return null;
   }
 
-  // Loading state
+  // Loading state with Skeleton layout for instant perceived performance
   if (isLoading && allProducts.length === 0) {
+    // Calculate card width for 2 columns with standard padding
+    const padding = 16;
+    const gap = 8;
+    const availableWidth = defaultContentWidth - (padding * 2);
+    const cardWidth = (availableWidth - gap) / 2;
+
     return (
-      <View style={[styles.container, styles.loadingContainer, style?.root]}>
-        <ActivityIndicator size="small" color="#000" />
-        <Text style={styles.loadingText}>Loading products...</Text>
+      <View style={[styles.container, style?.root]}>
+        {showHeading && title && (
+          <View style={[styles.header, style?.header]}>
+            <Text style={[styles.title, style?.title]} numberOfLines={2}>{title}</Text>
+          </View>
+        )}
+        <View style={{ paddingHorizontal: padding, paddingTop: 12 }}>
+          {[0, 1, 2].map((rowIndex) => (
+            <View key={rowIndex} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: gap }}>
+              <ProductCardSkeleton width={cardWidth} />
+              <ProductCardSkeleton width={cardWidth} />
+            </View>
+          ))}
+        </View>
       </View>
     );
   }

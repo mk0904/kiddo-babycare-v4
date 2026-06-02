@@ -33,10 +33,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
 import { initializeAppsFlyer } from '@/services/appsflyerService';
-import { initializeFreshchat } from '@/services/freshchatService';
 import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
 import { errorService } from '@/services/errorService';
+import { initializeFreshchat } from '@/services/freshchatService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
@@ -57,6 +57,37 @@ const ENTRY_SCREENS_SEEN_KEY = 'entry_screens_seen_v1';
 export const unstable_settings = {
   initialRouteName: 'index',
 };
+
+// Handle incoming notifications and forward to Freshchat if applicable
+import { Freshchat } from 'react-native-freshchat-sdk';
+
+Notifications.addNotificationReceivedListener((notification) => {
+  const data = notification.request?.content?.data;
+  if (data) {
+    console.log('[Freshchat] Received foreground push payload:', data);
+    Freshchat.isFreshchatNotification(data, (isFreshchat: boolean) => {
+      console.log('[Freshchat] isFreshchatNotification result:', isFreshchat);
+      if (isFreshchat) {
+        console.log('[Freshchat] Forwarding payload to Freshchat.handlePushNotification');
+        Freshchat.handlePushNotification(data);
+      }
+    });
+  }
+});
+
+Notifications.addNotificationResponseReceivedListener((response) => {
+  const data = response.notification?.request?.content?.data;
+  if (data) {
+    console.log('[Freshchat] Received background/tapped push payload:', data);
+    Freshchat.isFreshchatNotification(data, (isFreshchat: boolean) => {
+      console.log('[Freshchat] isFreshchatNotification result (tapped):', isFreshchat);
+      if (isFreshchat) {
+        console.log('[Freshchat] Forwarding tapped payload to Freshchat.handlePushNotification');
+        Freshchat.handlePushNotification(data);
+      }
+    });
+  }
+});
 
 // Show push notifications when app is in foreground
 Notifications.setNotificationHandler({
@@ -89,6 +120,7 @@ export default function RootLayout() {
   const attInitStartedRef = React.useRef(false);
   const appsFlyerUnsubRef = React.useRef<(() => void) | null>(null);
   const entryPrefetchStartedRef = React.useRef(false);
+  const entryDecisionResolvedRef = React.useRef(false);
   const [isConnected, setIsConnected] = React.useState<boolean | null>(true);
 
   const currentVersion = getAppVersionForApi();
@@ -111,6 +143,7 @@ export default function RootLayout() {
   );
 
   const resolveEntryScreensDecision = useCallback((screens: EntryScreenItem[]) => {
+    entryDecisionResolvedRef.current = true;
     setEntryScreens(screens);
     setIsEntryScreensDecisionPending(false);
     if (!isSplashVisible && screens.length > 0) {
@@ -186,20 +219,20 @@ export default function RootLayout() {
     const setReady = () => {
       if (isReadySet) return;
       isReadySet = true;
-      
+
       if (fontTimeout) {
         clearTimeout(fontTimeout);
         fontTimeout = null;
       }
-      
+
       // Preload config in background (non-blocking), then app config from backend (cart/checkout, free shoes, gift wrap)
       configService.loadConfig().then(() => {
         appConfigService.loadAppConfig(false, appConfigPayload).then((config) => {
           if (config?.forceUpdateConfig?.isForceUpdateEnabled) {
-            const minVersion = Platform.OS === 'ios' 
-              ? config.forceUpdateConfig.minIosAppVersion 
+            const minVersion = Platform.OS === 'ios'
+              ? config.forceUpdateConfig.minIosAppVersion
               : config.forceUpdateConfig.minAndroidAppVersion;
-            
+
             if (minVersion && isVersionBelowMinimum(currentVersion, minVersion)) {
               setRemoteUpdateRequired(true);
             }
@@ -210,7 +243,7 @@ export default function RootLayout() {
       }).catch((error) => {
         if (__DEV__) console.warn('[RootLayout] Failed to preload config:', error);
       });
-      
+
       setAppIsReady(true);
       try {
         // Identify user on app open so CleverTap attributes App Launched to profile (DAU/WAU/MAU)
@@ -250,6 +283,23 @@ export default function RootLayout() {
               await requestTrackingPermissionsAsync();
             }
           }
+
+
+          try {
+            // Must initialize Freshchat here so it can receive background push notifications
+            initializeFreshchat();
+          } catch (e) {
+            if (__DEV__) console.warn('[Freshchat] init failed:', e);
+          }
+
+          if (Platform.OS === 'ios') attReadyRef.current = true;
+          try {
+            appsFlyerUnsubRef.current = initializeAppsFlyer();
+          } catch (e) {
+            if (__DEV__) console.warn('[AppsFlyer] init failed:', e);
+          }
+
+          trySetReady();
         } catch (e) {
           if (__DEV__) console.warn('[ATT] request failed:', e);
         } finally {
@@ -259,11 +309,7 @@ export default function RootLayout() {
           } catch (e) {
             if (__DEV__) console.warn('[AppsFlyer] init failed:', e);
           }
-          try {
-            initializeFreshchat();
-          } catch (e) {
-            if (__DEV__) console.warn('[Freshchat] init failed:', e);
-          }
+
           trySetReady();
         }
       })();
@@ -388,7 +434,7 @@ export default function RootLayout() {
         }
       };
 
-      initOneSignal().catch(() => {});
+      initOneSignal().catch(() => { });
     };
 
     // On iOS, wait for ATT dialog to resolve before showing notification permission.
@@ -404,7 +450,7 @@ export default function RootLayout() {
     } else {
       setTimeout(startOneSignalInit, 1000);
     }
-    
+
     // Hide native splash immediately
     const hideNativeSplash = async () => {
       try {
@@ -414,7 +460,7 @@ export default function RootLayout() {
       }
     };
     hideNativeSplash();
-    
+
     // Set app ready if fonts loaded OR if there was an error (don't block on font errors)
     if (fontsLoaded || fontError) {
       if (__DEV__) console.log('[RootLayout] Fonts resolved, trying to set ready');
@@ -423,7 +469,7 @@ export default function RootLayout() {
 
     // Safety timeout for entry screens decision
     entryDecisionTimeout = setTimeout(() => {
-      if (isEntryScreensDecisionPending) {
+      if (!entryDecisionResolvedRef.current) {
         console.warn('⚠️ Entry screens decision timed out - forcing continue');
         resolveEntryScreensDecision([]);
       }
@@ -529,37 +575,37 @@ export default function RootLayout() {
               <UpdateRequiredScreen />
             </View>
           ) : (
-          <>
-            <ForceReloginCheck />
-            <NectorProvider>
-            <AddressProvider>
-              <WishlistProvider>
-                <RecentlyViewedProvider>
-                  <TryAndBuyProvider>
-                    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                    <TabBarVisibilityProvider>
-                      <MilestoneDockProvider>
-                        <MilestoneInlineCartProvider>
-                          <LiveDeliveryStackOffsetProvider>
-                            <Stack screenOptions={{ headerShown: false }}>
-                              <Stack.Screen name="index" />
-                              <Stack.Screen name="(auth)" />
-                              <Stack.Screen name="(tabs)" />
-                              <Stack.Screen name="products/[id]" />
-                              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                            </Stack>
-                          </LiveDeliveryStackOffsetProvider>
-                        </MilestoneInlineCartProvider>
-                      </MilestoneDockProvider>
-                    </TabBarVisibilityProvider>
-                    <StatusBar style="dark" />
-                    </ThemeProvider>
-                  </TryAndBuyProvider>
-                </RecentlyViewedProvider>
-              </WishlistProvider>
-            </AddressProvider>
-          </NectorProvider>
-          </>
+            <>
+              <ForceReloginCheck />
+              <NectorProvider>
+                <AddressProvider>
+                  <WishlistProvider>
+                    <RecentlyViewedProvider>
+                      <TryAndBuyProvider>
+                        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                          <TabBarVisibilityProvider>
+                            <MilestoneDockProvider>
+                              <MilestoneInlineCartProvider>
+                                <LiveDeliveryStackOffsetProvider>
+                                  <Stack screenOptions={{ headerShown: false }}>
+                                    <Stack.Screen name="index" />
+                                    <Stack.Screen name="(auth)" />
+                                    <Stack.Screen name="(tabs)" />
+                                    <Stack.Screen name="products/[id]" />
+                                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                                  </Stack>
+                                </LiveDeliveryStackOffsetProvider>
+                              </MilestoneInlineCartProvider>
+                            </MilestoneDockProvider>
+                          </TabBarVisibilityProvider>
+                          <StatusBar style="dark" />
+                        </ThemeProvider>
+                      </TryAndBuyProvider>
+                    </RecentlyViewedProvider>
+                  </WishlistProvider>
+                </AddressProvider>
+              </NectorProvider>
+            </>
           )}
         </AuthProvider>
       </QueryClientProvider>

@@ -63,7 +63,10 @@ export default function AddressFormScreen() {
     const [phone, setPhone] = useState(user?.phone || '');
     const [flat, setFlat] = useState('');
     const [area, setArea] = useState(locationData?.city || '');
-    const [street, setStreet] = useState(locationData?.address1 || '');
+    
+    // Only fill building/society/apartment name and sector/area
+    const initialStreet = locationData?.buildingAndSector || '';
+    const [street, setStreet] = useState(initialStreet);
     const isEventEnabled = appConfigService.isEventEnabled();
     const addressTags = React.useMemo(() => getAddressTags(isEventEnabled), [isEventEnabled]);
     const [selectedTag, setSelectedTag] = useState<'home' | 'work' | 'other' | 'events'>('home');
@@ -113,27 +116,6 @@ export default function AddressFormScreen() {
         try {
             let refinedLat = locationData?.latitude;
             let refinedLng = locationData?.longitude;
-
-            try {
-                const fullAddressString = `${flat.trim()}, ${street.trim()}, ${area.trim()}, ${locationData?.city || ''}`;
-                const etaUrl = getBackendApiPath('eta');
-                const etaResponse = await fetch(etaUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ address: fullAddressString, hasGiftWrap: false })
-                });
-                
-                if (etaResponse.ok) {
-                    const etaData = await etaResponse.json();
-                    if (etaData && typeof etaData.lat === 'number' && typeof etaData.lng === 'number') {
-                        refinedLat = etaData.lat;
-                        refinedLng = etaData.lng;
-                        console.log('Refined coordinates via /api/v1/eta:', refinedLat, refinedLng);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to forward geocode via ETA endpoint:', e);
-            }
 
             const addressData = {
                 name: tagToName(selectedTag),

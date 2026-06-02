@@ -9,6 +9,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { configService } from '@/services/configService';
 import { isProductOutOfStock } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -226,16 +227,17 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [width, containerStyle?.width, numColumns, horizontalPadding, gap]
   );
 
-  // Get optimized image URL
+  // Get optimized image URL — request at 2× card width for retina screens
   const currentImageUrl = useMemo(() => {
     const url =
       allImageUrls[imageErrorCount] ||
       allImageUrls[0] ||
       'https://via.placeholder.com/300';
 
-    // Simple return for now, image optimization service not present
-    return url;
-  }, [allImageUrls, imageErrorCount]);
+    // Request a Shopify CDN-resized image at 2× cardWidth for retina
+    const targetWidth = Math.round(cardWidth * 2);
+    return shopifyImageUrl(url, targetWidth);
+  }, [allImageUrls, imageErrorCount, cardWidth]);
 
   // Reset image error count when product changes
   useEffect(() => {
@@ -628,6 +630,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             source={{ uri: currentImageUrl }}
             style={styles.image}
             resizeMode="cover"
+            showSkeleton={true}
             onError={handleImageError}
             key={`img-${productId}-${imageErrorCount}`}
           />

@@ -12,6 +12,7 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -140,8 +141,11 @@ export default function InfinityScreen() {
     // When sidebar is shown, subcategory tap updates content in place (no navigation)
     const [activeCollectionId, setActiveCollectionId] = useState<string | null>(formatCollectionId(collectionId));
     const [activeTitle, setActiveTitle] = useState<string | null>(title || null);
-    // Measured width of the grid container (so product cards adapt and don't get cropped when sidebar is present)
-    const [gridContainerWidth, setGridContainerWidth] = useState<number | null>(null);
+    
+    // Calculate the width synchronously to avoid layout thrashing
+    const windowWidth = Dimensions.get('window').width;
+    const gridContainerWidth = sidebarSubcategories?.length ? windowWidth - 80 : windowWidth;
+    
     const effectiveCollectionId = (sidebarSubcategories?.length && activeCollectionId) ? activeCollectionId : (collectionId || '');
     const effectiveTitle = (sidebarSubcategories?.length && activeTitle !== null) ? activeTitle : (title || collection?.title || 'Products');
 
@@ -743,12 +747,13 @@ export default function InfinityScreen() {
                                 const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
                                 const subNorm = sub.collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
                                 const isSelected = currentNorm === subNorm;
-                                const imageUri = sub.imageUrl
+                                const optimizedUrl = sub.imageUrl ? shopifyImageUrl(sub.imageUrl, 100) : null;
+                                const imageUri = optimizedUrl
                                     ? (() => {
                                           const t = configService.getConfigLoadedAt();
-                                          if (t == null) return sub.imageUrl!;
-                                          const sep = sub.imageUrl!.includes('?') ? '&' : '?';
-                                          return `${sub.imageUrl!}${sep}_t=${t}`;
+                                          if (t == null) return optimizedUrl;
+                                          const sep = optimizedUrl.includes('?') ? '&' : '?';
+                                          return `${optimizedUrl}${sep}_t=${t}`;
                                       })()
                                     : null;
                                 return (
@@ -762,7 +767,7 @@ export default function InfinityScreen() {
                                         activeOpacity={0.7}
                                     >
                                         {imageUri ? (
-                                            <Image source={{ uri: imageUri }} style={styles.sidebarItemImage} contentFit="cover" />
+                                            <Image source={{ uri: imageUri }} style={styles.sidebarItemImage} contentFit="cover" transition={0} />
                                         ) : (
                                             <View style={styles.sidebarItemPlaceholder}>
                                                 <Ionicons name="pricetag-outline" size={18} color="#999" />
@@ -777,13 +782,10 @@ export default function InfinityScreen() {
                         </ScrollView>
                         </View>
                     )}
-                    <View
-                        style={styles.gridContainer}
-                        onLayout={(e) => setGridContainerWidth(e.nativeEvent.layout.width)}
-                    >
+                    <View style={styles.gridContainer}>
                     <InfiniteProductGrid
                         collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
-                        contentWidth={sidebarSubcategories?.length ? (gridContainerWidth != null && gridContainerWidth > 0 ? gridContainerWidth : Dimensions.get('window').width - 50) : undefined}
+                        contentWidth={sidebarSubcategories?.length ? gridContainerWidth : undefined}
                         sortKey={sortKey}
                         reverse={reverse}
                         filters={apiFilters} // Pass filters for client-side filtering

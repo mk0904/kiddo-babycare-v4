@@ -30,6 +30,9 @@ declare module 'react-native-freshchat-sdk' {
     showConversations: (options?: ConversationOptions) => void;
     showFAQs: () => void;
     setUser: (user: FreshchatUser, callback: (error: any) => void) => void;
-    resetUser: () => void;
+    resetUser: (callback?: (error: any) => void) => void;
+    setPushRegistrationToken: (token: string) => void;
+    handlePushNotification: (data: any) => void;
+    isFreshchatNotification: (data: any, callback: (isFreshchat: boolean) => void) => void;
   };
 }
