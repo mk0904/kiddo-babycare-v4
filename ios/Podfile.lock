@@ -1510,7 +1510,7 @@ PODS:
     - React-Core
   - react-native-razorpay (2.3.1):
     - razorpay-pod (= 1.5.0)
-    - React-Core
+    - React
   - react-native-safe-area-context (5.6.2):
     - hermes-engine
     - RCTRequired
@@ -2734,7 +2734,7 @@ SPEC CHECKSUMS:
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-onesignal: 7e6a97e3ebecbea1cdc469cdcaebd3244292c474
   react-native-otp-verify: 6d153f8a8e8392c6a51f9d94c090dc16d7c756b2
-  react-native-razorpay: 71306aa3b25653520daa864a5f999f11ed5ec2d6
+  react-native-razorpay: 376ba84b614ef8a22b5701df4ffee10f4c116d14
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
   react-native-skia: 05327e7acee05e7c27b68a5da0bc80d65f5d790c
   react-native-webview: b29007f4723bca10872028067b07abacfa1cb35a

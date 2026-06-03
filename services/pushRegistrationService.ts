@@ -7,6 +7,7 @@
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { Freshchat } from 'react-native-freshchat-sdk';
 import { getBackendApiPath } from './backendBase';
 
 function getPushRegisterUrl(): string {
@@ -27,6 +28,15 @@ export async function getNativePushTokenForBackend(): Promise<NativePushForBacke
     const devicePush = await Notifications.getDevicePushTokenAsync();
     const token = typeof devicePush?.data === 'string' ? devicePush.data : null;
     if (!token) return null;
+
+    // Send token to Freshchat
+    try {
+      console.log(`[Freshchat] Registering push token (${Platform.OS}):`, token);
+      Freshchat.setPushRegistrationToken(token);
+    } catch (e) {
+      console.warn('[Freshchat] Failed to set push registration token:', e);
+    }
+
     return { token, platform: Platform.OS as 'ios' | 'android' };
   } catch {
     return null;

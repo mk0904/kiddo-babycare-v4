@@ -2,6 +2,7 @@ import OptimizedImage from '@/components/ui/OptimizedImage';
 import { Colors, Fonts } from '@/constants/theme';
 import { CollectionImageCarouselBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import React, { useCallback } from 'react';
 import {
     Dimensions,
@@ -78,7 +79,7 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
           ]}
         >
           <OptimizedImage
-            source={{ uri: item.imageUrl }}
+            source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(itemWidth * 2)) }}
             style={[
               {
                 width: itemWidth,
@@ -89,7 +90,7 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
               blockStyles?.image,
             ]}
             contentFit={imageContentFit}
-            transition={200}
+            transition={0}
           />
         </TouchableOpacity>
       ),

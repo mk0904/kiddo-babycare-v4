@@ -2,6 +2,7 @@ import { Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { CollectionListBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
@@ -70,7 +71,7 @@ export function CollectionList({ block, onPress }: CollectionListProps) {
       >
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: shopifyImageUrl(item.image, Math.round(itemWidth * 2)) }}
             style={[
               styles.image,
               { borderRadius: roundness },

@@ -298,6 +298,16 @@ class AppConfigService {
     return parseServicableDistanceFromRecord(cfg as Record<string, unknown>);
   }
 
+  /** 
+   * Placeholder implementation for location serviceability.
+   * Full ETA-based serviceability is typically resolved in delivery routes.
+   */
+  isLocationServiceable(latitude: number, longitude: number): boolean {
+    // If backend provides a max distance, we'd compare it here if we had the dark store lat/lng.
+    // For now, assume true to allow users to add addresses. ETA check will validate later.
+    return true;
+  }
+
   getEntryScreens(): EntryScreenItem[] {
     const raw = this.config?.entryScreens;
     if (!Array.isArray(raw) || raw.length === 0) return [];
@@ -307,6 +317,10 @@ class AppConfigService {
   /** When true, show "Events" in address Save as and sync addressType to Shopify. */
   isEventEnabled(): boolean {
     return this.config?.isEvent === true;
+  }
+
+  isFreshChatEnabled(): boolean {
+    return this.config?.isFreshChatEnabled === true;
   }
 
   getReferralConfig(): ReferralConfig | null {

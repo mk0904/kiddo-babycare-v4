@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { nectorApi } from '@/services/nectorApi';
 import { oneSignalService } from '@/services/oneSignalService';
+import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -281,7 +282,8 @@ export default function AccountScreen() {
                 break;
 
             case 'freshchat':
-                Freshchat.showConversations();
+                const { openFreshchat } = require('@/services/freshchatService');
+                openFreshchat();
                 break;
 
             case 'custom':
@@ -455,6 +457,10 @@ export default function AccountScreen() {
                 {/* Menu Items */}
                 <View style={styles.menuCard}>
                     {config.menuItems && config.menuItems.length > 0 && config.menuItems.map((item, index) => {
+                        if (item.id === 'chat' && !appConfigService.isFreshChatEnabled()) {
+                            return null;
+                        }
+
                         const iconName = item.icon as any;
 
                         return (

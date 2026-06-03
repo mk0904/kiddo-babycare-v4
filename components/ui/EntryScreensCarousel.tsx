@@ -1,10 +1,11 @@
 import { Fonts } from '@/constants/theme';
 import type { EntryScreenItem } from '@/types/appConfig';
-import { Image } from 'expo-image';
-import React, { useEffect, useRef, useState } from 'react';
+
+import { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -15,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const AUTO_ADVANCE_MS = 4000;
+const AUTO_ADVANCE_MS = 3000;
 
 type EntryScreensCarouselProps = {
   screens: EntryScreenItem[];
@@ -77,7 +78,7 @@ export function EntryScreensCarousel({ screens, onDone }: EntryScreensCarouselPr
           ))}
         </View>
         <Pressable style={styles.nextButton} hitSlop={15} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>Next</Text>
+          <Text style={styles.nextButtonText}>Skip</Text>
         </Pressable>
       </View>
 
@@ -92,7 +93,7 @@ export function EntryScreensCarousel({ screens, onDone }: EntryScreensCarouselPr
         onMomentumScrollEnd={onMomentumEnd}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" />
+            <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
           </View>
         )}
       />
@@ -131,32 +132,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dot: {
-    width: 72, // 3x current (was 7)
+    width: 36, // 3x current (was 7)
     height: 7,
     borderRadius: 4,
     backgroundColor: '#D1D5DB',
     marginHorizontal: 2,
   },
   dotActive: {
-    width: 72, // 3x current (was 18)
+    width: 36, // 3x current (was 18)
     backgroundColor: '#F15E5E',
   },
   nextButton: {
     position: 'absolute',
     right: 16,
-    top: 0,
+    top: -5,
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#F15E5E',
-    backgroundColor: '#FEEFEF',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 16,
     paddingHorizontal: 12,
-
+    paddingVertical: 6,
   },
   nextButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F15E5E',
-    fontFamily: Fonts.LexendSemiBold,
+    color: '#181D27',
+    fontFamily: Fonts.SemiBold,
   },
 });

@@ -6,6 +6,7 @@ import {
 } from '@/utils/gridCellSizing';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo } from 'react';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import {
     Dimensions,
     Image,
@@ -362,7 +363,7 @@ export function FlexibleGrid({
         }]}>
           {item.imageUrl ? (
             <ExpoImage
-              source={{ uri: item.imageUrl }}
+              source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(size.width * 2)) }}
               style={[styles.image, { borderRadius }]}
               contentFit={imageResizeMode === 'stretch' ? 'fill' : imageResizeMode}
             />

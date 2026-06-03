@@ -53,7 +53,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
                 onLoadStart={handleLoadStart}
                 onLoad={handleLoadEnd}
                 onError={handleError}
-                transition={200}
+                transition={0} // No artificial fade-in delay
                 {...props}
             />
         </View>

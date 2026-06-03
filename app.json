@@ -2,10 +2,13 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["app", "kiddo"],
+    "scheme": [
+      "app",
+      "kiddo"
+    ],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -44,6 +47,7 @@
     },
     "android": {
       "splash": {
+        "image": "./assets/images/new-splash-screen.png",
         "backgroundColor": "#f4eee5",
         "resizeMode": "cover"
       },
@@ -130,7 +134,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon3.png",
+          "image": "./assets/images/new-splash-screen.png",
           "backgroundColor": "#ffffff",
           "resizeMode": "cover"
         }
@@ -176,7 +180,7 @@
       ]
     ],
     "splash": {
-      "image": "./assets/images/icon3.png",
+      "image": "./assets/images/new-splash-screen.png",
       "backgroundColor": "#ffffff",
       "resizeMode": "cover"
     },
