@@ -7,9 +7,9 @@ import {
     resolveImageHeightFromAspect,
     resolveRowWidths,
 } from '@/utils/gridCellSizing';
-import { Image } from 'expo-image';
 import { ResizeMode, Video } from 'expo-av';
-import React, { useMemo, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Image as RNImage,
@@ -308,7 +308,6 @@ export function VideoBanner({ block, onPress }: VideoBannerProps) {
 const styles = StyleSheet.create({
     container: {
         width: '100%',
-        backgroundColor: '#000',
         overflow: 'hidden',
     },
     video: {
@@ -345,7 +344,6 @@ const styles = StyleSheet.create({
     },
     overlayImageWrap: {
         overflow: 'hidden',
-        backgroundColor: 'rgba(0,0,0,0.15)',
     },
     overlayImage: {
         width: '100%',
