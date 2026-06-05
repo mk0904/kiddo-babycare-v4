@@ -67,7 +67,7 @@ Notifications.addNotificationReceivedListener((notification) => {
     console.log('[Freshchat] Received foreground push payload:', data);
     Freshchat.isFreshchatNotification(data, (isFreshchat: boolean) => {
       console.log('[Freshchat] isFreshchatNotification result:', isFreshchat);
-      if (isFreshchat) {
+      if (isFreshchat && Platform.OS == 'android') {
         console.log('[Freshchat] Forwarding payload to Freshchat.handlePushNotification');
         Freshchat.handlePushNotification(data);
       }
@@ -81,7 +81,7 @@ Notifications.addNotificationResponseReceivedListener((response) => {
     console.log('[Freshchat] Received background/tapped push payload:', data);
     Freshchat.isFreshchatNotification(data, (isFreshchat: boolean) => {
       console.log('[Freshchat] isFreshchatNotification result (tapped):', isFreshchat);
-      if (isFreshchat) {
+      if (isFreshchat && Platform.OS == 'android') {
         console.log('[Freshchat] Forwarding tapped payload to Freshchat.handlePushNotification');
         Freshchat.handlePushNotification(data);
       }

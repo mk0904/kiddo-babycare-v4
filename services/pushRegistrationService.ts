@@ -29,10 +29,12 @@ export async function getNativePushTokenForBackend(): Promise<NativePushForBacke
     const token = typeof devicePush?.data === 'string' ? devicePush.data : null;
     if (!token) return null;
 
-    // Send token to Freshchat
+    // Send token to Freshchat (Android only, iOS is handled natively in AppDelegate)
     try {
-      console.log(`[Freshchat] Registering push token (${Platform.OS}):`, token);
-      Freshchat.setPushRegistrationToken(token);
+      if (Platform.OS === 'android') {
+        console.log(`[Freshchat] Registering push token (android):`, token);
+        Freshchat.setPushRegistrationToken(token);
+      }
     } catch (e) {
       console.warn('[Freshchat] Failed to set push registration token:', e);
     }
