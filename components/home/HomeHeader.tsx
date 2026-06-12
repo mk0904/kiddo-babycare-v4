@@ -1,4 +1,5 @@
 import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
+import { TryAtHomePill } from '@/components/home/TryAtHomePill';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
@@ -48,6 +49,7 @@ interface HomeHeaderProps {
   };
   searchSuggestions?: string[];
   onSearchPress?: () => void;
+  onTryAtHomePress?: () => void;
   onLocationPress?: () => void;
   categories?: Array<{
     key: string;
@@ -71,6 +73,7 @@ export function HomeHeader({
   headerConfig = {},
   searchSuggestions = [],
   onSearchPress,
+  onTryAtHomePress,
   onLocationPress,
   categories = [],
   selectedCategory,
@@ -394,7 +397,12 @@ export function HomeHeader({
         ) : null}
         <View pointerEvents="box-none">
           <View style={styles.searchContainer}>
-            <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+            <View style={styles.searchRow}>
+              <View style={styles.searchBarWrap}>
+                <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+              </View>
+              <TryAtHomePill onPress={onTryAtHomePress} />
+            </View>
           </View>
           {categories && categories.length > 0 ? (
             <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
@@ -493,10 +501,22 @@ const styles = StyleSheet.create({
   searchContainer: {
     position: 'relative',
     zIndex: 1,
-    paddingHorizontal: 20,
+    paddingLeft: 10,
+    paddingRight: -30,
     paddingTop: 10,
     paddingBottom: 4,
     backgroundColor: 'transparent',
+    
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+    
+  },
+  searchBarWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   wishlistButton: {
     padding: 8,

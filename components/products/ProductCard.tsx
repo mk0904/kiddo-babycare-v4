@@ -864,16 +864,18 @@ const styles = StyleSheet.create({
     left: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: '#FEF9C3',
     paddingHorizontal: 6,
     borderRadius: 6,
     gap: 4,
     height: 18,
     zIndex: 10,
     minWidth: 65,
+    borderColor: '#FDE047',
   },
   hangerIcon: {
     marginRight: 0,
+    color:'#854D0E'
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1026,7 +1028,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   tbTagText: {
-    color: '#fff',
+    color: '#854D0E',
     fontSize: 10,
     fontFamily: Fonts.LexendSemiBold,
     flexShrink: 0,

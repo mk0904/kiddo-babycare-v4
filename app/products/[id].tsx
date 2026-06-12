@@ -1,6 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
 import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
+import { ProductTrustStrip } from '@/components/products/ProductTrustStrip';
 import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
@@ -267,6 +268,7 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
+    const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -1219,6 +1221,9 @@ const ProductDetailScreen = () => {
 
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
+    const refundPolicy =
+        getMetafieldValue(product, 'refund_policy') ??
+        getMetafieldValue(product, 'Refund Policy');
 
     // Highlights from metafields (highlight_1..4 or JSON "highlights")
     const highlightsList = useMemo(() => {
@@ -1544,6 +1549,11 @@ const ProductDetailScreen = () => {
                                 )}
                             </View>
                         </View>
+
+                        <ProductTrustStrip
+                            refundPolicyText={refundPolicy}
+                            onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                        />
 
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
@@ -1901,6 +1911,17 @@ const ProductDetailScreen = () => {
                     />
                 </BaseModal>
             )}
+
+            <BaseModal
+                visible={showRefundPolicyModal}
+                onClose={() => setShowRefundPolicyModal(false)}
+                title="Return Policy"
+                type="bottomSheet"
+            >
+                <Text style={styles.refundPolicyModalText}>
+                    {refundPolicy?.trim() || '7-Day Easy Returns'}
+                </Text>
+            </BaseModal>
 
             <FloatingCartButton showTabBar={false} />
         </View>
@@ -2328,6 +2349,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.FredokaSemiBold,
         color: '#4CAF50',
+    },
+    refundPolicyModalText: {
+        fontSize: 14,
+        lineHeight: 22,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.text,
+        paddingHorizontal: 20,
+        paddingBottom: 24,
     },
     priceComparisonContainer: {
         marginTop: 8,

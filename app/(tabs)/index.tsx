@@ -3,6 +3,7 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
+import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
   getDeliveryEta,
   getDeliveryEtaForAddress,
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
   /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
+  const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
   const [milestoneUiRev, setMilestoneUiRev] = useState(0);
   /** Subscribe + one bump on mount so we re-read if app config finished loading before this effect ran. */
   useEffect(() => {
@@ -577,6 +579,7 @@ export default function HomeScreen() {
             headerConfig={headerConfig}
             searchSuggestions={searchSuggestions}
             onSearchPress={handleSearchPress}
+            onTryAtHomePress={() => setShowTryAndBuyModal(true)}
             onLocationPress={handleLocationPress}
             categories={categories}
             selectedCategory={selectedCategory}
@@ -650,6 +653,11 @@ export default function HomeScreen() {
         open={!milestoneExpanded}
         isHomeTabFocused={isHomeTabFocused}
         onVisibilityChange={setKiddoWelcomePopupVisible}
+      />
+
+      <TryAndBuyModal
+        visible={showTryAndBuyModal}
+        onClose={() => setShowTryAndBuyModal(false)}
       />
     </SafeAreaView>
   );

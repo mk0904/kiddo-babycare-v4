@@ -10,13 +10,15 @@ import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartItemCount } from '@/store/cartStore';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Dimensions,
+    Animated,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
     ScrollView,
     Share,
     StyleSheet,
@@ -57,6 +59,9 @@ const DIAPER_SIZE_OPTIONS = [
     { label: 'XXL', value: 'XXL' },
     { label: 'XXXL', value: 'XXXL' },
 ];
+
+const SIDEBAR_HEIGHT = 110;
+const SCROLL_HIDE_THRESHOLD = 8;
 
 export default function InfinityScreen() {
     const { collectionId, title, hideFilters } = useLocalSearchParams<{ collectionId: string; title: string; hideFilters?: string }>();
@@ -126,7 +131,7 @@ export default function InfinityScreen() {
     // Transform local filters to Shopify API format
     const [apiFilters, setApiFilters] = useState<any[]>([]);
 
-    // Babycare collection sidebar (subcategories) – configurable per collection, starts below filters row
+    // Babycare collection sidebar (subcategories) – horizontal rail above filters
     const sidebarSubcategories = useMemo(
         () => (collectionId ? configService.getBabycareCollectionSidebar(collectionId) : null),
         [collectionId]
@@ -141,10 +146,6 @@ export default function InfinityScreen() {
     // When sidebar is shown, subcategory tap updates content in place (no navigation)
     const [activeCollectionId, setActiveCollectionId] = useState<string | null>(formatCollectionId(collectionId));
     const [activeTitle, setActiveTitle] = useState<string | null>(title || null);
-    
-    // Calculate the width synchronously to avoid layout thrashing
-    const windowWidth = Dimensions.get('window').width;
-    const gridContainerWidth = sidebarSubcategories?.length ? windowWidth - 80 : windowWidth;
     
     const effectiveCollectionId = (sidebarSubcategories?.length && activeCollectionId) ? activeCollectionId : (collectionId || '');
     const effectiveTitle = (sidebarSubcategories?.length && activeTitle !== null) ? activeTitle : (title || collection?.title || 'Products');
@@ -161,6 +162,49 @@ export default function InfinityScreen() {
         }
     }, [collectionId, title, sidebarSubcategories?.length]);
 
+    const lastScrollY = useRef(0);
+    const sidebarVisible = useRef(true);
+    const sidebarHeight = useRef(new Animated.Value(SIDEBAR_HEIGHT)).current;
+
+    useEffect(() => {
+        lastScrollY.current = 0;
+        sidebarVisible.current = true;
+        sidebarHeight.setValue(SIDEBAR_HEIGHT);
+    }, [effectiveCollectionId, sidebarHeight]);
+
+    const handleProductGridScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!sidebarSubcategories?.length) return;
+
+        const currentY = event.nativeEvent.contentOffset.y;
+        const diff = currentY - lastScrollY.current;
+
+        if (currentY <= 5) {
+            if (!sidebarVisible.current) {
+                sidebarVisible.current = true;
+                Animated.timing(sidebarHeight, {
+                    toValue: SIDEBAR_HEIGHT,
+                    duration: 200,
+                    useNativeDriver: false,
+                }).start();
+            }
+        } else if (diff > SCROLL_HIDE_THRESHOLD && sidebarVisible.current) {
+            sidebarVisible.current = false;
+            Animated.timing(sidebarHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        } else if (diff < -SCROLL_HIDE_THRESHOLD && !sidebarVisible.current) {
+            sidebarVisible.current = true;
+            Animated.timing(sidebarHeight, {
+                toValue: SIDEBAR_HEIGHT,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        }
+
+        lastScrollY.current = currentY;
+    }, [sidebarHeight, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
     // Gender filter should only be available in clothing category (girls/boys)
@@ -707,41 +751,14 @@ export default function InfinityScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {!shouldHideFilters && (
-                    <FilterSortPills
-                        totalItems={totalItems}
-                        activeFiltersCount={activeFiltersCount}
-                        onFiltersPress={() => setIsFilterPanelVisible(true)}
-                        onSortPress={handleSortPress}
-                        onGenderPress={() => setShowGenderModal(true)}
-                        onAgePress={() => setShowAgeModal(true)}
-                        onBrandPress={() => setShowBrandModal(true)}
-                        onSizePress={() => setShowSizeModal(true)}
-                        onStagePress={() => setShowStageModal(true)}
-                        selectedGender={selectedGender}
-                        selectedAge={selectedAge}
-                        selectedBrand={selectedBrand}
-                        selectedSize={selectedSize}
-                        selectedStage={selectedStage}
-                        facets={facets}
-                        selectedFilters={selectedFilters}
-                        style={styles.pills}
-                        showGenderFilter={shouldShowGenderFilter()}
-                        showAgeFilter={shouldShowAgeFilter()}
-                        showBrandFilter={shouldShowBrandFilter()}
-                        showSizeFilter={shouldShowSizeFilter()}
-                        showStageFilter={shouldShowStageFilter()}
-                    />
-                )}
-
-                <View style={styles.contentRow}>
-                    {sidebarSubcategories && sidebarSubcategories.length > 0 && (
-                        <View style={styles.sidebarShadowWrapper}>
-                            <ScrollView
-                                style={styles.sidebar}
-                                contentContainerStyle={styles.sidebarContent}
-                                showsVerticalScrollIndicator={false}
-                            >
+                {sidebarSubcategories && sidebarSubcategories.length > 0 && (
+                    <Animated.View style={[styles.sidebarShadowWrapper, { height: sidebarHeight, overflow: 'hidden' }]}>
+                        <ScrollView
+                            horizontal
+                            style={styles.sidebar}
+                            contentContainerStyle={styles.sidebarContent}
+                            showsHorizontalScrollIndicator={false}
+                        >
                             {sidebarSubcategories.map((sub) => {
                                 const subId = sub.collectionId.startsWith('gid://') ? sub.collectionId : `gid://shopify/Collection/${sub.collectionId}`;
                                 const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
@@ -780,12 +797,39 @@ export default function InfinityScreen() {
                                 );
                             })}
                         </ScrollView>
-                        </View>
-                    )}
-                    <View style={styles.gridContainer}>
+                    </Animated.View>
+                )}
+
+                {!shouldHideFilters && (
+                    <FilterSortPills
+                        totalItems={totalItems}
+                        activeFiltersCount={activeFiltersCount}
+                        onFiltersPress={() => setIsFilterPanelVisible(true)}
+                        onSortPress={handleSortPress}
+                        onGenderPress={() => setShowGenderModal(true)}
+                        onAgePress={() => setShowAgeModal(true)}
+                        onBrandPress={() => setShowBrandModal(true)}
+                        onSizePress={() => setShowSizeModal(true)}
+                        onStagePress={() => setShowStageModal(true)}
+                        selectedGender={selectedGender}
+                        selectedAge={selectedAge}
+                        selectedBrand={selectedBrand}
+                        selectedSize={selectedSize}
+                        selectedStage={selectedStage}
+                        facets={facets}
+                        selectedFilters={selectedFilters}
+                        style={styles.pills}
+                        showGenderFilter={shouldShowGenderFilter()}
+                        showAgeFilter={shouldShowAgeFilter()}
+                        showBrandFilter={shouldShowBrandFilter()}
+                        showSizeFilter={shouldShowSizeFilter()}
+                        showStageFilter={shouldShowStageFilter()}
+                    />
+                )}
+
+                <View style={styles.gridContainer}>
                     <InfiniteProductGrid
                         collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
-                        contentWidth={sidebarSubcategories?.length ? gridContainerWidth : undefined}
                         sortKey={sortKey}
                         reverse={reverse}
                         filters={apiFilters} // Pass filters for client-side filtering
@@ -802,12 +846,12 @@ export default function InfinityScreen() {
                             horizontalPadding: gridDefaults.paddingHorizontal, // Backward compatibility
                         }}
                         scrollable={true}
+                        onScroll={handleProductGridScroll}
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGender}
                         ageFilter={selectedAge}
                         pageCategory={pageCategory}
                     />
-                    </View>
                 </View>
 
                 {!shouldHideFilters && (
@@ -1151,7 +1195,7 @@ const styles = StyleSheet.create({
         paddingTop: 8,
         paddingBottom: 8,
         backgroundColor: '#fff',
-        borderBottomWidth: 1,
+        borderBottomWidth: 0,
         borderBottomColor: '#f0f0f0',
         zIndex: 10,
     },
@@ -1173,57 +1217,43 @@ const styles = StyleSheet.create({
     pills: {
         zIndex: 10,
     },
-    contentRow: {
-        flex: 1,
-        flexDirection: 'row',
-    },
     sidebarShadowWrapper: {
-        width: 80,
-        maxWidth: 80,
         backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 1, height: 0 },
-        shadowOpacity: 0.12,
-        shadowRadius: 4,
-        elevation: 6,
     },
     sidebar: {
-        width: 80,
-        maxWidth: 80,
-        borderRightWidth: 1,
-        borderRightColor: '#e8e8e8',
         backgroundColor: '#fff',
-        overflow: 'hidden',
     },
     sidebarContent: {
-        paddingVertical: 8,
-        paddingHorizontal: 4,
-        paddingBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 0,
+        paddingHorizontal: 12,
+        gap: 4,
     },
     sidebarItem: {
         alignItems: 'center',
-        marginBottom: 10,
-        paddingVertical: 6,
-        paddingHorizontal: 4,
-        borderRadius: 0,
-        position: 'relative',
+        width: 78,
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        borderRadius: 8,
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
     },
     sidebarItemSelected: {
         backgroundColor: '#FFEBEE',
-        borderRightWidth: 4,
-        borderRightColor: Colors.primary,
+        borderBottomColor: Colors.primary,
     },
     sidebarItemImage: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        marginBottom: 4,
+        width: 70,
+        height: 76,
+        borderRadius: 8,
+        marginBottom: 5,
     },
     sidebarItemPlaceholder: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        marginBottom: 4,
+        width: 56,
+        height: 56,
+        borderRadius: 8,
+        marginBottom: 0,
         backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',

@@ -27,6 +27,7 @@ export interface CollectionComponentProps {
   isFetchingNextPage?: boolean;
   isRefetching?: boolean;
   refetch?: () => void;
+  onScroll?: (event: any) => void;
 }
 
 export interface ProductCollectionProps {
@@ -59,6 +60,7 @@ export interface ProductCollectionProps {
   genderFilter?: string | null;
   ageFilter?: string | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
+  onScroll?: (event: any) => void;
 }
 
 interface Page {
@@ -103,6 +105,7 @@ export function ProductCollection({
   genderFilter,
   ageFilter,
   pageCategory,
+  onScroll,
 }: ProductCollectionProps) {
   const { width: windowWidth } = useDeviceDimensions();
 
@@ -643,6 +646,7 @@ export function ProductCollection({
           hasNextPage={false}
           collectionId={Array.isArray(collectionId) ? collectionId[0] : collectionId || null}
           searchQuery={searchQuery}
+          onScroll={onScroll}
         />
       </View>
     );
@@ -726,6 +730,7 @@ export function ProductCollection({
         isFetchingNextPage={isFetchingNextPage}
         isRefetching={isRefetching}
         refetch={refetch}
+        onScroll={onScroll}
       />
     </View>
   );

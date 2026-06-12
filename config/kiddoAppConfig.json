@@ -2900,7 +2900,7 @@
       "order": 1,
       "visible": false,
       "data": {
-        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/c1102ae625aa4dcf841a97ad50fc18d9.mp4"
+        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/2606e0e23dc4484d86968d71ee592598.mp4"
       },
       "videoConfig": {
         "autoPlay": true,
@@ -2913,7 +2913,7 @@
           "paddingHorizontal": 0,
           "paddingTop": 0,
           "paddingBottom": 0,
-          "backgroundColor": "#F5F5F5"
+          "borderRadius": 15
         }
       }
     },
@@ -2963,20 +2963,14 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Homepage_GIF_27_April_2026.gif?v=1777275024",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": "gid://shopify/Collection/512979566881"
-            }
-          }
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/mainbannervideo.gif?v=1780770315"
         }
       ],
       "carouselConfig": {
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.5,
+        "height": 0.6,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3039,6 +3033,7 @@
       ],
       "styles": {
         "container": {
+          "display": "none",
           "marginTop": 15,
           "paddingHorizontal": 16
         },
@@ -3046,6 +3041,61 @@
           "display": "none",
           "marginBottom": 0,
           "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-trending",
+      "type": "categoryGrid",
+      "order": 4,
+      "visible": true,
+      "title": "Trending",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 25,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 4
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/507797111073"
+        },
+        {
+          "id": "gid://shopify/Collection/512979566881"
+        },
+        {
+          "id": "gid://shopify/Collection/514698182945"
+        }
+      ],
+      "styles": {
+        "container": {
+          "marginTop": -150,
+          "paddingHorizontal": 16,
+          "paddingTop": 0,
+          "backgroundColor": "transparent"
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3082,8 +3132,8 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/507797111073",
-          "name": "Swimwear"
+          "id": "gid://shopify/Collection/514698215713",
+          "name": "Everyday Wear"
         },
         {
           "id": "gid://shopify/Collection/511688900897",
@@ -3100,7 +3150,7 @@
       ],
       "styles": {
         "container": {
-          "marginTop": -5,
+          "marginTop": 30,
           "paddingHorizontal": 16,
           "paddingTop": 0,
           "backgroundColor": "#F5F5F5"
@@ -3416,6 +3466,87 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "shop-by-brand-carousel-3",
+      "type": "collectionImageCarousel",
+      "title": "Shop by Brand",
+      "order": 4,
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/514922578209",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Mothercare.png?v=1780947232"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514922447137",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/23_7d5910c9-6146-438f-b96f-8b3a418c7c21.png?v=1780947049"
+        },
+        {
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/514922381601",
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/17_ae0c5487-4aab-4566-9abc-ea1a0dcc8f48.png?v=1780947011"
+        },
+        {
+          "id": "brand-doreme",
+          "collectionId": "gid://shopify/Collection/514922348833",
+          "label": "Kuchipoo",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/18_50eea419-d011-4150-b498-dcd366fe6a38.png?v=1780946984"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514922316065",
+          "label": "Trampoline",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/19_1f12cb74-bc21-424c-86f8-e205f7f786b4.png?v=1780946958"
+        },
+        {
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/514922283297",
+          "label": "Toonyport",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/22_4ac7a79d-bbe6-4dc4-9ec7-5c261d38d67a.png?v=1780946915"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/514922217761",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/21_e1171841-b00c-4a0c-8cdd-a87f96175ab7.png?v=1780946856"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514922053921",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/16_d43aff7e-a6c2-43e4-b680-db2fe9af1265.png?v=1780946803"
+        }
+      ],
+      "carouselConfig": {
+        "itemHeight": 84,
+        "itemWidth": 84,
+        "aspectRatio": 1,
+        "gap": 12,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "marginBottom": 15,
+          "marginTop": -10
+        },
+        "title": {
+          "marginBottom": 10,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     },
@@ -4023,7 +4154,7 @@
           "backgroundColor": "#F5F5F5"
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": -15,
           "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
@@ -4033,6 +4164,249 @@
         }
       },
       "order": 21
+    }
+  ],
+  "Pharmacy": [
+    {
+      "id": "all-banner-1",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_8_2026_02_40_29_PM.png?v=1780909850"
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 0.6,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "img": {}
+      }
+    },
+    {
+      "id": "babycare-grid-2-3",
+      "type": "grid",
+      "title": "Shop by Category",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/514890367265"
+        },
+        {
+          "id": "gid://shopify/Collection/514890400033"
+        },
+        {
+          "id": "gid://shopify/Collection/514890596641"
+        },
+        {
+          "id": "gid://shopify/Collection/514890662177"
+        },
+        {
+          "id": "gid://shopify/Collection/511117361441"
+        }
+      ],
+      "gridConfig": {
+        "columnsPerRow": [
+          2,
+          3
+        ],
+        "colGap": 12,
+        "rowGap": 6,
+        "limit": 0,
+        "resizeMode": "cover",
+        "aspectRatio": 1.25
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10,
+          "paddingBottom": 28
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "borderWidth": 1,
+          "borderColor": "#E5E7EB",
+          "overflow": "hidden"
+        },
+        "text": {
+          "marginTop": 12,
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      },
+      "visible": true
+    },
+    {
+      "id": "frequently-bought-carousel",
+      "type": "categoryGrid",
+      "order": 4.5,
+      "visible": true,
+      "title": "Frequently Bought",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 4,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/510756978977",
+          "name": "Kids Snacks"
+        },
+        {
+          "id": "gid://shopify/Collection/508371206433",
+          "name": "Skincare & Bathing"
+        },
+        {
+          "id": "gid://shopify/Collection/510757175585",
+          "name": "School & Stationary"
+        },
+        {
+          "id": "gid://shopify/Collection/508173123873",
+          "name": "Diapers & Wipes"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10,
+          "backgroundColor": "white",
+          "marginTop": -15
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "shop-by-brand-carousel-3",
+      "type": "collectionImageCarousel",
+      "title": "Shop by Brand",
+      "order": 4,
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/514922578209",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Mothercare.png?v=1780947232"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514922447137",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/23_7d5910c9-6146-438f-b96f-8b3a418c7c21.png?v=1780947049"
+        },
+        {
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/514922381601",
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/17_ae0c5487-4aab-4566-9abc-ea1a0dcc8f48.png?v=1780947011"
+        },
+        {
+          "id": "brand-doreme",
+          "collectionId": "gid://shopify/Collection/514922348833",
+          "label": "Kuchipoo",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/18_50eea419-d011-4150-b498-dcd366fe6a38.png?v=1780946984"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514922316065",
+          "label": "Trampoline",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/19_1f12cb74-bc21-424c-86f8-e205f7f786b4.png?v=1780946958"
+        },
+        {
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/514922283297",
+          "label": "Toonyport",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/22_4ac7a79d-bbe6-4dc4-9ec7-5c261d38d67a.png?v=1780946915"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/514922217761",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/21_e1171841-b00c-4a0c-8cdd-a87f96175ab7.png?v=1780946856"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514922053921",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/16_d43aff7e-a6c2-43e4-b680-db2fe9af1265.png?v=1780946803"
+        }
+      ],
+      "carouselConfig": {
+        "itemHeight": 84,
+        "itemWidth": 84,
+        "aspectRatio": 1,
+        "gap": 12,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "backgroundColor": "white",
+          "marginBottom": 15,
+          "marginTop": -10
+        },
+        "title": {
+          "marginBottom": 10,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        }
+      }
     }
   ],
   "girls": [
@@ -4146,6 +4520,102 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "shop-by-brand-carousel-2",
+      "type": "collectionImageCarousel",
+      "title": "Shop by Brand",
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/514759754017",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/1_83591310-d2e3-46bc-bbae-97b0b1081eb7.png?v=1780664291"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514760212769",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/2_c52fcfd7-30ed-450d-82b5-e21c72ca97c6.png?v=1780664561"
+        },
+        {
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/514760278305",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/3_c5744327-525b-4fc0-a1c0-574859644761.png?v=1780664662"
+        },
+        {
+          "id": "brand-doreme",
+          "collectionId": "gid://shopify/Collection/514760343841",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/4_4c2e6c91-5dae-43ab-ad1c-44da9e22a96c.png?v=1780664774"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514776662305",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/5_c5a23234-141f-4e92-9981-8b59e64e8f12.png?v=1780721268"
+        },
+        {
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/514777415969",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/6_0bca7551-ae09-469f-ba91-62a6d933a403.png?v=1780723608"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/514777776417",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/7_f760a4ac-78c3-4259-9199-44ba73fc951c.png?v=1780725704"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514777874721",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8_84323816-f550-4bff-9e65-cee49f3a77e6.png?v=1780726312"
+        },
+        {
+          "id": "brand-doreme-5",
+          "collectionId": "gid://shopify/Collection/514778464545",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/9_d9d6e7a4-8b7c-4b53-9d72-376d9c0f3c87.png?v=1780727859"
+        },
+        {
+          "id": "brand-doreme-6",
+          "collectionId": "gid://shopify/Collection/514778792225",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
+        },
+        {
+          "id": "brand-doreme-7",
+          "collectionId": "gid://shopify/Collection/514779119905",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/11_7aa03011-ea05-4854-99dc-b78dd3754dd0.png?v=1780730271"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 120,
+        "itemHeight": 120,
+        "gap": 16,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 20
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     },
@@ -4366,6 +4836,102 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "shop-by-brand-carousel-1",
+      "type": "collectionImageCarousel",
+      "title": "Shop by Brand",
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/514760016161",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/1_83591310-d2e3-46bc-bbae-97b0b1081eb7.png?v=1780664291"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514760245537",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/2_c52fcfd7-30ed-450d-82b5-e21c72ca97c6.png?v=1780664561"
+        },
+        {
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/514760311073",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/3_c5744327-525b-4fc0-a1c0-574859644761.png?v=1780664662"
+        },
+        {
+          "id": "brand-doreme",
+          "collectionId": "gid://shopify/Collection/514760376609",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/4_4c2e6c91-5dae-43ab-ad1c-44da9e22a96c.png?v=1780664774"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514776760609",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/5_c5a23234-141f-4e92-9981-8b59e64e8f12.png?v=1780721268"
+        },
+        {
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/514777448737",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/6_0bca7551-ae09-469f-ba91-62a6d933a403.png?v=1780723608"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/514777809185",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/7_f760a4ac-78c3-4259-9199-44ba73fc951c.png?v=1780725704"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514777940257",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8_84323816-f550-4bff-9e65-cee49f3a77e6.png?v=1780726312"
+        },
+        {
+          "id": "brand-doreme-5",
+          "collectionId": "gid://shopify/Collection/514778497313",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/9_d9d6e7a4-8b7c-4b53-9d72-376d9c0f3c87.png?v=1780727859"
+        },
+        {
+          "id": "brand-doreme-6",
+          "collectionId": "gid://shopify/Collection/514778824993",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
+        },
+        {
+          "id": "brand-doreme-7",
+          "collectionId": "gid://shopify/Collection/514779021601",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/11_7aa03011-ea05-4854-99dc-b78dd3754dd0.png?v=1780730271"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 120,
+        "itemHeight": 120,
+        "gap": 16,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 20
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     },
@@ -5655,6 +6221,7 @@
     "defaultPageBackgroundColor": "#F5F5F5",
     "order": [
       "all",
+      "Pharmacy",
       "girls",
       "boys",
       "babycare",
@@ -5669,7 +6236,18 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_New_Header.png?v=1774001167",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_header.png?v=1780071110",
+          "labelColors": {
+            "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "Pharmacy": {
+        "label": "Pharmacy",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_8_2026_02_07_05_PM.png?v=1780907853",
+        "header": {
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_header.png?v=1780071110",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
