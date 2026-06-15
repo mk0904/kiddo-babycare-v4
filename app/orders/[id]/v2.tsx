@@ -1,4 +1,5 @@
 import { DeliveryPartnerCard } from '@/components/orders/DeliveryPartnerCard';
+import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { OrderDetailsSection } from '@/components/orders/OrderDetailsSection';
 import { OrderSummaryDetails } from '@/components/orders/OrderSummaryDetails';
 import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
@@ -1713,111 +1714,203 @@ export default function OrderDetailV2Screen() {
                             <Ionicons name="copy-outline" size={18} color="#717680" style={styles.copyIcon} />
                         </TouchableOpacity>
                     </View>
-                    {(order.lineItems?.edges || []).map((edge: any, index: number) => {
-                        const item = edge.node;
-                        const price = parseFloat(item.originalTotalPrice?.amount || item.price?.amount || '0');
-                        const variantTitle = item.variant?.title && item.variant.title !== 'Default Title' ? item.variant.title : null;
-                        const lineAttrs = lineItemCustomAttributesRecord(item);
-                        const primarySize = orderLinePrimarySizeLabel(item.variant);
-                        const sizeLineLabel =
-                            primarySize || (variantTitle ? String(variantTitle).trim() : '');
-                        const tryBuyTrialId = lineAttrs.try_buy_trial_variant_id?.trim();
-                        const tryBuyTrialSize = tryBuyTrialId ? orderLineTryBuyTrialDisplay(lineAttrs) : '';
-                        const lineIdKeys = lineItemShopifyIdKeys(item);
-                        const tryBuyPostLine = resolveTryBuyPostDeliveryLineForKeys(
-                            deliveryPartnerStatus,
-                            lineIdKeys,
-                            { tryBuyTrialVariantId: tryBuyTrialId, lineTitle: item.title },
-                        );
-                        /** DPS packing `items` can appear before delivery; only replace sizes with rider outcome after delivered. */
-                        const partnerDelivered = isDeliveryStatusDelivered(deliveryPartnerStatus);
-                        /** After delivery, trust DPS resolution (`isCustomerSelected` → size / returned) even if trial line attrs are missing. */
-                        const useResolvedTryBuySummary =
-                            partnerDelivered && hasTryBuyPostDeliveryResolution(tryBuyPostLine);
+                    {(() => {
+                        const dpsItems = Array.isArray(deliveryPartnerStatus?.items) && deliveryPartnerStatus.items.length > 0
+                            ? deliveryPartnerStatus.items
+                            : null;
 
-                        let showSizeLine = !!(sizeLineLabel && String(sizeLineLabel).trim());
-                        let sizeDisplay = showSizeLine ? String(sizeLineLabel).trim() : '';
-                        let showTryBuyReturnedLine = false;
-                        if (useResolvedTryBuySummary && tryBuyPostLine) {
-                            const kept = tryBuyPostLine.finalSizeLabel?.trim();
-                            if (tryBuyPostLine.returnedAll && !kept) {
-                                showSizeLine = false;
-                                sizeDisplay = '';
-                                showTryBuyReturnedLine = true;
-                            } else if (kept) {
-                                sizeDisplay = kept;
-                                showSizeLine = true;
-                                showTryBuyReturnedLine = false;
-                            }
+                        if (dpsItems) {
+                            return dpsItems.map((item: any, index: number) => {
+                                const price = parseFloat(item.unitPrice || item.price || '0');
+                                const variantTitle = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : null;
+                                const isLast = index === dpsItems.length - 1;
+                                const partnerDelivered = isDeliveryStatusDelivered(deliveryPartnerStatus);
+
+                                const tryBuyVariants = item.storePackingRecord?.tryBuyVariants || [];
+                                const keptVariant = tryBuyVariants.find((v: any) => v.isCustomerSelected || v.storeDecision === 'keep');
+                                const isTryAndBuy = item.isTryAndBuy === true;
+
+                                let sizeDisplay = variantTitle ? String(variantTitle).trim() : '';
+                                let showSizeLine = !!sizeDisplay;
+                                let showTryBuyReturnedLine = false;
+
+                                if (partnerDelivered && isTryAndBuy && item.storePackingRecord) {
+                                    if (keptVariant) {
+                                        sizeDisplay = keptVariant.sizeLabel || keptVariant.variantTitle || sizeDisplay;
+                                        showSizeLine = true;
+                                        showTryBuyReturnedLine = false;
+                                    } else if (tryBuyVariants.length > 0) {
+                                        showSizeLine = false;
+                                        sizeDisplay = '';
+                                        showTryBuyReturnedLine = true;
+                                    }
+                                }
+
+                                const showTryBuyBadge = isTryAndBuy;
+                                const showTryBuyTrialSubtitle = isTryAndBuy && !partnerDelivered && !!sizeDisplay;
+                                const tryBuyTrialSize = sizeDisplay;
+
+                                const giftWrapImage = getGiftWrapImageSource(item.title);
+                                const imageSource = item.imageUrl
+                                    ? { uri: item.imageUrl }
+                                    : giftWrapImage
+                                        ? giftWrapImage
+                                        : null;
+
+                                return (
+                                    <View key={`${item.id || item.sku}-${index}`} style={[styles.itemRow, isLast && styles.itemRowLast]}>
+                                        <View>
+                                            {imageSource ? (
+                                                <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
+                                            ) : (
+                                                <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                                    <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                                </View>
+                                            )}
+                                            {showTryBuyBadge ? (
+                                                <View style={styles.tryAndBuyBadgeOrder} pointerEvents="none">
+                                                    <Text style={styles.tryAndBuyBadgeOrderText}>Try & Buy</Text>
+                                                </View>
+                                            ) : null}
+                                        </View>
+                                        <View style={styles.itemInfo}>
+                                            <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                                            <View style={styles.itemMetaRow}>
+                                                <View style={styles.itemMetaWrap}>
+                                                    <Text style={styles.itemMetaPrice}>
+                                                        ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
+                                            </View>
+                                            {item.itemStatus ? (
+                                                <View style={{ alignSelf: 'flex-start', backgroundColor: '#FEE4E2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
+                                                    <Text style={{ color: '#D92D20', fontSize: 10, fontFamily: Fonts.LexendMedium }}>
+                                                        {String(item.itemStatus).charAt(0).toUpperCase() + String(item.itemStatus).slice(1)}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+                                            {showTryBuyReturnedLine ? (
+                                                <Text style={styles.itemReturnedOrder}>Returned</Text>
+                                            ) : null}
+                                            {showSizeLine && sizeDisplay && !showTryBuyReturnedLine ? (
+                                                <Text style={styles.itemSizeLineOrder}>Size: {sizeDisplay}</Text>
+                                            ) : null}
+                                            {showTryBuyTrialSubtitle ? (
+                                                <Text style={styles.itemTryBuySizeOrder}>Try & Buy size: {tryBuyTrialSize}</Text>
+                                            ) : null}
+                                            {/* Booking dates not directly present in DPS items by default, skip or resolve if needed */}
+                                        </View>
+                                    </View>
+                                );
+                            });
                         }
 
-                        const showTryBuyBadge =
-                            (!!tryBuyTrialId || tryBuyPostLine?.isTryAndBuyLine === true) &&
-                            !useResolvedTryBuySummary;
-                        const showTryBuyTrialSubtitle =
-                            !!tryBuyTrialId && !!tryBuyTrialSize && !useResolvedTryBuySummary;
-                        const giftWrapImage = getGiftWrapImageSource(item.title);
-                        const dpsLineImage =
-                            tryBuyPostLine?.imageUrl != null && String(tryBuyPostLine.imageUrl).trim() !== ''
-                                ? String(tryBuyPostLine.imageUrl).trim()
-                                : null;
-                        const lineImageUri = dpsLineImage || storefrontVariantImageUrl(item.variant);
-                        const imageSource = lineImageUri
-                            ? { uri: lineImageUri }
-                            : giftWrapImage
-                                ? giftWrapImage
-                                : null;
-                        const edges = order.lineItems?.edges || [];
-                        const isLast = index === edges.length - 1;
-                        return (
-                            <View key={`${item.title}-${index}`} style={[styles.itemRow, isLast && styles.itemRowLast]}>
-                                <View>
-                                    {imageSource ? (
-                                        <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
-                                    ) : (
-                                        <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-                                            <Ionicons name="image-outline" size={28} color="#9CA3AF" />
-                                        </View>
-                                    )}
-                                    {showTryBuyBadge ? (
-                                        <View style={styles.tryAndBuyBadgeOrder} pointerEvents="none">
-                                            <Text style={styles.tryAndBuyBadgeOrderText}>Try & Buy</Text>
-                                        </View>
-                                    ) : null}
-                                </View>
-                                <View style={styles.itemInfo}>
-                                    <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
-                                    <View style={styles.itemMetaRow}>
-                                        <View style={styles.itemMetaWrap}>
-                                            <Text style={styles.itemMetaPrice}>
-                                                ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                            </Text>
-                                        </View>
-                                        <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
-                                    </View>
-                                    {showTryBuyReturnedLine ? (
-                                        <Text style={styles.itemReturnedOrder}>Returned</Text>
-                                    ) : null}
-                                    {showSizeLine && sizeDisplay && !showTryBuyReturnedLine ? (
-                                        <Text style={styles.itemSizeLineOrder}>Size: {sizeDisplay}</Text>
-                                    ) : null}
-                                    {showTryBuyTrialSubtitle ? (
-                                        <Text style={styles.itemTryBuySizeOrder}>Try & Buy size: {tryBuyTrialSize}</Text>
-                                    ) : null}
-                                    {(() => {
-                                        const bookingDate = getBookingDateDisplay(item);
-                                        if (!bookingDate) return null;
-                                        return (
-                                            <View style={styles.bookingDateRow}>
-                                                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
-                                                <Text style={styles.bookingDateText}>Booked for: {bookingDate}</Text>
+                        // Fallback to Shopify line items
+                        return (order.lineItems?.edges || []).map((edge: any, index: number) => {
+                            const item = edge.node;
+                            const price = parseFloat(item.originalTotalPrice?.amount || item.price?.amount || '0');
+                            const variantTitle = item.variant?.title && item.variant.title !== 'Default Title' ? item.variant.title : null;
+                            const lineAttrs = lineItemCustomAttributesRecord(item);
+                            const primarySize = orderLinePrimarySizeLabel(item.variant);
+                            const sizeLineLabel =
+                                primarySize || (variantTitle ? String(variantTitle).trim() : '');
+                            const tryBuyTrialId = lineAttrs.try_buy_trial_variant_id?.trim();
+                            const tryBuyTrialSize = tryBuyTrialId ? orderLineTryBuyTrialDisplay(lineAttrs) : '';
+                            const lineIdKeys = lineItemShopifyIdKeys(item);
+                            const tryBuyPostLine = resolveTryBuyPostDeliveryLineForKeys(
+                                deliveryPartnerStatus,
+                                lineIdKeys,
+                                { tryBuyTrialVariantId: tryBuyTrialId, lineTitle: item.title },
+                            );
+                            const partnerDelivered = isDeliveryStatusDelivered(deliveryPartnerStatus);
+                            const useResolvedTryBuySummary =
+                                partnerDelivered && hasTryBuyPostDeliveryResolution(tryBuyPostLine);
+
+                            let showSizeLine = !!(sizeLineLabel && String(sizeLineLabel).trim());
+                            let sizeDisplay = showSizeLine ? String(sizeLineLabel).trim() : '';
+                            let showTryBuyReturnedLine = false;
+                            if (useResolvedTryBuySummary && tryBuyPostLine) {
+                                const kept = tryBuyPostLine.finalSizeLabel?.trim();
+                                if (tryBuyPostLine.returnedAll && !kept) {
+                                    showSizeLine = false;
+                                    sizeDisplay = '';
+                                    showTryBuyReturnedLine = true;
+                                } else if (kept) {
+                                    sizeDisplay = kept;
+                                    showSizeLine = true;
+                                    showTryBuyReturnedLine = false;
+                                }
+                            }
+
+                            const showTryBuyBadge =
+                                (!!tryBuyTrialId || tryBuyPostLine?.isTryAndBuyLine === true) &&
+                                !useResolvedTryBuySummary;
+                            const showTryBuyTrialSubtitle =
+                                !!tryBuyTrialId && !!tryBuyTrialSize && !useResolvedTryBuySummary;
+                            const giftWrapImage = getGiftWrapImageSource(item.title);
+                            const dpsLineImage =
+                                tryBuyPostLine?.imageUrl != null && String(tryBuyPostLine.imageUrl).trim() !== ''
+                                    ? String(tryBuyPostLine.imageUrl).trim()
+                                    : null;
+                            const lineImageUri = dpsLineImage || storefrontVariantImageUrl(item.variant);
+                            const imageSource = lineImageUri
+                                ? { uri: lineImageUri }
+                                : giftWrapImage
+                                    ? giftWrapImage
+                                    : null;
+                            const edges = order.lineItems?.edges || [];
+                            const isLast = index === edges.length - 1;
+                            return (
+                                <View key={`${item.title}-${index}`} style={[styles.itemRow, isLast && styles.itemRowLast]}>
+                                    <View>
+                                        {imageSource ? (
+                                            <Image source={imageSource} style={styles.itemImage} contentFit="cover" />
+                                        ) : (
+                                            <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                                                <Ionicons name="image-outline" size={28} color="#9CA3AF" />
                                             </View>
-                                        );
-                                    })()}
+                                        )}
+                                        {showTryBuyBadge ? (
+                                            <View style={styles.tryAndBuyBadgeOrder} pointerEvents="none">
+                                                <Text style={styles.tryAndBuyBadgeOrderText}>Try & Buy</Text>
+                                            </View>
+                                        ) : null}
+                                    </View>
+                                    <View style={styles.itemInfo}>
+                                        <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
+                                        <View style={styles.itemMetaRow}>
+                                            <View style={styles.itemMetaWrap}>
+                                                <Text style={styles.itemMetaPrice}>
+                                                    ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.itemQty}>QTY:{item.quantity || 1}</Text>
+                                        </View>
+                                        {showTryBuyReturnedLine ? (
+                                            <Text style={styles.itemReturnedOrder}>Returned</Text>
+                                        ) : null}
+                                        {showSizeLine && sizeDisplay && !showTryBuyReturnedLine ? (
+                                            <Text style={styles.itemSizeLineOrder}>Size: {sizeDisplay}</Text>
+                                        ) : null}
+                                        {showTryBuyTrialSubtitle ? (
+                                            <Text style={styles.itemTryBuySizeOrder}>Try & Buy size: {tryBuyTrialSize}</Text>
+                                        ) : null}
+                                        {(() => {
+                                            const bookingDate = getBookingDateDisplay(item);
+                                            if (!bookingDate) return null;
+                                            return (
+                                                <View style={styles.bookingDateRow}>
+                                                    <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                                                    <Text style={styles.bookingDateText}>Booked for: {bookingDate}</Text>
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
                                 </View>
-                            </View>
-                        );
-                    })}
+                            );
+                        });
+                    })()}
                 </View>
 
                 {/* Bill details – fetched from delivery partner system */}
@@ -1839,7 +1932,14 @@ export default function OrderDetailV2Screen() {
 
 
 
-                {/* <NeedHelpChatCard onCallPress={openSupportCall} /> */}
+                {appConfigService.isFreshChatEnabled() && (
+                    <NeedHelpChatCard
+                        onChatPress={() => {
+                            const { openFreshchat } = require('@/services/freshchatService');
+                            openFreshchat();
+                        }}
+                    />
+                )}
 
             </ScrollView>
         </SafeAreaView>

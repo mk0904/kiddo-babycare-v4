@@ -10,3 +10,38 @@ index 22f09cd..9f81892 100755
      implementation "com.facebook.react:react-native:+"
      implementation 'com.google.android.gms:play-services-gcm:11.+'
      implementation 'com.github.freshworks:freshchat-android:6.5.4'
+diff --git a/node_modules/react-native-freshchat-sdk/ios/RNFreshchatSdk.m b/node_modules/react-native-freshchat-sdk/ios/RNFreshchatSdk.m
+index 328003e..60b0e8e 100644
+--- a/node_modules/react-native-freshchat-sdk/ios/RNFreshchatSdk.m
++++ b/node_modules/react-native-freshchat-sdk/ios/RNFreshchatSdk.m
+@@ -359,7 +359,29 @@ - (NSDictionary *)constantsToExport
+ RCT_EXPORT_METHOD(setPushRegistrationToken:(NSString *)devToken)
+ {
+     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+-        [[Freshchat sharedInstance] setPushRegistrationToken:devToken];
++        NSData *tokenData = nil;
++        if ([devToken isKindOfClass:[NSString class]]) {
++            NSString *hexString = [devToken stringByReplacingOccurrencesOfString:@" " withString:@""];
++            hexString = [hexString stringByReplacingOccurrencesOfString:@"<" withString:@""];
++            hexString = [hexString stringByReplacingOccurrencesOfString:@">" withString:@""];
++            
++            NSMutableData *data = [[NSMutableData alloc] init];
++            unsigned char whole_byte;
++            char byte_chars[3] = {'\0','\0','\0'};
++            for (int i = 0; i < ([hexString length] / 2); i++) {
++                byte_chars[0] = [hexString characterAtIndex:i*2];
++                byte_chars[1] = [hexString characterAtIndex:i*2+1];
++                whole_byte = strtol(byte_chars, NULL, 16);
++                [data appendBytes:&whole_byte length:1];
++            }
++            tokenData = data;
++        }
++        
++        if (tokenData != nil && tokenData.length > 0) {
++            [[Freshchat sharedInstance] setPushRegistrationToken:tokenData];
++        } else {
++            [[Freshchat sharedInstance] setPushRegistrationToken:devToken];
++        }
+     });
+ }
+ 

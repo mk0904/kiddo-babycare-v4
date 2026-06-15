@@ -1,62 +1,56 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { Fonts } from '@/constants/theme';
+import { shopifyApi } from '@/services/shopifyApi';
 import { useCartStore } from '@/store/cartStore';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { isProductAvailable, sortInStockFirst } from '@/utils/availability';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-const COMPLETE_PURCHASE_COLLECTION_ID = 'gid://shopify/Collection/511203115297';
+import { appConfigService } from '@/services/appConfigService';
+
+const DEFAULT_COLLECTION_ID = 'gid://shopify/Collection/511203115297';
+const FETCH_LIMIT = 250;
 
 export function CompletePurchaseSection() {
-    const router = useRouter();
-    const [hasProducts, setHasProducts] = useState<boolean | null>(null);
     const cartItems = useCartStore(s => s.lineItems);
 
-    const handleProductsLoaded = (products: any[]) => {
-        // Filter out items already in the cart
-        const filtered = products.filter(p => !cartItems.some(ci => ci.productId === p.id));
-        setHasProducts(filtered.length > 0);
-    };
+    const collectionId = useMemo(() => {
+        const config = appConfigService.getConfig();
+        return config?.completePurchase || config?.cart?.completePurchase || "";
+    }, []);
 
-    const list = (
-        <HorizontalProductList
-            collectionIds={[COMPLETE_PURCHASE_COLLECTION_ID]}
-            config={{ limit: 40, itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
-            title=""
-            onlyInStock={true}
-            refreshKey={cartItems.length}
-            onProductsLoaded={handleProductsLoaded}
-            onProductPress={(p) => p?.id && router.push({ pathname: '/products/[id]', params: { id: p.id } } as any)}
-            onAddToCart={(p) => {
-                if (p?.variants?.edges?.[0]?.node) {
-                    const v = p.variants.edges[0].node;
-                    useCartStore.getState().addItem({
-                        productId: p.id,
-                        variantId: v.id,
-                        title: p.title,
-                        variantTitle: v.title,
-                        price: parseFloat(v.price?.amount || '0'),
-                        compareAtPrice: v.compareAtPrice?.amount ? parseFloat(v.compareAtPrice.amount) : undefined,
-                        currencyCode: v.price?.currencyCode || 'INR',
-                        image: p.featuredImage?.url || v.image?.url || '',
-                        quantity: 1,
-                        availableForSale: v.availableForSale !== false,
-                        tags: p.tags || [],
-                    });
-                }
-            }}
-        />
-    );
+    // Fetch a large number of products. Added FETCH_LIMIT to queryKey to bust the previous cache.
+    const { data: products = [], isLoading } = useQuery({
+        queryKey: ['complete_purchase', collectionId, FETCH_LIMIT],
+        queryFn: async () => {
+            const result = await shopifyApi.getProductsByCollection(collectionId, FETCH_LIMIT);
+            return result?.products?.edges?.map((e: any) => e.node).filter(Boolean) || [];
+        },
+        staleTime: 1000 * 60 * 5,
+    });
 
-    if (hasProducts === false) {
+    // Filter out out-of-stock items
+    const filteredProducts = useMemo(() => {
+        let list = products.filter(p => isProductAvailable(p));
+        return sortInStockFirst(list); // Pass all in-stock products without slicing
+    }, [products]);
+
+    if (!isLoading && filteredProducts.length === 0) {
         return null;
     }
 
-    const wrapperStyle = hasProducts === true ? styles.section : styles.hidden;
+    const wrapperStyle = (!isLoading && filteredProducts.length > 0) ? styles.section : styles.hidden;
+
     return (
         <View style={wrapperStyle}>
-            {hasProducts === true && <Text style={styles.title}>Complete your purchase with</Text>}
-            {list}
+            {!isLoading && filteredProducts.length > 0 && <Text style={styles.title}>Complete your purchase with</Text>}
+            <HorizontalProductList
+                products={filteredProducts}
+                config={{ itemsPerView: 2.5, sidePadding: 8, itemSpacing: 12 }}
+                title=""
+                onlyInStock={true}
+            />
         </View>
     );
 }
