@@ -1,4 +1,5 @@
 import { DeliveryPartnerCard } from '@/components/orders/DeliveryPartnerCard';
+import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { OrderDetailsSection } from '@/components/orders/OrderDetailsSection';
 import { OrderSummaryDetails } from '@/components/orders/OrderSummaryDetails';
 import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
@@ -1931,7 +1932,14 @@ export default function OrderDetailV2Screen() {
 
 
 
-                {/* <NeedHelpChatCard onCallPress={openSupportCall} /> */}
+                {appConfigService.isFreshChatEnabled() && (
+                    <NeedHelpChatCard
+                        onChatPress={() => {
+                            const { openFreshchat } = require('@/services/freshchatService');
+                            openFreshchat();
+                        }}
+                    />
+                )}
 
             </ScrollView>
         </SafeAreaView>
