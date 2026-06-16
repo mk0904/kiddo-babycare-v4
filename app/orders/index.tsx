@@ -1,10 +1,10 @@
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useUserStore, type UserProfile } from '@/store/userStore';
 import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
 import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
+import { useUserStore, type UserProfile } from '@/store/userStore';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -191,6 +191,27 @@ const looksLikeTicketingDate = (value: string) => {
     return false;
 };
 
+const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'isDemoTrue', 'demo_request'];
+
+const isDemoOrder = (order: any): boolean => {
+    const orderAttrs = order?.customAttributes || [];
+    if (
+        orderAttrs.some(
+            (a: any) => DEMO_ORDER_ATTR_KEYS.includes(a.key) && String(a.value).toLowerCase() === 'true',
+        )
+    ) {
+        return true;
+    }
+    if (String(order?.note ?? '').toLowerCase().includes('demo')) {
+        return true;
+    }
+    const edges = order?.lineItems?.edges || [];
+    return edges.some((edge: any) => {
+        const attrs = edge?.node?.customAttributes || [];
+        return attrs.some((a: any) => a.key === 'demo_request' && String(a.value).toLowerCase() === 'true');
+    });
+};
+
 const isTicketingOrder = (order: any) => {
     const edges = order?.lineItems?.edges || [];
     return edges.some((edge: any) => {
@@ -256,8 +277,10 @@ export default function OrdersScreen() {
                 orderService.getAllOrders().catch(() => []),
             ]);
 
-            // Format Shopify orders
-            const shopifyOrders = shopifyOrdersResult?.edges?.map((edge: any) => edge.node) || [];
+            // Format Shopify orders (exclude demo bookings — those live under Demo Bookings)
+            const shopifyOrders = (shopifyOrdersResult?.edges?.map((edge: any) => edge.node) || []).filter(
+                (o: any) => !isDemoOrder(o),
+            );
             
             // Create sets of Shopify order IDs and order numbers to detect duplicates
             const shopifyOrderIds = new Set(shopifyOrders.map((o: any) => o.id));

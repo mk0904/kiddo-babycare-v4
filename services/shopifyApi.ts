@@ -513,6 +513,8 @@ const GET_CUSTOMER_ORDERS_QUERY = `
             id
             orderNumber
             processedAt
+            canceledAt
+            cancelReason
             financialStatus
             fulfillmentStatus
             currentTotalPrice {

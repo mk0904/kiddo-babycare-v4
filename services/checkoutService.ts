@@ -82,6 +82,8 @@ export interface CheckoutDraftRequest {
   selectedPuzzleAge?: string;
   /** Tag only: backend must create draft with all items; use only for order tagging, not for filtering line items */
   isTryAndBuy?: boolean;
+  /** Demo order flag – backend should store as custom attribute */
+  isDemoTrue?: boolean;
   /** School coupon data: backend should store in Shopify order attributes. */
   schoolCouponData?: {
     childName: string;
@@ -201,6 +203,8 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     selected_puzzle_age: puzzleAge,
     schoolCouponData: body.schoolCouponData,
     isTryAndBuy: body.isTryAndBuy ?? false,
+    isDemoTrue: body.isDemoTrue,
+    is_demo_true: body.isDemoTrue,
     ...(body.kiddoCashUsed != null && body.kiddoCashUsed > 0
       ? { kiddoCashUsed: body.kiddoCashUsed, kiddo_cash_used: body.kiddoCashUsed }
       : {}),

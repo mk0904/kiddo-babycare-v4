@@ -88,14 +88,8 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
             const editOrderId = params.editOrderId as string;
 
             if (editOrderId) {
-                // We are editing an existing demo order
+                // We are editing an existing demo order using Shopify Admin API
                 const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-
-                // Fetch existing order attributes to avoid overwriting payment_method, ETA, etc.
-                const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(editOrderId);
-                const preservedAttrs = existingAttrs.filter(a =>
-                    !['delivery_date', 'delivery_time', 'delivery_day', 'delivery_format', 'date_format'].includes(a.key)
-                );
 
                 const formatTimeForDelivery = (timeStr: string) => {
                     if (!timeStr) return '';
@@ -108,6 +102,12 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     return `${formattedHour}:00 ${ampm}`;
                 };
 
+                // Fetch existing order attributes to avoid overwriting payment_method, ETA, etc.
+                const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(editOrderId);
+                const preservedAttrs = existingAttrs.filter(a =>
+                    !['delivery_date', 'delivery_time', 'delivery_day', 'delivery_format', 'date_format'].includes(a.key)
+                );
+
                 // Pass date/time in exact same format as backend scheduled delivery
                 const customAttributes = [
                     ...preservedAttrs,
@@ -119,21 +119,34 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     { key: 'isDemoOrder', value: 'true' },
                 ];
 
-                console.log('existing customAttributes', customAttributes);
+                console.log('Updating demo order customAttributes:', customAttributes);
                 await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, customAttributes);
 
-                Alert.alert('Success', 'Your demo schedule has been updated.', [
-                    { text: 'OK', onPress: () => router.back() }
-                ]);
+                // Navigate to order success screen with "demo scheduled" title
+                router.replace({
+                    pathname: '/order-success/v2',
+                    params: {
+                        orderId: editOrderId,
+                        titleOverride: 'Demo scheduled'
+                    }
+                } as any);
             } else {
-                // Use the variantId passed from PDP (already in correct format)
+                // Use the variantId passed from PDP
                 const variantId = displayProduct.variantId || displayProduct.id;
                 const productId = displayProduct.id;
+
+                // Extract numeric ID from variantId (backend expects just the numeric part)
+                let numericVariantId = variantId;
+                if (variantId.startsWith('gid://shopify/ProductVariant/')) {
+                    numericVariantId = variantId.replace('gid://shopify/ProductVariant/', '');
+                } else if (variantId.includes('/')) {
+                    numericVariantId = variantId.split('/').pop() || variantId;
+                }
 
                 // Create order item for demo product
                 const orderItem: OrderItem = {
                     id: `demo-${Date.now()}`,
-                    variantId: variantId,
+                    variantId: numericVariantId,
                     productId: productId,
                     title: displayProduct.title,
                     price: 0, // Demo is free
@@ -172,7 +185,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     email: user?.email || '',
                     phone: user?.phone || '',
                     name: (user as any)?.displayName || 'Customer',
-                    customerId: `demo-customer-${Date.now()}`,
+                    customerId: user?.customerId || user?.id || undefined,
                     address: {
                         name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
                         address: [
@@ -189,7 +202,10 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     deliverySchedule: formattedDeliverySchedule,
                     deliveryType: 'scheduled' as const,
                     notes: `Demo Request for ${displayProduct.title} on ${demoSchedule.day}, ${demoSchedule.date} at ${formattedTimeLabel} - Demo order with 0 charge`,
+                    isDemoTrue: true,
                 };
+
+                console.log('Demo order data:', JSON.stringify(orderData, null, 2));
 
                 // Create the order using PaymentService (COD order with 0 amount)
                 const result = await PaymentService.createOrderWithPayment(orderData, 'cod');

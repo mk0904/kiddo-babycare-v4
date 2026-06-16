@@ -21,12 +21,44 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-/** Check if an order is a demo booking by looking at line item custom attributes */
+const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'isDemoTrue', 'demo_request'];
+
+/** Check if an order is a demo booking by line item or order custom attributes */
 const isDemoOrder = (order: any): boolean => {
+    const orderAttrs = order?.customAttributes || [];
+    if (
+        orderAttrs.some(
+            (a: any) =>
+                DEMO_ORDER_ATTR_KEYS.includes(a.key) && String(a.value).toLowerCase() === 'true',
+        )
+    ) {
+        return true;
+    }
     const edges = order?.lineItems?.edges || [];
     return edges.some((edge: any) => {
         const attrs = edge?.node?.customAttributes || [];
-        return attrs.some((a: any) => a.key === 'demo_request' && a.value === 'true');
+        return attrs.some(
+            (a: any) => a.key === 'demo_request' && String(a.value).toLowerCase() === 'true',
+        );
+    });
+};
+
+const toShopifyOrderGid = (id: string): string => {
+    if (id.includes('gid://')) return id;
+    const num = String(id).match(/\d+/)?.[0];
+    return num ? `gid://shopify/Order/${num}` : id;
+};
+
+const isCancelledOrder = (order: any): boolean => {
+    if (order?.canceledAt || order?.cancelReason) return true;
+    const financialStatus = String(order?.financialStatus ?? '').toUpperCase();
+    if (financialStatus === 'VOIDED') return true;
+    const orderAttrs = order?.customAttributes || [];
+    return orderAttrs.some((a: any) => {
+        const value = String(a.value).toLowerCase();
+        if (a.key === 'demo_cancelled' && value === 'true') return true;
+        if (['cancelled', 'order_status'].includes(a.key) && value === 'cancelled') return true;
+        return false;
     });
 };
 
@@ -150,8 +182,23 @@ export default function DemoBookingsScreen() {
             const result = await shopifyApi.getCustomerOrders(shopifyToken, 50);
             const allOrders = result?.edges?.map((edge: any) => edge.node) || [];
 
-            // Filter only demo orders
-            const demos = allOrders.filter(isDemoOrder);
+            const allDemos = allOrders.filter((o: any) => isDemoOrder(o));
+
+            // Storefront cancel fields are unreliable; verify via Admin API
+            let adminCancelledIds = new Set<string>();
+            try {
+                const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
+                adminCancelledIds = await shopifyAdminApi.getCancelledOrderIds(
+                    allDemos.map((o: any) => o.id),
+                );
+            } catch (adminErr) {
+                console.warn('[DemoBookings] Admin cancel check failed:', adminErr);
+            }
+
+            const demos = allDemos.filter(
+                (o: any) =>
+                    !isCancelledOrder(o) && !adminCancelledIds.has(toShopifyOrderGid(o.id)),
+            );
 
             // Sort by date (newest first)
             demos.sort((a: any, b: any) => {
@@ -190,6 +237,15 @@ export default function DemoBookingsScreen() {
         try {
             setCancelLoading(true);
             const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
+            const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(cancellingOrder.id);
+            const preservedAttrs = existingAttrs.filter(
+                (a) => a.key !== 'demo_cancelled' && a.key !== 'order_status',
+            );
+            await shopifyAdminApi.updateOrderCustomAttributes(cancellingOrder.id, [
+                ...preservedAttrs,
+                { key: 'demo_cancelled', value: 'true' },
+                { key: 'order_status', value: 'cancelled' },
+            ]);
             await shopifyAdminApi.cancelOrder(cancellingOrder.id);
 
             // Remove from local state for immediate feedback

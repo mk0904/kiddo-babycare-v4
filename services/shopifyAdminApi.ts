@@ -763,4 +763,61 @@ export const shopifyAdminApi = {
       throw error;
     }
   },
+
+  /**
+   * Batch-check which orders are cancelled (Admin API — reliable vs Storefront cancel fields).
+   */
+  getCancelledOrderIds: async (orderIds: string[]): Promise<Set<string>> => {
+    const cancelled = new Set<string>();
+    const unique = [...new Set(orderIds.filter(Boolean))];
+    if (unique.length === 0) return cancelled;
+
+    const toGid = (id: string) => {
+      if (id.includes('gid://')) return id;
+      const num = String(id).match(/\d+/)?.[0];
+      return num ? `gid://shopify/Order/${num}` : id;
+    };
+
+    const gids = unique.map(toGid);
+    const chunkSize = 50;
+
+    for (let i = 0; i < gids.length; i += chunkSize) {
+      const chunk = gids.slice(i, i + chunkSize);
+      try {
+        const response = await adminClient.post('', {
+          query: `
+            query getOrdersCancelStatus($ids: [ID!]!) {
+              nodes(ids: $ids) {
+                ... on Order {
+                  id
+                  cancelledAt
+                  cancelReason
+                  cancellation {
+                    staffNote
+                  }
+                }
+              }
+            }
+          `,
+          variables: { ids: chunk },
+        });
+
+        if (response.data.errors) {
+          console.warn('[AdminAPI] getCancelledOrderIds errors:', response.data.errors);
+          continue;
+        }
+
+        for (const node of response.data.data?.nodes || []) {
+          if (!node?.id) continue;
+          if (node.cancelledAt || node.cancelReason || node.cancellation) {
+            cancelled.add(node.id);
+          }
+        }
+      } catch (error: any) {
+        console.warn('[AdminAPI] getCancelledOrderIds chunk failed:', error.message);
+      }
+    }
+
+    return cancelled;
+  },
 };

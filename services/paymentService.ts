@@ -122,6 +122,8 @@ export interface OrderData {
     selectedShoeSize?: string;
     /** Free puzzle (milestone 2) – product variant id */
     selectedPuzzleId?: string;
+    /** Demo order flag – sent to backend as custom attribute */
+    isDemoTrue?: boolean;
     /** Chosen age label (e.g. `2-3 Years`) */
     selectedPuzzleAge?: string;
     /** When provided, backend should persist scheduled date/time on order; otherwise treat as instant. */
@@ -199,6 +201,7 @@ function orderDataToCheckoutDraftRequest(
         selectedPuzzleAge: orderData.selectedPuzzleAge ?? '',
         schoolCouponData: orderData.schoolCouponData,
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
+        isDemoTrue: orderData.isDemoTrue,
         appVersion: getAppVersionForApi(),
         deviceType: Platform.OS ?? '',
     };
