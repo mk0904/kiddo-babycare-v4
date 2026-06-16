@@ -1040,42 +1040,85 @@ export async function updateDeliveryPartnerOrderSchedule(
     const scheduledTime = String(input.scheduledTime || '').trim();
     if (!scheduledDate || !scheduledTime) return false;
 
+    console.log('[deliveryPartnerService] Finding delivery partner order for Shopify ID:', numericId);
     const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
     if (!partnerOrder?.id) {
         console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
         return false;
     }
 
+    console.log('[deliveryPartnerService] Found delivery partner order:', partnerOrder);
+
     try {
-        const response = await fetch(
-            `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(partnerOrder.id)}`,
-            {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({
-                    shopifyOrderId: numericId,
-                    scheduledDate,
-                    scheduledTime,
-                }),
-            },
-        );
+        // Try PUT instead of PATCH, and use snake_case field names
+        const url = `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(partnerOrder.id)}`;
+        const payload = {
+            shopify_order_id: numericId,
+            scheduled_date: scheduledDate,
+            scheduled_time: scheduledTime,
+        };
+        
+        console.log('[deliveryPartnerService] Updating delivery schedule (PUT with snake_case):', {
+            url,
+            deliveryPartnerOrderId: partnerOrder.id,
+            shopifyOrderId: numericId,
+            payload,
+        });
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        console.log('[deliveryPartnerService] Response status:', response.status);
 
         if (!response.ok) {
             let detail = '';
+            let responseBody = '';
             try {
-                const body = await response.json();
+                responseBody = await response.text();
+                const body = JSON.parse(responseBody);
                 detail = body?.error || body?.message || '';
             } catch {
-                /* ignore */
+                detail = responseBody || response.statusText;
             }
             console.warn(
-                '[deliveryPartnerService] schedule update failed:',
+                '[deliveryPartnerService] schedule update failed (PUT):',
                 response.status,
-                detail || response.statusText,
+                detail,
             );
-            return false;
+            
+            // If PUT fails, try POST as fallback
+            console.log('[deliveryPartnerService] Trying POST as fallback...');
+            const postResponse = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            
+            console.log('[deliveryPartnerService] POST Response status:', postResponse.status);
+            
+            if (postResponse.ok) {
+                const postData = await postResponse.json();
+                console.log('[deliveryPartnerService] Schedule update success (POST):', postData);
+                return true;
+            } else {
+                let postDetail = '';
+                try {
+                    const postBody = await postResponse.text();
+                    const parsedPost = JSON.parse(postBody);
+                    postDetail = parsedPost?.error || parsedPost?.message || '';
+                } catch {
+                    postDetail = postResponse.statusText;
+                }
+                console.warn('[deliveryPartnerService] schedule update failed (POST):', postResponse.status, postDetail);
+                return false;
+            }
         }
 
+        const responseData = await response.json();
+        console.log('[deliveryPartnerService] Schedule update success (PUT):', responseData);
         return true;
     } catch (error) {
         console.warn('[deliveryPartnerService] schedule update error:', error);
