@@ -90,21 +90,36 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
             if (editOrderId) {
                 // We are editing an existing demo order
                 const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-                
+
                 // Fetch existing order attributes to avoid overwriting payment_method, ETA, etc.
                 const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(editOrderId);
-                const preservedAttrs = existingAttrs.filter(a => 
+                const preservedAttrs = existingAttrs.filter(a =>
                     !['delivery_date', 'delivery_time', 'delivery_day', 'delivery_format', 'date_format'].includes(a.key)
                 );
+
+                const formatTimeForDelivery = (timeStr: string) => {
+                    if (!timeStr) return '';
+                    const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
+                    const match = time.match(/(\d+)(AM|PM)/i);
+                    if (!match) return timeStr.toUpperCase();
+                    let hour = parseInt(match[1], 10);
+                    const ampm = match[2].toUpperCase();
+                    const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
+                    return `${formattedHour}:00 ${ampm}`;
+                };
 
                 // Pass date/time in exact same format as backend scheduled delivery
                 const customAttributes = [
                     ...preservedAttrs,
                     { key: 'delivery_date', value: demoSchedule.date }, // DD/MM/YYYY e.g. "16/06/2026"
-                    { key: 'delivery_time', value: (demoSchedule.timeSlotLabel || demoSchedule.time || '').toLowerCase() }, // e.g. "03:00 pm"
+                    { key: 'delivery_time', value: formatTimeForDelivery(demoSchedule.timeSlotLabel || demoSchedule.time || '') }, // e.g. "03:00 PM"
                     { key: 'delivery_day', value: demoSchedule.day }, // e.g. "Tuesday"
+                    { key: 'delivery_format', value: 'scheduled' },
+                    { key: 'date_format', value: 'DD/MM/YYYY' },
+                    { key: 'isDemoOrder', value: 'true' },
                 ];
 
+                console.log('existing customAttributes', customAttributes);
                 await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, customAttributes);
 
                 Alert.alert('Success', 'Your demo schedule has been updated.', [
@@ -129,44 +144,52 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     },
                 };
 
+                const formatTimeForDelivery = (timeStr: string) => {
+                    if (!timeStr) return '';
+                    const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
+                    const match = time.match(/(\d+)(AM|PM)/i);
+                    if (!match) return timeStr.toUpperCase();
+                    let hour = parseInt(match[1], 10);
+                    const ampm = match[2].toUpperCase();
+                    const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
+                    return `${formattedHour}:00 ${ampm}`;
+                };
+
+                const formattedTimeLabel = formatTimeForDelivery(demoSchedule.timeSlotLabel || demoSchedule.time || '');
+
+                const formattedDeliverySchedule = {
+                    date: demoSchedule.date,
+                    day: demoSchedule.day,
+                    dateFormat: demoSchedule.dateFormat,
+                    time: formattedTimeLabel,
+                };
+
                 // Create order data with proper type handling
                 const orderData = {
                     items: [orderItem],
                     totalAmount: 1, // Set to 1 to avoid PaymentService auto-converting to 'free' when amount is 0
                     currencyCode: 'INR',
-                    email: user?.email,
-                    phone: user?.phone || undefined,
-                    name: (user as any)?.name || (user as any)?.displayName || 'Customer',
+                    email: user?.email || '',
+                    phone: user?.phone || '',
+                    name: (user as any)?.displayName || 'Customer',
+                    customerId: `demo-customer-${Date.now()}`,
                     address: {
                         name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
                         address: [
                             (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
                             (defaultAddress as any)?.address2 || ''
                         ].filter(Boolean).join(', '),
-                        city: defaultAddress.city || '',
-                        state: defaultAddress.state || '',
+                        city: (defaultAddress as any).city || '',
+                        state: (defaultAddress as any).state || '',
                         pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
                         phone: (defaultAddress as any)?.phone || user?.phone || '',
                         addressType: selectedAddress || 'home',
                     },
                     paymentMethod: 'cod' as const,
-                    deliverySchedule: demoSchedule,
+                    deliverySchedule: formattedDeliverySchedule,
                     deliveryType: 'scheduled' as const,
-                    notes: `Demo Request for ${displayProduct.title} on ${demoSchedule.day}, ${demoSchedule.date} at ${demoSchedule.timeSlotLabel || demoSchedule.time} - Demo order with 0 charge`,
+                    notes: `Demo Request for ${displayProduct.title} on ${demoSchedule.day}, ${demoSchedule.date} at ${formattedTimeLabel} - Demo order with 0 charge`,
                 };
-
-                // 🔍 TEMP DEBUG: Log what would be sent — remove before release
-                console.log('[Demo Debug] Line Item customAttributes:', JSON.stringify(orderItem.customAttributes, null, 2));
-                console.log('[Demo Debug] Order-level deliverySchedule:', JSON.stringify(demoSchedule, null, 2));
-                console.log('[Demo Debug] Full orderData:', JSON.stringify({
-                    items: orderItem,
-                    deliverySchedule: demoSchedule,
-                    deliveryType: 'scheduled',
-                }, null, 2));
-                Alert.alert('Debug Mode', 'Check the terminal logs — no order was placed.');
-                setIsSubmitting(false);
-                return;
-                // END TEMP DEBUG
 
                 // Create the order using PaymentService (COD order with 0 amount)
                 const result = await PaymentService.createOrderWithPayment(orderData, 'cod');
@@ -261,8 +284,12 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                                     const d = new Date(today);
                                     d.setDate(today.getDate() + i);
                                     const label = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                                    const dateFormat = label;
-                                    const dateStr = d.toISOString().split('T')[0];
+                                    const dd = String(d.getDate()).padStart(2, '0');
+                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                    const yyyy = d.getFullYear();
+                                    const yy = yyyy.toString().slice(-2);
+                                    const dateFormat = `${dd}/${mm}/${yy}`;
+                                    const dateStr = `${dd}/${mm}/${yyyy}`;
                                     const dayStr = d.toLocaleDateString('en-US', { weekday: 'long' });
 
                                     const isSelected = demoSchedule?.date === dateStr;
