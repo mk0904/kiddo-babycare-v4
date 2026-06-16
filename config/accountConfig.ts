@@ -79,6 +79,16 @@ export const accountConfig = {
             },
         },
         {
+            id: "demo_bookings",
+            title: "Demo Bookings",
+            icon: "calendar-outline",
+            actionType: "navigate",
+            action: {
+                type: "navigate",
+                screen: "DemoBookings",
+            },
+        },
+        {
             id: "chat",
             title: "Chat with us",
             icon: "chatbubbles-outline",

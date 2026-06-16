@@ -1828,6 +1828,7 @@ export default function OrderDetailV2Screen() {
                     total={total}
                     tax={tax}
                     couponCode={couponCode}
+                    order={order}
                 />
 
                 <OrderDetailsSection

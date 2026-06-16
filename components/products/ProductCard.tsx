@@ -409,6 +409,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has Gear & Furniture tag
+  const hasGearFurnitureTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'gear & furniture',
+      ),
+    [tags],
+  );
+
   // Get metafield value (supports edges or array, key match case-insensitive)
   const getMetafieldValue = useCallback((key: string) => {
     const productMetafields = product?.metafields;
@@ -676,6 +685,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               </Text>
             </TouchableOpacity>
           )}
+          {/* Demo Available Tag for Gear & Furniture */}
+          {hasGearFurnitureTag && (
+            <View style={styles.demoBadge}>
+              <Text style={[styles.demoBadgeText, compactTbTagTextStyle]} numberOfLines={1}>
+                Demo Available
+              </Text>
+            </View>
+          )}
           {/* Add to Cart Button - CTA on image - Hide for ticketing products */}
           {!outOfStock && !isTicketingProduct && (
             <View
@@ -875,7 +892,22 @@ const styles = StyleSheet.create({
   },
   hangerIcon: {
     marginRight: 0,
-    color:'#854D0E'
+    color: '#854D0E'
+  },
+  demoBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: '#FEF7C3',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  demoBadgeText: {
+    color: '#CA8504',
+    fontSize: 11,
+    fontFamily: Fonts.Bold,
   },
   priceContainer: {
     flexDirection: 'row',

@@ -519,6 +519,10 @@ const GET_CUSTOMER_ORDERS_QUERY = `
               amount
               currencyCode
             }
+            customAttributes {
+              key
+              value
+            }
             lineItems(first: 5) {
               edges {
                 node {

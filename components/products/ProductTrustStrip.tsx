@@ -1,10 +1,10 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 const ICONS = {
-  recycle: require('@/assets/icons/recycle.png'),
-  light: require('@/assets/icons/light.png'),
-  heart: require('@/assets/icons/heart.png'),
+  recycle: require('@/assets/icons/recycle1.png'),
+  light: require('@/assets/icons/lightning.png'),
+  heart: require('@/assets/icons/love.png'),
 } as const;
 
 interface ProductTrustStripProps {
@@ -18,26 +18,25 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress }: Product
   return (
     <View style={styles.container}>
       <View style={styles.item}>
-        <Image source={ICONS.recycle} style={styles.icon} resizeMode="contain" />
-        <View style={styles.textColumn}>
-          <Text style={styles.primaryText} numberOfLines={2}>
-            {refundText}
-          </Text>
-          {onKnowMorePress ? (
-            <TouchableOpacity onPress={onKnowMorePress} activeOpacity={0.7} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-              <Text style={styles.knowMoreText}>Know More</Text>
-            </TouchableOpacity>
-          ) : null}
+        <View style={[styles.iconWrapper, { backgroundColor: '#FEFBE8' }]}>
+          <Image source={ICONS.recycle} style={styles.icon} resizeMode="contain" />
         </View>
+        <Text style={styles.primaryText} numberOfLines={2}>
+          {refundText}
+        </Text>
       </View>
 
       <View style={styles.item}>
-        <Image source={ICONS.light} style={styles.icon} resizeMode="contain" />
+        <View style={[styles.iconWrapper, { backgroundColor: '#FEF6EE' }]}>
+          <Image source={ICONS.light} style={styles.icon} resizeMode="contain" />
+        </View>
         <Text style={styles.primaryText}>Delivered{'\n'}in Minutes</Text>
       </View>
 
       <View style={styles.item}>
-        <Image source={ICONS.heart} style={styles.icon} resizeMode="contain" />
+        <View style={[styles.iconWrapper, { backgroundColor: '#FEEFEF' }]}>
+          <Image source={ICONS.heart} style={styles.icon} resizeMode="contain" />
+        </View>
         <Text style={styles.primaryText}>Loved by{'\n'}Parents</Text>
       </View>
     </View>
@@ -48,25 +47,26 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 6,
+    marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 7,
+    paddingVertical: 22,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E8E8E8',
     gap: 6,
+    backgroundColor: "white",
   },
   item: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
   },
   icon: {
-    width: 28,
-    height: 28,
+    width: 17,
+    height: 20.8,
   },
   textColumn: {
     flex: 1,
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 10,
     fontFamily: Fonts.LexendSemiBold,
     color: Colors.text,
   },
@@ -87,4 +87,12 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     textDecorationLine: 'underline',
   },
+  iconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
 });

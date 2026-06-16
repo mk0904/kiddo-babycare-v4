@@ -1,7 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
-import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
 import { ProductTrustStrip } from '@/components/products/ProductTrustStrip';
+import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
 import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
@@ -834,7 +834,7 @@ const ProductDetailScreen = () => {
                 try {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -947,7 +947,7 @@ const ProductDetailScreen = () => {
                 try {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -1275,6 +1275,11 @@ const ProductDetailScreen = () => {
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
+    // Check if product has Gear & Furniture tag
+    const hasGearFurnitureTag = product?.tags?.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'gear & furniture'
+    );
+
     // Essentials-only: pack size and size for PDP (same as ProductCard)
     const essentialsMetaParts = useMemo(() => {
         if (!hasEssentialsTag || !product) return { packSize: null, size: null };
@@ -1328,7 +1333,7 @@ const ProductDetailScreen = () => {
                 await removeFromWishlist(product.id);
             } else {
                 await addToWishlist(product);
-                
+
                 // Track Wishlist Added event
                 try {
                     const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
@@ -1482,8 +1487,21 @@ const ProductDetailScreen = () => {
                     </View>
                 )}
 
+
                 <View style={styles.infoContainer}>
+                    <View>
+                        <ProductTrustStrip
+                            refundPolicyText={refundPolicy}
+                            onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                        /></View>
                     <View style={styles.sectionCard}>
+                        {hasGearFurnitureTag && (
+                            <View style={styles.pdpDemoBadgeContainer}>
+                                <View style={styles.pdpDemoBadge}>
+                                    <Text style={styles.pdpDemoBadgeText}>Demo Available</Text>
+                                </View>
+                            </View>
+                        )}
                         <View style={styles.vendorRow}>
                             {product.vendor ? (
                                 <Text style={[
@@ -1526,6 +1544,7 @@ const ProductDetailScreen = () => {
                             }
                         ]}>{product.title}</Text>
 
+
                         {tryBuyPdpEligible && pdpMainTryBuyOption ? (
                             <TryBuyPdpVariantSection
                                 productVariants={variants}
@@ -1539,6 +1558,7 @@ const ProductDetailScreen = () => {
 
                         {/* Price Section */}
                         <View style={styles.productPriceContainer}>
+
                             <View style={styles.productPriceRow}>
                                 <Text style={styles.productPriceText}>{formattedPrice}</Text>
                                 {formattedMRP && (
@@ -1550,10 +1570,6 @@ const ProductDetailScreen = () => {
                             </View>
                         </View>
 
-                        <ProductTrustStrip
-                            refundPolicyText={refundPolicy}
-                            onKnowMorePress={() => setShowRefundPolicyModal(true)}
-                        />
 
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
@@ -1573,7 +1589,7 @@ const ProductDetailScreen = () => {
                                             {(() => {
                                                 const availableValues: string[] = [];
                                                 const unavailableValues: string[] = [];
-                                                
+
                                                 option.values.forEach((value: string) => {
                                                     const isAvail = variants.some((variant: any) => {
                                                         if (!variant.selectedOptions) return false;
@@ -1584,37 +1600,37 @@ const ProductDetailScreen = () => {
                                                     if (isAvail) availableValues.push(value);
                                                     else unavailableValues.push(value);
                                                 });
-                                                
+
                                                 return [...availableValues, ...unavailableValues].map((value: string) => {
                                                     const isSelected = selectedOptions[option.name] === value;
                                                     const isOptionAvailable = availableValues.includes(value);
 
                                                     return (
-                                                    <TouchableOpacity
-                                                        key={value}
-                                                        style={[
-                                                            styles.variantButton,
-                                                            isSelected && styles.variantButtonActive,
-                                                            !isOptionAvailable && styles.variantButtonDisabled
-                                                        ]}
-                                                        onPress={() => handleOptionSelect(option.name, value)}
-                                                        disabled={!isOptionAvailable}
-                                                    >
-                                                        <Text style={[
-                                                            styles.variantText,
-                                                            isSelected && styles.variantTextActive,
-                                                            !isOptionAvailable && styles.variantTextDisabled,
-                                                            productStyles.variantButton && !isSelected && {
-                                                                fontSize: productStyles.variantButton.fontSize,
-                                                                color: productStyles.variantButton.color,
-                                                                ...processFontStyle(productStyles.variantButton, Fonts.Medium),
-                                                            }
-                                                        ]}>
-                                                            {value}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                );
-                                            });
+                                                        <TouchableOpacity
+                                                            key={value}
+                                                            style={[
+                                                                styles.variantButton,
+                                                                isSelected && styles.variantButtonActive,
+                                                                !isOptionAvailable && styles.variantButtonDisabled
+                                                            ]}
+                                                            onPress={() => handleOptionSelect(option.name, value)}
+                                                            disabled={!isOptionAvailable}
+                                                        >
+                                                            <Text style={[
+                                                                styles.variantText,
+                                                                isSelected && styles.variantTextActive,
+                                                                !isOptionAvailable && styles.variantTextDisabled,
+                                                                productStyles.variantButton && !isSelected && {
+                                                                    fontSize: productStyles.variantButton.fontSize,
+                                                                    color: productStyles.variantButton.color,
+                                                                    ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                                }
+                                                            ]}>
+                                                                {value}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                });
                                             })()}
                                         </View>
                                     </View>
@@ -1696,6 +1712,50 @@ const ProductDetailScreen = () => {
                                     ]}>{product.description}</Text>
                                 </View>
                             )}
+                        </View>
+                    )}
+
+                    {/* Demo Available Section for Gear & Furniture */}
+                    {hasGearFurnitureTag && (
+                        <View style={styles.demoSection}>
+                            <Text style={styles.demoSectionTitle}>Experience it at home</Text>
+                            <Image
+                                source={{ uri: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101' }}
+                                style={styles.demoImage}
+                                resizeMode="cover"
+                            />
+                            <View style={styles.demoContent}>
+                                <View style={styles.demoBulletPoints}>
+                                    <View style={styles.demoBulletPoint}>
+                                        <Text style={styles.demoBulletText}>• Kiddo partner visits for a 30-minute demo</Text>
+                                    </View>
+                                    <View style={styles.demoBulletPoint}>
+                                        <Text style={styles.demoBulletText}>• Ensures product meets personalized needs</Text>
+                                    </View>
+                                    <View style={styles.demoBulletPoint}>
+                                        <Text style={styles.demoBulletText}>• Option to buy via digital payment or cash</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.requestDemoButton}
+                                    onPress={() => {
+                                        router.push({
+                                            pathname: '/demo/get-demo',
+                                            params: {
+                                                productId: product.id,
+                                                variantId: selectedVariant?.id || product.id,
+                                                productTitle: product.title,
+                                                productPrice: basePrice.toFixed(0),
+                                                productComparePrice: mrp.toFixed(0),
+                                                productDiscount: discountPercentage || 0,
+                                                productImage: images[0] || '',
+                                            }
+                                        });
+                                    }}
+                                >
+                                    <Text style={styles.requestDemoButtonText}>REQUEST A DEMO</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     )}
 
@@ -1833,8 +1893,12 @@ const ProductDetailScreen = () => {
                 </View>
             </ScrollView>
 
-            <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <View style={styles.priceContainer}>
+            <View style={[
+                styles.bottomBar,
+                { paddingBottom: Math.max(insets.bottom, 20) },
+                hasGearFurnitureTag && { flexDirection: 'column', alignItems: 'stretch' }
+            ]}>
+                <View style={[styles.priceContainer, hasGearFurnitureTag && { marginBottom: 12 }]}>
                     <View style={styles.priceRow}>
                         <Text style={styles.priceText}>{formattedPrice}</Text>
                         {formattedMRP && (
@@ -1845,46 +1909,80 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
                 </View>
-                {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
-                    isTicketingProduct && !selectedEventDate ? (
-                        <TouchableOpacity
-                            style={[styles.addToCartButton]}
-                            onPress={() => {
-                                setShowDatePicker(true);
-                                setShowDateError(false); // Clear error when user opens date picker
-                            }}
-                        >
-                            <Text style={styles.addToCartText}>Select Date</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <UniversalAdd
-                            item={product}
-                            selectedVariant={selectedVariant}
-                            variant="pdp"
-                            addText="Add to Cart"
-                            bookingDate={isTicketingProduct ? selectedEventDate : undefined}
-                            isTicketing={isTicketingProduct}
-                            tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
-                            pdpAddBlocked={
-                                tryBuyPdpEligible &&
-                                !!pdpMainTryBuyOption &&
-                                !selectedOptions[pdpMainTryBuyOption.name]
-                            }
-                            onValidationError={() => {
-                                if (isTicketingProduct && !selectedEventDate) {
-                                    setShowDateError(true);
+
+                {(() => {
+                    const cartButtonNode = selectedVariant && isVariantAvailable(selectedVariant) === true ? (
+                        isTicketingProduct && !selectedEventDate ? (
+                            <TouchableOpacity
+                                style={[styles.addToCartButton]}
+                                onPress={() => {
+                                    setShowDatePicker(true);
+                                    setShowDateError(false); // Clear error when user opens date picker
+                                }}
+                            >
+                                <Text style={styles.addToCartText}>Select Date</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <UniversalAdd
+                                item={product}
+                                selectedVariant={selectedVariant}
+                                variant="pdp"
+                                addText="Add to Cart"
+                                bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                                isTicketing={isTicketingProduct}
+                                tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
+                                pdpAddBlocked={
+                                    tryBuyPdpEligible &&
+                                    !!pdpMainTryBuyOption &&
+                                    !selectedOptions[pdpMainTryBuyOption.name]
                                 }
-                            }}
-                        />
-                    )
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.addToCartButton, styles.disabledButton]}
-                        disabled={true}
-                    >
-                        <Text style={styles.addToCartText}>Out of Stock</Text>
-                    </TouchableOpacity>
-                )}
+                                onValidationError={() => {
+                                    if (isTicketingProduct && !selectedEventDate) {
+                                        setShowDateError(true);
+                                    }
+                                }}
+                            />
+                        )
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton, styles.disabledButton]}
+                            disabled={true}
+                        >
+                            <Text style={styles.addToCartText}>Out of Stock</Text>
+                        </TouchableOpacity>
+                    );
+
+                    if (hasGearFurnitureTag) {
+                        return (
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <View style={{ flex: 1, minWidth: 0 }}>
+                                    {cartButtonNode}
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.bookDemoButton}
+                                    onPress={() => {
+                                        router.push({
+                                            pathname: '/demo/get-demo',
+                                            params: {
+                                                productId: product.id,
+                                                variantId: selectedVariant?.id || product.id,
+                                                productTitle: product.title,
+                                                productPrice: basePrice.toFixed(0),
+                                                productComparePrice: mrp.toFixed(0),
+                                                productDiscount: discountPercentage || 0,
+                                                productImage: images[0] || '',
+                                            }
+                                        });
+                                    }}
+                                >
+                                    <Text style={styles.bookDemoButtonText}>BOOK A DEMO</Text>
+                                </TouchableOpacity>
+                            </View>
+                        );
+                    }
+
+                    return cartButtonNode;
+                })()}
             </View>
 
             <TryAndBuyModal visible={tryAndBuyModalVisible} onClose={() => setTryAndBuyModalVisible(false)} />
@@ -2052,6 +2150,77 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendSemiBold,
         marginLeft: 4,
     },
+    demoSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 8,
+        paddingTop: 16,
+        paddingBottom: 16,
+        paddingHorizontal: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
+    },
+    demoSectionTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    demoImage: {
+        width: '100%',
+        height: 160,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    demoContent: {
+        marginTop: 8,
+    },
+    demoSubsectionTitle: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.text,
+        marginBottom: 8,
+    },
+    demoBulletPoints: {
+        marginTop: 8,
+    },
+    demoBulletPoint: {
+        marginBottom: 6,
+    },
+    demoBulletText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.textSecondary,
+        lineHeight: 18,
+    },
+    requestDemoButton: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        marginTop: 16,
+        alignItems: 'center',
+        borderColor: Colors.primary,
+        borderWidth: 1
+
+    },
+    requestDemoButtonText: {
+        color: Colors.primary,
+        fontSize: 14,
+        fontFamily: Fonts.LexendSemiBold,
+        fontWeight: '600',
+    },
     infoContainer: {
         paddingTop: 10,
     },
@@ -2062,6 +2231,22 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         marginTop: 0,
         lineHeight: 28,
+    },
+    pdpDemoBadgeContainer: {
+        paddingHorizontal: 16,
+        alignItems: 'flex-start',
+        marginBottom: 2,
+    },
+    pdpDemoBadge: {
+        backgroundColor: '#FEF7C3',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    pdpDemoBadgeText: {
+        color: '#CA8504',
+        fontSize: 11,
+        fontFamily: Fonts.Bold,
     },
     vendorRow: {
         flexDirection: 'row',
@@ -2349,6 +2534,21 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: Fonts.FredokaSemiBold,
         color: '#4CAF50',
+    },
+    bookDemoButton: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderColor: Colors.primary,
+        borderWidth: 1,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 14,
+    },
+    bookDemoButtonText: {
+        color: Colors.primary,
+        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 14,
     },
     refundPolicyModalText: {
         fontSize: 14,

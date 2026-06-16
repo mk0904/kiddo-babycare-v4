@@ -289,6 +289,27 @@ const GET_DRAFT_ORDER_QUERY = `
   }
 `;
 
+const ORDER_CANCEL_MUTATION = `
+  mutation orderCancel($orderId: ID!, $notifyCustomer: Boolean, $reason: OrderCancelReason!, $restock: Boolean!) {
+    orderCancel(orderId: $orderId, notifyCustomer: $notifyCustomer, reason: $reason, restock: $restock) {
+      job { id }
+      orderCancelUserErrors { field message }
+    }
+  }
+`;
+
+const ORDER_UPDATE_MUTATION = `
+  mutation orderUpdate($input: OrderInput!) {
+    orderUpdate(input: $input) {
+      order {
+        id
+        customAttributes { key value }
+      }
+      userErrors { field message }
+    }
+  }
+`;
+
 // Admin API Service
 export const shopifyAdminApi = {
   /**
@@ -633,6 +654,112 @@ export const shopifyAdminApi = {
       return true;
     } catch (error: any) {
       console.error('[AdminAPI] Error updating customer metafields:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Cancel an order
+   */
+  cancelOrder: async (orderId: string, notifyCustomer: boolean = false): Promise<boolean> => {
+    try {
+      const formattedOrderId = orderId.includes('gid://')
+        ? orderId
+        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
+
+      const response = await adminClient.post('', {
+        query: ORDER_CANCEL_MUTATION,
+        variables: {
+          orderId: formattedOrderId,
+          notifyCustomer,
+          reason: 'CUSTOMER',
+          restock: true,
+        },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to cancel order');
+      }
+
+      const result = response.data.data.orderCancel;
+
+      if (result.orderCancelUserErrors && result.orderCancelUserErrors.length > 0) {
+        throw new Error(result.orderCancelUserErrors[0].message || 'Failed to cancel order');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error canceling order:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get order custom attributes
+   */
+  getOrderCustomAttributes: async (orderId: string): Promise<Array<{ key: string; value: string }>> => {
+    try {
+      const formattedOrderId = orderId.includes('gid://')
+        ? orderId
+        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
+
+      const response = await adminClient.post('', {
+        query: `
+          query getOrderAttrs($id: ID!) {
+            order(id: $id) {
+              customAttributes {
+                key
+                value
+              }
+            }
+          }
+        `,
+        variables: { id: formattedOrderId },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to get order');
+      }
+
+      return response.data.data.order?.customAttributes || [];
+    } catch (error: any) {
+      console.error('[AdminAPI] Error getting order custom attributes:', error.message);
+      return [];
+    }
+  },
+
+  /**
+   * Update order custom attributes
+   */
+  updateOrderCustomAttributes: async (orderId: string, attributes: Array<{ key: string; value: string }>): Promise<boolean> => {
+    try {
+      const formattedOrderId = orderId.includes('gid://')
+        ? orderId
+        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
+
+      const response = await adminClient.post('', {
+        query: ORDER_UPDATE_MUTATION,
+        variables: {
+          input: {
+            id: formattedOrderId,
+            customAttributes: attributes,
+          },
+        },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0]?.message || 'Failed to update order');
+      }
+
+      const result = response.data.data.orderUpdate;
+
+      if (result.userErrors && result.userErrors.length > 0) {
+        throw new Error(result.userErrors[0].message || 'Failed to update order');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error updating order custom attributes:', error.message);
       throw error;
     }
   },

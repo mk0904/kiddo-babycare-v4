@@ -248,6 +248,7 @@ export default function AccountScreen() {
                         'Wishlist': '/wishlist',
                         'ContactSupport': '/support',
                         'Profile': '/profile/edit',
+                        'DemoBookings': '/demo/bookings',
                     };
 
                     const path = screenMap[params.screen];

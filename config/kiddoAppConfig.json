@@ -2963,7 +2963,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/mainbannervideo.gif?v=1780770315"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Main_Banner_3.gif?v=1781374355"
         }
       ],
       "carouselConfig": {
@@ -3073,7 +3073,7 @@
         "aspectRatio": 1,
         "resizeMode": "cover",
         "showLabels": true,
-        "borderRadius": 4
+        "borderRadius": 6
       },
       "collectionIds": [
         {
@@ -3091,7 +3091,7 @@
           "marginTop": -150,
           "paddingHorizontal": 16,
           "paddingTop": 0,
-          "backgroundColor": "transparent"
+          "backgroundColor": "none"
         },
         "title": {
           "display": "none",
@@ -3811,6 +3811,79 @@
       }
     },
     {
+      "id": "books-shopByCat",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Books",
+      "order": 6,
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512844300577",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.09.41_PM.jpg?v=1781521410",
+          "name": "Sensory Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512845283617",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.13.57_PM.jpg?v=1781521302",
+          "name": "Interactive Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512846364961",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.15.01_PM.jpg?v=1781521330",
+          "name": "First Learning / Concept Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512847937825",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.08.51_PM.jpg?v=1781521428",
+          "name": "Storybooks"
+        },
+        {
+          "id": "gid://shopify/Collection/512848298273",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.15.44_PM.jpg?v=1781521351",
+          "name": "Picture Books (Story-based)"
+        },
+        {
+          "id": "gid://shopify/Collection/512848363809",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.16.34_PM.jpg?v=1781521371",
+          "name": "Activity Books / Educational Workbooks"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
       "id": "category-grid-gear-furniture",
       "type": "categoryGrid",
       "order": 7.5,
@@ -4173,7 +4246,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_8_2026_02_40_29_PM.png?v=1780909850"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_13_2026_01_19_00_PM.png?v=1781336985"
         }
       ],
       "carouselConfig": {
@@ -4533,83 +4606,83 @@
           "id": "brand-adidas",
           "collectionId": "gid://shopify/Collection/514759754017",
           "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/1_83591310-d2e3-46bc-bbae-97b0b1081eb7.png?v=1780664291"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.05_PM_1.jpg?v=1781503926"
         },
         {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514760212769",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/2_c52fcfd7-30ed-450d-82b5-e21c72ca97c6.png?v=1780664561"
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/514777415969",
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.06_PM.jpg?v=1781503864"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514777874721",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.07_PM.jpg?v=1781508884"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/514777776417",
+          "label": "Kuchipoo",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.08_PM.jpg?v=1781508927"
         },
         {
           "id": "brand-bumzee",
           "collectionId": "gid://shopify/Collection/514760278305",
           "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/3_c5744327-525b-4fc0-a1c0-574859644761.png?v=1780664662"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.09_PM.jpg?v=1781515893"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514776662305",
+          "label": "Googagaga",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.15_PM.jpg?v=1781515786"
         },
         {
           "id": "brand-doreme",
           "collectionId": "gid://shopify/Collection/514760343841",
           "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/4_4c2e6c91-5dae-43ab-ad1c-44da9e22a96c.png?v=1780664774"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514776662305",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/5_c5a23234-141f-4e92-9981-8b59e64e8f12.png?v=1780721268"
-        },
-        {
-          "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/514777415969",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/6_0bca7551-ae09-469f-ba91-62a6d933a403.png?v=1780723608"
-        },
-        {
-          "id": "brand-doreme-3",
-          "collectionId": "gid://shopify/Collection/514777776417",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/7_f760a4ac-78c3-4259-9199-44ba73fc951c.png?v=1780725704"
-        },
-        {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514777874721",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8_84323816-f550-4bff-9e65-cee49f3a77e6.png?v=1780726312"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.14_PM.jpg?v=1781515759"
         },
         {
           "id": "brand-doreme-5",
           "collectionId": "gid://shopify/Collection/514778464545",
           "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/9_d9d6e7a4-8b7c-4b53-9d72-376d9c0f3c87.png?v=1780727859"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.15_PM_1.jpg?v=1781515816"
+        },
+        {
+          "id": "brand-doreme-7",
+          "collectionId": "gid://shopify/Collection/514779119905",
+          "label": "Trampoline",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.12_PM.jpg?v=1781515738"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514760212769",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.11_PM.jpg?v=1781515713"
         },
         {
           "id": "brand-doreme-6",
           "collectionId": "gid://shopify/Collection/514778792225",
           "label": "Doreme",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
-        },
-        {
-          "id": "brand-doreme-7",
-          "collectionId": "gid://shopify/Collection/514779119905",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/11_7aa03011-ea05-4854-99dc-b78dd3754dd0.png?v=1780730271"
         }
       ],
       "carouselConfig": {
-        "itemWidth": 120,
-        "itemHeight": 120,
-        "gap": 16,
+        "itemWidth": 160,
+        "itemHeight": 220,
+        "gap": 8,
         "borderRadius": 10,
         "imageContentFit": "cover",
-        "paddingHorizontal": 20
+        "paddingHorizontal": 16
       },
       "styles": {
         "container": {
           "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": 10,
           "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
@@ -4849,83 +4922,83 @@
           "id": "brand-adidas",
           "collectionId": "gid://shopify/Collection/514760016161",
           "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/1_83591310-d2e3-46bc-bbae-97b0b1081eb7.png?v=1780664291"
-        },
-        {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514760245537",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/2_c52fcfd7-30ed-450d-82b5-e21c72ca97c6.png?v=1780664561"
-        },
-        {
-          "id": "brand-bumzee",
-          "collectionId": "gid://shopify/Collection/514760311073",
-          "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/3_c5744327-525b-4fc0-a1c0-574859644761.png?v=1780664662"
-        },
-        {
-          "id": "brand-doreme",
-          "collectionId": "gid://shopify/Collection/514760376609",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/4_4c2e6c91-5dae-43ab-ad1c-44da9e22a96c.png?v=1780664774"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514776760609",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/5_c5a23234-141f-4e92-9981-8b59e64e8f12.png?v=1780721268"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.23_PM.jpg?v=1781546437"
         },
         {
           "id": "brand-doreme-2",
           "collectionId": "gid://shopify/Collection/514777448737",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/6_0bca7551-ae09-469f-ba91-62a6d933a403.png?v=1780723608"
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.25_PM.jpg?v=1781546457"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/514777940257",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.26_PM.jpg?v=1781546474"
         },
         {
           "id": "brand-doreme-3",
           "collectionId": "gid://shopify/Collection/514777809185",
           "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/7_f760a4ac-78c3-4259-9199-44ba73fc951c.png?v=1780725704"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.28_PM.jpg?v=1781546493"
         },
         {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514777940257",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/8_84323816-f550-4bff-9e65-cee49f3a77e6.png?v=1780726312"
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/514760311073",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.29_PM.jpg?v=1781546511"
         },
         {
-          "id": "brand-doreme-5",
-          "collectionId": "gid://shopify/Collection/514778497313",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/9_d9d6e7a4-8b7c-4b53-9d72-376d9c0f3c87.png?v=1780727859"
-        },
-        {
-          "id": "brand-doreme-6",
-          "collectionId": "gid://shopify/Collection/514778824993",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/514760245537",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.31_PM.jpg?v=1781546533"
         },
         {
           "id": "brand-doreme-7",
           "collectionId": "gid://shopify/Collection/514779021601",
+          "label": "Trampoline",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.34_PM.jpg?v=1781546552"
+        },
+        {
+          "id": "brand-doreme",
+          "collectionId": "gid://shopify/Collection/514760376609",
           "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/11_7aa03011-ea05-4854-99dc-b78dd3754dd0.png?v=1780730271"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM.jpg?v=1781546577"
+        },
+        {
+          "id": "brand-doreme-1",
+          "collectionId": "gid://shopify/Collection/514776760609",
+          "label": "Googagaga",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM_1.jpg?v=1781546599"
+        },
+        {
+          "id": "brand-doreme-5",
+          "collectionId": "gid://shopify/Collection/514778497313",
+          "label": "Snugbug",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM_2.jpg?v=1781546630"
+        },
+        {
+          "id": "brand-doreme-6",
+          "collectionId": "gid://shopify/Collection/514778824993",
+          "label": "talesandstories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
         }
       ],
       "carouselConfig": {
-        "itemWidth": 120,
-        "itemHeight": 120,
-        "gap": 16,
+        "itemHeight": 215,
+        "itemWidth": 160,
+        "gap": 8,
         "borderRadius": 10,
         "imageContentFit": "cover",
-        "paddingHorizontal": 20
+        "paddingHorizontal": 16
       },
       "styles": {
         "container": {
           "paddingVertical": 16
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": 10,
           "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
@@ -5599,7 +5672,7 @@
       "title": "Postpartum Care & Wellness",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 3,
+        "numColumns": 4,
         "colGap": 12,
         "rowGap": 12,
         "limit": 0,
@@ -5616,6 +5689,14 @@
         {
           "id": "gid://shopify/Collection/512148308257",
           "name": "Skin Care and Stretch Marks"
+        },
+        {
+          "id": "gid://shopify/Collection/512148177185",
+          "name": "Pregnancy Pillows"
+        },
+        {
+          "id": "gid://shopify/Collection/512316571937",
+          "name": "Belly Support Belts"
         }
       ],
       "styles": {
@@ -5873,6 +5954,144 @@
       }
     },
     {
+      "id": "books-shopByCat",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Shop By Category",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512844300577",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.09.41_PM.jpg?v=1781521410",
+          "name": "Sensory Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512845283617",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.13.57_PM.jpg?v=1781521302",
+          "name": "Interactive Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512846364961",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.15.01_PM.jpg?v=1781521330",
+          "name": "First Learning / Concept Books"
+        },
+        {
+          "id": "gid://shopify/Collection/512847937825",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.08.51_PM.jpg?v=1781521428",
+          "name": "Storybooks"
+        },
+        {
+          "id": "gid://shopify/Collection/512848298273",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.15.44_PM.jpg?v=1781521351",
+          "name": "Picture Books (Story-based)"
+        },
+        {
+          "id": "gid://shopify/Collection/512848363809",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_4.16.34_PM.jpg?v=1781521371",
+          "name": "Activity Books / Educational Workbooks"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "books-Early-Learning",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Early Learning",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 8,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/512845906209",
+          "name": "ABC & 123"
+        },
+        {
+          "id": "gid://shopify/Collection/512845971745",
+          "name": "Colors & Shapes"
+        },
+        {
+          "id": "gid://shopify/Collection/512846037281",
+          "name": "Animals & Vehicles"
+        },
+        {
+          "id": "gid://shopify/Collection/512846070049",
+          "name": "Fruits & Veggies"
+        },
+        {
+          "id": "gid://shopify/Collection/512846201121",
+          "name": "Phonics & Vocabulary"
+        },
+        {
+          "id": "gid://shopify/Collection/512846266657",
+          "name": "School Concepts"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
       "id": "books-grid-foundations-for-life",
       "type": "categoryGrid",
       "visible": true,
@@ -6003,138 +6222,6 @@
           "textAlign": "center"
         }
       }
-    },
-    {
-      "id": "books-Early-Learning",
-      "type": "categoryGrid",
-      "visible": true,
-      "title": "Early Learning",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 3,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 8,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/512845906209",
-          "name": "ABC & 123"
-        },
-        {
-          "id": "gid://shopify/Collection/512845971745",
-          "name": "Colors & Shapes"
-        },
-        {
-          "id": "gid://shopify/Collection/512846037281",
-          "name": "Animals & Vehicles"
-        },
-        {
-          "id": "gid://shopify/Collection/512846070049",
-          "name": "Fruits & Veggies"
-        },
-        {
-          "id": "gid://shopify/Collection/512846201121",
-          "name": "Phonics & Vocabulary"
-        },
-        {
-          "id": "gid://shopify/Collection/512846266657",
-          "name": "School Concepts"
-        }
-      ],
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "books-shopByCat",
-      "type": "categoryGrid",
-      "visible": true,
-      "title": "Shop By Category",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 3,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 8,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/512844300577",
-          "name": "Sensory Books"
-        },
-        {
-          "id": "gid://shopify/Collection/512845283617",
-          "name": "Interactive Books"
-        },
-        {
-          "id": "gid://shopify/Collection/512846364961",
-          "name": "First Learning / Concept Books"
-        },
-        {
-          "id": "gid://shopify/Collection/512847937825",
-          "name": "Storybooks"
-        },
-        {
-          "id": "gid://shopify/Collection/512848298273",
-          "name": "Picture Books (Story-based)"
-        },
-        {
-          "id": "gid://shopify/Collection/512848363809",
-          "name": "Activity Books / Educational Workbooks"
-        }
-      ],
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
     }
   ],
   "header": {
@@ -6221,7 +6308,6 @@
     "defaultPageBackgroundColor": "#F5F5F5",
     "order": [
       "all",
-      "Pharmacy",
       "girls",
       "boys",
       "babycare",
