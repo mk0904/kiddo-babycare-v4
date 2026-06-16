@@ -967,3 +967,118 @@ export async function getExternalOrderStatus(orderId: string): Promise<ExternalO
         return null;
     }
 }
+
+const DELIVERY_PARTNER_ORDERS_API =
+    'https://delivery-partner-service-874125225773.asia-south1.run.app/api/v1/orders';
+
+export interface UpdateDeliveryPartnerOrderScheduleInput {
+    scheduledDate: string;
+    scheduledTime: string;
+}
+
+export interface DeliveryPartnerOrderRef {
+    id: string;
+    shopifyOrderId: string;
+}
+
+function extractShopifyOrderNumericId(orderId: string): string {
+    const raw = String(orderId || '').trim();
+    return raw.match(/\/Order\/(\d+)/i)?.[1] ?? (raw.replace(/\D/g, '') || raw);
+}
+
+/** Normalize to DD/MM/YYYY for delivery-partner `scheduledDate`. */
+export function normalizeScheduledDateForDeliveryPartner(dateStr: string): string {
+    const s = String(dateStr || '').trim();
+    if (!s) return s;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    const parsed = new Date(s);
+    if (!Number.isNaN(parsed.getTime())) {
+        const dd = String(parsed.getDate()).padStart(2, '0');
+        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        const yyyy = parsed.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    }
+    return s;
+}
+
+/** Resolve delivery-partner order row by Shopify numeric id (list API has no reliable filter). */
+export async function findDeliveryPartnerOrderByShopifyId(
+    shopifyOrderId: string,
+): Promise<DeliveryPartnerOrderRef | null> {
+    const numericId = extractShopifyOrderNumericId(shopifyOrderId);
+    if (!numericId) return null;
+
+    try {
+        const response = await fetch(DELIVERY_PARTNER_ORDERS_API, {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) return null;
+        const body = (await response.json()) as { orders?: DeliveryPartnerOrderRef[] };
+        return (
+            body.orders?.find((o) => String(o.shopifyOrderId) === numericId) ?? null
+        );
+    } catch (error) {
+        console.warn('[deliveryPartnerService] findDeliveryPartnerOrderByShopifyId failed:', error);
+        return null;
+    }
+}
+
+/**
+ * PATCH delivery-partner order schedule (demo edit).
+ * Uses internal delivery-partner order id; returns false when order missing or API fails.
+ */
+export async function updateDeliveryPartnerOrderSchedule(
+    shopifyOrderId: string,
+    input: UpdateDeliveryPartnerOrderScheduleInput,
+): Promise<boolean> {
+    const numericId = extractShopifyOrderNumericId(shopifyOrderId);
+    if (!numericId) return false;
+
+    const scheduledDate = normalizeScheduledDateForDeliveryPartner(input.scheduledDate);
+    const scheduledTime = String(input.scheduledTime || '').trim();
+    if (!scheduledDate || !scheduledTime) return false;
+
+    const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
+    if (!partnerOrder?.id) {
+        console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
+        return false;
+    }
+
+    try {
+        const response = await fetch(
+            `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(partnerOrder.id)}`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({
+                    shopifyOrderId: numericId,
+                    scheduledDate,
+                    scheduledTime,
+                }),
+            },
+        );
+
+        if (!response.ok) {
+            let detail = '';
+            try {
+                const body = await response.json();
+                detail = body?.error || body?.message || '';
+            } catch {
+                /* ignore */
+            }
+            console.warn(
+                '[deliveryPartnerService] schedule update failed:',
+                response.status,
+                detail || response.statusText,
+            );
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.warn('[deliveryPartnerService] schedule update error:', error);
+        return false;
+    }
+}

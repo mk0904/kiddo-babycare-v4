@@ -3,6 +3,10 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { type OrderItem } from '@/services/orderService';
+import {
+    normalizeScheduledDateForDeliveryPartner,
+    updateDeliveryPartnerOrderSchedule,
+} from '@/services/deliveryPartnerService';
 import PaymentService from '@/services/paymentService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -102,6 +106,11 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     return `${formattedHour}:00 ${ampm}`;
                 };
 
+                const scheduledDate = normalizeScheduledDateForDeliveryPartner(demoSchedule.date);
+                const scheduledTime = formatTimeForDelivery(
+                    demoSchedule.timeSlotLabel || demoSchedule.time || '',
+                );
+
                 // Fetch existing order attributes to avoid overwriting payment_method, ETA, etc.
                 const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(editOrderId);
                 const preservedAttrs = existingAttrs.filter(a =>
@@ -111,8 +120,8 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 // Pass date/time in exact same format as backend scheduled delivery
                 const customAttributes = [
                     ...preservedAttrs,
-                    { key: 'delivery_date', value: demoSchedule.date }, // DD/MM/YYYY e.g. "16/06/2026"
-                    { key: 'delivery_time', value: formatTimeForDelivery(demoSchedule.timeSlotLabel || demoSchedule.time || '') }, // e.g. "03:00 PM"
+                    { key: 'delivery_date', value: scheduledDate }, // DD/MM/YYYY e.g. "16/06/2026"
+                    { key: 'delivery_time', value: scheduledTime }, // e.g. "02:00 PM"
                     { key: 'delivery_day', value: demoSchedule.day }, // e.g. "Tuesday"
                     { key: 'delivery_format', value: 'scheduled' },
                     { key: 'date_format', value: 'DD/MM/YYYY' },
@@ -121,6 +130,16 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                 console.log('Updating demo order customAttributes:', customAttributes);
                 await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, customAttributes);
+
+                const deliveryPartnerSynced = await updateDeliveryPartnerOrderSchedule(editOrderId, {
+                    scheduledDate,
+                    scheduledTime,
+                });
+                if (!deliveryPartnerSynced) {
+                    console.warn(
+                        '[GetDemo] Delivery-partner schedule sync failed; Shopify schedule was updated.',
+                    );
+                }
 
                 // Navigate to order success screen with "demo scheduled" title
                 router.replace({
@@ -344,8 +363,11 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                                             if (!demoSchedule?.date) {
                                                 // If date isn't selected, default to today
                                                 const d = new Date();
+                                                const dd = String(d.getDate()).padStart(2, '0');
+                                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                                const yyyy = d.getFullYear();
                                                 setDemoSchedule({
-                                                    date: d.toISOString().split('T')[0],
+                                                    date: `${dd}/${mm}/${yyyy}`,
                                                     day: d.toLocaleDateString('en-US', { weekday: 'long' }),
                                                     dateFormat: 'Today',
                                                     time: slot.split(' ')[0], // fallback
