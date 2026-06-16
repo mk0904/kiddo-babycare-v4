@@ -2,11 +2,11 @@ import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
-import { type OrderItem } from '@/services/orderService';
 import {
     normalizeScheduledDateForDeliveryPartner,
     updateDeliveryPartnerOrderSchedule,
 } from '@/services/deliveryPartnerService';
+import { type OrderItem } from '@/services/orderService';
 import PaymentService from '@/services/paymentService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
