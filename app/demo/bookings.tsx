@@ -62,6 +62,21 @@ const isCancelledOrder = (order: any): boolean => {
     });
 };
 
+const isCancelledFromDeliveryApi = async (shopifyOrderId: string): Promise<boolean> => {
+    try {
+        const { getDeliveryPartnerOrderStatus, extractShopifyOrderNumericId } = await import('@/services/deliveryPartnerService');
+        const numericId = extractShopifyOrderNumericId(shopifyOrderId);
+        console.log('[Bookings] Checking delivery API status for order:', shopifyOrderId, 'numeric ID:', numericId);
+        const status = await getDeliveryPartnerOrderStatus(numericId);
+        const isCancelled = status?.status?.toLowerCase() === 'cancelled';
+        console.log('[Bookings] Delivery API status for', numericId, ':', status?.status, 'isCancelled:', isCancelled);
+        return isCancelled;
+    } catch (error) {
+        console.warn('[Bookings] Failed to check delivery partner cancel status:', error);
+        return false;
+    }
+};
+
 /** Extract price info from line item custom attributes (stored when demo was booked) */
 const getDemoPriceInfo = (order: any) => {
     const edges = order?.lineItems?.edges || [];
@@ -85,14 +100,14 @@ const getDemoPriceInfo = (order: any) => {
 const getDemoDate = (order: any): string | null => {
     // Check order-level custom attributes first
     const orderAttrs = order?.customAttributes || [];
-    const orderDateAttr = orderAttrs.find((a: any) => a.key === 'delivery_date' || a.key === 'demo_date');
+    const orderDateAttr = orderAttrs.find((a: any) => a.key === 'scheduled_date' || a.key === 'delivery_date' || a.key === 'demo_date');
     if (orderDateAttr?.value) return orderDateAttr.value;
 
     // Fallback to line item custom attributes
     const edges = order?.lineItems?.edges || [];
     for (const edge of edges) {
         const attrs = edge?.node?.customAttributes || [];
-        const dateAttr = attrs.find((a: any) => a.key === 'delivery_date' || a.key === 'demo_date');
+        const dateAttr = attrs.find((a: any) => a.key === 'scheduled_date' || a.key === 'delivery_date' || a.key === 'demo_date');
         if (dateAttr?.value) return dateAttr.value;
     }
     return null;
@@ -102,14 +117,14 @@ const getDemoDate = (order: any): string | null => {
 const getDemoTimeSlot = (order: any): string | null => {
     // Check order-level custom attributes first
     const orderAttrs = order?.customAttributes || [];
-    const orderTime = orderAttrs.find((a: any) => a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
+    const orderTime = orderAttrs.find((a: any) => a.key === 'scheduled_time' || a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
     if (orderTime?.value) return orderTime.value;
 
     // Fallback to line item custom attributes
     const edges = order?.lineItems?.edges || [];
     for (const edge of edges) {
         const attrs = edge?.node?.customAttributes || [];
-        const time = attrs.find((a: any) => a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
+        const time = attrs.find((a: any) => a.key === 'scheduled_time' || a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
         if (time?.value) return time.value;
     }
     return null;
@@ -184,21 +199,18 @@ export default function DemoBookingsScreen() {
 
             const allDemos = allOrders.filter((o: any) => isDemoOrder(o));
 
-            // Storefront cancel fields are unreliable; verify via Admin API
-            let adminCancelledIds = new Set<string>();
-            try {
-                const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-                adminCancelledIds = await shopifyAdminApi.getCancelledOrderIds(
-                    allDemos.map((o: any) => o.id),
-                );
-            } catch (adminErr) {
-                console.warn('[DemoBookings] Admin cancel check failed:', adminErr);
+            // Check cancelled status from delivery partner API
+            const deliveryCancelledIds = new Set<string>();
+            for (const order of allDemos) {
+                const isCancelled = await isCancelledFromDeliveryApi(order.id);
+                console.log('[Bookings] Order', order.id, 'cancelled from delivery API:', isCancelled);
+                if (isCancelled) {
+                    deliveryCancelledIds.add(order.id);
+                }
             }
+            console.log('[Bookings] Delivery cancelled IDs:', Array.from(deliveryCancelledIds));
 
-            const demos = allDemos.filter(
-                (o: any) =>
-                    !isCancelledOrder(o) && !adminCancelledIds.has(toShopifyOrderGid(o.id)),
-            );
+            const demos = allDemos;
 
             // Sort by date (newest first)
             demos.sort((a: any, b: any) => {
@@ -207,7 +219,11 @@ export default function DemoBookingsScreen() {
                 return dateB - dateA;
             });
 
-            setDemoOrders(demos);
+            setDemoOrders(demos.map((order: any) => ({
+                ...order,
+                isCancelledFromDelivery: deliveryCancelledIds.has(order.id),
+            })));
+            console.log('[Bookings] Set demo orders with cancelled status:', demos.map((o: any) => ({ id: o.id, isCancelledFromDelivery: deliveryCancelledIds.has(o.id) })));
         } catch (err: any) {
             console.error('Error loading demo bookings:', err);
             setDemoOrders([]);
@@ -370,6 +386,8 @@ export default function DemoBookingsScreen() {
                     {demoOrders.map((order) => {
                         const item = getLineItemDetails(order);
                         const priceInfo = getDemoPriceInfo(order);
+                        
+                        // Use Shopify custom attributes for scheduled_date and scheduled_time
                         const demoDateRaw = getDemoDate(order);
                         const demoTime = getDemoTimeSlot(order);
                         
@@ -378,15 +396,18 @@ export default function DemoBookingsScreen() {
                         const actualPrice = priceInfo?.price || 0;
                         const comparePriceNum = priceInfo?.comparePrice || 0;
                         const discountPercent = priceInfo?.discount || 0;
+                        const isCancelled = order.isCancelledFromDelivery || isCancelledOrder(order);
+                        console.log('[Bookings] Rendering order', order.id, 'isCancelledFromDelivery:', order.isCancelledFromDelivery, 'isCancelledOrder:', isCancelledOrder(order), 'final isCancelled:', isCancelled);
 
                         return (
                             <View key={order.id} style={styles.demoCardContainer}>
                                 {/* Header Date and Time */}
-                                {(formattedDate || demoTime) && (
+                                {(formattedDate || demoTime || isCancelled) && (
                                     <View style={styles.demoHeader}>
                                         {formattedDate ? <Text style={styles.demoHeaderText}>{formattedDate}</Text> : null}
                                         {formattedDate && demoTime ? <Text style={styles.demoHeaderDot}>  •  </Text> : null}
                                         {demoTime ? <Text style={styles.demoHeaderTimeText}>{demoTime}</Text> : null}
+                                        {isCancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
                                     </View>
                                 )}
                                 
@@ -443,19 +464,21 @@ export default function DemoBookingsScreen() {
                                 {/* Action Buttons */}
                                 <View style={styles.actionRow}>
                                     <TouchableOpacity
-                                        style={styles.actionButton}
+                                        style={[styles.actionButton, isCancelled && styles.disabledActionButton]}
                                         onPress={() => handleCancel(order)}
                                         activeOpacity={0.7}
+                                        disabled={isCancelled}
                                     >
-                                        <Text style={styles.cancelText}>Cancel</Text>
+                                        <Text style={[styles.cancelText, isCancelled && styles.disabledActionText]}>Cancel</Text>
                                     </TouchableOpacity>
                                     <View style={styles.actionDivider} />
                                     <TouchableOpacity
-                                        style={styles.actionButton}
+                                        style={[styles.actionButton, isCancelled && styles.disabledActionButton]}
                                         onPress={() => handleEdit(order)}
                                         activeOpacity={0.7}
+                                        disabled={isCancelled}
                                     >
-                                        <Text style={styles.editText}>Edit</Text>
+                                        <Text style={[styles.editText, isCancelled && styles.disabledActionText]}>Edit</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -636,5 +659,21 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: Fonts.SemiBold,
         color: Colors.primary,
+    },
+    cancelledBadge: {
+        fontSize: 11,
+        fontFamily: Fonts.Bold,
+        color: '#E84E4E',
+        backgroundColor: '#FEE2E2',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 4,
+        marginLeft: 8,
+    },
+    disabledActionButton: {
+        opacity: 0.5,
+    },
+    disabledActionText: {
+        opacity: 0.5,
     },
 });

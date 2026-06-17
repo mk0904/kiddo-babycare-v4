@@ -881,10 +881,14 @@ export async function getDeliveryPartnerOrderStatus(
   try {
     const response = await fetch(getBackendApiPath(`orders/${encodeURIComponent(normalized)}/delivery-status`));
     if (!response.ok) {
+      console.log('[getDeliveryPartnerOrderStatus] Response not OK:', response.status, response.statusText);
       return null;
     }
     const body: unknown = await response.json();
-    return normalizeDeliveryPartnerOrderStatusPayload(body);
+    console.log('[getDeliveryPartnerOrderStatus] Raw API response for order', normalized, ':', JSON.stringify(body, null, 2));
+    const normalizedStatus = normalizeDeliveryPartnerOrderStatusPayload(body);
+    console.log('[getDeliveryPartnerOrderStatus] Normalized status:', normalizedStatus?.status);
+    return normalizedStatus;
   } catch (error) {
     console.error('Error fetching delivery partner status:', error);
     return null;
@@ -992,7 +996,7 @@ export interface DeliveryPartnerOrderRef {
     shopifyOrderId: string;
 }
 
-function extractShopifyOrderNumericId(orderId: string): string {
+export function extractShopifyOrderNumericId(orderId: string): string {
     const raw = String(orderId || '').trim();
     return raw.match(/\/Order\/(\d+)/i)?.[1] ?? (raw.replace(/\D/g, '') || raw);
 }

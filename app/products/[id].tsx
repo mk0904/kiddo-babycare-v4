@@ -27,6 +27,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
     Platform,
@@ -1737,8 +1738,16 @@ const ProductDetailScreen = () => {
                                     </View>
                                 </View>
                                 <TouchableOpacity
-                                    style={styles.requestDemoButton}
+                                    style={[
+                                        styles.requestDemoButton,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && styles.disabledButton
+                                    ]}
                                     onPress={() => {
+                                        // Check if product is out of stock before allowing demo booking
+                                        if (selectedVariant && isVariantAvailable(selectedVariant) === false) {
+                                            Alert.alert('Out of Stock', 'This product is currently out of stock and cannot be booked for a demo.');
+                                            return;
+                                        }
                                         router.push({
                                             pathname: '/demo/get-demo',
                                             params: {
@@ -1752,8 +1761,12 @@ const ProductDetailScreen = () => {
                                             }
                                         });
                                     }}
+                                    disabled={selectedVariant && isVariantAvailable(selectedVariant) === false}
                                 >
-                                    <Text style={styles.requestDemoButtonText}>REQUEST A DEMO</Text>
+                                    <Text style={[
+                                        styles.requestDemoButtonText,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
+                                    ]}>REQUEST A DEMO</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -1959,8 +1972,16 @@ const ProductDetailScreen = () => {
                                     {cartButtonNode}
                                 </View>
                                 <TouchableOpacity
-                                    style={styles.bookDemoButton}
+                                    style={[
+                                        styles.bookDemoButton,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && styles.disabledButton
+                                    ]}
                                     onPress={() => {
+                                        // Check if product is out of stock before allowing demo booking
+                                        if (selectedVariant && isVariantAvailable(selectedVariant) === false) {
+                                            Alert.alert('Out of Stock', 'This product is currently out of stock and cannot be booked for a demo.');
+                                            return;
+                                        }
                                         router.push({
                                             pathname: '/demo/get-demo',
                                             params: {
@@ -1974,8 +1995,12 @@ const ProductDetailScreen = () => {
                                             }
                                         });
                                     }}
+                                    disabled={selectedVariant && isVariantAvailable(selectedVariant) === false}
                                 >
-                                    <Text style={styles.bookDemoButtonText}>BOOK A DEMO</Text>
+                                    <Text style={[
+                                        styles.bookDemoButtonText,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
+                                    ]}>BOOK A DEMO</Text>
                                 </TouchableOpacity>
                             </View>
                         );
