@@ -2,8 +2,8 @@ import { DemoCancelModal } from '@/components/demo/DemoCancelModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useUserStore, type UserProfile } from '@/store/userStore';
 import { shopifyApi } from '@/services/shopifyApi';
+import { useUserStore, type UserProfile } from '@/store/userStore';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -236,25 +236,24 @@ export default function DemoBookingsScreen() {
         if (!cancellingOrder) return;
         try {
             setCancelLoading(true);
-            const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-            const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(cancellingOrder.id);
-            const preservedAttrs = existingAttrs.filter(
-                (a) => a.key !== 'demo_cancelled' && a.key !== 'order_status',
-            );
-            await shopifyAdminApi.updateOrderCustomAttributes(cancellingOrder.id, [
-                ...preservedAttrs,
-                { key: 'demo_cancelled', value: 'true' },
-                { key: 'order_status', value: 'cancelled' },
-            ]);
-            await shopifyAdminApi.cancelOrder(cancellingOrder.id);
+
+            // Use delivery partner API to cancel the order
+            const { cancelDeliveryPartnerOrder } = await import('@/services/deliveryPartnerService');
+            const deliveryPartnerCancelled = await cancelDeliveryPartnerOrder(cancellingOrder.id, 'Test order');
+
+            if (!deliveryPartnerCancelled) {
+                console.warn('[Bookings] Delivery-partner cancel failed');
+                Alert.alert('Error', 'Failed to cancel the demo. Please try again.');
+                return;
+            }
 
             // Remove from local state for immediate feedback
             setDemoOrders((prev) => prev.filter((o) => o.id !== cancellingOrder.id));
             setCancelModalVisible(false);
-            
+
             const cancelledId = cancellingOrder.name || cancellingOrder.id;
             setCancellingOrder(null);
-            
+
             router.push({
                 pathname: '/order-success/v2',
                 params: {

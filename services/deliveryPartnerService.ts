@@ -1121,3 +1121,67 @@ export async function updateDeliveryPartnerOrderSchedule(
         return false;
     }
 }
+
+export async function cancelDeliveryPartnerOrder(
+    shopifyOrderId: string,
+    reason: string,
+): Promise<boolean> {
+    const numericId = extractShopifyOrderNumericId(shopifyOrderId);
+    if (!numericId) return false;
+
+    console.log('[deliveryPartnerService] Cancelling delivery partner order for Shopify ID:', numericId);
+    const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
+    console.log('[deliveryPartnerService] Found partner order:', partnerOrder);
+    if (!partnerOrder?.id) {
+        console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
+        return false;
+    }
+
+    try {
+        const requestBody: Record<string, any> = {
+            status: 'cancelled',
+            reason: reason,
+        };
+
+        const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/status/${encodeURIComponent(partnerOrder.id)}`;
+        console.log('[deliveryPartnerService] POST request to cancel:', apiUrl);
+        console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
+
+        const response = await fetch(
+            apiUrl,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(requestBody),
+            },
+        );
+
+        console.log('[deliveryPartnerService] Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            let detail = '';
+            let responseBody = '';
+            try {
+                responseBody = await response.text();
+                const body = JSON.parse(responseBody);
+                detail = body?.error || body?.message || '';
+            } catch {
+                /* ignore */
+            }
+            console.error(
+                '[deliveryPartnerService] order cancel failed:',
+                response.status,
+                detail || response.statusText,
+            );
+            console.error('[deliveryPartnerService] Response body:', responseBody);
+            return false;
+        }
+
+        const successBody = await response.text();
+        console.log('[deliveryPartnerService] Cancel successful. Response:', successBody);
+        return true;
+    } catch (error) {
+        console.error('[deliveryPartnerService] order cancel error:', error);
+        return false;
+    }
+}
