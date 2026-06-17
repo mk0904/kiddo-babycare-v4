@@ -974,6 +974,17 @@ const DELIVERY_PARTNER_ORDERS_API =
 export interface UpdateDeliveryPartnerOrderScheduleInput {
     scheduledDate: string;
     scheduledTime: string;
+    shippingAddress?: {
+        lat?: number;
+        lng?: number;
+        city?: string;
+        name?: string;
+        phone?: string;
+        state?: string;
+        address?: string;
+        country?: string;
+        pincode?: string;
+    };
 }
 
 export interface DeliveryPartnerOrderRef {
@@ -1034,51 +1045,79 @@ export async function updateDeliveryPartnerOrderSchedule(
     input: UpdateDeliveryPartnerOrderScheduleInput,
 ): Promise<boolean> {
     const numericId = extractShopifyOrderNumericId(shopifyOrderId);
-    if (!numericId) return false;
+    console.log('[deliveryPartnerService] updateDeliveryPartnerOrderSchedule - Shopify Order ID:', shopifyOrderId, 'Numeric ID:', numericId);
+    if (!numericId) {
+        console.error('[deliveryPartnerService] Failed to extract numeric ID from:', shopifyOrderId);
+        return false;
+    }
 
     const scheduledDate = normalizeScheduledDateForDeliveryPartner(input.scheduledDate);
     const scheduledTime = String(input.scheduledTime || '').trim();
-    if (!scheduledDate || !scheduledTime) return false;
+    console.log('[deliveryPartnerService] Normalized scheduledDate:', scheduledDate, 'scheduledTime:', scheduledTime);
+    if (!scheduledDate || !scheduledTime) {
+        console.error('[deliveryPartnerService] Missing scheduledDate or scheduledTime');
+        return false;
+    }
 
+    console.log('[deliveryPartnerService] Finding delivery partner order for Shopify ID:', numericId);
     const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
+    console.log('[deliveryPartnerService] Found partner order:', partnerOrder);
     if (!partnerOrder?.id) {
         console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
         return false;
     }
 
     try {
+        const requestBody: Record<string, any> = {
+            is_scheduled_order: true,
+            scheduled_date: scheduledDate,
+            scheduled_time: scheduledTime,
+        };
+
+        // Temporarily exclude shippingAddress to test if API supports it
+        if (input.shippingAddress) {
+            console.log('[deliveryPartnerService] shippingAddress provided but excluded from request (testing API support):', input.shippingAddress);
+        }
+
+        const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(partnerOrder.id)}`;
+        console.log('[deliveryPartnerService] PATCH request to:', apiUrl);
+        console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
+
         const response = await fetch(
-            `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(partnerOrder.id)}`,
+            apiUrl,
             {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({
-                    shopifyOrderId: numericId,
-                    scheduledDate,
-                    scheduledTime,
-                }),
+                body: JSON.stringify(requestBody),
             },
         );
 
+        console.log('[deliveryPartnerService] Response status:', response.status, response.statusText);
+
         if (!response.ok) {
             let detail = '';
+            let responseBody = '';
             try {
-                const body = await response.json();
+                responseBody = await response.text();
+                const body = JSON.parse(responseBody);
                 detail = body?.error || body?.message || '';
             } catch {
                 /* ignore */
             }
-            console.warn(
+            console.error(
                 '[deliveryPartnerService] schedule update failed:',
                 response.status,
                 detail || response.statusText,
             );
+            console.error('[deliveryPartnerService] Response body:', responseBody);
             return false;
         }
 
+        const successBody = await response.text();
+        console.log('[deliveryPartnerService] Update successful. Response:', successBody);
         return true;
     } catch (error) {
-        console.warn('[deliveryPartnerService] schedule update error:', error);
+        console.error('[deliveryPartnerService] schedule update error:', error);
         return false;
     }
 }

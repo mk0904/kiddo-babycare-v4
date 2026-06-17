@@ -90,11 +90,8 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
         try {
             const editOrderId = params.editOrderId as string;
-
             if (editOrderId) {
-                // We are editing an existing demo order using Shopify Admin API
-                const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-
+                // We are editing an existing demo order using Delivery Partner API only
                 const formatTimeForDelivery = (timeStr: string) => {
                     if (!timeStr) return '';
                     const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
@@ -111,34 +108,34 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     demoSchedule.timeSlotLabel || demoSchedule.time || '',
                 );
 
-                // Fetch existing order attributes to avoid overwriting payment_method, ETA, etc.
-                const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(editOrderId);
-                const preservedAttrs = existingAttrs.filter(a =>
-                    !['delivery_date', 'delivery_time', 'delivery_day', 'delivery_format', 'date_format'].includes(a.key)
-                );
-
-                // Pass date/time in exact same format as backend scheduled delivery
-                const customAttributes = [
-                    ...preservedAttrs,
-                    { key: 'delivery_date', value: scheduledDate }, // DD/MM/YYYY e.g. "16/06/2026"
-                    { key: 'delivery_time', value: scheduledTime }, // e.g. "02:00 PM"
-                    { key: 'delivery_day', value: demoSchedule.day }, // e.g. "Tuesday"
-                    { key: 'delivery_format', value: 'scheduled' },
-                    { key: 'date_format', value: 'DD/MM/YYYY' },
-                    { key: 'isDemoOrder', value: 'true' },
-                ];
-
-                console.log('Updating demo order customAttributes:', customAttributes);
-                await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, customAttributes);
+                console.log('[GetDemo] Editing demo order via Delivery Partner API only');
+                console.log('[GetDemo] Order ID:', editOrderId);
+                console.log('[GetDemo] Scheduled Date:', scheduledDate);
+                console.log('[GetDemo] Scheduled Time:', scheduledTime);
 
                 const deliveryPartnerSynced = await updateDeliveryPartnerOrderSchedule(editOrderId, {
                     scheduledDate,
                     scheduledTime,
+                    shippingAddress: {
+                        lat: (defaultAddress as any)?.lat || (defaultAddress as any)?.latitude || null,
+                        lng: (defaultAddress as any)?.lng || (defaultAddress as any)?.longitude || null,
+                        city: (defaultAddress as any).city || '',
+                        name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
+                        phone: (defaultAddress as any)?.phone || user?.phone || '',
+                        state: (defaultAddress as any).state || '',
+                        address: [
+                            (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
+                            (defaultAddress as any)?.address2 || ''
+                        ].filter(Boolean).join(', '),
+                        country: (defaultAddress as any)?.country || 'India',
+                        pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
+                    },
                 });
+
                 if (!deliveryPartnerSynced) {
-                    console.warn(
-                        '[GetDemo] Delivery-partner schedule sync failed; Shopify schedule was updated.',
-                    );
+                    console.error('[GetDemo] Delivery-partner schedule sync failed');
+                    Alert.alert('Error', 'Failed to update demo schedule. Please try again.');
+                    return;
                 }
 
                 // Navigate to order success screen with "demo scheduled" title
@@ -225,6 +222,10 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 };
 
                 console.log('Demo order data:', JSON.stringify(orderData, null, 2));
+                console.log('[GetDemo] Order-level custom attributes:', JSON.stringify(orderData.items[0].customAttributes, null, 2));
+                console.log('[GetDemo] Delivery schedule:', JSON.stringify(orderData.deliverySchedule, null, 2));
+                console.log('[GetDemo] isDemoTrue:', orderData.isDemoTrue);
+                console.log('[GetDemo] Notes:', orderData.notes);
 
                 // Create the order using PaymentService (COD order with 0 amount)
                 const result = await PaymentService.createOrderWithPayment(orderData, 'cod');
@@ -663,8 +664,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     dateSelectorRow: {
-        width: '80%',
-        alignSelf: 'center',
+        width: '100%',
         flexDirection: 'row',
         backgroundColor: '#FAFAFA',
         borderRadius: 36,
