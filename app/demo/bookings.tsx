@@ -443,11 +443,13 @@ export default function DemoBookingsScreen() {
                                     style={styles.productRow}
                                     activeOpacity={0.7}
                                     onPress={() => {
-                                        const productId = order?.lineItems?.edges?.[0]?.node?.variant?.product?.id;
+                                        const firstEdge = order?.lineItems?.edges?.[0];
+                                        const node = firstEdge?.node;
+                                        const productId = node?.variant?.product?.id;
                                         if (productId) {
                                             router.push({
                                                 pathname: '/products/[id]',
-                                                params: { id: String(productId) }
+                                                params: { id: productId }
                                             } as any);
                                         }
                                     }}

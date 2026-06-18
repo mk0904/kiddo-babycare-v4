@@ -434,7 +434,10 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         <View style={styles.addressContent}>
                             <Text style={styles.addressLabel}>HOME</Text>
                             <Text style={styles.addressText} numberOfLines={1}>
-                                a3 401, rg, 482, near Sham Swe...
+                                {defaultAddress ? [
+                                    (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
+                                    (defaultAddress as any)?.address2 || ''
+                                ].filter(Boolean).join(', ') : 'No address added'}
                             </Text>
                         </View>
                         {selectedAddress === 'home' && (
