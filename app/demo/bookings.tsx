@@ -157,13 +157,15 @@ const getLineItemDetails = (order: any) => {
     const variant = node.variant;
     const variantTitle = variant?.title || '';
     const price = variant?.price?.amount || node?.originalTotalPrice?.amount || '0';
-    const imageUrl = storefrontVariantImageUrl(variant);
+    
+    // Use imageUrl from delivery API if available, otherwise try storefrontVariantImageUrl
+    const imageUrl = node.imageUrl || (variant ? storefrontVariantImageUrl(variant) : null);
 
     return {
         title: node.title || 'Demo Product',
         variantTitle: variantTitle !== 'Default Title' ? variantTitle : '',
         price,
-        imageUrl,
+        imageUrl: imageUrl || 'https://via.placeholder.com/80',
     };
 };
 
@@ -208,6 +210,7 @@ export default function DemoBookingsScreen() {
                     edges: dpOrder.items.map((item: any) => ({
                         node: {
                             title: item.title,
+                            imageUrl: item.imageUrl,
                             variant: {
                                 title: item.variantTitle,
                                 price: { amount: String(item.unitPrice) },
@@ -425,12 +428,12 @@ export default function DemoBookingsScreen() {
                         return (
                             <View key={order.id} style={styles.demoCardContainer}>
                                 {/* Header Date and Time */}
-                                {(formattedDate || demoTime || isCancelled) && (
+                                {(formattedDate || demoTime || order.name) && (
                                     <View style={styles.demoHeader}>
                                         {formattedDate ? <Text style={styles.demoHeaderText}>{formattedDate}</Text> : null}
                                         {formattedDate && demoTime ? <Text style={styles.demoHeaderDot}>  •  </Text> : null}
                                         {demoTime ? <Text style={styles.demoHeaderTimeText}>{demoTime}</Text> : null}
-                                        {isCancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
+                                        {order.name && <Text style={styles.orderIdText}>{order.name}</Text>}
                                     </View>
                                 )}
                                 
@@ -440,10 +443,13 @@ export default function DemoBookingsScreen() {
                                     style={styles.productRow}
                                     activeOpacity={0.7}
                                     onPress={() => {
-                                        router.push({
-                                            pathname: '/orders/[id]/v2',
-                                            params: { id: String(order.id), from: 'demo-bookings' }
-                                        } as any);
+                                        const productId = order?.lineItems?.edges?.[0]?.node?.variant?.product?.id;
+                                        if (productId) {
+                                            router.push({
+                                                pathname: '/products/[id]',
+                                                params: { id: String(productId) }
+                                            } as any);
+                                        }
                                     }}
                                 >
                                     <Image
@@ -486,23 +492,32 @@ export default function DemoBookingsScreen() {
 
                                 {/* Action Buttons */}
                                 <View style={styles.actionRow}>
-                                    <TouchableOpacity
-                                        style={[styles.actionButton, isCancelled && styles.disabledActionButton]}
-                                        onPress={() => handleCancel(order)}
-                                        activeOpacity={0.7}
-                                        disabled={isCancelled}
-                                    >
-                                        <Text style={[styles.cancelText, isCancelled && styles.disabledActionText]}>Cancel</Text>
-                                    </TouchableOpacity>
-                                    <View style={styles.actionDivider} />
-                                    <TouchableOpacity
-                                        style={[styles.actionButton, isCancelled && styles.disabledActionButton]}
-                                        onPress={() => handleEdit(order)}
-                                        activeOpacity={0.7}
-                                        disabled={isCancelled}
-                                    >
-                                        <Text style={[styles.editText, isCancelled && styles.disabledActionText]}>Edit</Text>
-                                    </TouchableOpacity>
+                                    {isCancelled ? (
+                                        <TouchableOpacity
+                                            style={styles.cancelledButton}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.cancelledButtonText}>Demo Cancelled</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <>
+                                            <TouchableOpacity
+                                                style={styles.actionButton}
+                                                onPress={() => handleCancel(order)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.cancelText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <View style={styles.actionDivider} />
+                                            <TouchableOpacity
+                                                style={styles.actionButton}
+                                                onPress={() => handleEdit(order)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.editText}>Edit</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
                                 </View>
                             </View>
                         </View>
@@ -591,6 +606,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.Bold,
         color: Colors.textSecondary,
+    },
+    orderIdText: {
+        fontSize: 12,
+        fontFamily: Fonts.Regular,
+        color: '#2E7D32',
+        backgroundColor: '#E8F5E9',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginLeft: 8,
     },
     demoCard: {
         backgroundColor: '#FFFFFF',
@@ -682,6 +707,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: Fonts.SemiBold,
         color: Colors.primary,
+    },
+    cancelledButton: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+    },
+    cancelledButtonText: {
+        fontSize: 15,
+        fontFamily: Fonts.SemiBold,
+        color: 'grey',
     },
     cancelledBadge: {
         fontSize: 11,

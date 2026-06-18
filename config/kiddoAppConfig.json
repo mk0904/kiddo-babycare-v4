@@ -2963,14 +2963,14 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Main_Banner_3.gif?v=1781374355"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_2.gif?v=1781788543"
         }
       ],
       "carouselConfig": {
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.6,
+        "height": 1,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3058,44 +3058,61 @@
         }
       }
     },
+    
     {
-      "id": "category-grid-trending",
+      "id": "category-grid-fashion",
       "type": "categoryGrid",
-      "order": 4,
+      "order": 3,
       "visible": true,
-      "title": "Trending",
+      "title": "Fashion",
       "gridConfig": {
         "layout": "uniform",
         "numColumns": 3,
-        "colGap": 25,
+        "colGap": 12,
         "rowGap": 12,
-        "limit": 8,
+        "limit": 13,
         "aspectRatio": 1,
         "resizeMode": "cover",
         "showLabels": true,
-        "borderRadius": 6
+        "borderRadius": 12
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/507797111073"
+          "id": "gid://shopify/Collection/510762123553",
+          "name": "Top Wear"
         },
         {
-          "id": "gid://shopify/Collection/512979566881"
+          "id": "gid://shopify/Collection/510762221857",
+          "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/514698182945"
+          "id": "gid://shopify/Collection/510762254625",
+          "name": "Dresses"
+        },
+        {
+          "id": "gid://shopify/Collection/510762320161",
+          "name": "Coord Sets"
+        },
+        {
+          "id": "gid://shopify/Collection/510762352929",
+          "name": "Nightsuits & Inner Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/510762418465",
+          "name": "Onesies"
         }
       ],
       "styles": {
         "container": {
-          "marginTop": -150,
-          "paddingHorizontal": 16,
-          "paddingTop": 0,
-          "backgroundColor": "none"
+          "marginTop":-340,
+          "paddingHorizontal": 46,
+          "paddingTop": 10
+          
         },
         "title": {
-          "display": "none",
+          "display":"none",
           "marginBottom": 0,
+          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3103,7 +3120,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display": "none",
+          "display":"none",
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
