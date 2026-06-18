@@ -1,4 +1,6 @@
 import Expo
+import FreshchatSDK
+import UserNotifications
 
 import React
 import ReactAppDependencyProvider
@@ -9,8 +11,9 @@ import GoogleMaps
 #endif
 // @generated end react-native-maps-import
 @UIApplicationMain
-public class AppDelegate: ExpoAppDelegate {
+public class AppDelegate: ExpoAppDelegate, UNUserNotificationCenterDelegate {
   var window: UIWindow?
+  weak var expoNotificationDelegate: UNUserNotificationCenterDelegate?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
@@ -41,7 +44,73 @@ public class AppDelegate: ExpoAppDelegate {
 GMSServices.provideAPIKey("PLACEHOLDER_GOOGLE_MAPS_KEY")
 #endif
 // @generated end react-native-maps-init
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    // Handle Freshchat notification from cold launch (killed state)
+    // Must extract the remote notification dict from launchOptions — NOT pass raw launchOptions
+    if let remoteNotifDict = launchOptions?[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any],
+       Freshchat.sharedInstance().isFreshchatNotification(remoteNotifDict) {
+        Freshchat.sharedInstance().handleRemoteNotification(remoteNotifDict, andAppstate: application.applicationState)
+    }
+
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    // Capture Expo/CleverTap delegate set by super.application, then take over as delegate
+    expoNotificationDelegate = UNUserNotificationCenter.current().delegate
+    UNUserNotificationCenter.current().delegate = self
+    UNUserNotificationCenter.current().requestAuthorization(options:[.badge, .alert, .sound]){ (granted, error) in }
+    UIApplication.shared.registerForRemoteNotifications()
+
+    // CleverTap may asynchronously re-set the delegate after super.application returns.
+    // Re-assert ourselves on the next run loop pass to guarantee we remain the delegate.
+    DispatchQueue.main.async {
+      if UNUserNotificationCenter.current().delegate !== self {
+        // CleverTap overwrote — save it as expo delegate and re-assert
+        self.expoNotificationDelegate = UNUserNotificationCenter.current().delegate
+        UNUserNotificationCenter.current().delegate = self
+      }
+    }
+
+    return result
+  }
+
+  public override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    Freshchat.sharedInstance().setPushRegistrationToken(deviceToken)
+  }
+
+  public override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    if Freshchat.sharedInstance().isFreshchatNotification(userInfo) {
+        Freshchat.sharedInstance().handleRemoteNotification(userInfo, andAppstate: application.applicationState)
+        completionHandler(.newData)
+    } else {
+        super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+    }
+  }
+
+  // MARK: - UNUserNotificationCenterDelegate
+  public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    let dictionary = response.notification.request.content.userInfo
+    let appstate = UIApplication.shared.applicationState
+    if Freshchat.sharedInstance().isFreshchatNotification(dictionary) {
+        Freshchat.sharedInstance().handleRemoteNotification(dictionary, andAppstate: appstate)
+        completionHandler()
+    } else if let expoDelegate = expoNotificationDelegate, expoDelegate.responds(to: #selector(userNotificationCenter(_:didReceive:withCompletionHandler:))) {
+        expoDelegate.userNotificationCenter?(center, didReceive: response, withCompletionHandler: completionHandler)
+    } else {
+        completionHandler()
+    }
+  }
+
+  public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+      let dictionary = notification.request.content.userInfo
+      if Freshchat.sharedInstance().isFreshchatNotification(dictionary) {
+          Freshchat.sharedInstance().handleRemoteNotification(dictionary, andAppstate: UIApplication.shared.applicationState)
+          completionHandler([.alert, .sound, .badge])
+      } else if let expoDelegate = expoNotificationDelegate, expoDelegate.responds(to: #selector(userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+          expoDelegate.userNotificationCenter?(center, willPresent: notification, withCompletionHandler: completionHandler)
+      } else {
+          completionHandler([])
+      }
   }
 
   // Linking API

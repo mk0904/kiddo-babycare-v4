@@ -99,8 +99,8 @@ android {
         applicationId 'com.barereactnativeapp072'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 29
-        versionName "2.0.2"
+        versionCode 30
+        versionName "2.0.3"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -233,11 +233,12 @@ dependencies {
 
     // Google Play In-App Review (System In-App Functions - SDK 7.4.0+)
     if (project.hasProperty('clevertapPlayReviewEnabled') && project.clevertapPlayReviewEnabled.toBoolean()) {
-        implementation("com.google.android.play:review:${project.findProperty('playReviewVersion') ?: '2.0.2'}")
+        implementation("com.google.android.play:review:${project.findProperty('playReviewVersion') ?: '2.0.3'}")
     }
 // @generated end clevertap-sdk-dependencies
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation("com.github.freshworks:freshchat-android:6.5.4")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

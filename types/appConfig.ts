@@ -251,6 +251,7 @@ export interface CartConfig {
     discountLabel?: string;
     totalLabel?: string;
   };
+  completePurchase?: string;
 }
 
 export interface CheckoutConfig {
@@ -441,6 +442,7 @@ export interface AppConfigResponse {
   referralConfig?: ReferralConfig;
   walletConfig?: WalletConfig;
   appDownloadConfig?: AppDownloadConfig;
+  completePurchase?: string;
 }
 
 export interface AppDownloadPlatformConfig {
