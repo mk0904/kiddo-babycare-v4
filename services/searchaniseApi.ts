@@ -36,7 +36,7 @@ const trackSearch = (query: string, totalItems: number): void => {
                 api_key: SEARCHANISE_API_KEY,
                 action: 'search',
                 q: query.trim(),
-                totalItems,
+                q_total: totalItems,
                 ref: 'mobile_app',
                 session_id: APP_SESSION_ID,
             },
