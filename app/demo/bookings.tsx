@@ -536,6 +536,11 @@ export default function DemoBookingsScreen() {
                 }}
                 onConfirmCancel={handleConfirmCancel}
                 loading={cancelLoading}
+                onEditDemo={() => {
+                    if (cancellingOrder) {
+                        handleEdit(cancellingOrder);
+                    }
+                }}
             />
         </SafeAreaView>
     );

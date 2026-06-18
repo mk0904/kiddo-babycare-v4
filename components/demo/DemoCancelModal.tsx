@@ -1,6 +1,6 @@
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Image,
     Modal,
@@ -16,6 +16,7 @@ interface DemoCancelModalProps {
     onClose: () => void;
     onConfirmCancel: (reason: string) => void;
     loading?: boolean;
+    onEditDemo?: () => void;
 }
 
 const DEMO_IMAGE_URL =
@@ -28,7 +29,7 @@ const CANCEL_REASONS = [
     'My reason not listed',
 ];
 
-export const DemoCancelModal = ({ visible, onClose, onConfirmCancel, loading }: DemoCancelModalProps) => {
+export const DemoCancelModal = ({ visible, onClose, onConfirmCancel, loading, onEditDemo }: DemoCancelModalProps) => {
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedReason, setSelectedReason] = useState<string | null>(null);
 
@@ -122,18 +123,32 @@ export const DemoCancelModal = ({ visible, onClose, onConfirmCancel, loading }: 
                             <View style={styles.reasonsList}>
                                 {CANCEL_REASONS.map((reason) => {
                                     const isSelected = selectedReason === reason;
+                                    const showEditOption = reason === 'Selected the wrong address' && isSelected;
                                     return (
-                                        <TouchableOpacity
-                                            key={reason}
-                                            style={styles.reasonRow}
-                                            onPress={() => setSelectedReason(reason)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.reasonText}>{reason}</Text>
-                                            <View style={[styles.radio, isSelected && styles.radioSelected]}>
-                                                {isSelected && <View style={styles.radioDot} />}
-                                            </View>
-                                        </TouchableOpacity>
+                                        <View key={reason}>
+                                            <TouchableOpacity
+                                                style={styles.reasonRow}
+                                                onPress={() => setSelectedReason(reason)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.reasonText}>{reason}</Text>
+                                                <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                                                    {isSelected && <View style={styles.radioDot} />}
+                                                </View>
+                                            </TouchableOpacity>
+                                            {showEditOption && onEditDemo && (
+                                                <TouchableOpacity
+                                                    style={styles.editDemoOption}
+                                                    onPress={() => {
+                                                        onClose();
+                                                        onEditDemo();
+                                                    }}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Text style={styles.editDemoText}>Edit Demo Instead</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
                                     );
                                 })}
                             </View>
@@ -306,5 +321,15 @@ const styles = StyleSheet.create({
     },
     confirmCancelButtonTextDisabled: {
         color: '#C0C0C0',
+    },
+    editDemoOption: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginTop: 4,
+    },
+    editDemoText: {
+        fontSize: 15,
+        fontFamily: Fonts.LexendBold,
+        color: '#E84E4E',
     },
 });

@@ -41,6 +41,19 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// @ts-ignore - expo-blur types may not be properly recognized
+const BlurView = require('expo-blur').BlurView;
+
+// Demo PDP section configuration
+const DEMO_PDP_CONFIG = {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101',
+    bulletPoints: [
+        'Kiddo partner visits for a 30-minute demo',
+        'Ensures product meets personalized needs',
+        'Option to buy via digital payment or cash'
+    ]
+};
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /** Format date as YYYY-MM-DD for ticketing cart item. */
@@ -1490,11 +1503,6 @@ const ProductDetailScreen = () => {
 
 
                 <View style={styles.infoContainer}>
-                    <View>
-                        <ProductTrustStrip
-                            refundPolicyText={refundPolicy}
-                            onKnowMorePress={() => setShowRefundPolicyModal(true)}
-                        /></View>
                     <View style={styles.sectionCard}>
                         {hasGearFurnitureTag && (
                             <View style={styles.pdpDemoBadgeContainer}>
@@ -1675,6 +1683,12 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
 
+                    {/* 7 Days Easy Returns Bar */}
+                    <ProductTrustStrip
+                        refundPolicyText={refundPolicy}
+                        onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                    />
+
                     {/* Product Description - Collapsible */}
                     {product.description && (
                         <View style={[styles.accordionContainer, styles.sectionCard]}>
@@ -1721,21 +1735,17 @@ const ProductDetailScreen = () => {
                         <View style={styles.demoSection}>
                             <Text style={styles.demoSectionTitle}>Experience it at home</Text>
                             <Image
-                                source={{ uri: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101' }}
+                                source={{ uri: DEMO_PDP_CONFIG.imageUrl }}
                                 style={styles.demoImage}
                                 resizeMode="cover"
                             />
                             <View style={styles.demoContent}>
                                 <View style={styles.demoBulletPoints}>
-                                    <View style={styles.demoBulletPoint}>
-                                        <Text style={styles.demoBulletText}>• Kiddo partner visits for a 30-minute demo</Text>
-                                    </View>
-                                    <View style={styles.demoBulletPoint}>
-                                        <Text style={styles.demoBulletText}>• Ensures product meets personalized needs</Text>
-                                    </View>
-                                    <View style={styles.demoBulletPoint}>
-                                        <Text style={styles.demoBulletText}>• Option to buy via digital payment or cash</Text>
-                                    </View>
+                                    {DEMO_PDP_CONFIG.bulletPoints.map((point: string, index: number) => (
+                                        <View key={index} style={styles.demoBulletPoint}>
+                                            <Text style={styles.demoBulletText}>• {point}</Text>
+                                        </View>
+                                    ))}
                                 </View>
                                 <TouchableOpacity
                                     style={[
@@ -1906,11 +1916,15 @@ const ProductDetailScreen = () => {
                 </View>
             </ScrollView>
 
-            <View style={[
-                styles.bottomBar,
-                { paddingBottom: Math.max(insets.bottom, 20) },
-                hasGearFurnitureTag && { flexDirection: 'column', alignItems: 'stretch' }
-            ]}>
+            <BlurView
+                intensity={100}
+                tint="light"
+                style={[
+                    styles.bottomBar,
+                    { paddingBottom: Math.max(insets.bottom, 20) },
+                    hasGearFurnitureTag && { flexDirection: 'column', alignItems: 'stretch' }
+                ]}
+            >
                 <View style={[styles.priceContainer, hasGearFurnitureTag && { marginBottom: 12 }]}>
                     <View style={styles.priceRow}>
                         <Text style={styles.priceText}>{formattedPrice}</Text>
@@ -2008,7 +2022,7 @@ const ProductDetailScreen = () => {
 
                     return cartButtonNode;
                 })()}
-            </View>
+            </BlurView>
 
             <TryAndBuyModal visible={tryAndBuyModalVisible} onClose={() => setTryAndBuyModalVisible(false)} />
             <ImageViewerModal
@@ -2503,10 +2517,10 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        borderTopColor: 'rgba(0, 0, 0, 0.08)',
         alignItems: 'center',
     },
     priceContainer: {
@@ -2563,9 +2577,9 @@ const styles = StyleSheet.create({
     bookDemoButton: {
         flex: 1,
         backgroundColor: '#FFFFFF',
-        borderColor: Colors.primary,
-        borderWidth: 1,
-        borderRadius: 24,
+        borderColor: '#D5D7DA',
+        borderWidth: 2,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: 14,

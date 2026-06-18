@@ -300,7 +300,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{params.editOrderId ? 'Update Demo' : 'Get Demo'}</Text>
+                <Text style={styles.headerTitle}>{params.editOrderId ? 'Edit Demo' : 'Book a Demo'}</Text>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendBold,
     },
     noSlotsContainer: {
-        backgroundColor: '#2C2C2C',
+        backgroundColor: '#FAFAFA',
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderRadius: 8,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     noSlotsText: {
         fontSize: 14,
         fontFamily: Fonts.LexendMedium,
-        color: '#9E9E9E',
+        color: '#717680',
     },
     footer: {
         flexDirection: 'row',
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
         flex: 2,
         backgroundColor: '#DB5656',
         paddingVertical: 14,
-        borderRadius: 999,
+        borderRadius: 14,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
