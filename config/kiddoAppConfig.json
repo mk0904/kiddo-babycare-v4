@@ -7834,6 +7834,14 @@
     "travelTimePerKm": 2,
     "maxDeliveryDistance": null
   },
+  "demo": {
+    "timeSlots": [
+      "2PM - 3PM",
+      "3PM - 4PM",
+      "4PM - 5PM",
+      "5PM - 6PM"
+    ]
+  },
   "freeShoesOffer": {
     "enabled": true,
     "shoes": [

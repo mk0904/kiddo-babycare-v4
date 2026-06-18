@@ -24,6 +24,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Demo time slots configuration
+const DEMO_TIME_SLOTS = ['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM'];
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface DeliverySchedule {
@@ -375,41 +378,74 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         </View>
 
                         <View style={styles.timeSlotContainer}>
-                            {['2PM - 3PM', '3PM - 4PM', '4PM - 5PM'].map((slot, index) => {
-                                const isSelected = demoSchedule?.timeSlotLabel === slot;
-                                return (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[styles.inlineTimeSlot, isSelected && styles.inlineTimeSlotSelected]}
-                                        onPress={() => {
-                                            if (!demoSchedule?.date) {
-                                                // If date isn't selected, default to today
-                                                const d = new Date();
-                                                const dd = String(d.getDate()).padStart(2, '0');
-                                                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                                const yyyy = d.getFullYear();
-                                                setDemoSchedule({
-                                                    date: `${dd}/${mm}/${yyyy}`,
-                                                    day: d.toLocaleDateString('en-US', { weekday: 'long' }),
-                                                    dateFormat: 'Today',
-                                                    time: slot.split(' ')[0], // fallback
-                                                    timeSlotLabel: slot
-                                                });
-                                            } else {
-                                                setDemoSchedule({
-                                                    ...demoSchedule,
-                                                    time: slot.split(' ')[0],
-                                                    timeSlotLabel: slot
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <Text style={[styles.inlineTimeText, isSelected && styles.inlineTimeTextSelected]}>
-                                            {slot}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                            {(() => {
+                                const allSlots = DEMO_TIME_SLOTS;
+                                const now = new Date();
+                                const currentHour = now.getHours();
+                                const currentMinutes = now.getMinutes();
+                                
+                                // Check if selected date is today
+                                const isToday = demoSchedule?.date ? (() => {
+                                    const today = new Date();
+                                    const dd = String(today.getDate()).padStart(2, '0');
+                                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                                    const yyyy = today.getFullYear();
+                                    return demoSchedule.date === `${dd}/${mm}/${yyyy}`;
+                                })() : true;
+
+                                // Filter slots that have already passed (only for today)
+                                const availableSlots = allSlots.filter((slot: string) => {
+                                    if (!isToday) return true; // Show all slots for future dates
+                                    
+                                    const slotHour = parseInt(slot.split(' ')[0], 10);
+                                    return slotHour > currentHour || (slotHour === currentHour && currentMinutes < 30);
+                                });
+
+                                // Show no slots message if no available slots for today
+                                if (availableSlots.length === 0 && isToday) {
+                                    return (
+                                        <View style={styles.noSlotsContainer}>
+                                            <Text style={styles.noSlotsText}>No slots available today</Text>
+                                        </View>
+                                    );
+                                }
+
+                                return availableSlots.map((slot: string, index: number) => {
+                                    const isSelected = demoSchedule?.timeSlotLabel === slot;
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[styles.inlineTimeSlot, isSelected && styles.inlineTimeSlotSelected]}
+                                            onPress={() => {
+                                                if (!demoSchedule?.date) {
+                                                    // If date isn't selected, default to today
+                                                    const d = new Date();
+                                                    const dd = String(d.getDate()).padStart(2, '0');
+                                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                                    const yyyy = d.getFullYear();
+                                                    setDemoSchedule({
+                                                        date: `${dd}/${mm}/${yyyy}`,
+                                                        day: d.toLocaleDateString('en-US', { weekday: 'long' }),
+                                                        dateFormat: 'Today',
+                                                        time: slot.split(' ')[0], // fallback
+                                                        timeSlotLabel: slot
+                                                    });
+                                                } else {
+                                                    setDemoSchedule({
+                                                        ...demoSchedule,
+                                                        time: slot.split(' ')[0],
+                                                        timeSlotLabel: slot
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            <Text style={[styles.inlineTimeText, isSelected && styles.inlineTimeTextSelected]}>
+                                                {slot}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                });
+                            })()}
                         </View>
                     </View>
                 </View>
@@ -751,6 +787,19 @@ const styles = StyleSheet.create({
     inlineTimeTextSelected: {
         color: '#181D27',
         fontFamily: Fonts.LexendBold,
+    },
+    noSlotsContainer: {
+        backgroundColor: '#2C2C2C',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noSlotsText: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendMedium,
+        color: '#9E9E9E',
     },
     footer: {
         flexDirection: 'row',
