@@ -191,7 +191,7 @@ const looksLikeTicketingDate = (value: string) => {
     return false;
 };
 
-const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'isDemoTrue', 'demo_request'];
+const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'demo_request'];
 
 const isDemoOrder = (order: any): boolean => {
     const orderAttrs = order?.customAttributes || [];

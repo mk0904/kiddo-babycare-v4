@@ -2,8 +2,8 @@
 // For operations that require Admin privileges (Draft Orders, Order Editing, etc.)
 
 import {
-  SHOPIFY_ADMIN_ACCESS_TOKEN,
-  SHOPIFY_STORE_DOMAIN,
+    SHOPIFY_ADMIN_ACCESS_TOKEN,
+    SHOPIFY_STORE_DOMAIN,
 } from '@/config/shopify';
 import axios from 'axios';
 
@@ -729,20 +729,37 @@ export const shopifyAdminApi = {
   },
 
   /**
-   * Update order custom attributes
+   * Update order custom attributes (merges with existing attributes)
    */
-  updateOrderCustomAttributes: async (orderId: string, attributes: Array<{ key: string; value: string }>): Promise<boolean> => {
+  updateOrderCustomAttributes: async (orderId: string, attributes: Array<{ key: string; value: string }>, excludeKeys: string[] = []): Promise<boolean> => {
     try {
       const formattedOrderId = orderId.includes('gid://')
         ? orderId
         : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
+
+      // Fetch existing attributes first
+      const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(orderId);
+      
+      // Merge: existing + new (new values override existing for same keys)
+      // Exclude specified keys from existing attributes
+      const attrMap = new Map();
+      for (const attr of existingAttrs) {
+        if (!excludeKeys.includes(attr.key)) {
+          attrMap.set(attr.key, attr.value);
+        }
+      }
+      for (const attr of attributes) {
+        attrMap.set(attr.key, attr.value);
+      }
+      
+      const mergedAttributes = Array.from(attrMap.entries()).map(([key, value]) => ({ key, value }));
 
       const response = await adminClient.post('', {
         query: ORDER_UPDATE_MUTATION,
         variables: {
           input: {
             id: formattedOrderId,
-            customAttributes: attributes,
+            customAttributes: mergedAttributes,
           },
         },
       });

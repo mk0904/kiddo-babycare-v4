@@ -6,6 +6,7 @@ import { FilterPanel } from '@/components/ui/FilterPanel';
 import { FilterSortPills } from '@/components/ui/FilterSortPills';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { Colors, Fonts } from '@/constants/theme';
+import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
 import { configService } from '@/services/configService';
 import { searchaniseApi } from '@/services/searchaniseApi';
@@ -14,7 +15,7 @@ import { isProductAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -29,7 +30,6 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 
 const DEFAULT_SORT_OPTIONS = [
     { value: 'relevance', label: 'Relevance', order: 'asc' },

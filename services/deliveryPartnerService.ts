@@ -1018,7 +1018,7 @@ export function normalizeScheduledDateForDeliveryPartner(dateStr: string): strin
     return s;
 }
 
-/** Resolve delivery-partner order row by Shopify numeric id (list API has no reliable filter). */
+/** Resolve delivery-partner order row by Shopify numeric id using query filter. */
 export async function findDeliveryPartnerOrderByShopifyId(
     shopifyOrderId: string,
 ): Promise<DeliveryPartnerOrderRef | null> {
@@ -1026,7 +1026,7 @@ export async function findDeliveryPartnerOrderByShopifyId(
     if (!numericId) return null;
 
     try {
-        const response = await fetch(DELIVERY_PARTNER_ORDERS_API, {
+        const response = await fetch(`${DELIVERY_PARTNER_ORDERS_API}?shopify_order_id=${numericId}`, {
             headers: { Accept: 'application/json' },
         });
         if (!response.ok) return null;
@@ -1037,6 +1037,130 @@ export async function findDeliveryPartnerOrderByShopifyId(
     } catch (error) {
         console.warn('[deliveryPartnerService] findDeliveryPartnerOrderByShopifyId failed:', error);
         return null;
+    }
+}
+
+/** Fetch all demo orders from delivery partner API with pagination support. */
+export async function fetchDemoOrdersFromDeliveryPartner(
+    page: number = 1,
+    limit: number = 50,
+): Promise<{ orders: DeliveryPartnerOrderRef[]; total: number; hasMore: boolean }> {
+    try {
+        const response = await fetch(
+            `${DELIVERY_PARTNER_ORDERS_API}?is_demo_order=true&page=${page}&limit=${limit}`,
+            { headers: { Accept: 'application/json' } },
+        );
+        if (!response.ok) {
+            console.warn('[deliveryPartnerService] Failed to fetch demo orders:', response.status);
+            return { orders: [], total: 0, hasMore: false };
+        }
+        const body = (await response.json()) as {
+            orders?: DeliveryPartnerOrderRef[];
+            total?: number;
+            page?: number;
+            limit?: number;
+        };
+        const orders = body.orders || [];
+        const total = body.total || 0;
+        const hasMore = orders.length === limit && (page * limit) < total;
+        console.log('[deliveryPartnerService] Fetched demo orders page', page, ':', orders.length, 'orders, total:', total);
+        return { orders, total, hasMore };
+    } catch (error) {
+        console.warn('[deliveryPartnerService] fetchDemoOrdersFromDeliveryPartner failed:', error);
+        return { orders: [], total: 0, hasMore: false };
+    }
+}
+
+/** Fetch all demo orders from delivery partner API (all pages). */
+export async function fetchAllDemoOrdersFromDeliveryPartner(): Promise<DeliveryPartnerOrderRef[]> {
+    const allOrders: DeliveryPartnerOrderRef[] = [];
+    let page = 1;
+    const limit = 50;
+    let hasMore = true;
+
+    while (hasMore) {
+        const { orders, total, hasMore: more } = await fetchDemoOrdersFromDeliveryPartner(page, limit);
+        allOrders.push(...orders);
+        hasMore = more;
+        page++;
+        
+        // Safety limit to prevent infinite loops
+        if (page > 100) {
+            console.warn('[deliveryPartnerService] Reached page limit (100), stopping pagination');
+            break;
+        }
+    }
+
+    console.log('[deliveryPartnerService] Fetched total demo orders:', allOrders.length);
+    return allOrders;
+}
+
+/**
+ * PATCH delivery-partner order schedule (demo edit) using delivery partner order ID directly.
+ * Returns false when API fails.
+ */
+export async function updateDeliveryPartnerOrderScheduleById(
+    deliveryPartnerOrderId: string,
+    input: UpdateDeliveryPartnerOrderScheduleInput,
+): Promise<boolean> {
+    if (!deliveryPartnerOrderId) {
+        console.error('[deliveryPartnerService] No delivery partner order ID provided');
+        return false;
+    }
+
+    const scheduledDate = normalizeScheduledDateForDeliveryPartner(input.scheduledDate);
+    const scheduledTime = String(input.scheduledTime || '').trim();
+    console.log('[deliveryPartnerService] updateDeliveryPartnerOrderScheduleById - Delivery Partner Order ID:', deliveryPartnerOrderId);
+    console.log('[deliveryPartnerService] Normalized scheduledDate:', scheduledDate, 'scheduledTime:', scheduledTime);
+    if (!scheduledDate || !scheduledTime) {
+        console.error('[deliveryPartnerService] Missing scheduledDate or scheduledTime');
+        return false;
+    }
+
+    try {
+        const requestBody: Record<string, any> = {
+            is_scheduled_order: true,
+            scheduled_date: scheduledDate,
+            scheduled_time: scheduledTime,
+        };
+
+        const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(deliveryPartnerOrderId)}`;
+        console.log('[deliveryPartnerService] PATCH request to:', apiUrl);
+        console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
+
+        const response = await fetch(
+            apiUrl,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(requestBody),
+            },
+        );
+
+        console.log('[deliveryPartnerService] Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            let detail = '';
+            let responseBody = '';
+            try {
+                responseBody = await response.text();
+                const body = JSON.parse(responseBody);
+                detail = body?.error || body?.message || '';
+            } catch {
+                /* ignore */
+            }
+            console.error(
+                '[deliveryPartnerService] schedule update failed:',
+                response.status,
+                detail || response.statusText,
+            );
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('[deliveryPartnerService] Error updating delivery partner order schedule:', error);
+        return false;
     }
 }
 
@@ -1066,6 +1190,7 @@ export async function updateDeliveryPartnerOrderSchedule(
     console.log('[deliveryPartnerService] Finding delivery partner order for Shopify ID:', numericId);
     const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
     console.log('[deliveryPartnerService] Found partner order:', partnerOrder);
+    console.log('[deliveryPartnerService] Delivery partner order ID:', partnerOrder?.id);
     if (!partnerOrder?.id) {
         console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
         return false;
@@ -1122,6 +1247,67 @@ export async function updateDeliveryPartnerOrderSchedule(
         return true;
     } catch (error) {
         console.error('[deliveryPartnerService] schedule update error:', error);
+        return false;
+    }
+}
+
+/**
+ * Cancel delivery-partner order using delivery partner order ID directly.
+ * Returns false when API fails.
+ */
+export async function cancelDeliveryPartnerOrderById(
+    deliveryPartnerOrderId: string,
+    reason: string,
+): Promise<boolean> {
+    if (!deliveryPartnerOrderId) {
+        console.error('[deliveryPartnerService] No delivery partner order ID provided');
+        return false;
+    }
+
+    console.log('[deliveryPartnerService] Cancelling delivery partner order with ID:', deliveryPartnerOrderId);
+
+    try {
+        const requestBody: Record<string, any> = {
+            status: 'cancelled',
+            reason: reason,
+        };
+
+        const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/status/${encodeURIComponent(deliveryPartnerOrderId)}`;
+        console.log('[deliveryPartnerService] POST request to cancel:', apiUrl);
+        console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
+
+        const response = await fetch(
+            apiUrl,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(requestBody),
+            },
+        );
+
+        console.log('[deliveryPartnerService] Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            let detail = '';
+            let responseBody = '';
+            try {
+                responseBody = await response.text();
+                const body = JSON.parse(responseBody);
+                detail = body?.error || body?.message || '';
+            } catch {
+                /* ignore */
+            }
+            console.error(
+                '[deliveryPartnerService] order cancel failed:',
+                response.status,
+                detail || response.statusText,
+            );
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('[deliveryPartnerService] Error cancelling delivery partner order:', error);
         return false;
     }
 }

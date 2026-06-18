@@ -2,7 +2,6 @@ import { DemoCancelModal } from '@/components/demo/DemoCancelModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore, type UserProfile } from '@/store/userStore';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'isDemoTrue', 'demo_request'];
+const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'demo_request'];
 
 /** Check if an order is a demo booking by line item or order custom attributes */
 const isDemoOrder = (order: any): boolean => {
@@ -188,29 +187,45 @@ export default function DemoBookingsScreen() {
             if (isRefresh) setRefreshing(true);
             else setLoading(true);
 
-            const shopifyToken = getShopifyCustomerAccessToken(user);
-            if (!shopifyToken) {
-                setDemoOrders([]);
-                return;
-            }
+            // Fetch demo orders from delivery partner API using is_demo_order filter
+            const { fetchAllDemoOrdersFromDeliveryPartner } = await import('@/services/deliveryPartnerService');
+            const deliveryDemoOrders = await fetchAllDemoOrdersFromDeliveryPartner();
+            console.log('[Bookings] Fetched demo orders from delivery API:', deliveryDemoOrders.length);
 
-            const result = await shopifyApi.getCustomerOrders(shopifyToken, 50);
-            const allOrders = result?.edges?.map((edge: any) => edge.node) || [];
-
-            const allDemos = allOrders.filter((o: any) => isDemoOrder(o));
-
-            // Check cancelled status from delivery partner API
-            const deliveryCancelledIds = new Set<string>();
-            for (const order of allDemos) {
-                const isCancelled = await isCancelledFromDeliveryApi(order.id);
-                console.log('[Bookings] Order', order.id, 'cancelled from delivery API:', isCancelled);
-                if (isCancelled) {
-                    deliveryCancelledIds.add(order.id);
-                }
-            }
-            console.log('[Bookings] Delivery cancelled IDs:', Array.from(deliveryCancelledIds));
-
-            const demos = allDemos;
+            // Transform delivery partner orders to match existing structure
+            const demos = deliveryDemoOrders.map((dpOrder: any) => ({
+                id: dpOrder.shopifyOrderId,
+                name: dpOrder.shopifyOrderName,
+                processedAt: dpOrder.createdAt,
+                canceledAt: dpOrder.status === 'cancelled' ? dpOrder.updatedAt : null,
+                cancelReason: dpOrder.status === 'cancelled' ? dpOrder.reasonCancelRefundDelay : null,
+                customAttributes: [
+                    { key: 'scheduled_date', value: dpOrder.scheduledDate },
+                    { key: 'scheduled_time', value: dpOrder.scheduledTime },
+                    { key: 'isDemoOrder', value: String(dpOrder.isDemoOrder) },
+                ],
+                lineItems: {
+                    edges: dpOrder.items.map((item: any) => ({
+                        node: {
+                            title: item.title,
+                            variant: {
+                                title: item.variantTitle,
+                                price: { amount: String(item.unitPrice) },
+                                product: { id: item.shopifyProductId },
+                                id: item.shopifyVariantId,
+                            },
+                            customAttributes: [
+                                { key: 'product_price', value: String(item.unitPrice) },
+                            ],
+                            originalTotalPrice: { amount: String(item.lineTotal) },
+                        },
+                    })),
+                },
+                // Store delivery partner order ID for edit/cancel operations
+                deliveryPartnerOrderId: dpOrder.id,
+                // Store delivery partner status
+                isCancelledFromDelivery: dpOrder.status === 'cancelled',
+            }));
 
             // Sort by date (newest first)
             demos.sort((a: any, b: any) => {
@@ -219,11 +234,8 @@ export default function DemoBookingsScreen() {
                 return dateB - dateA;
             });
 
-            setDemoOrders(demos.map((order: any) => ({
-                ...order,
-                isCancelledFromDelivery: deliveryCancelledIds.has(order.id),
-            })));
-            console.log('[Bookings] Set demo orders with cancelled status:', demos.map((o: any) => ({ id: o.id, isCancelledFromDelivery: deliveryCancelledIds.has(o.id) })));
+            setDemoOrders(demos);
+            console.log('[Bookings] Set demo orders from delivery API:', demos.length);
         } catch (err: any) {
             console.error('Error loading demo bookings:', err);
             setDemoOrders([]);
@@ -253,9 +265,18 @@ export default function DemoBookingsScreen() {
         try {
             setCancelLoading(true);
 
-            // Use delivery partner API to cancel the order
-            const { cancelDeliveryPartnerOrder } = await import('@/services/deliveryPartnerService');
-            const deliveryPartnerCancelled = await cancelDeliveryPartnerOrder(cancellingOrder.id, 'Test order');
+            // Use delivery partner order ID directly for cancellation
+            const { cancelDeliveryPartnerOrderById } = await import('@/services/deliveryPartnerService');
+            const deliveryPartnerOrderId = cancellingOrder.deliveryPartnerOrderId;
+            console.log('[Bookings] Cancelling with delivery partner order ID:', deliveryPartnerOrderId);
+            
+            if (!deliveryPartnerOrderId) {
+                console.warn('[Bookings] No delivery partner order ID found');
+                Alert.alert('Error', 'Failed to cancel the demo. Delivery partner order ID not found.');
+                return;
+            }
+
+            const deliveryPartnerCancelled = await cancelDeliveryPartnerOrderById(deliveryPartnerOrderId, reason);
 
             if (!deliveryPartnerCancelled) {
                 console.warn('[Bookings] Delivery-partner cancel failed');
@@ -291,6 +312,7 @@ export default function DemoBookingsScreen() {
         const variant = node?.variant;
 
         // Navigate to the get-demo screen with pre-filled product data and edit mode
+        // Pass delivery partner order ID for direct API calls
         router.push({
             pathname: '/demo/get-demo',
             params: {
@@ -300,6 +322,7 @@ export default function DemoBookingsScreen() {
                 productPrice: item?.price || '0',
                 productImage: item?.imageUrl || '',
                 editOrderId: order.id,
+                editDeliveryPartnerOrderId: order.deliveryPartnerOrderId,
             },
         } as any);
     };

@@ -90,6 +90,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
         try {
             const editOrderId = params.editOrderId as string;
+            const editDeliveryPartnerOrderId = params.editDeliveryPartnerOrderId as string;
             if (editOrderId) {
                 // We are editing an existing demo order using Delivery Partner API only
                 const formatTimeForDelivery = (timeStr: string) => {
@@ -110,27 +111,39 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                 console.log('[GetDemo] Editing demo order via Delivery Partner API only');
                 console.log('[GetDemo] Order ID:', editOrderId);
+                console.log('[GetDemo] Delivery Partner Order ID:', editDeliveryPartnerOrderId);
                 console.log('[GetDemo] Scheduled Date:', scheduledDate);
                 console.log('[GetDemo] Scheduled Time:', scheduledTime);
 
-                const deliveryPartnerSynced = await updateDeliveryPartnerOrderSchedule(editOrderId, {
-                    scheduledDate,
-                    scheduledTime,
-                    shippingAddress: {
-                        lat: (defaultAddress as any)?.lat || (defaultAddress as any)?.latitude || null,
-                        lng: (defaultAddress as any)?.lng || (defaultAddress as any)?.longitude || null,
-                        city: (defaultAddress as any).city || '',
-                        name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
-                        phone: (defaultAddress as any)?.phone || user?.phone || '',
-                        state: (defaultAddress as any).state || '',
-                        address: [
-                            (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
-                            (defaultAddress as any)?.address2 || ''
-                        ].filter(Boolean).join(', '),
-                        country: (defaultAddress as any)?.country || 'India',
-                        pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
-                    },
-                });
+                let deliveryPartnerSynced = false;
+                if (editDeliveryPartnerOrderId) {
+                    // Use delivery partner order ID directly (no lookup needed)
+                    const { updateDeliveryPartnerOrderScheduleById } = await import('@/services/deliveryPartnerService');
+                    deliveryPartnerSynced = await updateDeliveryPartnerOrderScheduleById(editDeliveryPartnerOrderId, {
+                        scheduledDate,
+                        scheduledTime,
+                    });
+                } else {
+                    // Fallback to Shopify order ID lookup (for old orders without delivery partner ID)
+                    deliveryPartnerSynced = await updateDeliveryPartnerOrderSchedule(editOrderId, {
+                        scheduledDate,
+                        scheduledTime,
+                        shippingAddress: {
+                            lat: (defaultAddress as any)?.lat || (defaultAddress as any)?.latitude || null,
+                            lng: (defaultAddress as any)?.lng || (defaultAddress as any)?.longitude || null,
+                            city: (defaultAddress as any).city || '',
+                            name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
+                            phone: (defaultAddress as any)?.phone || user?.phone || '',
+                            state: (defaultAddress as any).state || '',
+                            address: [
+                                (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
+                                (defaultAddress as any)?.address2 || ''
+                            ].filter(Boolean).join(', '),
+                            country: (defaultAddress as any)?.country || 'India',
+                            pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
+                        },
+                    });
+                }
 
                 if (!deliveryPartnerSynced) {
                     console.error('[GetDemo] Delivery-partner schedule sync failed');
@@ -143,7 +156,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 const attributesUpdated = await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, [
                     { key: 'scheduled_date', value: scheduledDate },
                     { key: 'scheduled_time', value: scheduledTime },
-                ]);
+                ], ['delivery_date', 'delivery_time']);
                 console.log('[GetDemo] Shopify custom attributes updated:', attributesUpdated);
 
                 // Navigate to order success screen with "demo scheduled" title
@@ -226,13 +239,13 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     deliverySchedule: formattedDeliverySchedule,
                     deliveryType: 'scheduled' as const,
                     notes: `Demo Request for ${displayProduct.title} on ${demoSchedule.day}, ${demoSchedule.date} at ${formattedTimeLabel} - Demo order with 0 charge`,
-                    isDemoTrue: true,
+                    isDemoOrder: true,
                 };
 
                 console.log('Demo order data:', JSON.stringify(orderData, null, 2));
                 console.log('[GetDemo] Order-level custom attributes:', JSON.stringify(orderData.items[0].customAttributes, null, 2));
                 console.log('[GetDemo] Delivery schedule:', JSON.stringify(orderData.deliverySchedule, null, 2));
-                console.log('[GetDemo] isDemoTrue:', orderData.isDemoTrue);
+                console.log('[GetDemo] isDemoOrder:', orderData.isDemoOrder);
                 console.log('[GetDemo] Notes:', orderData.notes);
 
                 // Create the order using PaymentService (COD order with 0 amount)
