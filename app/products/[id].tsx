@@ -605,20 +605,6 @@ const ProductDetailScreen = () => {
         }
     }, [params.collectionId]);
 
-    // Accordion State
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        description: false,
-        material: false,
-        wash_care: false,
-    });
-
-    const toggleSection = (section: string) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [section]: !prev[section]
-        }));
-    };
-
     const loadProductDetails = useCallback(async () => {
         try {
             setLoading(true);
@@ -1239,6 +1225,13 @@ const ProductDetailScreen = () => {
         getMetafieldValue(product, 'refund_policy') ??
         getMetafieldValue(product, 'Refund Policy');
 
+    // Log all available metafields to debug
+    console.log('[PDP] All metafields:', product?.metafields);
+
+    const productSpecifications = getMetafieldValue(product, 'Product Specifications');
+
+    console.log('[PDP] Product specifications found:', productSpecifications);
+
     // Highlights from metafields (highlight_1..4 or JSON "highlights")
     const highlightsList = useMemo(() => {
         const list: string[] = [];
@@ -1689,44 +1682,49 @@ const ProductDetailScreen = () => {
                         onKnowMorePress={() => setShowRefundPolicyModal(true)}
                     />
 
-                    {/* Product Description - Collapsible */}
-                    {product.description && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('description')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
+                    {/* Product Specifications */}
+                    {(product.description || productSpecifications) && (
+                        <View style={styles.sectionCard}>
+                            <Text style={styles.productDescriptionTitle}>Product Specifications</Text>
+                            <View style={styles.specsDescRow}>
+                                {/* Specifications Column */}
+                                <View style={styles.specsColumn}>
+                                    <Text style={styles.columnTitle}>Specifications</Text>
+                                    {productSpecifications ? (() => {
+                                        console.log('[PDP] Product specifications raw:', productSpecifications);
+                                        try {
+                                            const specs = JSON.parse(productSpecifications);
+                                            console.log('[PDP] Parsed specs:', specs);
+                                            return Object.entries(specs).map(([key, value]) => (
+                                                <View key={key} style={styles.specItem}>
+                                                    <Text style={styles.specKey}>{key}:</Text>
+                                                    <Text style={styles.specValue}>{String(value)}</Text>
+                                                </View>
+                                            ));
+                                        } catch (e) {
+                                            console.error('[PDP] Failed to parse product specifications:', e);
+                                            return null;
                                         }
-                                    ]}>Description</Text>
+                                    })() : (
+                                        <Text style={styles.noSpecsText}>No specifications available</Text>
+                                    )}
                                 </View>
-                                <Ionicons
-                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['description'] && (
-                                <View style={[styles.accordionContent, styles.descriptionContainer]}>
-                                    <Text style={[
-                                        styles.descriptionBody,
-                                        productStyles.description && {
-                                            fontSize: productStyles.description.fontSize,
-                                            color: productStyles.description.color,
-                                            lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{product.description}</Text>
+                                {/* Description Column */}
+                                <View style={styles.descColumn}>
+                                    <Text style={styles.columnTitle}>Description</Text>
+                                    {product.description && (
+                                        <Text style={[
+                                            styles.productDescriptionText,
+                                            productStyles.description && {
+                                                fontSize: productStyles.description.fontSize,
+                                                color: productStyles.description.color,
+                                                lineHeight: productStyles.description.lineHeight,
+                                                ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
+                                            }
+                                        ]}>{product.description}</Text>
+                                    )}
                                 </View>
-                            )}
+                            </View>
                         </View>
                     )}
 
@@ -1819,86 +1817,6 @@ const ProductDetailScreen = () => {
                                     <Text style={styles.priceValueTextKiddo}>{formatPriceWithRupee(priceOnKiddo)}</Text>
                                 </View>
                             </View>
-                        </View>
-                    )}
-
-                    {/* Material Accordion */}
-                    {fabric && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('material')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="shirt-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>Material</Text>
-                                </View>
-                                <Ionicons
-                                    name={expandedSections['material'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['material'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.specValue,
-                                        productStyles.material && {
-                                            fontSize: productStyles.material.fontSize,
-                                            color: productStyles.material.color,
-                                            ...processFontStyle(productStyles.material, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{fabric}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-
-                    {/* Wash Care Accordion */}
-                    {washCare && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('wash_care')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="water-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>Wash Care</Text>
-                                </View>
-                                <Ionicons
-                                    name={expandedSections['wash_care'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['wash_care'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.specValue,
-                                        productStyles.washCare && {
-                                            fontSize: productStyles.washCare.fontSize,
-                                            color: productStyles.washCare.color,
-                                            ...processFontStyle(productStyles.washCare, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{washCare}</Text>
-                                </View>
-                            )}
                         </View>
                     )}
 
@@ -2014,7 +1932,7 @@ const ProductDetailScreen = () => {
                                     <Text style={[
                                         styles.bookDemoButtonText,
                                         selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
-                                    ]}>BOOK A DEMO</Text>
+                                    ]}>Book a demo</Text>
                                 </TouchableOpacity>
                             </View>
                         );
@@ -2578,7 +2496,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
         borderColor: '#D5D7DA',
-        borderWidth: 2,
+        borderWidth: 1,
         borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
@@ -2587,7 +2505,7 @@ const styles = StyleSheet.create({
     bookDemoButtonText: {
         color: Colors.primary,
         fontFamily: Fonts.FredokaSemiBold,
-        fontSize: 14,
+        fontSize: 18,
     },
     refundPolicyModalText: {
         fontSize: 14,
@@ -2602,6 +2520,48 @@ const styles = StyleSheet.create({
         marginBottom: 0,
         paddingHorizontal: 16,
         paddingTop: 16,
+    },
+    productDescriptionTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.Bold,
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    specsDescRow: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    specsColumn: {
+        flex: 1,
+    },
+    descColumn: {
+        flex: 1,
+    },
+    columnTitle: {
+        fontSize: 16,
+        fontFamily: Fonts.FredokaSemiBold,
+        color: Colors.text,
+        marginBottom: 8,
+    },
+    specItem: {
+        marginBottom: 8,
+    },
+    specKey: {
+        fontSize: 14,
+        fontFamily: Fonts.FredokaSemiBold,
+        color: Colors.text,
+    },
+    noSpecsText: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.textSecondary,
+        fontStyle: 'italic',
+    },
+    productDescriptionText: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.text,
+        lineHeight: 22,
     },
     priceComparisonTitle: {
         fontSize: 18,

@@ -2963,14 +2963,14 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_2.gif?v=1781788543"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_13.gif?v=1781862122"
         }
       ],
       "carouselConfig": {
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 1,
+        "height": 0.8,
         "resizeMode": "cover"
       },
       "styles": {
@@ -2987,6 +2987,38 @@
           "borderRadius": 0,
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
+        },
+        "img": {}
+      },
+      "order": 3
+    },
+    {
+      "id": "all-banner-1",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Final_Fathers_Day.png?v=1781858145"
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 0.35,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal":10,
+          "marginTop": 0,
+          "backgroundColor": "#F5F5F5"
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 20
         },
         "img": {}
       },
@@ -3069,42 +3101,36 @@
         "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": 12,
+        "rowGap": -10,
         "limit": 13,
-        "aspectRatio": 1,
+        "aspectRatio": 1.2,
         "resizeMode": "cover",
         "showLabels": true,
-        "borderRadius": 12
+        "borderRadius": 6
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510762123553",
-          "name": "Top Wear"
+          "id": "gid://shopify/Collection/510769791265"
         },
         {
-          "id": "gid://shopify/Collection/510762221857",
-          "name": "Bottom Wear"
+          "id": "gid://shopify/Collection/510769824033"
         },
         {
-          "id": "gid://shopify/Collection/510762254625",
-          "name": "Dresses"
+          "id": "gid://shopify/Collection/510769889569"
         },
         {
-          "id": "gid://shopify/Collection/510762320161",
-          "name": "Coord Sets"
+          "id": "gid://shopify/Collection/512203096353"
         },
         {
-          "id": "gid://shopify/Collection/510762352929",
-          "name": "Nightsuits & Inner Wear"
+          "id": "gid://shopify/Collection/510769955105"
         },
         {
-          "id": "gid://shopify/Collection/510762418465",
-          "name": "Onesies"
+          "id": "gid://shopify/Collection/512202932513"
         }
       ],
       "styles": {
         "container": {
-          "marginTop":-340,
+          "marginTop":-420,
           "paddingHorizontal": 46,
           "paddingTop": 10
           
@@ -3120,16 +3146,17 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display":"none",
-          "fontFamily": "lexend-regular",
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
           "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
+          "fontSize": 9,
           "letterSpacing": 0,
           "textAlign": "center"
         }
       }
     },
+
     {
       "id": "category-grid-trending",
       "type": "categoryGrid",
@@ -3167,7 +3194,7 @@
       ],
       "styles": {
         "container": {
-          "marginTop": 30,
+          "marginTop": 10,
           "paddingHorizontal": 16,
           "paddingTop": 0,
           "backgroundColor": "#F5F5F5"
@@ -3334,7 +3361,7 @@
       }
     },
     {
-      "id": "category-grid-fashion",
+      "id": "category-grid-banner",
       "type": "categoryGrid",
       "order": 5,
       "visible": true,
@@ -3386,7 +3413,7 @@
       ],
       "styles": {
         "container": {
-          "paddingHorizontal": 16,
+          "paddingHorizontal": 6,
           "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
@@ -6339,7 +6366,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_header.png?v=1780071110",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_1.png?v=1781858650",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

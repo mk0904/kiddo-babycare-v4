@@ -135,7 +135,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                             lat: (defaultAddress as any)?.lat || (defaultAddress as any)?.latitude || null,
                             lng: (defaultAddress as any)?.lng || (defaultAddress as any)?.longitude || null,
                             city: (defaultAddress as any).city || '',
-                            name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
+                            name: (defaultAddress as any)?.firstName || (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
                             phone: (defaultAddress as any)?.phone || user?.phone || '',
                             state: (defaultAddress as any).state || '',
                             address: [
@@ -227,7 +227,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     name: (user as any)?.displayName || 'Customer',
                     customerId: user?.customerId || user?.id || undefined,
                     address: {
-                        name: (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
+                        name: (defaultAddress as any)?.firstName || (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
                         address: [
                             (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
                             (defaultAddress as any)?.address2 || ''
@@ -396,9 +396,21 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                                 // Filter slots that have already passed (only for today)
                                 const availableSlots = allSlots.filter((slot: string) => {
                                     if (!isToday) return true; // Show all slots for future dates
-                                    
-                                    const slotHour = parseInt(slot.split(' ')[0], 10);
-                                    return slotHour > currentHour || (slotHour === currentHour && currentMinutes < 30);
+
+                                    // Extract hour from slot (e.g., "2PM" from "2PM - 3PM")
+                                    const slotTimePart = slot.split(' ')[0]; // "2PM"
+                                    const slotHourNum = parseInt(slotTimePart, 10); // 2
+                                    const isPM = slotTimePart.toUpperCase().includes('PM');
+
+                                    // Convert to 24-hour format
+                                    let slotHour24 = slotHourNum;
+                                    if (isPM && slotHourNum !== 12) {
+                                        slotHour24 = slotHourNum + 12;
+                                    } else if (!isPM && slotHourNum === 12) {
+                                        slotHour24 = 0;
+                                    }
+
+                                    return slotHour24 > currentHour || (slotHour24 === currentHour && currentMinutes < 30);
                                 });
 
                                 // Show no slots message if no available slots for today

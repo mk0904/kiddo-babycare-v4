@@ -2,6 +2,7 @@ import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
+import { analyticsService } from '@/services/analyticsService';
 import {
     canonicalVariantKeyForMerge,
     SPECIAL_DEAL_PROMO_CART_ATTR,
@@ -11,7 +12,6 @@ import {
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
-import { analyticsService } from '@/services/analyticsService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';

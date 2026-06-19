@@ -409,6 +409,7 @@ export default function DemoBookingsScreen() {
                         />
                     }
                 >
+                    <Text style={styles.sectionTitle}>Upcoming</Text>
                     {demoOrders.map((order) => {
                         const item = getLineItemDetails(order);
                         const priceInfo = getDemoPriceInfo(order);
@@ -589,6 +590,12 @@ const styles = StyleSheet.create({
     scrollContent: {
         padding: 16,
         paddingBottom: 40,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontFamily: Fonts.Bold,
+        color: 'grey',
+        marginBottom: 16,
     },
     demoCardContainer: {
         marginBottom: 24,
