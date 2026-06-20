@@ -3536,75 +3536,69 @@
         }
       }
     },
-    {
-      "id": "shop-by-brand-carousel-3",
+    
+        {
+      "id": "shop-by-brand-carousel-5",
       "type": "collectionImageCarousel",
       "title": "Shop by Brand",
-      "order": 4,
       "visible": true,
+      "order": 4,
+
       "data": [
         {
           "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/514922578209",
-          "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Mothercare.png?v=1780947232"
-        },
-        {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514922447137",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/23_7d5910c9-6146-438f-b96f-8b3a418c7c21.png?v=1780947049"
-        },
-        {
-          "id": "brand-bumzee",
-          "collectionId": "gid://shopify/Collection/514922381601",
-          "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/17_ae0c5487-4aab-4566-9abc-ea1a0dcc8f48.png?v=1780947011"
-        },
-        {
-          "id": "brand-doreme",
-          "collectionId": "gid://shopify/Collection/514922348833",
-          "label": "Kuchipoo",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/18_50eea419-d011-4150-b498-dcd366fe6a38.png?v=1780946984"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514922316065",
-          "label": "Trampoline",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/19_1f12cb74-bc21-424c-86f8-e205f7f786b4.png?v=1780946958"
+          "collectionId": "gid://shopify/Collection/515442802977",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.23_PM.jpg?v=1781546437"
         },
         {
           "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/514922283297",
-          "label": "Toonyport",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/22_4ac7a79d-bbe6-4dc4-9ec7-5c261d38d67a.png?v=1780946915"
-        },
-        {
-          "id": "brand-doreme-3",
-          "collectionId": "gid://shopify/Collection/514922217761",
-          "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/21_e1171841-b00c-4a0c-8cdd-a87f96175ab7.png?v=1780946856"
+          "collectionId": "gid://shopify/Collection/515304522017",
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.25_PM.jpg?v=1781546457"
         },
         {
           "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514922053921",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/16_d43aff7e-a6c2-43e4-b680-db2fe9af1265.png?v=1780946803"
+          "collectionId": "gid://shopify/Collection/515442835745",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.26_PM.jpg?v=1781546474"
+        },
+        {
+          "id": "brand-doreme-3",
+          "collectionId": "gid://shopify/Collection/515442966817",
+          "label": "Doreme",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.28_PM.jpg?v=1781546493"
+        },
+        {
+          "id": "brand-bumzee",
+          "collectionId": "gid://shopify/Collection/515442868513",
+          "label": "Bumzee",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.29_PM.jpg?v=1781546511"
+        },
+        {
+          "id": "brand-bontots",
+          "collectionId": "gid://shopify/Collection/515442901281",
+          "label": "Bontots",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.31_PM.jpg?v=1781546533"
+        },
+        {
+          "id": "brand-doreme-7",
+          "collectionId": "gid://shopify/Collection/515442934049",
+          "label": "Trampoline",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.34_PM.jpg?v=1781546552"
         }
       ],
       "carouselConfig": {
-        "itemHeight": 84,
-        "itemWidth": 84,
-        "aspectRatio": 1,
-        "gap": 12,
+        "itemHeight": 215,
+        "itemWidth": 160,
+        "gap": 8,
         "borderRadius": 10,
         "imageContentFit": "cover",
         "paddingHorizontal": 16
       },
       "styles": {
         "container": {
-          "marginBottom": 15,
-          "marginTop": -10
+          "paddingVertical": 16
         },
         "title": {
           "marginBottom": 10,
@@ -3617,6 +3611,7 @@
         }
       }
     },
+
     {
       "id": "category-grid-toys",
       "type": "categoryGrid",

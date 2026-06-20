@@ -284,6 +284,7 @@ const ProductDetailScreen = () => {
     const [showDateError, setShowDateError] = useState(false);
     const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
     const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
+    const [isSpecCollapsed, setIsSpecCollapsed] = useState(false);
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -1497,7 +1498,7 @@ const ProductDetailScreen = () => {
 
 
                 <View style={styles.infoContainer}>
-                    <View style={styles.sectionCard}>
+                    <View style={[styles.sectionCard, { paddingHorizontal: 8 }]}>
                         {hasGearFurnitureTag && (
                             <View style={styles.pdpDemoBadgeContainer}>
                                 <View style={styles.pdpDemoBadge}>
@@ -1686,77 +1687,121 @@ const ProductDetailScreen = () => {
                     {/* Product Specification - Tabbed Interface */}
                     {(product.description || ageGroup || productSpecifications || productCategory) && (
                         <View style={styles.sectionCard}>
-                            <Text style={styles.productDescriptionTitle}>Product specification</Text>
+                            <TouchableOpacity 
+                                style={styles.specHeader}
+                                onPress={() => setIsSpecCollapsed(!isSpecCollapsed)}
+                            >
+                                <Text style={styles.productDescriptionTitle}>Product specification</Text>
+                                <Ionicons 
+                                    name={isSpecCollapsed ? 'chevron-down' : 'chevron-up'} 
+                                    size={24} 
+                                    color={Colors.text} 
+                                />
+                            </TouchableOpacity>
 
-                            {/* Tab Buttons */}
-                            <View style={styles.specTabContainer}>
-                                <TouchableOpacity
-                                    style={[styles.specTabButton, selectedSpecTab === 'description' && styles.specTabButtonActive]}
-                                    onPress={() => setSelectedSpecTab('description')}
-                                >
-                                    <Text style={[styles.specTabText, selectedSpecTab === 'description' && styles.specTabTextActive]}>
-                                        Description
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.specTabButton, selectedSpecTab === 'details' && styles.specTabButtonActive]}
-                                    onPress={() => setSelectedSpecTab('details')}
-                                >
-                                    <Text style={[styles.specTabText, selectedSpecTab === 'details' && styles.specTabTextActive]}>
-                                        Product details
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
+                            {!isSpecCollapsed && (
+                                <>
+                                    {/* Tab Buttons */}
+                                    <View style={styles.specTabContainer}>
+                                        <TouchableOpacity
+                                            style={[styles.specTabButton, selectedSpecTab === 'description' && styles.specTabButtonActive]}
+                                            onPress={() => setSelectedSpecTab('description')}
+                                        >
+                                            <Text style={[styles.specTabText, selectedSpecTab === 'description' && styles.specTabTextActive]}>
+                                                Description
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.specTabButton, selectedSpecTab === 'details' && styles.specTabButtonActive]}
+                                            onPress={() => setSelectedSpecTab('details')}
+                                        >
+                                            <Text style={[styles.specTabText, selectedSpecTab === 'details' && styles.specTabTextActive]}>
+                                                Product details
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
 
-                            {/* Tab Content */}
-                            <View style={styles.specTabContent}>
-                                {selectedSpecTab === 'description' && product.description && (
-                                    <Text style={[
-                                        styles.productDescriptionText,
-                                        productStyles.description && {
-                                            fontSize: productStyles.description.fontSize,
-                                            color: productStyles.description.color,
-                                            lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{product.description}</Text>
-                                )}
-
-                                {selectedSpecTab === 'details' && (ageGroup || productSpecifications || productCategory) && (
-                                    <>
-                                        {ageGroup && (
-                                            <View style={styles.detailItem}>
-                                                <Text style={styles.detailLabel}>Age Group:</Text>
-                                                <Text style={styles.detailValue}>{ageGroup}</Text>
-                                            </View>
-                                        )}
-                                        {productCategory && (
-                                            <View style={styles.detailItem}>
-                                                <Text style={styles.detailLabel}>Product Category:</Text>
-                                                <Text style={styles.detailValue}>{productCategory}</Text>
-                                            </View>
-                                        )}
-                                        {productSpecifications && (() => {
-                                            try {
-                                                const specs = JSON.parse(productSpecifications);
-                                                return Object.entries(specs).map(([key, value]) => (
-                                                    <View key={key} style={styles.detailItem}>
-                                                        <Text style={styles.detailLabel}>{key}:</Text>
-                                                        <Text style={styles.detailValue}>{String(value)}</Text>
-                                                    </View>
-                                                ));
-                                            } catch (e) {
+                                    {/* Tab Content */}
+                                    <View style={styles.specTabContent}>
+                                        {selectedSpecTab === 'description' && product.description && (() => {
+                                            console.log('[PDP] Description text:', product.description);
+                                            // Split by sentences to create bullet points
+                                            const sentences = product.description.match(/[^.!?]+[.!?]+/g) || [product.description];
+                                            console.log('[PDP] Split sentences:', sentences);
+                                            return sentences.map((sentence: string, index: number) => {
+                                                const trimmedSentence = sentence.trim();
+                                                console.log('[PDP] Sentence', index, ':', trimmedSentence);
+                                                if (!trimmedSentence) return null;
+                                                
+                                                // Remove existing bullet characters if present
+                                                const content = trimmedSentence.replace(/^[•\-\*]\s+|^\d+\.\s+/, '');
+                                                
                                                 return (
-                                                    <View style={styles.detailItem}>
-                                                        <Text style={styles.detailLabel}>Specifications:</Text>
-                                                        <Text style={styles.detailValue}>{productSpecifications}</Text>
+                                                    <View key={index} style={styles.bulletPointItem}>
+                                                        <Text style={styles.bulletPoint}>.</Text>
+                                                        <Text style={[
+                                                            styles.productDescriptionText,
+                                                            productStyles.description && {
+                                                                fontSize: productStyles.description.fontSize,
+                                                                color: productStyles.description.color,
+                                                                lineHeight: productStyles.description.lineHeight,
+                                                            }
+                                                        ]}>{content}</Text>
                                                     </View>
                                                 );
-                                            }
+                                            });
                                         })()}
-                                    </>
-                                )}
-                            </View>
+
+                                        {selectedSpecTab === 'details' && (ageGroup || productSpecifications || productCategory) && (() => {
+                                            // Collect all detail items into an array
+                                            const allDetails: Array<{label: string, value: string}> = [];
+                                            
+                                            if (ageGroup) {
+                                                allDetails.push({ label: 'Age Group', value: ageGroup });
+                                            }
+                                            if (productCategory) {
+                                                allDetails.push({ label: 'Product Category', value: productCategory });
+                                            }
+                                            if (productSpecifications) {
+                                                try {
+                                                    const specs = JSON.parse(productSpecifications);
+                                                    Object.entries(specs).forEach(([key, value]) => {
+                                                        allDetails.push({ label: key, value: String(value) });
+                                                    });
+                                                } catch (e) {
+                                                    allDetails.push({ label: 'Specifications', value: productSpecifications });
+                                                }
+                                            }
+                                            
+                                            // Split evenly: left gets more if odd
+                                            const midPoint = Math.ceil(allDetails.length / 2);
+                                            const leftColumn = allDetails.slice(0, midPoint);
+                                            const rightColumn = allDetails.slice(midPoint);
+                                            
+                                            return (
+                                                <View style={styles.detailsGridContainer}>
+                                                    <View style={styles.detailsColumn}>
+                                                        {leftColumn.map((item, index) => (
+                                                            <View key={`left-${index}`} style={styles.detailItem}>
+                                                                <Text style={styles.detailLabel}>{item.label}:</Text>
+                                                                <Text style={styles.detailValue}>{item.value}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                    <View style={styles.detailsColumn}>
+                                                        {rightColumn.map((item, index) => (
+                                                            <View key={`right-${index}`} style={styles.detailItem}>
+                                                                <Text style={styles.detailLabel}>{item.label}:</Text>
+                                                                <Text style={styles.detailValue}>{item.value}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
+                                </>
+                            )}
                         </View>
                     )}
 
@@ -2141,7 +2186,7 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     demoSection: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#fdf3e4',
         borderRadius: 16,
         marginHorizontal: 16,
         marginTop: 8,
@@ -2530,10 +2575,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderColor: '#D5D7DA',
         borderWidth: 1,
-        borderRadius: 14,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        minWidth: 0,
+        height:50,
     },
     bookDemoButtonText: {
         color: Colors.primary,
@@ -2560,23 +2608,35 @@ const styles = StyleSheet.create({
         color: Colors.text,
         marginBottom: 12,
     },
+    specHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
     detailItem: {
         marginBottom: 8,
     },
+    detailsGridContainer: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    detailsColumn: {
+        flex: 1,
+    },
     detailLabel: {
         fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.text,
     },
     detailValue: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.textSecondary,
         marginTop: 2,
     },
     productDescriptionText: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.text,
         lineHeight: 22,
     },
@@ -2609,17 +2669,17 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     specTabContent: {
-        paddingTop: 8,
-        paddingHorizontal: 15,
+        paddingTop: 4,
+        paddingHorizontal: 8,
     },
     bulletPointItem: {
         flexDirection: 'row',
-        marginBottom: 8,
+        marginBottom: 12,
         alignItems: 'flex-start',
     },
     bulletPoint: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.text,
         marginRight: 8,
         marginTop: 2,
@@ -2703,6 +2763,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         minWidth: 140,
         alignItems: 'center',
+        height: 50,
     },
     disabledButton: {
         backgroundColor: '#ccc',
