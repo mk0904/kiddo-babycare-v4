@@ -283,6 +283,7 @@ const ProductDetailScreen = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
     const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
+    const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -1225,12 +1226,12 @@ const ProductDetailScreen = () => {
         getMetafieldValue(product, 'refund_policy') ??
         getMetafieldValue(product, 'Refund Policy');
 
-    // Log all available metafields to debug
+    const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
+    const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
+    const productCategory = product?.productCategory?.value || getMetafieldValue(product, 'product_category');
+
     console.log('[PDP] All metafields:', product?.metafields);
-
-    const productSpecifications = getMetafieldValue(product, 'Product Specifications');
-
-    console.log('[PDP] Product specifications found:', productSpecifications);
+    console.log('[PDP] Product Details Metafields:', { ageGroup, productSpecifications, productCategory });
 
     // Highlights from metafields (highlight_1..4 or JSON "highlights")
     const highlightsList = useMemo(() => {
@@ -1682,48 +1683,79 @@ const ProductDetailScreen = () => {
                         onKnowMorePress={() => setShowRefundPolicyModal(true)}
                     />
 
-                    {/* Product Specifications */}
-                    {(product.description || productSpecifications) && (
+                    {/* Product Specification - Tabbed Interface */}
+                    {(product.description || ageGroup || productSpecifications || productCategory) && (
                         <View style={styles.sectionCard}>
-                            <Text style={styles.productDescriptionTitle}>Product Specifications</Text>
-                            <View style={styles.specsDescRow}>
-                                {/* Specifications Column */}
-                                <View style={styles.specsColumn}>
-                                    <Text style={styles.columnTitle}>Specifications</Text>
-                                    {productSpecifications ? (() => {
-                                        console.log('[PDP] Product specifications raw:', productSpecifications);
-                                        try {
-                                            const specs = JSON.parse(productSpecifications);
-                                            console.log('[PDP] Parsed specs:', specs);
-                                            return Object.entries(specs).map(([key, value]) => (
-                                                <View key={key} style={styles.specItem}>
-                                                    <Text style={styles.specKey}>{key}:</Text>
-                                                    <Text style={styles.specValue}>{String(value)}</Text>
-                                                </View>
-                                            ));
-                                        } catch (e) {
-                                            console.error('[PDP] Failed to parse product specifications:', e);
-                                            return null;
+                            <Text style={styles.productDescriptionTitle}>Product specification</Text>
+
+                            {/* Tab Buttons */}
+                            <View style={styles.specTabContainer}>
+                                <TouchableOpacity
+                                    style={[styles.specTabButton, selectedSpecTab === 'description' && styles.specTabButtonActive]}
+                                    onPress={() => setSelectedSpecTab('description')}
+                                >
+                                    <Text style={[styles.specTabText, selectedSpecTab === 'description' && styles.specTabTextActive]}>
+                                        Description
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.specTabButton, selectedSpecTab === 'details' && styles.specTabButtonActive]}
+                                    onPress={() => setSelectedSpecTab('details')}
+                                >
+                                    <Text style={[styles.specTabText, selectedSpecTab === 'details' && styles.specTabTextActive]}>
+                                        Product details
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Tab Content */}
+                            <View style={styles.specTabContent}>
+                                {selectedSpecTab === 'description' && product.description && (
+                                    <Text style={[
+                                        styles.productDescriptionText,
+                                        productStyles.description && {
+                                            fontSize: productStyles.description.fontSize,
+                                            color: productStyles.description.color,
+                                            lineHeight: productStyles.description.lineHeight,
+                                            ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
                                         }
-                                    })() : (
-                                        <Text style={styles.noSpecsText}>No specifications available</Text>
-                                    )}
-                                </View>
-                                {/* Description Column */}
-                                <View style={styles.descColumn}>
-                                    <Text style={styles.columnTitle}>Description</Text>
-                                    {product.description && (
-                                        <Text style={[
-                                            styles.productDescriptionText,
-                                            productStyles.description && {
-                                                fontSize: productStyles.description.fontSize,
-                                                color: productStyles.description.color,
-                                                lineHeight: productStyles.description.lineHeight,
-                                                ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
+                                    ]}>{product.description}</Text>
+                                )}
+
+                                {selectedSpecTab === 'details' && (ageGroup || productSpecifications || productCategory) && (
+                                    <>
+                                        {ageGroup && (
+                                            <View style={styles.detailItem}>
+                                                <Text style={styles.detailLabel}>Age Group:</Text>
+                                                <Text style={styles.detailValue}>{ageGroup}</Text>
+                                            </View>
+                                        )}
+                                        {productCategory && (
+                                            <View style={styles.detailItem}>
+                                                <Text style={styles.detailLabel}>Product Category:</Text>
+                                                <Text style={styles.detailValue}>{productCategory}</Text>
+                                            </View>
+                                        )}
+                                        {productSpecifications && (() => {
+                                            try {
+                                                const specs = JSON.parse(productSpecifications);
+                                                return Object.entries(specs).map(([key, value]) => (
+                                                    <View key={key} style={styles.detailItem}>
+                                                        <Text style={styles.detailLabel}>{key}:</Text>
+                                                        <Text style={styles.detailValue}>{String(value)}</Text>
+                                                    </View>
+                                                ));
+                                            } catch (e) {
+                                                return (
+                                                    <View style={styles.detailItem}>
+                                                        <Text style={styles.detailLabel}>Specifications:</Text>
+                                                        <Text style={styles.detailValue}>{productSpecifications}</Text>
+                                                    </View>
+                                                );
                                             }
-                                        ]}>{product.description}</Text>
-                                    )}
-                                </View>
+                                        })()}
+                                    </>
+                                )}
                             </View>
                         </View>
                     )}
@@ -1731,7 +1763,7 @@ const ProductDetailScreen = () => {
                     {/* Demo Available Section for Gear & Furniture */}
                     {hasGearFurnitureTag && (
                         <View style={styles.demoSection}>
-                            <Text style={styles.demoSectionTitle}>Experience it at home</Text>
+                            <Text style={styles.demoSectionTitle}>Experience it at home!</Text>
                             <Image
                                 source={{ uri: DEMO_PDP_CONFIG.imageUrl }}
                                 style={styles.demoImage}
@@ -1774,7 +1806,7 @@ const ProductDetailScreen = () => {
                                     <Text style={[
                                         styles.requestDemoButtonText,
                                         selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
-                                    ]}>REQUEST A DEMO</Text>
+                                    ]}>Request a demo</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -2031,6 +2063,7 @@ const styles = StyleSheet.create({
     },
     /** White elevated card on soft background (PDP sections) */
     sectionCard: {
+        paddingHorizontal:16,
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         marginHorizontal: 16,
@@ -2163,12 +2196,12 @@ const styles = StyleSheet.create({
     },
     requestDemoButton: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 8,
+        borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 24,
         marginTop: 16,
         alignItems: 'center',
-        borderColor: Colors.primary,
+        borderColor: "#D5D7DA",
         borderWidth: 1
 
     },
@@ -2527,41 +2560,69 @@ const styles = StyleSheet.create({
         color: Colors.text,
         marginBottom: 12,
     },
-    specsDescRow: {
-        flexDirection: 'row',
-        gap: 16,
-    },
-    specsColumn: {
-        flex: 1,
-    },
-    descColumn: {
-        flex: 1,
-    },
-    columnTitle: {
-        fontSize: 16,
-        fontFamily: Fonts.FredokaSemiBold,
-        color: Colors.text,
+    detailItem: {
         marginBottom: 8,
     },
-    specItem: {
-        marginBottom: 8,
-    },
-    specKey: {
+    detailLabel: {
         fontSize: 14,
         fontFamily: Fonts.FredokaSemiBold,
         color: Colors.text,
     },
-    noSpecsText: {
+    detailValue: {
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: Colors.textSecondary,
-        fontStyle: 'italic',
+        marginTop: 2,
     },
     productDescriptionText: {
         fontSize: 14,
         fontFamily: Fonts.Regular,
         color: Colors.text,
         lineHeight: 22,
+    },
+    specTabContainer: {
+        flexDirection: 'row',
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 8,
+        padding: 4,
+        paddingHorizontal: 4,
+    },
+    specTabButton: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    specTabButtonActive: {
+        backgroundColor: Colors.primary,
+    },
+    specTabText: {
+        fontSize: 14,
+        fontFamily: Fonts.FredokaSemiBold,
+        color: Colors.textSecondary,
+    },
+    specTabTextActive: {
+        color: '#FFFFFF',
+    },
+    specTabContent: {
+        paddingTop: 8,
+        paddingHorizontal: 15,
+    },
+    bulletPointItem: {
+        flexDirection: 'row',
+        marginBottom: 8,
+        alignItems: 'flex-start',
+    },
+    bulletPoint: {
+        fontSize: 14,
+        fontFamily: Fonts.Regular,
+        color: Colors.text,
+        marginRight: 8,
+        marginTop: 2,
     },
     priceComparisonTitle: {
         fontSize: 18,

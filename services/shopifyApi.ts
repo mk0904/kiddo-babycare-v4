@@ -320,7 +320,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         values
       }
       metafields(identifiers: [
-        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "fabric"},
         {namespace: "custom", key: "wash_care"},
         {namespace: "custom", key: "price_on_kiddo"},
         {namespace: "custom", key: "price_on_amazon"},
@@ -344,6 +344,15 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         key
         value
         namespace
+      }
+      ageGroup: metafield(namespace: "custom", key: "age_group") {
+        value
+      }
+      productCategory: metafield(namespace: "custom", key: "product_category") {
+        value
+      }
+      productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
+        value
       }
     }
   }
@@ -407,7 +416,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
         values
       }
       metafields(identifiers: [
-        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "fabric"},
         {namespace: "custom", key: "wash_care"},
         {namespace: "custom", key: "price_on_kiddo"},
         {namespace: "custom", key: "price_on_amazon"},
@@ -431,6 +440,15 @@ const GET_PRODUCT_BY_ID_QUERY = `
         key
         value
         namespace
+      }
+      ageGroup: metafield(namespace: "custom", key: "age_group") {
+        value
+      }
+      productCategory: metafield(namespace: "custom", key: "product_category") {
+        value
+      }
+      productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
+        value
       }
     }
   }

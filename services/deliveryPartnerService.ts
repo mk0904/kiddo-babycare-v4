@@ -1044,10 +1044,27 @@ export async function findDeliveryPartnerOrderByShopifyId(
 export async function fetchDemoOrdersFromDeliveryPartner(
     page: number = 1,
     limit: number = 50,
+    customerId?: string,
+    customerEmail?: string,
+    customerPhone?: string,
 ): Promise<{ orders: DeliveryPartnerOrderRef[]; total: number; hasMore: boolean }> {
     try {
+        let apiUrl = `${DELIVERY_PARTNER_ORDERS_API}?is_demo_order=true&page=${page}&limit=${limit}`;
+        if (customerId) {
+            apiUrl += `&customerId=${customerId}`;
+        }
+        if (customerEmail) {
+            apiUrl += `&customerEmail=${encodeURIComponent(customerEmail)}`;
+        }
+        if (customerPhone) {
+            apiUrl += `&customer_phone=${encodeURIComponent(customerPhone)}`;
+        }
+        console.log('[deliveryPartnerService] Fetching demo orders with URL:', apiUrl);
+        console.log('[deliveryPartnerService] Customer ID filter:', customerId || 'none');
+        console.log('[deliveryPartnerService] Customer Email filter:', customerEmail || 'none');
+        console.log('[deliveryPartnerService] Customer Phone filter:', customerPhone || 'none');
         const response = await fetch(
-            `${DELIVERY_PARTNER_ORDERS_API}?is_demo_order=true&page=${page}&limit=${limit}`,
+            apiUrl,
             { headers: { Accept: 'application/json' } },
         );
         if (!response.ok) {
@@ -1072,14 +1089,14 @@ export async function fetchDemoOrdersFromDeliveryPartner(
 }
 
 /** Fetch all demo orders from delivery partner API (all pages). */
-export async function fetchAllDemoOrdersFromDeliveryPartner(): Promise<DeliveryPartnerOrderRef[]> {
+export async function fetchAllDemoOrdersFromDeliveryPartner(customerId?: string, customerEmail?: string, customerPhone?: string): Promise<DeliveryPartnerOrderRef[]> {
     const allOrders: DeliveryPartnerOrderRef[] = [];
     let page = 1;
     const limit = 50;
     let hasMore = true;
 
     while (hasMore) {
-        const { orders, total, hasMore: more } = await fetchDemoOrdersFromDeliveryPartner(page, limit);
+        const { orders, total, hasMore: more } = await fetchDemoOrdersFromDeliveryPartner(page, limit, customerId, customerEmail, customerPhone);
         allOrders.push(...orders);
         hasMore = more;
         page++;

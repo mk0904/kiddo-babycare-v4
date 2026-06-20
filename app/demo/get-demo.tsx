@@ -332,8 +332,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                 {/* Schedule Demo Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>SCHEDULE DEMO</Text>
-                    <Text style={styles.subText}>The demo should take about 30 min</Text>
+                    <Text style={styles.sectionTitle}>When?</Text>
 
                     {/* Inline Date and Time Selection */}
                     <View style={styles.inlineScheduleContainer}>
@@ -464,7 +463,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                 {/* Address Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ADDRESS</Text>
+                    <Text style={styles.sectionTitle}>Where?</Text>
 
                     {/* Current Address */}
                     <TouchableOpacity
@@ -474,11 +473,6 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         ]}
                         onPress={() => setSelectedAddress('home')}
                     >
-                        <Ionicons
-                            name="home-outline"
-                            size={20}
-                            color={selectedAddress === 'home' ? Colors.primary : Colors.textSecondary}
-                        />
                         <View style={styles.addressContent}>
                             <Text style={styles.addressLabel}>HOME</Text>
                             <Text style={styles.addressText} numberOfLines={1}>
@@ -488,9 +482,9 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                                 ].filter(Boolean).join(', ') : 'No address added'}
                             </Text>
                         </View>
-                        {selectedAddress === 'home' && (
-                            <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                        )}
+                        <View style={styles.radioButton}>
+                            <View style={[styles.radioButtonInner, selectedAddress === 'home' && styles.radioButtonInnerSelected]} />
+                        </View>
                     </TouchableOpacity>
 
                     {/* Add Address */}
@@ -525,7 +519,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     disabled={!demoSchedule?.date || !demoSchedule?.time || isSubmitting}
                 >
                     <Text style={styles.confirmChangesButtonText}>
-                        {isSubmitting ? 'Confirming...' : 'Confirm changes'}
+                        {isSubmitting ? 'Confirming...' : 'Confirm demo'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -656,7 +650,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 16,
         fontFamily: Fonts.LexendSemiBold,
-        color: Colors.text,
+        color: "#717680",
         marginBottom: 8,
     },
     sectionDescription: {
@@ -709,6 +703,24 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: Fonts.LexendRegular,
         color: Colors.textSecondary,
+    },
+    radioButton: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#DB5656',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioButtonInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: 'transparent',
+    },
+    radioButtonInnerSelected: {
+        backgroundColor: '#DB5656',
     },
     addAddressCard: {
         flexDirection: 'row',

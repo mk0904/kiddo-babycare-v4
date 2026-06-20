@@ -177,6 +177,7 @@ function getShopifyCustomerAccessToken(user: UserProfile | null): string {
 export default function DemoBookingsScreen() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuth();
+    const getCustomerId = useUserStore((state) => state.getCustomerId);
     const [demoOrders, setDemoOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -189,13 +190,83 @@ export default function DemoBookingsScreen() {
             if (isRefresh) setRefreshing(true);
             else setLoading(true);
 
+            // Get current user's customer ID for filtering
+            const currentCustomerId = getCustomerId();
+            console.log('[Bookings] Current customer ID:', currentCustomerId);
+            console.log('[Bookings] User object:', JSON.stringify(user, null, 2));
+
+            // Extract numeric ID from current customer ID (handles both "shopify-123" and "123" formats)
+            const currentNumericCustomerId = currentCustomerId?.replace('shopify-', '') || '';
+            console.log('[Bookings] Current numeric customer ID:', currentNumericCustomerId);
+
+            // If no customer ID, try to get it from user object directly
+            const fallbackCustomerId = user?.customerId || user?.id;
+            console.log('[Bookings] Fallback customer ID from user object:', fallbackCustomerId);
+            const finalCustomerId = currentNumericCustomerId || String(fallbackCustomerId || '').replace('shopify-', '');
+            console.log('[Bookings] Final customer ID to use for filtering:', finalCustomerId);
+
+            // Get user email for fallback matching
+            const userEmail = user?.email;
+            console.log('[Bookings] User email for fallback:', userEmail);
+
+            // If customer ID is a placeholder (like "existing"), use phone filtering instead
+            let customerIdForApi: string | undefined = finalCustomerId;
+            let customerEmailForApi: string | undefined = userEmail;
+            let customerPhoneForApi: string | undefined = user?.phone || undefined;
+            let useApiFiltering = true;
+
+            if (finalCustomerId === 'existing' && userEmail) {
+                customerIdForApi = undefined; // Don't use customer ID for placeholder
+                console.log('[Bookings] Placeholder detected, using phone filtering instead');
+            }
+
+            // Format phone number with country code if needed
+            if (customerPhoneForApi && !customerPhoneForApi.startsWith('+')) {
+                customerPhoneForApi = `+91${customerPhoneForApi}`;
+                console.log('[Bookings] Formatted phone with country code:', customerPhoneForApi);
+            }
+
             // Fetch demo orders from delivery partner API using is_demo_order filter
             const { fetchAllDemoOrdersFromDeliveryPartner } = await import('@/services/deliveryPartnerService');
-            const deliveryDemoOrders = await fetchAllDemoOrdersFromDeliveryPartner();
+            console.log('[Bookings] Calling API with customer ID:', customerIdForApi || 'none', 'email:', customerEmailForApi || 'none', 'phone:', customerPhoneForApi || 'none');
+            const deliveryDemoOrders = await fetchAllDemoOrdersFromDeliveryPartner(
+                customerIdForApi,
+                customerEmailForApi,
+                customerPhoneForApi
+            );
             console.log('[Bookings] Fetched demo orders from delivery API:', deliveryDemoOrders.length);
 
+            // Log first order to check structure
+            if (deliveryDemoOrders.length > 0) {
+                console.log('[Bookings] First order structure:', JSON.stringify(deliveryDemoOrders[0], null, 2));
+            }
+
+            // If customer ID is a placeholder (like "existing"), find real customer ID from orders by email
+            let customerIdForFiltering = finalCustomerId;
+            if (finalCustomerId === 'existing' && userEmail) {
+                const matchingOrder = deliveryDemoOrders.find((order: any) => order.customerEmail === userEmail);
+                if (matchingOrder) {
+                    customerIdForFiltering = String((matchingOrder as any).customerId);
+                    console.log('[Bookings] Found real customer ID from order:', customerIdForFiltering);
+                }
+            }
+
+            // Filter orders by current customer ID (client-side filtering as security fallback)
+            const userSpecificOrders = customerIdForFiltering
+                ? deliveryDemoOrders.filter((order: any) => {
+                    // Check if order has customer_id field and matches current user
+                    const orderCustomerId = order.customer_id || order.customerId;
+                    const orderNumericCustomerId = String(orderCustomerId || '').replace('shopify-', '');
+                    const matches = orderNumericCustomerId === customerIdForFiltering;
+                    console.log('[Bookings] Order customer ID:', orderCustomerId, 'numeric:', orderNumericCustomerId, 'matches current:', matches);
+                    return matches;
+                })
+                : deliveryDemoOrders;
+
+            console.log('[Bookings] Filtered to user-specific orders:', userSpecificOrders.length);
+
             // Transform delivery partner orders to match existing structure
-            const demos = deliveryDemoOrders.map((dpOrder: any) => ({
+            const demos = userSpecificOrders.map((dpOrder: any) => ({
                 id: dpOrder.shopifyOrderId,
                 name: dpOrder.shopifyOrderName,
                 processedAt: dpOrder.createdAt,

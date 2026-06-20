@@ -2963,14 +2963,21 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_13.gif?v=1781862122"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_23.gif?v=1781880703",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/510757175585",
+              "name": "School & Stationary"
+            }
+          }
         }
       ],
       "carouselConfig": {
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.8,
+        "height": 0.55,
         "resizeMode": "cover"
       },
       "styles": {
@@ -2993,12 +3000,19 @@
       "order": 3
     },
     {
-      "id": "all-banner-1",
+      "id": "all-banner-6",
       "type": "carousel",
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Final_Fathers_Day.png?v=1781858145"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Final_Fathers_Day.png?v=1781858145",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/515413967137"
+              
+            }
+          }
         }
       ],
       "carouselConfig": {
@@ -3008,6 +3022,7 @@
         "height": 0.35,
         "resizeMode": "cover"
       },
+  
       "styles": {
         "container": {
           "paddingHorizontal":10,
@@ -3092,11 +3107,11 @@
     },
     
     {
-      "id": "category-grid-fashion",
+      "id": "category-grid-onbanner",
       "type": "categoryGrid",
       "order": 3,
       "visible": true,
-      "title": "Fashion",
+      "title": "bannergrid",
       "gridConfig": {
         "layout": "uniform",
         "numColumns": 3,
@@ -3130,9 +3145,10 @@
       ],
       "styles": {
         "container": {
-          "marginTop":-420,
-          "paddingHorizontal": 46,
-          "paddingTop": 10
+          "display":"none",
+          "position": "absolute",
+          "top":"-400%",
+          "zIndex": 10
           
         },
         "title": {
@@ -3286,7 +3302,14 @@
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Welcome_Offer_Banners.png?v=1773923290",
         "height": 100,
         "borderRadius": 12,
-        "resizeMode": "cover"
+        "resizeMode": "cover",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/507740487969",
+            "name": "All Products"
+          }
+        }
       },
       "styles": {
         "container": {
@@ -3413,7 +3436,7 @@
       ],
       "styles": {
         "container": {
-          "paddingHorizontal": 6,
+          "paddingHorizontal": 16,
           "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
@@ -4561,40 +4584,31 @@
       "type": "grid",
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510879301921",
-          "name": "Onesies"
+          "id": "gid://shopify/Collection/510879301921"
         },
         {
-          "id": "gid://shopify/Collection/510860001569",
-          "name": "Top Wear"
+          "id": "gid://shopify/Collection/510860001569"
         },
         {
-          "id": "gid://shopify/Collection/510860067105",
-          "name": "Bottom Wear"
+          "id": "gid://shopify/Collection/510860067105"
         },
         {
-          "id": "gid://shopify/Collection/510860198177",
-          "name": "Dresses & Coord Sets"
+          "id": "gid://shopify/Collection/510860198177"
         },
         {
-          "id": "gid://shopify/Collection/510860525857",
-          "name": "Nightsuits & Inner Wear"
+          "id": "gid://shopify/Collection/510860525857"
         },
         {
-          "id": "gid://shopify/Collection/510860689697",
-          "name": "Ethnic Wear"
+          "id": "gid://shopify/Collection/515418194209"
         },
         {
-          "id": "gid://shopify/Collection/510860788001",
-          "name": "Party Wear"
+          "id": "gid://shopify/Collection/510860788001"
         },
         {
-          "id": "gid://shopify/Collection/510860984609",
-          "name": "Footwear & Socks"
+          "id": "gid://shopify/Collection/510860984609"
         },
         {
-          "id": "gid://shopify/Collection/510861017377",
-          "name": "Accessories"
+          "id": "gid://shopify/Collection/510861017377"
         }
       ],
       "title": "Shop by Category",
@@ -4877,40 +4891,31 @@
       "type": "grid",
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510879269153",
-          "name": "Onesies"
+          "id": "gid://shopify/Collection/510879269153"
         },
         {
-          "id": "gid://shopify/Collection/510861345057",
-          "name": "Top Wears"
+          "id": "gid://shopify/Collection/510861345057"
         },
         {
-          "id": "gid://shopify/Collection/510861476129",
-          "name": "Bottom Wear"
+          "id": "gid://shopify/Collection/510861476129"
         },
         {
-          "id": "gid://shopify/Collection/510861508897",
-          "name": "Dresses & Coord Sets"
+          "id": "gid://shopify/Collection/510861508897"
         },
         {
-          "id": "gid://shopify/Collection/510861771041",
-          "name": "Nightsuits & Inner Wear"
+          "id": "gid://shopify/Collection/510861771041"
         },
         {
-          "id": "gid://shopify/Collection/510861836577",
-          "name": "Ethnic Wear"
+          "id": "gid://shopify/Collection/515441230113"
         },
         {
-          "id": "gid://shopify/Collection/510861967649",
-          "name": "Party Wear"
+          "id": "gid://shopify/Collection/510861967649"
         },
         {
-          "id": "gid://shopify/Collection/510862065953",
-          "name": "Footwear & Socks"
+          "id": "gid://shopify/Collection/510862065953"
         },
         {
-          "id": "gid://shopify/Collection/510862131489",
-          "name": "Accessories"
+          "id": "gid://shopify/Collection/510862131489"
         }
       ],
       "title": "Shop by Category",
@@ -6366,7 +6371,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_1.png?v=1781858650",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-19_at_5.54.08_PM.jpg?v=1781872214",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

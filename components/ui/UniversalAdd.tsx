@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     pdpContainer: {
-        backgroundColor: Colors.primary,
+        backgroundColor: "#DB5656",
         paddingHorizontal: 30,
         paddingVertical: 12,
         borderRadius: 12,
