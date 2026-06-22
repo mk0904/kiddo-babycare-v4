@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         backgroundColor: '#E84E4E',
-        borderRadius: 999,
+        borderRadius: 16,
         paddingVertical: 16,
         alignItems: 'center',
     },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     },
     keepButton: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 999,
+        borderRadius: 16,
         paddingVertical: 16,
         alignItems: 'center',
         borderWidth: 1,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     },
     confirmCancelButton: {
         backgroundColor: '#E84E4E',
-        borderRadius: 999,
+        borderRadius: 16,
         paddingVertical: 16,
         alignItems: 'center',
     },

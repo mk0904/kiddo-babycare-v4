@@ -2963,7 +2963,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_23_1.gif?v=1782103259",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_21_1.gif?v=1782131863",
           "link": {
             "type": "collection",
             "collection": {
@@ -2976,7 +2976,7 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.5,
+        "height": 0.8,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3079,10 +3079,10 @@
       ],
       "styles": {
         "container": {
-          "display":"none",
           "position": "absolute",
-          "top":"-400%",
-          "zIndex": 10
+          "top":"-300",
+          "zIndex": 10,
+          "paddingHorizontal":50
           
         },
         "title": {

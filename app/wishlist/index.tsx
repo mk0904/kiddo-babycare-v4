@@ -1,26 +1,23 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-    Dimensions,
-    Platform,
-    FlatList,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useWishlist } from '@/context/WishlistContext';
-import { useRouter, useSegments } from 'expo-router';
-import { useFocusEffect, useNavigationState } from '@react-navigation/native';
-import { Colors, Fonts } from '@/constants/theme';
 import ProductCard from '@/components/products/ProductCard';
-import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
-import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { EmptyState } from '@/components/ui/EmptyState';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
+import LoginRequiredModal from '@/components/ui/LoginRequiredModal';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Colors } from '@/constants/theme';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { useWishlist } from '@/context/WishlistContext';
+import { useFocusEffect, useNavigationState } from '@react-navigation/native';
+import { useRouter, useSegments } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Platform,
+    StyleSheet,
+    View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 8; // Consistent gap between product cards
@@ -112,6 +109,8 @@ export default function WishlistScreen() {
             title: item.title || item.productTitle,
             price: { amount: item.priceRange?.minVariantPrice?.amount || item.price || '0', currencyCode: 'INR' },
             images: { edges: [{ node: { url: item.images?.edges?.[0]?.node?.url || item.image } }] },
+            tags: item.tags || [],
+            productType: item.productType || item.product_type || '',
             // Add other fields as needed by your ProductCard
         };
 

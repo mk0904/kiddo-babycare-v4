@@ -61,6 +61,28 @@ const isCancelledOrder = (order: any): boolean => {
     });
 };
 
+/** Check if a demo order is completed */
+const isCompletedOrder = (order: any): boolean => {
+    // Check delivery partner status first
+    if (order.isCancelledFromDelivery) return false;
+    const deliveryStatus = String(order.status || '').toLowerCase();
+    if (deliveryStatus === 'delivered' || deliveryStatus === 'completed') return true;
+
+    // Check Shopify fulfillment status
+    if (order.fulfillmentStatus === 'FULFILLED') return true;
+
+    // Fallback: check if scheduled date has passed
+    const scheduledDate = getDemoDate(order);
+    if (!scheduledDate) return false;
+    try {
+        const demoDate = new Date(scheduledDate);
+        const now = new Date();
+        return demoDate < now;
+    } catch {
+        return false;
+    }
+};
+
 const isCancelledFromDeliveryApi = async (shopifyOrderId: string): Promise<boolean> => {
     try {
         const { getDeliveryPartnerOrderStatus, extractShopifyOrderNumericId } = await import('@/services/deliveryPartnerService');
@@ -185,6 +207,11 @@ export default function DemoBookingsScreen() {
     const [cancellingOrder, setCancellingOrder] = useState<any>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
 
+    // Filter orders into categories
+    const upcomingOrders = demoOrders.filter(order => !isCancelledOrder(order) && !isCompletedOrder(order));
+    const completedOrders = demoOrders.filter(order => !isCancelledOrder(order) && isCompletedOrder(order));
+    const cancelledOrders = demoOrders.filter(order => isCancelledOrder(order));
+
     const loadDemoBookings = async (isRefresh = false) => {
         try {
             if (isRefresh) setRefreshing(true);
@@ -272,6 +299,7 @@ export default function DemoBookingsScreen() {
                 processedAt: dpOrder.createdAt,
                 canceledAt: dpOrder.status === 'cancelled' ? dpOrder.updatedAt : null,
                 cancelReason: dpOrder.status === 'cancelled' ? dpOrder.reasonCancelRefundDelay : null,
+                status: dpOrder.status, // Store delivery partner status
                 customAttributes: [
                     { key: 'scheduled_date', value: dpOrder.scheduledDate },
                     { key: 'scheduled_time', value: dpOrder.scheduledTime },
@@ -310,6 +338,10 @@ export default function DemoBookingsScreen() {
 
             setDemoOrders(demos);
             console.log('[Bookings] Set demo orders from delivery API:', demos.length);
+            // Log status values for debugging
+            demos.forEach((order: any) => {
+                console.log('[Bookings] Order', order.id, 'status:', order.status, 'isCancelledFromDelivery:', order.isCancelledFromDelivery);
+            });
         } catch (err: any) {
             console.error('Error loading demo bookings:', err);
             setDemoOrders([]);
@@ -369,7 +401,7 @@ export default function DemoBookingsScreen() {
                 pathname: '/order-success/v2',
                 params: {
                     orderId: cancelledId,
-                    titleOverride: 'Demo cancelled'
+                    titleOverride: 'Demo Cancelled!'
                 }
             } as any);
         } catch (err: any) {
@@ -385,6 +417,10 @@ export default function DemoBookingsScreen() {
         const node = firstEdge?.node;
         const variant = node?.variant;
 
+        // Extract existing scheduled date and time from order custom attributes
+        const scheduledDate = getDemoDate(order);
+        const scheduledTime = getDemoTimeSlot(order);
+
         // Navigate to the get-demo screen with pre-filled product data and edit mode
         // Pass delivery partner order ID for direct API calls
         router.push({
@@ -397,8 +433,134 @@ export default function DemoBookingsScreen() {
                 productImage: item?.imageUrl || '',
                 editOrderId: order.id,
                 editDeliveryPartnerOrderId: order.deliveryPartnerOrderId,
+                editScheduledDate: scheduledDate || '',
+                editScheduledTime: scheduledTime || '',
             },
         } as any);
+    };
+
+    const renderOrderCard = (order: any) => {
+        const item = getLineItemDetails(order);
+        const priceInfo = getDemoPriceInfo(order);
+
+        // Use Shopify custom attributes for scheduled_date and scheduled_time
+        const demoDateRaw = getDemoDate(order);
+        const demoTime = getDemoTimeSlot(order);
+
+        const formattedDate = formatDemoDate(demoDateRaw);
+
+        const actualPrice = priceInfo?.price || 0;
+        const comparePriceNum = priceInfo?.comparePrice || 0;
+        const discountPercent = priceInfo?.discount || 0;
+        const isCancelled = order.isCancelledFromDelivery || isCancelledOrder(order);
+        const isCompleted = isCompletedOrder(order);
+
+        return (
+            <View key={order.id} style={styles.demoCardContainer}>
+                {/* Header Date and Time */}
+                {(formattedDate || demoTime || order.name) && (
+                    <View style={styles.demoHeader}>
+                        {formattedDate ? <Text style={styles.demoHeaderText}>{formattedDate}</Text> : null}
+                        {formattedDate && demoTime ? <Text style={styles.demoHeaderDot}>  •  </Text> : null}
+                        {demoTime ? <Text style={styles.demoHeaderTimeText}>{demoTime}</Text> : null}
+                        {order.name && <Text style={styles.orderIdText}>{order.name}</Text>}
+                    </View>
+                )}
+
+                <View style={styles.demoCard}>
+                    {/* Product Row */}
+                    <TouchableOpacity
+                        style={styles.productRow}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                            const firstEdge = order?.lineItems?.edges?.[0];
+                            const node = firstEdge?.node;
+                            const productId = node?.variant?.product?.id;
+                            if (productId) {
+                                router.push({
+                                    pathname: '/products/[id]',
+                                    params: { id: productId }
+                                } as any);
+                            }
+                        }}
+                    >
+                        <Image
+                            source={{
+                                uri: item?.imageUrl || 'https://via.placeholder.com/80',
+                            }}
+                            style={styles.productImage}
+                        />
+                        <View style={styles.productInfo}>
+                            <Text style={styles.productTitle} numberOfLines={1}>
+                                {item?.title || 'Demo Product'}
+                            </Text>
+                            {item?.variantTitle ? (
+                                <Text style={styles.variantText} numberOfLines={1}>
+                                    {item.variantTitle}
+                                </Text>
+                            ) : null}
+                            {/* Price Row */}
+                            <View style={styles.priceRow}>
+                                {actualPrice > 0 && (
+                                    <Text style={styles.price}>
+                                        ₹{actualPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </Text>
+                                )}
+                                {comparePriceNum > 0 && comparePriceNum > actualPrice && (
+                                    <Text style={styles.comparePrice}>
+                                        ₹{comparePriceNum.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                                    </Text>
+                                )}
+                                {discountPercent > 0 && (
+                                    <Text style={styles.discount}>
+                                        {discountPercent}% OFF!
+                                    </Text>
+                                )}
+                            </View>
+
+                        </View>
+                        <Ionicons name="chevron-forward" size={22} color={Colors.textSecondary} style={styles.chevron} />
+                    </TouchableOpacity>
+
+                    {/* Action Buttons */}
+                    <View style={styles.actionRow}>
+                        {isCancelled ? (
+                            <TouchableOpacity
+                                style={styles.cancelledButton}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.cancelledButtonText}>Demo Cancelled!</Text>
+                            </TouchableOpacity>
+                        ) : isCompleted ? (
+                            <TouchableOpacity
+                                style={styles.completedButton}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.completedButtonText}>Completed</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => handleCancel(order)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.cancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <View style={styles.actionDivider} />
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => handleEdit(order)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.editText}>Edit</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </View>
+        );
     };
 
     const renderHeader = () => (
@@ -480,123 +642,29 @@ export default function DemoBookingsScreen() {
                         />
                     }
                 >
-                    <Text style={styles.sectionTitle}>Upcoming</Text>
-                    {demoOrders.map((order) => {
-                        const item = getLineItemDetails(order);
-                        const priceInfo = getDemoPriceInfo(order);
-                        
-                        // Use Shopify custom attributes for scheduled_date and scheduled_time
-                        const demoDateRaw = getDemoDate(order);
-                        const demoTime = getDemoTimeSlot(order);
-                        
-                        const formattedDate = formatDemoDate(demoDateRaw);
+                    {/* Upcoming Orders Section */}
+                    {upcomingOrders.length > 0 && (
+                        <>
+                            <Text style={styles.sectionTitle}>Upcoming</Text>
+                            {upcomingOrders.map((order) => renderOrderCard(order))}
+                        </>
+                    )}
 
-                        const actualPrice = priceInfo?.price || 0;
-                        const comparePriceNum = priceInfo?.comparePrice || 0;
-                        const discountPercent = priceInfo?.discount || 0;
-                        const isCancelled = order.isCancelledFromDelivery || isCancelledOrder(order);
-                        console.log('[Bookings] Rendering order', order.id, 'isCancelledFromDelivery:', order.isCancelledFromDelivery, 'isCancelledOrder:', isCancelledOrder(order), 'final isCancelled:', isCancelled);
+                    {/* Completed Orders Section */}
+                    {completedOrders.length > 0 && (
+                        <>
+                            <Text style={styles.sectionTitle}>Completed</Text>
+                            {completedOrders.map((order) => renderOrderCard(order))}
+                        </>
+                    )}
 
-                        return (
-                            <View key={order.id} style={styles.demoCardContainer}>
-                                {/* Header Date and Time */}
-                                {(formattedDate || demoTime || order.name) && (
-                                    <View style={styles.demoHeader}>
-                                        {formattedDate ? <Text style={styles.demoHeaderText}>{formattedDate}</Text> : null}
-                                        {formattedDate && demoTime ? <Text style={styles.demoHeaderDot}>  •  </Text> : null}
-                                        {demoTime ? <Text style={styles.demoHeaderTimeText}>{demoTime}</Text> : null}
-                                        {order.name && <Text style={styles.orderIdText}>{order.name}</Text>}
-                                    </View>
-                                )}
-                                
-                                <View style={styles.demoCard}>
-                                    {/* Product Row */}
-                                    <TouchableOpacity
-                                    style={styles.productRow}
-                                    activeOpacity={0.7}
-                                    onPress={() => {
-                                        const firstEdge = order?.lineItems?.edges?.[0];
-                                        const node = firstEdge?.node;
-                                        const productId = node?.variant?.product?.id;
-                                        if (productId) {
-                                            router.push({
-                                                pathname: '/products/[id]',
-                                                params: { id: productId }
-                                            } as any);
-                                        }
-                                    }}
-                                >
-                                    <Image
-                                        source={{
-                                            uri: item?.imageUrl || 'https://via.placeholder.com/80',
-                                        }}
-                                        style={styles.productImage}
-                                    />
-                                    <View style={styles.productInfo}>
-                                        <Text style={styles.productTitle} numberOfLines={1}>
-                                            {item?.title || 'Demo Product'}
-                                        </Text>
-                                        {item?.variantTitle ? (
-                                            <Text style={styles.variantText} numberOfLines={1}>
-                                                {item.variantTitle}
-                                            </Text>
-                                        ) : null}
-                                        {/* Price Row */}
-                                        <View style={styles.priceRow}>
-                                            {actualPrice > 0 && (
-                                                <Text style={styles.price}>
-                                                    ₹{actualPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                </Text>
-                                            )}
-                                            {comparePriceNum > 0 && comparePriceNum > actualPrice && (
-                                                <Text style={styles.comparePrice}>
-                                                    ₹{comparePriceNum.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-                                                </Text>
-                                            )}
-                                            {discountPercent > 0 && (
-                                                <Text style={styles.discount}>
-                                                    {discountPercent}% OFF!
-                                                </Text>
-                                            )}
-                                        </View>
-
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={22} color={Colors.textSecondary} style={styles.chevron} />
-                                </TouchableOpacity>
-
-                                {/* Action Buttons */}
-                                <View style={styles.actionRow}>
-                                    {isCancelled ? (
-                                        <TouchableOpacity
-                                            style={styles.cancelledButton}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.cancelledButtonText}>Demo Cancelled</Text>
-                                        </TouchableOpacity>
-                                    ) : (
-                                        <>
-                                            <TouchableOpacity
-                                                style={styles.actionButton}
-                                                onPress={() => handleCancel(order)}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Text style={styles.cancelText}>Cancel</Text>
-                                            </TouchableOpacity>
-                                            <View style={styles.actionDivider} />
-                                            <TouchableOpacity
-                                                style={styles.actionButton}
-                                                onPress={() => handleEdit(order)}
-                                                activeOpacity={0.7}
-                                            >
-                                                <Text style={styles.editText}>Edit</Text>
-                                            </TouchableOpacity>
-                                        </>
-                                    )}
-                                </View>
-                            </View>
-                        </View>
-                        );
-                    })}
+                    {/* Cancelled Orders Section */}
+                    {cancelledOrders.length > 0 && (
+                        <>
+                            <Text style={styles.sectionTitle}>Cancelled</Text>
+                            {cancelledOrders.map((order) => renderOrderCard(order))}
+                        </>
+                    )}
                 </ScrollView>
             )}
 
@@ -803,6 +871,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: Fonts.SemiBold,
         color: 'grey',
+    },
+    completedButton: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+    },
+    completedButtonText: {
+        fontSize: 15,
+        fontFamily: Fonts.SemiBold,
+        color: '#2E7D32',
     },
     cancelledBadge: {
         fontSize: 11,

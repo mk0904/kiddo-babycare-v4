@@ -10,7 +10,7 @@ import { type OrderItem } from '@/services/orderService';
 import PaymentService from '@/services/paymentService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -66,6 +66,80 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     };
 
     const displayProduct = product || mockProduct;
+
+    // Pre-populate schedule when editing
+    useEffect(() => {
+        const editOrderId = params.editOrderId as string;
+        const editScheduledDate = params.editScheduledDate as string;
+        const editScheduledTime = params.editScheduledTime as string;
+
+        if (editOrderId && editScheduledDate && editScheduledTime) {
+            // Parse the date from delivery partner format (YYYY-MM-DD) to UI format (DD/MM/YYYY)
+            let parsedDate: Date | null = null;
+            try {
+                parsedDate = new Date(editScheduledDate);
+                if (isNaN(parsedDate.getTime())) {
+                    // Try DD/MM/YYYY format as fallback
+                    const parts = editScheduledDate.split('/');
+                    if (parts.length === 3) {
+                        parsedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[GetDemo] Failed to parse scheduled date:', editScheduledDate, e);
+            }
+
+            if (parsedDate && !isNaN(parsedDate.getTime())) {
+                const dd = String(parsedDate.getDate()).padStart(2, '0');
+                const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                const yyyy = parsedDate.getFullYear();
+                const yy = yyyy.toString().slice(-2);
+                const dateStr = `${dd}/${mm}/${yyyy}`;
+                const dateFormat = `${dd}/${mm}/${yy}`;
+                const dayStr = parsedDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+                // Parse time from delivery partner format (e.g., "02:00 PM") to UI slot format (e.g., "2PM - 3PM")
+                let timeSlotLabel = '';
+                let time = '';
+                try {
+                    const timeMatch = editScheduledTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                    if (timeMatch) {
+                        const hour = parseInt(timeMatch[1], 10);
+                        const ampm = timeMatch[3].toUpperCase();
+                        const nextHour = hour + 1;
+                        const nextHourFormatted = nextHour > 12 ? nextHour - 12 : nextHour;
+                        timeSlotLabel = `${hour}${ampm} - ${nextHourFormatted}${ampm}`;
+                        time = `${hour}${ampm}`;
+                    } else {
+                        // Try to match existing slot format directly
+                        timeSlotLabel = DEMO_TIME_SLOTS.find(slot => 
+                            editScheduledTime.includes(slot.split(' - ')[0])
+                        ) || editScheduledTime;
+                        time = timeSlotLabel.split(' ')[0];
+                    }
+                } catch (e) {
+                    console.warn('[GetDemo] Failed to parse scheduled time:', editScheduledTime, e);
+                    timeSlotLabel = editScheduledTime;
+                    time = editScheduledTime.split(' ')[0];
+                }
+
+                setDemoSchedule({
+                    date: dateStr,
+                    day: dayStr,
+                    dateFormat: dateFormat,
+                    time: time,
+                    timeSlotLabel: timeSlotLabel,
+                });
+
+                console.log('[GetDemo] Pre-populated schedule from edit params:', {
+                    date: dateStr,
+                    day: dayStr,
+                    time: time,
+                    timeSlotLabel: timeSlotLabel,
+                });
+            }
+        }
+    }, [params.editOrderId, params.editScheduledDate, params.editScheduledTime]);
 
     const handleCancel = () => {
         router.back();
@@ -167,7 +241,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     pathname: '/order-success/v2',
                     params: {
                         orderId: editOrderId,
-                        titleOverride: 'Demo scheduled'
+                        titleOverride: 'Demo Scheduled!'
                     }
                 } as any);
             } else {
@@ -259,7 +333,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         pathname: '/order-success/v2',
                         params: {
                             orderId: result.order?.name || result.order?.orderNumber || result.order?.id || `DEMO-${Date.now()}`,
-                            titleOverride: 'Demo scheduled'
+                            titleOverride: 'Demo Scheduled'
                         }
                     } as any);
                 } else {
@@ -519,7 +593,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     disabled={!demoSchedule?.date || !demoSchedule?.time || isSubmitting}
                 >
                     <Text style={styles.confirmChangesButtonText}>
-                        {isSubmitting ? 'Confirming...' : 'Confirm demo'}
+                        {isSubmitting ? 'Confirming...' : 'Confirm Changes'}
                     </Text>
                 </TouchableOpacity>
             </View>
