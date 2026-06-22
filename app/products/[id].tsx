@@ -2772,6 +2772,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
+        textAlign: 'center',
     },
     retryButton: {
         marginTop: 20,

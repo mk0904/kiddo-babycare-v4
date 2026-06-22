@@ -46,13 +46,20 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { user, isAuthenticated } = useAuth();
-    const { defaultAddress } = useAddress();
+    const { defaultAddress, addresses } = useAddress();
 
     // State for demo scheduling
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [demoSchedule, setDemoSchedule] = useState<DeliverySchedule | null>(null);
-    const [selectedAddress, setSelectedAddress] = useState<string>('home');
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Set default address as selected when addresses load
+    useEffect(() => {
+        if (defaultAddress && !selectedAddressId) {
+            setSelectedAddressId(defaultAddress.id);
+        }
+    }, [defaultAddress, selectedAddressId]);
 
     // Mock product data (in real app, this would come from params or navigation)
     const mockProduct = {
@@ -310,7 +317,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         state: (defaultAddress as any).state || '',
                         pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
                         phone: (defaultAddress as any)?.phone || user?.phone || '',
-                        addressType: selectedAddress || 'home',
+                        addressType: 'home',
                     },
                     paymentMethod: 'cod' as const,
                     deliverySchedule: formattedDeliverySchedule,
@@ -539,32 +546,34 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Where?</Text>
 
-                    {/* Current Address */}
-                    <TouchableOpacity
-                        style={[
-                            styles.addressCard,
-                            selectedAddress === 'home' && styles.addressCardSelected,
-                        ]}
-                        onPress={() => setSelectedAddress('home')}
-                    >
-                        <View style={styles.addressContent}>
-                            <Text style={styles.addressLabel}>HOME</Text>
-                            <Text style={styles.addressText} numberOfLines={1}>
-                                {defaultAddress ? [
-                                    (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
-                                    (defaultAddress as any)?.address2 || ''
-                                ].filter(Boolean).join(', ') : 'No address added'}
-                            </Text>
-                        </View>
-                        <View style={styles.radioButton}>
-                            <View style={[styles.radioButtonInner, selectedAddress === 'home' && styles.radioButtonInnerSelected]} />
-                        </View>
-                    </TouchableOpacity>
+                    {/* Address List - Show up to 2 addresses */}
+                    {addresses.slice(0, 2).map((address: any) => (
+                        <TouchableOpacity
+                            key={address.id}
+                            style={[
+                                styles.addressCard,
+                                selectedAddressId === address.id && styles.addressCardSelected,
+                            ]}
+                            onPress={() => setSelectedAddressId(address.id)}
+                        >
+                            <View style={styles.addressContent}>
+                                <Text style={styles.addressLabel}>{address.tag?.toUpperCase() || 'HOME'}</Text>
+                                <Text style={styles.addressText} numberOfLines={1}>
+                                    {[
+                                        address?.address1 || address?.address || '',
+                                        address?.address2 || ''
+                                    ].filter(Boolean).join(', ') || 'No address added'}
+                                </Text>
+                            </View>
+                            <View style={styles.radioButton}>
+                                <View style={[styles.radioButtonInner, selectedAddressId === address.id && styles.radioButtonInnerSelected]} />
+                            </View>
+                        </TouchableOpacity>
+                    ))}
 
                     {/* Add Address */}
                     <TouchableOpacity style={styles.addAddressCard} onPress={handleAddAddress}>
-                        <Ionicons name="add-circle-outline" size={20} color={Colors.primary} />
-                        <Text style={styles.addAddressText}>Add Address</Text>
+                        <Text style={styles.addAddressText}>Add new address</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -797,20 +806,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#DB5656',
     },
     addAddressCard: {
-        flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
         padding: 12,
         borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        borderStyle: 'dashed',
     },
     addAddressText: {
-        fontSize: 13,
+        fontSize: 16,
         fontFamily: Fonts.LexendSemiBold,
         color: Colors.primary,
-        marginLeft: 8,
+        textAlign: 'center',
     },
     subText: {
         fontSize: 12,
