@@ -2963,12 +2963,11 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_23.gif?v=1781880703",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_23_1.gif?v=1782103259",
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/510757175585",
-              "name": "School & Stationary"
+              "id": "gid://shopify/Collection/510757175585"
             }
           }
         }
@@ -2977,7 +2976,7 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.55,
+        "height": 0.5,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3002,10 +3001,10 @@
     {
       "id": "all-banner-6",
       "type": "carousel",
-      "visible": true,
+      "visible": false,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Final_Fathers_Day.png?v=1781858145",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_June_Night_Final_Banner.png?v=1781978221",
           "link": {
             "type": "collection",
             "collection": {
@@ -3026,6 +3025,7 @@
       "styles": {
         "container": {
           "paddingHorizontal":10,
+          "paddingVertical":16,
           "marginTop": 0,
           "backgroundColor": "#F5F5F5"
         },
@@ -3038,72 +3038,6 @@
         "img": {}
       },
       "order": 3
-    },
-    {
-      "id": "category-grid-summer",
-      "type": "categoryGrid",
-      "order": 4,
-      "visible": true,
-      "title": "Summer Collection",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 2,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 8,
-        "aspectRatio": 1.5,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/512979566881",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestsummerfashionbanner.jpg?v=1779862326",
-          "name": "Fashion"
-        },
-        {
-          "id": "gid://shopify/Collection/513082589473",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latesttoysbanner.jpg?v=1779862306",
-          "name": "Toys"
-        },
-        {
-          "id": "gid://shopify/Collection/509520085281",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestbookbanner.jpg?v=1779859231",
-          "name": "Books"
-        },
-        {
-          "id": "gid://shopify/Collection/513167851809",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestessentialbanner.jpg?v=1779862332",
-          "name": "Essentials"
-        }
-      ],
-      "styles": {
-        "container": {
-          "display": "none",
-          "marginTop": 15,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "display": "none",
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "display": "none",
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
     },
     
     {
@@ -3183,7 +3117,6 @@
         "layout": "uniform",
         "numColumns": 4,
         "colGap": 12,
-        "rowGap": 12,
         "limit": 8,
         "aspectRatio": 1,
         "resizeMode": "cover",
@@ -3210,7 +3143,7 @@
       ],
       "styles": {
         "container": {
-          "marginTop": 10,
+          "marginTop": 40,
           "paddingHorizontal": 16,
           "paddingTop": 0,
           "backgroundColor": "#F5F5F5"
@@ -3276,7 +3209,7 @@
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
+          "marginTop": 40,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3540,7 +3473,7 @@
         {
       "id": "shop-by-brand-carousel-5",
       "type": "collectionImageCarousel",
-      "title": "Shop by Brand",
+      "title": "Newly Launched",
       "visible": true,
       "order": 4,
 
@@ -3549,43 +3482,43 @@
           "id": "brand-adidas",
           "collectionId": "gid://shopify/Collection/515442802977",
           "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.23_PM.jpg?v=1781546437"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908"
         },
         {
           "id": "brand-doreme-2",
           "collectionId": "gid://shopify/Collection/515304522017",
           "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.25_PM.jpg?v=1781546457"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690"
         },
         {
           "id": "brand-doreme-4",
           "collectionId": "gid://shopify/Collection/515442835745",
           "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.26_PM.jpg?v=1781546474"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.19_PM.jpg?v=1781962723"
         },
         {
           "id": "brand-doreme-3",
           "collectionId": "gid://shopify/Collection/515442966817",
           "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.28_PM.jpg?v=1781546493"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.21_PM.jpg?v=1781962794"
         },
         {
           "id": "brand-bumzee",
           "collectionId": "gid://shopify/Collection/515442868513",
           "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.29_PM.jpg?v=1781546511"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.19_PM_1.jpg?v=1781962736"
         },
         {
           "id": "brand-bontots",
           "collectionId": "gid://shopify/Collection/515442901281",
           "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.31_PM.jpg?v=1781546533"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.20_PM.jpg?v=1781962753"
         },
         {
           "id": "brand-doreme-7",
           "collectionId": "gid://shopify/Collection/515442934049",
           "label": "Trampoline",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.34_PM.jpg?v=1781546552"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.20_PM_1_94dd3bf0-9336-4ef0-b1a4-3c632671be71.jpg?v=1781962778"
         }
       ],
       "carouselConfig": {
@@ -3598,7 +3531,6 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16
         },
         "title": {
           "marginBottom": 10,
@@ -4440,7 +4372,8 @@
           "paddingHorizontal": 16,
           "paddingTop": 10,
           "backgroundColor": "white",
-          "marginTop": -15
+          "marginTop": -15,
+          "paddingVertical":16
         },
         "title": {
           "marginBottom": 0,

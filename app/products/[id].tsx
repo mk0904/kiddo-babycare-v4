@@ -1284,9 +1284,9 @@ const ProductDetailScreen = () => {
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
     );
 
-    // Check if product has Gear & Furniture tag
+    // Check if product has Demo Available tag
     const hasGearFurnitureTag = product?.tags?.some(
-        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'gear & furniture'
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'demo available'
     );
 
     // Essentials-only: pack size and size for PDP (same as ProductCard)
@@ -2581,7 +2581,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         minWidth: 0,
-        height:50,
+        height: 48,
     },
     bookDemoButtonText: {
         color: Colors.primary,

@@ -409,11 +409,11 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
-  // Check if product has Gear & Furniture tag
+  // Check if product has Demo Available tag
   const hasGearFurnitureTag = useMemo(
     () =>
       tags.some(
-        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'gear & furniture',
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'demo available',
       ),
     [tags],
   );
