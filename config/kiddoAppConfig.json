@@ -3080,7 +3080,7 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "top":"-300",
+          "top":"-280",
           "zIndex": 10,
           "paddingHorizontal":50
           
@@ -3230,7 +3230,7 @@
       "id": "all-banner-below-frequently-bought",
       "type": "imageBanner",
       "order": 4.55,
-      "visible": true,
+      "visible": false,
       "imageBannerConfig": {
         "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Welcome_Offer_Banners.png?v=1773923290",
         "height": 100,
@@ -3396,7 +3396,7 @@
       "id": "all-age-wise-toys",
       "type": "categoryGrid",
       "order": 5.2,
-      "visible": true,
+      "visible": false,
       "title": "All Age Wise Toys",
       "gridConfig": {
         "layout": "uniform",
@@ -3700,7 +3700,7 @@
       "id": "all-banner-before-baby-care",
       "type": "carousel",
       "order": 6,
-      "visible": true,
+      "visible": false,
       "data": [
         {
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ONYC_Shoes_Banner.png?v=1773945802",

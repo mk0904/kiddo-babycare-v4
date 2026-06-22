@@ -293,13 +293,19 @@ export default function DemoBookingsScreen() {
             console.log('[Bookings] Filtered to user-specific orders:', userSpecificOrders.length);
 
             // Transform delivery partner orders to match existing structure
-            const demos = userSpecificOrders.map((dpOrder: any) => ({
-                id: dpOrder.shopifyOrderId,
-                name: dpOrder.shopifyOrderName,
-                processedAt: dpOrder.createdAt,
-                canceledAt: dpOrder.status === 'cancelled' ? dpOrder.updatedAt : null,
-                cancelReason: dpOrder.status === 'cancelled' ? dpOrder.reasonCancelRefundDelay : null,
-                status: dpOrder.status, // Store delivery partner status
+            const demos = userSpecificOrders.map((dpOrder: any) => {
+                const firstItem = dpOrder.items?.[0];
+                const numericProductId = firstItem?.shopifyProductId;
+                // Convert numeric ID to Shopify GID format
+                const productIdGid = numericProductId ? `gid://shopify/Product/${numericProductId}` : null;
+                return {
+                    id: dpOrder.shopifyOrderId,
+                    name: dpOrder.shopifyOrderName,
+                    processedAt: dpOrder.createdAt,
+                    canceledAt: dpOrder.status === 'cancelled' ? dpOrder.updatedAt : null,
+                    cancelReason: dpOrder.status === 'cancelled' ? dpOrder.reasonCancelRefundDelay : null,
+                    status: dpOrder.status, // Store delivery partner status
+                    productId: productIdGid, // Store product ID as GID
                 customAttributes: [
                     { key: 'scheduled_date', value: dpOrder.scheduledDate },
                     { key: 'scheduled_time', value: dpOrder.scheduledTime },
@@ -327,7 +333,8 @@ export default function DemoBookingsScreen() {
                 deliveryPartnerOrderId: dpOrder.id,
                 // Store delivery partner status
                 isCancelledFromDelivery: dpOrder.status === 'cancelled',
-            }));
+            };
+            });
 
             // Sort by date (newest first)
             demos.sort((a: any, b: any) => {
@@ -473,14 +480,16 @@ export default function DemoBookingsScreen() {
                         style={styles.productRow}
                         activeOpacity={0.7}
                         onPress={() => {
-                            const firstEdge = order?.lineItems?.edges?.[0];
-                            const node = firstEdge?.node;
-                            const productId = node?.variant?.product?.id;
+                            const productId = order.productId;
+                            console.log('[Bookings] Product clicked - productId:', productId, 'order.id:', order.id);
+
                             if (productId) {
                                 router.push({
                                     pathname: '/products/[id]',
                                     params: { id: productId }
                                 } as any);
+                            } else {
+                                console.warn('[Bookings] No productId found for order:', order.id);
                             }
                         }}
                     >

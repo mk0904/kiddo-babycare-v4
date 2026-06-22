@@ -144,6 +144,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     };
     const merged = {
       productName: merge(styles.productName, 'productName'),
+      vendorName: merge(styles.vendorName, 'vendorName'),
       vendorBadgeText: merge(styles.vendorBadgeText, 'vendorBadgeText'),
       mainPrice: merge(styles.mainPrice, 'mainPrice'),
       comparePrice: merge(styles.comparePrice, 'comparePrice'),
@@ -153,6 +154,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     if (scale != null && scale > 0 && scale < 1) {
       return {
         productName: scaleFontStyle(merged.productName, scale),
+        vendorName: scaleFontStyle(merged.vendorName, scale),
         vendorBadgeText: scaleFontStyle(merged.vendorBadgeText, scale),
         mainPrice: scaleFontStyle(merged.mainPrice, scale),
         comparePrice: scaleFontStyle(merged.comparePrice, scale),
@@ -656,14 +658,6 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               color={inWishlist ? '#ff4444' : Colors.text}
             />
           </TouchableOpacity>
-          {/* Vendor Badge - bottom left */}
-          {product.vendor && (
-            <View style={styles.vendorBadge}>
-              <Text style={cardTextStyles.vendorBadgeText} numberOfLines={1}>
-                {product.vendor}
-              </Text>
-            </View>
-          )}
           {/* T&B Tag - replaces timer */}
           {hasFashionTag && (
             <TouchableOpacity
@@ -717,6 +711,12 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         </View>
 
         <View style={styles.content}>
+          {/* Brand Name */}
+          {product.vendor && (
+            <Text style={cardTextStyles.vendorName} numberOfLines={1} ellipsizeMode="tail">
+              {product.vendor}
+            </Text>
+          )}
           {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
             <View style={styles.essentialsMetaRow}>
               {essentialsMetaParts.packSize ? (
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 0.85,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
@@ -856,6 +856,13 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     color: Colors.text,
     lineHeight: 18,
+  },
+  vendorName: {
+    fontSize: 11,
+    fontFamily: Fonts.LexendMedium,
+    marginBottom: 4,
+    color: Colors.textSecondary,
+    lineHeight: 14,
   },
   essentialsMetaRow: {
     flexDirection: 'row',

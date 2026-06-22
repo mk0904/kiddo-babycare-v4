@@ -333,7 +333,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         pathname: '/order-success/v2',
                         params: {
                             orderId: result.order?.name || result.order?.orderNumber || result.order?.id || `DEMO-${Date.now()}`,
-                            titleOverride: 'Demo Scheduled'
+                            titleOverride: 'Demo Scheduled!'
                         }
                     } as any);
                 } else {
@@ -374,7 +374,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 <TouchableOpacity style={styles.backButton} onPress={handleCancel}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{params.editOrderId ? 'Edit Demo' : 'Book a Demo'}</Text>
+                <Text style={styles.headerTitle}>{params.editOrderId ? 'Edit Demo' : 'Book a demo'}</Text>
                 <View style={styles.headerSpacer} />
             </View>
 

@@ -1,6 +1,5 @@
 import { Fonts } from '@/constants/theme';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { configService } from '@/services/configService';
 import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout, MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
@@ -9,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     AppState,
     Modal,
@@ -669,7 +668,7 @@ const styles = StyleSheet.create({
         width: '100%',
         minHeight: 52,
         zIndex: 1,
-        marginBottom: 12,
+        marginBottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -680,7 +679,7 @@ const styles = StyleSheet.create({
     pillBlurContainer: {
         width: '100%',
         height: 64,
-        borderRadius: 24,
+        borderRadius: 32,
         overflow: 'hidden',
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderStyle: 'solid',
