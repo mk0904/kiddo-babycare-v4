@@ -22,10 +22,7 @@ import {
 import { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    CollapsedMilestoneIconProgressRing,
-    MILESTONE_EXPANDED_LIST_IMAGE,
-    MILESTONE_EXPANDED_LIST_OUTER,
-    MilestoneExpandedFormContent,
+    MilestoneExpandedFormContent
 } from './milestoneExpandedFormContent';
 import {
     areAllMilestoneSlotsCompleted,
@@ -503,10 +500,6 @@ export function MilestoneTracker({
                                             ]}
                                             contentFit="contain"
                                         />
-                                        <CollapsedMilestoneIconProgressRing
-                                            progress01={collapsedIconProgress01}
-                                            accentColor={accentColor}
-                                        />
                                     </View>
                                 ) : null}
                                 <View style={styles.collapsedCopyWrap}>
@@ -654,7 +647,7 @@ const styles = StyleSheet.create({
     /** Home row beside cart: use full column width, no side padding. */
     collapsedSurfaceInCartRow: {
         paddingHorizontal: 0,
-        marginBottom: 8,
+        marginBottom: 0,
     },
     /** Cart: flush under savings (square top); rounded bottom into cream scroll area. */
     surfaceEmbeddedCollapsed: {
@@ -665,12 +658,13 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     collapsedPillPressable: {
-        width: '100%',
-        minHeight: 52,
+        width: '95%',
+        height: 48,
         zIndex: 1,
         marginBottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
+        alignSelf: 'center',
     },
     collapsedPillPressableInCartRow: {
         marginBottom: 0,
@@ -678,13 +672,14 @@ const styles = StyleSheet.create({
     },
     pillBlurContainer: {
         width: '100%',
-        height: 64,
+        height: 48,
         borderRadius: 32,
         overflow: 'hidden',
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderStyle: 'solid',
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.7)',
+        justifyContent: 'center',
     },
     pillBlurContainerInCartRow: {
         height: MILESTONE_CART_ROW_PILL_HEIGHT,
@@ -695,7 +690,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        padding: 8,
+        paddingVertical: 0,
+        paddingHorizontal: 8,
     },
     collapsedChevronWrap: {
         flexShrink: 0,
@@ -706,38 +702,41 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     collapsedTitle: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: 14,
         fontFamily: Fonts.LexendBold,
         color: '#000000',
     },
     collapsedCopyWrap: {
         flex: 1,
         minWidth: 0,
+        justifyContent: 'center',
+        marginTop: 2,
     },
     collapsedActiveIconWrap: {
-        width: MILESTONE_EXPANDED_LIST_OUTER,
-        height: MILESTONE_EXPANDED_LIST_OUTER,
+        width: 0,
+        height: 0,
         alignItems: 'center',
         justifyContent: 'center',
     },
     collapsedActiveIconWrapEmbedded: {
-        width: MILESTONE_EXPANDED_LIST_OUTER,
-        height: MILESTONE_EXPANDED_LIST_OUTER,
-        borderRadius: 24,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         position: 'relative',
         backgroundColor: '#FFFFFF',
+        alignSelf: 'center',
     },
     /** Same inner size as expanded Kiddo rewards list (`MILESTONE_EXPANDED_LIST_IMAGE`). */
     collapsedMilestoneIconImage: {
-        width: MILESTONE_EXPANDED_LIST_IMAGE,
-        height: MILESTONE_EXPANDED_LIST_IMAGE,
+        width: 24,
+        height: 24,
         zIndex: 1,
     },
     collapsedTitleEmbedded: {
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendBold,
+        fontSize: 12,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#111111',
-        lineHeight: 20,
+        lineHeight: 14,
     },
     /** Muted line under title when `unlockedSubtitle` / earned copy is set (light pill). */
     collapsedSubtitleEmbedded: {

@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 13,
-    fontFamily: Fonts.LexendSemiBold,
+    fontFamily: Fonts.LexendRegular,
     marginBottom: 2,
     color: Colors.text,
     lineHeight: 18,

@@ -24,9 +24,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Demo time slots configuration
-const DEMO_TIME_SLOTS = ['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM'];
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface DeliverySchedule {
@@ -53,6 +50,25 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const [demoSchedule, setDemoSchedule] = useState<DeliverySchedule | null>(null);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [demoTimeSlots, setDemoTimeSlots] = useState<string[]>([]);
+
+    // Load demo time slots from local config file
+    useEffect(() => {
+        const loadDemoTimeSlots = () => {
+            try {
+                console.log('[GetDemo] Loading demo time slots from local config...');
+                const localConfig = require('@/config/kiddoAppConfig.json');
+                const timeSlots = localConfig?.demo?.timeSlots || ['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM'];
+                console.log('[GetDemo] Time slots from local config:', timeSlots);
+                setDemoTimeSlots(timeSlots);
+            } catch (error) {
+                console.error('[GetDemo] Failed to load demo time slots:', error);
+                setDemoTimeSlots(['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM']);
+            }
+        };
+
+        loadDemoTimeSlots();
+    }, []);
 
     // Set default address as selected when addresses load
     useEffect(() => {
@@ -119,7 +135,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         time = `${hour}${ampm}`;
                     } else {
                         // Try to match existing slot format directly
-                        timeSlotLabel = DEMO_TIME_SLOTS.find(slot => 
+                        timeSlotLabel = demoTimeSlots.find((slot: string) =>
                             editScheduledTime.includes(slot.split(' - ')[0])
                         ) || editScheduledTime;
                         time = timeSlotLabel.split(' ')[0];
@@ -459,7 +475,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                         <View style={styles.timeSlotContainer}>
                             {(() => {
-                                const allSlots = DEMO_TIME_SLOTS;
+                                const allSlots = demoTimeSlots;
                                 const now = new Date();
                                 const currentHour = now.getHours();
                                 const currentMinutes = now.getMinutes();
@@ -496,8 +512,8 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                                 // Show no slots message if no available slots for today
                                 if (availableSlots.length === 0 && isToday) {
                                     return (
-                                        <View style={styles.noSlotsContainer}>
-                                            <Text style={styles.noSlotsText}>No slots available today</Text>
+                                        <View style={styles.noSlotsBox}>
+                                            <Text style={styles.noSlotsText}>No slots available on this day</Text>
                                         </View>
                                     );
                                 }
@@ -547,29 +563,35 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     <Text style={styles.sectionTitle}>Where?</Text>
 
                     {/* Address List - Show up to 2 addresses */}
-                    {addresses.slice(0, 2).map((address: any) => (
-                        <TouchableOpacity
-                            key={address.id}
-                            style={[
-                                styles.addressCard,
-                                selectedAddressId === address.id && styles.addressCardSelected,
-                            ]}
-                            onPress={() => setSelectedAddressId(address.id)}
-                        >
-                            <View style={styles.addressContent}>
-                                <Text style={styles.addressLabel}>{address.tag?.toUpperCase() || 'HOME'}</Text>
-                                <Text style={styles.addressText} numberOfLines={1}>
-                                    {[
-                                        address?.address1 || address?.address || '',
-                                        address?.address2 || ''
-                                    ].filter(Boolean).join(', ') || 'No address added'}
-                                </Text>
-                            </View>
-                            <View style={styles.radioButton}>
-                                <View style={[styles.radioButtonInner, selectedAddressId === address.id && styles.radioButtonInnerSelected]} />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                    {addresses.length > 0 ? (
+                        addresses.slice(0, 2).map((address: any) => (
+                            <TouchableOpacity
+                                key={address.id}
+                                style={[
+                                    styles.addressCard,
+                                    selectedAddressId === address.id && styles.addressCardSelected,
+                                ]}
+                                onPress={() => setSelectedAddressId(address.id)}
+                            >
+                                <View style={styles.addressContent}>
+                                    <Text style={styles.addressLabel}>{address.tag?.toUpperCase() || 'HOME'}</Text>
+                                    <Text style={styles.addressText} numberOfLines={1}>
+                                        {[
+                                            address?.address1 || address?.address || '',
+                                            address?.address2 || ''
+                                        ].filter(Boolean).join(', ') || 'No address added'}
+                                    </Text>
+                                </View>
+                                <View style={styles.radioButton}>
+                                    <View style={[styles.radioButtonInner, selectedAddressId === address.id && styles.radioButtonInnerSelected]} />
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <View style={styles.noAddressBox}>
+                            <Text style={styles.noAddressText}>No saved addresses found</Text>
+                        </View>
+                    )}
 
                     {/* Add Address */}
                     <TouchableOpacity style={styles.addAddressCard} onPress={handleAddAddress}>
@@ -818,6 +840,36 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         textAlign: 'center',
     },
+    noAddressBox: {
+        backgroundColor: '#FAFAFA',
+        padding: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderColor: '#e0e0e0',
+        minHeight: 180,
+    },
+    noAddressText: {
+        fontSize: 14,
+        fontWeight:600,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.textSecondary,
+    },
+    noSlotsBox: {
+        backgroundColor: '#FAFAFA',
+        padding: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderColor: '#e0e0e0',
+        minHeight: 180,
+    },
+    noSlotsText: {
+        fontSize: 14,
+        fontWeight: 600,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.textSecondary,
+    },
     subText: {
         fontSize: 12,
         fontFamily: Fonts.LexendRegular,
@@ -899,11 +951,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    noSlotsText: {
-        fontSize: 14,
-        fontFamily: Fonts.LexendMedium,
-        color: '#717680',
     },
     footer: {
         flexDirection: 'row',

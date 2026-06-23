@@ -560,7 +560,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 const styles = StyleSheet.create({
     /** Heavier than Ionicons “add” — typographic + with max Metropolis weight */
     addPlusGlyph: {
-        color: '#FFFFFF',
+        color: '#DB5656',
         fontSize: 26,
         fontFamily: Fonts.Black,
         lineHeight: 28,
@@ -576,7 +576,9 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: Colors.primary,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#DB5656',
         alignItems: 'center',
         justifyContent: 'center',
         ...Platform.select({
@@ -595,7 +597,9 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: Colors.primary,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#DB5656',
         alignItems: 'center',
         justifyContent: 'center',
     },

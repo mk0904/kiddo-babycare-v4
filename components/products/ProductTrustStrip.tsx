@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     flex: 1,
-    fontSize: 10,
-    lineHeight: 10,
+    fontSize: 12,
+    lineHeight: 12,
     fontFamily: Fonts.LexendSemiBold,
     color: Colors.text,
   },

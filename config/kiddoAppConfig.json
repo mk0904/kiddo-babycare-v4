@@ -2455,8 +2455,8 @@
     "styles": {
       "productName": {
         "fontSize": 13,
-        "fontWeight": "600",
-        "fontFamily": "lexend-semibold",
+        "fontWeight": "400",
+        "fontFamily": "lexend-regular",
         "color": "#363636"
       },
       "vendorBadgeText": {
@@ -2750,7 +2750,7 @@
             "textAlign": "center"
           }
         },
-        "order": 5
+        "order": 4
       },
       {
         "id": "all-grid-1",
@@ -2986,7 +2986,7 @@
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
-        "imageContainer": {},
+        "imageContainer": {}, 
         "image": {
           "width": "100%",
           "padding": 0,
@@ -3001,10 +3001,10 @@
     {
       "id": "all-banner-6",
       "type": "carousel",
-      "visible": false,
+      "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_June_Night_Final_Banner.png?v=1781978221",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App__Short_Banners_1.gif?v=1782203754",
           "link": {
             "type": "collection",
             "collection": {
@@ -3025,7 +3025,7 @@
       "styles": {
         "container": {
           "paddingHorizontal":10,
-          "paddingVertical":16,
+          "paddingVertical":20,
           "marginTop": 0,
           "backgroundColor": "#F5F5F5"
         },
@@ -3037,7 +3037,7 @@
         },
         "img": {}
       },
-      "order": 3
+      "order": 5
     },
     
     {
@@ -3129,16 +3129,16 @@
           "name": "Everyday Wear"
         },
         {
-          "id": "gid://shopify/Collection/511688900897",
-          "name": "Hopscotch"
+          "id": "gid://shopify/Collection/515546644769",
+          "name": "Educational Toys"
         },
         {
           "id": "gid://shopify/Collection/513106018593",
           "name": "Footwear"
         },
         {
-          "id": "gid://shopify/Collection/513806434593",
-          "name": "Adidas"
+          "id": "gid://shopify/Collection/515567780129",
+          "name": "Food"
         }
       ],
       "styles": {
@@ -3169,7 +3169,7 @@
     {
       "id": "frequently-bought-carousel",
       "type": "categoryGrid",
-      "order": 4.5,
+      "order": 6,
       "visible": true,
       "title": "Frequently Bought",
       "gridConfig": {
@@ -3204,12 +3204,11 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 40,
+          "marginTop": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3319,7 +3318,7 @@
     {
       "id": "category-grid-banner",
       "type": "categoryGrid",
-      "order": 5,
+      "order": 6,
       "visible": true,
       "title": "Fashion",
       "gridConfig": {
@@ -3395,7 +3394,7 @@
     {
       "id": "all-age-wise-toys",
       "type": "categoryGrid",
-      "order": 5.2,
+      "order": 6,
       "visible": false,
       "title": "All Age Wise Toys",
       "gridConfig": {
@@ -3547,7 +3546,7 @@
     {
       "id": "category-grid-toys",
       "type": "categoryGrid",
-      "order": 5.2,
+      "order": 6,
       "visible": true,
       "title": "Toys",
       "gridConfig": {
@@ -3639,7 +3638,7 @@
     {
       "id": "category-grid-toy-brands",
       "type": "categoryGrid",
-      "order": 5.5,
+      "order": 6,
       "visible": true,
       "title": "Favourite Toy Brands",
       "gridConfig": {
@@ -3856,11 +3855,11 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10
+          "paddingTop": 0
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
+          "marginTop": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -4335,7 +4334,7 @@
     {
       "id": "frequently-bought-carousel",
       "type": "categoryGrid",
-      "order": 4.5,
+      "order": 3,
       "visible": true,
       "title": "Frequently Bought",
       "gridConfig": {
@@ -4370,14 +4369,14 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
+          "paddingTop": 0,
           "backgroundColor": "white",
           "marginTop": -15,
-          "paddingVertical":16
+          "paddingVertical":0
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
+          "marginTop": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",

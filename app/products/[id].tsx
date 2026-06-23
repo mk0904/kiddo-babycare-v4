@@ -221,7 +221,7 @@ const datePickerStyles = StyleSheet.create({
     },
     dateLabel: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
         marginBottom: 4,
     },
@@ -230,7 +230,7 @@ const datePickerStyles = StyleSheet.create({
     },
     dateSubLabel: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.textSecondary,
     },
     dateSubLabelSelected: {
@@ -242,7 +242,7 @@ const datePickerStyles = StyleSheet.create({
     },
     emptyStateText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.textSecondary,
     },
 });
@@ -2089,7 +2089,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#000',
     },
     shareButton: {
@@ -2261,7 +2261,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 20,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         paddingHorizontal: 16,
         paddingTop: 0,
         marginTop: 0,
@@ -2281,7 +2281,7 @@ const styles = StyleSheet.create({
     pdpDemoBadgeText: {
         color: '#CA8504',
         fontSize: 11,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
     },
     vendorRow: {
         flexDirection: 'row',
@@ -2367,13 +2367,13 @@ const styles = StyleSheet.create({
     },
     dateSelectionLabel: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
         marginRight: 4,
     },
     requiredAsterisk: {
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: '#FF4444',
     },
     dateSelectionButton: {
@@ -2392,7 +2392,7 @@ const styles = StyleSheet.create({
     dateSelectionText: {
         flex: 1,
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     dateSelectionPlaceholder: {
@@ -2429,7 +2429,7 @@ const styles = StyleSheet.create({
     },
     highlightChipLabelText: {
         fontSize: 12,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
     },
     highlightChip: {
@@ -2440,7 +2440,7 @@ const styles = StyleSheet.create({
     },
     highlightChipText: {
         fontSize: 12,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: '#363636',
     },
     essentialsMetaRow: {
@@ -2456,7 +2456,7 @@ const styles = StyleSheet.create({
     },
     essentialsMetaText: {
         fontSize: 10,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#1565C0',
         lineHeight: 14,
     },
@@ -2482,7 +2482,7 @@ const styles = StyleSheet.create({
     },
     accordionTitle: {
         fontSize: 16,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#1a1a1a',
     },
     accordionContent: {
@@ -2498,12 +2498,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#4a4a4a',
         lineHeight: 24,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
     },
     specValue: {
         fontSize: 14,
         color: '#4a4a4a',
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         lineHeight: 24,
         textAlign: 'left',
     },
@@ -2530,18 +2530,18 @@ const styles = StyleSheet.create({
     },
     priceText: {
         fontSize: 18,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     mrpText: {
-        fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 18,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     savingsText: {
         fontSize: 12,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#4CAF50',
     },
     productPriceContainer: {
@@ -2555,19 +2555,19 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     productPriceText: {
-        fontSize: 24,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 18,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     productMrpText: {
         fontSize: 18,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     productSavingsText: {
         fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#4CAF50',
     },
     bookDemoButton: {
@@ -2585,7 +2585,7 @@ const styles = StyleSheet.create({
     },
     bookDemoButtonText: {
         color: Colors.primary,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         fontSize: 18,
     },
     refundPolicyModalText: {
@@ -2604,7 +2604,7 @@ const styles = StyleSheet.create({
     },
     productDescriptionTitle: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
         marginBottom: 12,
     },
@@ -2645,28 +2645,37 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: '#E0E0E0',
-        borderRadius: 8,
+        borderRadius: 32,
         padding: 4,
         paddingHorizontal: 4,
+        backgroundColor: '#FAFAFA',
     },
     specTabButton: {
         flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 32,
+        borderWidth: 0,
+        borderColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
     },
     specTabButtonActive: {
-        backgroundColor: Colors.primary,
+        backgroundColor: '#FFFFFF',
+        borderColor: '#D8D8D8',
+        shadowColor: '#000',
+        shadowOpacity: 0.0,
+        shadowRadius: 0,
+        elevation: 1,
     },
     specTabText: {
-        fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
-        color: Colors.textSecondary,
+        fontSize: 13,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
     },
     specTabTextActive: {
-        color: '#FFFFFF',
+        color: '#DB5656',
+        fontFamily: Fonts.LexendBold,
     },
     specTabContent: {
         paddingTop: 4,
@@ -2686,7 +2695,7 @@ const styles = StyleSheet.create({
     },
     priceComparisonTitle: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
         textAlign: 'center',
         marginTop: 8,
@@ -2728,32 +2737,32 @@ const styles = StyleSheet.create({
     },
     pricePlatformText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     pricePlatformTextHeader: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     pricePlatformTextKiddo: {
         fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
     },
     priceValueText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     priceValueTextHeader: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     priceValueTextKiddo: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     addToCartButton: {

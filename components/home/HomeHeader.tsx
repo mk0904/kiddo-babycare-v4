@@ -5,22 +5,22 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-  headerGlassTintIsVisible,
-  resolveHeaderGlassConfig,
+    headerGlassTintIsVisible,
+    resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
-  Image,
-  ImageBackground,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    ImageBackground,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   addressRow: {
-    marginTop: -5,
+    marginTop: -10,
     marginBottom: 12,
   },
   kiddoHeaderText: {
