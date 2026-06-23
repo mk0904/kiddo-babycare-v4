@@ -21,7 +21,7 @@ const generateSearchUuid = () => {
 
 const makeAnalyticsRequest = async (url: string, method: string, data: any) => {
     try {
-        await axios({
+        const response = await axios({
             method,
             url: `https://athena.searchserverapi1.com/api/v1/${url}`,
             headers: {
@@ -30,6 +30,7 @@ const makeAnalyticsRequest = async (url: string, method: string, data: any) => {
             },
             data,
         });
+        console.log(`[Searchanise] Analytics ${method} request to ${url} successful (Status: ${response.status})`);
     } catch (error) {
         console.error('Searchanise analytics error:', error);
     }
