@@ -20,6 +20,10 @@ config.resolver = {
   ...resolver,
   assetExts: resolver.assetExts.filter((ext) => ext !== 'svg'),
   sourceExts: [...resolver.sourceExts, 'svg'],
+  blockList: [
+    ...resolver.blockList || [],
+    /.*\/node_modules\/undici\/.*/,
+  ]
 };
 
 module.exports = config;
