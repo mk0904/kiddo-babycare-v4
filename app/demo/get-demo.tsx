@@ -3,8 +3,7 @@ import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import {
-    normalizeScheduledDateForDeliveryPartner,
-    updateDeliveryPartnerOrderSchedule,
+    normalizeScheduledDateForDeliveryPartner
 } from '@/services/deliveryPartnerService';
 import { type OrderItem } from '@/services/orderService';
 import PaymentService from '@/services/paymentService';
@@ -37,6 +36,18 @@ interface DeliverySchedule {
 interface GetDemoProps {
     product?: any;
 }
+
+/** Format time string for delivery partner API (e.g., "2PM - 3PM" -> "02:00 PM") */
+const formatTimeForDelivery = (timeStr: string) => {
+    if (!timeStr) return '';
+    const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
+    const match = time.match(/(\d+)(AM|PM)/i);
+    if (!match) return timeStr.toUpperCase();
+    let hour = parseInt(match[1], 10);
+    const ampm = match[2].toUpperCase();
+    const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
+    return `${formattedHour}:00 ${ampm}`;
+};
 
 const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const router = useRouter();
@@ -193,17 +204,6 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
             const editDeliveryPartnerOrderId = params.editDeliveryPartnerOrderId as string;
             if (editOrderId) {
                 // We are editing an existing demo order using Delivery Partner API only
-                const formatTimeForDelivery = (timeStr: string) => {
-                    if (!timeStr) return '';
-                    const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
-                    const match = time.match(/(\d+)(AM|PM)/i);
-                    if (!match) return timeStr.toUpperCase();
-                    let hour = parseInt(match[1], 10);
-                    const ampm = match[2].toUpperCase();
-                    const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
-                    return `${formattedHour}:00 ${ampm}`;
-                };
-
                 const scheduledDate = normalizeScheduledDateForDeliveryPartner(demoSchedule.date);
                 const scheduledTime = formatTimeForDelivery(
                     demoSchedule.timeSlotLabel || demoSchedule.time || '',
@@ -217,15 +217,9 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
 
                 let deliveryPartnerSynced = false;
                 if (editDeliveryPartnerOrderId) {
-                    // Use delivery partner order ID directly (no lookup needed)
+                    // Use delivery partner order ID directly
                     const { updateDeliveryPartnerOrderScheduleById } = await import('@/services/deliveryPartnerService');
                     deliveryPartnerSynced = await updateDeliveryPartnerOrderScheduleById(editDeliveryPartnerOrderId, {
-                        scheduledDate,
-                        scheduledTime,
-                    });
-                } else {
-                    // Fallback to Shopify order ID lookup (for old orders without delivery partner ID)
-                    deliveryPartnerSynced = await updateDeliveryPartnerOrderSchedule(editOrderId, {
                         scheduledDate,
                         scheduledTime,
                         shippingAddress: {
@@ -292,17 +286,6 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     customAttributes: {
                         demo_request: 'true'
                     },
-                };
-
-                const formatTimeForDelivery = (timeStr: string) => {
-                    if (!timeStr) return '';
-                    const time = timeStr.split(' ')[0]; // e.g. '2PM' from '2PM - 3PM'
-                    const match = time.match(/(\d+)(AM|PM)/i);
-                    if (!match) return timeStr.toUpperCase();
-                    let hour = parseInt(match[1], 10);
-                    const ampm = match[2].toUpperCase();
-                    const formattedHour = hour < 10 ? `0${hour}` : `${hour}`;
-                    return `${formattedHour}:00 ${ampm}`;
                 };
 
                 const formattedTimeLabel = formatTimeForDelivery(demoSchedule.timeSlotLabel || demoSchedule.time || '');

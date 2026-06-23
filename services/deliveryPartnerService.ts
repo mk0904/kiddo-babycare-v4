@@ -1141,6 +1141,10 @@ export async function updateDeliveryPartnerOrderScheduleById(
             scheduled_time: scheduledTime,
         };
 
+        if (input.shippingAddress) {
+            requestBody.shipping_address = input.shippingAddress;
+        }
+
         const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(deliveryPartnerOrderId)}`;
         console.log('[deliveryPartnerService] PATCH request to:', apiUrl);
         console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
