@@ -323,6 +323,10 @@ class AppConfigService {
     return this.config?.isFreshChatEnabled === true;
   }
 
+  isBackendGeocodingEnabled(): boolean {
+    return this.config?.isBackendGeocodingEnabled === true;
+  }
+
   getReferralConfig(): ReferralConfig | null {
     return this.config?.referralConfig ?? null;
   }
