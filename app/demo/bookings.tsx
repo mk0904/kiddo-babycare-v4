@@ -215,6 +215,7 @@ export default function DemoBookingsScreen() {
                     productId: productIdGid, // Store product ID as GID
                     scheduledDate: dpOrder.scheduledDate, // Store delivery partner scheduled date
                     scheduledTime: dpOrder.scheduledTime, // Store delivery partner scheduled time
+                    shippingAddress: dpOrder.shippingAddress, // Store delivery partner shipping address
                 customAttributes: [
                     { key: 'scheduled_date', value: dpOrder.scheduledDate },
                     { key: 'scheduled_time', value: dpOrder.scheduledTime },
@@ -351,6 +352,7 @@ export default function DemoBookingsScreen() {
                 editDeliveryPartnerOrderId: order.deliveryPartnerOrderId,
                 editScheduledDate: scheduledDate || '',
                 editScheduledTime: scheduledTime || '',
+                editAddress: order.shippingAddress ? JSON.stringify(order.shippingAddress) : '',
             },
         } as any);
     };

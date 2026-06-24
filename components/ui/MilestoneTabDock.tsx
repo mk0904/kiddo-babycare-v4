@@ -1,10 +1,10 @@
 import { MilestoneCartRow } from '@/components/ui/MilestoneCartRow';
 import { useMilestoneDock } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { getMilestoneDockBottom } from '@/utils/tabBarLayout';
 import type { MilestoneUIConfig } from '@/types/appConfig';
+import { getMilestoneDockBottom } from '@/utils/tabBarLayout';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Animated, LayoutChangeEvent, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -115,5 +115,6 @@ const styles = StyleSheet.create({
         right: 0,
         zIndex: 10000,
         elevation: 10000,
+        paddingBottom: 0,
     },
 });

@@ -1135,6 +1135,9 @@ export async function updateDeliveryPartnerOrderScheduleById(
 
         if (input.shippingAddress) {
             requestBody.shipping_address = input.shippingAddress;
+            console.log('[deliveryPartnerService] Including shipping_address in request:', JSON.stringify(input.shippingAddress, null, 2));
+        } else {
+            console.warn('[deliveryPartnerService] No shipping_address provided in input');
         }
 
         const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/${encodeURIComponent(deliveryPartnerOrderId)}`;

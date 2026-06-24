@@ -442,8 +442,8 @@ export function MilestoneTracker({
         : Math.max(200, windowHeight * 0.86 - insets.top - insets.bottom);
 
     const collapsedContainerStyle = Array.isArray(surfaceCollapsed)
-        ? [...surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow]
-        : [surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow];
+        ? [...surfaceCollapsed, variant === 'dock' && styles.collapsedSurfaceDock, inlineInCartRow && styles.collapsedSurfaceInCartRow]
+        : [surfaceCollapsed, variant === 'dock' && styles.collapsedSurfaceDock, inlineInCartRow && styles.collapsedSurfaceInCartRow];
 
     const hasCollapsedSubtitle = Boolean((collapsedCopy.subtitle || '').trim());
 
@@ -461,6 +461,7 @@ export function MilestoneTracker({
                     <TouchableOpacity
                         style={[
                             styles.collapsedPillPressable,
+                            variant === 'embedded' && styles.collapsedPillPressableEmbedded,
                             inlineInCartRow && styles.collapsedPillPressableInCartRow,
                         ]}
                         onPress={toggle}
@@ -472,6 +473,7 @@ export function MilestoneTracker({
                             tint="light"
                             style={[
                                 styles.pillBlurContainer,
+                                variant === 'embedded' && styles.pillBlurContainerEmbedded,
                                 { borderColor: accentColor },
                                 inlineInCartRow && styles.pillBlurContainerInCartRow,
                             ]}
@@ -633,9 +635,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         paddingTop: 0,
         paddingBottom: 0,
+        marginBottom: 0,
         zIndex: 50,
         position: 'relative',
         overflow: 'hidden',
+    },
+    collapsedSurfaceDock: {
+        marginBottom: 0,
+        paddingBottom: 0,
     },
     surfaceFrostBackground: {
         ...StyleSheet.absoluteFillObject,
@@ -648,23 +655,30 @@ const styles = StyleSheet.create({
     collapsedSurfaceInCartRow: {
         paddingHorizontal: 0,
         marginBottom: 0,
+        paddingBottom: 10,
     },
     /** Cart: flush under savings (square top); rounded bottom into cream scroll area. */
     surfaceEmbeddedCollapsed: {
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
         overflow: 'hidden',
+        marginBottom: 0,
     },
     collapsedPillPressable: {
         width: '95%',
-        height: 48,
+        height: 68,
         zIndex: 1,
         marginBottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
         alignSelf: 'center',
+    },
+    collapsedPillPressableEmbedded: {
+        height: 68,
+        width: '100%',
+        alignSelf: 'stretch',
     },
     collapsedPillPressableInCartRow: {
         marginBottom: 0,
@@ -680,6 +694,13 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.7)',
         justifyContent: 'center',
+    },
+    pillBlurContainerEmbedded: {
+        height: 68,
+        borderRadius: 20,
+        width: '100%',
+        marginHorizontal: 0,
+        paddingHorizontal:0,
     },
     pillBlurContainerInCartRow: {
         height: MILESTONE_CART_ROW_PILL_HEIGHT,

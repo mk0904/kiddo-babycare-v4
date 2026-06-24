@@ -88,6 +88,38 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
         }
     }, [defaultAddress, selectedAddressId]);
 
+    // Set selected address from edit order when editing
+    useEffect(() => {
+        const editAddress = params.editAddress as string;
+        if (editAddress && addresses.length > 0) {
+            try {
+                const parsedAddress = JSON.parse(editAddress);
+                // Try to find matching address by comparing key fields
+                const matchingAddress = addresses.find((addr: any) => {
+                    const addrLat = addr?.lat || addr?.latitude;
+                    const addrLng = addr?.lng || addr?.longitude;
+                    const parsedLat = parsedAddress?.lat;
+                    const parsedLng = parsedAddress?.lng;
+                    // Match by coordinates if available
+                    if (addrLat && addrLng && parsedLat && parsedLng) {
+                        return Math.abs(addrLat - parsedLat) < 0.0001 && Math.abs(addrLng - parsedLng) < 0.0001;
+                    }
+                    // Fallback to match by address line and pincode
+                    return addr?.address1 === parsedAddress?.address && addr?.zip === parsedAddress?.pincode;
+                });
+
+                if (matchingAddress) {
+                    setSelectedAddressId(matchingAddress.id);
+                    console.log('[GetDemo] Set selected address from edit order:', matchingAddress.id);
+                } else {
+                    console.warn('[GetDemo] No matching address found for edit order, using default');
+                }
+            } catch (error) {
+                console.error('[GetDemo] Failed to parse editAddress:', error);
+            }
+        }
+    }, [params.editAddress, addresses]);
+
     // Mock product data (in real app, this would come from params or navigation)
     const mockProduct = {
         id: params.productId || 'demo-product-1',
@@ -219,23 +251,33 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 if (editDeliveryPartnerOrderId) {
                     // Use delivery partner order ID directly
                     const { updateDeliveryPartnerOrderScheduleById } = await import('@/services/deliveryPartnerService');
+
+                    // Use selected address instead of default address
+                    const selectedAddressObj = addresses?.find((addr: any) => addr.id === selectedAddressId) || defaultAddress;
+
+                    const shippingAddress = {
+                        lat: (selectedAddressObj as any)?.lat || (selectedAddressObj as any)?.latitude || null,
+                        lng: (selectedAddressObj as any)?.lng || (selectedAddressObj as any)?.longitude || null,
+                        city: (selectedAddressObj as any).city || '',
+                        name: (selectedAddressObj as any)?.firstName || (selectedAddressObj as any)?.name || (user as any)?.name || 'Customer',
+                        phone: (selectedAddressObj as any)?.phone || user?.phone || '',
+                        state: (selectedAddressObj as any).state || '',
+                        address: [
+                            (selectedAddressObj as any)?.address1 || (selectedAddressObj as any)?.address || '',
+                            (selectedAddressObj as any)?.address2 || ''
+                        ].filter(Boolean).join(', '),
+                        country: (selectedAddressObj as any)?.country || 'India',
+                        pincode: (selectedAddressObj as any)?.zip || (selectedAddressObj as any)?.pincode || (selectedAddressObj as any)?.postalCode || '',
+                    };
+
+                    console.log('[GetDemo] selectedAddressId:', selectedAddressId);
+                    console.log('[GetDemo] selectedAddressObj:', JSON.stringify(selectedAddressObj, null, 2));
+                    console.log('[GetDemo] shippingAddress being sent:', JSON.stringify(shippingAddress, null, 2));
+
                     deliveryPartnerSynced = await updateDeliveryPartnerOrderScheduleById(editDeliveryPartnerOrderId, {
                         scheduledDate,
                         scheduledTime,
-                        shippingAddress: {
-                            lat: (defaultAddress as any)?.lat || (defaultAddress as any)?.latitude || null,
-                            lng: (defaultAddress as any)?.lng || (defaultAddress as any)?.longitude || null,
-                            city: (defaultAddress as any).city || '',
-                            name: (defaultAddress as any)?.firstName || (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
-                            phone: (defaultAddress as any)?.phone || user?.phone || '',
-                            state: (defaultAddress as any).state || '',
-                            address: [
-                                (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
-                                (defaultAddress as any)?.address2 || ''
-                            ].filter(Boolean).join(', '),
-                            country: (defaultAddress as any)?.country || 'India',
-                            pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
-                        },
+                        shippingAddress,
                     });
                 }
 
@@ -537,9 +579,9 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Where?</Text>
 
-                    {/* Address List - Show up to 2 addresses */}
+                    {/* Address List - Show all addresses */}
                     {addresses.length > 0 ? (
-                        addresses.slice(0, 2).map((address: any) => (
+                        addresses.map((address: any) => (
                             <TouchableOpacity
                                 key={address.id}
                                 style={[
@@ -599,7 +641,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     disabled={!demoSchedule?.date || !demoSchedule?.time || isSubmitting}
                 >
                     <Text style={styles.confirmChangesButtonText}>
-                        {isSubmitting ? 'Confirming...' : (params.editOrderId ? 'Confirm Changes' : 'Confirm Demo')}
+                        {isSubmitting ? 'Confirming...' : (params.editOrderId ? 'Confirm Changes' : 'Confirm demo')}
                     </Text>
                 </TouchableOpacity>
             </View>

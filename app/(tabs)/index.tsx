@@ -5,9 +5,9 @@ import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
-  getDeliveryEta,
-  getDeliveryEtaForAddress,
-  reverseGeocode,
+    getDeliveryEta,
+    getDeliveryEtaForAddress,
+    reverseGeocode,
 } from '@/config/deliveryConfig';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAddress } from '@/context/AddressContext';
@@ -27,11 +27,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+    Animated,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
