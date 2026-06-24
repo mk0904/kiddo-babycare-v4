@@ -92,7 +92,7 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
 
 const styles = StyleSheet.create({
     buttonOuter: {
-        minWidth: 168,
+        minWidth: 140,
     },
     buttonOuterFloating: {
         marginBottom: 10,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
         elevation: 12,
     },
     glassPillFloating: {
-        minWidth: 168,
+        minWidth: 140,
         paddingHorizontal: 4,
     },
     glassPillInMilestoneRow: {

@@ -5,22 +5,22 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-    headerGlassTintIsVisible,
-    resolveHeaderGlassConfig,
+  headerGlassTintIsVisible,
+  resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Animated,
-    Image,
-    ImageBackground,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -172,7 +172,7 @@ export function HomeHeader({
    */
   const ADDRESS_BOTTOM_MARGIN = 12;
   const ADDRESS_BAR_HEIGHT = 80 + ADDRESS_BOTTOM_MARGIN;
-  const TOTAL_HEADER_HEIGHT = 220 + ADDRESS_BOTTOM_MARGIN;
+  const TOTAL_HEADER_HEIGHT = 185 + ADDRESS_BOTTOM_MARGIN;
 
   const contentTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
     backgroundColor: 'transparent',
   },
   leftInfoContainer: {
@@ -466,10 +466,10 @@ const styles = StyleSheet.create({
   },
   addressRow: {
     marginTop: -10,
-    marginBottom: 12,
+    marginBottom: 0,
   },
   kiddoHeaderText: {
-    fontSize: 15,
+    fontSize: 12,
     lineHeight: 16,
     fontFamily: Fonts.LexendBold,
     letterSpacing: 0,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   estimatedTimeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -6,
+    marginTop: -10,
   },
   estimatedTimeContent: {
     flexDirection: 'row',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   lightningIcon: {
     width: 54,
-    height: 54,
+    height: 44,
     marginLeft: 0,
   },
   estimatedTimeText: {
@@ -503,16 +503,17 @@ const styles = StyleSheet.create({
     zIndex: 1,
     paddingLeft: 10,
     paddingRight: -30,
-    paddingTop: 10,
+    paddingTop: 0,
     paddingBottom: 4,
+    marginTop: -25,
     backgroundColor: 'transparent',
-    
+
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 0,
-    
+
   },
   searchBarWrap: {
     flex: 1,

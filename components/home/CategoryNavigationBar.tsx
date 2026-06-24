@@ -206,6 +206,7 @@ const defaultStyles = StyleSheet.create({
   },
   categoriesWrapper: {
     paddingTop: 0,
+    paddingBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -223,7 +224,7 @@ const defaultStyles = StyleSheet.create({
     padding: 0,
     borderRadius: 0,
     backgroundColor: 'transparent',
-    marginBottom: -4,
+    marginBottom: -12,
   },
   selectedIconWrapper: {
     backgroundColor: 'transparent',

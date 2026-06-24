@@ -289,7 +289,7 @@ export default function HomeScreen() {
   // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
   // Total content: ~232px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 232 : 232;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 197 : 197;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 

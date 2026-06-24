@@ -54,12 +54,6 @@ export function LocationButton({
       >
         {address ? (
           <>
-            <Ionicons
-              name="location"
-              size={14}
-              color={textColor}
-              style={styles.locationIcon}
-            />
             <Text
               style={[
                 categoryLabel ? styles.locationTextOuter : styles.locationText,

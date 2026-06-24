@@ -21,7 +21,7 @@ export function TryAtHomePill({ onPress }: TryAtHomePillProps) {
         style={styles.pill}
       >
         <Text style={styles.label}>
-        <Text style={styles.tryAtHome}>Try at home</Text>{'\n'}Instant Refund
+          <Text style={styles.tryAtHome}>Try at home</Text>{'\n'}Instant Refund
         </Text>
       </LinearGradient>
     </TouchableOpacity>
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 0,
-    left:10
+    left: 10
   },
   tryAtHome: {
     fontSize: 12, // bigger

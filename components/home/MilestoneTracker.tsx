@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
     },
     collapsedPillPressableInCartRow: {
         marginBottom: 0,
-        minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
+        height: MILESTONE_CART_ROW_PILL_HEIGHT,
     },
     pillBlurContainer: {
         width: '100%',

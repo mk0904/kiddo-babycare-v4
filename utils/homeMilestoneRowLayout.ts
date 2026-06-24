@@ -6,7 +6,7 @@ const MILESTONE_FRACTION = 0.65;
 const CART_FRACTION = 0.35;
 
 /** Shared height for milestone pill and `FloatingCartCta` in `MilestoneCartRow` (one visual row). */
-export const MILESTONE_CART_ROW_PILL_HEIGHT = 64;
+export const MILESTONE_CART_ROW_PILL_HEIGHT = 52;
 
 export type HomeMilestoneRowLayout = {
     sideInset: number;
@@ -33,17 +33,19 @@ export type HomeMilestoneRowLayout = {
  * so the two UIs are never shown together.
  */
 export function getHomeMilestoneRowLayout(screenWidth: number): HomeMilestoneRowLayout {
-    const innerWidth = screenWidth - 2 * SIDE_INSET;
+    const navBarWidth = 368;
+    const innerWidth = Math.min(navBarWidth, screenWidth - 32);
+    const dynamicSideInset = (screenWidth - innerWidth) / 2;
     const rowMinusGap = Math.max(0, innerWidth - MILESTONE_CART_GAP);
     const milestoneWidth = MILESTONE_FRACTION * rowMinusGap;
     const cartColumnWidth = CART_FRACTION * rowMinusGap;
     return {
-        sideInset: SIDE_INSET,
+        sideInset: dynamicSideInset,
         gap: MILESTONE_CART_GAP,
         innerWidth,
         milestoneWidth,
         cartColumnWidth,
-        milestoneDockLeft: SIDE_INSET,
-        milestoneDockRight: SIDE_INSET + cartColumnWidth + MILESTONE_CART_GAP,
+        milestoneDockLeft: dynamicSideInset,
+        milestoneDockRight: dynamicSideInset + cartColumnWidth + MILESTONE_CART_GAP,
     };
 }
