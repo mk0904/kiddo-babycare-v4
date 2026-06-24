@@ -431,7 +431,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                         resizeMode="cover"
                     />
                     <View style={styles.productInfo}>
-                        <Text style={styles.productTitle} numberOfLines={2}>
+                        <Text style={styles.productTitle}>
                             {displayProduct.title}
                         </Text>
                         <View style={styles.priceRow}>

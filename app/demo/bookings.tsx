@@ -411,7 +411,7 @@ export default function DemoBookingsScreen() {
                             style={styles.productImage}
                         />
                         <View style={styles.productInfo}>
-                            <Text style={styles.productTitle} numberOfLines={1}>
+                            <Text style={styles.productTitle} numberOfLines={2}>
                                 {item?.title || 'Demo Product'}
                             </Text>
                             {item?.variantTitle ? (

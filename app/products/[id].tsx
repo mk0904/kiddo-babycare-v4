@@ -45,13 +45,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const BlurView = require('expo-blur').BlurView;
 
 // Demo PDP section configuration
-const DEMO_PDP_CONFIG = {
+const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
+const DEMO_PDP_CONFIG = kiddoAppConfig?.demo?.pdpSection || {
     imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101',
     bulletPoints: [
         'Kiddo partner visits for a 30-minute demo',
         'Ensures product meets personalized needs',
         'Option to buy via digital payment or cash'
-    ]
+    ],
+    backgroundColor: '#fdf3e4'
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -2186,7 +2188,7 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     demoSection: {
-        backgroundColor: '#fdf3e4',
+        backgroundColor: DEMO_PDP_CONFIG.backgroundColor || '#fdf3e4',
         borderRadius: 16,
         marginHorizontal: 16,
         marginTop: 8,
@@ -2208,7 +2210,7 @@ const styles = StyleSheet.create({
     },
     demoSectionTitle: {
         fontSize: 18,
-        fontFamily: Fonts.LexendSemiBold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: Colors.text,
         marginBottom: 12,
     },
@@ -2604,7 +2606,7 @@ const styles = StyleSheet.create({
     },
     productDescriptionTitle: {
         fontSize: 18,
-        fontFamily: Fonts.LexendBold,
+        fontFamily: Fonts.FredokaSemiBold,
         color: Colors.text,
         marginBottom: 12,
     },

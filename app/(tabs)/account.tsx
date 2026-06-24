@@ -2,15 +2,14 @@ import { accountConfig } from '@/config/accountConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { nectorApi } from '@/services/nectorApi';
 import { oneSignalService } from '@/services/oneSignalService';
-import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
-import { Freshchat } from 'react-native-freshchat-sdk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -602,11 +601,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FB',
     },
     profileSection: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 20,
     },
     avatarContainer: {
-        marginBottom: 16,
+        marginRight: 16,
     },
     avatar: {
         backgroundColor: '#EEEEEE',
@@ -619,20 +620,20 @@ const styles = StyleSheet.create({
         fontSize: 32,
     },
     userInfo: {
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     userName: {
         fontSize: 22,
         color: Colors.text,
         fontFamily: Fonts.Bold,
         marginBottom: 4,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     userPhone: {
         fontSize: 16,
         color: Colors.textSecondary,
         fontFamily: Fonts.Medium,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     quickActionsContainer: {
         flexDirection: 'row',
