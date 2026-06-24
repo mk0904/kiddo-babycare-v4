@@ -1042,73 +1042,65 @@ export async function findDeliveryPartnerOrderByShopifyId(
 
 /** Fetch all demo orders from delivery partner API with pagination support. */
 export async function fetchDemoOrdersFromDeliveryPartner(
-    page: number = 1,
-    limit: number = 50,
     customerId?: string,
     customerEmail?: string,
     customerPhone?: string,
-): Promise<{ orders: DeliveryPartnerOrderRef[]; total: number; hasMore: boolean }> {
-    try {
-        let apiUrl = `${DELIVERY_PARTNER_ORDERS_API}?is_demo_order=true&page=${page}&limit=${limit}`;
-        if (customerId) {
-            apiUrl += `&customerId=${customerId}`;
-        }
-        if (customerEmail) {
-            apiUrl += `&customerEmail=${encodeURIComponent(customerEmail)}`;
-        }
-        if (customerPhone) {
-            apiUrl += `&customer_phone=${encodeURIComponent(customerPhone)}`;
-        }
-        console.log('[deliveryPartnerService] Fetching demo orders with URL:', apiUrl);
-        console.log('[deliveryPartnerService] Customer ID filter:', customerId || 'none');
-        console.log('[deliveryPartnerService] Customer Email filter:', customerEmail || 'none');
-        console.log('[deliveryPartnerService] Customer Phone filter:', customerPhone || 'none');
-        const response = await fetch(
-            apiUrl,
-            { headers: { Accept: 'application/json' } },
-        );
-        if (!response.ok) {
-            console.warn('[deliveryPartnerService] Failed to fetch demo orders:', response.status);
-            return { orders: [], total: 0, hasMore: false };
-        }
-        const body = (await response.json()) as {
-            orders?: DeliveryPartnerOrderRef[];
-            total?: number;
-            page?: number;
-            limit?: number;
-        };
-        const orders = body.orders || [];
-        const total = body.total || 0;
-        const hasMore = orders.length === limit && (page * limit) < total;
-        console.log('[deliveryPartnerService] Fetched demo orders page', page, ':', orders.length, 'orders, total:', total);
-        return { orders, total, hasMore };
-    } catch (error) {
-        console.warn('[deliveryPartnerService] fetchDemoOrdersFromDeliveryPartner failed:', error);
-        return { orders: [], total: 0, hasMore: false };
-    }
-}
-
-/** Fetch all demo orders from delivery partner API (all pages). */
-export async function fetchAllDemoOrdersFromDeliveryPartner(customerId?: string, customerEmail?: string, customerPhone?: string): Promise<DeliveryPartnerOrderRef[]> {
+): Promise<DeliveryPartnerOrderRef[]> {
     const allOrders: DeliveryPartnerOrderRef[] = [];
     let page = 1;
     const limit = 50;
     let hasMore = true;
 
     while (hasMore) {
-        const { orders, total, hasMore: more } = await fetchDemoOrdersFromDeliveryPartner(page, limit, customerId, customerEmail, customerPhone);
-        allOrders.push(...orders);
-        hasMore = more;
-        page++;
-        
-        // Safety limit to prevent infinite loops
-        if (page > 100) {
-            console.warn('[deliveryPartnerService] Reached page limit (100), stopping pagination');
+        try {
+            let apiUrl = `${DELIVERY_PARTNER_ORDERS_API}?is_demo_order=true&page=${page}&limit=${limit}`;
+            if (customerId) {
+                apiUrl += `&customerId=${customerId}`;
+            }
+            if (customerEmail) {
+                apiUrl += `&customerEmail=${encodeURIComponent(customerEmail)}`;
+            }
+            if (customerPhone) {
+                apiUrl += `&customer_phone=${encodeURIComponent(customerPhone)}`;
+            }
+            console.log('[deliveryPartnerService] Fetching demo orders page', page, 'with URL:', apiUrl);
+            console.log('[deliveryPartnerService] Customer ID filter:', customerId || 'none');
+            console.log('[deliveryPartnerService] Customer Email filter:', customerEmail || 'none');
+            console.log('[deliveryPartnerService] Customer Phone filter:', customerPhone || 'none');
+
+            const response = await fetch(
+                apiUrl,
+                { headers: { Accept: 'application/json' } },
+            );
+            if (!response.ok) {
+                console.warn('[deliveryPartnerService] Failed to fetch demo orders:', response.status);
+                break;
+            }
+            const body = (await response.json()) as {
+                orders?: DeliveryPartnerOrderRef[];
+                total?: number;
+                page?: number;
+                limit?: number;
+            };
+            const orders = body.orders || [];
+            const total = body.total || 0;
+            allOrders.push(...orders);
+            hasMore = orders.length === limit && (page * limit) < total;
+            console.log('[deliveryPartnerService] Fetched demo orders page', page, ':', orders.length, 'orders, total so far:', allOrders.length, 'total:', total);
+            page++;
+
+            // Safety limit to prevent infinite loops
+            if (page > 100) {
+                console.warn('[deliveryPartnerService] Reached page limit (100), stopping pagination');
+                break;
+            }
+        } catch (error) {
+            console.warn('[deliveryPartnerService] fetchDemoOrdersFromDeliveryPartner page failed:', error);
             break;
         }
     }
 
-    console.log('[deliveryPartnerService] Fetched total demo orders:', allOrders.length);
+    console.log('[deliveryPartnerService] Fetched all demo orders:', allOrders.length, 'total');
     return allOrders;
 }
 
@@ -1242,70 +1234,6 @@ export async function cancelDeliveryPartnerOrderById(
         return true;
     } catch (error) {
         console.error('[deliveryPartnerService] Error cancelling delivery partner order:', error);
-        return false;
-    }
-}
-
-export async function cancelDeliveryPartnerOrder(
-    shopifyOrderId: string,
-    reason: string,
-): Promise<boolean> {
-    const numericId = extractShopifyOrderNumericId(shopifyOrderId);
-    if (!numericId) return false;
-
-    console.log('[deliveryPartnerService] Cancelling delivery partner order for Shopify ID:', numericId);
-    const partnerOrder = await findDeliveryPartnerOrderByShopifyId(numericId);
-    console.log('[deliveryPartnerService] Found partner order:', partnerOrder);
-    if (!partnerOrder?.id) {
-        console.warn('[deliveryPartnerService] No delivery-partner order for Shopify id', numericId);
-        return false;
-    }
-
-    try {
-        const requestBody: Record<string, any> = {
-            status: 'cancelled',
-            reason: reason,
-        };
-
-        const apiUrl = `${DELIVERY_PARTNER_ORDERS_API}/status/${encodeURIComponent(partnerOrder.id)}`;
-        console.log('[deliveryPartnerService] POST request to cancel:', apiUrl);
-        console.log('[deliveryPartnerService] Request body:', JSON.stringify(requestBody, null, 2));
-
-        const response = await fetch(
-            apiUrl,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify(requestBody),
-            },
-        );
-
-        console.log('[deliveryPartnerService] Response status:', response.status, response.statusText);
-
-        if (!response.ok) {
-            let detail = '';
-            let responseBody = '';
-            try {
-                responseBody = await response.text();
-                const body = JSON.parse(responseBody);
-                detail = body?.error || body?.message || '';
-            } catch {
-                /* ignore */
-            }
-            console.error(
-                '[deliveryPartnerService] order cancel failed:',
-                response.status,
-                detail || response.statusText,
-            );
-            console.error('[deliveryPartnerService] Response body:', responseBody);
-            return false;
-        }
-
-        const successBody = await response.text();
-        console.log('[deliveryPartnerService] Cancel successful. Response:', successBody);
-        return true;
-    } catch (error) {
-        console.error('[deliveryPartnerService] order cancel error:', error);
         return false;
     }
 }

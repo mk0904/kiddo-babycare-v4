@@ -2,7 +2,7 @@ import { DemoCancelModal } from '@/components/demo/DemoCancelModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useUserStore, type UserProfile } from '@/store/userStore';
+import { useUserStore } from '@/store/userStore';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -20,12 +20,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const toShopifyOrderGid = (id: string): string => {
-    if (id.includes('gid://')) return id;
-    const num = String(id).match(/\d+/)?.[0];
-    return num ? `gid://shopify/Order/${num}` : id;
-};
-
 const isCancelledOrder = (order: any): boolean => {
     // Check delivery partner status only
     const deliveryStatus = String(order.status || '').toLowerCase();
@@ -38,21 +32,6 @@ const isCompletedOrder = (order: any): boolean => {
     if (isCancelledOrder(order)) return false;
     const deliveryStatus = String(order.status || '').toLowerCase();
     return deliveryStatus === 'delivered' || deliveryStatus === 'completed';
-};
-
-const isCancelledFromDeliveryApi = async (shopifyOrderId: string): Promise<boolean> => {
-    try {
-        const { getDeliveryPartnerOrderStatus, extractShopifyOrderNumericId } = await import('@/services/deliveryPartnerService');
-        const numericId = extractShopifyOrderNumericId(shopifyOrderId);
-        console.log('[Bookings] Checking delivery API status for order:', shopifyOrderId, 'numeric ID:', numericId);
-        const status = await getDeliveryPartnerOrderStatus(numericId);
-        const isCancelled = status?.status?.toLowerCase() === 'cancelled';
-        console.log('[Bookings] Delivery API status for', numericId, ':', status?.status, 'isCancelled:', isCancelled);
-        return isCancelled;
-    } catch (error) {
-        console.warn('[Bookings] Failed to check delivery partner cancel status:', error);
-        return false;
-    }
 };
 
 /** Extract price info from line item custom attributes (stored when demo was booked) */
@@ -124,11 +103,6 @@ const getLineItemDetails = (order: any) => {
     };
 };
 
-function getShopifyCustomerAccessToken(user: UserProfile | null): string {
-    const persisted = useUserStore.getState().accessToken;
-    return String(user?.customerAccessToken ?? user?.accessToken ?? persisted ?? '').trim();
-}
-
 export default function DemoBookingsScreen() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuth();
@@ -187,9 +161,9 @@ export default function DemoBookingsScreen() {
             }
 
             // Fetch demo orders from delivery partner API using is_demo_order filter
-            const { fetchAllDemoOrdersFromDeliveryPartner } = await import('@/services/deliveryPartnerService');
+            const { fetchDemoOrdersFromDeliveryPartner } = await import('@/services/deliveryPartnerService');
             console.log('[Bookings] Calling API with customer ID:', customerIdForApi || 'none', 'email:', customerEmailForApi || 'none', 'phone:', customerPhoneForApi || 'none');
-            const deliveryDemoOrders = await fetchAllDemoOrdersFromDeliveryPartner(
+            const deliveryDemoOrders = await fetchDemoOrdersFromDeliveryPartner(
                 customerIdForApi,
                 customerEmailForApi,
                 customerPhoneForApi
