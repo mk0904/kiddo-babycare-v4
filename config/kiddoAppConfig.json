@@ -4516,35 +4516,6 @@
   ],
   "fashion": [
     {
-      "id": "girls-image-banner-1",
-      "type": "imageBanner",
-      "title": "Featured",
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Main_Banner.png?v=1774001067",
-        "link": {
-          "type": "collection",
-          "collection": {
-            "id": "gid://shopify/Collection/510860198177"
-          }
-        },
-        "height": 250,
-        "borderRadius": 0,
-        "borderBottomLeftRadius": 20,
-        "borderBottomRightRadius": 20,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginTop": 0,
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
-        },
-        "wrapper": {
-          "marginHorizontal": 0
-        }
-      }
-    },
-    {
       "id": "category-grid-banner-1",
       "type": "categoryGrid",
       "visible": true,
@@ -4598,7 +4569,7 @@
           "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 0,
+          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -4690,7 +4661,7 @@
       "id": "category-grid-banner-3",
       "type": "categoryGrid",
       "visible": true,
-      "title": "Footwear",
+      "title": "Infant Fashion",
       "gridConfig": {
         "layout": "uniform",
         "numColumns": 2,
@@ -4930,110 +4901,45 @@
         }
       }
     },
-    {
-      "id": "all-grid-1",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510879301921"
-        },
-        {
-          "id": "gid://shopify/Collection/510860001569"
-        },
-        {
-          "id": "gid://shopify/Collection/510860067105"
-        },
-        {
-          "id": "gid://shopify/Collection/510860198177"
-        },
-        {
-          "id": "gid://shopify/Collection/510860525857"
-        },
-        {
-          "id": "gid://shopify/Collection/515418194209"
-        },
-        {
-          "id": "gid://shopify/Collection/510860788001"
-        },
-        {
-          "id": "gid://shopify/Collection/510860984609"
-        },
-        {
-          "id": "gid://shopify/Collection/510861017377"
-        }
-      ],
-      "title": "Shop by Category",
-      "gridConfig": {
-        "numColumns": 3,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "contain"
-      },
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "marginBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "image": {
-          "width": "100%",
-          "borderRadius": 20
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "overflow": "visible"
-        },
-        "text": {
-          "marginTop": 12,
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
-    },
+    
     {
       "id": "shop-by-brand-carousel-2",
       "type": "collectionImageCarousel",
-      "title": "Shop by Brand",
+      "title": "Brand Spotlight",
       "visible": true,
 "data": [
   {
     "id": "brand-adidas",
     "collectionId": "gid://shopify/Collection/514922053921",
+
+    "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.05_PM_1.jpg?v=1781503926",
     "label": "Adidas"
   },
   {
     "id": "brand-hopscotch",
     "collectionId": "gid://shopify/Collection/514922381601",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.06_PM.jpg?v=1781503864",
     "label": "Hopscotch"
   },
   {
     "id": "brand-mothercare",
     "collectionId": "gid://shopify/Collection/514922578209",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.07_PM.jpg?v=1781508884"
+,
     "label": "Mothercare"
   },
   {
     "id": "brand-carters",
     "collectionId": "gid://shopify/Collection/515442802977",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908",
+
     "label": "Carter's"
   },
   {
     "id": "brand-puma",
     "collectionId": "gid://shopify/Collection/515304522017",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690"
+    ,
     "label": "Puma"
   }
 ],      "carouselConfig": {
@@ -5046,7 +4952,6 @@
       },
       "styles": {
         "container": {
-          "paddingVertical": 16
         },
         "title": {
           "marginBottom": 10,
@@ -5058,106 +4963,10 @@
           "color": "rgba(0, 0, 0, 0.3)"
         }
       }
-    },
-    {
-      "id": "girls-product-list-6",
-      "type": "horizontalProductList",
-      "title": "Occassion Wear",
-      "collectionIds": [
-        "gid://shopify/Collection/508366291233"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 20,
-          "paddingHorizontal": 16,
-          "marginBottom": 10
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "girls-product-list-7",
-      "type": "horizontalProductList",
-      "title": "Accessories",
-      "collectionIds": [
-        "gid://shopify/Collection/508366848289"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "girls-all-infinite-grid-1",
-      "type": "infiniteProductGrid",
-      "title": "All Products",
-      "collectionIds": [
-        "gid://shopify/Collection/507808678177"
-      ],
-      "productGridConfig": {
-        "numColumns": 2,
-        "gap": 16,
-        "rowGap": 16,
-        "colGap": 16,
-        "paddingHorizontal": 20,
-        "pageSize": 20,
-        "initialLoad": 20
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
     }
+   
+   
+   
   ],
   "girls": [
     {
@@ -7003,7 +6812,7 @@
       "fashion": {
         "label": "fashion",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fashion_icon_774e6bfb-010d-40f3-93a3-32013a5b03eb.png?v=1782294230",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
