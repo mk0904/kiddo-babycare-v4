@@ -289,15 +289,6 @@ const GET_DRAFT_ORDER_QUERY = `
   }
 `;
 
-const ORDER_CANCEL_MUTATION = `
-  mutation orderCancel($orderId: ID!, $notifyCustomer: Boolean, $reason: OrderCancelReason!, $restock: Boolean!) {
-    orderCancel(orderId: $orderId, notifyCustomer: $notifyCustomer, reason: $reason, restock: $restock) {
-      job { id }
-      orderCancelUserErrors { field message }
-    }
-  }
-`;
-
 const ORDER_UPDATE_MUTATION = `
   mutation orderUpdate($input: OrderInput!) {
     orderUpdate(input: $input) {
@@ -659,42 +650,6 @@ export const shopifyAdminApi = {
   },
 
   /**
-   * Cancel an order
-   */
-  cancelOrder: async (orderId: string, notifyCustomer: boolean = false): Promise<boolean> => {
-    try {
-      const formattedOrderId = orderId.includes('gid://')
-        ? orderId
-        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
-
-      const response = await adminClient.post('', {
-        query: ORDER_CANCEL_MUTATION,
-        variables: {
-          orderId: formattedOrderId,
-          notifyCustomer,
-          reason: 'CUSTOMER',
-          restock: true,
-        },
-      });
-
-      if (response.data.errors) {
-        throw new Error(response.data.errors[0]?.message || 'Failed to cancel order');
-      }
-
-      const result = response.data.data.orderCancel;
-
-      if (result.orderCancelUserErrors && result.orderCancelUserErrors.length > 0) {
-        throw new Error(result.orderCancelUserErrors[0].message || 'Failed to cancel order');
-      }
-
-      return true;
-    } catch (error: any) {
-      console.error('[AdminAPI] Error canceling order:', error.message);
-      throw error;
-    }
-  },
-
-  /**
    * Get order custom attributes
    */
   getOrderCustomAttributes: async (orderId: string): Promise<Array<{ key: string; value: string }>> => {
@@ -781,60 +736,4 @@ export const shopifyAdminApi = {
     }
   },
 
-  /**
-   * Batch-check which orders are cancelled (Admin API — reliable vs Storefront cancel fields).
-   */
-  getCancelledOrderIds: async (orderIds: string[]): Promise<Set<string>> => {
-    const cancelled = new Set<string>();
-    const unique = [...new Set(orderIds.filter(Boolean))];
-    if (unique.length === 0) return cancelled;
-
-    const toGid = (id: string) => {
-      if (id.includes('gid://')) return id;
-      const num = String(id).match(/\d+/)?.[0];
-      return num ? `gid://shopify/Order/${num}` : id;
-    };
-
-    const gids = unique.map(toGid);
-    const chunkSize = 50;
-
-    for (let i = 0; i < gids.length; i += chunkSize) {
-      const chunk = gids.slice(i, i + chunkSize);
-      try {
-        const response = await adminClient.post('', {
-          query: `
-            query getOrdersCancelStatus($ids: [ID!]!) {
-              nodes(ids: $ids) {
-                ... on Order {
-                  id
-                  cancelledAt
-                  cancelReason
-                  cancellation {
-                    staffNote
-                  }
-                }
-              }
-            }
-          `,
-          variables: { ids: chunk },
-        });
-
-        if (response.data.errors) {
-          console.warn('[AdminAPI] getCancelledOrderIds errors:', response.data.errors);
-          continue;
-        }
-
-        for (const node of response.data.data?.nodes || []) {
-          if (!node?.id) continue;
-          if (node.cancelledAt || node.cancelReason || node.cancellation) {
-            cancelled.add(node.id);
-          }
-        }
-      } catch (error: any) {
-        console.warn('[AdminAPI] getCancelledOrderIds chunk failed:', error.message);
-      }
-    }
-
-    return cancelled;
-  },
 };

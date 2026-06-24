@@ -2443,7 +2443,60 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_May_15_2026_12_56_47_PM.png?v=1778830023"
         }
       ]
+    },
+    "514698215713": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/515544744225",
+      "label": "Top Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/topwear_57ff8982-2b2b-4256-8fdd-51fa354bec49.jpg?v=1782192556"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515544711457",
+      "label": "Bottom Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/bottomwear_ba458fbd-8f05-4b84-8c0f-4422c569afe9.jpg?v=1782192580"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515544875297",
+      "label": "Dresses",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Dresses_92f0f0cb-f6bc-4577-9faf-e43574bcc85c.jpg?v=1782192607"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515545006369",
+      "label": "Co-ord Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Co-ord_sets.jpg?v=1782192634"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515545137441",
+      "label": "Accessories",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Accessories_82a4782a-beb3-423b-93e6-aa1f4d576517.jpg?v=1782192661"
     }
+  ]
+     },
+ "515567780129": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/515565060385",
+      "label": "Snacks & Drinks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/32.png?v=1782202727"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/510760354081",
+      "label": "Instant Food",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-04_at_2.01.08_AM.png?v=1772599192"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515565486369",
+      "label": "Cereals",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/30_5b3a386c-edbc-41a4-9eea-893ab6428a8c.png?v=1782202605"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515565617441",
+      "label": "Baby Food and Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/29_81e09ae7-bffb-40e7-be2f-8abd90c4a975.png?v=1782202540"
+    }
+  ]
+}
   },
   "productGridDefaults": {
     "gap": 16,
@@ -3004,11 +3057,11 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App__Short_Banners_1.gif?v=1782203754",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15k_products_banner.gif?v=1782221863",
           "link": {
             "type": "collection",
             "collection": {
-              "id": "gid://shopify/Collection/515413967137"
+              "id": ""
               
             }
           }
@@ -3025,7 +3078,7 @@
       "styles": {
         "container": {
           "paddingHorizontal":10,
-          "paddingVertical":20,
+          "paddingVertical":0,
           "marginTop": 0,
           "backgroundColor": "#F5F5F5"
         },
@@ -3325,7 +3378,6 @@
         "layout": "uniform",
         "numColumns": 4,
         "colGap": 12,
-        "rowGap": 12,
         "limit": 13,
         "aspectRatio": 1,
         "resizeMode": "cover",
@@ -3369,12 +3421,10 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3445,12 +3495,10 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3532,8 +3580,6 @@
         "container": {
         },
         "title": {
-          "marginBottom": 10,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3613,12 +3659,10 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3673,12 +3717,10 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3781,12 +3823,10 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -3914,13 +3954,11 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
           "paddingBottom": 10,
           "backgroundColor": "#F5F5F5"
         },
         "title": {
           "marginBottom": 0,
-          "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
@@ -4466,6 +4504,651 @@
         },
         "title": {
           "marginBottom": 10,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        }
+      }
+    }
+  ],
+  "fashion": [
+    {
+      "id": "girls-image-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Main_Banner.png?v=1774001067",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/510860198177"
+          }
+        },
+        "height": 250,
+        "borderRadius": 0,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-1",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Girl Fashion",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/510860001569",
+    "name": "Top Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/510860067105",
+    "name": "Bottom Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/512670826785",
+    "name": "Dresses"
+  },
+  {
+    "id": "gid://shopify/Collection/510860198177",
+    "name": "Coord Sets"
+  },
+  {
+    "id": "gid://shopify/Collection/510860525857",
+    "name": "Nightwear"
+  },
+  {
+    "id": "gid://shopify/Collection/515418194209",
+    "name": "Innerwear"
+  },
+  {
+    "id": "gid://shopify/Collection/510860689697",
+    "name": "Ethnic Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/510860788001",
+    "name": "Party Wear"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-2",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Boy Fashion",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+  {
+    "id": "gid://shopify/Collection/510861345057",
+    "name": "Top Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/510861476129",
+    "name": "Bottom Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/515569451297",
+    "name": "Dungarees"
+  },
+  {
+    "id": "gid://shopify/Collection/510861508897",
+    "name": "Coord Sets"
+  },
+  {
+    "id": "gid://shopify/Collection/510861771041",
+    "name": "Nightwear"
+  },
+  {
+    "id": "gid://shopify/Collection/515441230113",
+    "name": "Innerwear"
+  },
+  {
+    "id": "gid://shopify/Collection/510861836577",
+    "name": "Ethnic Wear"
+  },
+  {
+    "id": "gid://shopify/Collection/510861967649",
+    "name": "Party Wear"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-3",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Footwear",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 2,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/515566502177",
+    "name": "Onesies & Rompers"
+  },
+  {
+    "id": "gid://shopify/Collection/515569156385",
+    "name": "Accessories"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-3",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Footwear",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/512584679713",
+    "name": "Casual Shoes"
+  },
+  {
+    "id": "gid://shopify/Collection/515566829857",
+    "name": "Clogs & Slippers"
+  },
+  {
+    "id": "gid://shopify/Collection/515566797089",
+    "name": "Sandals & Ballerinas"
+  },
+  {
+    "id": "gid://shopify/Collection/512586383649",
+    "name": "School Shoes"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-4",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Accessories",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/512674988321",
+    "name": "Hair Accessories"
+  },
+  {
+    "id": "gid://shopify/Collection/512615055649",
+    "name": "Caps & Hats"
+  },
+  {
+    "id": "gid://shopify/Collection/515567812897",
+    "name": "Watches & Bands"
+  },
+  {
+    "id": "gid://shopify/Collection/512614859041",
+    "name": "Sunglasses"
+  },
+  {
+    "id": "gid://shopify/Collection/515567845665",
+    "name": "Kids Makeup"
+  },
+  {
+    "id": "gid://shopify/Collection/515441656097",
+    "name": "Jewellery"
+  },
+  {
+    "id": "gid://shopify/Collection/515567911201",
+    "name": "Luggage & Bagpacks"
+  },
+  {
+    "id": "gid://shopify/Collection/512586481953",
+    "name": "Socks"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "category-grid-banner-4",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Accessories",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/514894889249",
+    "name": "0-6 M"
+  },
+  {
+    "id": "gid://shopify/Collection/514894954785",
+    "name": "6-12 M"
+  },
+  {
+    "id": "gid://shopify/Collection/514895085857",
+    "name": "1-2 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514895216929",
+    "name": "2-3 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514895249697",
+    "name": "3-4 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514998272289",
+    "name": "4-5 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514999189793",
+    "name": "5-6 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514999222561",
+    "name": "6-7 Y"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "all-grid-1",
+      "type": "grid",
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/510879301921"
+        },
+        {
+          "id": "gid://shopify/Collection/510860001569"
+        },
+        {
+          "id": "gid://shopify/Collection/510860067105"
+        },
+        {
+          "id": "gid://shopify/Collection/510860198177"
+        },
+        {
+          "id": "gid://shopify/Collection/510860525857"
+        },
+        {
+          "id": "gid://shopify/Collection/515418194209"
+        },
+        {
+          "id": "gid://shopify/Collection/510860788001"
+        },
+        {
+          "id": "gid://shopify/Collection/510860984609"
+        },
+        {
+          "id": "gid://shopify/Collection/510861017377"
+        }
+      ],
+      "title": "Shop by Category",
+      "gridConfig": {
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 0,
+        "resizeMode": "contain"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop": 10,
+          "marginBottom": 20
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 20
+        },
+        "imageContainer": {
+          "borderRadius": 20,
+          "backgroundColor": "#FFFFFF",
+          "overflow": "visible"
+        },
+        "text": {
+          "marginTop": 12,
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "shop-by-brand-carousel-2",
+      "type": "collectionImageCarousel",
+      "title": "Shop by Brand",
+      "visible": true,
+"data": [
+  {
+    "id": "brand-adidas",
+    "collectionId": "gid://shopify/Collection/514922053921",
+    "label": "Adidas"
+  },
+  {
+    "id": "brand-hopscotch",
+    "collectionId": "gid://shopify/Collection/514922381601",
+    "label": "Hopscotch"
+  },
+  {
+    "id": "brand-mothercare",
+    "collectionId": "gid://shopify/Collection/514922578209",
+    "label": "Mothercare"
+  },
+  {
+    "id": "brand-carters",
+    "collectionId": "gid://shopify/Collection/515442802977",
+    "label": "Carter's"
+  },
+  {
+    "id": "brand-puma",
+    "collectionId": "gid://shopify/Collection/515304522017",
+    "label": "Puma"
+  }
+],      "carouselConfig": {
+        "itemWidth": 160,
+        "itemHeight": 220,
+        "gap": 8,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 16
+        },
+        "title": {
+          "marginBottom": 10,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        }
+      }
+    },
+    {
+      "id": "girls-product-list-6",
+      "type": "horizontalProductList",
+      "title": "Occassion Wear",
+      "collectionIds": [
+        "gid://shopify/Collection/508366291233"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingTop": 20,
+          "paddingHorizontal": 16,
+          "marginBottom": 10
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-product-list-7",
+      "type": "horizontalProductList",
+      "title": "Accessories",
+      "collectionIds": [
+        "gid://shopify/Collection/508366848289"
+      ],
+      "productListConfig": {
+        "limit": 20,
+        "showSeeAll": true,
+        "seeAllText": "View All",
+        "itemsPerView": 2.1
+      },
+      "styles": {
+        "container": {
+          "paddingTop": 10,
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "titleContainer": {
+          "marginBottom": 0
+        },
+        "content": {}
+      }
+    },
+    {
+      "id": "girls-all-infinite-grid-1",
+      "type": "infiniteProductGrid",
+      "title": "All Products",
+      "collectionIds": [
+        "gid://shopify/Collection/507808678177"
+      ],
+      "productGridConfig": {
+        "numColumns": 2,
+        "gap": 16,
+        "rowGap": 16,
+        "colGap": 16,
+        "paddingHorizontal": 20,
+        "pageSize": 20,
+        "initialLoad": 20
+      },
+      "styles": {
+        "container": {
+          "paddingTop": 10,
+          "paddingBottom": 20
+        },
+        "title": {
+          "marginBottom": 0,
           "marginTop": 20,
           "fontSize": 15,
           "lineHeight": 20,
@@ -6284,6 +6967,7 @@
     "defaultPageBackgroundColor": "#F5F5F5",
     "order": [
       "all",
+      "fashion",
       "girls",
       "boys",
       "babycare",
@@ -6312,6 +6996,20 @@
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_header.png?v=1780071110",
           "labelColors": {
             "selected": "#363636",
+            "unselected": "#363636"
+          }
+        }
+      },
+      "fashion": {
+        "label": "fashion",
+        "pageBackgroundColor": "#FFFFFF",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
+        "header": {
+          "textColor": "#363636",
+          "backgroundColor": "#FF69B4",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Header.png?v=1774001066",
+          "labelColors": {
+            "selected": "#FF1493",
             "unselected": "#363636"
           }
         }

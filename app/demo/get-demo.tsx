@@ -607,7 +607,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     disabled={!demoSchedule?.date || !demoSchedule?.time || isSubmitting}
                 >
                     <Text style={styles.confirmChangesButtonText}>
-                        {isSubmitting ? 'Confirming...' : 'Confirm Changes'}
+                        {isSubmitting ? 'Confirming...' : (params.editOrderId ? 'Confirm Changes' : 'Confirm Demo')}
                     </Text>
                 </TouchableOpacity>
             </View>

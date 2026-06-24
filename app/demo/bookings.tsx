@@ -20,28 +20,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'demo_request'];
-
-/** Check if an order is a demo booking by line item or order custom attributes */
-const isDemoOrder = (order: any): boolean => {
-    const orderAttrs = order?.customAttributes || [];
-    if (
-        orderAttrs.some(
-            (a: any) =>
-                DEMO_ORDER_ATTR_KEYS.includes(a.key) && String(a.value).toLowerCase() === 'true',
-        )
-    ) {
-        return true;
-    }
-    const edges = order?.lineItems?.edges || [];
-    return edges.some((edge: any) => {
-        const attrs = edge?.node?.customAttributes || [];
-        return attrs.some(
-            (a: any) => a.key === 'demo_request' && String(a.value).toLowerCase() === 'true',
-        );
-    });
-};
-
 const toShopifyOrderGid = (id: string): string => {
     if (id.includes('gid://')) return id;
     const num = String(id).match(/\d+/)?.[0];
