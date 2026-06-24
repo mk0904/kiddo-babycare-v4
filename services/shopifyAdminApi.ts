@@ -289,18 +289,6 @@ const GET_DRAFT_ORDER_QUERY = `
   }
 `;
 
-const ORDER_UPDATE_MUTATION = `
-  mutation orderUpdate($input: OrderInput!) {
-    orderUpdate(input: $input) {
-      order {
-        id
-        customAttributes { key value }
-      }
-      userErrors { field message }
-    }
-  }
-`;
-
 // Admin API Service
 export const shopifyAdminApi = {
   /**
@@ -645,93 +633,6 @@ export const shopifyAdminApi = {
       return true;
     } catch (error: any) {
       console.error('[AdminAPI] Error updating customer metafields:', error.message);
-      throw error;
-    }
-  },
-
-  /**
-   * Get order custom attributes
-   */
-  getOrderCustomAttributes: async (orderId: string): Promise<Array<{ key: string; value: string }>> => {
-    try {
-      const formattedOrderId = orderId.includes('gid://')
-        ? orderId
-        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
-
-      const response = await adminClient.post('', {
-        query: `
-          query getOrderAttrs($id: ID!) {
-            order(id: $id) {
-              customAttributes {
-                key
-                value
-              }
-            }
-          }
-        `,
-        variables: { id: formattedOrderId },
-      });
-
-      if (response.data.errors) {
-        throw new Error(response.data.errors[0]?.message || 'Failed to get order');
-      }
-
-      return response.data.data.order?.customAttributes || [];
-    } catch (error: any) {
-      console.error('[AdminAPI] Error getting order custom attributes:', error.message);
-      return [];
-    }
-  },
-
-  /**
-   * Update order custom attributes (merges with existing attributes)
-   */
-  updateOrderCustomAttributes: async (orderId: string, attributes: Array<{ key: string; value: string }>, excludeKeys: string[] = []): Promise<boolean> => {
-    try {
-      const formattedOrderId = orderId.includes('gid://')
-        ? orderId
-        : `gid://shopify/Order/${orderId.replace('shopify-', '').replace('gid://shopify/Order/', '')}`;
-
-      // Fetch existing attributes first
-      const existingAttrs = await shopifyAdminApi.getOrderCustomAttributes(orderId);
-      
-      // Merge: existing + new (new values override existing for same keys)
-      // Exclude specified keys from existing attributes
-      const attrMap = new Map();
-      for (const attr of existingAttrs) {
-        if (!excludeKeys.includes(attr.key)) {
-          attrMap.set(attr.key, attr.value);
-        }
-      }
-      for (const attr of attributes) {
-        attrMap.set(attr.key, attr.value);
-      }
-      
-      const mergedAttributes = Array.from(attrMap.entries()).map(([key, value]) => ({ key, value }));
-
-      const response = await adminClient.post('', {
-        query: ORDER_UPDATE_MUTATION,
-        variables: {
-          input: {
-            id: formattedOrderId,
-            customAttributes: mergedAttributes,
-          },
-        },
-      });
-
-      if (response.data.errors) {
-        throw new Error(response.data.errors[0]?.message || 'Failed to update order');
-      }
-
-      const result = response.data.data.orderUpdate;
-
-      if (result.userErrors && result.userErrors.length > 0) {
-        throw new Error(result.userErrors[0].message || 'Failed to update order');
-      }
-
-      return true;
-    } catch (error: any) {
-      console.error('[AdminAPI] Error updating order custom attributes:', error.message);
       throw error;
     }
   },

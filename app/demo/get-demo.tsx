@@ -245,14 +245,6 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     return;
                 }
 
-                // Update Shopify custom attributes with scheduled_date and scheduled_time for local display
-                const { shopifyAdminApi } = await import('@/services/shopifyAdminApi');
-                const attributesUpdated = await shopifyAdminApi.updateOrderCustomAttributes(editOrderId, [
-                    { key: 'scheduled_date', value: scheduledDate },
-                    { key: 'scheduled_time', value: scheduledTime },
-                ], ['delivery_date', 'delivery_time']);
-                console.log('[GetDemo] Shopify custom attributes updated:', attributesUpdated);
-
                 // Navigate to order success screen with "demo scheduled" title
                 router.replace({
                     pathname: '/order-success/v2',

@@ -27,38 +27,17 @@ const toShopifyOrderGid = (id: string): string => {
 };
 
 const isCancelledOrder = (order: any): boolean => {
-    if (order?.canceledAt || order?.cancelReason) return true;
-    const financialStatus = String(order?.financialStatus ?? '').toUpperCase();
-    if (financialStatus === 'VOIDED') return true;
-    const orderAttrs = order?.customAttributes || [];
-    return orderAttrs.some((a: any) => {
-        const value = String(a.value).toLowerCase();
-        if (a.key === 'demo_cancelled' && value === 'true') return true;
-        if (['cancelled', 'order_status'].includes(a.key) && value === 'cancelled') return true;
-        return false;
-    });
+    // Check delivery partner status only
+    const deliveryStatus = String(order.status || '').toLowerCase();
+    return deliveryStatus === 'cancelled';
 };
 
 /** Check if a demo order is completed */
 const isCompletedOrder = (order: any): boolean => {
-    // Check delivery partner status first
-    if (order.isCancelledFromDelivery) return false;
+    // Check delivery partner status only
+    if (isCancelledOrder(order)) return false;
     const deliveryStatus = String(order.status || '').toLowerCase();
-    if (deliveryStatus === 'delivered' || deliveryStatus === 'completed') return true;
-
-    // Check Shopify fulfillment status
-    if (order.fulfillmentStatus === 'FULFILLED') return true;
-
-    // Fallback: check if scheduled date has passed
-    const scheduledDate = getDemoDate(order);
-    if (!scheduledDate) return false;
-    try {
-        const demoDate = new Date(scheduledDate);
-        const now = new Date();
-        return demoDate < now;
-    } catch {
-        return false;
-    }
+    return deliveryStatus === 'delivered' || deliveryStatus === 'completed';
 };
 
 const isCancelledFromDeliveryApi = async (shopifyOrderId: string): Promise<boolean> => {
@@ -95,38 +74,14 @@ const getDemoPriceInfo = (order: any) => {
     return null;
 };
 
-/** Extract demo date from order-level or line item custom attributes */
+/** Extract demo date from delivery partner API */
 const getDemoDate = (order: any): string | null => {
-    // Check order-level custom attributes first
-    const orderAttrs = order?.customAttributes || [];
-    const orderDateAttr = orderAttrs.find((a: any) => a.key === 'scheduled_date' || a.key === 'delivery_date' || a.key === 'demo_date');
-    if (orderDateAttr?.value) return orderDateAttr.value;
-
-    // Fallback to line item custom attributes
-    const edges = order?.lineItems?.edges || [];
-    for (const edge of edges) {
-        const attrs = edge?.node?.customAttributes || [];
-        const dateAttr = attrs.find((a: any) => a.key === 'scheduled_date' || a.key === 'delivery_date' || a.key === 'demo_date');
-        if (dateAttr?.value) return dateAttr.value;
-    }
-    return null;
+    return order?.scheduledDate || null;
 };
 
-/** Extract demo time slot from order-level or line item custom attributes */
+/** Extract demo time slot from delivery partner API */
 const getDemoTimeSlot = (order: any): string | null => {
-    // Check order-level custom attributes first
-    const orderAttrs = order?.customAttributes || [];
-    const orderTime = orderAttrs.find((a: any) => a.key === 'scheduled_time' || a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
-    if (orderTime?.value) return orderTime.value;
-
-    // Fallback to line item custom attributes
-    const edges = order?.lineItems?.edges || [];
-    for (const edge of edges) {
-        const attrs = edge?.node?.customAttributes || [];
-        const time = attrs.find((a: any) => a.key === 'scheduled_time' || a.key === 'delivery_time' || a.key === 'demo_time_slot' || a.key === 'demo_time');
-        if (time?.value) return time.value;
-    }
-    return null;
+    return order?.scheduledTime || null;
 };
 
 function formatDemoDate(dateStr: string | null): string {
@@ -284,6 +239,8 @@ export default function DemoBookingsScreen() {
                     cancelReason: dpOrder.status === 'cancelled' ? dpOrder.reasonCancelRefundDelay : null,
                     status: dpOrder.status, // Store delivery partner status
                     productId: productIdGid, // Store product ID as GID
+                    scheduledDate: dpOrder.scheduledDate, // Store delivery partner scheduled date
+                    scheduledTime: dpOrder.scheduledTime, // Store delivery partner scheduled time
                 customAttributes: [
                     { key: 'scheduled_date', value: dpOrder.scheduledDate },
                     { key: 'scheduled_time', value: dpOrder.scheduledTime },
@@ -437,7 +394,7 @@ export default function DemoBookingsScreen() {
         const actualPrice = priceInfo?.price || 0;
         const comparePriceNum = priceInfo?.comparePrice || 0;
         const discountPercent = priceInfo?.discount || 0;
-        const isCancelled = order.isCancelledFromDelivery || isCancelledOrder(order);
+        const isCancelled = isCancelledOrder(order);
         const isCompleted = isCompletedOrder(order);
 
         return (

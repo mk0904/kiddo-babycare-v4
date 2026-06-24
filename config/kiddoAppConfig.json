@@ -4830,78 +4830,69 @@
         }
       }
     },
+   
     {
-      "id": "category-grid-banner-4",
-      "type": "categoryGrid",
+      "id": "shop-by-brand-carousel-2",
+      "type": "collectionImageCarousel",
+      "title": "Happy Wallets",
       "visible": true,
-      "title": "Accessories",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 4,
-        "colGap": 12,
-        "limit": 13,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-"collectionIds": [
+"data": [
   {
-    "id": "gid://shopify/Collection/514894889249",
-    "name": "0-6 M"
+    "id": "brand-adidas",
+    "collectionId": "gid://shopify/Collection/515568861473",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_e788c18b-3f18-4b29-84ea-6af23f1bb298.png?v=1782207175",
+    "label": "Adidas"
   },
   {
-    "id": "gid://shopify/Collection/514894954785",
-    "name": "6-12 M"
+    "id": "brand-hopscotch",
+    "collectionId": "gid://shopify/Collection/514947776801",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_e788c18b-3f18-4b29-84ea-6af23f1bb298.png?v=1782207175",
+
+    "label": "Hopscotch"
   },
   {
-    "id": "gid://shopify/Collection/514895085857",
-    "name": "1-2 Y"
+    "id": "brand-mothercare",
+    "collectionId": "gid://shopify/Collection/514948923681",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_e788c18b-3f18-4b29-84ea-6af23f1bb298.png?v=1782207175",
+
+    "label": "Mothercare"
   },
   {
-    "id": "gid://shopify/Collection/514895216929",
-    "name": "2-3 Y"
+    "id": "brand-carters",
+    "collectionId": "gid://shopify/Collection/515568959777",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_e788c18b-3f18-4b29-84ea-6af23f1bb298.png?v=1782207175",
+
+    "label": "Carter's"
   },
   {
-    "id": "gid://shopify/Collection/514895249697",
-    "name": "3-4 Y"
-  },
-  {
-    "id": "gid://shopify/Collection/514998272289",
-    "name": "4-5 Y"
-  },
-  {
-    "id": "gid://shopify/Collection/514999189793",
-    "name": "5-6 Y"
-  },
-  {
-    "id": "gid://shopify/Collection/514999222561",
-    "name": "6-7 Y"
+    "id": "brand-puma",
+    "collectionId": "gid://shopify/Collection/515569090849",
+    "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_e788c18b-3f18-4b29-84ea-6af23f1bb298.png?v=1782207175",
+    
+    "label": "Puma"
   }
-],
+],      "carouselConfig": {
+        "itemWidth": 100,
+        "itemHeight": 100,
+        "gap": 8,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
       "styles": {
         "container": {
-          "paddingHorizontal": 16
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": 10,
+          "marginTop": 10,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
           "fontFamily": "lexend",
           "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
         }
       }
     },
-    
     {
       "id": "shop-by-brand-carousel-2",
       "type": "collectionImageCarousel",
@@ -4961,6 +4952,80 @@
           "fontWeight": "700",
           "fontFamily": "lexend",
           "color": "rgba(0, 0, 0, 0.3)"
+        }
+      }
+    },
+     {
+      "id": "category-grid-banner-4",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "Age Wise Picks",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/514894889249",
+    "name": "0-6 M"
+  },
+  {
+    "id": "gid://shopify/Collection/514894954785",
+    "name": "6-12 M"
+  },
+  {
+    "id": "gid://shopify/Collection/514895085857",
+    "name": "1-2 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514895216929",
+    "name": "2-3 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514895249697",
+    "name": "3-4 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514998272289",
+    "name": "4-5 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514999189793",
+    "name": "5-6 Y"
+  },
+  {
+    "id": "gid://shopify/Collection/514999222561",
+    "name": "6-7 Y"
+  }
+],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "paddingTop":30,
+          "marginBottom":0,
+          "paddingBottom":0
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     }
