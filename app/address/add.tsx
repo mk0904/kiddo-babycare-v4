@@ -23,6 +23,7 @@ import {
 import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { appConfigService } from '@/services/appConfigService';
+import { reverseGeocodeFull } from '@/config/deliveryConfig';
 
 const GOOGLE_API_KEY = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -35,6 +36,8 @@ interface LocationData {
     state?: string;
     pincode?: string;
     address1?: string;
+    area?: string;
+    buildingAndSector?: string;
 }
 
 // --- Helper Functions (Kiddo Style) ---
@@ -185,6 +188,32 @@ export default function MapAddressScreen() {
         setLoadingAddress(true);
         
         try {
+            if (appConfigService.isBackendGeocodingEnabled()) {
+                try {
+                    const data = await reverseGeocodeFull(latitude, longitude);
+                    if (data) {
+                        const formattedAddress = data.formattedAddress || `${data.address1 || ''} ${data.city || ''} ${data.state || ''} ${data.pincode || ''}`.trim();
+                        setSelectedLocation({
+                            latitude,
+                            longitude,
+                            formattedAddress,
+                            area: data.address1,
+                            city: data.city,
+                            state: data.state,
+                            pincode: data.pincode,
+                            address1: data.address1,
+                            buildingAndSector: data.address1,
+                        });
+                        setMapError(null);
+                        setLoadingAddress(false);
+                        return; // Successfully geocoded using backend, exit early
+                    }
+                } catch (backendError) {
+                    console.log('Backend geocoding error:', backendError);
+                }
+                console.log('Backend geocoding returned no data or failed, falling back to Google API');
+            }
+
             // Use AbortController for timeout
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout

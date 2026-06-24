@@ -8,6 +8,33 @@ const client = axios.create({
     timeout: 10000,
 });
 
+const generateSearchUuid = () => {
+    let u = '', i = 0;
+    while (i++ < 36) {
+        const c = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'[i - 1];
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        u += (c === '-' || c === '4') ? c : v.toString(16);
+    }
+    return u;
+};
+
+const makeAnalyticsRequest = async (url: string, method: string, data: any) => {
+    try {
+        const response = await axios({
+            method,
+            url: `https://athena.searchserverapi1.com/api/v1/${url}`,
+            headers: {
+                'Authorization': `Bearer ${SEARCHANISE_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            data,
+        });
+        console.log(`[Searchanise] Analytics ${method} request to ${url} successful (Status: ${response.status})`);
+    } catch (error) {
+        console.error('Searchanise analytics error:', error);
+    }
+};
 // ---------------------------------------------------------------------------
 // Analytics tracking
 // Searchanise analytics are powered by their JS widget on web storefronts.
@@ -237,6 +264,18 @@ export const searchProducts = async ({
                 totalItems: responseData.totalItems || 0,
                 correctedQuery: responseData.correctedQuery,
             };
+
+            // Send analytics for the search query
+            if (q && startIndex === 0) {
+                const searchQueryData = {
+                    timestamp: Math.floor(Date.now() / 1000),
+                    search_query: q,
+                    has_result: result.totalItems > 0,
+                    uuid: generateSearchUuid(),
+                };
+                // Fire and forget analytics request
+                makeAnalyticsRequest('search-queries', 'POST', searchQueryData).catch(() => { });
+            }
 
             // Never cache when facets are requested - always fetch fresh filter data
             if (startIndex === 0 && facets !== true) {

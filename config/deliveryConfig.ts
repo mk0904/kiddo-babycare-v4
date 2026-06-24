@@ -132,14 +132,30 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
   };
 };
 
+export interface ReverseGeocodeFullResponse {
+  formattedAddress?: string;
+  address1?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
+
+/** Reverse geocode coordinates and return the full location object (city, state, area, pincode). */
+export const reverseGeocodeFull = async (
+  latitude: number,
+  longitude: number
+): Promise<ReverseGeocodeFullResponse | null> => {
+  return postJSON<ReverseGeocodeFullResponse>(
+    'geocode/reverse',
+    { lat: latitude, lng: longitude }
+  );
+};
+
 /** Reverse geocode coordinates to a short label (locality or formatted address). */
 export const reverseGeocode = async (
   latitude: number,
   longitude: number
 ): Promise<string | null> => {
-  const data = await postJSON<{ formattedAddress?: string; address1?: string; city?: string; state?: string; pincode?: string }>(
-    'geocode/reverse',
-    { lat: latitude, lng: longitude }
-  );
+  const data = await reverseGeocodeFull(latitude, longitude);
   return data?.address1 || data?.city || data?.formattedAddress || null;
 };
