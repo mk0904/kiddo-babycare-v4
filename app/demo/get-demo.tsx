@@ -7,6 +7,7 @@ import {
 } from '@/services/deliveryPartnerService';
 import { type OrderItem } from '@/services/orderService';
 import PaymentService from '@/services/paymentService';
+import { configService } from '@/services/configService';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -64,14 +65,13 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [demoTimeSlots, setDemoTimeSlots] = useState<string[]>([]);
 
-    // Load demo time slots from local config file
+    // Load demo time slots from remote config
     useEffect(() => {
         const loadDemoTimeSlots = () => {
             try {
-                console.log('[GetDemo] Loading demo time slots from local config...');
-                const localConfig = require('@/config/kiddoAppConfig.json');
-                const timeSlots = localConfig?.demo?.timeSlots || ['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM'];
-                console.log('[GetDemo] Time slots from local config:', timeSlots);
+                const demoConfig = configService.getDemoConfig();
+                const timeSlots = demoConfig?.timeSlots || ['2PM - 3PM', '3PM - 4PM', '4PM - 5PM', '5PM - 6PM'];
+                console.log('[GetDemo] Time slots from remote config:', timeSlots);
                 setDemoTimeSlots(timeSlots);
             } catch (error) {
                 console.error('[GetDemo] Failed to load demo time slots:', error);
@@ -80,6 +80,10 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
         };
 
         loadDemoTimeSlots();
+
+        // Also subscribe so slots update if remote config reloads
+        const unsub = configService.subscribe(() => loadDemoTimeSlots());
+        return unsub;
     }, []);
 
     // Set default address as selected when addresses load or when default address changes
