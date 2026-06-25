@@ -47,13 +47,13 @@ export default function SearchScreen() {
     const { handleScroll } = useScrollTracking();
     const initialQuery = typeof params.query === 'string' ? params.query : '';
     const collectionHandle = typeof params.collectionHandle === 'string' ? params.collectionHandle : null;
-    
+
     // Get product grid defaults from config
     const gridDefaults = configService.getProductGridDefaults();
     const GAP = gridDefaults.colGap ?? gridDefaults.gap ?? 8;
     const ROW_GAP = gridDefaults.rowGap ?? gridDefaults.gap ?? 8;
     const HORIZONTAL_PADDING = gridDefaults.paddingHorizontal ?? 8;
-    
+
     // Create styles with config values
     const styles = createStyles(HORIZONTAL_PADDING);
 
@@ -169,20 +169,20 @@ export default function SearchScreen() {
     // Save search query to history
     const saveToSearchHistory = useCallback(async (query: string) => {
         if (!query.trim()) return;
-        
+
         try {
             const saved = await AsyncStorage.getItem('search_history');
             let history: string[] = saved ? JSON.parse(saved) : [];
-            
+
             // Remove if already exists
             history = history.filter((item) => item.toLowerCase() !== query.trim().toLowerCase());
-            
+
             // Add to beginning
             history.unshift(query.trim());
-            
+
             // Keep only last 3
             history = history.slice(0, 3);
-            
+
             await AsyncStorage.setItem('search_history', JSON.stringify(history));
             setSearchHistory(history);
         } catch (error) {
@@ -195,9 +195,9 @@ export default function SearchScreen() {
         try {
             const saved = await AsyncStorage.getItem('search_history');
             let history: string[] = saved ? JSON.parse(saved) : [];
-            
+
             history = history.filter((h) => h.toLowerCase() !== item.toLowerCase());
-            
+
             await AsyncStorage.setItem('search_history', JSON.stringify(history));
             setSearchHistory(history.slice(0, 3));
         } catch (error) {
@@ -252,7 +252,7 @@ export default function SearchScreen() {
 
                 if (!loadMore && searchQuery.trim()) {
                     saveToSearchHistory(searchQuery.trim());
-                    
+
                     // Track search performed (count of in-stock results shown)
                     try {
                         const { trackSearchPerformed } = require('@/utils/mixpanelHelpers');
@@ -360,7 +360,7 @@ export default function SearchScreen() {
             }
         } finally {
             if (requestId === undefined || requestId === requestIdRef.current) {
-            setLoading(false);
+                setLoading(false);
                 setLoadingMore(false);
             }
         }
@@ -368,7 +368,7 @@ export default function SearchScreen() {
 
     const handleFilterChange = (newFilters: any) => {
         setSelectedFilters(newFilters);
-        
+
         // Track filters applied
         try {
             const { trackFiltersApplied } = require('@/utils/mixpanelHelpers');
@@ -396,9 +396,9 @@ export default function SearchScreen() {
             const isSelected = Array.isArray(current) && current.includes(value);
 
             // For price/range filters, replace instead of add (single selection)
-            const isPriceFilter = attribute === 'price' || 
-                                 attribute === 'price_range' || 
-                                 attribute?.toLowerCase().includes('price');
+            const isPriceFilter = attribute === 'price' ||
+                attribute === 'price_range' ||
+                attribute?.toLowerCase().includes('price');
 
             if (isSelected) {
                 // Remove filter
@@ -416,6 +416,10 @@ export default function SearchScreen() {
     };
 
     const handleProductPress = (product: any) => {
+        // Track the click in Searchanise analytics so it shows in the dashboard
+        if (searchQuery.trim()) {
+            searchaniseApi.trackProductClick(searchQuery.trim(), product.id);
+        }
         router.push({
             pathname: '/products/[id]',
             params: { id: product.id, handle: product.handle },
@@ -457,7 +461,7 @@ export default function SearchScreen() {
         if (!item || !item.id) return null;
 
         const isLastInRow = (index + 1) % 2 === 0;
-            return (
+        return (
             <View style={{
                 width: cardWidth,
                 marginRight: isLastInRow ? 0 : GAP,
@@ -468,8 +472,8 @@ export default function SearchScreen() {
                     onPress={() => handleProductPress(item)}
                     width={cardWidth}
                 />
-                </View>
-            );
+            </View>
+        );
     }, [cardWidth]);
 
     const handleLoadMore = useCallback(() => {
@@ -489,7 +493,7 @@ export default function SearchScreen() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 {/* Header */}
-            <View style={styles.header}>
+                <View style={styles.header}>
                     <View style={styles.searchInputContainer}>
                         <TouchableOpacity
                             style={styles.backButtonContainer}
@@ -497,12 +501,12 @@ export default function SearchScreen() {
                         >
                             <Ionicons name="arrow-back" size={20} color="#666666" />
                         </TouchableOpacity>
-                    <TextInput
+                        <TextInput
                             style={styles.searchInput}
                             placeholder="Search products..."
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                        returnKeyType="search"
+                            returnKeyType="search"
                             autoFocus={!initialQuery}
                             placeholderTextColor="#666666"
                         />
@@ -524,10 +528,10 @@ export default function SearchScreen() {
                                 }}
                             >
                                 <Ionicons name="close-circle" size={18} color="#999" />
-                        </TouchableOpacity>
+                            </TouchableOpacity>
                         )}
+                    </View>
                 </View>
-            </View>
 
                 {/* Toolbar - Only show when there are results */}
                 {hasResults && (
@@ -543,7 +547,7 @@ export default function SearchScreen() {
                                     const title = f.title || f.label || f.name || attribute;
                                     const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
                                     let buckets = f.buckets || f.values || f.data || [];
-                                    
+
                                     if (Array.isArray(buckets)) {
                                         buckets = buckets.map((bucket: any) => ({
                                             value: bucket.value || bucket.id || bucket.title || bucket.label,
@@ -555,7 +559,7 @@ export default function SearchScreen() {
                                             max: bucket.max,
                                         })).filter((b: any) => b.value || b.label);
                                     }
-                                    
+
                                     return {
                                         ...f,
                                         attribute,
@@ -598,7 +602,7 @@ export default function SearchScreen() {
                                 style={styles.emptyState}
                             />
                         </View>
-                        
+
                         {/* Search History */}
                         {searchHistory.length > 0 && (
                             <View style={styles.searchHistoryContainer}>
@@ -626,7 +630,7 @@ export default function SearchScreen() {
                                 ))}
                             </View>
                         )}
-                        
+
                         {/* Featured Products */}
                         <HorizontalProductList
                             collectionIds={[
@@ -733,7 +737,7 @@ export default function SearchScreen() {
                                         isSelected && styles.radioOuterSelected,
                                     ]}>
                                         {isSelected && <View style={styles.radioInner} />}
-            </View>
+                                    </View>
                                 </TouchableOpacity>
                             );
                         })}
@@ -751,13 +755,13 @@ export default function SearchScreen() {
                         const title = f.title || f.label || f.name || attribute;
                         const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
                         let buckets = f.buckets || f.values || f.data || [];
-                        
+
                         // Map brand/vendor attributes correctly for Searchanise
                         // Searchanise uses 'vendor' for brand filtering
                         if (attribute?.toLowerCase().includes('brand') || title?.toLowerCase().includes('brand')) {
                             attribute = 'vendor';
                         }
-                        
+
                         // Ensure buckets have the right structure
                         if (Array.isArray(buckets)) {
                             buckets = buckets.map((bucket: any) => {
@@ -773,7 +777,7 @@ export default function SearchScreen() {
                                 };
                             }).filter((b: any) => b.value || b.label);
                         }
-                        
+
                         return {
                             ...f,
                             attribute,
