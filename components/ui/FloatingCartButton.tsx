@@ -88,6 +88,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
                 ? TAB_BAR_HEIGHT + bottomInset
                 : bottomInset;
     const isCartScreen = pathname === '/cart';
+    const isAccount = currentRoute === 'account' || currentRoute === '(tabs)/account' || pathname === '/account' || pathname === '/(tabs)/account';
     const isPDP = pathname?.includes('/products/');
 
     const PDP_PADDING_TOP = 16;
@@ -106,7 +107,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const hideBecauseCartIsInMilestoneRow = isMilestoneScreen && cartInMilestoneRow;
 
     const visible =
-        itemCount > 0 && !isCartScreen && !shouldHideGlobalCart && !hideBecauseCartIsInMilestoneRow;
+        itemCount > 0 && !isCartScreen && !isAccount && !shouldHideGlobalCart && !hideBecauseCartIsInMilestoneRow;
 
     if (!visible) {
         return null;

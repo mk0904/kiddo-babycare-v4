@@ -854,14 +854,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: Fonts.LexendRegular,
     marginBottom: 2,
-    color: Colors.text,
+    color: '#666666',
     lineHeight: 18,
   },
   vendorName: {
     fontSize: 11,
     fontFamily: Fonts.LexendMedium,
     marginBottom: 4,
-    color: Colors.textSecondary,
+    color: "grey",
     lineHeight: 14,
   },
   essentialsMetaRow: {
@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
   },
   tbTag: {
     position: 'absolute',
-    top: 6,
+    bottom: 6,
     left: 6,
     flexDirection: 'row',
     alignItems: 'center',
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
   },
   demoBadge: {
     position: 'absolute',
-    top: 6,
+    bottom: 6,
     left: 6,
     backgroundColor: '#FEF7C3',
     paddingHorizontal: 8,
@@ -945,15 +945,15 @@ const styles = StyleSheet.create({
   },
   mainPrice: {
     color: '#2c6975',
-    fontSize: 10,
-    fontFamily: Fonts.LexendRegular,
-    lineHeight: 16,
+    fontSize: 14,
+    fontFamily: Fonts.LexendBold,
+    lineHeight: 18,
     flexShrink: 0,
   },
   comparePrice: {
     color: '#888888',
     textDecorationLine: 'line-through',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: Fonts.LexendRegular,
     flexShrink: 1,
     minWidth: 0,
@@ -1038,9 +1038,9 @@ const styles = StyleSheet.create({
   },
   essentialsOurPrice: {
     color: '#2c6975',
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: Fonts.LexendBold,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   vendorBadge: {
     position: 'absolute',

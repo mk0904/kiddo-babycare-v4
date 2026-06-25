@@ -1,8 +1,8 @@
 import { Carousel } from '@/components/ui/Carousel';
-import { ImageCarouselBlock } from '@/types/content';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useEffect } from 'react';
 import { analyticsService } from '@/services/analyticsService';
+import { ImageCarouselBlock } from '@/types/content';
+import { useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
 interface ImageCarouselProps extends Omit<BaseContentBlockProps, 'onPress'> {

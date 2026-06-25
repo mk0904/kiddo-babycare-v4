@@ -13,7 +13,7 @@ interface ProductTrustStripProps {
 }
 
 export function ProductTrustStrip({ refundPolicyText, onKnowMorePress }: ProductTrustStripProps) {
-  const refundText = refundPolicyText?.trim() || '7 Days\nEasy Returns';
+  const refundText = refundPolicyText?.trim() || '72hr\nReplacement';
 
   return (
     <View style={styles.container}>
@@ -48,9 +48,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 0,
     marginBottom: 4,
-    paddingVertical: 22,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
@@ -60,8 +60,9 @@ const styles = StyleSheet.create({
   },
   item: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
   },
   icon: {
@@ -73,11 +74,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   primaryText: {
-    flex: 1,
     fontSize: 12,
-    lineHeight: 12,
+    lineHeight: 16,
     fontFamily: Fonts.LexendSemiBold,
     color: Colors.text,
+    textAlign: 'center',
   },
   knowMoreText: {
     marginTop: 2,

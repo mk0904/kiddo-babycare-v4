@@ -1546,7 +1546,7 @@ const ProductDetailScreen = () => {
                                 paddingHorizontal: productStyles.title.paddingHorizontal,
                                 paddingTop: productStyles.title.paddingTop,
                                 lineHeight: productStyles.title.lineHeight,
-                                ...processFontStyle(productStyles.title, Fonts.FredokaSemiBold),
+                                ...processFontStyle(productStyles.title, Fonts.LexendSemiBold),
                             }
                         ]}>{product.title}</Text>
 
@@ -1689,15 +1689,15 @@ const ProductDetailScreen = () => {
                     {/* Product Specification - Tabbed Interface */}
                     {(product.description || ageGroup || productSpecifications || productCategory) && (
                         <View style={styles.sectionCard}>
-                            <TouchableOpacity 
-                                style={styles.specHeader}
+                            <TouchableOpacity
+                                style={[styles.specHeader, !isSpecCollapsed && { marginBottom: 20 }]}
                                 onPress={() => setIsSpecCollapsed(!isSpecCollapsed)}
                             >
                                 <Text style={styles.productDescriptionTitle}>Product specification</Text>
-                                <Ionicons 
-                                    name={isSpecCollapsed ? 'chevron-down' : 'chevron-up'} 
-                                    size={24} 
-                                    color={Colors.text} 
+                                <Ionicons
+                                    name={isSpecCollapsed ? 'chevron-down' : 'chevron-up'}
+                                    size={24}
+                                    color={Colors.text}
                                 />
                             </TouchableOpacity>
 
@@ -1734,10 +1734,10 @@ const ProductDetailScreen = () => {
                                                 const trimmedSentence = sentence.trim();
                                                 console.log('[PDP] Sentence', index, ':', trimmedSentence);
                                                 if (!trimmedSentence) return null;
-                                                
+
                                                 // Remove existing bullet characters if present
                                                 const content = trimmedSentence.replace(/^[•\-\*]\s+|^\d+\.\s+/, '');
-                                                
+
                                                 return (
                                                     <View key={index} style={styles.bulletPointItem}>
                                                         <Text style={styles.bulletPoint}>.</Text>
@@ -1756,8 +1756,8 @@ const ProductDetailScreen = () => {
 
                                         {selectedSpecTab === 'details' && (ageGroup || productSpecifications || productCategory) && (() => {
                                             // Collect all detail items into an array
-                                            const allDetails: Array<{label: string, value: string}> = [];
-                                            
+                                            const allDetails: Array<{ label: string, value: string }> = [];
+
                                             if (ageGroup) {
                                                 allDetails.push({ label: 'Age Group', value: ageGroup });
                                             }
@@ -1774,12 +1774,12 @@ const ProductDetailScreen = () => {
                                                     allDetails.push({ label: 'Specifications', value: productSpecifications });
                                                 }
                                             }
-                                            
+
                                             // Split evenly: left gets more if odd
                                             const midPoint = Math.ceil(allDetails.length / 2);
                                             const leftColumn = allDetails.slice(0, midPoint);
                                             const rightColumn = allDetails.slice(midPoint);
-                                            
+
                                             return (
                                                 <View style={styles.detailsGridContainer}>
                                                     <View style={styles.detailsColumn}>
@@ -2053,7 +2053,7 @@ const ProductDetailScreen = () => {
                 type="bottomSheet"
             >
                 <Text style={styles.refundPolicyModalText}>
-                    {refundPolicy?.trim() || '7-Day Easy Returns'}
+                    {refundPolicy?.trim() || '72hr Replacement'}
                 </Text>
             </BaseModal>
 
@@ -2110,7 +2110,7 @@ const styles = StyleSheet.create({
     },
     /** White elevated card on soft background (PDP sections) */
     sectionCard: {
-        paddingHorizontal:16,
+        paddingHorizontal: 16,
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         marginHorizontal: 16,
@@ -2605,10 +2605,9 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     productDescriptionTitle: {
-        fontSize: 18,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 16,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
-        marginBottom: 12,
     },
     specHeader: {
         flexDirection: 'row',

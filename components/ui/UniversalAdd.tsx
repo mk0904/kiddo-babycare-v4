@@ -83,9 +83,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
     const expectedDealPromoAttr =
         dealPromoPercentOff != null &&
-        Number.isFinite(dealPromoPercentOff) &&
-        dealPromoPercentOff > 0 &&
-        dealPromoPercentOff < 100
+            Number.isFinite(dealPromoPercentOff) &&
+            dealPromoPercentOff > 0 &&
+            dealPromoPercentOff < 100
             ? String(dealPromoPercentOff)
             : null;
 
@@ -162,9 +162,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         const rawSellingPrice = parseFloat(
             finalVariant.price?.amount ||
-                currentItem.priceRange?.minVariantPrice?.amount ||
-                currentItem.price?.amount ||
-                '0',
+            currentItem.priceRange?.minVariantPrice?.amount ||
+            currentItem.price?.amount ||
+            '0',
         );
 
         const quantityAvailable =
@@ -176,9 +176,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         const promoPctEffective =
             dealPromoPercentOff != null &&
-            Number.isFinite(dealPromoPercentOff) &&
-            dealPromoPercentOff > 0 &&
-            dealPromoPercentOff < 100
+                Number.isFinite(dealPromoPercentOff) &&
+                dealPromoPercentOff > 0 &&
+                dealPromoPercentOff < 100
                 ? dealPromoPercentOff
                 : null;
 
@@ -223,12 +223,12 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         try {
             await addItem(cartItem);
-            
+
             // Track Add to Cart event
             try {
                 const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                
+
                 const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                 if (!hasAddedToCart) {
                     trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -297,8 +297,8 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     const fullVariants = Array.isArray(fullProduct.variants?.edges)
                         ? fullProduct.variants.edges
                         : Array.isArray(fullProduct.variants)
-                          ? fullProduct.variants
-                          : [];
+                            ? fullProduct.variants
+                            : [];
 
                     const tryBuy = hasTryAndBuyProduct(fullProduct);
 
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: "#ffe1e1",
         borderWidth: 1,
         borderColor: '#DB5656',
         alignItems: 'center',
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Colors.backgroundSecondary,
         borderWidth: 1,
         borderColor: '#DB5656',
         alignItems: 'center',

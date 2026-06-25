@@ -227,6 +227,18 @@ export function HomeHeader({
     extrapolate: 'clamp',
   });
 
+  const searchTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, 25],
+    extrapolate: 'clamp',
+  });
+
+  const categoryTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, 22],
+    extrapolate: 'clamp',
+  });
+
   return (
     <Animated.View
       style={[
@@ -385,8 +397,8 @@ export function HomeHeader({
               styles.stickyGlassLayer,
               {
                 top: -insets.top,
-                bottom: Platform.OS === 'ios' ? 0 : undefined,
-                height: Platform.OS === 'android' ? (insets.top + 150) : undefined,
+                bottom: Platform.OS === 'ios' ? -25 : undefined,
+                height: Platform.OS === 'android' ? (insets.top + 170) : undefined,
                 opacity: stickyGlassOpacity
               },
             ]}
@@ -396,22 +408,22 @@ export function HomeHeader({
           </Animated.View>
         ) : null}
         <View pointerEvents="box-none">
-          <View style={styles.searchContainer}>
+          <Animated.View style={[styles.searchContainer, { transform: [{ translateY: searchTranslateY }] }]} pointerEvents="box-none">
             <View style={styles.searchRow}>
               <View style={styles.searchBarWrap}>
                 <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
               </View>
               <TryAtHomePill onPress={onTryAtHomePress} />
             </View>
-          </View>
+          </Animated.View>
           {categories && categories.length > 0 ? (
-            <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
+            <Animated.View style={[styles.categoryBarAboveUnderlay, { transform: [{ translateY: categoryTranslateY }] }]} collapsable={false}>
               <CategoryNavigationBar
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategorySelect={onCategorySelect}
               />
-            </View>
+            </Animated.View>
           ) : null}
         </View>
       </Animated.View>

@@ -2516,7 +2516,7 @@
         "fontSize": 10,
         "fontWeight": "600",
         "fontFamily": "lexend-semibold",
-        "color": "#000000"
+        "color": "green"
       },
       "mainPrice": {
         "fontSize": 14,
@@ -3016,7 +3016,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Back_to_School_Final_21_1.gif?v=1782131863",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Main_Banner_5.gif?v=1782331882",
           "link": {
             "type": "collection",
             "collection": {
@@ -3029,7 +3029,7 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.8,
+        "height": 0.9,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3102,7 +3102,7 @@
         "colGap": 12,
         "rowGap": -10,
         "limit": 13,
-        "aspectRatio": 1.2,
+        "aspectRatio": 1,
         "resizeMode": "cover",
         "showLabels": true,
         "borderRadius": 6
@@ -3130,7 +3130,7 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "top": "-280",
+          "top": "-320",
           "zIndex": 10,
           "paddingHorizontal": 50
         },
@@ -3138,7 +3138,7 @@
           "display": "none",
           "marginBottom": 0,
           "marginTop": 20,
-          "fontSize": 15,
+          "fontSize": 18,
           "lineHeight": 20,
           "fontWeight": "700",
           "fontFamily": "lexend",
@@ -3149,7 +3149,7 @@
           "fontWeight": "700",
           "fontFamily": "lexend-bold",
           "color": "#414651",
-          "fontSize": 9,
+          "fontSize": 11,
           "letterSpacing": 0,
           "textAlign": "center"
         }
@@ -3185,8 +3185,8 @@
           "name": "Footwear"
         },
         {
-          "id": "gid://shopify/Collection/515567780129",
-          "name": "Food"
+          "id": "gid://shopify/Collection/509514514721",
+          "name": "Gifting"
         }
       ],
       "styles": {
@@ -3233,7 +3233,7 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510756978977",
+          "id": "gid://shopify/Collection/515608936737",
           "name": "Kids Snacks"
         },
         {
@@ -3356,7 +3356,7 @@
         "text": {
           "fontFamily": "lexend-regular",
           "color": "#414651",
-          "fontSize": 12,
+          "fontSize": 14,
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
@@ -4261,250 +4261,6 @@
       "order": 21
     }
   ],
-  "Pharmacy": [
-    {
-      "id": "all-banner-1",
-      "type": "carousel",
-      "visible": true,
-      "data": [
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_13_2026_01_19_00_PM.png?v=1781336985"
-        }
-      ],
-      "carouselConfig": {
-        "autoPlay": false,
-        "autoPlayInterval": 3000,
-        "loop": false,
-        "height": 0.6,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginTop": 0,
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
-        },
-        "imageContainer": {},
-        "image": {
-          "width": "100%",
-          "padding": 0,
-          "borderRadius": 0,
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
-        },
-        "img": {}
-      }
-    },
-    {
-      "id": "babycare-grid-2-3",
-      "type": "grid",
-      "title": "Shop by Category",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/514890367265"
-        },
-        {
-          "id": "gid://shopify/Collection/514890400033"
-        },
-        {
-          "id": "gid://shopify/Collection/514890596641"
-        },
-        {
-          "id": "gid://shopify/Collection/514890662177"
-        },
-        {
-          "id": "gid://shopify/Collection/511117361441"
-        }
-      ],
-      "gridConfig": {
-        "columnsPerRow": [
-          2,
-          3
-        ],
-        "colGap": 12,
-        "rowGap": 6,
-        "limit": 0,
-        "resizeMode": "cover",
-        "aspectRatio": 1.25
-      },
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "paddingBottom": 28
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "borderWidth": 1,
-          "borderColor": "#E5E7EB",
-          "overflow": "hidden"
-        },
-        "text": {
-          "marginTop": 12,
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      },
-      "visible": true
-    },
-    {
-      "id": "frequently-bought-carousel",
-      "type": "categoryGrid",
-      "order": 3,
-      "visible": true,
-      "title": "Frequently Bought",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 4,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 4,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510756978977",
-          "name": "Kids Snacks"
-        },
-        {
-          "id": "gid://shopify/Collection/508371206433",
-          "name": "Skincare & Bathing"
-        },
-        {
-          "id": "gid://shopify/Collection/510757175585",
-          "name": "School & Stationary"
-        },
-        {
-          "id": "gid://shopify/Collection/508173123873",
-          "name": "Diapers & Wipes"
-        }
-      ],
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 0,
-          "backgroundColor": "white",
-          "marginTop": -15,
-          "paddingVertical": 0
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 0,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "shop-by-brand-carousel-3",
-      "type": "collectionImageCarousel",
-      "title": "Shop by Brand",
-      "order": 4,
-      "visible": true,
-      "data": [
-        {
-          "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/514922578209",
-          "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Mothercare.png?v=1780947232"
-        },
-        {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514922447137",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/23_7d5910c9-6146-438f-b96f-8b3a418c7c21.png?v=1780947049"
-        },
-        {
-          "id": "brand-bumzee",
-          "collectionId": "gid://shopify/Collection/514922381601",
-          "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/17_ae0c5487-4aab-4566-9abc-ea1a0dcc8f48.png?v=1780947011"
-        },
-        {
-          "id": "brand-doreme",
-          "collectionId": "gid://shopify/Collection/514922348833",
-          "label": "Kuchipoo",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/18_50eea419-d011-4150-b498-dcd366fe6a38.png?v=1780946984"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514922316065",
-          "label": "Trampoline",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/19_1f12cb74-bc21-424c-86f8-e205f7f786b4.png?v=1780946958"
-        },
-        {
-          "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/514922283297",
-          "label": "Toonyport",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/22_4ac7a79d-bbe6-4dc4-9ec7-5c261d38d67a.png?v=1780946915"
-        },
-        {
-          "id": "brand-doreme-3",
-          "collectionId": "gid://shopify/Collection/514922217761",
-          "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/21_e1171841-b00c-4a0c-8cdd-a87f96175ab7.png?v=1780946856"
-        },
-        {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514922053921",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/16_d43aff7e-a6c2-43e4-b680-db2fe9af1265.png?v=1780946803"
-        }
-      ],
-      "carouselConfig": {
-        "itemHeight": 84,
-        "itemWidth": 84,
-        "aspectRatio": 1,
-        "gap": 12,
-        "borderRadius": 10,
-        "imageContentFit": "cover",
-        "paddingHorizontal": 16
-      },
-      "styles": {
-        "container": {
-          "backgroundColor": "white",
-          "marginBottom": 15,
-          "marginTop": -10
-        },
-        "title": {
-          "marginBottom": 10,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
-    }
-  ],
   "Fashion": [
     {
       "id": "category-grid-banner-1",
@@ -4831,37 +4587,37 @@
         {
           "id": "brand-adidas",
           "collectionId": "gid://shopify/Collection/515568861473",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_2_42e68d90-0949-4a65-8fc4-a18e632736b5.jpg?v=1782301899",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_2_42e68d90-0949-4a65-8fc4-a18e632736b5.jpg?v=1782306884",
           "label": "Adidas"
         },
         {
           "id": "brand-hopscotch",
           "collectionId": "gid://shopify/Collection/514947776801",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/fashion_3edea754-aebb-418e-bd61-0ab59d26006a.png?v=1782301921",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_3_07ec49de-de24-4971-8144-a96ec5e08487.jpg?v=1782306916",
           "label": "Hopscotch"
         },
         {
           "id": "brand-mothercare",
           "collectionId": "gid://shopify/Collection/514948923681",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_3.jpg?v=1782301948",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_4_7c811c6d-a07c-4db5-9cfd-b77c77627167.jpg?v=1782306944",
           "label": "Mothercare"
         },
         {
           "id": "brand-carters",
           "collectionId": "gid://shopify/Collection/515568959777",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_4.jpg?v=1782301976",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_5_2854ce75-b1a8-4c17-8f76-6deb78b8cb3a.jpg?v=1782306950",
           "label": "Carter's"
         },
         {
           "id": "brand-puma",
           "collectionId": "gid://shopify/Collection/515569090849",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Fashion_Page_-_Girls_5.jpg?v=1782302010",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_15.jpg?v=1782306954",
           "label": "Puma"
         }
       ],
       "carouselConfig": {
-        "itemWidth": 100,
-        "itemHeight": 100,
+        "itemWidth": 150,
+        "itemHeight": 150,
         "gap": 8,
         "borderRadius": 10,
         "imageContentFit": "cover",
@@ -5010,646 +4766,6 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
-        }
-      }
-    }
-  ],
-  "girls": [
-    {
-      "id": "girls-image-banner-1",
-      "type": "imageBanner",
-      "title": "Featured",
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Main_Banner.png?v=1774001067",
-        "link": {
-          "type": "collection",
-          "collection": {
-            "id": "gid://shopify/Collection/510860198177"
-          }
-        },
-        "height": 250,
-        "borderRadius": 0,
-        "borderBottomLeftRadius": 20,
-        "borderBottomRightRadius": 20,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "marginTop": 0,
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
-        },
-        "wrapper": {
-          "marginHorizontal": 0
-        }
-      }
-    },
-    {
-      "id": "all-grid-1",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510879301921"
-        },
-        {
-          "id": "gid://shopify/Collection/510860001569"
-        },
-        {
-          "id": "gid://shopify/Collection/510860067105"
-        },
-        {
-          "id": "gid://shopify/Collection/510860198177"
-        },
-        {
-          "id": "gid://shopify/Collection/510860525857"
-        },
-        {
-          "id": "gid://shopify/Collection/515418194209"
-        },
-        {
-          "id": "gid://shopify/Collection/510860788001"
-        },
-        {
-          "id": "gid://shopify/Collection/510860984609"
-        },
-        {
-          "id": "gid://shopify/Collection/510861017377"
-        }
-      ],
-      "title": "Shop by Category",
-      "gridConfig": {
-        "numColumns": 3,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "contain"
-      },
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "marginBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "image": {
-          "width": "100%",
-          "borderRadius": 20
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "overflow": "visible"
-        },
-        "text": {
-          "marginTop": 12,
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "shop-by-brand-carousel-2",
-      "type": "collectionImageCarousel",
-      "title": "Shop by Brand",
-      "visible": true,
-      "data": [
-        {
-          "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/514759754017",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.05_PM_1.jpg?v=1781503926"
-        },
-        {
-          "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/514777415969",
-          "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.06_PM.jpg?v=1781503864"
-        },
-        {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514777874721",
-          "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.07_PM.jpg?v=1781508884"
-        },
-        {
-          "id": "brand-doreme-3",
-          "collectionId": "gid://shopify/Collection/514777776417",
-          "label": "Kuchipoo",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.08_PM.jpg?v=1781508927"
-        },
-        {
-          "id": "brand-bumzee",
-          "collectionId": "gid://shopify/Collection/514760278305",
-          "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.09_PM.jpg?v=1781515893"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514776662305",
-          "label": "Googagaga",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.15_PM.jpg?v=1781515786"
-        },
-        {
-          "id": "brand-doreme",
-          "collectionId": "gid://shopify/Collection/514760343841",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.14_PM.jpg?v=1781515759"
-        },
-        {
-          "id": "brand-doreme-5",
-          "collectionId": "gid://shopify/Collection/514778464545",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.15_PM_1.jpg?v=1781515816"
-        },
-        {
-          "id": "brand-doreme-7",
-          "collectionId": "gid://shopify/Collection/514779119905",
-          "label": "Trampoline",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.12_PM.jpg?v=1781515738"
-        },
-        {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514760212769",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.11_PM.jpg?v=1781515713"
-        },
-        {
-          "id": "brand-doreme-6",
-          "collectionId": "gid://shopify/Collection/514778792225",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
-        }
-      ],
-      "carouselConfig": {
-        "itemWidth": 160,
-        "itemHeight": 220,
-        "gap": 8,
-        "borderRadius": 10,
-        "imageContentFit": "cover",
-        "paddingHorizontal": 16
-      },
-      "styles": {
-        "container": {
-          "paddingVertical": 16
-        },
-        "title": {
-          "marginBottom": 10,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
-    },
-    {
-      "id": "girls-product-list-6",
-      "type": "horizontalProductList",
-      "title": "Occassion Wear",
-      "collectionIds": [
-        "gid://shopify/Collection/508366291233"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 20,
-          "paddingHorizontal": 16,
-          "marginBottom": 10
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "girls-product-list-7",
-      "type": "horizontalProductList",
-      "title": "Accessories",
-      "collectionIds": [
-        "gid://shopify/Collection/508366848289"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "girls-all-infinite-grid-1",
-      "type": "infiniteProductGrid",
-      "title": "All Products",
-      "collectionIds": [
-        "gid://shopify/Collection/507808678177"
-      ],
-      "productGridConfig": {
-        "numColumns": 2,
-        "gap": 16,
-        "rowGap": 16,
-        "colGap": 16,
-        "paddingHorizontal": 20,
-        "pageSize": 20,
-        "initialLoad": 20
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
-    }
-  ],
-  "boys": [
-    {
-      "id": "all-banner-boy-1",
-      "type": "carousel",
-      "data": [
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Boys_Main_Banner.png?v=1773997491",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": "gid://shopify/Collection/510861508897"
-            }
-          }
-        }
-      ],
-      "styles": {
-        "container": {
-          "marginTop": 0
-        },
-        "imageContainer": {},
-        "image": {
-          "width": "100%",
-          "padding": 0,
-          "borderRadius": 0,
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
-        },
-        "img": {}
-      },
-      "carouselConfig": {
-        "autoPlay": true,
-        "autoPlayInterval": 3000,
-        "loop": true,
-        "resizeMode": "cover"
-      }
-    },
-    {
-      "id": "all-grid-1",
-      "type": "grid",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510879269153"
-        },
-        {
-          "id": "gid://shopify/Collection/510861345057"
-        },
-        {
-          "id": "gid://shopify/Collection/510861476129"
-        },
-        {
-          "id": "gid://shopify/Collection/510861508897"
-        },
-        {
-          "id": "gid://shopify/Collection/510861771041"
-        },
-        {
-          "id": "gid://shopify/Collection/515441230113"
-        },
-        {
-          "id": "gid://shopify/Collection/510861967649"
-        },
-        {
-          "id": "gid://shopify/Collection/510862065953"
-        },
-        {
-          "id": "gid://shopify/Collection/510862131489"
-        }
-      ],
-      "title": "Shop by Category",
-      "gridConfig": {
-        "numColumns": 3,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 0,
-        "resizeMode": "contain"
-      },
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "marginBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "image": {
-          "width": "100%",
-          "borderRadius": 20
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "backgroundColor": "#FFFFFF",
-          "overflow": "visible"
-        },
-        "text": {
-          "marginTop": 12,
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
-      }
-    },
-    {
-      "id": "shop-by-brand-carousel-1",
-      "type": "collectionImageCarousel",
-      "title": "Shop by Brand",
-      "visible": true,
-      "data": [
-        {
-          "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/514760016161",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.23_PM.jpg?v=1781546437"
-        },
-        {
-          "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/514777448737",
-          "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.25_PM.jpg?v=1781546457"
-        },
-        {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/514777940257",
-          "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.26_PM.jpg?v=1781546474"
-        },
-        {
-          "id": "brand-doreme-3",
-          "collectionId": "gid://shopify/Collection/514777809185",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.28_PM.jpg?v=1781546493"
-        },
-        {
-          "id": "brand-bumzee",
-          "collectionId": "gid://shopify/Collection/514760311073",
-          "label": "Bumzee",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.29_PM.jpg?v=1781546511"
-        },
-        {
-          "id": "brand-bontots",
-          "collectionId": "gid://shopify/Collection/514760245537",
-          "label": "Bontots",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.31_PM.jpg?v=1781546533"
-        },
-        {
-          "id": "brand-doreme-7",
-          "collectionId": "gid://shopify/Collection/514779021601",
-          "label": "Trampoline",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.34_PM.jpg?v=1781546552"
-        },
-        {
-          "id": "brand-doreme",
-          "collectionId": "gid://shopify/Collection/514760376609",
-          "label": "Doreme",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM.jpg?v=1781546577"
-        },
-        {
-          "id": "brand-doreme-1",
-          "collectionId": "gid://shopify/Collection/514776760609",
-          "label": "Googagaga",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM_1.jpg?v=1781546599"
-        },
-        {
-          "id": "brand-doreme-5",
-          "collectionId": "gid://shopify/Collection/514778497313",
-          "label": "Snugbug",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-15_at_11.22.37_PM_2.jpg?v=1781546630"
-        },
-        {
-          "id": "brand-doreme-6",
-          "collectionId": "gid://shopify/Collection/514778824993",
-          "label": "talesandstories",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/10_5aa3fd83-3632-4c66-9c43-c0d633c461fd.png?v=1780729843"
-        }
-      ],
-      "carouselConfig": {
-        "itemHeight": 215,
-        "itemWidth": 160,
-        "gap": 8,
-        "borderRadius": 10,
-        "imageContentFit": "cover",
-        "paddingHorizontal": 16
-      },
-      "styles": {
-        "container": {
-          "paddingVertical": 16
-        },
-        "title": {
-          "marginBottom": 10,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
-    },
-    {
-      "id": "all-product-list-boy-6",
-      "type": "horizontalProductList",
-      "title": "Occassion Wear",
-      "collectionIds": [
-        "gid://shopify/Collection/508365701409"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "itemsPerView": 2.1,
-        "showSeeAll": true,
-        "seeAllText": "View All"
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 30,
-          "paddingHorizontal": 16,
-          "marginBottom": 10
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "all-product-list-boy-7",
-      "type": "horizontalProductList",
-      "title": "Accessories",
-      "collectionIds": [
-        "gid://shopify/Collection/508365930785"
-      ],
-      "productListConfig": {
-        "limit": 20,
-        "itemsPerView": 2.1,
-        "showSeeAll": true,
-        "seeAllText": "View All"
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingHorizontal": 16
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      }
-    },
-    {
-      "id": "boys-all-infinite-grid-1",
-      "type": "infiniteProductGrid",
-      "title": "New Arrivals",
-      "collectionIds": [
-        "gid://shopify/Collection/507740487969"
-      ],
-      "productGridConfig": {
-        "numColumns": 2,
-        "gap": 16,
-        "rowGap": 16,
-        "colGap": 16,
-        "paddingHorizontal": 20,
-        "pageSize": 20,
-        "initialLoad": 20
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        }
-      }
-    },
-    {
-      "id": "boys-lil-infinite-grid-1",
-      "type": "infiniteProductGrid",
-      "title": "Fashion for Lil' Toes",
-      "collectionIds": [
-        "gid://shopify/Collection/507741208865"
-      ],
-      "productGridConfig": {
-        "numColumns": 2,
-        "gap": 16,
-        "rowGap": 16,
-        "colGap": 16,
-        "paddingHorizontal": 20,
-        "pageSize": 20,
-        "initialLoad": 20
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 20,
-          "paddingBottom": 20
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
         }
       }
     }
@@ -6820,6 +5936,10 @@
   },
   "categories": {
     "defaultPageBackgroundColor": "#F5F5F5",
+    "navigationBar": {
+      "iconSize": 50,
+      "iconContainerSize": 70
+    },
     "order": [
       "all",
       "Fashion",
@@ -6835,7 +5955,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-19_at_5.54.08_PM.jpg?v=1781872214",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Header_Final.png?v=1782332137",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -6856,7 +5976,7 @@
       "Fashion": {
         "label": "Fashion",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_fashion_icon_2nd_try.png?v=1782329357",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_3.png?v=1782390778",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -6898,7 +6018,7 @@
       "babycare": {
         "label": "Baby Care",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/babycare-selected_e686a7e3-ec46-412b-a563-289532e32bc6.png?v=1772801243",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_5.png?v=1782395143",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
@@ -6926,7 +6046,7 @@
       "babygear": {
         "label": "Baby Gear",
         "pageBackgroundColor": "#F5F5F5",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby-Gear_e445edf2-9527-4924-9755-6578e63ef39e.png?v=1773208150",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_2.png?v=1782390992",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#F5F5F5",
@@ -6940,7 +6060,7 @@
       "books": {
         "label": "Books",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Apr_24_2026_12_30_30_PM.png?v=1777014092",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_1_2.png?v=1782391522",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#F5F5F5",
@@ -6997,7 +6117,7 @@
     "styles": {
       "title": {
         "fontSize": 20,
-        "fontFamily": "fredoka-semibold",
+        "fontFamily": "lexend-semibold",
         "color": "#363636",
         "paddingHorizontal": 16,
         "paddingTop": 0,
@@ -8360,31 +7480,6 @@
         "Option to buy via digital payment or cash"
       ]
     }
-  },
-  "freeShoesOffer": {
-    "enabled": true,
-    "shoes": [
-      {
-        "id": "shoe-1",
-        "name": "Shoe 1",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.43_PM.png?v=1770746854"
-      },
-      {
-        "id": "shoe-2",
-        "name": "Shoe 2",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.54_PM.png?v=1770746844"
-      },
-      {
-        "id": "shoe-3",
-        "name": "Shoe 3",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.41.17_PM.png?v=1770746855"
-      },
-      {
-        "id": "shoe-4",
-        "name": "Shoe 4",
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-02-08_at_12.40.14_PM.png?v=1770746855"
-      }
-    ]
   },
   "providers": {
     "backend": {

@@ -8,8 +8,9 @@ import {
 import { type OrderItem } from '@/services/orderService';
 import PaymentService from '@/services/paymentService';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -54,7 +55,7 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { user, isAuthenticated } = useAuth();
-    const { defaultAddress, addresses } = useAddress();
+    const { defaultAddress, addresses, loadAddresses } = useAddress();
 
     // State for demo scheduling
     const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -81,12 +82,21 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
         loadDemoTimeSlots();
     }, []);
 
-    // Set default address as selected when addresses load
+    // Set default address as selected when addresses load or when default address changes
     useEffect(() => {
-        if (defaultAddress && !selectedAddressId) {
+        if (defaultAddress) {
             setSelectedAddressId(defaultAddress.id);
         }
-    }, [defaultAddress, selectedAddressId]);
+    }, [defaultAddress]);
+
+    // Reload addresses when screen comes back into focus (e.g., after adding address)
+    useFocusEffect(
+        useCallback(() => {
+            if (isAuthenticated) {
+                loadAddresses();
+            }
+        }, [isAuthenticated, loadAddresses])
+    );
 
     // Set selected address from edit order when editing
     useEffect(() => {
