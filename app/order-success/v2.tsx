@@ -379,9 +379,9 @@ export default function OrderSuccessV2Screen() {
     // After a short beat, navigate to order summary (or orders list if no id)
     useEffect(() => {
         const t = setTimeout(() => {
-            // For demo/non-order flows, just go home
+            // For demo/non-order flows, just go back to previous screen
             if (titleOverride) {
-                router.replace('/');
+                router.back();
                 return;
             }
             const etaParam = estimatedDeliveryMinutes != null ? { estimatedDeliveryMinutes } : {};
@@ -421,14 +421,18 @@ export default function OrderSuccessV2Screen() {
 
     const handleClose = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.replace('/');
+        if (titleOverride) {
+            router.back();
+        } else {
+            router.replace('/');
+        }
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <StatusBar style="dark" />
 
-            <TouchableOpacity style={styles.closeButton} onPress={() => router.replace('/')}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
                 <Ionicons name="close" size={28} color="#1A1A1A" />
             </TouchableOpacity>
 

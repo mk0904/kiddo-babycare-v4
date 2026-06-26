@@ -7466,9 +7466,9 @@
   },
   "demo": {
     "timeSlots": [
-      "1PM - 4PM",
-      "1PM - 4PM",
-      "4PM - 7PM"
+      "10AM - 1PM",
+      "2PM - 4PM",
+      "5PM - 7PM"
     ],
     "pdpSection": {
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101",
