@@ -10,13 +10,15 @@ import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useCartItemCount } from '@/store/cartStore';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Dimensions,
+    Animated,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
     ScrollView,
     Share,
     StyleSheet,
@@ -58,6 +60,9 @@ const DIAPER_SIZE_OPTIONS = [
     { label: 'XXXL', value: 'XXXL' },
 ];
 
+const SIDEBAR_HEIGHT = 120;
+const SCROLL_HIDE_THRESHOLD = 8;
+
 export default function InfinityScreen() {
     const { collectionId, title, hideFilters } = useLocalSearchParams<{ collectionId: string; title: string; hideFilters?: string }>();
     const router = useRouter();
@@ -95,7 +100,7 @@ export default function InfinityScreen() {
     const [selectedFilters, setSelectedFilters] = useState<any>({});
     const [sortKey, setSortKey] = useState<string | undefined>(undefined);
     const [reverse, setReverse] = useState(false);
-    
+
     // Gender & Age Filter State
     const [showGenderModal, setShowGenderModal] = useState(false);
     const [showAgeModal, setShowAgeModal] = useState(false);
@@ -126,7 +131,7 @@ export default function InfinityScreen() {
     // Transform local filters to Shopify API format
     const [apiFilters, setApiFilters] = useState<any[]>([]);
 
-    // Babycare collection sidebar (subcategories) – configurable per collection, starts below filters row
+    // Babycare collection sidebar (subcategories) – horizontal rail above filters
     const sidebarSubcategories = useMemo(
         () => (collectionId ? configService.getBabycareCollectionSidebar(collectionId) : null),
         [collectionId]
@@ -141,11 +146,7 @@ export default function InfinityScreen() {
     // When sidebar is shown, subcategory tap updates content in place (no navigation)
     const [activeCollectionId, setActiveCollectionId] = useState<string | null>(formatCollectionId(collectionId));
     const [activeTitle, setActiveTitle] = useState<string | null>(title || null);
-    
-    // Calculate the width synchronously to avoid layout thrashing
-    const windowWidth = Dimensions.get('window').width;
-    const gridContainerWidth = sidebarSubcategories?.length ? windowWidth - 80 : windowWidth;
-    
+
     const effectiveCollectionId = (sidebarSubcategories?.length && activeCollectionId) ? activeCollectionId : (collectionId || '');
     const effectiveTitle = (sidebarSubcategories?.length && activeTitle !== null) ? activeTitle : (title || collection?.title || 'Products');
 
@@ -161,40 +162,83 @@ export default function InfinityScreen() {
         }
     }, [collectionId, title, sidebarSubcategories?.length]);
 
+    const lastScrollY = useRef(0);
+    const sidebarVisible = useRef(true);
+    const sidebarHeight = useRef(new Animated.Value(SIDEBAR_HEIGHT)).current;
+
+    useEffect(() => {
+        lastScrollY.current = 0;
+        sidebarVisible.current = true;
+        sidebarHeight.setValue(SIDEBAR_HEIGHT);
+    }, [effectiveCollectionId, sidebarHeight]);
+
+    const handleProductGridScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!sidebarSubcategories?.length) return;
+
+        const currentY = event.nativeEvent.contentOffset.y;
+        const diff = currentY - lastScrollY.current;
+
+        if (currentY <= 5) {
+            if (!sidebarVisible.current) {
+                sidebarVisible.current = true;
+                Animated.timing(sidebarHeight, {
+                    toValue: SIDEBAR_HEIGHT,
+                    duration: 200,
+                    useNativeDriver: false,
+                }).start();
+            }
+        } else if (diff > SCROLL_HIDE_THRESHOLD && sidebarVisible.current) {
+            sidebarVisible.current = false;
+            Animated.timing(sidebarHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        } else if (diff < -SCROLL_HIDE_THRESHOLD && !sidebarVisible.current) {
+            sidebarVisible.current = true;
+            Animated.timing(sidebarHeight, {
+                toValue: SIDEBAR_HEIGHT,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        }
+
+        lastScrollY.current = currentY;
+    }, [sidebarHeight, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
     // Gender filter should only be available in clothing category (girls/boys)
     // and NOT when viewing a gender-specific collection
     const shouldShowGenderFilter = () => {
         if (!collection) return false; // Default to false if collection not loaded yet
-        
+
         const collectionTitle = (collection.title || '').toLowerCase();
         const collectionHandle = (collection.handle || '').toLowerCase();
         if (shouldHideFilters) return false;
-        
+
         // Show gender filter ONLY for fashion category
         if (pageCategory === 'fashion') {
             const allText = (effectiveTitle || '').toLowerCase();
-            const isGenderSpecific = 
-                allText.includes('girls') || 
+            const isGenderSpecific =
+                allText.includes('girls') ||
                 allText.includes('boys') ||
                 allText.includes("girl's") ||
                 allText.includes("boy's") ||
                 allText.includes("girl ") ||
                 allText.includes("boy ");
-            
+
             // If it's already gender-specific (e.g. "Girls Tops"), don't show the filter
             if (isGenderSpecific) return false;
             return true;
         }
-        
+
         // Hide for Toys, Essentials, and others
         return false;
     };
 
     const shouldShowAgeFilter = () => {
         if (shouldHideFilters) return false;
-        
+
         // Show age filter for Fashion and Toys
         // (Essentials/Other usually use different sizing like weight or volume)
         return pageCategory === 'fashion' || pageCategory === 'toys';
@@ -225,7 +269,7 @@ export default function InfinityScreen() {
                 try {
                     const info = await shopifyApi.getCollectionById(effectiveCollectionId);
                     setCollection(info);
-                    
+
                     // Identify category from "Category" metafield
                     const categoryValue = info?.categoryMetafield?.value?.toLowerCase();
                     if (categoryValue === 'fashion') {
@@ -287,7 +331,7 @@ export default function InfinityScreen() {
             handleApplyFilters(rest);
         } else {
             setSelectedSize(size);
-            
+
             // For Diapers, we want to EXCLUSIVELY use the Sizes metafield facet
             let sizeKey = 'size';
             if (pageCategory === 'diapers') {
@@ -306,7 +350,7 @@ export default function InfinityScreen() {
                 });
                 sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
             }
-            
+
             const newFilters = { ...selectedFilters, [sizeKey]: [size] };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
@@ -352,89 +396,89 @@ export default function InfinityScreen() {
 
     // Handle facets loaded from the product query
     const handleFacetsLoaded = (loadedFacets: any[]) => {
-            setFacets(loadedFacets);
+        setFacets(loadedFacets);
 
-            // Extract brand options from vendor facet for the quick-filter bubble
-            const vendorFacet = loadedFacets.find((f: any) => 
-                (f.attribute || f.id || f.field || f.name || '').toLowerCase() === 'vendor' ||
-                (f.title || f.label || '').toLowerCase().includes('brand')
-            );
-            if (vendorFacet) {
-                const options = (vendorFacet.buckets || vendorFacet.values || []).map((b: any) => ({
-                    label: b.label || b.title || b.value,
-                    value: b.value || b.id || b.label
-                }));
-                setBrandOptions(options);
+        // Extract brand options from vendor facet for the quick-filter bubble
+        const vendorFacet = loadedFacets.find((f: any) =>
+            (f.attribute || f.id || f.field || f.name || '').toLowerCase() === 'vendor' ||
+            (f.title || f.label || '').toLowerCase().includes('brand')
+        );
+        if (vendorFacet) {
+            const options = (vendorFacet.buckets || vendorFacet.values || []).map((b: any) => ({
+                label: b.label || b.title || b.value,
+                value: b.value || b.id || b.label
+            }));
+            setBrandOptions(options);
+        }
+
+        // For Diapers, we specifically look for the "Sizes" metafield facet
+        if (pageCategory === 'diapers') {
+            const diaperFacet = loadedFacets.find((f: any) => {
+                const attr = (f.attribute || f.id || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
+            });
+
+            const uniqueOptionsMap = new Map();
+            if (diaperFacet) {
+                const buckets = (diaperFacet.buckets || diaperFacet.values || []);
+                buckets.forEach((b: any) => {
+                    const label = b.label || b.title || b.value;
+                    const value = b.value || b.id || b.label;
+                    if (label) uniqueOptionsMap.set(label.toLowerCase(), { label, value });
+                });
             }
 
-            // For Diapers, we specifically look for the "Sizes" metafield facet
-            if (pageCategory === 'diapers') {
-                const diaperFacet = loadedFacets.find((f: any) => {
-                    const attr = (f.attribute || f.id || '').toLowerCase();
-                    const title = (f.title || f.label || '').toLowerCase();
-                    return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
-                });
-
-                const uniqueOptionsMap = new Map();
-                if (diaperFacet) {
-                    const buckets = (diaperFacet.buckets || diaperFacet.values || []);
-                    buckets.forEach((b: any) => {
-                        const label = b.label || b.title || b.value;
-                        const value = b.value || b.id || b.label;
-                        if (label) uniqueOptionsMap.set(label.toLowerCase(), { label, value });
-                    });
-                }
-
-                // Show the FULL standardized list but map to facet values if they exist
-                const options = DIAPER_SIZE_OPTIONS.map(opt => {
-                    const facetMatch = uniqueOptionsMap.get(opt.label.toLowerCase());
-                    return {
-                        ...opt,
-                        value: facetMatch ? facetMatch.value : opt.value,
-                        available: !!facetMatch
-                    };
-                });
-                setSizeOptions(options);
-            } else {
-                // For other categories, extract size options from all Size/Sizes related facets
-                const sizeFacets = loadedFacets.filter((f: any) => {
-                    const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-                    const title = (f.title || f.label || '').toLowerCase();
-                    return attr.includes('size') || title.includes('size');
-                });
-
-                if (sizeFacets.length > 0) {
-                    const allBuckets = sizeFacets.reduce((acc: any[], facet: any) => {
-                        const buckets = (facet.buckets || facet.values || []);
-                        return [...acc, ...buckets];
-                    }, []);
-
-                    const uniqueOptionsMap = new Map();
-                    allBuckets.forEach((b: any) => {
-                        const label = b.label || b.title || b.value;
-                        const value = b.value || b.id || b.label;
-                        if (label && !uniqueOptionsMap.has(label.toLowerCase())) {
-                            uniqueOptionsMap.set(label.toLowerCase(), { label, value });
-                        }
-                    });
-                    setSizeOptions(Array.from(uniqueOptionsMap.values()));
-                }
-            }
-
-            // Extract stage options from Pack Size/Stage facet for the quick-filter bubble
-            const stageFacet = loadedFacets.find((f: any) => {
+            // Show the FULL standardized list but map to facet values if they exist
+            const options = DIAPER_SIZE_OPTIONS.map(opt => {
+                const facetMatch = uniqueOptionsMap.get(opt.label.toLowerCase());
+                return {
+                    ...opt,
+                    value: facetMatch ? facetMatch.value : opt.value,
+                    available: !!facetMatch
+                };
+            });
+            setSizeOptions(options);
+        } else {
+            // For other categories, extract size options from all Size/Sizes related facets
+            const sizeFacets = loadedFacets.filter((f: any) => {
                 const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
-                return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
+                return attr.includes('size') || title.includes('size');
             });
-            if (stageFacet) {
-                const options = (stageFacet.buckets || stageFacet.values || []).map((b: any) => ({
-                    label: b.label || b.title || b.value,
-                    value: b.value || b.id || b.label
-                }));
-                setStageOptions(options);
+
+            if (sizeFacets.length > 0) {
+                const allBuckets = sizeFacets.reduce((acc: any[], facet: any) => {
+                    const buckets = (facet.buckets || facet.values || []);
+                    return [...acc, ...buckets];
+                }, []);
+
+                const uniqueOptionsMap = new Map();
+                allBuckets.forEach((b: any) => {
+                    const label = b.label || b.title || b.value;
+                    const value = b.value || b.id || b.label;
+                    if (label && !uniqueOptionsMap.has(label.toLowerCase())) {
+                        uniqueOptionsMap.set(label.toLowerCase(), { label, value });
+                    }
+                });
+                setSizeOptions(Array.from(uniqueOptionsMap.values()));
             }
-        };
+        }
+
+        // Extract stage options from Pack Size/Stage facet for the quick-filter bubble
+        const stageFacet = loadedFacets.find((f: any) => {
+            const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+            const title = (f.title || f.label || '').toLowerCase();
+            return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
+        });
+        if (stageFacet) {
+            const options = (stageFacet.buckets || stageFacet.values || []).map((b: any) => ({
+                label: b.label || b.title || b.value,
+                value: b.value || b.id || b.label
+            }));
+            setStageOptions(options);
+        }
+    };
     const handleApplyFilters = (filters: any) => {
         setSelectedFilters(filters);
         setIsFilterPanelVisible(false);
@@ -454,7 +498,7 @@ export default function InfinityScreen() {
                 if (key !== 'gender' && key !== 'age') {
                     count += value.length;
                 }
-                
+
                 // Map filter keys to standardized names
                 let filterKey = key;
                 if (key?.toLowerCase().includes('brand') || key === 'brand') {
@@ -462,12 +506,12 @@ export default function InfinityScreen() {
                 } else if (key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype') || key === 'product_type' || key === 'productType') {
                     filterKey = 'product_type';
                 }
-                
+
                 // Construct API filter object
                 // Check if it's a price range or simple list
                 value.forEach(val => {
                     let filterAdded = false;
-                    
+
                     // Special handling for price filters - they come as "min,max" strings
                     const isPriceFilter = key?.toLowerCase().includes('price') || filterKey?.toLowerCase().includes('price');
                     if (isPriceFilter && typeof val === 'string' && val.includes(',')) {
@@ -482,140 +526,140 @@ export default function InfinityScreen() {
                             }
                         }
                     }
-                    
+
                     if (!filterAdded) {
                         try {
                             newApiFilters.push(JSON.parse(val));
                             filterAdded = true;
                         } catch (e) {
-                        const isIdFormat = typeof val === 'string' && val.includes('filter.p.');
-                        
-                        let facet = null;
-                        if (isIdFormat) {
-                            const idParts = val.split('.');
-                            if (idParts.length >= 3) {
-                                const idAttribute = idParts.slice(0, 3).join('.');
+                            const isIdFormat = typeof val === 'string' && val.includes('filter.p.');
+
+                            let facet = null;
+                            if (isIdFormat) {
+                                const idParts = val.split('.');
+                                if (idParts.length >= 3) {
+                                    const idAttribute = idParts.slice(0, 3).join('.');
+                                    facet = facets.find(f => {
+                                        const facetAttr = f.attribute || f.id || f.field || f.name;
+                                        return facetAttr === idAttribute || facetAttr === key || facetAttr === filterKey;
+                                    });
+                                }
+                            }
+
+                            if (!facet) {
                                 facet = facets.find(f => {
                                     const facetAttr = f.attribute || f.id || f.field || f.name;
-                                    return facetAttr === idAttribute || facetAttr === key || facetAttr === filterKey;
+                                    const facetTitle = f.title || f.label || f.name || '';
+                                    const isBrandKey = key?.toLowerCase().includes('brand') || key === 'brand';
+                                    const isVendorKey = filterKey === 'vendor' || facetAttr?.toLowerCase().includes('vendor');
+                                    const isBrandFacet = facetTitle?.toLowerCase().includes('brand') || facetTitle?.toLowerCase().includes('vendor');
+
+                                    const isProductTypeKey = filterKey === 'product_type' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype');
+                                    const isProductTypeFacet = facetAttr?.toLowerCase().includes('product_type') || facetTitle?.toLowerCase().includes('product type');
+
+                                    return facetAttr === key ||
+                                        facetAttr === filterKey ||
+                                        f.id === key ||
+                                        (isBrandKey && (isVendorKey || isBrandFacet)) ||
+                                        (isBrandFacet && isBrandKey) ||
+                                        (isProductTypeKey && isProductTypeFacet) ||
+                                        (isProductTypeFacet && isProductTypeKey);
                                 });
                             }
-                        }
-                        
-                        if (!facet) {
-                            facet = facets.find(f => {
-                                const facetAttr = f.attribute || f.id || f.field || f.name;
-                                const facetTitle = f.title || f.label || f.name || '';
-                                const isBrandKey = key?.toLowerCase().includes('brand') || key === 'brand';
-                                const isVendorKey = filterKey === 'vendor' || facetAttr?.toLowerCase().includes('vendor');
-                                const isBrandFacet = facetTitle?.toLowerCase().includes('brand') || facetTitle?.toLowerCase().includes('vendor');
-                                
-                                const isProductTypeKey = filterKey === 'product_type' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype');
-                                const isProductTypeFacet = facetAttr?.toLowerCase().includes('product_type') || facetTitle?.toLowerCase().includes('product type');
-                                
-                                return facetAttr === key || 
-                                       facetAttr === filterKey || 
-                                       f.id === key ||
-                                       (isBrandKey && (isVendorKey || isBrandFacet)) ||
-                                       (isBrandFacet && isBrandKey) ||
-                                       (isProductTypeKey && isProductTypeFacet) ||
-                                       (isProductTypeFacet && isProductTypeKey);
-                            });
-                        }
-                        
-                        if (facet) {
-                            const bucketArray = facet.buckets || facet.values || [];
-                            const bucket = bucketArray.find((b: any) => {
-                                if (b.id && b.id === val) return true;
-                                if (b.label === val || b.value === val) return true;
-                                if (typeof val === 'string') {
-                                    if (b.label?.toLowerCase() === val.toLowerCase() || b.value?.toLowerCase() === val.toLowerCase()) return true;
-                                }
-                                return false;
-                            });
-                            
-                            if (bucket) {
-                                if (bucket.input && !filterAdded) {
-                                    try {
-                                        const parsed = typeof bucket.input === 'string' ? JSON.parse(bucket.input) : bucket.input;
-                                        if (parsed && typeof parsed === 'object') {
-                                            newApiFilters.push(parsed);
-                                            filterAdded = true;
-                                        }
-                                    } catch (err) {
-                                        if (typeof bucket.input === 'object' && bucket.input !== null) {
-                                            newApiFilters.push(bucket.input);
-                                            filterAdded = true;
-                                        }
-                                    }
-                                }
-                                
-                                if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand') || facet.title?.toLowerCase().includes('brand'))) {
-                                    const vendorValue = bucket.label || bucket.value || val;
-                                    if (!vendorValue.includes('filter.p.')) {
-                                        const vendorFilter = { productVendor: vendorValue };
-                                        newApiFilters.push(vendorFilter);
-                                        filterAdded = true;
-                                    }
-                                }
-                                
-                                if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype') || facet.title?.toLowerCase().includes('product type') || facet.id?.includes('product_type') || facet.label?.toLowerCase().includes('product type'))) {
-                                    const productTypeValue = bucket.label || bucket.value || val;
-                                    if (!productTypeValue.includes('filter.p.')) {
-                                        const productTypeFilter = { productType: productTypeValue };
-                                        newApiFilters.push(productTypeFilter);
-                                        filterAdded = true;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand'))) {
-                            if (!val.includes('filter.p.')) {
-                                const vendorFilter = { productVendor: val };
-                                newApiFilters.push(vendorFilter);
-                                filterAdded = true;
-                            }
-                        }
-                        
-                        if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype'))) {
-                            if (!val.includes('filter.p.')) {
-                                const productTypeFilter = { productType: val };
-                                newApiFilters.push(productTypeFilter);
-                                filterAdded = true;
-                            }
-                        }
 
-                        // RIGID DIAPER SIZE FILTERING:
-                        // If it's a size filter in the diapers category, and not yet added, 
-                        // force a productMetafield filter for the "Sizes" metafield.
-                        if (!filterAdded && pageCategory === 'diapers' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
-                            // Only apply if it matches our standardized list values
-                            const isStandardSize = DIAPER_SIZE_OPTIONS.some(o => 
-                                o.label.toLowerCase() === val.toLowerCase() || 
-                                o.value.toLowerCase() === val.toLowerCase()
-                            );
-                            
-                            if (isStandardSize) {
-                                // Construct a rigid metafield filter for Shopify
-                                // We use 'custom' namespace and 'sizes' key as specified by user
-                                const rigidSizeFilter = {
-                                    productMetafield: {
-                                        namespace: "custom",
-                                        key: "sizes",
-                                        value: val
+                            if (facet) {
+                                const bucketArray = facet.buckets || facet.values || [];
+                                const bucket = bucketArray.find((b: any) => {
+                                    if (b.id && b.id === val) return true;
+                                    if (b.label === val || b.value === val) return true;
+                                    if (typeof val === 'string') {
+                                        if (b.label?.toLowerCase() === val.toLowerCase() || b.value?.toLowerCase() === val.toLowerCase()) return true;
                                     }
-                                };
-                                newApiFilters.push(rigidSizeFilter);
-                                filterAdded = true;
+                                    return false;
+                                });
+
+                                if (bucket) {
+                                    if (bucket.input && !filterAdded) {
+                                        try {
+                                            const parsed = typeof bucket.input === 'string' ? JSON.parse(bucket.input) : bucket.input;
+                                            if (parsed && typeof parsed === 'object') {
+                                                newApiFilters.push(parsed);
+                                                filterAdded = true;
+                                            }
+                                        } catch (err) {
+                                            if (typeof bucket.input === 'object' && bucket.input !== null) {
+                                                newApiFilters.push(bucket.input);
+                                                filterAdded = true;
+                                            }
+                                        }
+                                    }
+
+                                    if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand') || facet.title?.toLowerCase().includes('brand'))) {
+                                        const vendorValue = bucket.label || bucket.value || val;
+                                        if (!vendorValue.includes('filter.p.')) {
+                                            const vendorFilter = { productVendor: vendorValue };
+                                            newApiFilters.push(vendorFilter);
+                                            filterAdded = true;
+                                        }
+                                    }
+
+                                    if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype') || facet.title?.toLowerCase().includes('product type') || facet.id?.includes('product_type') || facet.label?.toLowerCase().includes('product type'))) {
+                                        const productTypeValue = bucket.label || bucket.value || val;
+                                        if (!productTypeValue.includes('filter.p.')) {
+                                            const productTypeFilter = { productType: productTypeValue };
+                                            newApiFilters.push(productTypeFilter);
+                                            filterAdded = true;
+                                        }
+                                    }
+                                }
                             }
-                        }
+
+                            if (!filterAdded && (filterKey === 'vendor' || key?.toLowerCase().includes('brand'))) {
+                                if (!val.includes('filter.p.')) {
+                                    const vendorFilter = { productVendor: val };
+                                    newApiFilters.push(vendorFilter);
+                                    filterAdded = true;
+                                }
+                            }
+
+                            if (!filterAdded && (filterKey === 'product_type' || filterKey === 'productType' || key?.toLowerCase().includes('product_type') || key?.toLowerCase().includes('producttype'))) {
+                                if (!val.includes('filter.p.')) {
+                                    const productTypeFilter = { productType: val };
+                                    newApiFilters.push(productTypeFilter);
+                                    filterAdded = true;
+                                }
+                            }
+
+                            // RIGID DIAPER SIZE FILTERING:
+                            // If it's a size filter in the diapers category, and not yet added, 
+                            // force a productMetafield filter for the "Sizes" metafield.
+                            if (!filterAdded && pageCategory === 'diapers' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
+                                // Only apply if it matches our standardized list values
+                                const isStandardSize = DIAPER_SIZE_OPTIONS.some(o =>
+                                    o.label.toLowerCase() === val.toLowerCase() ||
+                                    o.value.toLowerCase() === val.toLowerCase()
+                                );
+
+                                if (isStandardSize) {
+                                    // Construct a rigid metafield filter for Shopify
+                                    // We use 'custom' namespace and 'sizes' key as specified by user
+                                    const rigidSizeFilter = {
+                                        productMetafield: {
+                                            namespace: "custom",
+                                            key: "sizes",
+                                            value: val
+                                        }
+                                    };
+                                    newApiFilters.push(rigidSizeFilter);
+                                    filterAdded = true;
+                                }
+                            }
                         }
                     }
                 });
             }
         });
-        
+
         setActiveFiltersCount(count);
         setApiFilters(newApiFilters);
     };
@@ -698,14 +742,63 @@ export default function InfinityScreen() {
                             {effectiveTitle}
                         </Text>
                     </View>
-                    <TouchableOpacity 
-                        style={styles.shareButton} 
+                    <TouchableOpacity
+                        style={styles.shareButton}
                         onPress={handleSharePress}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                         <Ionicons name="share-social-outline" size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
+
+                {sidebarSubcategories && sidebarSubcategories.length > 0 && (
+                    <Animated.View style={[styles.sidebarShadowWrapper, { height: sidebarHeight, overflow: 'hidden' }]}>
+                        <ScrollView
+                            horizontal
+                            style={styles.sidebar}
+                            contentContainerStyle={styles.sidebarContent}
+                            showsHorizontalScrollIndicator={false}
+                        >
+                            {sidebarSubcategories.map((sub) => {
+                                const subId = sub.collectionId.startsWith('gid://') ? sub.collectionId : `gid://shopify/Collection/${sub.collectionId}`;
+                                const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
+                                const subNorm = sub.collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
+                                const isSelected = currentNorm === subNorm;
+                                const optimizedUrl = sub.imageUrl ? shopifyImageUrl(sub.imageUrl, 100) : null;
+                                const imageUri = optimizedUrl
+                                    ? (() => {
+                                        const t = configService.getConfigLoadedAt();
+                                        if (t == null) return optimizedUrl;
+                                        const sep = optimizedUrl.includes('?') ? '&' : '?';
+                                        return `${optimizedUrl}${sep}_t=${t}`;
+                                    })()
+                                    : null;
+                                return (
+                                    <TouchableOpacity
+                                        key={sub.collectionId}
+                                        style={[styles.sidebarItem, isSelected && styles.sidebarItemSelected]}
+                                        onPress={() => {
+                                            setActiveCollectionId(subId);
+                                            setActiveTitle(sub.label || '');
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        {imageUri ? (
+                                            <Image source={{ uri: imageUri }} style={styles.sidebarItemImage} contentFit="cover" transition={0} />
+                                        ) : (
+                                            <View style={styles.sidebarItemPlaceholder}>
+                                                <Ionicons name="pricetag-outline" size={18} color="#999" />
+                                            </View>
+                                        )}
+                                        <Text style={[styles.sidebarItemLabel, isSelected && styles.sidebarItemLabelSelected]} numberOfLines={2}>
+                                            {sub.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </Animated.View>
+                )}
 
                 {!shouldHideFilters && (
                     <FilterSortPills
@@ -734,58 +827,9 @@ export default function InfinityScreen() {
                     />
                 )}
 
-                <View style={styles.contentRow}>
-                    {sidebarSubcategories && sidebarSubcategories.length > 0 && (
-                        <View style={styles.sidebarShadowWrapper}>
-                            <ScrollView
-                                style={styles.sidebar}
-                                contentContainerStyle={styles.sidebarContent}
-                                showsVerticalScrollIndicator={false}
-                            >
-                            {sidebarSubcategories.map((sub) => {
-                                const subId = sub.collectionId.startsWith('gid://') ? sub.collectionId : `gid://shopify/Collection/${sub.collectionId}`;
-                                const currentNorm = effectiveCollectionId?.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
-                                const subNorm = sub.collectionId.replace(/^gid:\/\/shopify\/Collection\//i, '').split('?')[0] || '';
-                                const isSelected = currentNorm === subNorm;
-                                const optimizedUrl = sub.imageUrl ? shopifyImageUrl(sub.imageUrl, 100) : null;
-                                const imageUri = optimizedUrl
-                                    ? (() => {
-                                          const t = configService.getConfigLoadedAt();
-                                          if (t == null) return optimizedUrl;
-                                          const sep = optimizedUrl.includes('?') ? '&' : '?';
-                                          return `${optimizedUrl}${sep}_t=${t}`;
-                                      })()
-                                    : null;
-                                return (
-                                    <TouchableOpacity
-                                        key={sub.collectionId}
-                                        style={[styles.sidebarItem, isSelected && styles.sidebarItemSelected]}
-                                        onPress={() => {
-                                            setActiveCollectionId(subId);
-                                            setActiveTitle(sub.label || '');
-                                        }}
-                                        activeOpacity={0.7}
-                                    >
-                                        {imageUri ? (
-                                            <Image source={{ uri: imageUri }} style={styles.sidebarItemImage} contentFit="cover" transition={0} />
-                                        ) : (
-                                            <View style={styles.sidebarItemPlaceholder}>
-                                                <Ionicons name="pricetag-outline" size={18} color="#999" />
-                                            </View>
-                                        )}
-                                        <Text style={[styles.sidebarItemLabel, isSelected && styles.sidebarItemLabelSelected]} numberOfLines={2}>
-                                            {sub.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                        </View>
-                    )}
-                    <View style={styles.gridContainer}>
+                <View style={styles.gridContainer}>
                     <InfiniteProductGrid
                         collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
-                        contentWidth={sidebarSubcategories?.length ? gridContainerWidth : undefined}
                         sortKey={sortKey}
                         reverse={reverse}
                         filters={apiFilters} // Pass filters for client-side filtering
@@ -802,82 +846,82 @@ export default function InfinityScreen() {
                             horizontalPadding: gridDefaults.paddingHorizontal, // Backward compatibility
                         }}
                         scrollable={true}
+                        onScroll={handleProductGridScroll}
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGender}
                         ageFilter={selectedAge}
                         pageCategory={pageCategory}
                     />
-                    </View>
                 </View>
 
                 {!shouldHideFilters && (
                     <FilterPanel
                         visible={isFilterPanelVisible}
                         onClose={() => setIsFilterPanelVisible(false)}
-                    facets={facets.map((f: any) => {
-                        // Handle different facet structures from Shopify
-                        let attribute = f.attribute || f.id || f.field || f.name;
-                        const title = f.title || f.label || f.name || attribute;
-                        const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
-                        let buckets = f.buckets || f.values || f.data || [];
-                        
-                        // Map brand/vendor attributes correctly
-                        // Shopify uses 'vendor' for brand filtering in ProductFilter
-                        const isBrandFacet = attribute?.toLowerCase().includes('brand') || 
-                                           title?.toLowerCase().includes('brand') ||
-                                           title?.toLowerCase().includes('vendor') ||
-                                           attribute?.toLowerCase().includes('vendor');
-                        if (isBrandFacet) {
-                            attribute = 'vendor';
-                        }
-                        
-                        // Ensure buckets have the right structure
-                        if (Array.isArray(buckets)) {
-                            buckets = buckets.map((bucket: any) => ({
-                                value: bucket.value || bucket.id || bucket.title || bucket.label,
-                                label: bucket.label || bucket.title || bucket.value || bucket.name,
-                                count: bucket.count || 0,
-                                from: bucket.from,
-                                to: bucket.to,
-                                min: bucket.min,
-                                max: bucket.max,
-                                input: bucket.input, // CRITICAL: Preserve the input field - this contains the exact filter format
-                                id: bucket.id, // Preserve id for matching
-                            })).filter((b: any) => {
-                                if (!b.value && !b.label) return false;
-                                
-                                const val = (b.value || b.label || '').toLowerCase().replace(/\s+/g, '');
-                                const IGNORE_LIST = [
-                                    'defaulttitle', 'allages', 'onesize'
-                                ];
-                                
-                                // For Fashion, we might want to hide specific technical sizes that are handled by the top Age bar
-                                if (pageCategory === 'fashion') {
-                                    IGNORE_LIST.push('s', 'm', 'l', 'xl', 'xxl', '8-9y', '9-10y', '11-12y', '12-18y', '13-14y');
-                                }
-                                
-                                return !IGNORE_LIST.includes(val);
-                            });
-                        }
-                        
-                        return {
-                        ...f,
-                            attribute,
-                            title,
-                            type,
-                            buckets: Array.isArray(buckets) ? buckets : [],
-                        };
-                    }).filter((f: any) => {
-                        if (!f.buckets || f.buckets.length === 0 || !f.attribute) return false;
-                        const attr = (f.attribute || '').toLowerCase();
-                        const titleLower = (f.title || '').toLowerCase();
-                        const exclude = ['collections', 'tags', 'availability'];
-                        if (exclude.some((key) => attr === key || titleLower === key || attr.includes(key) || titleLower.includes(key))) return false;
-                        return true;
-                    })}
-                    selectedFilters={selectedFilters}
-                    onApplyFilters={handleApplyFilters}
-                    totalResults={totalItems}
+                        facets={facets.map((f: any) => {
+                            // Handle different facet structures from Shopify
+                            let attribute = f.attribute || f.id || f.field || f.name;
+                            const title = f.title || f.label || f.name || attribute;
+                            const type = f.type || f.data_type || (f.buckets ? 'select' : 'LIST');
+                            let buckets = f.buckets || f.values || f.data || [];
+
+                            // Map brand/vendor attributes correctly
+                            // Shopify uses 'vendor' for brand filtering in ProductFilter
+                            const isBrandFacet = attribute?.toLowerCase().includes('brand') ||
+                                title?.toLowerCase().includes('brand') ||
+                                title?.toLowerCase().includes('vendor') ||
+                                attribute?.toLowerCase().includes('vendor');
+                            if (isBrandFacet) {
+                                attribute = 'vendor';
+                            }
+
+                            // Ensure buckets have the right structure
+                            if (Array.isArray(buckets)) {
+                                buckets = buckets.map((bucket: any) => ({
+                                    value: bucket.value || bucket.id || bucket.title || bucket.label,
+                                    label: bucket.label || bucket.title || bucket.value || bucket.name,
+                                    count: bucket.count || 0,
+                                    from: bucket.from,
+                                    to: bucket.to,
+                                    min: bucket.min,
+                                    max: bucket.max,
+                                    input: bucket.input, // CRITICAL: Preserve the input field - this contains the exact filter format
+                                    id: bucket.id, // Preserve id for matching
+                                })).filter((b: any) => {
+                                    if (!b.value && !b.label) return false;
+
+                                    const val = (b.value || b.label || '').toLowerCase().replace(/\s+/g, '');
+                                    const IGNORE_LIST = [
+                                        'defaulttitle', 'allages', 'onesize'
+                                    ];
+
+                                    // For Fashion, we might want to hide specific technical sizes that are handled by the top Age bar
+                                    if (pageCategory === 'fashion') {
+                                        IGNORE_LIST.push('s', 'm', 'l', 'xl', 'xxl', '8-9y', '9-10y', '11-12y', '12-18y', '13-14y');
+                                    }
+
+                                    return !IGNORE_LIST.includes(val);
+                                });
+                            }
+
+                            return {
+                                ...f,
+                                attribute,
+                                title,
+                                type,
+                                buckets: Array.isArray(buckets) ? buckets : [],
+                            };
+                        }).filter((f: any) => {
+                            if (!f.buckets || f.buckets.length === 0 || !f.attribute) return false;
+                            const attr = (f.attribute || '').toLowerCase();
+                            const titleLower = (f.title || '').toLowerCase();
+                            const exclude = ['collections', 'tags', 'availability'];
+                            if (exclude.some((key) => attr === key || titleLower === key || attr.includes(key) || titleLower.includes(key))) return false;
+                            return true;
+                        })}
+                        selectedFilters={selectedFilters}
+                        onApplyFilters={handleApplyFilters}
+                        totalResults={totalItems}
                     />
                 )}
 
@@ -1151,7 +1195,7 @@ const styles = StyleSheet.create({
         paddingTop: 8,
         paddingBottom: 8,
         backgroundColor: '#fff',
-        borderBottomWidth: 1,
+        borderBottomWidth: 0,
         borderBottomColor: '#f0f0f0',
         zIndex: 10,
     },
@@ -1173,57 +1217,48 @@ const styles = StyleSheet.create({
     pills: {
         zIndex: 10,
     },
-    contentRow: {
-        flex: 1,
-        flexDirection: 'row',
-    },
     sidebarShadowWrapper: {
-        width: 80,
-        maxWidth: 80,
         backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 1, height: 0 },
-        shadowOpacity: 0.12,
-        shadowRadius: 4,
-        elevation: 6,
     },
     sidebar: {
-        width: 80,
-        maxWidth: 80,
-        borderRightWidth: 1,
-        borderRightColor: '#e8e8e8',
         backgroundColor: '#fff',
-        overflow: 'hidden',
     },
     sidebarContent: {
-        paddingVertical: 8,
-        paddingHorizontal: 4,
-        paddingBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 0,
+        paddingHorizontal: 12,
+        gap: 4,
     },
     sidebarItem: {
         alignItems: 'center',
-        marginBottom: 10,
-        paddingVertical: 6,
-        paddingHorizontal: 4,
-        borderRadius: 0,
-        position: 'relative',
+        width: 88,
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        borderRadius: 8,
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
+        paddingTop: 4,
+
     },
     sidebarItemSelected: {
         backgroundColor: '#FFEBEE',
-        borderRightWidth: 4,
-        borderRightColor: Colors.primary,
+        borderBottomColor: Colors.primary,
+        width: 94,
+        paddingTop: 4,
+
     },
     sidebarItemImage: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        marginBottom: 4,
+        width: 86,
+        height: 86,
+        borderRadius: 8,
+        marginBottom: 5,
     },
     sidebarItemPlaceholder: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        marginBottom: 4,
+        width: 56,
+        height: 56,
+        borderRadius: 8,
+        marginBottom: 0,
         backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1235,7 +1270,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     sidebarItemLabelSelected: {
-        fontFamily: Fonts.LexendSemiBold,
         color: Colors.primary,
     },
     gridContainer: {

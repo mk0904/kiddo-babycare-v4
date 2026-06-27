@@ -15,13 +15,20 @@ export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
     showLastMileDeliveryUi,
     headerStatusText,
 }) => {
+    // Check if this is a demo order by looking at custom attributes or notes
+    const isDemoOrder = order?.customAttributes?.some((attr: any) =>
+        attr.key === 'demo_request' || attr.value === 'true'
+    ) || order?.note?.toLowerCase().includes('demo');
+
     return (
         <>
             {/* Payment method */}
             <View style={styles.paymentMethodCard}>
                 <Text style={styles.billTitle}>Payment method</Text>
                 <Text style={styles.paymentMethodLabel}>
-                    {order?.financialStatus === 'PENDING'
+                    {isDemoOrder
+                        ? 'Cash on Delivery (COD) - Demo Order'
+                        : order?.financialStatus === 'PENDING'
                         ? 'Cash on Delivery (COD)'
                         : 'Paid online'}
                 </Text>

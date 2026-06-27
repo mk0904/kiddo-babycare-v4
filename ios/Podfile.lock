@@ -2,6 +2,8 @@ PODS:
   - AppsFlyerFramework (6.18.0):
     - AppsFlyerFramework/Main (= 6.18.0)
   - AppsFlyerFramework/Main (6.18.0)
+  - BVLinearGradient (2.8.3):
+    - React-Core
   - CleverTap-iOS-SDK (7.5.0):
     - SDWebImage (~> 5.11)
   - clevertap-react-native (3.9.0):
@@ -2296,6 +2298,7 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
   - clevertap-react-native (from `../node_modules/clevertap-react-native`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXAV (from `../node_modules/expo-av/ios`)
@@ -2359,8 +2362,8 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-appsflyer (from `../node_modules/react-native-appsflyer`)
-  - react-native-google-maps (from `/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps`)
-  - react-native-maps (from `/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps`)
+  - react-native-google-maps (from `/Users/farzan/Desktop/kiddo-app/node_modules/react-native-maps`)
+  - react-native-maps (from `/Users/farzan/Desktop/kiddo-app/node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-onesignal (from `../node_modules/react-native-onesignal`)
   - react-native-otp-verify (from `../node_modules/react-native-otp-verify`)
@@ -2430,6 +2433,8 @@ SPEC REPOS:
     - SDWebImageWebPCoder
 
 EXTERNAL SOURCES:
+  BVLinearGradient:
+    :path: "../node_modules/react-native-linear-gradient"
   clevertap-react-native:
     :path: "../node_modules/clevertap-react-native"
   EXApplication:
@@ -2556,9 +2561,9 @@ EXTERNAL SOURCES:
   react-native-appsflyer:
     :path: "../node_modules/react-native-appsflyer"
   react-native-google-maps:
-    :path: "/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps"
+    :path: "/Users/farzan/Desktop/kiddo-app/node_modules/react-native-maps"
   react-native-maps:
-    :path: "/Users/adarshdixit/Desktop/kiddo-app/node_modules/react-native-maps"
+    :path: "/Users/farzan/Desktop/kiddo-app/node_modules/react-native-maps"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-onesignal:
@@ -2656,6 +2661,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AppsFlyerFramework: c1e1e4cd3b98ffdca2fe32b17ae93909e409b6ab
+  BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
   CleverTap-iOS-SDK: 000af11abfaa0e5ba779563a9a2e56555c0e07aa
   clevertap-react-native: 428c1d1eea4719deaa475734b5ea2fde17ec3b0f
   EXApplication: 1e06972201838375ca1ec1ba34d586a98a5dc718

@@ -2,9 +2,9 @@ import { accountConfig } from '@/config/accountConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { appConfigService } from '@/services/appConfigService';
 import { nectorApi } from '@/services/nectorApi';
 import { oneSignalService } from '@/services/oneSignalService';
-import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -248,6 +248,7 @@ export default function AccountScreen() {
                         'Wishlist': '/wishlist',
                         'ContactSupport': '/support',
                         'Profile': '/profile/edit',
+                        'DemoBookings': '/demo/bookings',
                     };
 
                     const path = screenMap[params.screen];
@@ -601,8 +602,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FB',
     },
     profileSection: {
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 20,
     },
     avatarContainer: {
         marginBottom: 16,
@@ -628,7 +631,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     userPhone: {
-        fontSize: 16,
+        fontSize: 12,
         color: Colors.textSecondary,
         fontFamily: Fonts.Medium,
         textAlign: 'center',
@@ -636,30 +639,30 @@ const styles = StyleSheet.create({
     quickActionsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 20,
     },
     quickActionCard: {
         flex: 1,
-        marginHorizontal: 6,
+        marginHorizontal: 3,
     },
     quickActionCardInner: {
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
-        paddingVertical: 20,
+        paddingVertical: 5,
         paddingHorizontal: 10,
         alignItems: 'center',
         justifyContent: 'center',
 
     },
     quickActionIconCircle: {
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         borderRadius: 24,
         backgroundColor: '#0000000D',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 4,
     },
     quickActionTitle: {
         fontSize: 12,

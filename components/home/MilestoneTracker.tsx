@@ -1,6 +1,5 @@
 import { Fonts } from '@/constants/theme';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
-import { configService } from '@/services/configService';
 import { useCartSubtotal } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout, MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
@@ -9,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     AppState,
     Modal,
@@ -23,10 +22,7 @@ import {
 import { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    CollapsedMilestoneIconProgressRing,
-    MILESTONE_EXPANDED_LIST_IMAGE,
-    MILESTONE_EXPANDED_LIST_OUTER,
-    MilestoneExpandedFormContent,
+    MilestoneExpandedFormContent
 } from './milestoneExpandedFormContent';
 import {
     areAllMilestoneSlotsCompleted,
@@ -446,8 +442,8 @@ export function MilestoneTracker({
         : Math.max(200, windowHeight * 0.86 - insets.top - insets.bottom);
 
     const collapsedContainerStyle = Array.isArray(surfaceCollapsed)
-        ? [...surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow]
-        : [surfaceCollapsed, inlineInCartRow && styles.collapsedSurfaceInCartRow];
+        ? [...surfaceCollapsed, variant === 'dock' && styles.collapsedSurfaceDock, inlineInCartRow && styles.collapsedSurfaceInCartRow]
+        : [surfaceCollapsed, variant === 'dock' && styles.collapsedSurfaceDock, inlineInCartRow && styles.collapsedSurfaceInCartRow];
 
     const hasCollapsedSubtitle = Boolean((collapsedCopy.subtitle || '').trim());
 
@@ -465,6 +461,7 @@ export function MilestoneTracker({
                     <TouchableOpacity
                         style={[
                             styles.collapsedPillPressable,
+                            variant === 'embedded' && styles.collapsedPillPressableEmbedded,
                             inlineInCartRow && styles.collapsedPillPressableInCartRow,
                         ]}
                         onPress={toggle}
@@ -476,6 +473,7 @@ export function MilestoneTracker({
                             tint="light"
                             style={[
                                 styles.pillBlurContainer,
+                                variant === 'embedded' && styles.pillBlurContainerEmbedded,
                                 { borderColor: accentColor },
                                 inlineInCartRow && styles.pillBlurContainerInCartRow,
                             ]}
@@ -503,10 +501,6 @@ export function MilestoneTracker({
                                                 styles.collapsedMilestoneIconImage,
                                             ]}
                                             contentFit="contain"
-                                        />
-                                        <CollapsedMilestoneIconProgressRing
-                                            progress01={collapsedIconProgress01}
-                                            accentColor={accentColor}
                                         />
                                     </View>
                                 ) : null}
@@ -641,9 +635,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         paddingTop: 0,
         paddingBottom: 0,
+        marginBottom: 0,
         zIndex: 50,
         position: 'relative',
         overflow: 'hidden',
+    },
+    collapsedSurfaceDock: {
+        marginBottom: 0,
+        paddingBottom: 0,
     },
     surfaceFrostBackground: {
         ...StyleSheet.absoluteFillObject,
@@ -655,37 +654,53 @@ const styles = StyleSheet.create({
     /** Home row beside cart: use full column width, no side padding. */
     collapsedSurfaceInCartRow: {
         paddingHorizontal: 0,
-        marginBottom: 8,
+        marginBottom: 0,
+        paddingBottom: 10,
     },
     /** Cart: flush under savings (square top); rounded bottom into cream scroll area. */
     surfaceEmbeddedCollapsed: {
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
         overflow: 'hidden',
+        marginBottom: 0,
     },
     collapsedPillPressable: {
-        width: '100%',
-        minHeight: 52,
+        width: '95%',
+        height: 68,
         zIndex: 1,
-        marginBottom: 12,
+        marginBottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
+        alignSelf: 'center',
+    },
+    collapsedPillPressableEmbedded: {
+        height: 68,
+        width: '100%',
+        alignSelf: 'stretch',
     },
     collapsedPillPressableInCartRow: {
         marginBottom: 0,
-        minHeight: MILESTONE_CART_ROW_PILL_HEIGHT,
+        height: MILESTONE_CART_ROW_PILL_HEIGHT,
     },
     pillBlurContainer: {
         width: '100%',
-        height: 64,
-        borderRadius: 24,
+        height: 48,
+        borderRadius: 32,
         overflow: 'hidden',
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderStyle: 'solid',
         borderWidth: 1.5,
         borderColor: 'rgba(255, 255, 255, 0.7)',
+        justifyContent: 'center',
+    },
+    pillBlurContainerEmbedded: {
+        height: 68,
+        borderRadius: 20,
+        width: '100%',
+        marginHorizontal: 0,
+        paddingHorizontal:0,
     },
     pillBlurContainerInCartRow: {
         height: MILESTONE_CART_ROW_PILL_HEIGHT,
@@ -696,7 +711,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        padding: 8,
+        paddingVertical: 0,
+        paddingHorizontal: 8,
     },
     collapsedChevronWrap: {
         flexShrink: 0,
@@ -707,38 +723,41 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     collapsedTitle: {
-        fontSize: Fonts.SmallFontSize,
+        fontSize: 14,
         fontFamily: Fonts.LexendBold,
         color: '#000000',
     },
     collapsedCopyWrap: {
         flex: 1,
         minWidth: 0,
+        justifyContent: 'center',
+        marginTop: 2,
     },
     collapsedActiveIconWrap: {
-        width: MILESTONE_EXPANDED_LIST_OUTER,
-        height: MILESTONE_EXPANDED_LIST_OUTER,
+        width: 0,
+        height: 0,
         alignItems: 'center',
         justifyContent: 'center',
     },
     collapsedActiveIconWrapEmbedded: {
-        width: MILESTONE_EXPANDED_LIST_OUTER,
-        height: MILESTONE_EXPANDED_LIST_OUTER,
-        borderRadius: 24,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         position: 'relative',
         backgroundColor: '#FFFFFF',
+        alignSelf: 'center',
     },
     /** Same inner size as expanded Kiddo rewards list (`MILESTONE_EXPANDED_LIST_IMAGE`). */
     collapsedMilestoneIconImage: {
-        width: MILESTONE_EXPANDED_LIST_IMAGE,
-        height: MILESTONE_EXPANDED_LIST_IMAGE,
+        width: 24,
+        height: 24,
         zIndex: 1,
     },
     collapsedTitleEmbedded: {
-        fontSize: Fonts.SmallFontSize,
-        fontFamily: Fonts.LexendBold,
+        fontSize: 12,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#111111',
-        lineHeight: 20,
+        lineHeight: 14,
     },
     /** Muted line under title when `unlockedSubtitle` / earned copy is set (light pill). */
     collapsedSubtitleEmbedded: {

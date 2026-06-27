@@ -376,6 +376,11 @@ class ConfigService {
     return this.rawConfig.delivery || null;
   }
 
+  getDemoConfig() {
+    if (!this.rawConfig) return null;
+    return this.rawConfig.demo || null;
+  }
+
   updateConfig(config: AppConfig) {
     this.config = config;
     this.notifyListeners();

@@ -1,25 +1,26 @@
 import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
+import { TryAtHomePill } from '@/components/home/TryAtHomePill';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-  headerGlassTintIsVisible,
-  resolveHeaderGlassConfig,
+    headerGlassTintIsVisible,
+    resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
-  Image,
-  ImageBackground,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    ImageBackground,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,6 +49,7 @@ interface HomeHeaderProps {
   };
   searchSuggestions?: string[];
   onSearchPress?: () => void;
+  onTryAtHomePress?: () => void;
   onLocationPress?: () => void;
   categories?: Array<{
     key: string;
@@ -71,6 +73,7 @@ export function HomeHeader({
   headerConfig = {},
   searchSuggestions = [],
   onSearchPress,
+  onTryAtHomePress,
   onLocationPress,
   categories = [],
   selectedCategory,
@@ -169,7 +172,7 @@ export function HomeHeader({
    */
   const ADDRESS_BOTTOM_MARGIN = 12;
   const ADDRESS_BAR_HEIGHT = 80 + ADDRESS_BOTTOM_MARGIN;
-  const TOTAL_HEADER_HEIGHT = 220 + ADDRESS_BOTTOM_MARGIN;
+  const TOTAL_HEADER_HEIGHT = 185 + ADDRESS_BOTTOM_MARGIN;
 
   const contentTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
@@ -221,6 +224,18 @@ export function HomeHeader({
   const headerBorderBottomOpacity = scrollY.interpolate({
     inputRange: [0, stickyThreshold * 0.8, stickyThreshold],
     outputRange: [0, 0.5, 1],
+    extrapolate: 'clamp',
+  });
+
+  const searchTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, 25],
+    extrapolate: 'clamp',
+  });
+
+  const categoryTranslateY = scrollY.interpolate({
+    inputRange: [0, ADDRESS_BAR_HEIGHT],
+    outputRange: [0, 22],
     extrapolate: 'clamp',
   });
 
@@ -382,7 +397,7 @@ export function HomeHeader({
               styles.stickyGlassLayer,
               {
                 top: -insets.top,
-                bottom: Platform.OS === 'ios' ? 0 : undefined,
+                bottom: Platform.OS === 'ios' ? -25 : undefined,
                 height: Platform.OS === 'android' ? (insets.top + 150) : undefined,
                 opacity: stickyGlassOpacity
               },
@@ -393,17 +408,22 @@ export function HomeHeader({
           </Animated.View>
         ) : null}
         <View pointerEvents="box-none">
-          <View style={styles.searchContainer}>
-            <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
-          </View>
+          <Animated.View style={[styles.searchContainer, { transform: [{ translateY: searchTranslateY }] }]} pointerEvents="box-none">
+            <View style={styles.searchRow}>
+              <View style={styles.searchBarWrap}>
+                <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+              </View>
+              <TryAtHomePill onPress={onTryAtHomePress} />
+            </View>
+          </Animated.View>
           {categories && categories.length > 0 ? (
-            <View style={styles.categoryBarAboveUnderlay} collapsable={false}>
+            <Animated.View style={[styles.categoryBarAboveUnderlay, { transform: [{ translateY: categoryTranslateY }] }]} collapsable={false}>
               <CategoryNavigationBar
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategorySelect={onCategorySelect}
               />
-            </View>
+            </Animated.View>
           ) : null}
         </View>
       </Animated.View>
@@ -444,7 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
     backgroundColor: 'transparent',
   },
   leftInfoContainer: {
@@ -457,11 +477,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   addressRow: {
-    marginTop: -5,
-    marginBottom: 12,
+    marginTop: -10,
+    marginBottom: 0,
   },
   kiddoHeaderText: {
-    fontSize: 15,
+    fontSize: 12,
     lineHeight: 16,
     fontFamily: Fonts.LexendBold,
     letterSpacing: 0,
@@ -469,7 +489,7 @@ const styles = StyleSheet.create({
   estimatedTimeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -6,
+    marginTop: -10,
   },
   estimatedTimeContent: {
     flexDirection: 'row',
@@ -478,7 +498,7 @@ const styles = StyleSheet.create({
   },
   lightningIcon: {
     width: 54,
-    height: 54,
+    height: 44,
     marginLeft: 0,
   },
   estimatedTimeText: {
@@ -493,10 +513,23 @@ const styles = StyleSheet.create({
   searchContainer: {
     position: 'relative',
     zIndex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingLeft: 10,
+    paddingRight: -30,
+    paddingTop: 0,
     paddingBottom: 4,
+    marginTop: -25,
     backgroundColor: 'transparent',
+
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+
+  },
+  searchBarWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   wishlistButton: {
     padding: 8,

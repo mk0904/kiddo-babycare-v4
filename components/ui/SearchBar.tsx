@@ -1,5 +1,5 @@
 import { Fonts } from '@/constants/theme';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SearchIcon } from './SearchIcon';
 

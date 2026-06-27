@@ -3,10 +3,11 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
+import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
-  getDeliveryEta,
-  getDeliveryEtaForAddress,
-  reverseGeocode,
+    getDeliveryEta,
+    getDeliveryEtaForAddress,
+    reverseGeocode,
 } from '@/config/deliveryConfig';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { useAddress } from '@/context/AddressContext';
@@ -26,11 +27,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+    Animated,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
   /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
+  const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
   const [milestoneUiRev, setMilestoneUiRev] = useState(0);
   /** Subscribe + one bump on mount so we re-read if app config finished loading before this effect ran. */
   useEffect(() => {
@@ -287,7 +289,7 @@ export default function HomeScreen() {
   // - Category nav: ~90px (paddingTop: 4 + icon 63px + label ~20px + border 3px)
   // Total content: ~232px, using conservative estimate
   const initialHeaderHeight = useMemo(() => {
-    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 232 : 232;
+    const HEADER_CONTENT_HEIGHT = Platform.OS === 'ios' ? 197 : 197;
     return insets.top + HEADER_CONTENT_HEIGHT;
   }, [insets.top]);
 
@@ -577,6 +579,7 @@ export default function HomeScreen() {
             headerConfig={headerConfig}
             searchSuggestions={searchSuggestions}
             onSearchPress={handleSearchPress}
+            onTryAtHomePress={() => setShowTryAndBuyModal(true)}
             onLocationPress={handleLocationPress}
             categories={categories}
             selectedCategory={selectedCategory}
@@ -650,6 +653,11 @@ export default function HomeScreen() {
         open={!milestoneExpanded}
         isHomeTabFocused={isHomeTabFocused}
         onVisibilityChange={setKiddoWelcomePopupVisible}
+      />
+
+      <TryAndBuyModal
+        visible={showTryAndBuyModal}
+        onClose={() => setShowTryAndBuyModal(false)}
       />
     </SafeAreaView>
   );

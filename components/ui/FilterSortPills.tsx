@@ -105,10 +105,18 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     const hasFastFilters = facets.length > 0 && onFastFilterToggle;
 
     // Interpolated values for smooth transitions
-    const buttonWidth = useMemo(() => {
+    const filterButtonWidth = useMemo(() => {
         return animatedValue.interpolate({
             inputRange: [0, 1],
-            outputRange: [80, 32], // ~80px when expanded (fits "Filters" text), 32px when collapsed
+            outputRange: [activeFiltersCount > 0 ? 112 : 80, 32], // wider when badge visible
+            extrapolate: 'clamp',
+        });
+    }, [activeFiltersCount]);
+
+    const standardButtonWidth = useMemo(() => {
+        return animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [76, 32], // standard width for Sort, Age, etc.
             extrapolate: 'clamp',
         });
     }, []);
@@ -129,10 +137,18 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
         });
     }, []);
 
-    const textWidth = useMemo(() => {
+    const filterTextWidth = useMemo(() => {
         return animatedValue.interpolate({
             inputRange: [0, 0.5, 1],
-            outputRange: [50, 25, 0],
+            outputRange: [activeFiltersCount > 0 ? 68 : 50, 25, 0],
+            extrapolate: 'clamp',
+        });
+    }, [activeFiltersCount]);
+
+    const standardTextWidth = useMemo(() => {
+        return animatedValue.interpolate({
+            inputRange: [0, 0.5, 1],
+            outputRange: [46, 23, 0],
             extrapolate: 'clamp',
         });
     }, []);
@@ -162,7 +178,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         styles.actionButton,
                         activeFiltersCount > 0 && styles.actionButtonActive,
                         {
-                            width: buttonWidth,
+                            width: filterButtonWidth,
                             paddingHorizontal: paddingHorizontal,
                         },
                     ]}
@@ -188,11 +204,14 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         <Animated.View
                             style={{
                                 opacity: textOpacity,
-                                width: textWidth,
+                                width: filterTextWidth,
                                 overflow: 'hidden',
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 marginLeft: textMarginLeft,
+                                flexDirection: 'row',
+                                gap: 4,
+                                paddingHorizontal: activeFiltersCount > 0 ? 4 : 0,
                             }}
                         >
                             <Text
@@ -203,12 +222,12 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             >
                                 Filters
                             </Text>
+                            {activeFiltersCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>{activeFiltersCount}</Text>
+                                </View>
+                            )}
                         </Animated.View>
-                        {activeFiltersCount > 0 && (
-                            <View style={styles.badge}>
-                                <Text style={styles.badgeText}>{activeFiltersCount}</Text>
-                            </View>
-                        )}
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -216,7 +235,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                     style={[
                         styles.actionButton,
                         {
-                            width: buttonWidth,
+                            width: standardButtonWidth,
                             paddingHorizontal: paddingHorizontal,
                         },
                     ]}
@@ -238,7 +257,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         <Animated.View
                             style={{
                                 opacity: textOpacity,
-                                width: textWidth,
+                                width: standardTextWidth,
                                 overflow: 'hidden',
                                 justifyContent: 'center',
                                 alignItems: 'center',
@@ -256,7 +275,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             styles.actionButton,
                             selectedGender && styles.actionButtonActive,
                             {
-                                width: buttonWidth,
+                                width: standardButtonWidth,
                                 paddingHorizontal: paddingHorizontal,
                             },
                         ]}
@@ -282,7 +301,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             <Animated.View
                                 style={{
                                     opacity: textOpacity,
-                                    width: textWidth,
+                                    width: standardTextWidth,
                                     overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -306,7 +325,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             styles.actionButton,
                             selectedAge && styles.actionButtonActive,
                             {
-                                width: buttonWidth,
+                                width: standardButtonWidth,
                                 paddingHorizontal: paddingHorizontal,
                             },
                         ]}
@@ -332,7 +351,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             <Animated.View
                                 style={{
                                     opacity: textOpacity,
-                                    width: textWidth,
+                                    width: standardTextWidth,
                                     overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -356,7 +375,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             styles.actionButton,
                             selectedBrand && styles.actionButtonActive,
                             {
-                                width: buttonWidth,
+                                width: standardButtonWidth,
                                 paddingHorizontal: paddingHorizontal,
                             },
                         ]}
@@ -382,7 +401,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             <Animated.View
                                 style={{
                                     opacity: textOpacity,
-                                    width: textWidth,
+                                    width: standardTextWidth,
                                     overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -406,7 +425,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             styles.actionButton,
                             selectedSize && styles.actionButtonActive,
                             {
-                                width: buttonWidth,
+                                width: standardButtonWidth,
                                 paddingHorizontal: paddingHorizontal,
                             },
                         ]}
@@ -432,7 +451,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             <Animated.View
                                 style={{
                                     opacity: textOpacity,
-                                    width: textWidth,
+                                    width: standardTextWidth,
                                     overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -456,7 +475,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             styles.actionButton,
                             selectedStage && styles.actionButtonActive,
                             {
-                                width: buttonWidth,
+                                width: standardButtonWidth,
                                 paddingHorizontal: paddingHorizontal,
                             },
                         ]}
@@ -482,7 +501,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                             <Animated.View
                                 style={{
                                     opacity: textOpacity,
-                                    width: textWidth,
+                                    width: standardTextWidth,
                                     overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -579,22 +598,18 @@ const styles = StyleSheet.create({
         minWidth: 0, // Allows flex to shrink below content size
     },
     badge: {
-        position: 'absolute',
-        top: -2,
-        right: -2,
         backgroundColor: Colors.variantSelection,
-        borderRadius: 10,
-        minWidth: 18,
-        height: 18,
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 4,
-        borderWidth: 2,
-        borderColor: Colors.backgroundWhite,
+        paddingHorizontal: 3,
     },
     badgeText: {
         fontSize: 10,
         color: Colors.backgroundWhite,
         fontFamily: Fonts.LexendBold,
+        lineHeight: 14,
     },
 });

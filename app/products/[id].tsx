@@ -1,5 +1,6 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
+import { ProductTrustStrip } from '@/components/products/ProductTrustStrip';
 import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
 import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
 import BaseModal from '@/components/ui/BaseModal';
@@ -26,6 +27,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
     Platform,
@@ -38,6 +40,21 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// @ts-ignore - expo-blur types may not be properly recognized
+const BlurView = require('expo-blur').BlurView;
+
+// Demo PDP section configuration
+const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
+const DEMO_PDP_CONFIG = kiddoAppConfig?.demo?.pdpSection || {
+    imageUrl: 'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/08733a2192a952536958cb74bb5830bb723113fa.png?v=1781594101',
+    bulletPoints: [
+        'Kiddo partner visits for a 30-minute demo',
+        'Ensures product meets personalized needs',
+        'Option to buy via digital payment or cash'
+    ],
+    backgroundColor: '#fdf3e4'
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -206,7 +223,7 @@ const datePickerStyles = StyleSheet.create({
     },
     dateLabel: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
         marginBottom: 4,
     },
@@ -215,7 +232,7 @@ const datePickerStyles = StyleSheet.create({
     },
     dateSubLabel: {
         fontSize: 14,
-        fontFamily: Fonts.Regular,
+        fontFamily: Fonts.LexendRegular,
         color: Colors.textSecondary,
     },
     dateSubLabelSelected: {
@@ -227,7 +244,7 @@ const datePickerStyles = StyleSheet.create({
     },
     emptyStateText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.textSecondary,
     },
 });
@@ -267,6 +284,9 @@ const ProductDetailScreen = () => {
     const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
+    const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
+    const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
+    const [isSpecCollapsed, setIsSpecCollapsed] = useState(false);
     // Collection IDs that require date selection
     const TICKETING_COLLECTION_IDS = [
         'gid://shopify/Collection/509771120929', // Events
@@ -589,20 +609,6 @@ const ProductDetailScreen = () => {
         }
     }, [params.collectionId]);
 
-    // Accordion State
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        description: false,
-        material: false,
-        wash_care: false,
-    });
-
-    const toggleSection = (section: string) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [section]: !prev[section]
-        }));
-    };
-
     const loadProductDetails = useCallback(async () => {
         try {
             setLoading(true);
@@ -832,7 +838,7 @@ const ProductDetailScreen = () => {
                 try {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -945,7 +951,7 @@ const ProductDetailScreen = () => {
                 try {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -1219,6 +1225,16 @@ const ProductDetailScreen = () => {
 
     const fabric = getMetafieldValue(product, 'fabric');
     const washCare = getMetafieldValue(product, 'wash_care');
+    const refundPolicy =
+        getMetafieldValue(product, 'refund_policy') ??
+        getMetafieldValue(product, 'Refund Policy');
+
+    const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
+    const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
+    const productCategory = product?.productCategory?.value || getMetafieldValue(product, 'product_category');
+
+    console.log('[PDP] All metafields:', product?.metafields);
+    console.log('[PDP] Product Details Metafields:', { ageGroup, productSpecifications, productCategory });
 
     // Highlights from metafields (highlight_1..4 or JSON "highlights")
     const highlightsList = useMemo(() => {
@@ -1268,6 +1284,11 @@ const ProductDetailScreen = () => {
     // Check if product has Essentials tag
     const hasEssentialsTag = product?.tags?.some(
         (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'essentials'
+    );
+
+    // Check if product has Demo Available tag
+    const hasGearFurnitureTag = product?.tags?.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'demo available'
     );
 
     // Essentials-only: pack size and size for PDP (same as ProductCard)
@@ -1323,7 +1344,7 @@ const ProductDetailScreen = () => {
                 await removeFromWishlist(product.id);
             } else {
                 await addToWishlist(product);
-                
+
                 // Track Wishlist Added event
                 try {
                     const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
@@ -1477,8 +1498,16 @@ const ProductDetailScreen = () => {
                     </View>
                 )}
 
+
                 <View style={styles.infoContainer}>
-                    <View style={styles.sectionCard}>
+                    <View style={[styles.sectionCard, { paddingHorizontal: 8 }]}>
+                        {hasGearFurnitureTag && (
+                            <View style={styles.pdpDemoBadgeContainer}>
+                                <View style={styles.pdpDemoBadge}>
+                                    <Text style={styles.pdpDemoBadgeText}>Demo Available</Text>
+                                </View>
+                            </View>
+                        )}
                         <View style={styles.vendorRow}>
                             {product.vendor ? (
                                 <Text style={[
@@ -1517,9 +1546,10 @@ const ProductDetailScreen = () => {
                                 paddingHorizontal: productStyles.title.paddingHorizontal,
                                 paddingTop: productStyles.title.paddingTop,
                                 lineHeight: productStyles.title.lineHeight,
-                                ...processFontStyle(productStyles.title, Fonts.FredokaSemiBold),
+                                ...processFontStyle(productStyles.title, Fonts.LexendSemiBold),
                             }
                         ]}>{product.title}</Text>
+
 
                         {tryBuyPdpEligible && pdpMainTryBuyOption ? (
                             <TryBuyPdpVariantSection
@@ -1534,6 +1564,7 @@ const ProductDetailScreen = () => {
 
                         {/* Price Section */}
                         <View style={styles.productPriceContainer}>
+
                             <View style={styles.productPriceRow}>
                                 <Text style={styles.productPriceText}>{formattedPrice}</Text>
                                 {formattedMRP && (
@@ -1544,6 +1575,7 @@ const ProductDetailScreen = () => {
                                 )}
                             </View>
                         </View>
+
 
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
@@ -1563,7 +1595,7 @@ const ProductDetailScreen = () => {
                                             {(() => {
                                                 const availableValues: string[] = [];
                                                 const unavailableValues: string[] = [];
-                                                
+
                                                 option.values.forEach((value: string) => {
                                                     const isAvail = variants.some((variant: any) => {
                                                         if (!variant.selectedOptions) return false;
@@ -1574,37 +1606,37 @@ const ProductDetailScreen = () => {
                                                     if (isAvail) availableValues.push(value);
                                                     else unavailableValues.push(value);
                                                 });
-                                                
+
                                                 return [...availableValues, ...unavailableValues].map((value: string) => {
                                                     const isSelected = selectedOptions[option.name] === value;
                                                     const isOptionAvailable = availableValues.includes(value);
 
                                                     return (
-                                                    <TouchableOpacity
-                                                        key={value}
-                                                        style={[
-                                                            styles.variantButton,
-                                                            isSelected && styles.variantButtonActive,
-                                                            !isOptionAvailable && styles.variantButtonDisabled
-                                                        ]}
-                                                        onPress={() => handleOptionSelect(option.name, value)}
-                                                        disabled={!isOptionAvailable}
-                                                    >
-                                                        <Text style={[
-                                                            styles.variantText,
-                                                            isSelected && styles.variantTextActive,
-                                                            !isOptionAvailable && styles.variantTextDisabled,
-                                                            productStyles.variantButton && !isSelected && {
-                                                                fontSize: productStyles.variantButton.fontSize,
-                                                                color: productStyles.variantButton.color,
-                                                                ...processFontStyle(productStyles.variantButton, Fonts.Medium),
-                                                            }
-                                                        ]}>
-                                                            {value}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                );
-                                            });
+                                                        <TouchableOpacity
+                                                            key={value}
+                                                            style={[
+                                                                styles.variantButton,
+                                                                isSelected && styles.variantButtonActive,
+                                                                !isOptionAvailable && styles.variantButtonDisabled
+                                                            ]}
+                                                            onPress={() => handleOptionSelect(option.name, value)}
+                                                            disabled={!isOptionAvailable}
+                                                        >
+                                                            <Text style={[
+                                                                styles.variantText,
+                                                                isSelected && styles.variantTextActive,
+                                                                !isOptionAvailable && styles.variantTextDisabled,
+                                                                productStyles.variantButton && !isSelected && {
+                                                                    fontSize: productStyles.variantButton.fontSize,
+                                                                    color: productStyles.variantButton.color,
+                                                                    ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                                }
+                                                            ]}>
+                                                                {value}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                });
                                             })()}
                                         </View>
                                     </View>
@@ -1648,44 +1680,182 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
 
-                    {/* Product Description - Collapsible */}
-                    {product.description && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
+                    {/* 7 Days Easy Returns Bar */}
+                    <ProductTrustStrip
+                        refundPolicyText={refundPolicy}
+                        onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                    />
+
+                    {/* Product Specification - Tabbed Interface */}
+                    {(product.description || ageGroup || productSpecifications || productCategory) && (
+                        <View style={styles.sectionCard}>
                             <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('description')}
-                                activeOpacity={0.7}
+                                style={[styles.specHeader, !isSpecCollapsed && { marginBottom: 20 }]}
+                                onPress={() => setIsSpecCollapsed(!isSpecCollapsed)}
                             >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="document-text-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>Description</Text>
-                                </View>
+                                <Text style={styles.productDescriptionTitle}>Product specification</Text>
                                 <Ionicons
-                                    name={expandedSections['description'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
+                                    name={isSpecCollapsed ? 'chevron-down' : 'chevron-up'}
+                                    size={24}
+                                    color={Colors.text}
                                 />
                             </TouchableOpacity>
-                            {expandedSections['description'] && (
-                                <View style={[styles.accordionContent, styles.descriptionContainer]}>
-                                    <Text style={[
-                                        styles.descriptionBody,
-                                        productStyles.description && {
-                                            fontSize: productStyles.description.fontSize,
-                                            color: productStyles.description.color,
-                                            lineHeight: productStyles.description.lineHeight,
-                                            ...processFontStyle(productStyles.description, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{product.description}</Text>
-                                </View>
+
+                            {!isSpecCollapsed && (
+                                <>
+                                    {/* Tab Buttons */}
+                                    <View style={styles.specTabContainer}>
+                                        <TouchableOpacity
+                                            style={[styles.specTabButton, selectedSpecTab === 'description' && styles.specTabButtonActive]}
+                                            onPress={() => setSelectedSpecTab('description')}
+                                        >
+                                            <Text style={[styles.specTabText, selectedSpecTab === 'description' && styles.specTabTextActive]}>
+                                                Description
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.specTabButton, selectedSpecTab === 'details' && styles.specTabButtonActive]}
+                                            onPress={() => setSelectedSpecTab('details')}
+                                        >
+                                            <Text style={[styles.specTabText, selectedSpecTab === 'details' && styles.specTabTextActive]}>
+                                                Product details
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* Tab Content */}
+                                    <View style={styles.specTabContent}>
+                                        {selectedSpecTab === 'description' && product.description && (() => {
+                                            console.log('[PDP] Description text:', product.description);
+                                            // Split by sentences to create bullet points
+                                            const sentences = product.description.match(/[^.!?]+[.!?]+/g) || [product.description];
+                                            console.log('[PDP] Split sentences:', sentences);
+                                            return sentences.map((sentence: string, index: number) => {
+                                                const trimmedSentence = sentence.trim();
+                                                console.log('[PDP] Sentence', index, ':', trimmedSentence);
+                                                if (!trimmedSentence) return null;
+
+                                                // Remove existing bullet characters if present
+                                                const content = trimmedSentence.replace(/^[•\-\*]\s+|^\d+\.\s+/, '');
+
+                                                return (
+                                                    <View key={index} style={styles.bulletPointItem}>
+                                                        <Text style={styles.bulletPoint}>.</Text>
+                                                        <Text style={[
+                                                            styles.productDescriptionText,
+                                                            productStyles.description && {
+                                                                fontSize: productStyles.description.fontSize,
+                                                                color: productStyles.description.color,
+                                                                lineHeight: productStyles.description.lineHeight,
+                                                            }
+                                                        ]}>{content}</Text>
+                                                    </View>
+                                                );
+                                            });
+                                        })()}
+
+                                        {selectedSpecTab === 'details' && (ageGroup || productSpecifications || productCategory) && (() => {
+                                            // Collect all detail items into an array
+                                            const allDetails: Array<{ label: string, value: string }> = [];
+
+                                            if (ageGroup) {
+                                                allDetails.push({ label: 'Age Group', value: ageGroup });
+                                            }
+                                            if (productCategory) {
+                                                allDetails.push({ label: 'Product Category', value: productCategory });
+                                            }
+                                            if (productSpecifications) {
+                                                try {
+                                                    const specs = JSON.parse(productSpecifications);
+                                                    Object.entries(specs).forEach(([key, value]) => {
+                                                        allDetails.push({ label: key, value: String(value) });
+                                                    });
+                                                } catch (e) {
+                                                    allDetails.push({ label: 'Specifications', value: productSpecifications });
+                                                }
+                                            }
+
+                                            // Split evenly: left gets more if odd
+                                            const midPoint = Math.ceil(allDetails.length / 2);
+                                            const leftColumn = allDetails.slice(0, midPoint);
+                                            const rightColumn = allDetails.slice(midPoint);
+
+                                            return (
+                                                <View style={styles.detailsGridContainer}>
+                                                    <View style={styles.detailsColumn}>
+                                                        {leftColumn.map((item, index) => (
+                                                            <View key={`left-${index}`} style={styles.detailItem}>
+                                                                <Text style={styles.detailLabel}>{item.label}:</Text>
+                                                                <Text style={styles.detailValue}>{item.value}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                    <View style={styles.detailsColumn}>
+                                                        {rightColumn.map((item, index) => (
+                                                            <View key={`right-${index}`} style={styles.detailItem}>
+                                                                <Text style={styles.detailLabel}>{item.label}:</Text>
+                                                                <Text style={styles.detailValue}>{item.value}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
+                                </>
                             )}
+                        </View>
+                    )}
+
+                    {/* Demo Available Section for Gear & Furniture */}
+                    {hasGearFurnitureTag && (
+                        <View style={styles.demoSection}>
+                            <Text style={styles.demoSectionTitle}>Experience it at home!</Text>
+                            <Image
+                                source={{ uri: DEMO_PDP_CONFIG.imageUrl }}
+                                style={styles.demoImage}
+                                resizeMode="cover"
+                            />
+                            <View style={styles.demoContent}>
+                                <View style={styles.demoBulletPoints}>
+                                    {DEMO_PDP_CONFIG.bulletPoints.map((point: string, index: number) => (
+                                        <View key={index} style={styles.demoBulletPoint}>
+                                            <Text style={styles.demoBulletText}>• {point}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.requestDemoButton,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && styles.disabledButton
+                                    ]}
+                                    onPress={() => {
+                                        // Check if product is out of stock before allowing demo booking
+                                        if (selectedVariant && isVariantAvailable(selectedVariant) === false) {
+                                            Alert.alert('Out of Stock', 'This product is currently out of stock and cannot be booked for a demo.');
+                                            return;
+                                        }
+                                        router.push({
+                                            pathname: '/demo/get-demo',
+                                            params: {
+                                                productId: product.id,
+                                                variantId: selectedVariant?.id || product.id,
+                                                productTitle: product.title,
+                                                productPrice: basePrice.toFixed(0),
+                                                productComparePrice: mrp.toFixed(0),
+                                                productDiscount: discountPercentage || 0,
+                                                productImage: images[0] || '',
+                                            }
+                                        });
+                                    }}
+                                    disabled={selectedVariant && isVariantAvailable(selectedVariant) === false}
+                                >
+                                    <Text style={[
+                                        styles.requestDemoButtonText,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
+                                    ]}>Request a demo</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     )}
 
@@ -1729,86 +1899,6 @@ const ProductDetailScreen = () => {
                         </View>
                     )}
 
-                    {/* Material Accordion */}
-                    {fabric && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('material')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="shirt-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>Material</Text>
-                                </View>
-                                <Ionicons
-                                    name={expandedSections['material'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['material'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.specValue,
-                                        productStyles.material && {
-                                            fontSize: productStyles.material.fontSize,
-                                            color: productStyles.material.color,
-                                            ...processFontStyle(productStyles.material, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{fabric}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-
-                    {/* Wash Care Accordion */}
-                    {washCare && (
-                        <View style={[styles.accordionContainer, styles.sectionCard]}>
-                            <TouchableOpacity
-                                style={styles.accordionHeader}
-                                onPress={() => toggleSection('wash_care')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.accordionTitleContainer}>
-                                    <Ionicons name="water-outline" size={20} color={Colors.text} style={styles.accordionIcon} />
-                                    <Text style={[
-                                        styles.accordionTitle,
-                                        productStyles.accordionTitle && {
-                                            fontSize: productStyles.accordionTitle.fontSize,
-                                            color: productStyles.accordionTitle.color,
-                                            ...processFontStyle(productStyles.accordionTitle, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>Wash Care</Text>
-                                </View>
-                                <Ionicons
-                                    name={expandedSections['wash_care'] ? "chevron-up" : "chevron-down"}
-                                    size={20}
-                                    color={Colors.textSecondary}
-                                />
-                            </TouchableOpacity>
-                            {expandedSections['wash_care'] && (
-                                <View style={styles.accordionContent}>
-                                    <Text style={[
-                                        styles.specValue,
-                                        productStyles.washCare && {
-                                            fontSize: productStyles.washCare.fontSize,
-                                            color: productStyles.washCare.color,
-                                            ...processFontStyle(productStyles.washCare, Fonts.FredokaSemiBold),
-                                        }
-                                    ]}>{washCare}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-
                     {recommendationsConfig.enabled !== false && renderProductSection(
                         recommendedProducts,
                         recommendationsConfig,
@@ -1823,8 +1913,16 @@ const ProductDetailScreen = () => {
                 </View>
             </ScrollView>
 
-            <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <View style={styles.priceContainer}>
+            <BlurView
+                intensity={100}
+                tint="light"
+                style={[
+                    styles.bottomBar,
+                    { paddingBottom: Math.max(insets.bottom, 20) },
+                    hasGearFurnitureTag && { flexDirection: 'column', alignItems: 'stretch' }
+                ]}
+            >
+                <View style={[styles.priceContainer, hasGearFurnitureTag && { marginBottom: 12 }]}>
                     <View style={styles.priceRow}>
                         <Text style={styles.priceText}>{formattedPrice}</Text>
                         {formattedMRP && (
@@ -1835,47 +1933,93 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
                 </View>
-                {selectedVariant && isVariantAvailable(selectedVariant) === true ? (
-                    isTicketingProduct && !selectedEventDate ? (
-                        <TouchableOpacity
-                            style={[styles.addToCartButton]}
-                            onPress={() => {
-                                setShowDatePicker(true);
-                                setShowDateError(false); // Clear error when user opens date picker
-                            }}
-                        >
-                            <Text style={styles.addToCartText}>Select Date</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <UniversalAdd
-                            item={product}
-                            selectedVariant={selectedVariant}
-                            variant="pdp"
-                            addText="Add to Cart"
-                            bookingDate={isTicketingProduct ? selectedEventDate : undefined}
-                            isTicketing={isTicketingProduct}
-                            tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
-                            pdpAddBlocked={
-                                tryBuyPdpEligible &&
-                                !!pdpMainTryBuyOption &&
-                                !selectedOptions[pdpMainTryBuyOption.name]
-                            }
-                            onValidationError={() => {
-                                if (isTicketingProduct && !selectedEventDate) {
-                                    setShowDateError(true);
+
+                {(() => {
+                    const cartButtonNode = selectedVariant && isVariantAvailable(selectedVariant) === true ? (
+                        isTicketingProduct && !selectedEventDate ? (
+                            <TouchableOpacity
+                                style={[styles.addToCartButton]}
+                                onPress={() => {
+                                    setShowDatePicker(true);
+                                    setShowDateError(false); // Clear error when user opens date picker
+                                }}
+                            >
+                                <Text style={styles.addToCartText}>Select Date</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <UniversalAdd
+                                item={product}
+                                selectedVariant={selectedVariant}
+                                variant="pdp"
+                                addText="Add to Cart"
+                                bookingDate={isTicketingProduct ? selectedEventDate : undefined}
+                                isTicketing={isTicketingProduct}
+                                tryBuyTrialVariant={tryBuyPdpEligible ? pdpResolvedTryVariant : undefined}
+                                pdpAddBlocked={
+                                    tryBuyPdpEligible &&
+                                    !!pdpMainTryBuyOption &&
+                                    !selectedOptions[pdpMainTryBuyOption.name]
                                 }
-                            }}
-                        />
-                    )
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.addToCartButton, styles.disabledButton]}
-                        disabled={true}
-                    >
-                        <Text style={styles.addToCartText}>Out of Stock</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+                                onValidationError={() => {
+                                    if (isTicketingProduct && !selectedEventDate) {
+                                        setShowDateError(true);
+                                    }
+                                }}
+                            />
+                        )
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton, styles.disabledButton]}
+                            disabled={true}
+                        >
+                            <Text style={styles.addToCartText}>Out of Stock</Text>
+                        </TouchableOpacity>
+                    );
+
+                    if (hasGearFurnitureTag) {
+                        return (
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <View style={{ flex: 1, minWidth: 0 }}>
+                                    {cartButtonNode}
+                                </View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.bookDemoButton,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && styles.disabledButton
+                                    ]}
+                                    onPress={() => {
+                                        // Check if product is out of stock before allowing demo booking
+                                        if (selectedVariant && isVariantAvailable(selectedVariant) === false) {
+                                            Alert.alert('Out of Stock', 'This product is currently out of stock and cannot be booked for a demo.');
+                                            return;
+                                        }
+                                        router.push({
+                                            pathname: '/demo/get-demo',
+                                            params: {
+                                                productId: product.id,
+                                                variantId: selectedVariant?.id || product.id,
+                                                productTitle: product.title,
+                                                productPrice: basePrice.toFixed(0),
+                                                productComparePrice: mrp.toFixed(0),
+                                                productDiscount: discountPercentage || 0,
+                                                productImage: images[0] || '',
+                                            }
+                                        });
+                                    }}
+                                    disabled={selectedVariant && isVariantAvailable(selectedVariant) === false}
+                                >
+                                    <Text style={[
+                                        styles.bookDemoButtonText,
+                                        selectedVariant && isVariantAvailable(selectedVariant) === false && { opacity: 0.5 }
+                                    ]}>Book a demo</Text>
+                                </TouchableOpacity>
+                            </View>
+                        );
+                    }
+
+                    return cartButtonNode;
+                })()}
+            </BlurView>
 
             <TryAndBuyModal visible={tryAndBuyModalVisible} onClose={() => setTryAndBuyModalVisible(false)} />
             <ImageViewerModal
@@ -1901,6 +2045,17 @@ const ProductDetailScreen = () => {
                     />
                 </BaseModal>
             )}
+
+            <BaseModal
+                visible={showRefundPolicyModal}
+                onClose={() => setShowRefundPolicyModal(false)}
+                title="Return Policy"
+                type="bottomSheet"
+            >
+                <Text style={styles.refundPolicyModalText}>
+                    {refundPolicy?.trim() || '72hr Replacement'}
+                </Text>
+            </BaseModal>
 
             <FloatingCartButton showTabBar={false} />
         </View>
@@ -1936,7 +2091,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#000',
     },
     shareButton: {
@@ -1955,6 +2110,7 @@ const styles = StyleSheet.create({
     },
     /** White elevated card on soft background (PDP sections) */
     sectionCard: {
+        paddingHorizontal: 16,
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         marginHorizontal: 16,
@@ -2031,16 +2187,103 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendSemiBold,
         marginLeft: 4,
     },
+    demoSection: {
+        backgroundColor: DEMO_PDP_CONFIG.backgroundColor || '#fdf3e4',
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 8,
+        paddingTop: 16,
+        paddingBottom: 16,
+        paddingHorizontal: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
+    },
+    demoSectionTitle: {
+        fontSize: 18,
+        fontFamily: Fonts.FredokaSemiBold,
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    demoImage: {
+        width: '100%',
+        height: 160,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    demoContent: {
+        marginTop: 8,
+    },
+    demoSubsectionTitle: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.text,
+        marginBottom: 8,
+    },
+    demoBulletPoints: {
+        marginTop: 8,
+    },
+    demoBulletPoint: {
+        marginBottom: 6,
+    },
+    demoBulletText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.textSecondary,
+        lineHeight: 18,
+    },
+    requestDemoButton: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        marginTop: 16,
+        alignItems: 'center',
+        borderColor: "#D5D7DA",
+        borderWidth: 1
+
+    },
+    requestDemoButtonText: {
+        color: Colors.primary,
+        fontSize: 14,
+        fontFamily: Fonts.LexendSemiBold,
+        fontWeight: '600',
+    },
     infoContainer: {
         paddingTop: 10,
     },
     title: {
         fontSize: 20,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         paddingHorizontal: 16,
         paddingTop: 0,
         marginTop: 0,
         lineHeight: 28,
+    },
+    pdpDemoBadgeContainer: {
+        paddingHorizontal: 16,
+        alignItems: 'flex-start',
+        marginBottom: 2,
+    },
+    pdpDemoBadge: {
+        backgroundColor: '#FEF7C3',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    pdpDemoBadgeText: {
+        color: '#CA8504',
+        fontSize: 11,
+        fontFamily: Fonts.LexendBold,
     },
     vendorRow: {
         flexDirection: 'row',
@@ -2126,13 +2369,13 @@ const styles = StyleSheet.create({
     },
     dateSelectionLabel: {
         fontSize: 16,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
         marginRight: 4,
     },
     requiredAsterisk: {
         fontSize: 16,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: '#FF4444',
     },
     dateSelectionButton: {
@@ -2151,7 +2394,7 @@ const styles = StyleSheet.create({
     dateSelectionText: {
         flex: 1,
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     dateSelectionPlaceholder: {
@@ -2188,7 +2431,7 @@ const styles = StyleSheet.create({
     },
     highlightChipLabelText: {
         fontSize: 12,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
     },
     highlightChip: {
@@ -2199,7 +2442,7 @@ const styles = StyleSheet.create({
     },
     highlightChipText: {
         fontSize: 12,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: '#363636',
     },
     essentialsMetaRow: {
@@ -2215,7 +2458,7 @@ const styles = StyleSheet.create({
     },
     essentialsMetaText: {
         fontSize: 10,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#1565C0',
         lineHeight: 14,
     },
@@ -2241,7 +2484,7 @@ const styles = StyleSheet.create({
     },
     accordionTitle: {
         fontSize: 16,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#1a1a1a',
     },
     accordionContent: {
@@ -2257,12 +2500,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#4a4a4a',
         lineHeight: 24,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
     },
     specValue: {
         fontSize: 14,
         color: '#4a4a4a',
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         lineHeight: 24,
         textAlign: 'left',
     },
@@ -2272,10 +2515,10 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        borderTopColor: 'rgba(0, 0, 0, 0.08)',
         alignItems: 'center',
     },
     priceContainer: {
@@ -2289,18 +2532,18 @@ const styles = StyleSheet.create({
     },
     priceText: {
         fontSize: 18,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     mrpText: {
-        fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 18,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     savingsText: {
         fontSize: 12,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#4CAF50',
     },
     productPriceContainer: {
@@ -2314,20 +2557,46 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     productPriceText: {
-        fontSize: 24,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontSize: 18,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     productMrpText: {
         fontSize: 18,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#999',
         textDecorationLine: 'line-through',
     },
     productSavingsText: {
         fontSize: 14,
-        fontFamily: Fonts.FredokaSemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: '#4CAF50',
+    },
+    bookDemoButton: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderColor: '#D5D7DA',
+        borderWidth: 1,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        minWidth: 0,
+        height: 48,
+    },
+    bookDemoButtonText: {
+        color: Colors.primary,
+        fontFamily: Fonts.LexendSemiBold,
+        fontSize: 18,
+    },
+    refundPolicyModalText: {
+        fontSize: 14,
+        lineHeight: 22,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.text,
+        paddingHorizontal: 20,
+        paddingBottom: 24,
     },
     priceComparisonContainer: {
         marginTop: 8,
@@ -2335,9 +2604,99 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 16,
     },
+    productDescriptionTitle: {
+        fontSize: 16,
+        fontFamily: Fonts.LexendSemiBold,
+        color: Colors.text,
+    },
+    specHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    detailItem: {
+        marginBottom: 8,
+    },
+    detailsGridContainer: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    detailsColumn: {
+        flex: 1,
+    },
+    detailLabel: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.text,
+    },
+    detailValue: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.textSecondary,
+        marginTop: 2,
+    },
+    productDescriptionText: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.text,
+        lineHeight: 22,
+    },
+    specTabContainer: {
+        flexDirection: 'row',
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 32,
+        padding: 4,
+        paddingHorizontal: 4,
+        backgroundColor: '#FAFAFA',
+    },
+    specTabButton: {
+        flex: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 32,
+        borderWidth: 0,
+        borderColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    specTabButtonActive: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#D8D8D8',
+        shadowColor: '#000',
+        shadowOpacity: 0.0,
+        shadowRadius: 0,
+        elevation: 1,
+    },
+    specTabText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendBold,
+        color: '#717680',
+    },
+    specTabTextActive: {
+        color: '#DB5656',
+        fontFamily: Fonts.LexendBold,
+    },
+    specTabContent: {
+        paddingTop: 4,
+        paddingHorizontal: 8,
+    },
+    bulletPointItem: {
+        flexDirection: 'row',
+        marginBottom: 12,
+        alignItems: 'flex-start',
+    },
+    bulletPoint: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendRegular,
+        color: Colors.text,
+        marginRight: 8,
+        marginTop: 2,
+    },
     priceComparisonTitle: {
         fontSize: 18,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
         textAlign: 'center',
         marginTop: 8,
@@ -2379,32 +2738,32 @@ const styles = StyleSheet.create({
     },
     pricePlatformText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     pricePlatformTextHeader: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     pricePlatformTextKiddo: {
         fontSize: 14,
-        fontFamily: Fonts.SemiBold,
+        fontFamily: Fonts.LexendSemiBold,
         color: Colors.text,
     },
     priceValueText: {
         fontSize: 14,
-        fontFamily: Fonts.Medium,
+        fontFamily: Fonts.LexendMedium,
         color: Colors.text,
     },
     priceValueTextHeader: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     priceValueTextKiddo: {
         fontSize: 14,
-        fontFamily: Fonts.Bold,
+        fontFamily: Fonts.LexendBold,
         color: Colors.text,
     },
     addToCartButton: {
@@ -2414,6 +2773,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         minWidth: 140,
         alignItems: 'center',
+        height: 50,
     },
     disabledButton: {
         backgroundColor: '#ccc',
@@ -2422,6 +2782,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontFamily: Fonts.SemiBold,
+        textAlign: 'center',
     },
     retryButton: {
         marginTop: 20,

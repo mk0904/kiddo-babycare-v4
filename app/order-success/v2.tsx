@@ -134,6 +134,8 @@ export default function OrderSuccessV2Screen() {
         subtotal?: string;
         /** The discount code applied to this order (if any). */
         appliedCouponCode?: string;
+        /** Custom title to override default 'Order placed' text */
+        titleOverride?: string;
     }>();
     const {
         orderId,
@@ -144,7 +146,8 @@ export default function OrderSuccessV2Screen() {
         total: orderTotalParam,
         milestoneStep: milestoneStepParam,
         subtotal: subtotalParam,
-        appliedCouponCode
+        appliedCouponCode,
+        titleOverride
     } = params;
     const orderTotalStr = Array.isArray(orderTotalParam) ? orderTotalParam[0] : orderTotalParam;
     const subtotalStr = Array.isArray(subtotalParam) ? subtotalParam[0] : subtotalParam;
@@ -351,6 +354,7 @@ export default function OrderSuccessV2Screen() {
      * sequence is running (`showClubAfter`) or once it lands on the club finale (`milestoneShowAll`).
      */
     const showMilestoneBlock =
+        !titleOverride &&
         skipMilestoneExperience != null &&
         !shouldSkipMilestoneExperience &&
         maxTargetIndex >= 0 &&
@@ -375,6 +379,11 @@ export default function OrderSuccessV2Screen() {
     // After a short beat, navigate to order summary (or orders list if no id)
     useEffect(() => {
         const t = setTimeout(() => {
+            // For demo/non-order flows, just go back to previous screen
+            if (titleOverride) {
+                router.back();
+                return;
+            }
             const etaParam = estimatedDeliveryMinutes != null ? { estimatedDeliveryMinutes } : {};
             const destParam =
                 destinationLat != null &&
@@ -412,14 +421,18 @@ export default function OrderSuccessV2Screen() {
 
     const handleClose = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.replace('/');
+        if (titleOverride) {
+            router.back();
+        } else {
+            router.replace('/');
+        }
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <StatusBar style="dark" />
 
-            <TouchableOpacity style={styles.closeButton} onPress={() => router.replace('/')}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
                 <Ionicons name="close" size={28} color="#1A1A1A" />
             </TouchableOpacity>
 
@@ -427,7 +440,7 @@ export default function OrderSuccessV2Screen() {
                 <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                     <Image source={require('@/assets/images/order-success.png')} style={styles.heroIcon} contentFit="contain" />
                 </Animated.View>
-                <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>Order placed</Animated.Text>
+                <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>{titleOverride || 'Order placed'}</Animated.Text>
             </View>
 
 

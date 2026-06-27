@@ -3,12 +3,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import {
-  getDeliveryPartnerOrderStatus,
-  getExternalOrderStatus,
-  liveTabBannerPhaseFromPartnerStatus,
-  type DeliveryPartnerOrderStatus,
-  type ExternalOrderStatusResponse,
-  type LiveTabBannerPhase
+    getDeliveryPartnerOrderStatus,
+    getExternalOrderStatus,
+    liveTabBannerPhaseFromPartnerStatus,
+    type DeliveryPartnerOrderStatus,
+    type ExternalOrderStatusResponse,
+    type LiveTabBannerPhase
 } from '@/services/deliveryPartnerService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
@@ -19,12 +19,12 @@ import { Image } from 'expo-image';
 import { usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AppState,
-  LayoutChangeEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    AppState,
+    LayoutChangeEvent,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const RIDER_ICON = require('@/assets/icons/riderIcon.png');
@@ -87,6 +87,27 @@ function isOnlyTicketingOrderNode(o: any): boolean {
   const edges = o?.lineItems?.edges || [];
   if (edges.length === 0) return false;
   return edges.every((e: any) => isTicketingLineItemNode(e?.node));
+}
+
+/** Check if an order is a demo booking by line item or order custom attributes */
+function isDemoOrderNode(o: any): boolean {
+  const DEMO_ORDER_ATTR_KEYS = ['isDemoOrder', 'demo_request'];
+  const orderAttrs = o?.customAttributes || [];
+  if (
+    orderAttrs.some(
+      (a: any) =>
+        DEMO_ORDER_ATTR_KEYS.includes(a.key) && String(a.value).toLowerCase() === 'true',
+    )
+  ) {
+    return true;
+  }
+  const edges = o?.lineItems?.edges || [];
+  return edges.some((edge: any) => {
+    const attrs = edge?.node?.customAttributes || [];
+    return attrs.some(
+      (a: any) => a.key === 'demo_request' && String(a.value).toLowerCase() === 'true',
+    );
+  });
 }
 
 
@@ -188,6 +209,10 @@ export function LiveDeliveryTabBanner({
       return;
     }
     if (isOnlyTicketingOrderNode(latestOrder)) {
+      if (pollActiveRef.current) setModel(null);
+      return;
+    }
+    if (isDemoOrderNode(latestOrder)) {
       if (pollActiveRef.current) setModel(null);
       return;
     }

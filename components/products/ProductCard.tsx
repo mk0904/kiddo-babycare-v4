@@ -144,6 +144,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     };
     const merged = {
       productName: merge(styles.productName, 'productName'),
+      vendorName: merge(styles.vendorName, 'vendorName'),
       vendorBadgeText: merge(styles.vendorBadgeText, 'vendorBadgeText'),
       mainPrice: merge(styles.mainPrice, 'mainPrice'),
       comparePrice: merge(styles.comparePrice, 'comparePrice'),
@@ -153,6 +154,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     if (scale != null && scale > 0 && scale < 1) {
       return {
         productName: scaleFontStyle(merged.productName, scale),
+        vendorName: scaleFontStyle(merged.vendorName, scale),
         vendorBadgeText: scaleFontStyle(merged.vendorBadgeText, scale),
         mainPrice: scaleFontStyle(merged.mainPrice, scale),
         comparePrice: scaleFontStyle(merged.comparePrice, scale),
@@ -409,6 +411,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has Demo Available tag
+  const hasGearFurnitureTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'demo available',
+      ),
+    [tags],
+  );
+
   // Get metafield value (supports edges or array, key match case-insensitive)
   const getMetafieldValue = useCallback((key: string) => {
     const productMetafields = product?.metafields;
@@ -647,14 +658,6 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               color={inWishlist ? '#ff4444' : Colors.text}
             />
           </TouchableOpacity>
-          {/* Vendor Badge - bottom left */}
-          {product.vendor && (
-            <View style={styles.vendorBadge}>
-              <Text style={cardTextStyles.vendorBadgeText} numberOfLines={1}>
-                {product.vendor}
-              </Text>
-            </View>
-          )}
           {/* T&B Tag - replaces timer */}
           {hasFashionTag && (
             <TouchableOpacity
@@ -675,6 +678,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 Try & Buy
               </Text>
             </TouchableOpacity>
+          )}
+          {/* Demo Available Tag for Gear & Furniture */}
+          {hasGearFurnitureTag && (
+            <View style={styles.demoBadge}>
+              <Text style={[styles.demoBadgeText, compactTbTagTextStyle]} numberOfLines={1}>
+                Demo Available
+              </Text>
+            </View>
           )}
           {/* Add to Cart Button - CTA on image - Hide for ticketing products */}
           {!outOfStock && !isTicketingProduct && (
@@ -700,6 +711,12 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         </View>
 
         <View style={styles.content}>
+          {/* Brand Name */}
+          {product.vendor && (
+            <Text style={cardTextStyles.vendorName} numberOfLines={1} ellipsizeMode="tail">
+              {product.vendor}
+            </Text>
+          )}
           {(essentialsMetaParts.packSize || essentialsMetaParts.size) ? (
             <View style={styles.essentialsMetaRow}>
               {essentialsMetaParts.packSize ? (
@@ -812,7 +829,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 0.85,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
@@ -835,10 +852,17 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 13,
-    fontFamily: Fonts.LexendSemiBold,
+    fontFamily: Fonts.LexendRegular,
     marginBottom: 2,
-    color: Colors.text,
+    color: '#666666',
     lineHeight: 18,
+  },
+  vendorName: {
+    fontSize: 11,
+    fontFamily: Fonts.LexendMedium,
+    marginBottom: 4,
+    color: "grey",
+    lineHeight: 14,
   },
   essentialsMetaRow: {
     flexDirection: 'row',
@@ -860,20 +884,37 @@ const styles = StyleSheet.create({
   },
   tbTag: {
     position: 'absolute',
-    top: 6,
+    bottom: 6,
     left: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: '#FEF9C3',
     paddingHorizontal: 6,
     borderRadius: 6,
     gap: 4,
     height: 18,
     zIndex: 10,
     minWidth: 65,
+    borderColor: '#FDE047',
   },
   hangerIcon: {
     marginRight: 0,
+    color: '#854D0E'
+  },
+  demoBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: '#FEF7C3',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  demoBadgeText: {
+    color: '#CA8504',
+    fontSize: 11,
+    fontFamily: Fonts.Bold,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -904,15 +945,15 @@ const styles = StyleSheet.create({
   },
   mainPrice: {
     color: '#2c6975',
-    fontSize: 10,
-    fontFamily: Fonts.LexendRegular,
-    lineHeight: 16,
+    fontSize: 14,
+    fontFamily: Fonts.LexendBold,
+    lineHeight: 18,
     flexShrink: 0,
   },
   comparePrice: {
     color: '#888888',
     textDecorationLine: 'line-through',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: Fonts.LexendRegular,
     flexShrink: 1,
     minWidth: 0,
@@ -997,9 +1038,9 @@ const styles = StyleSheet.create({
   },
   essentialsOurPrice: {
     color: '#2c6975',
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: Fonts.LexendBold,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   vendorBadge: {
     position: 'absolute',
@@ -1026,7 +1067,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   tbTagText: {
-    color: '#fff',
+    color: '#854D0E',
     fontSize: 10,
     fontFamily: Fonts.LexendSemiBold,
     flexShrink: 0,

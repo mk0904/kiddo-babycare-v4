@@ -2,6 +2,7 @@ import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
 import { VariantSelectionModal } from '@/components/modals/VariantSelectionModal';
 import { Colors, Fonts } from '@/constants/theme';
+import { analyticsService } from '@/services/analyticsService';
 import {
     canonicalVariantKeyForMerge,
     SPECIAL_DEAL_PROMO_CART_ATTR,
@@ -11,7 +12,6 @@ import {
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
-import { analyticsService } from '@/services/analyticsService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -83,9 +83,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
     const expectedDealPromoAttr =
         dealPromoPercentOff != null &&
-        Number.isFinite(dealPromoPercentOff) &&
-        dealPromoPercentOff > 0 &&
-        dealPromoPercentOff < 100
+            Number.isFinite(dealPromoPercentOff) &&
+            dealPromoPercentOff > 0 &&
+            dealPromoPercentOff < 100
             ? String(dealPromoPercentOff)
             : null;
 
@@ -162,9 +162,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         const rawSellingPrice = parseFloat(
             finalVariant.price?.amount ||
-                currentItem.priceRange?.minVariantPrice?.amount ||
-                currentItem.price?.amount ||
-                '0',
+            currentItem.priceRange?.minVariantPrice?.amount ||
+            currentItem.price?.amount ||
+            '0',
         );
 
         const quantityAvailable =
@@ -176,9 +176,9 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         const promoPctEffective =
             dealPromoPercentOff != null &&
-            Number.isFinite(dealPromoPercentOff) &&
-            dealPromoPercentOff > 0 &&
-            dealPromoPercentOff < 100
+                Number.isFinite(dealPromoPercentOff) &&
+                dealPromoPercentOff > 0 &&
+                dealPromoPercentOff < 100
                 ? dealPromoPercentOff
                 : null;
 
@@ -223,12 +223,12 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
         try {
             await addItem(cartItem);
-            
+
             // Track Add to Cart event
             try {
                 const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                
+
                 const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                 if (!hasAddedToCart) {
                     trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
@@ -297,8 +297,8 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     const fullVariants = Array.isArray(fullProduct.variants?.edges)
                         ? fullProduct.variants.edges
                         : Array.isArray(fullProduct.variants)
-                          ? fullProduct.variants
-                          : [];
+                            ? fullProduct.variants
+                            : [];
 
                     const tryBuy = hasTryAndBuyProduct(fullProduct);
 
@@ -560,7 +560,7 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 const styles = StyleSheet.create({
     /** Heavier than Ionicons “add” — typographic + with max Metropolis weight */
     addPlusGlyph: {
-        color: '#FFFFFF',
+        color: '#DB5656',
         fontSize: 26,
         fontFamily: Fonts.Black,
         lineHeight: 28,
@@ -576,7 +576,9 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: Colors.primary,
+        backgroundColor: "#ffe1e1",
+        borderWidth: 1,
+        borderColor: '#DB5656',
         alignItems: 'center',
         justifyContent: 'center',
         ...Platform.select({
@@ -595,7 +597,9 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: Colors.primary,
+        backgroundColor: Colors.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: '#DB5656',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -720,7 +724,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     pdpContainer: {
-        backgroundColor: Colors.primary,
+        backgroundColor: "#DB5656",
         paddingHorizontal: 30,
         paddingVertical: 12,
         borderRadius: 12,

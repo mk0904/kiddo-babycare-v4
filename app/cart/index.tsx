@@ -2665,6 +2665,10 @@ const styles = StyleSheet.create({
         position: 'relative',
         width: '100%',
         alignSelf: 'stretch',
+        overflow: 'hidden',
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        marginBottom: 12,
     },
     scrollView: {
         flex: 1,

@@ -320,7 +320,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         values
       }
       metafields(identifiers: [
-        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "fabric"},
         {namespace: "custom", key: "wash_care"},
         {namespace: "custom", key: "price_on_kiddo"},
         {namespace: "custom", key: "price_on_amazon"},
@@ -336,12 +336,23 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
         {namespace: "custom", key: "highlight_4"},
-        {namespace: "custom", key: "highlights"}
+        {namespace: "custom", key: "highlights"},
+        {namespace: "custom", key: "refund_policy"},
+        {namespace: "custom", key: "Refund Policy"}
       ]) {
         id
         key
         value
         namespace
+      }
+      ageGroup: metafield(namespace: "custom", key: "age_group") {
+        value
+      }
+      productCategory: metafield(namespace: "custom", key: "product_category") {
+        value
+      }
+      productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
+        value
       }
     }
   }
@@ -405,7 +416,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
         values
       }
       metafields(identifiers: [
-        {namespace: "custom", key: "fabric"}, 
+        {namespace: "custom", key: "fabric"},
         {namespace: "custom", key: "wash_care"},
         {namespace: "custom", key: "price_on_kiddo"},
         {namespace: "custom", key: "price_on_amazon"},
@@ -421,12 +432,23 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
         {namespace: "custom", key: "highlight_4"},
-        {namespace: "custom", key: "highlights"}
+        {namespace: "custom", key: "highlights"},
+        {namespace: "custom", key: "refund_policy"},
+        {namespace: "custom", key: "Refund Policy"}
       ]) {
         id
         key
         value
         namespace
+      }
+      ageGroup: metafield(namespace: "custom", key: "age_group") {
+        value
+      }
+      productCategory: metafield(namespace: "custom", key: "product_category") {
+        value
+      }
+      productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
+        value
       }
     }
   }
@@ -509,11 +531,17 @@ const GET_CUSTOMER_ORDERS_QUERY = `
             id
             orderNumber
             processedAt
+            canceledAt
+            cancelReason
             financialStatus
             fulfillmentStatus
             currentTotalPrice {
               amount
               currencyCode
+            }
+            customAttributes {
+              key
+              value
             }
             lineItems(first: 5) {
               edges {

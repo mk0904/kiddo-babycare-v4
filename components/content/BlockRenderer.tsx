@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AnnouncementCarousel } from './AnnouncementCarousel';
 import { BaseModal } from './BaseModal';
 import { CategoryGrid } from './CategoryGrid';
+import { CollectionImageCarousel } from './CollectionImageCarousel';
 import { CollectionList } from './CollectionList';
 import { FeatureStrip } from './FeatureStrip';
 import { FlashSaleTimer } from './FlashSaleTimer';
@@ -17,7 +18,6 @@ import { NoInternet } from './NoInternet';
 import { PromoCarousel } from './PromoCarousel';
 import { SearchProductList } from './SearchProductList';
 import { VideoBanner } from './VideoBanner';
-import { CollectionImageCarousel } from './CollectionImageCarousel';
 import { VisualCategoryRail } from './VisualCategoryRail';
 
 interface BlockRendererProps {

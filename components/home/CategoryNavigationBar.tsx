@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
     Dimensions,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
 
 interface Category {
   key: string;
@@ -45,6 +46,27 @@ export function CategoryNavigationBar({
   styles: customStyles = {},
 }: CategoryNavigationBarProps) {
   const borderAnimationsRef = useRef<{ [key: string]: Animated.Value }>({});
+
+  // Get icon sizes from config
+  const iconSize = useMemo(() => {
+    return (kiddoAppConfig as any)?.categories?.navigationBar?.iconSize || 50;
+  }, []);
+
+  const iconContainerSize = useMemo(() => {
+    return (kiddoAppConfig as any)?.categories?.navigationBar?.iconContainerSize || 70;
+  }, []);
+
+  // Dynamic styles based on config
+  const dynamicStyles = useMemo(() => ({
+    categoryIconContainer: {
+      width: iconContainerSize,
+      height: iconContainerSize,
+    },
+    categoryIconImage: {
+      width: iconSize,
+      height: iconSize,
+    },
+  }), [iconSize, iconContainerSize]);
 
   useEffect(() => {
     categories.forEach((category) => {
@@ -115,6 +137,7 @@ export function CategoryNavigationBar({
             <View
               style={[
                 defaultStyles.categoryIconContainer,
+                dynamicStyles.categoryIconContainer,
                 customStyles.categoryIconContainer,
                 isSelected && defaultStyles.selectedIconContainer,
                 isSelected && customStyles.selectedIconContainer,
@@ -123,13 +146,13 @@ export function CategoryNavigationBar({
               {category.iconUrl ? (
                 <Image
                   source={{ uri: category.iconUrl }}
-                  style={defaultStyles.categoryIconImage}
+                  style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
                   resizeMode="contain"
                 />
               ) : category.iconImage ? (
                 <Image
                   source={category.iconImage}
-                  style={defaultStyles.categoryIconImage}
+                  style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
                   resizeMode="contain"
                 />
               ) : (
@@ -206,6 +229,7 @@ const defaultStyles = StyleSheet.create({
   },
   categoriesWrapper: {
     paddingTop: 0,
+    paddingBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -223,7 +247,7 @@ const defaultStyles = StyleSheet.create({
     padding: 0,
     borderRadius: 0,
     backgroundColor: 'transparent',
-    marginBottom: -4,
+    marginBottom: -12,
   },
   selectedIconWrapper: {
     backgroundColor: 'transparent',
@@ -231,8 +255,8 @@ const defaultStyles = StyleSheet.create({
     padding: 0,
   },
   categoryIconContainer: {
-    width: 63,
-    height: 63,
+    width: 70,
+    height: 70,
     borderRadius: 0,
     backgroundColor: 'transparent',
     justifyContent: 'center',
@@ -247,8 +271,8 @@ const defaultStyles = StyleSheet.create({
     borderWidth: 0,
   },
   categoryIconImage: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
   },
   categoryIconText: {
     fontSize: 18,

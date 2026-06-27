@@ -5,7 +5,7 @@ import { useCartItemCount } from '@/store/cartStore';
 import type { MilestoneUIConfig } from '@/types/appConfig';
 import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { FloatingCartCta } from './FloatingCartCta';
 
@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         width: '100%',
         alignItems: 'flex-start',
+        marginBottom: 0,
     },
     milestoneCol: {
         minWidth: 0,

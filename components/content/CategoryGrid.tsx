@@ -6,7 +6,7 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { CategoryGridBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 

@@ -11,6 +11,7 @@ type OrderSummaryDetailsProps = {
     total: number;
     tax: number;
     couponCode: string | null;
+    order?: any;
 };
 
 export const OrderSummaryDetails: React.FC<OrderSummaryDetailsProps> = ({
@@ -20,9 +21,15 @@ export const OrderSummaryDetails: React.FC<OrderSummaryDetailsProps> = ({
     total,
     tax,
     couponCode,
+    order,
 }) => {
     const formatCurrency = (amount: number) =>
         `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+    // Check if this is a demo order
+    const isDemoOrder = order?.customAttributes?.some((attr: any) =>
+        attr.key === 'demo_request' || attr.value === 'true'
+    ) || order?.note?.toLowerCase().includes('demo');
 
     const freeShoesGiftUc = appConfigService.getFreeShoesGiftDiscountCodeUppercase();
     const freePuzzleGiftUc = appConfigService.getFreePuzzleGiftDiscountCodeUppercase();
@@ -87,9 +94,19 @@ export const OrderSummaryDetails: React.FC<OrderSummaryDetailsProps> = ({
 
             <View style={styles.billDivider} />
             <View style={styles.billRow}>
-                <Text style={styles.billTotalLabel}>Amount Paid</Text>
+                <Text style={styles.billTotalLabel}>
+                    {isDemoOrder ? 'Amount to Pay' : 'Amount Paid'}
+                </Text>
                 <Text style={styles.billTotalValue}>{formatCurrency(billSubtotal)}</Text>
             </View>
+
+            {/* Demo order note */}
+            {isDemoOrder && order?.note && (
+                <View style={styles.demoNoteCard}>
+                    <Text style={styles.demoNoteTitle}>Demo Schedule</Text>
+                    <Text style={styles.demoNoteText}>{order.note}</Text>
+                </View>
+            )}
         </View>
     );
 };
@@ -141,5 +158,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.LexendSemiBold,
         color: '#111827',
+    },
+    demoNoteCard: {
+        backgroundColor: '#FEF3C7',
+        borderRadius: 12,
+        padding: 12,
+        marginTop: 12,
+    },
+    demoNoteTitle: {
+        fontSize: 14,
+        fontFamily: Fonts.LexendSemiBold,
+        color: '#92400E',
+        marginBottom: 4,
+    },
+    demoNoteText: {
+        fontSize: Fonts.SmallFontSize,
+        fontFamily: Fonts.LexendMedium,
+        color: '#78350F',
+        lineHeight: 18,
     },
 });

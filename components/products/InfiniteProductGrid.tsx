@@ -20,6 +20,7 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
   isFetchingNextPage,
   isRefetching,
   refetch,
+  onScroll,
 }) => {
   const { width: windowWidth } = useDeviceDimensions();
 
@@ -122,6 +123,8 @@ const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }
         ) : undefined
       }
       scrollEnabled={scrollable}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       // Android performance optimizations
       drawDistance={760}
       contentContainerStyle={[
@@ -184,6 +187,7 @@ export interface InfiniteProductGridProps
   genderFilter?: string | null;
   ageFilter?: string | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
+  onScroll?: (event: any) => void;
 }
 
 export function InfiniteProductGrid({
@@ -213,10 +217,13 @@ export function InfiniteProductGrid({
   genderFilter,
   ageFilter,
   pageCategory,
+  onScroll,
 }: InfiniteProductGridProps) {
   const MemoizedCollectionComponent = React.useMemo(
-    () => (props: CollectionComponentProps) => <InfiniteGrid {...props} scrollable={scrollable} />,
-    [scrollable]
+    () => (props: CollectionComponentProps) => (
+      <InfiniteGrid {...props} scrollable={scrollable} onScroll={onScroll} />
+    ),
+    [scrollable, onScroll]
   );
 
   return (

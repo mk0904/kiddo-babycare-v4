@@ -2,8 +2,8 @@
 // For operations that require Admin privileges (Draft Orders, Order Editing, etc.)
 
 import {
-  SHOPIFY_ADMIN_ACCESS_TOKEN,
-  SHOPIFY_STORE_DOMAIN,
+    SHOPIFY_ADMIN_ACCESS_TOKEN,
+    SHOPIFY_STORE_DOMAIN,
 } from '@/config/shopify';
 import axios from 'axios';
 
@@ -636,4 +636,5 @@ export const shopifyAdminApi = {
       throw error;
     }
   },
+
 };
