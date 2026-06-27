@@ -259,7 +259,13 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   // Get container styles (matching ImageGrid pattern)
   // Extract paddingHorizontal before spreading, so we can use it for FlexibleGrid
   const containerPaddingFromStyles = blockStyles?.container?.paddingHorizontal;
-  const containerPaddingHorizontal = containerPaddingFromStyles || gridConfig.padding || 16;
+  let rawPadding = containerPaddingFromStyles !== undefined ? containerPaddingFromStyles : (gridConfig.padding ?? 16);
+  let containerPaddingHorizontal = 16;
+  if (typeof rawPadding === 'string' && rawPadding.endsWith('%')) {
+    containerPaddingHorizontal = (parseFloat(rawPadding) / 100) * width;
+  } else {
+    containerPaddingHorizontal = Number(rawPadding) || 16;
+  }
   
   // Create container style without paddingHorizontal (FlexibleGrid will handle it)
   const {
@@ -288,23 +294,34 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     ...processFontStyle(blockStyles?.title, Fonts.Black),
   };
 
+  // Calculate proportional scale if enabled (base width 390px - typical phone)
+  const scale = gridConfig.proportionalScale ? width / 390 : 1;
+  const scaledColGap = colGap * scale;
+  const scaledRowGap = rowGap * scale;
+
   // Text/label style under each cell: configurable via styles.text (fontSize, fontWeight, fontFamily, etc.)
   // Do not spread raw blockStyles.text after processFontStyle — that re-applies fontWeight and can
   // break custom fonts (e.g. lexend-medium) on cell labels.
   const { fontWeight: _labelFw, fontFamily: _labelFf, ...textStyleRest } = blockStyles?.text || {};
   const processedTextStyle = processFontStyle(blockStyles?.text, Fonts.Bold);
+  const baseFontSize = textStyleRest.fontSize ?? processedTextStyle.fontSize ?? 12;
+  const baseLineHeight = textStyleRest.lineHeight ?? processedTextStyle.lineHeight;
+  const baseMarginTop = textStyleRest.marginTop ?? 0;
+  
   const textStyle = {
     color: '#666666',
     textAlign: 'center' as const,
-    fontSize: 12,
     ...processedTextStyle,
     ...textStyleRest,
+    fontSize: baseFontSize * scale,
+    lineHeight: baseLineHeight ? baseLineHeight * scale : undefined,
+    marginTop: baseMarginTop * scale,
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)
   // Note: FlexibleGrid currently uses a single 'gap' prop, so we use colGap
   // If rowGap differs, we might need to update FlexibleGrid to support separate gaps
-  const gap = colGap;
+  const gap = scaledColGap;
 
   return (
     <BaseContentBlock block={block} style={containerStyle}>
@@ -316,8 +333,8 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         layout={(gridConfig.layout || 'first-item-2-col') as GridLayoutType}
         numColumns={numColumns}
         gap={gap}
-        colGap={colGap}
-        rowGap={rowGap}
+        colGap={scaledColGap}
+        rowGap={scaledRowGap}
         padding={containerPaddingHorizontal}
         aspectRatio={aspectRatio}
         imageResizeMode={resizeMode as 'cover' | 'contain' | 'stretch'}
