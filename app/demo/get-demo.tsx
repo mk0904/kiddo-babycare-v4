@@ -237,7 +237,9 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
             return;
         }
 
-        if (!defaultAddress) {
+        // Check that user has a selected address (or at least a default address)
+        const hasSelectedAddress = selectedAddressId && addresses?.some((addr: any) => addr.id === selectedAddressId);
+        if (!hasSelectedAddress && !defaultAddress) {
             Alert.alert('Address Required', 'Please add a delivery address');
             handleAddAddress();
             return;
@@ -345,6 +347,9 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     time: formattedTimeLabel,
                 };
 
+                // Use selected address instead of default address
+                const selectedAddressObj = addresses?.find((addr: any) => addr.id === selectedAddressId) || defaultAddress;
+
                 // Create order data with proper type handling
                 const orderData = {
                     items: [orderItem],
@@ -355,15 +360,15 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
                     name: (user as any)?.displayName || 'Customer',
                     customerId: user?.customerId || user?.id || undefined,
                     address: {
-                        name: (defaultAddress as any)?.firstName || (defaultAddress as any)?.name || (user as any)?.name || 'Customer',
+                        name: (selectedAddressObj as any)?.firstName || (selectedAddressObj as any)?.name || (user as any)?.name || 'Customer',
                         address: [
-                            (defaultAddress as any)?.address1 || (defaultAddress as any)?.address || '',
-                            (defaultAddress as any)?.address2 || ''
+                            (selectedAddressObj as any)?.address1 || (selectedAddressObj as any)?.address || '',
+                            (selectedAddressObj as any)?.address2 || ''
                         ].filter(Boolean).join(', '),
-                        city: (defaultAddress as any).city || '',
-                        state: (defaultAddress as any).state || '',
-                        pincode: (defaultAddress as any)?.zip || (defaultAddress as any)?.pincode || (defaultAddress as any)?.postalCode || '',
-                        phone: (defaultAddress as any)?.phone || user?.phone || '',
+                        city: (selectedAddressObj as any).city || '',
+                        state: (selectedAddressObj as any).state || '',
+                        pincode: (selectedAddressObj as any)?.zip || (selectedAddressObj as any)?.pincode || (selectedAddressObj as any)?.postalCode || '',
+                        phone: (selectedAddressObj as any)?.phone || user?.phone || '',
                         addressType: 'home',
                     },
                     paymentMethod: 'cod' as const,
