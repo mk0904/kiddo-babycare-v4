@@ -7,6 +7,12 @@ import {
   trackAddToCartAction,
   trackInitiatedCheckoutAction,
   trackPurchaseCompletion,
+  trackRegistrationAction,
+  trackLoginAction,
+  trackSearchAction,
+  trackContentViewAction,
+  trackListViewAction,
+  trackAddToWishlistAction,
 } from '@/utils/appsFlyerAnalytics';
 
 /**
@@ -93,6 +99,7 @@ export const resetUser = () => {
 export const trackLoginSuccess = (userId: string) => {
   trackEvent('Login Success', { userId });
   identifyUser(userId);
+  trackLoginAction();
 };
 
 export const trackLoginFailed = (reason?: string) => {
@@ -109,6 +116,7 @@ export const trackProductViewed = (productId: string, productName?: string, pric
     value: price,
     currency: 'INR',
   });
+  trackContentViewAction(productId, price, 'INR');
 };
 
 export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number) => {
@@ -137,7 +145,7 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number, produ
     content_type: 'product',
     num_items: itemCount,
   });
-  trackInitiatedCheckoutAction(cartValue, 'INR');
+  trackInitiatedCheckoutAction(cartValue, itemCount, productIds, 'INR');
 };
 
 export const trackPaymentSuccess = (orderId: string, amount: number, paymentMethod: string, productIds?: string[]) => {
@@ -174,6 +182,7 @@ export const trackSignupCompleted = (userId: string, method?: string) => {
     userId,
     method: method || 'phone' 
   });
+  trackRegistrationAction(method || 'phone');
 };
 
 export const trackMobileOTPVerified = (phoneNumber: string) => {
@@ -194,6 +203,7 @@ export const trackFirstProductViewed = (productId: string, productName?: string)
     productId,
     productName,
   });
+  trackContentViewAction(productId);
 };
 
 export const trackFirstAddToCart = (productId: string, productName?: string, price?: number) => {
@@ -253,6 +263,7 @@ export const trackCategoryViewed = (categoryName: string, categoryId?: string) =
     categoryName,
     categoryId,
   });
+  trackListViewAction(categoryName);
 };
 
 export const trackSearchPerformed = (query: string, resultsCount?: number) => {
@@ -261,6 +272,7 @@ export const trackSearchPerformed = (query: string, resultsCount?: number) => {
     search_string: query,
     resultsCount,
   });
+  trackSearchAction(query);
 };
 
 export const trackFiltersApplied = (filters: {
@@ -290,6 +302,7 @@ export const trackWishlistAdded = (productId: string, productName?: string, pric
     value: price,
     currency: 'INR',
   });
+  trackAddToWishlistAction(productId, price, 'INR');
 };
 
 export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
@@ -358,7 +371,7 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     content_type: 'product',
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
-  trackPurchaseCompletion(orderId, amount, 'INR');
+  trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');
 };
 
 export const trackOrderConfirmed = (orderId: string, amount: number) => {
