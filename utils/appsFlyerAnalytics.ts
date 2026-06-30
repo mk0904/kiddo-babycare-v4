@@ -1,3 +1,4 @@
+
 import { NativeModules } from 'react-native';
 import appsFlyer from 'react-native-appsflyer';
 
@@ -50,20 +51,33 @@ export const trackAddToCartAction = (
   itemCategory: string,
   itemPrice: number,
   quantity = 1,
+  currency = 'INR',
 ) => {
   emitAppsFlyerSignal('af_add_to_cart', {
     af_content_id: extractNumericId(itemId) || itemId,
     af_content_type: itemCategory || 'product',
     af_price: itemPrice,
     af_quantity: quantity,
+    af_currency: currency,
   });
 };
 
-export const trackInitiatedCheckoutAction = (cartTotalValue: number, currency = 'INR') => {
-  emitAppsFlyerSignal('af_initiated_checkout', {
+export const trackInitiatedCheckoutAction = (
+  cartTotalValue: number,
+  itemCount: number,
+  contentIds?: string[],
+  currency = 'INR',
+) => {
+  const payload: Record<string, any> = {
     af_price: cartTotalValue,
     af_currency: currency,
-  });
+    af_quantity: itemCount,
+    af_content_type: 'product',
+  };
+  if (contentIds && contentIds.length > 0) {
+    payload.af_content_id = contentIds.map(id => extractNumericId(id) || id);
+  }
+  emitAppsFlyerSignal('af_initiated_checkout', payload);
 };
 
 /**
@@ -72,11 +86,95 @@ export const trackInitiatedCheckoutAction = (cartTotalValue: number, currency = 
 export const trackPurchaseCompletion = (
   orderId: string,
   finalBillAmount: number,
+  itemCount: number,
+  contentIds?: string[],
   currency = 'INR',
 ) => {
-  emitAppsFlyerSignal('af_purchase', {
+  const payload: Record<string, any> = {
     af_revenue: finalBillAmount,
+    af_price: finalBillAmount,
     af_currency: currency,
     af_receipt_id: orderId,
+    af_order_id: orderId,
+    af_quantity: itemCount,
+    af_content_type: 'product',
+  };
+  if (contentIds && contentIds.length > 0) {
+    payload.af_content_id = contentIds.map(id => extractNumericId(id) || id);
+  }
+  emitAppsFlyerSignal('af_purchase', payload);
+};
+
+export const trackRegistrationAction = (
+  registrationMethod = 'phone',
+) => {
+  emitAppsFlyerSignal('af_complete_registration', {
+    af_registration_method: registrationMethod,
   });
+};
+
+export const trackLoginAction = (
+  loginMethod = 'phone',
+) => {
+  emitAppsFlyerSignal('af_login', {
+    af_login_method: loginMethod,
+  });
+};
+
+export const trackSearchAction = (
+  searchString: string,
+  contentList?: string[],
+) => {
+  const payload: Record<string, any> = {
+    af_search_string: searchString,
+  };
+  if (contentList && contentList.length > 0) {
+    payload.af_content_list = contentList;
+  }
+  emitAppsFlyerSignal('af_search', payload);
+};
+
+export const trackContentViewAction = (
+  productId: string,
+  price?: number,
+  currency: string = 'INR',
+) => {
+  const payload: Record<string, any> = {
+    af_content_id: extractNumericId(productId) || productId,
+    af_content_type: 'product',
+    af_currency: currency,
+  };
+  if (price != null && Number.isFinite(price)) {
+    payload.af_price = price;
+  }
+  emitAppsFlyerSignal('af_content_view', payload);
+};
+
+export const trackListViewAction = (
+  contentType: string,
+  contentList?: string[],
+) => {
+  const payload: Record<string, any> = {
+    af_content_type: contentType,
+  };
+  if (contentList && contentList.length > 0) {
+    payload.af_content_list = contentList;
+  }
+  emitAppsFlyerSignal('af_list_view', payload);
+};
+
+export const trackAddToWishlistAction = (
+  productId: string,
+  price?: number,
+  currency: string = 'INR',
+) => {
+  const payload: Record<string, any> = {
+    af_content_id: extractNumericId(productId) || productId,
+    af_content_type: 'product',
+    af_currency: currency,
+  };
+  if (price != null && Number.isFinite(price)) {
+    payload.af_price = price;
+  }
+  emitAppsFlyerSignal('af_add_to_wishlist', payload);
 };
