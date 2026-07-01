@@ -236,8 +236,11 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       allImageUrls[0] ||
       'https://via.placeholder.com/300';
 
-    // Request a Shopify CDN-resized image at 2× cardWidth for retina
-    const targetWidth = Math.round(cardWidth * 2);
+    // Request a Shopify CDN-resized image at 1× cardWidth.
+    // Using 2× was overshooting the CDN bucket (e.g. snapping to 1200x)
+    // which caused cache misses and slow TTFB. 1× still looks sharp on
+    // most devices and reliably hits the 200/300/400px cached buckets.
+    const targetWidth = Math.round(cardWidth);
     return shopifyImageUrl(url, targetWidth);
   }, [allImageUrls, imageErrorCount, cardWidth]);
 

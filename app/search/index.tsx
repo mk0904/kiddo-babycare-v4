@@ -14,6 +14,7 @@ import { shopifyApi } from '@/services/shopifyApi';
 import { isProductAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -276,8 +277,23 @@ export default function SearchScreen() {
                     setFacets(facetsData);
                 }
 
-                // Fetch tags asynchronously after UI update
-                if (newProducts.length > 0 && !loadMore) {
+                // Prefetch images immediately so they're in cache by the time cards render.
+                // This eliminates the skeleton-loader delay for the Searchanise image_link
+                // URLs which are valid Shopify CDN URLs and don't need Shopify API enrichment.
+                if (newProducts.length > 0) {
+                    newProducts.forEach((product: any) => {
+                        const imageUrl = product.images?.edges?.[0]?.node?.url;
+                        if (imageUrl && imageUrl.includes('cdn.shopify.com')) {
+                            Image.prefetch(imageUrl).catch(() => { });
+                        }
+                    });
+                }
+
+                // Fetch tags + Shopify images asynchronously after UI update.
+                // Run for ALL pages (including loadMore) so that paginated results
+                // also get proper Shopify CDN images — Searchanise image_link URLs
+                // from later pages are sometimes not Shopify CDN and fail to render.
+                if (newProducts.length > 0) {
                     const currentRequestId = requestIdRef.current;
 
                     InteractionManager.runAfterInteractions(() => {
@@ -285,7 +301,8 @@ export default function SearchScreen() {
                             return;
                         }
 
-                        const batchSize = 5;
+                        // Use a larger batch size for subsequent pages to reduce total round-trips
+                        const batchSize = loadMore ? 8 : 5;
                         const batches = [];
                         for (let i = 0; i < newProducts.length; i += batchSize) {
                             batches.push(newProducts.slice(i, i + batchSize));
@@ -307,11 +324,13 @@ export default function SearchScreen() {
                                                     tags: fullProduct.tags,
                                                     metafields: fullProduct.metafields,
                                                     variants: fullProduct.variants,
+                                                    // Carry Shopify images so cards always use CDN-hosted URLs
+                                                    images: fullProduct.images,
                                                 };
                                             }
                                         }
                                     } catch (error) {
-                                        // Silently fail - tags/metafields/variants are optional
+                                        // Silently fail - enrichment is optional
                                     }
                                     return null;
                                 });
@@ -333,11 +352,20 @@ export default function SearchScreen() {
                                         if (enriched.tags) updates.tags = enriched.tags;
                                         if (enriched.metafields) updates.metafields = enriched.metafields;
                                         if (enriched.variants) updates.variants = enriched.variants;
+                                        // Only replace images if the current image_link is NOT already a
+                                        // Shopify CDN URL. If it is, the prefetch already primed the cache
+                                        // and swapping the URL would trigger a second unnecessary load.
+                                        if (enriched.images) {
+                                            const existingUrl = product.images?.edges?.[0]?.node?.url || '';
+                                            if (!existingUrl.includes('cdn.shopify.com')) {
+                                                updates.images = enriched.images;
+                                            }
+                                        }
                                         if (Object.keys(updates).length === 0) return product;
                                         return { ...product, ...updates };
                                     });
                                 });
-                            }, batchIndex * 100);
+                            }, batchIndex * 150);
 
                             tagFetchTimeoutsRef.current.push(timeoutId);
                         });
@@ -680,7 +708,7 @@ export default function SearchScreen() {
                         scrollEventThrottle={16}
                         onScroll={handleScroll}
                         onEndReached={handleLoadMore}
-                        onEndReachedThreshold={0.3}
+                        onEndReachedThreshold={0.5}
                         columnWrapperStyle={styles.columnWrapper}
                         ListFooterComponent={
                             loadingMore ? (
