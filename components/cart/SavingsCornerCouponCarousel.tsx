@@ -56,6 +56,8 @@ export interface SavingsCornerCouponCarouselProps {
     onApplyCoupon: (coupon: SavingsCornerCouponItem) => void;
     /** Fired when the whole coupon ticket is pressed (e.g. to open deal modal). */
     onCouponPress?: (coupon: SavingsCornerCouponItem) => void;
+    /** When true, hides the "Apply" / "Applied" states and makes the component read-only. */
+    readOnly?: boolean;
 }
 
 function buildCouponDetailsContent(
@@ -101,6 +103,7 @@ export function SavingsCornerCouponCarousel({
     appliedCouponCode,
     onApplyCoupon,
     onCouponPress,
+    readOnly,
 }: SavingsCornerCouponCarouselProps) {
     const [details, setDetails] = useState<{ code: string; subtitle: string; bullets: string[] } | null>(null);
     const ticketWidth = useMemo(
@@ -152,7 +155,7 @@ export function SavingsCornerCouponCarousel({
                                 style={[
                                     styles.ticketCard,
                                     { height: TICKET_CARD_HEIGHT },
-                                    (couponApplying || (isDisabled && !isApplied)) && styles.ticketCardMuted,
+                                    (!readOnly && (couponApplying || (isDisabled && !isApplied))) && styles.ticketCardMuted,
                                 ]}
                             >
                                 <View style={styles.ticketTopRow}>
@@ -183,7 +186,7 @@ export function SavingsCornerCouponCarousel({
                                             {codeLabel}
                                         </Text>
                                     </View>
-                                    {isAppliedSuccess ? (
+                                    {readOnly ? null : isAppliedSuccess ? (
                                         <View style={styles.appliedBadge}>
                                             <Ionicons name="checkmark" size={18} color={Colors.primary} />
                                             <Text style={styles.appliedBadgeText}>Applied</Text>
