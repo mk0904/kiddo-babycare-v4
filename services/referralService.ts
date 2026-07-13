@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, getBackendAuthHeaders } from './backendBase';
 
 export interface ReferralProfile {
   id: string;
@@ -68,7 +68,9 @@ class ReferralService {
       }
       const url = getBackendApiPath(urlStr);
       console.log(`[Referral Service] Fetching status for ${cleaned} from ${url}`);
-      const response = await axios.get<ReferralStatusResponse>(url);
+      const response = await axios.get<ReferralStatusResponse>(url, {
+        headers: getBackendAuthHeaders(),
+      });
       return response.data;
     } catch (error) {
       console.error('[Referral Service] Error fetching referral status:', error);

@@ -8,7 +8,7 @@ import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { Freshchat } from 'react-native-freshchat-sdk';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, getBackendAuthHeaders } from './backendBase';
 
 function getPushRegisterUrl(): string {
   return getBackendApiPath('push/register');
@@ -70,7 +70,11 @@ export async function registerWithBackend(
   }
 
   const url = getPushRegisterUrl();
-  await axios.post(url, body, { timeout: 10000, validateStatus: () => true });
+  await axios.post(url, body, { 
+    timeout: 10000, 
+    validateStatus: () => true,
+    headers: getBackendAuthHeaders(),
+  });
 }
 
 export const pushRegistrationService = {

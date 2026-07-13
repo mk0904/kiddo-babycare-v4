@@ -4,7 +4,7 @@
  */
 import axios from 'axios';
 import { Platform } from 'react-native';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, getBackendAuthHeaders } from './backendBase';
 
 /** Bill breakdown for backend to persist on Shopify order. */
 export interface CheckoutBillDetails {
@@ -214,7 +214,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
   console.log('[CheckoutService] createDraft request:', JSON.stringify({ url, payload }, null, 2));
   const { data } = await axios.post<CheckoutDraftResponse>(url, payload, {
     timeout: 30000,
-    headers: { 'Content-Type': 'application/json' },
+    headers: getBackendAuthHeaders({ 'Content-Type': 'application/json' }),
   });
   console.log('[CheckoutService] createDraft response:', JSON.stringify(data, null, 2));
   return data;
@@ -229,8 +229,8 @@ export async function completeDraft(body: CheckoutCompleteRequest): Promise<Chec
   console.log('[CheckoutService] completeDraft request:', { url, body });
   try {
     const { data } = await axios.post<CheckoutCompleteResponse>(url, body, {
-      timeout: 30000,
-      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000,
+      headers: getBackendAuthHeaders({ 'Content-Type': 'application/json' }),
     });
     console.log('[CheckoutService] completeDraft response:', data);
     return data;

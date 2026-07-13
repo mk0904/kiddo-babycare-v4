@@ -424,6 +424,8 @@ export interface AppConfigResponse {
   isEvent?: boolean;
   isFreshChatEnabled?: boolean;
   isBackendGeocodingEnabled?: boolean;
+  isHelpSupportEnabled?: boolean;
+  minOrderValue?: number;
   /** Some backends send special-deal promo at root instead of under `cart`. */
   speacialDealConfig?: SpecialDealConfig;
   specialDealConfig?: SpecialDealConfig;

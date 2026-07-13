@@ -2499,6 +2499,7 @@ export default function CartScreen() {
                             onAddAddress={handleAddressSelection}
                             onLoginPress={() => router.push('/(auth)/login')}
                             payButtonLabel={checkoutConfig?.payButtonLabel}
+                            minOrderValueNotMet={itemSubtotal < appConfigService.getMinOrderValue()}
                         />
                     </View>
                 </View>

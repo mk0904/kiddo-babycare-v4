@@ -1,7 +1,7 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { Address, useAddress } from '@/context/AddressContext';
 import { appConfigService } from '@/services/appConfigService';
-import { getBackendApiPath } from '@/services/backendBase';
+import { getBackendApiPath, backendFetch } from '@/services/backendBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -106,8 +106,7 @@ export default function EditAddressScreen() {
 
             try {
                 const fullAddressString = `${address1.trim()}, ${address2.trim()}, ${city.trim()}`;
-                const etaUrl = getBackendApiPath('eta');
-                const etaResponse = await fetch(etaUrl, {
+                const etaResponse = await backendFetch('eta', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ address: fullAddressString, hasGiftWrap: false })
