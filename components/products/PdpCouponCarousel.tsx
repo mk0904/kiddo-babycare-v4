@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
 import Svg, { Path } from 'react-native-svg';
 
@@ -20,12 +20,10 @@ const CurvedUnderline = () => (
 
 const KiddoSpecialBadge = () => (
     <View style={styles.badgeContainer}>
-        <View style={styles.kiddoBubble}>
-            <Text style={styles.kiddoText}>Kiddo</Text>
-        </View>
-        <View style={styles.specialBubble}>
-            <Text style={styles.specialText}>SPECIAL</Text>
-        </View>
+        <Image 
+            source={require('@/assets/icons/KIDDO.png')} 
+            style={styles.kiddoIcon}
+        />
     </View>
 );
 
@@ -117,31 +115,10 @@ const styles = StyleSheet.create({
         width: 48,
         height: 36,
     },
-    kiddoBubble: {
-        backgroundColor: '#FF8A80',
-        borderRadius: 12,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        zIndex: 2,
-        transform: [{ rotate: '-5deg' }, { translateY: 4 }],
-    },
-    kiddoText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontFamily: Fonts.LexendBold,
-    },
-    specialBubble: {
-        backgroundColor: '#B388FF',
-        borderRadius: 4,
-        paddingHorizontal: 4,
-        paddingVertical: 1,
-        transform: [{ rotate: '3deg' }],
-        zIndex: 1,
-    },
-    specialText: {
-        color: '#FFFFFF',
-        fontSize: 8,
-        fontFamily: Fonts.LexendBold,
+    kiddoIcon: {
+        width: 36,
+        height: 36,
+        resizeMode: 'contain',
     },
     getAtText: {
         fontSize: 16,
