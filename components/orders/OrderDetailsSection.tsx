@@ -5,8 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 type OrderDetailsSectionProps = {
     order: any;
     isTicketingOnly: boolean;
-    showLastMileDeliveryUi: boolean;
     headerStatusText: string;
+    deliveryPartnerStatus?: any;
+    deliveryStatusKey?: string;
 };
 
 export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
@@ -14,11 +15,24 @@ export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
     isTicketingOnly,
     showLastMileDeliveryUi,
     headerStatusText,
+    deliveryPartnerStatus,
+    deliveryStatusKey,
 }) => {
     // Check if this is a demo order by looking at custom attributes or notes
     const isDemoOrder = order?.customAttributes?.some((attr: any) =>
         attr.key === 'demo_request' || attr.value === 'true'
     ) || order?.note?.toLowerCase().includes('demo');
+
+    // Extract schedule details
+    const scheduledDateAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_date')?.value;
+    const scheduledTimeAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_time')?.value;
+    
+    const scheduledDate = deliveryPartnerStatus?.scheduled_date || scheduledDateAttr || order?.scheduledDate || order?.deliverySchedule?.date;
+    const scheduledTime = deliveryPartnerStatus?.scheduled_time || scheduledTimeAttr || order?.scheduledTime || order?.deliverySchedule?.time;
+    const isScheduledOrder = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || !!(scheduledDate && scheduledTime);
+
+    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing', 'packed', 'rider_assigned']);
+    const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey || '');
 
     return (
         <>
@@ -40,7 +54,13 @@ export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
                     {showLastMileDeliveryUi ? <Text style={styles.billTitle}>Order Details</Text> : null}
 
                     {/* Arrival / ETA line */}
-                    {showLastMileDeliveryUi && !!headerStatusText.trim() ? (
+                    {isScheduledOrder && isEarlyStatus && scheduledDate && scheduledTime ? (
+                        <View style={styles.belowBillSection}>
+                            <Text style={styles.belowBillTitle}>
+                                Scheduled: {scheduledDate}, {scheduledTime}
+                            </Text>
+                        </View>
+                    ) : showLastMileDeliveryUi && !!headerStatusText.trim() ? (
                         <View style={styles.belowBillSection}>
                             <Text style={styles.belowBillTitle}>{headerStatusText}</Text>
                         </View>

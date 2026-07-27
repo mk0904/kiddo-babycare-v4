@@ -48,6 +48,10 @@ export interface DeliveryPartnerOrderStatus {
   assignedAt?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
+  /** Scheduled delivery properties */
+  is_scheduled_order?: boolean;
+  scheduled_date?: string | null;
+  scheduled_time?: string | null;
   /** Billing details from delivery-partner-service */
   subtotal_amount?: string | number | null;
   delivery_fee?: string | number | null;
