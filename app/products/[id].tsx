@@ -1233,6 +1233,22 @@ const ProductDetailScreen = () => {
     const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
     const productCategory = product?.productCategory?.value || getMetafieldValue(product, 'product_category');
 
+    const isFashion = useMemo(() => {
+        if (!product) return false;
+        if (fabric || washCare) return true;
+        const typeStr = (product.productType || '').toLowerCase();
+        const categoryStr = (productCategory || '').toLowerCase();
+        const tagsStr = Array.isArray(product.tags) ? product.tags.join(' ').toLowerCase() : String(product.tags || '').toLowerCase();
+        const keywords = ['fashion', 'clothing', 'apparel', 'wear', 'dress', 'top', 'bottom', 'onesie', 'pant', 'shirt', 'footwear', 'shoe', 'skirt', 'frock', 'suit', 'pyjama', 't-shirt', 'tshirt', 'jacket', 'sweater'];
+        if (keywords.some((k) => typeStr.includes(k) || categoryStr.includes(k) || tagsStr.includes(k))) {
+            return true;
+        }
+        if (product.options?.some((o: any) => o.name?.toLowerCase() === 'size')) {
+            return true;
+        }
+        return false;
+    }, [product, fabric, washCare, productCategory]);
+
     console.log('[PDP] All metafields:', product?.metafields);
     console.log('[PDP] Product Details Metafields:', { ageGroup, productSpecifications, productCategory });
 
@@ -1684,6 +1700,7 @@ const ProductDetailScreen = () => {
                     <ProductTrustStrip
                         refundPolicyText={refundPolicy}
                         onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                        isFashion={isFashion}
                     />
 
                     {/* Product Specification - Tabbed Interface */}

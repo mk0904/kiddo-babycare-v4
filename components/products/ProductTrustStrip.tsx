@@ -12,14 +12,10 @@ import {
 } from 'react-native';
 
 const ICONS = {
-  recyclenew: require('@/assets/icons/recyclenew.png'),
-  lrecyclec: require('@/assets/icons/recyclenew.png'),
-  newlight: require('@/assets/icons/newlight.png'),
-  light1: require('@/assets/icons/newlight.png'),
-  headphone: require('@/assets/icons/headphone.png'),
-  support247: require('@/assets/icons/headphone.png'),
-  trynbuy: require('@/assets/icons/trynbuy.png'),
-  hanger: require('@/assets/icons/trynbuy.png'),
+  replacement72: require('@/assets/icons/72.png'),
+  light2: require('@/assets/icons/light2.png'),
+  headphone1: require('@/assets/icons/headphone1.png'),
+  tryandbuy: require('@/assets/icons/tryandbuy.png'),
 } as const;
 
 interface ProductTrustStripProps {
@@ -53,7 +49,7 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
   const items: TrustItem[] = isFashion
     ? [
       {
-        icon: ICONS.hanger,
+        icon: ICONS.tryandbuy,
         label: 'Try Upto\n10 Items',
         accentColor: '#EAAA08',
         bgColor: '#FEFBE8',
@@ -62,15 +58,15 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
         isTryBuy: true,
       },
       {
-        icon: ICONS.lrecyclec,
-        label: 'Return\nInstant / 7 days',
+        icon: ICONS.replacement72,
+        label: '7 days \nReturn        ',
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
-        title: 'Return Instant / 7 Days',
+        title: '7 Days Return ',
         description: 'Eligible if you recieve a damaged, defected, expired, incorrect or missing item.',
       },
       {
-        icon: ICONS.support247,
+        icon: ICONS.headphone1,
         label: '24x7\nSupport',
         accentColor: '#F15E5E',
         bgColor: '#FEEFEF',
@@ -80,7 +76,7 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
     ]
     : [
       {
-        icon: ICONS.lrecyclec,
+        icon: ICONS.replacement72,
         label: refundPolicyText?.trim() || '72hr\nReplacement',
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
@@ -88,7 +84,7 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
         description: 'Eligible if you recieve a damaged, defected, expired, incorrect or missing item.',
       },
       {
-        icon: ICONS.light1,
+        icon: ICONS.light2,
         label: 'Delivered\nin Minutes',
         accentColor: '#EAAA08',
         bgColor: '#FEFBE8',
@@ -96,7 +92,7 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
         description: 'Get your order delivered to your doorstep in just minutes',
       },
       {
-        icon: ICONS.support247,
+        icon: ICONS.headphone1,
         label: '24x7\nSupport',
         accentColor: '#F15E5E',
         bgColor: '#FEEFEF',
