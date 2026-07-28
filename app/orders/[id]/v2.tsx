@@ -245,6 +245,7 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
     returned: 'Returned',
     reached_delivery: 'Arrived',
     rto_delivered: 'RTO Delivered',
+    exchanged: 'Exchanged',
 };
 
 const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -264,6 +265,7 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
     returned: { bg: '#F5F3FF', text: '#6B21A8' },
     reached_delivery: { bg: '#DCFCE7', text: '#15803D' },
     rto_delivered: { bg: '#FEF2F2', text: '#B91C1C' },
+    exchanged: { bg: '#F5F3FF', text: '#6B21A8' },
 };
 
 export default function OrderDetailV2Screen() {
