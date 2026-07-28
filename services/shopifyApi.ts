@@ -1138,6 +1138,12 @@ export interface ShopifyProduct {
   handle: string;
   tags?: string[];
   vendor?: string;
+  metafields?: Array<{
+    id: string;
+    key: string;
+    value: string;
+    namespace: string;
+  } | null>;
   priceRange?: {
     minVariantPrice: {
       amount: string;

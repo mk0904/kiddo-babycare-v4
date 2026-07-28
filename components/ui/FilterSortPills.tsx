@@ -14,6 +14,19 @@ import { FastFilters } from './FastFilters';
 
 interface FilterSortPillsProps {
     totalItems?: number;
+    activeFiltersCount?: number;
+    onFiltersPress?: () => void;
+    onSortPress?: () => void;
+    onGenderPress?: () => void;
+    onAgePress?: () => void;
+    selectedGender?: string | null;
+    selectedAge?: string | null;
+    facets?: any[];
+    selectedFilters?: any;
+    onFastFilterToggle?: (attribute: string, value: any) => void;
+    style?: StyleProp<ViewStyle>;
+    showGenderFilter?: boolean;
+    showAgeFilter?: boolean;
     showBrandFilter?: boolean;
     showSizeFilter?: boolean;
     showStageFilter?: boolean;

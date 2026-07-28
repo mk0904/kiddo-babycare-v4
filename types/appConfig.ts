@@ -426,6 +426,7 @@ export interface AppConfigResponse {
   isBackendGeocodingEnabled?: boolean;
   isHelpSupportEnabled?: boolean;
   minOrderValue?: number;
+  isSelfSearchEnabled?: boolean;
   /** Some backends send special-deal promo at root instead of under `cart`. */
   speacialDealConfig?: SpecialDealConfig;
   specialDealConfig?: SpecialDealConfig;

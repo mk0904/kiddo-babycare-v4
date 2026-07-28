@@ -130,6 +130,14 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
     const completeAddToCart = async (currentItem: any, finalVariant: any, tryVariant?: any) => {
         const pid = currentItem.id || currentItem._id || productId;
 
+        // Prevent adding to cart if the variant ID is a placeholder (i.e. has the same numeric ID as the product)
+        const variantIdNum = String(finalVariant?.id || variantId || '').split('/').pop();
+        const productIdNum = String(pid || '').split('/').pop();
+        if (variantIdNum && productIdNum && variantIdNum === productIdNum) {
+            Alert.alert('Please wait', 'Product details are still loading. Try again in a moment.');
+            return;
+        }
+
         // Validate date selection for ticketing products
         if (bookingDate !== undefined && !bookingDate) {
             if (onValidationError) onValidationError();

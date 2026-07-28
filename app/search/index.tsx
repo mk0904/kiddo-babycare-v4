@@ -8,8 +8,10 @@ import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { Colors, Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { searchaniseApi } from '@/services/searchaniseApi';
+import { selfSearchApi } from '@/services/selfSearchApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { isProductAvailable } from '@/utils/availability';
 import { Ionicons } from '@expo/vector-icons';
@@ -227,16 +229,21 @@ export default function SearchScreen() {
             }
 
             const currentIndex = loadMore ? startIndex : 0;
-            const result = await searchaniseApi.searchProducts({
+            const searchParams = {
                 q: searchQuery.trim(),
                 collection: collectionHandle,
                 filters: selectedFilters,
                 sortBy,
                 sortOrder,
                 startIndex: currentIndex,
-                maxResults: 24, // Increased for better pagination
+                maxResults: 12, // Increased for better pagination
                 facets: true,
-            }, signal);
+            };
+
+            const config = appConfigService.getConfig();
+            const result = config?.isSelfSearchEnabled
+                ? await selfSearchApi.searchProducts(searchParams, signal)
+                : await searchaniseApi.searchProducts(searchParams, signal);
 
             if (signal?.aborted || (requestId !== undefined && requestId !== requestIdRef.current)) {
                 return;
@@ -265,7 +272,11 @@ export default function SearchScreen() {
 
                 // Update products immediately (without tags) to prevent UI freeze
                 if (loadMore) {
-                    setProducts((prev) => [...prev.filter((p: any) => p && p.id), ...newProducts]);
+                    setProducts((prev) => {
+                        const existingIds = new Set(prev.map((p: any) => p?.id).filter(Boolean));
+                        const uniqueNewProducts = newProducts.filter((p: any) => p?.id && !existingIds.has(p.id));
+                        return [...prev.filter((p: any) => p && p.id), ...uniqueNewProducts];
+                    });
                 } else {
                     setProducts(newProducts);
                     const facetsData = result.facets || [];
@@ -345,7 +356,7 @@ export default function SearchScreen() {
                                     if (currentRequestId !== requestIdRef.current) {
                                         return prev;
                                     }
-                                    return prev.map((product: any) => {
+                                    const nextProducts = prev.map((product: any) => {
                                         const enriched = tagResults.find((r: any) => r && r.productId === product.id);
                                         if (!enriched) return product;
                                         const updates: any = {};
@@ -364,6 +375,8 @@ export default function SearchScreen() {
                                         if (Object.keys(updates).length === 0) return product;
                                         return { ...product, ...updates };
                                     });
+                                    // Re-evaluate stock availability after getting real variants from Shopify
+                                    return nextProducts.filter((p: any) => isProductAvailable(p));
                                 });
                             }, batchIndex * 150);
 
@@ -446,7 +459,12 @@ export default function SearchScreen() {
     const handleProductPress = (product: any) => {
         // Track the click in Searchanise analytics so it shows in the dashboard
         if (searchQuery.trim()) {
-            searchaniseApi.trackProductClick(searchQuery.trim(), product.id);
+            const config = appConfigService.getConfig();
+            if (config?.isSelfSearchEnabled) {
+                selfSearchApi.trackProductClick(searchQuery.trim(), product.id);
+            } else {
+                searchaniseApi.trackProductClick(searchQuery.trim(), product.id);
+            }
         }
         router.push({
             pathname: '/products/[id]',
@@ -481,8 +499,8 @@ export default function SearchScreen() {
     }, [GAP, HORIZONTAL_PADDING, screenWidth]);
 
 
-    const keyExtractor = useCallback((item: any) => {
-        return item.id || item._id || `product-${item.handle}`;
+    const keyExtractor = useCallback((item: any, index: number) => {
+        return item.id ? String(item.id) : (item._id ? String(item._id) : `product-${item.handle || index}`);
     }, []);
 
     const renderItem = useCallback(({ item, index }: { item: any; index: number }) => {
