@@ -1133,12 +1133,32 @@ export const useCartStore = create<CartState>()(
                         return;
                     }
 
+                    const existingItem = state.lineItems.find(li => li.id === itemId);
+                    const oldQty = existingItem?.quantity ?? 0;
+
                     const newLineItems = state.lineItems.map((li) => {
                         if (li.id !== itemId) return li;
                         const maxQty = li.quantityAvailable;
                         const capped = typeof maxQty === 'number' ? Math.min(quantity, maxQty) : quantity;
                         return { ...li, quantity: capped };
                     });
+
+                    const updatedItem = newLineItems.find(li => li.id === itemId);
+                    const newQty = updatedItem?.quantity ?? quantity;
+                    const prodId = updatedItem?.productId || updatedItem?.merchandiseId || itemId;
+
+                    if (newQty !== oldQty && prodId) {
+                        try {
+                            const { trackQuantityIncreased, trackQuantityDecreased } = require('@/utils/mixpanelHelpers');
+                            if (newQty > oldQty) {
+                                trackQuantityIncreased(prodId, oldQty, newQty);
+                            } else if (newQty < oldQty) {
+                                trackQuantityDecreased(prodId, oldQty, newQty);
+                            }
+                        } catch (e) {
+                            console.warn('Mixpanel tracking error:', e);
+                        }
+                    }
 
                     set({
                         lineItems: newLineItems,

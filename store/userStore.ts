@@ -98,18 +98,17 @@ export const useUserStore = create<UserStore>()(
                     loginProvider: 'phone', // Default to phone for OTP
                 });
                 console.log('[UserStore] User logged in:', user.email || user.phone);
-                
-                // Track login success (backend → Mixpanel)
+
                 try {
                     const { trackEvent, identifyUser } = require('@/utils/mixpanelHelpers');
-                    const userId = user.id || user.customerId || user.email || user.phone;
-                    identifyUser(userId, {
+                    const identityId = user.email || user.id || user.customerId || user.phone;
+                    identifyUser(identityId, {
                         email: user.email,
                         phone: user.phone,
                         name: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
                     });
                     trackEvent('Login Success', {
-                        userId,
+                        userId: identityId,
                         loginProvider: 'phone',
                         email: user.email,
                         phone: user.phone,
@@ -143,7 +142,7 @@ export const useUserStore = create<UserStore>()(
                     hasSkippedLogin: false,
                 });
                 console.log('[UserStore] User logged out');
-                
+
                 // Reset analytics identity on logout
                 try {
                     const { resetUser } = require('@/utils/mixpanelHelpers');

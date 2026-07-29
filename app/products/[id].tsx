@@ -1221,6 +1221,14 @@ const ProductDetailScreen = () => {
             ...prev,
             [optionName]: optionValue,
         }));
+        if (optionName.toLowerCase() === 'size' && (product?.id || (params as any)?.id)) {
+            try {
+                const { trackSizeSelected } = require('@/utils/mixpanelHelpers');
+                trackSizeSelected(product?.id || (params as any)?.id, optionValue);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+        }
     };
 
     const onImageScroll = (event: any) => {
@@ -1230,6 +1238,14 @@ const ProductDetailScreen = () => {
         const index = Math.round(offset / slideSize);
         if (index >= 0 && index < images.length && index !== selectedImageIndex) {
             setSelectedImageIndex(index);
+            if (product?.id || (params as any)?.id) {
+                try {
+                    const { trackProductImageSwiped } = require('@/utils/mixpanelHelpers');
+                    trackProductImageSwiped(product?.id || (params as any)?.id, index);
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
+            }
         }
     };
 

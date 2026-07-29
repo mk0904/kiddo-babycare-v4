@@ -297,10 +297,18 @@ export const SavingsCorner = React.memo(function SavingsCorner({
             }
             const err = result.error ?? 'Failed to apply coupon';
             if (surfaceCardError) setLastApplyError(err);
+            try {
+                const { trackCouponFailed } = require('@/utils/mixpanelHelpers');
+                trackCouponFailed(trimmed, err);
+            } catch (e) { console.warn('Analytics tracking error:', e); }
             return { success: false, error: err };
         } catch (error: any) {
             const err = error.message ?? 'Failed to apply coupon';
             if (surfaceCardError) setLastApplyError(err);
+            try {
+                const { trackCouponFailed } = require('@/utils/mixpanelHelpers');
+                trackCouponFailed(trimmed, err);
+            } catch (e) { console.warn('Analytics tracking error:', e); }
             return { success: false, error: err };
         } finally {
             setApplyUiSource(null);
@@ -358,6 +366,10 @@ export const SavingsCorner = React.memo(function SavingsCorner({
             setManualCode('');
             setManualCodeMessage(null);
             setLastApplyError(null);
+            try {
+                const { trackCouponRemoved } = require('@/utils/mixpanelHelpers');
+                trackCouponRemoved(code);
+            } catch (e) { console.warn('Analytics tracking error:', e); }
         } catch (error: any) {
             setManualCodeMessage(error.message ?? 'Failed to remove coupon');
         } finally {
