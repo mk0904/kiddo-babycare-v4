@@ -1753,16 +1753,24 @@ export default function CartScreen() {
 
             // Track Payment Success and Order Placed
             try {
-                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced, trackSecondOrderPlaced, trackThirdOrderPlaced } = require('@/utils/mixpanelHelpers');
                 const { extractNumericId } = require('@/utils/shopifyIds');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
-                const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
-                if (!hasPlacedOrder) {
+                const orderCountRaw = await AsyncStorage.getItem('user_order_count');
+                const orderCount = (parseInt(orderCountRaw || '0', 10) || 0) + 1;
+                await AsyncStorage.setItem('user_order_count', orderCount.toString());
+
+                if (orderCount === 1) {
                     trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
                     await AsyncStorage.setItem('has_placed_order', 'true');
+                } else if (orderCount === 2) {
+                    trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
+                } else if (orderCount === 3) {
+                    trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
                 }
+
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
                 trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds);
                 trackEvent('Payment Success', {

@@ -3146,7 +3146,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13july_under2mb.gif?v=1783883371",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_app_banner_new.gif?v=1785273889",
           "link": {
             "type": "collection",
             "collection": {
@@ -3159,15 +3159,15 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 1,
+        "height": 0.75,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
           "marginTop": 0,
           "backgroundColor": "#F5F5F5",
-          "borderBottomLeftRadius": 20,
-          "borderBottomRightRadius": 20
+          "borderBottomLeftRadius": 800,
+          "borderBottomRightRadius": 800
         },
         "imageContainer": {},
         "image": {
@@ -3230,30 +3230,32 @@
         "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": 10,
+        "rowGap": -10,
         "limit": 6,
-        "aspectRatio": 0.5,
+        "aspectRatio": 1,
         "showLabels": true,
         "borderRadius": 12,
         "proportionalScale": true
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/515873767713"
+          "id": "gid://shopify/Collection/516881449249"
         },
         {
-          "id": "gid://shopify/Collection/516297097505"
+          "id": "gid://shopify/Collection/516881416481"
         },
         {
-          "id": "gid://shopify/Collection/516297228577"
+          "id": "gid://shopify/Collection/516881514785"
         }
       ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-65%",
+          "marginTop": "-45%",
           "zIndex": 10,
-          "paddingHorizontal": 15
+          "paddingHorizontal": 25,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
         "title": {
           "display": "none",
@@ -3560,6 +3562,115 @@
           "fontWeight": "700",
           "fontFamily": "lexend",
           "color": "rgba(0, 0, 0, 0.3)"
+        }
+      }
+    },
+    {
+      "id": "all-banner-9",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Final_for_farzan_29_July.gif?v=1785266750",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": ""
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 0.8,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 15,
+          "paddingHorizontal": 10,
+          "backgroundColor": "#F5F5F5",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 20
+        },
+        "img": {}
+      },
+      "order": 4
+    },
+    {
+      "id": "category-grid-onbanner1",
+      "type": "categoryGrid",
+      "order": 3,
+      "visible": true,
+      "title": "bannergrid",
+      "gridConfig": {
+        "layout": "featured-left",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 10,
+        "limit": 7,
+        "aspectRatio": 1,
+        "showLabels": true,
+        "borderRadius": 12,
+        "proportionalScale": true
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/516534698273"
+        },
+        {
+          "id": "gid://shopify/Collection/516534731041"
+        },
+        {
+          "id": "gid://shopify/Collection/516559831329"
+        },
+        {
+          "id": "gid://shopify/Collection/516534894881"
+        },
+        {
+          "id": "gid://shopify/Collection/516565369121"
+        },
+        {
+          "id": "gid://shopify/Collection/516562518305"
+        },
+        {
+          "id": "gid://shopify/Collection/516560093473"
+        }
+      ],
+      "styles": {
+        "container": {
+          "position": "absolute",
+          "marginTop": "152%",
+          "zIndex": 10,
+          "paddingHorizontal": 25
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 18,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0, 0, 0, 0.3)"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
+          "color": "#414651",
+          "fontSize": 11,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -5840,7 +5951,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/sunday12july.gif?v=1783854018",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Header_29_July_2026.png?v=1785272214",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

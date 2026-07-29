@@ -1372,10 +1372,20 @@ const ProductDetailScreen = () => {
     const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
     const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
 
+<<<<<<< HEAD
     const rawSizeChartMetafield = product?.sizeChartMetafield?.reference?.image?.url ||
         product?.sizeChartMetafield?.value ||
         getMetafieldValue(product, 'sizechart') ||
         getMetafieldValue(product, 'size_chart');
+=======
+    const sizeChartMetafield = getMetafieldNode(product, 'sizechart') || getMetafieldNode(product, 'sizeChartImage');
+    const sizeChartImageUrl = useMemo(() => {
+        if (!sizeChartMetafield) return null;
+        
+        // Resolve using Shopify metafield reference node
+        const refUrl = sizeChartMetafield.reference?.image?.url || sizeChartMetafield.reference?.url;
+        if (refUrl) return refUrl;
+>>>>>>> fc7bfa5 (uncommited changes)
 
     const sizeChartUrl = useMemo(() => {
         if (!rawSizeChartMetafield) return null;

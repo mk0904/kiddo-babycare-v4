@@ -224,6 +224,27 @@ export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
   });
 };
 
+export const trackSecondOrderPlaced = (orderId: string, amount: number) => {
+  trackEvent('Second Order Placed', {
+    event_id: orderId,
+    orderId,
+    amount,
+    value: amount,
+    currency: 'INR',
+  });
+};
+
+export const trackThirdOrderPlaced = (orderId: string, amount: number) => {
+  trackEvent('Third Order Placed', {
+    event_id: orderId,
+    orderId,
+    amount,
+    value: amount,
+    currency: 'INR',
+  });
+};
+
+
 // ============================================
 // BROWSING & ENGAGEMENT EVENTS
 // ============================================
@@ -381,6 +402,27 @@ export const trackOrderConfirmed = (orderId: string, amount: number) => {
     amount,
     value: amount,
     currency: 'INR',
+  });
+};
+
+export const trackAddressAdded = (addressId: string, city?: string, pincode?: string) => {
+  trackEvent('Address Added', {
+    addressId,
+    city,
+    pincode,
+  });
+};
+
+export const trackAddressSelected = (addressId: string) => {
+  trackEvent('Address Selected', {
+    addressId,
+  });
+};
+
+export const trackDeliverySlotSelected = (slotDate: string, slotTime: string) => {
+  trackEvent('Delivery Slot Selected', {
+    slotDate,
+    slotTime,
   });
 };
 

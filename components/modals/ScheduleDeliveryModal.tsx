@@ -155,6 +155,13 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
             timeSlotLabel: selectedSlot?.label,
         };
 
+        try {
+            const { trackDeliverySlotSelected } = require('@/utils/mixpanelHelpers');
+            trackDeliverySlotSelected(schedule.date, selectedSlot?.label ?? selectedTime);
+        } catch (e) {
+            console.warn('Mixpanel tracking error:', e);
+        }
+
         onConfirm(schedule);
         onClose();
     };
