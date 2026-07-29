@@ -50,6 +50,7 @@ export default function SearchScreen() {
     const { handleScroll } = useScrollTracking();
     const initialQuery = typeof params.query === 'string' ? params.query : '';
     const collectionHandle = typeof params.collectionHandle === 'string' ? params.collectionHandle : null;
+    const config = appConfigService.getConfig();
 
     // Get product grid defaults from config
     const gridDefaults = configService.getProductGridDefaults();
@@ -80,9 +81,12 @@ export default function SearchScreen() {
     const abortControllerRef = useRef<AbortController | null>(null);
     const requestIdRef = useRef(0);
     const tagFetchTimeoutsRef = useRef<any[]>([]);
+    const isFirstMount = useRef(true);
 
     // Debounced search effect
     useEffect(() => {
+        if (isFirstMount.current) return;
+
         // Cancel any ongoing requests
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -119,11 +123,12 @@ export default function SearchScreen() {
         abortControllerRef.current = new AbortController();
 
         // Debounce the search
+        const debounceDelay = config?.isSelfSearchEnabled ? 800 : 300;
         searchTimeoutRef.current = setTimeout(() => {
             if (currentRequestId === requestIdRef.current) {
                 performSearch(false, abortControllerRef.current?.signal || undefined, currentRequestId);
             }
-        }, 300);
+        }, debounceDelay);
 
         // Cleanup
         return () => {
@@ -141,10 +146,13 @@ export default function SearchScreen() {
         if (initialQuery || collectionHandle) {
             performSearch(false);
         }
+        isFirstMount.current = false;
     }, []);
 
     // Re-search when filters or sort change
     useEffect(() => {
+        if (isFirstMount.current) return;
+        
         if (products.length > 0 || searchQuery.trim() || collectionHandle) {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
@@ -586,6 +594,7 @@ export default function SearchScreen() {
                             <FilterSortPills
                                 totalItems={totalItems}
                                 activeFiltersCount={getActiveFiltersCount()}
+                                showFilterButton={!config?.isSelfSearchEnabled}
                                 onFiltersPress={() => setShowFiltersModal(true)}
                                 onSortPress={() => setShowSortModal(true)}
                                 facets={facets.map((f: any) => {

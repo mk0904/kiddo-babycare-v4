@@ -30,6 +30,7 @@ interface FilterSortPillsProps {
     showBrandFilter?: boolean;
     showSizeFilter?: boolean;
     showStageFilter?: boolean;
+    showFilterButton?: boolean;
     onBrandPress?: () => void;
     onSizePress?: () => void;
     onStagePress?: () => void;
@@ -56,6 +57,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     showBrandFilter = false,
     showSizeFilter = false,
     showStageFilter = false,
+    showFilterButton = true,
     onBrandPress,
     onSizePress,
     onStagePress,
@@ -115,7 +117,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
         };
     }, []);
 
-    const hasFastFilters = facets.length > 0 && onFastFilterToggle;
+    const hasFastFilters = facets.length > 0 && onFastFilterToggle && showFilterButton;
 
     // Interpolated values for smooth transitions
     const filterButtonWidth = useMemo(() => {
@@ -186,63 +188,65 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
         <View style={[styles.container, style]}>
             {/* Filter & Sort Buttons - Left side (with text, collapse to icons when scrolling left) */}
             <View style={styles.actionsContainer}>
-                <Animated.View
-                    style={[
-                        styles.actionButton,
-                        activeFiltersCount > 0 && styles.actionButtonActive,
-                        {
-                            width: filterButtonWidth,
-                            paddingHorizontal: paddingHorizontal,
-                        },
-                    ]}
-                >
-                    <TouchableOpacity
-                        style={styles.actionButtonInner}
-                        onPress={onFiltersPress}
-                        activeOpacity={0.7}
+                {showFilterButton && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            activeFiltersCount > 0 && styles.actionButtonActive,
+                            {
+                                width: filterButtonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
                     >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onFiltersPress}
+                            activeOpacity={0.7}
+                        >
+                                <Animated.View
+                                    style={{
+                                        transform: [{ scale: iconScale }],
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <Ionicons
+                                        name="filter-outline"
+                                        size={16}
+                                        color={activeFiltersCount > 0 ? Colors.variantSelection : Colors.text}
+                                    />
+                                </Animated.View>
                             <Animated.View
                                 style={{
-                                    transform: [{ scale: iconScale }],
+                                    opacity: textOpacity,
+                                    width: filterTextWidth,
+                                    overflow: 'hidden',
                                     justifyContent: 'center',
                                     alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                    flexDirection: 'row',
+                                    gap: 4,
+                                    paddingHorizontal: activeFiltersCount > 0 ? 4 : 0,
                                 }}
                             >
-                                <Ionicons
-                                    name="filter-outline"
-                                    size={16}
-                                    color={activeFiltersCount > 0 ? Colors.variantSelection : Colors.text}
-                                />
+                                <Text
+                                    style={[
+                                        styles.actionButtonText,
+                                        activeFiltersCount > 0 && styles.actionButtonTextActive,
+                                    ]}
+                                >
+                                    Filters
+                                </Text>
+                                {activeFiltersCount > 0 && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>{activeFiltersCount}</Text>
+                                    </View>
+                                )}
                             </Animated.View>
-                        <Animated.View
-                            style={{
-                                opacity: textOpacity,
-                                width: filterTextWidth,
-                                overflow: 'hidden',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginLeft: textMarginLeft,
-                                flexDirection: 'row',
-                                gap: 4,
-                                paddingHorizontal: activeFiltersCount > 0 ? 4 : 0,
-                            }}
-                        >
-                            <Text
-                                style={[
-                                    styles.actionButtonText,
-                                    activeFiltersCount > 0 && styles.actionButtonTextActive,
-                                ]}
-                            >
-                                Filters
-                            </Text>
-                            {activeFiltersCount > 0 && (
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{activeFiltersCount}</Text>
-                                </View>
-                            )}
-                        </Animated.View>
-                    </TouchableOpacity>
-                </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
 
                 <Animated.View
                     style={[
