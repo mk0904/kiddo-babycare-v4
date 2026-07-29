@@ -12,6 +12,8 @@ type DeliveryPartnerCardProps = {
     partnerAvatarSrc: any;
     deliveryPartnerStatus: DeliveryPartnerOrderStatus | null;
     handleDeliveryPartnerCall: () => void;
+    isScheduledOrderForPill?: boolean;
+    scheduledTimeForPill?: string;
 };
 
 export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
@@ -21,6 +23,8 @@ export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
     partnerAvatarSrc,
     deliveryPartnerStatus,
     handleDeliveryPartnerCall,
+    isScheduledOrderForPill,
+    scheduledTimeForPill,
 }) => {
     return (
         <>
@@ -45,8 +49,16 @@ export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
                             <Ionicons name="time-outline" size={36} color="#8B5E00" />
                         </View>
                         <View style={styles.deliveryPartnerTextWrap}>
-                            <Text style={styles.deliveryPartnerIntro}>Your delivery partner will be assigned soon</Text>
-                            <Text style={styles.deliveryPartnerPendingText}>We will share the rider details here shortly</Text>
+                            <Text style={styles.deliveryPartnerIntro}>
+                                {isScheduledOrderForPill
+                                    ? `Your order will be delivered at ${scheduledTimeForPill || 'your scheduled time'}`
+                                    : 'Your delivery partner will be assigned soon'}
+                            </Text>
+                            <Text style={styles.deliveryPartnerPendingText}>
+                                {isScheduledOrderForPill
+                                    ? 'We will assign a rider closer to the delivery time'
+                                    : 'We will share the rider details here shortly'}
+                            </Text>
                         </View>
 
                     </View>

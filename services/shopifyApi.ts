@@ -605,6 +605,10 @@ const GET_ORDER_BY_ID_QUERY = `
           amount
           currencyCode
         }
+        customAttributes {
+          key
+          value
+        }
         shippingAddress {
           firstName
           lastName

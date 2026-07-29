@@ -1081,7 +1081,7 @@ export default function OrderDetailV2Screen() {
 
     const scheduledDateForPill = deliveryPartnerStatus?.scheduled_date || scheduledDateAttr || order?.scheduledDate || order?.deliverySchedule?.date;
     const scheduledTimeForPill = deliveryPartnerStatus?.scheduled_time || scheduledTimeAttr || order?.scheduledTime || order?.deliverySchedule?.time;
-    const isScheduledOrderForPill = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || isScheduledOrderAttr === 'true' || isScheduledOrderAttr === true || !!(scheduledDateForPill && scheduledTimeForPill);
+    const isScheduledOrderForPill = deliveryPartnerStatus?.is_schedule_order === true || deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || isScheduledOrderAttr === 'true' || isScheduledOrderAttr === true || !!(scheduledDateForPill && scheduledTimeForPill);
 
     const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing', 'packed', 'rider_assigned']);
     const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey);
@@ -1423,10 +1423,14 @@ export default function OrderDetailV2Screen() {
                                 </View>
                                 <View style={styles.deliveryPartnerTextWrap}>
                                     <Text style={styles.deliveryPartnerIntro}>
-                                        Your delivery partner will be assigned soon
+                                        {isScheduledOrderForPill
+                                            ? `Your order will be delivered at ${scheduledTimeForPill || 'your scheduled time'}`
+                                            : 'Your delivery partner will be assigned soon'}
                                     </Text>
                                     <Text style={styles.deliveryPartnerPendingText}>
-                                        We will share the rider details here shortly
+                                        {isScheduledOrderForPill
+                                            ? 'We will assign a rider closer to the delivery time'
+                                            : 'We will share the rider details here shortly'}
                                     </Text>
                                 </View>
 
@@ -1720,6 +1724,8 @@ export default function OrderDetailV2Screen() {
                     partnerAvatarSrc={partnerAvatarSrc}
                     deliveryPartnerStatus={deliveryPartnerStatus}
                     handleDeliveryPartnerCall={handleDeliveryPartnerCall}
+                    isScheduledOrderForPill={isScheduledOrderForPill}
+                    scheduledTimeForPill={scheduledTimeForPill}
                 />
 
                 {/* Line items – single card like cart */}
