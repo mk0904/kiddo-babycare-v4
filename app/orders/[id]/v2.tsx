@@ -1075,13 +1075,9 @@ export default function OrderDetailV2Screen() {
                         ? 'placed'
                         : '';
 
-    const isScheduledOrderAttr = order?.customAttributes?.find((attr: any) => attr.key === 'is_scheduled_order')?.value;
-    const scheduledDateAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_date')?.value;
-    const scheduledTimeAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_time')?.value;
-
-    const scheduledDateForPill = deliveryPartnerStatus?.scheduled_date || scheduledDateAttr || order?.scheduledDate || order?.deliverySchedule?.date;
-    const scheduledTimeForPill = deliveryPartnerStatus?.scheduled_time || scheduledTimeAttr || order?.scheduledTime || order?.deliverySchedule?.time;
-    const isScheduledOrderForPill = deliveryPartnerStatus?.is_schedule_order === true || deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || isScheduledOrderAttr === 'true' || isScheduledOrderAttr === true || !!(scheduledDateForPill && scheduledTimeForPill);
+    const scheduledDateForPill = deliveryPartnerStatus?.scheduled_date || order?.scheduledDate || order?.deliverySchedule?.date;
+    const scheduledTimeForPill = deliveryPartnerStatus?.scheduled_time || order?.scheduledTime || order?.deliverySchedule?.time;
+    const isScheduledOrderForPill = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || !!(scheduledDateForPill && scheduledTimeForPill);
 
     const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing', 'packed', 'rider_assigned']);
     const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey);

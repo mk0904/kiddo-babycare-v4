@@ -221,14 +221,7 @@ const isTicketingOrder = (order: any) => {
 };
 
 const isScheduledOrder = (order: any, dps?: any): boolean => {
-    const isScheduledOrderAttr = order?.customAttributes?.find((attr: any) => attr.key === 'is_scheduled_order')?.value;
-    const scheduledDateAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_date')?.value;
-    const scheduledTimeAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_time')?.value;
-
     return order?.deliveryType === 'scheduled' || 
-           isScheduledOrderAttr === 'true' || 
-           isScheduledOrderAttr === true || 
-           !!(scheduledDateAttr && scheduledTimeAttr) ||
            !!(order?.scheduledDate && order?.scheduledTime) ||
            !!(order?.deliverySchedule?.date && order?.deliverySchedule?.time) ||
            dps?.is_schedule_order === true ||
