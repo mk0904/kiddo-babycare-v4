@@ -2689,7 +2689,95 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-04_at_1.21.28_AM.png?v=1772567597"
         }
       ]
+    },
+    "516980375841": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/515916169505",
+      "label": "Under 599",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_1_f74fcb79-2882-468e-bdb9-c7a8940388b5.png?v=1783770221"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515917742369",
+      "label": "Under 499",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_4_bfacdc43-065e-49d4-b6c4-7ac1c900b331.png?v=1783770069"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515916955937",
+      "label": "Under 399",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_4_29eaadd2-b462-449b-b6ea-4fec8fb13958.png?v=1783770114"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515917316385",
+      "label": "Under 299",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_4_61332f7a-0e3b-4f4b-a3bb-9b76be0f323b.png?v=1783770151"
     }
+  ]
+},
+"516979917089": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/515824943393",
+      "label": "Water bottles",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_6.png?v=1782898852"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/512202932513",
+      "label": "Casual fits",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_Mar_31_2026_10_11_28_AM.png?v=1783326784"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/512203096353",
+      "label": "School shoes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/ChatGPT_Image_Mar_31_2026_10_23_53_AM.png?v=1782333267"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/510769791265",
+      "label": "School bags",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-03-04_at_3.20.39_AM.png?v=1782332811"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/515878355233",
+      "label": "Stationery",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Homepage_Main_Banner_9.png?v=1782903773"
+    }
+  ]
+},
+"514979299617": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/516058808609",
+      "label": "Building Blocks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_52.png?v=1783400743"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/516058939681",
+      "label": "Puzzles",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_53.png?v=1783400964"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/516059005217",
+      "label": "Sof Toys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_53.png?v=1783400964"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/516059070753",
+      "label": "Board games",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_54.png?v=1783401031"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/516059169057",
+      "label": "Art & Craft",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_55.png?v=1783401200"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/516059267361",
+      "label": "Stem Learing",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Copy_of_Fashion_Page_-_Girls_57.png?v=1783401278"
+    }
+  ]
+}
+
   },
   "productGridDefaults": {
     "gap": 16,
@@ -3146,7 +3234,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_app_banner_new.gif?v=1785273889",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_Homepage_Banner_1.gif?v=1782892908",
           "link": {
             "type": "collection",
             "collection": {
@@ -3159,7 +3247,7 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.75,
+        "height": 1,
         "resizeMode": "cover"
       },
       "styles": {
@@ -3230,7 +3318,7 @@
         "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": -10,
+        "rowGap": -5,
         "limit": 6,
         "aspectRatio": 1,
         "showLabels": true,
@@ -3239,19 +3327,31 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/516881449249"
+          "id": "gid://shopify/Collection/516979917089"
         },
+
         {
-          "id": "gid://shopify/Collection/516881416481"
+          "id": "gid://shopify/Collection/516980375841"
         },
+
         {
-          "id": "gid://shopify/Collection/516881514785"
+          "id": "gid://shopify/Collection/514979299617"
+        },
+                {
+          "id": "gid://shopify/Collection/515826843937"
         }
+,        {
+          "id": "gid://shopify/Collection/516980080929"
+        }
+,        {
+          "id": "gid://shopify/Collection/515674702113"
+        }
+
       ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-45%",
+          "marginTop": "-75%",
           "zIndex": 10,
           "paddingHorizontal": 25,
           "borderBottomLeftRadius": 20,
@@ -3268,7 +3368,6 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
-          "display": "none",
           "marginTop": -5,
           "fontWeight": "700",
           "fontFamily": "lexend-bold",
@@ -4563,9 +4662,70 @@
         "borderRadius": 10,
         "imageContentFit": "cover",
         "paddingHorizontal": 16
+      }
+    },
+    {
+      "id": "card-carousel-grid-demo",
+      "type": "cardCarouselGrid",
+      "visible": true,
+      "title": "Featured Card Grids",
+      "carouselGridConfig": {
+        "numRows": 2,
+        "numColumns": 2,
+        "cardAspectRatio": 0.7,
+        "cardGap": 14,
+        "gridGap": 6,
+        "borderRadius": 16,
+        "showCellLabels": true,
+        "headerImageRatio": 0.25,
+        "headerImageBottomMargin": 12,
+        "cardLayoutTypes": ["grid", "verticalRow"]
       },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/510879269153",
+          "name": "Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.05_PM_1.jpg?v=1781503926",
+          "headerBannerUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/We_ll_make_ads_here_10.png?v=1782731702"
+        },
+        {
+          "id": "gid://shopify/Collection/510861345057",
+          "name": "Top Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.06_PM.jpg?v=1781503864"
+        },
+        {
+          "id": "gid://shopify/Collection/510861476129",
+          "name": "Bottoms",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.07_PM.jpg?v=1781508884"
+        },
+        {
+          "id": "gid://shopify/Collection/510861508897",
+          "name": "Dresses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908"
+        },
+        {
+          "id": "gid://shopify/Collection/508372615457",
+          "name": "STEM Learning",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-07_at_6.29.01_AM.png?v=1769804878",
+          "headerBannerUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
+        },
+        {
+          "id": "gid://shopify/Collection/507747369249",
+          "name": "Dolls",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_jvsd0mjvsd0mjvsd.png?v=1769805204"
+        },
+        {
+          "id": "gid://shopify/Collection/507747303713",
+          "name": "Cars",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.24.02_AM.png?v=1769804438"
+        },
+        {
+          "id": "gid://shopify/Collection/507747238177",
+          "name": "Soft Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.38.50_AM.png?v=1769804016"
+        }
+      ],
       "styles": {
-        "container": {},
         "title": {
           "marginBottom": 10,
           "marginTop": 20,
@@ -5951,7 +6111,7 @@
         "pageBackgroundColor": "#F5F5F5",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Header_29_July_2026.png?v=1785272214",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Header_design_1.png?v=1782893051",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

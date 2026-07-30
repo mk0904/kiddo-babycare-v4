@@ -599,6 +599,7 @@ export default function CartScreen() {
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+    const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
     const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
     const [tryBuyEditProduct, setTryBuyEditProduct] = useState<any>(null);
 
@@ -705,6 +706,26 @@ export default function CartScreen() {
     }, [loading, cartItems.length, router]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added or COD is unavailable
+    // Track cart abandonment when user leaves cart without checkout
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                // Fire Cart Abandoned event if user leaves without placing order
+                if (!hasPlacedOrder && cartItems.length > 0) {
+                    try {
+                        const { trackCartAbandoned } = require('@/utils/mixpanelHelpers');
+                        const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                        const cartValue = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                        trackCartAbandoned(cartValue, itemCount);
+                    } catch (e) {
+                        console.warn('Cart abandoned tracking error:', e);
+                    }
+                }
+            };
+        }, [hasPlacedOrder, cartItems])
+    );
+
+    // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
         if ((hasTicketingProducts || !isCodAvailable) && paymentMethod === 'cod') {
             setPaymentMethod('razorpay');
@@ -1030,6 +1051,19 @@ export default function CartScreen() {
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, itemMrpTotal - subtotalAfterDiscount);
 
+    const handleKiddoCashChange = useCallback((enabled: boolean) => {
+        setKiddoCashEnabled(enabled);
+        if (enabled) {
+            const appliedAmount = Math.min(walletBalance ?? 0, total);
+            try {
+                const { trackWalletApplied } = require('@/utils/mixpanelHelpers');
+                trackWalletApplied(appliedAmount);
+            } catch (e) {
+                console.warn('Wallet applied tracking error:', e);
+            }
+        }
+    }, [walletBalance, total]);
+
     // Bill details display constants
     const HANDLING_FEE_ORIGINAL = 10;
     const DELIVERY_FEE_ORIGINAL = 50;
@@ -1109,6 +1143,7 @@ export default function CartScreen() {
     const handlePlaceOrder = async () => {
         if (status === 'loading' || orderLoading) return;
         setOrderLoading(true);
+        setHasPlacedOrder(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         // GET LATEST STORE STATE TO AVOID STALE CLOSURES
@@ -2369,7 +2404,7 @@ export default function CartScreen() {
                                 kiddoCashApplied={kiddoCashApplied}
                                 formatCurrency={formatCurrency}
                                 onLoginPress={() => router.push('/(auth)/login')}
-                                onKiddoCashChange={setKiddoCashEnabled}
+                                onKiddoCashChange={handleKiddoCashChange}
                                 configRefreshKey={appConfigRefresh}
                             />
                         )}

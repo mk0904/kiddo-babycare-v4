@@ -20,6 +20,8 @@ import { SearchProductList } from './SearchProductList';
 import { VideoBanner } from './VideoBanner';
 import { VisualCategoryRail } from './VisualCategoryRail';
 
+import { CardCarouselGrid } from './CardCarouselGrid';
+
 interface BlockRendererProps {
   blocks: ContentBlock[];
   onBlockPress?: (block: ContentBlock, link?: string, item?: any) => void;
@@ -50,6 +52,7 @@ const blockComponentMap: Record<
   noInternet: NoInternet,
   rail: VisualCategoryRail,
   collectionImageCarousel: CollectionImageCarousel,
+  cardCarouselGrid: CardCarouselGrid,
   flashSale: FlashSaleTimer,
   featureStrip: FeatureStrip,
   videoBanner: VideoBanner,

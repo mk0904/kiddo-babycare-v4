@@ -155,10 +155,10 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 
     if (collectionIds && collectionIds.length > 0) {
       // Use collections from collectionIds
-      items = collections.map((collection) => {
+      items = collections.map((collection, index) => {
         // Use the full collection ID (keep gid:// format if present)
         const collectionId = collection.id;
-        
+
         return {
           id: collection.id,
           label: collection.name,
@@ -167,6 +167,22 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
           aspectRatio: collection.aspectRatio,
           widthFraction: collection.widthFraction,
           onPress: () => {
+            // Track grid cell click
+            try {
+              const { trackGridCellClicked } = require('@/utils/mixpanelHelpers');
+              trackGridCellClicked(
+                block.id || 'category-grid',
+                index + 1,
+                collectionId,
+                collection.name,
+                undefined,
+                undefined,
+                collections.length,
+                numColumns
+              );
+            } catch (e) {
+              console.warn('Grid cell click tracking error:', e);
+            }
             // Pass collection info to onPress handler (let parent handleBlockPress handle navigation)
             // This ensures consistent navigation behavior across home and category pages
             onPress?.(`/collections/${collectionId}`, {
@@ -180,12 +196,28 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
       });
     } else {
       // Use categories
-      items = filteredCategories.map((category) => ({
+      items = filteredCategories.map((category, index) => ({
         id: category.key,
         label: category.label,
         imageUrl: category.iconUrl,
         imageSource: category.iconImage,
         onPress: () => {
+          // Track grid cell click
+          try {
+            const { trackGridCellClicked } = require('@/utils/mixpanelHelpers');
+            trackGridCellClicked(
+              block.id || 'category-grid',
+              index + 1,
+              undefined,
+              undefined,
+              category.key,
+              category.label,
+              filteredCategories.length,
+              numColumns
+            );
+          } catch (e) {
+            console.warn('Grid cell click tracking error:', e);
+          }
           if (category.key === 'all') {
             router.push('/(tabs)' as any);
           } else {
@@ -206,7 +238,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     }
 
     return items;
-  }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit]);
+  }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit, block.id, numColumns]);
 
   // Get grid config with defaults (matching ImageGrid pattern)
   const numColumns = gridConfig.numColumns ?? 3;

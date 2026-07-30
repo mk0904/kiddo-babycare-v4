@@ -341,6 +341,10 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "Refund Policy"},
         {namespace: "custom", key: "tryandbuyupto10"},
         {namespace: "custom", key: "sizechart"}
+       
+        {namespace: "custom", key: "l1_collection"},
+        {namespace: "custom", key: "l2_collection"},
+        {namespace: "custom", key: "l3_collection"}
       ]) {
         id
         key
@@ -449,6 +453,9 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "Refund Policy"},
         {namespace: "custom", key: "tryandbuyupto10"},
         {namespace: "custom", key: "sizechart"}
+        {namespace: "custom", key: "l1_collection"},
+        {namespace: "custom", key: "l2_collection"},
+        {namespace: "custom", key: "l3_collection"}
       ]) {
         id
         key
@@ -1300,7 +1307,7 @@ export const shopifyApi = {
   ): Promise<boolean> => {
     if (!collectionGids.length) return false;
     const pid = productId.startsWith('gid://shopify/Product/') ? productId : `gid://shopify/Product/${productId}`;
-    
+
     // Check cache first to avoid slow network requests during checkout/quantity changes
     const cacheKey = `${pid}:${[...collectionGids].sort().join(',')}`;
     if (collectionEligibilityCache.has(cacheKey)) {
@@ -1319,7 +1326,7 @@ export const shopifyApi = {
       const nodes = response.data.data?.product?.collections?.nodes;
       if (!Array.isArray(nodes)) return false;
       const isEligible = nodes.some((c: { id?: string }) => c?.id && targets.has(normalizeStorefrontGid(c.id)));
-      
+
       // Store result in cache
       collectionEligibilityCache.set(cacheKey, isEligible);
       return isEligible;
@@ -1370,16 +1377,16 @@ export const shopifyApi = {
         const productGid = node.id;
         const productCollectionGids = (node.collections?.nodes || []).map((c: any) => normalizeStorefrontGid(c.id));
         const isEligible = targets.size > 0 && productCollectionGids.some((gid: string) => targets.has(gid));
-        
+
         // Cache it for individual calls too
         const cacheKey = `${productGid}:${[...collectionGids].sort().join(',')}`;
         collectionEligibilityCache.set(cacheKey, isEligible);
-        
+
         // Match back to original ID (numeric or GID)
         const originalId = productIds.find(id => id === productGid || `gid://shopify/Product/${id}` === productGid);
         if (originalId) results.set(originalId, isEligible);
       }
-      
+
       // Fill in remaining as false if fetch failed for some
       for (const id of productIds) {
         if (!results.has(id)) results.set(id, false);

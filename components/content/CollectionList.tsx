@@ -4,7 +4,6 @@ import { CollectionListBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import {
     Dimensions,
     FlatList,

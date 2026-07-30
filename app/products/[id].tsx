@@ -975,12 +975,36 @@ const ProductDetailScreen = () => {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 
+                    // Extract L1, L2, L3 collection metafields
+                    const getMetafieldValue = (key: string) => {
+                        const productMetafields = product?.metafields;
+                        if (!productMetafields) return null;
+                        const keyLower = key.toLowerCase();
+                        if (Array.isArray(productMetafields.edges)) {
+                            const edge = productMetafields.edges.find(
+                                (e: any) => e?.node?.key?.toLowerCase() === keyLower,
+                            );
+                            return edge?.node?.value ?? null;
+                        }
+                        if (Array.isArray(productMetafields)) {
+                            const m = productMetafields.find(
+                                (m: any) => (m?.key ?? m?.node?.key)?.toLowerCase() === keyLower,
+                            );
+                            return m?.value ?? m?.node?.value ?? null;
+                        }
+                        return null;
+                    };
+
+                    const l1Collection = getMetafieldValue('l1_collection');
+                    const l2Collection = getMetafieldValue('l2_collection');
+                    const l3Collection = getMetafieldValue('l3_collection');
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity, l1Collection, l2Collection, l3Collection);
 
                     // Firebase Ecommerce Tracking
                     analyticsService.logAddToCart({
@@ -1088,12 +1112,36 @@ const ProductDetailScreen = () => {
                     const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 
+                    // Extract L1, L2, L3 collection metafields
+                    const getMetafieldValue = (key: string) => {
+                        const productMetafields = product?.metafields;
+                        if (!productMetafields) return null;
+                        const keyLower = key.toLowerCase();
+                        if (Array.isArray(productMetafields.edges)) {
+                            const edge = productMetafields.edges.find(
+                                (e: any) => e?.node?.key?.toLowerCase() === keyLower,
+                            );
+                            return edge?.node?.value ?? null;
+                        }
+                        if (Array.isArray(productMetafields)) {
+                            const m = productMetafields.find(
+                                (m: any) => (m?.key ?? m?.node?.key)?.toLowerCase() === keyLower,
+                            );
+                            return m?.value ?? m?.node?.value ?? null;
+                        }
+                        return null;
+                    };
+
+                    const l1Collection = getMetafieldValue('l1_collection');
+                    const l2Collection = getMetafieldValue('l2_collection');
+                    const l3Collection = getMetafieldValue('l3_collection');
+
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
+                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity, l1Collection, l2Collection, l3Collection);
 
                     // Firebase Ecommerce Tracking
                     analyticsService.logAddToCart({
