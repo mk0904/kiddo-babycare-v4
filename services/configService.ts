@@ -28,7 +28,7 @@ function getRemoteConfigApiUrl(): string {
 }
 
 /** TEMP: bundled `config/kiddoAppConfig.json` instead of kiddo-service → CDN. Set false before release. */
-const USE_LOCAL_KIDDO_APP_CONFIG = true;
+const USE_LOCAL_KIDDO_APP_CONFIG = false;
 
 /** Fallback JSON URL if remote-config API fails (offline / timeout). */
 export const KIDDO_APP_CONFIG_CDN_URL =
