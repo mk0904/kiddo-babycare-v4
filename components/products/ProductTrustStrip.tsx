@@ -60,11 +60,11 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
       },
       {
         icon: ICONS.replacement72,
-        label: refundPolicyText?.trim() || '72hr\nReplacement',
+        label: 'Instant\nReturn',
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
-        title: '72 Hours Replacement',
-        description: 'Eligible if you recieve a damaged, defected, expired, incorrect or missing item.',
+        title: 'Instant Return',
+        description: 'Return items instantly if you are not satisfied with the product.',
       },
       {
         icon: ICONS.headphone1,
