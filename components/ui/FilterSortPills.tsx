@@ -31,6 +31,7 @@ interface FilterSortPillsProps {
     showSizeFilter?: boolean;
     showStageFilter?: boolean;
     showFilterButton?: boolean;
+    showSortButton?: boolean;
     onBrandPress?: () => void;
     onSizePress?: () => void;
     onStagePress?: () => void;
@@ -58,6 +59,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     showSizeFilter = false,
     showStageFilter = false,
     showFilterButton = true,
+    showSortButton = true,
     onBrandPress,
     onSizePress,
     onStagePress,
@@ -248,9 +250,10 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                     </Animated.View>
                 )}
 
-                <Animated.View
-                    style={[
-                        styles.actionButton,
+                {showSortButton && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
                         {
                             width: standardButtonWidth,
                             paddingHorizontal: paddingHorizontal,
@@ -285,6 +288,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         </Animated.View>
                     </TouchableOpacity>
                 </Animated.View>
+                )}
 
                 {onGenderPress && showGenderFilter && (
                     <Animated.View

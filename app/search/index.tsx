@@ -595,6 +595,7 @@ export default function SearchScreen() {
                                 totalItems={totalItems}
                                 activeFiltersCount={getActiveFiltersCount()}
                                 showFilterButton={!config?.isSelfSearchEnabled}
+                                showSortButton={!config?.isSelfSearchEnabled}
                                 onFiltersPress={() => setShowFiltersModal(true)}
                                 onSortPress={() => setShowSortModal(true)}
                                 facets={facets.map((f: any) => {
