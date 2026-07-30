@@ -338,7 +338,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "highlight_4"},
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
-        {namespace: "custom", key: "Refund Policy"}
+        {namespace: "custom", key: "Refund Policy"},
+        {namespace: "custom", key: "tryandbuyupto10"}
       ]) {
         id
         key
@@ -434,7 +435,8 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "highlight_4"},
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
-        {namespace: "custom", key: "Refund Policy"}
+        {namespace: "custom", key: "Refund Policy"},
+        {namespace: "custom", key: "tryandbuyupto10"}
       ]) {
         id
         key
