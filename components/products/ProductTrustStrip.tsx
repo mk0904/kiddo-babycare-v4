@@ -1,14 +1,14 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useRef, useState } from 'react';
 import {
-  Animated,
-  Image,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Animated,
+    Image,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 
 const ICONS = {
@@ -22,6 +22,7 @@ interface ProductTrustStripProps {
   refundPolicyText?: string | null;
   onKnowMorePress?: () => void;
   isFashion?: boolean;
+  tryAndBuyEnabled?: boolean;
 }
 
 interface TrustItem {
@@ -41,12 +42,12 @@ const TaperedBackground = ({ color }: { color: string }) => (
   </>
 );
 
-export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion }: ProductTrustStripProps) {
+export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion, tryAndBuyEnabled }: ProductTrustStripProps) {
   const [activeItem, setActiveItem] = useState<TrustItem | null>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const items: TrustItem[] = isFashion
+  const items: TrustItem[] = tryAndBuyEnabled
     ? [
       {
         icon: ICONS.tryandbuy,
@@ -59,10 +60,10 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
       },
       {
         icon: ICONS.replacement72,
-        label: '7 days \nReturn        ',
+        label: refundPolicyText?.trim() || '72hr\nReplacement',
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
-        title: '7 Days Return ',
+        title: '72 Hours Replacement',
         description: 'Eligible if you recieve a damaged, defected, expired, incorrect or missing item.',
       },
       {

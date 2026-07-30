@@ -1228,6 +1228,9 @@ const ProductDetailScreen = () => {
     const refundPolicy =
         getMetafieldValue(product, 'refund_policy') ??
         getMetafieldValue(product, 'Refund Policy');
+    const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
+    const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
+    console.log('tryAndBuyMetafield:', tryAndBuyMetafield, 'tryAndBuyEnabled:', tryAndBuyEnabled);
 
     const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
     const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
@@ -1701,6 +1704,7 @@ const ProductDetailScreen = () => {
                         refundPolicyText={refundPolicy}
                         onKnowMorePress={() => setShowRefundPolicyModal(true)}
                         isFashion={isFashion}
+                        tryAndBuyEnabled={tryAndBuyEnabled}
                     />
 
                     {/* Product Specification - Tabbed Interface */}
