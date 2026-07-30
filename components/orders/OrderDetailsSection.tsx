@@ -26,12 +26,12 @@ export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
     // Extract schedule details
     const scheduledDateAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_date')?.value;
     const scheduledTimeAttr = order?.customAttributes?.find((attr: any) => attr.key === 'scheduled_time')?.value;
-    
+
     const scheduledDate = deliveryPartnerStatus?.scheduled_date || scheduledDateAttr || order?.scheduledDate || order?.deliverySchedule?.date;
     const scheduledTime = deliveryPartnerStatus?.scheduled_time || scheduledTimeAttr || order?.scheduledTime || order?.deliverySchedule?.time;
     const isScheduledOrder = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || !!(scheduledDate && scheduledTime);
 
-    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing', 'packed', 'rider_assigned']);
+    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing']);
     const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey || '');
 
     return (
@@ -43,8 +43,8 @@ export const OrderDetailsSection: React.FC<OrderDetailsSectionProps> = ({
                     {isDemoOrder
                         ? 'Cash on Delivery (COD) - Demo Order'
                         : order?.financialStatus === 'PENDING'
-                        ? 'Cash on Delivery (COD)'
-                        : 'Paid online'}
+                            ? 'Cash on Delivery (COD)'
+                            : 'Paid online'}
                 </Text>
             </View>
 

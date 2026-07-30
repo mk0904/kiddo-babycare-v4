@@ -1079,7 +1079,7 @@ export default function OrderDetailV2Screen() {
     const scheduledTimeForPill = deliveryPartnerStatus?.scheduled_time || order?.scheduledTime || order?.deliverySchedule?.time;
     const isScheduledOrderForPill = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || !!(scheduledDateForPill && scheduledTimeForPill);
 
-    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing', 'packed', 'rider_assigned']);
+    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing']);
     const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey);
 
     const deliveryStatusLabel = !statusKeyForHeaderPill
