@@ -6,6 +6,7 @@ import { AnnouncementCarousel } from './AnnouncementCarousel';
 import { BaseModal } from './BaseModal';
 import { CategoryGrid } from './CategoryGrid';
 import { CollectionImageCarousel } from './CollectionImageCarousel';
+import { CollectionImageCarouselGrid } from './CollectionImageCarouselGrid';
 import { CollectionList } from './CollectionList';
 import { FeatureStrip } from './FeatureStrip';
 import { FlashSaleTimer } from './FlashSaleTimer';
@@ -50,6 +51,7 @@ const blockComponentMap: Record<
   noInternet: NoInternet,
   rail: VisualCategoryRail,
   collectionImageCarousel: CollectionImageCarousel,
+  collectionImageCarouselGrid: CollectionImageCarouselGrid,
   flashSale: FlashSaleTimer,
   featureStrip: FeatureStrip,
   videoBanner: VideoBanner,
