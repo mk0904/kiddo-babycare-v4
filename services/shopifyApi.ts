@@ -339,12 +339,17 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
         {namespace: "custom", key: "Refund Policy"},
+<<<<<<< HEAD
         {namespace: "custom", key: "tryandbuyupto10"},
         {namespace: "custom", key: "sizechart"}
        
         {namespace: "custom", key: "l1_collection"},
         {namespace: "custom", key: "l2_collection"},
         {namespace: "custom", key: "l3_collection"}
+=======
+        {namespace: "custom", key: "sizechart"},
+        {namespace: "custom", key: "sizeChartImage"}
+>>>>>>> 87bab3f (fix)
       ]) {
         id
         key
@@ -456,6 +461,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "l1_collection"},
         {namespace: "custom", key: "l2_collection"},
         {namespace: "custom", key: "l3_collection"}
+       
       ]) {
         id
         key

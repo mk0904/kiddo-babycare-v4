@@ -191,16 +191,16 @@ export const trackProductViewed = (productId: string, productName?: string, pric
   trackContentViewAction(productId, price, 'INR');
 };
 
-export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number, l1Collection?: string, l2Collection?: string, l3Collection?: string) => {
+export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number) => {
   trackEvent('Add to Cart', {
     productId,
     productName,
+    price,
     quantity: quantity || 1,
+    content_id: extractNumericId(productId),
+    content_type: 'product',
     value: price,
     currency: 'INR',
-    l1Collection,
-    l2Collection,
-    l3Collection,
   });
   if (price != null && Number.isFinite(price)) {
     trackAddToCartAction(productId, 'product', price, quantity || 1);

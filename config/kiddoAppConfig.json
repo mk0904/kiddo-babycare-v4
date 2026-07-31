@@ -4662,70 +4662,9 @@
         "borderRadius": 10,
         "imageContentFit": "cover",
         "paddingHorizontal": 16
-      }
-    },
-    {
-      "id": "card-carousel-grid-demo",
-      "type": "cardCarouselGrid",
-      "visible": true,
-      "title": "Featured Card Grids",
-      "carouselGridConfig": {
-        "numRows": 2,
-        "numColumns": 2,
-        "cardAspectRatio": 0.7,
-        "cardGap": 14,
-        "gridGap": 6,
-        "borderRadius": 16,
-        "showCellLabels": true,
-        "headerImageRatio": 0.25,
-        "headerImageBottomMargin": 12,
-        "cardLayoutTypes": ["grid", "verticalRow"]
       },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510879269153",
-          "name": "Onesies",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.05_PM_1.jpg?v=1781503926",
-          "headerBannerUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/We_ll_make_ads_here_10.png?v=1782731702"
-        },
-        {
-          "id": "gid://shopify/Collection/510861345057",
-          "name": "Top Wear",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.06_PM.jpg?v=1781503864"
-        },
-        {
-          "id": "gid://shopify/Collection/510861476129",
-          "name": "Bottoms",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-14_at_10.27.07_PM.jpg?v=1781508884"
-        },
-        {
-          "id": "gid://shopify/Collection/510861508897",
-          "name": "Dresses",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908"
-        },
-        {
-          "id": "gid://shopify/Collection/508372615457",
-          "name": "STEM Learning",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-07_at_6.29.01_AM.png?v=1769804878",
-          "headerBannerUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_21.png?v=1773820263"
-        },
-        {
-          "id": "gid://shopify/Collection/507747369249",
-          "name": "Dolls",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_jvsd0mjvsd0mjvsd.png?v=1769805204"
-        },
-        {
-          "id": "gid://shopify/Collection/507747303713",
-          "name": "Cars",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.24.02_AM.png?v=1769804438"
-        },
-        {
-          "id": "gid://shopify/Collection/507747238177",
-          "name": "Soft Toys",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Screenshot_2026-01-11_at_5.38.50_AM.png?v=1769804016"
-        }
-      ],
       "styles": {
+        "container": {},
         "title": {
           "marginBottom": 10,
           "marginTop": 20,

@@ -418,8 +418,7 @@ export type ContentBlock =
   | FeatureStripBlock
   | VideoBannerBlock
   | NoInternetBlock
-  | CategoryGridBlock
-  | import('../components/content/CardCarouselGrid').CardCarouselGridBlock;
+  | CategoryGridBlock;
 
 export interface ScreenConfig {
   [category: string]: ContentBlock[];
