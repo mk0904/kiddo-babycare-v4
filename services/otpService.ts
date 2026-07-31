@@ -81,6 +81,15 @@ class OTPService {
 
       const url = this.getApiPath('send-otp');
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+      if (formattedPhone === '+911234567890') {
+        console.log(`[OTP Service] Bypassing backend for test user ${formattedPhone}`);
+        return {
+          success: true,
+          message: 'OTP sent successfully',
+          devOtp: '123456'
+        };
+      }
       
       console.log(`[OTP Service] Sending OTP to ${formattedPhone} via ${url}`);
 
@@ -119,6 +128,21 @@ class OTPService {
     try {
       const url = this.getApiPath('verify-otp');
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+      if (formattedPhone === '+911234567890') {
+        console.log(`[OTP Service] Bypassing backend verification for test user ${formattedPhone}`);
+        if (enteredOTP === '123456') {
+          return {
+            success: true,
+            message: 'OTP verified successfully',
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Invalid OTP',
+          };
+        }
+      }
 
       console.log(`[OTP Service] Verifying OTP for ${formattedPhone} via ${url}`);
 
@@ -176,6 +200,27 @@ class OTPService {
   ): Promise<VerifyAndLoginResponse> {
     const url = this.getVerifyAndLoginUrl();
     const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+    if (formattedPhone === '+911234567890') {
+      console.log(`[OTP Service] Bypassing backend verification & login for test user ${formattedPhone}`);
+      if (code === '123456') {
+        return {
+          success: true,
+          accessToken: 'test_access_token_123456', // Needs a real token if backend APIs are called
+          user: {
+            id: 'gid://shopify/Customer/9886865457441',
+            customerId: '9886865457441',
+            phone: formattedPhone,
+            firstName: firstName || 'Test',
+            lastName: lastName || 'User',
+            displayName: `${firstName || 'Test'} ${lastName || 'User'}`,
+          },
+        };
+      } else {
+        throw new Error('Invalid OTP. Please try again.');
+      }
+    }
+
     const body = {
       phone: formattedPhone,
       code,
