@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { Fonts } from '@/constants/theme';
 import type { DeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type DeliveryPartnerCardProps = {
     isRiderAtCustomer: boolean;
@@ -12,6 +12,8 @@ type DeliveryPartnerCardProps = {
     partnerAvatarSrc: any;
     deliveryPartnerStatus: DeliveryPartnerOrderStatus | null;
     handleDeliveryPartnerCall: () => void;
+    isScheduledOrderForPill?: boolean;
+    scheduledTimeForPill?: string;
 };
 
 export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
@@ -21,6 +23,8 @@ export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
     partnerAvatarSrc,
     deliveryPartnerStatus,
     handleDeliveryPartnerCall,
+    isScheduledOrderForPill,
+    scheduledTimeForPill,
 }) => {
     return (
         <>
@@ -42,15 +46,21 @@ export const DeliveryPartnerCard: React.FC<DeliveryPartnerCardProps> = ({
                 <View style={styles.deliveryPartnerCard}>
                     <View style={styles.deliveryPartnerContent}>
                         <View style={styles.deliveryPartnerAvatarWait}>
-                            <Ionicons name="time-outline" size={26} color="#8B5E00" />
+                            <Ionicons name="time-outline" size={36} color="#8B5E00" />
                         </View>
                         <View style={styles.deliveryPartnerTextWrap}>
-                            <Text style={styles.deliveryPartnerIntro}>Your delivery partner will be assigned soon</Text>
-                            <Text style={styles.deliveryPartnerPendingText}>We will share the rider details here shortly</Text>
+                            <Text style={styles.deliveryPartnerIntro}>
+                                {isScheduledOrderForPill
+                                    ? `Your order will be delivered at ${scheduledTimeForPill || 'your scheduled time'}`
+                                    : 'Your delivery partner will be assigned soon'}
+                            </Text>
+                            <Text style={styles.deliveryPartnerPendingText}>
+                                {isScheduledOrderForPill
+                                    ? 'We will assign a rider closer to the delivery time'
+                                    : 'We will share the rider details here shortly'}
+                            </Text>
                         </View>
-                        <View style={styles.deliveryPartnerPendingBadge}>
-                            <Ionicons name="hourglass-outline" size={18} color="#9CA3AF" />
-                        </View>
+
                     </View>
                 </View>
             )}
@@ -147,10 +157,8 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     deliveryPartnerAvatarWait: {
-        width: 68,
-        height: 68,
+
         borderRadius: 34,
-        backgroundColor: '#FEF3C7',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -166,7 +174,6 @@ const styles = StyleSheet.create({
     },
     deliveryPartnerIntro: {
         fontSize: Fonts.SmallFontSize,
-        lineHeight: 20,
         fontFamily: Fonts.LexendBold,
         color: '#414651',
     },

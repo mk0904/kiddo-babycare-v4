@@ -27,6 +27,8 @@ export interface CartFooterPaymentProps {
     onPaymentMethodPress?: () => void;
     /** Pay button prefix from backend app config (e.g. "Pay"). */
     payButtonLabel?: string | null;
+    /** If true, the pay button will be disabled because the cart value is below min order value. */
+    minOrderValueNotMet?: boolean;
 }
 
 export function CartFooterPayment({
@@ -42,6 +44,7 @@ export function CartFooterPayment({
     onLoginPress,
     onPaymentMethodPress,
     payButtonLabel,
+    minOrderValueNotMet = false,
 }: CartFooterPaymentProps) {
     const payPrefix = payButtonLabel?.trim() || 'Pay';
     const paymentMethodLabel =
@@ -66,9 +69,9 @@ export function CartFooterPayment({
 
             {showPayButton ? (
                 <TouchableOpacity
-                    style={[styles.payButton, (orderLoading || isSyncing) && styles.payButtonDisabled]}
+                    style={[styles.payButton, (orderLoading || isSyncing || minOrderValueNotMet) && styles.payButtonDisabled]}
                     onPress={isAuthenticated ? onPlaceOrder : (onLoginPress ?? onPlaceOrder)}
-                    disabled={orderLoading || isSyncing}
+                    disabled={orderLoading || isSyncing || minOrderValueNotMet}
                     activeOpacity={0.85}
                 >
                     {orderLoading ? (

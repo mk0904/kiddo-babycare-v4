@@ -1,7 +1,7 @@
 // Delivery Configuration
 // Calculate delivery time based on distance: 2 mins per km + 5 mins
 
-import { getBackendApiPath } from '@/services/backendBase';
+import { getBackendApiPath, backendFetch } from '@/services/backendBase';
 export const DARK_STORE_LOCATION = {
   latitude: 28.540546501290788,
   longitude: 77.37018854503113,
@@ -65,7 +65,7 @@ export interface EtaResponse {
 
 async function postJSON<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
   try {
-    const response = await fetch(getBackendApiPath(path), {
+    const response = await backendFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

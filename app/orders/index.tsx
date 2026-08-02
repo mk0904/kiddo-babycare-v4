@@ -69,26 +69,19 @@ const PARTNER_STATUS_LABELS: Record<string, string> = {
     confirmed: 'Confirmed',
     packing: 'Packing',
     packed: 'Packed',
-    rider_assigned: 'Out for Delivery',
+    rider_assigned: 'Rider assigned',
     out_for_delivery: 'Out for Delivery',
-    picked_up: 'Picked Up',
-    picking_up: 'Picking Up',
-    dispatched: 'Dispatched',
-    on_the_way: 'On the way',
-    in_transit: 'In transit',
-    transit: 'In transit',
-    delivery_started: 'Out for Delivery',
-    en_route: 'On the way',
     arrived: 'Arrived',
     at_destination: 'Arrived',
     rider_arrived: 'Arrived',
     reached_destination: 'Arrived',
-    reached_customer: 'Arrived',
-    reached_location: 'Arrived',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
     return_requested: 'Return Requested',
     returned: 'Returned',
+    reached_delivery: 'Arrived',
+    rto_delivered: 'RTO Delivered',
+    exchanged: 'Exchanged',
 };
 
 const PARTNER_STATUS_COLORS: Record<string, string> = {
@@ -148,9 +141,9 @@ function partnerListStatusColor(raw: string): string {
     return '#0369A1';
 }
 
-async function fetchDeliveryPartnerStatusesForOrders(orderIds: string[]): Promise<Record<string, string>> {
+async function fetchDeliveryPartnerStatusesForOrders(orderIds: string[]): Promise<Record<string, any>> {
     const unique = [...new Set(orderIds.filter(Boolean))];
-    const out: Record<string, string> = {};
+    const out: Record<string, any> = {};
     const chunkSize = 8;
     for (let i = 0; i < unique.length; i += chunkSize) {
         const chunk = unique.slice(i, i + chunkSize);
@@ -158,7 +151,7 @@ async function fetchDeliveryPartnerStatusesForOrders(orderIds: string[]): Promis
             chunk.map(async (oid) => {
                 try {
                     const st = await getDeliveryPartnerOrderStatus(oid);
-                    return st?.status ? ([oid, String(st.status).trim()] as const) : null;
+                    return st?.status ? ([oid, st] as const) : null;
                 } catch {
                     return null;
                 }
@@ -227,6 +220,15 @@ const isTicketingOrder = (order: any) => {
     });
 };
 
+const isScheduledOrder = (order: any, dps?: any): boolean => {
+    return order?.deliveryType === 'scheduled' || 
+           !!(order?.scheduledDate && order?.scheduledTime) ||
+           !!(order?.deliverySchedule?.date && order?.deliverySchedule?.time) ||
+           dps?.is_schedule_order === true ||
+           dps?.is_scheduled_order === true || 
+           !!(dps?.scheduled_date && dps?.scheduled_time);
+};
+
 const getFirstBookingDate = (order: any): string | null => {
     const edges = order?.lineItems?.edges || [];
     for (const edge of edges) {
@@ -253,8 +255,8 @@ export default function OrdersScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [isAutoRetrying, setIsAutoRetrying] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    /** shopifyOrderId (numeric) → delivery-partner status; missing key → use Shopify fulfillment. */
-    const [deliveryPartnerStatusByShopifyId, setDeliveryPartnerStatusByShopifyId] = useState<Record<string, string>>(
+    /** shopifyOrderId (numeric) → delivery-partner status obj */
+    const [deliveryPartnerStatusByShopifyId, setDeliveryPartnerStatusByShopifyId] = useState<Record<string, any>>(
         {},
     );
 
@@ -264,7 +266,7 @@ export default function OrdersScreen() {
             else if (isAutoRetry) setIsAutoRetrying(true);
             else setLoading(true);
             setError(null);
-            
+
             // Fetch orders from both Shopify (regular orders) and local storage (Try & Buy)
             const shopifyToken = getShopifyCustomerAccessTokenForOrders(user);
             const [shopifyOrdersResult, localOrders] = await Promise.all([
@@ -281,7 +283,7 @@ export default function OrdersScreen() {
             const shopifyOrders = (shopifyOrdersResult?.edges?.map((edge: any) => edge.node) || []).filter(
                 (o: any) => !isDemoOrder(o),
             );
-            
+
             // Create sets of Shopify order IDs and order numbers to detect duplicates
             const shopifyOrderIds = new Set(shopifyOrders.map((o: any) => o.id));
             const shopifyOrderNumbers = new Set(
@@ -291,20 +293,20 @@ export default function OrdersScreen() {
                     return typeof orderNum === 'string' ? orderNum.replace('#', '') : String(orderNum);
                 }).filter((num: string) => num) // Filter out empty strings
             );
-            
+
             // Transform local Try & Buy orders to match the expected format
             // Only include local orders that aren't already in Shopify orders
             const tryAndBuyOrders = localOrders
                 .filter((o) => {
                     // Only include if it's a Try & Buy order
                     if (o.type !== 'try_and_buy') return false;
-                    
+
                     // Check if this order already exists in Shopify orders
                     // Match by: 1) shopifyOrderId, 2) order number from shopifyOrderName, 3) local order ID
                     if (o.shopifyOrderId && shopifyOrderIds.has(o.shopifyOrderId)) {
                         return false; // Already in Shopify orders
                     }
-                    
+
                     // Extract order number from shopifyOrderName (e.g., "#1224" or "1224")
                     if (o.shopifyOrderName) {
                         const orderNum = String(o.shopifyOrderName).replace('#', '').trim();
@@ -312,21 +314,21 @@ export default function OrdersScreen() {
                             return false; // Already in Shopify orders (matched by order number)
                         }
                     }
-                    
+
                     // Check if local order ID matches any Shopify order
                     // Extract numeric part from order ID for comparison
                     const localOrderNum = String(o.id).match(/\d+/)?.[0];
                     if (localOrderNum && shopifyOrderNumbers.has(localOrderNum)) {
                         return false; // Already in Shopify orders (matched by numeric ID)
                     }
-                    
+
                     // Include this local order only if it's not already in Shopify orders
                     return true;
                 })
                 .map((localOrder) => {
                     // Prefer completed Order ID over Draft Order ID
                     const orderId = localOrder.shopifyOrderId || localOrder.shopifyDraftOrderId || localOrder.id;
-                    
+
                     return {
                         id: orderId,
                         orderNumber: localOrder.shopifyOrderName || localOrder.id,
@@ -356,33 +358,33 @@ export default function OrdersScreen() {
 
             // Combine both types of orders
             const allOrders = [...shopifyOrders, ...tryAndBuyOrders];
-            
+
             // Remove any remaining duplicates by order number and ID
             const seenOrderNumbers = new Set<string>();
             const seenOrderIds = new Set<string>();
             const deduplicatedOrders = allOrders.filter((order: any) => {
                 // Extract order number
                 const orderNum = order.orderNumber || '';
-                const orderNumStr = typeof orderNum === 'string' 
-                    ? orderNum.replace('#', '').trim() 
+                const orderNumStr = typeof orderNum === 'string'
+                    ? orderNum.replace('#', '').trim()
                     : String(orderNum);
-                
+
                 // Create a unique key from order ID and order number
                 const orderId = order.id || '';
                 const uniqueKey = `${orderId}_${orderNumStr}`;
-                
+
                 // Check if we've seen this combination before
                 if (seenOrderIds.has(orderId) || (orderNumStr && seenOrderNumbers.has(orderNumStr))) {
                     return false; // Duplicate, skip it
                 }
-                
+
                 // Mark as seen
                 if (orderId) seenOrderIds.add(orderId);
                 if (orderNumStr) seenOrderNumbers.add(orderNumStr);
-                
+
                 return true;
             });
-            
+
             // Sort by creation date (newest first)
             deduplicatedOrders.sort((a: any, b: any) => {
                 const dateA = new Date(a.processedAt || a.localOrderData?.createdAt || 0).getTime();
@@ -516,8 +518,8 @@ export default function OrdersScreen() {
             </View>
 
             {orders.length === 0 ? (
-                <ScrollView 
-                    style={styles.scrollView} 
+                <ScrollView
+                    style={styles.scrollView}
                     contentContainerStyle={{ flex: 1 }}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} tintColor={Colors.primary} />
@@ -536,8 +538,8 @@ export default function OrdersScreen() {
                             <Text style={styles.autoRetryText}>Checking for new orders...</Text>
                         </View>
                     ) : (
-                        <TouchableOpacity 
-                            style={styles.retryButton} 
+                        <TouchableOpacity
+                            style={styles.retryButton}
                             onPress={() => loadOrders(false)}
                         >
                             <Text style={styles.retryButtonText}>Retry Loading</Text>
@@ -554,27 +556,42 @@ export default function OrdersScreen() {
                     }
                 >
                     {orders.map((order) => {
+                        const numericShopifyId = extractShopifyOrderNumericId(order.id);
+                        const partnerStatusObj =
+                            numericShopifyId && deliveryPartnerStatusByShopifyId[numericShopifyId]
+                                ? deliveryPartnerStatusByShopifyId[numericShopifyId]
+                                : null;
+                        const partnerRaw = partnerStatusObj?.status;
+                        
                         const ticketing = isTicketingOrder(order);
+                        const scheduled = isScheduledOrder(order, partnerStatusObj);
                         const bookingDate = getFirstBookingDate(order);
                         const statusKey = order.fulfillmentStatus || order.financialStatus;
                         // For Events, Playhouses, Petting Farms - always show "Booked"
                         const showBooked = ticketing;
-                        const numericShopifyId = extractShopifyOrderNumericId(order.id);
-                        const partnerRaw =
-                            numericShopifyId && deliveryPartnerStatusByShopifyId[numericShopifyId]
-                                ? deliveryPartnerStatusByShopifyId[numericShopifyId]
-                                : null;
+                        
+                        const isEarlyPartnerStatus = !partnerRaw || ['placed', 'confirmed', 'packing', 'packed', 'rider_assigned'].includes(partnerRaw.toLowerCase());
+                        const isEarlyShopifyStatus = !statusKey || ['UNFULFILLED', 'PENDING', 'PAID'].includes(statusKey);
+                        
+                        // If it's a scheduled order and we are in an early status (before out for delivery), show "Scheduled"
+                        const showScheduled = scheduled && !showBooked && 
+                            (partnerRaw ? isEarlyPartnerStatus : isEarlyShopifyStatus);
+
                         const statusText = showBooked
                             ? 'Booked'
-                            : partnerRaw
-                              ? partnerListStatusLabel(partnerRaw)
-                              : getStatusText(statusKey);
+                            : showScheduled
+                                ? 'Scheduled'
+                                : partnerRaw
+                                    ? partnerListStatusLabel(partnerRaw)
+                                    : getStatusText(statusKey);
                         const statusColor = showBooked
                             ? Colors.success
-                            : partnerRaw
-                              ? partnerListStatusColor(partnerRaw)
-                              : getStatusColor(statusKey);
-                        
+                            : showScheduled
+                                ? '#B45309' // Use 'placed' color for Scheduled
+                                : partnerRaw
+                                    ? partnerListStatusColor(partnerRaw)
+                                    : getStatusColor(statusKey);
+
                         return (
                             <TouchableOpacity
                                 key={order.id}
@@ -582,7 +599,7 @@ export default function OrdersScreen() {
                                 activeOpacity={0.7}
                                 onPress={() => {
                                     // For Try & Buy orders, use the draft order ID or local order ID
-                                    const orderId = order.isTryAndBuy 
+                                    const orderId = order.isTryAndBuy
                                         ? (order.id || order.localOrderData?.shopifyDraftOrderId || order.localOrderData?.id)
                                         : order.id;
                                     router.push({ pathname: '/orders/[id]/v2', params: { id: String(orderId), from: 'orders' } } as any);

@@ -1,4 +1,4 @@
-import { getBackendApiPath, getBackendBase } from './backendBase';
+import { getBackendApiPath, getBackendBase, backendFetch } from './backendBase';
 
 export interface AssignedDeliveryPartner {
   name: string | null;
@@ -48,6 +48,10 @@ export interface DeliveryPartnerOrderStatus {
   assignedAt?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
+  /** Scheduled delivery properties */
+  is_scheduled_order?: boolean;
+  scheduled_date?: string | null;
+  scheduled_time?: string | null;
   /** Billing details from delivery-partner-service */
   subtotal_amount?: string | number | null;
   delivery_fee?: string | number | null;
@@ -839,7 +843,6 @@ export async function getDeliveryRouteForOrder(
   if (!oid) return null;
 
   try {
-    const base = getBackendApiPath(`orders/${encodeURIComponent(oid)}/delivery-route`);
     const params = new URLSearchParams();
     if (rider && Number.isFinite(rider.latitude) && Number.isFinite(rider.longitude)) {
       params.set('rider_lat', String(rider.latitude));
@@ -850,16 +853,16 @@ export async function getDeliveryRouteForOrder(
       params.set('dest_lng', String(destination.longitude));
     }
     const qs = params.toString();
-    const sep = base.includes('?') ? '&' : '?';
-    const url = qs ? `${base}${sep}${qs}` : base;
-    const response = await fetch(url, {
+    const sep = '?';
+    const path = qs ? `orders/${encodeURIComponent(oid)}/delivery-route${sep}${qs}` : `orders/${encodeURIComponent(oid)}/delivery-route`;
+    const response = await backendFetch(path, {
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) {
       if (__DEV__) {
         let detail = '';
         try { detail = (await response.text()).slice(0, 200); } catch (_) {}
-        console.warn(`[delivery-route] ${response.status} ${url}`, detail || '');
+        console.warn(`[delivery-route] ${response.status} ${path}`, detail || '');
       }
       return null;
     }
@@ -879,7 +882,7 @@ export async function getDeliveryPartnerOrderStatus(
   if (!normalized) return null;
 
   try {
-    const response = await fetch(getBackendApiPath(`orders/${encodeURIComponent(normalized)}/delivery-status`));
+    const response = await backendFetch(`orders/${encodeURIComponent(normalized)}/delivery-status`);
     if (!response.ok) {
       console.log('[getDeliveryPartnerOrderStatus] Response not OK:', response.status, response.statusText);
       return null;

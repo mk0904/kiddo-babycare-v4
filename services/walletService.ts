@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, getBackendAuthHeaders } from './backendBase';
 
 export interface InitiateTopupResponse {
     id?: string;
@@ -22,7 +22,7 @@ export async function initiateTopup(amount: number, customerId: string, customer
     try {
         const { data } = await axios.post<InitiateTopupResponse>(url, payload, {
             timeout: 30000,
-            headers: { 'Content-Type': 'application/json' },
+            headers: getBackendAuthHeaders({ 'Content-Type': 'application/json' }),
         });
         console.log('[WalletService] initiateTopup response:', data);
         return data;

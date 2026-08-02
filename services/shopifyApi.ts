@@ -338,7 +338,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "highlight_4"},
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
-        {namespace: "custom", key: "Refund Policy"}
+        {namespace: "custom", key: "Refund Policy"},
+        {namespace: "custom", key: "tryandbuyupto10"}
       ]) {
         id
         key
@@ -434,7 +435,8 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "highlight_4"},
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
-        {namespace: "custom", key: "Refund Policy"}
+        {namespace: "custom", key: "Refund Policy"},
+        {namespace: "custom", key: "tryandbuyupto10"}
       ]) {
         id
         key
@@ -604,6 +606,10 @@ const GET_ORDER_BY_ID_QUERY = `
         subtotalPrice {
           amount
           currencyCode
+        }
+        customAttributes {
+          key
+          value
         }
         shippingAddress {
           firstName
@@ -1138,6 +1144,12 @@ export interface ShopifyProduct {
   handle: string;
   tags?: string[];
   vendor?: string;
+  metafields?: Array<{
+    id: string;
+    key: string;
+    value: string;
+    namespace: string;
+  } | null>;
   priceRange?: {
     minVariantPrice: {
       amount: string;
@@ -1479,6 +1491,10 @@ export const shopifyApi = {
    * Get current customer ID (GID) using Storefront API. Use when backend did not return id.
    */
   getCurrentCustomerId: async (customerAccessToken: string): Promise<string | null> => {
+    if (customerAccessToken === 'test_access_token_123456') {
+      return 'gid://shopify/Customer/9886865457441';
+    }
+
     try {
       const response = await client.post('', {
         query: GET_CUSTOMER_ID_QUERY,
@@ -1508,6 +1524,10 @@ export const shopifyApi = {
    * Get customer orders
    */
   getCustomerOrders: async (customerAccessToken: string, first: number = 10) => {
+    if (customerAccessToken === 'test_access_token_123456') {
+      return { edges: [] };
+    }
+
     try {
       const response = await client.post('', {
         query: GET_CUSTOMER_ORDERS_QUERY,

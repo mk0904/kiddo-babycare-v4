@@ -243,6 +243,9 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
     cancelled: 'Cancelled',
     return_requested: 'Return Requested',
     returned: 'Returned',
+    reached_delivery: 'Arrived',
+    rto_delivered: 'RTO Delivered',
+    exchanged: 'Exchanged',
 };
 
 const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -260,6 +263,9 @@ const DELIVERY_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
     cancelled: { bg: '#FEF2F2', text: '#B91C1C' },
     return_requested: { bg: '#FFF7ED', text: '#C2410C' },
     returned: { bg: '#F5F3FF', text: '#6B21A8' },
+    reached_delivery: { bg: '#DCFCE7', text: '#15803D' },
+    rto_delivered: { bg: '#FEF2F2', text: '#B91C1C' },
+    exchanged: { bg: '#F5F3FF', text: '#6B21A8' },
 };
 
 export default function OrderDetailV2Screen() {
@@ -1068,12 +1074,22 @@ export default function OrderDetailV2Screen() {
                     : isEventOrder
                         ? 'placed'
                         : '';
+
+    const scheduledDateForPill = deliveryPartnerStatus?.scheduled_date || order?.scheduledDate || order?.deliverySchedule?.date;
+    const scheduledTimeForPill = deliveryPartnerStatus?.scheduled_time || order?.scheduledTime || order?.deliverySchedule?.time;
+    const isScheduledOrderForPill = deliveryPartnerStatus?.is_scheduled_order === true || order?.deliveryType === 'scheduled' || !!(scheduledDateForPill && scheduledTimeForPill);
+
+    const BEFORE_OUT_FOR_DELIVERY_STATUSES = new Set(['', 'placed', 'confirmed', 'packing']);
+    const isEarlyStatus = BEFORE_OUT_FOR_DELIVERY_STATUSES.has(deliveryStatusKey);
+
     const deliveryStatusLabel = !statusKeyForHeaderPill
         ? ''
-        : (DELIVERY_STATUS_LABELS[statusKeyForHeaderPill] ??
-            (deliveryPartnerStatus?.status
-                ? String(deliveryPartnerStatus.status).replace(/_/g, ' ')
-                : '')) || 'Placed';
+        : isScheduledOrderForPill && isEarlyStatus
+            ? 'Scheduled'
+            : (DELIVERY_STATUS_LABELS[statusKeyForHeaderPill] ??
+                (deliveryPartnerStatus?.status
+                    ? String(deliveryPartnerStatus.status).replace(/_/g, ' ')
+                    : '')) || 'Placed';
     const deliveryStatusColors: { bg: string; text: string } = statusKeyForHeaderPill
         ? (DELIVERY_STATUS_COLORS[statusKeyForHeaderPill] ?? { bg: '#F3F4F6', text: '#374151' })
         : { bg: '#F3F4F6', text: '#374151' };
@@ -1403,15 +1419,17 @@ export default function OrderDetailV2Screen() {
                                 </View>
                                 <View style={styles.deliveryPartnerTextWrap}>
                                     <Text style={styles.deliveryPartnerIntro}>
-                                        Your delivery partner will be assigned soon
+                                        {isScheduledOrderForPill
+                                            ? `Your order will be delivered at ${scheduledTimeForPill || 'your scheduled time'}`
+                                            : 'Your delivery partner will be assigned soon'}
                                     </Text>
                                     <Text style={styles.deliveryPartnerPendingText}>
-                                        We will share the rider details here shortly
+                                        {isScheduledOrderForPill
+                                            ? 'We will assign a rider closer to the delivery time'
+                                            : 'We will share the rider details here shortly'}
                                     </Text>
                                 </View>
-                                <View style={styles.deliveryPartnerPendingBadge}>
-                                    <Ionicons name="hourglass-outline" size={18} color="#9CA3AF" />
-                                </View>
+
                             </View>
                         </View>
                     </View>
@@ -1497,7 +1515,7 @@ export default function OrderDetailV2Screen() {
 
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                {isDelivered && orderDetailCfg?.imageUrl?.trim() ? (
+                {/* {isDelivered && orderDetailCfg?.imageUrl?.trim() ? (
                     <View style={styles.orderDetailImageWrap}>
                         <Image
                             source={{ uri: orderDetailCfg.imageUrl.trim() }}
@@ -1505,7 +1523,7 @@ export default function OrderDetailV2Screen() {
                             contentFit="cover"
                         />
                     </View>
-                ) : null}
+                ) : null} */}
 
                 {(isEventOrder && !!eventHeroDisplayUrl.trim()) || showEventHeroSkeletonOnly ? (
                     <View style={styles.trackingWrap}>
@@ -1702,6 +1720,8 @@ export default function OrderDetailV2Screen() {
                     partnerAvatarSrc={partnerAvatarSrc}
                     deliveryPartnerStatus={deliveryPartnerStatus}
                     handleDeliveryPartnerCall={handleDeliveryPartnerCall}
+                    isScheduledOrderForPill={isScheduledOrderForPill}
+                    scheduledTimeForPill={scheduledTimeForPill}
                 />
 
                 {/* Line items – single card like cart */}
@@ -1929,6 +1949,8 @@ export default function OrderDetailV2Screen() {
                     isTicketingOnly={isOnlyTicketingOrder(order)}
                     showLastMileDeliveryUi={showLastMileDeliveryUi}
                     headerStatusText={headerStatusText}
+                    deliveryPartnerStatus={deliveryPartnerStatus}
+                    deliveryStatusKey={deliveryStatusKey}
                 />
 
 

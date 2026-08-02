@@ -462,6 +462,10 @@ export default function AccountScreen() {
                             return null;
                         }
 
+                        if (item.id === 'help' && !appConfigService.isHelpSupportEnabled()) {
+                            return null;
+                        }
+
                         const iconName = item.icon as any;
 
                         return (

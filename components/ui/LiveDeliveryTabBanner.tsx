@@ -110,6 +110,18 @@ function isDemoOrderNode(o: any): boolean {
   });
 }
 
+const isScheduledOrder = (order: any, dps?: any): boolean => {
+  return order?.deliveryType === 'scheduled' || 
+         !!(order?.scheduledDate && order?.scheduledTime) ||
+         !!(order?.deliverySchedule?.date && order?.deliverySchedule?.time) ||
+         dps?.is_scheduled_order === true || 
+         !!(dps?.scheduled_date && dps?.scheduled_time);
+};
+
+const getScheduledTimeForBanner = (order: any, dps?: any): string | null => {
+  return dps?.scheduled_time || order?.scheduledTime || order?.deliverySchedule?.time || null;
+};
+
 
 type BannerModel = {
   phase: LiveTabBannerPhase;
@@ -145,6 +157,7 @@ export function LiveDeliveryTabBanner({
   const [model, setModel] = useState<BannerModel | null>(null);
   const [seenOrderIdsInSession] = useState(() => new Set<string>());
   const [dismissedStateKeys, setDismissedStateKeys] = useState<Set<string>>(() => new Set());
+  const [isDismissLoaded, setIsDismissLoaded] = useState(false);
   const cfg = useMemo(() => appConfigService.getOrderDetailConfig(), []);
   const pollingConfig = useMemo(() => appConfigService.getOrderSummaryConfig()?.pollingConfig, []);
 
@@ -167,6 +180,8 @@ export function LiveDeliveryTabBanner({
       setDismissedStateKeys(next);
     } catch {
       setDismissedStateKeys(new Set());
+    } finally {
+      setIsDismissLoaded(true);
     }
   }, []);
 
@@ -177,7 +192,8 @@ export function LiveDeliveryTabBanner({
   const pollActiveRef = useRef(false);
 
   const fetchLive = useCallback(async () => {
-    if (!isAuthenticated || hideForRoute) {
+    if (!isAuthenticated || hideForRoute || !isDismissLoaded) {
+      console.log('[LiveDeliveryTabBanner] Hiding because: isAuthenticated=', isAuthenticated, 'hideForRoute=', hideForRoute, 'isDismissLoaded=', isDismissLoaded);
       setModel(null);
       return;
     }
@@ -185,6 +201,7 @@ export function LiveDeliveryTabBanner({
       user?.customerAccessToken ?? user?.accessToken ?? persistedAccessToken ?? '',
     ).trim();
     if (!token) {
+      console.log('[LiveDeliveryTabBanner] Hiding because: No token');
       setModel(null);
       return;
     }
@@ -197,7 +214,10 @@ export function LiveDeliveryTabBanner({
         console.warn('[LiveDeliveryTabBanner] Token expired or invalid, forcing logout');
         logout();
       }
-      if (pollActiveRef.current) setModel(null);
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: fetch orders failed', err);
+        setModel(null);
+      }
       return;
     }
     const edges = ordersConn?.edges || [];
@@ -205,20 +225,32 @@ export function LiveDeliveryTabBanner({
 
     const latestOrder = edges[0]?.node ?? null;
     if (!latestOrder) {
-      if (pollActiveRef.current) setModel(null);
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: No latest order');
+        setModel(null);
+      }
       return;
     }
     if (isOnlyTicketingOrderNode(latestOrder)) {
-      if (pollActiveRef.current) setModel(null);
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: Only ticketing order');
+        setModel(null);
+      }
       return;
     }
     if (isDemoOrderNode(latestOrder)) {
-      if (pollActiveRef.current) setModel(null);
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: Demo order');
+        setModel(null);
+      }
       return;
     }
     const latestProcessedMs = latestOrder.processedAt ? Date.parse(latestOrder.processedAt) : NaN;
     if (Number.isFinite(latestProcessedMs) && now - latestProcessedMs >= RECENT_ORDER_MAX_AGE_MS) {
-      if (pollActiveRef.current) setModel(null);
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: Order too old');
+        setModel(null);
+      }
       return;
     }
 
@@ -257,10 +289,13 @@ export function LiveDeliveryTabBanner({
     }
 
     const stateKey = `${numericId}:${phase}`;
-    if (dismissedStateKeys.has(stateKey)) {
-      if (pollActiveRef.current) setModel(null);
-      return;
-    }
+    // if (dismissedStateKeys.has(stateKey)) {
+    //   if (pollActiveRef.current) {
+    //     console.log('[LiveDeliveryTabBanner] Hiding because: dismissed');
+    //     setModel(null);
+    //   }
+    //   return;
+    // }
 
     if (phase === 'delivered') {
       const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : NaN;
@@ -272,10 +307,13 @@ export function LiveDeliveryTabBanner({
       const isOldDelivery = Number.isFinite(dm) && dm < SESSION_START_MS;
       const wasDeliveredBeforeSessionStart = orderIsNewInSession && (isOldDelivery || Number.isNaN(dm));
 
-      if (wasDeliveredBeforeSessionStart) {
-        if (pollActiveRef.current) setModel(null);
-        return;
-      }
+      // if (wasDeliveredBeforeSessionStart) {
+      //   if (pollActiveRef.current) {
+      //     console.log('[LiveDeliveryTabBanner] Hiding because: old delivery');
+      //     setModel(null);
+      //   }
+      //   return;
+      // }
     }
 
     // Mark active orders as seen in session so we can show their transition to 'delivered' later
@@ -295,15 +333,12 @@ export function LiveDeliveryTabBanner({
 
     let headerPrimary = '';
 
-    // if (extSt?.order && phase !== 'delivered') {
-    //   if (extSt.order.exact_time) {
-    //     headerPrimary = `Arriving by ${extSt.order.exact_time}`;
-    //   } else if (extSt.order.eta) {
-    //     headerPrimary = `Arriving in ${extSt.order.eta} mins`;
-    //   } else if (extSt.order.is_delayed && extSt.order.delayed_by) {
-    //     headerPrimary = `Delayed by ${extSt.order.delayed_by}`;
-    //   }
-    // }
+    const scheduled = isScheduledOrder(fullOrder, st);
+    const scheduledTime = getScheduledTimeForBanner(fullOrder, st);
+
+    if (scheduled && phase === 'packing') {
+      headerPrimary = `Your order has been scheduled for ${scheduledTime || 'your selected time'}`;
+    }
 
     if (!headerPrimary) {
       if (phase === 'packing') {
@@ -324,6 +359,7 @@ export function LiveDeliveryTabBanner({
     persistedAccessToken,
     hideForRoute,
     dismissedStateKeys,
+    isDismissLoaded,
   ]);
 
   const fetchGen = useRef(0);

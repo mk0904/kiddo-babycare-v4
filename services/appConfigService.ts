@@ -25,7 +25,7 @@ import type {
   AppDownloadConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, backendFetch } from './backendBase';
 
 function getAppConfigUrl(payload?: AppConfigPayload): string {
   const url = getBackendApiPath('app/config');
@@ -113,7 +113,7 @@ class AppConfigService {
             payload: payload || 'no payload',
           });
         }
-        const res = await fetch(url, {
+        const res = await backendFetch(url, {
           method: 'GET',
           headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
         });
@@ -325,6 +325,14 @@ class AppConfigService {
 
   isBackendGeocodingEnabled(): boolean {
     return this.config?.isBackendGeocodingEnabled === true;
+  }
+
+  isHelpSupportEnabled(): boolean {
+    return this.config?.isHelpSupportEnabled === true;
+  }
+
+  getMinOrderValue(): number {
+    return this.config?.minOrderValue ?? 0;
   }
 
   getReferralConfig(): ReferralConfig | null {

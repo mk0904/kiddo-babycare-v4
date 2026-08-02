@@ -25,6 +25,8 @@ import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PdpCouponCarousel } from '@/components/products/PdpCouponCarousel';
+import { CouponDetailsModal } from '@/components/products/CouponDetailsModal';
 import {
     ActivityIndicator,
     Alert,
@@ -271,6 +273,10 @@ const ProductDetailScreen = () => {
     const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<any[]>([]);
     const [imageViewerVisible, setImageViewerVisible] = useState(false);
     const [tryAndBuyModalVisible, setTryAndBuyModalVisible] = useState(false);
+    const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+    const [loadingCoupons, setLoadingCoupons] = useState(false);
+    const [couponUsages, setCouponUsages] = useState<Record<string, number>>({});
+    const [couponApplying, setCouponApplying] = useState(false);
     /** PDP inline Try & Buy: optional second size (first option row is primary). */
     const [pdpTrySizeValue, setPdpTrySizeValue] = useState<string | null>(null);
     const imageFlatListRef = useRef<any>(null);
@@ -285,6 +291,8 @@ const ProductDetailScreen = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showDateError, setShowDateError] = useState(false);
     const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
+    const [couponModalVisible, setCouponModalVisible] = useState(false);
+    const [selectedCouponDetails, setSelectedCouponDetails] = useState<any>(null);
     const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
     const [isSpecCollapsed, setIsSpecCollapsed] = useState(false);
     // Collection IDs that require date selection
@@ -793,6 +801,128 @@ const ProductDetailScreen = () => {
         loadProductDetails();
     }, [loadProductDetails]);
 
+    // Fetch coupons for this product
+    useEffect(() => {
+        if (!product || !isAuthenticated) return;
+        let cancelled = false;
+        const fetchCoupons = async () => {
+            setLoadingCoupons(true);
+            try {
+                const { getAppVersionForApi } = require('@/constants/versionConfig');
+                const { couponService } = require('@/services/couponService');
+                
+                const price = selectedVariant
+                    ? parseFloat(selectedVariant.price?.amount || '0')
+                    : parseFloat(product.priceRange?.minVariantPrice?.amount || '0');
+                
+                const categories = product.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
+                const categorySubtotalsForFetch: Record<string, number> = {};
+                for (const tag of categories) {
+                    categorySubtotalsForFetch[tag] = price;
+                }
+                
+                const hasClothing = categories.some((tagLower: string) => 
+                    tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
+                );
+
+                const visibleCoupons = await couponService.getVisibleCouponsFromBackend({
+                    phone: user?.phone ?? null,
+                    cartSubTotal: price,
+                    cartItemCount: 1,
+                    hasTicketing: isTicketingProduct,
+                    hasClothing,
+                    cartCategories: categories.length > 0 ? categories : undefined,
+                    categorySubtotals: Object.keys(categorySubtotalsForFetch).length > 0 ? categorySubtotalsForFetch : undefined,
+                    appVersion: getAppVersionForApi(),
+                    deviceType: Platform.OS ?? '',
+                });
+
+                if (cancelled) return;
+                
+                const normalized = (visibleCoupons ?? []).map((c: any) => ({
+                    ...c,
+                    value: typeof c.value === 'number' ? c.value : typeof c.value === 'string' ? parseFloat(c.value) || undefined : undefined,
+                    valueType: (c.valueType === 'fixed_amount' ? 'fixed' : c.valueType) as 'percentage' | 'fixed' | undefined,
+                }));
+                setAvailableCoupons(normalized);
+            } catch (error) {
+                console.warn('[PDP] Error fetching coupons:', error);
+            } finally {
+                if (!cancelled) setLoadingCoupons(false);
+            }
+        };
+        fetchCoupons();
+        return () => { cancelled = true; };
+    }, [product?.id, selectedVariant?.id, isAuthenticated, user?.phone, isTicketingProduct]);
+
+    // Update coupon usages
+    useEffect(() => {
+        if (!isAuthenticated || availableCoupons.length === 0) return;
+        const codes = availableCoupons.map((c) => c.code).filter(Boolean) as string[];
+        const userId = user?.id ?? user?.customerId ?? user?.phone ?? null;
+        const { couponService } = require('@/services/couponService');
+        couponService.getCouponUsagesForUser(codes, userId).then(setCouponUsages);
+    }, [isAuthenticated, user?.id, user?.customerId, user?.phone, availableCoupons]);
+
+    // Filter and format for display
+    const displayCoupons = useMemo(() => {
+        if (!availableCoupons || availableCoupons.length === 0) return [];
+        const { couponService } = require('@/services/couponService');
+        
+        const price = selectedVariant
+            ? parseFloat(selectedVariant.price?.amount || '0')
+            : parseFloat(product?.priceRange?.minVariantPrice?.amount || '0');
+            
+        const categories = product?.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
+        const categorySubtotalsForFetch: Record<string, number> = {};
+        for (const tag of categories) {
+            categorySubtotalsForFetch[tag] = price;
+        }
+        const hasClothing = categories.some((tagLower: string) => 
+            tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
+        );
+
+        const visibleOnly = availableCoupons.filter((c: any) => c.isVisible === true);
+        
+        const mapped = visibleOnly.map((c: any) => {
+            const codeObj = { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType };
+            const applicability = c.code ? couponService.getCouponApplicabilityForDisplay(
+                codeObj,
+                {
+                    hasTicketingProducts: isTicketingProduct,
+                    hasFashionItems: hasClothing,
+                    cartSubtotal: price,
+                    cartItemCount: 1,
+                    userOrderCount: (user as any)?.numberOfOrders ?? 0,
+                    couponUsageCount: couponUsages[c.code?.toUpperCase() ?? ''] ?? 0,
+                    categorySubtotals: categorySubtotalsForFetch,
+                    lineItems: [{ price, quantity: 1, tags: product?.tags || [], title: product?.title }],
+                }
+            ) : { applicable: true };
+            
+            const conditions = c.code ? couponService.getCouponConditionsText(codeObj) : [];
+            return { coupon: c, applicability, conditions, applicable: applicability.applicable };
+        });
+        
+        return mapped.filter((m: any) => m.applicable);
+    }, [availableCoupons, user, couponUsages, product, selectedVariant, isTicketingProduct]);
+
+    const handleApplyCoupon = async (coupon: any) => {
+        setCouponApplying(true);
+        try {
+            const result = await useCartStore.getState().applyDiscountCode(coupon.code, { preloadedCoupons: availableCoupons });
+            if (result.success) {
+                Alert.alert('Coupon Applied', `${coupon.code} applied! Add this product to cart to avail the offer.`);
+            } else {
+                Alert.alert('Error', result.error || 'Failed to apply coupon');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to apply coupon');
+        } finally {
+            setCouponApplying(false);
+        }
+    };
+
     const handleAddToCart = async () => {
         if (selectedVariant && selectedVariant.availableForSale) {
             try {
@@ -1228,10 +1358,29 @@ const ProductDetailScreen = () => {
     const refundPolicy =
         getMetafieldValue(product, 'refund_policy') ??
         getMetafieldValue(product, 'Refund Policy');
+    const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
+    const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
+    console.log('tryAndBuyMetafield:', tryAndBuyMetafield, 'tryAndBuyEnabled:', tryAndBuyEnabled);
 
     const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
     const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
     const productCategory = product?.productCategory?.value || getMetafieldValue(product, 'product_category');
+
+    const isFashion = useMemo(() => {
+        if (!product) return false;
+        if (fabric || washCare) return true;
+        const typeStr = (product.productType || '').toLowerCase();
+        const categoryStr = (productCategory || '').toLowerCase();
+        const tagsStr = Array.isArray(product.tags) ? product.tags.join(' ').toLowerCase() : String(product.tags || '').toLowerCase();
+        const keywords = ['fashion', 'clothing', 'apparel', 'wear', 'dress', 'top', 'bottom', 'onesie', 'pant', 'shirt', 'footwear', 'shoe', 'skirt', 'frock', 'suit', 'pyjama', 't-shirt', 'tshirt', 'jacket', 'sweater'];
+        if (keywords.some((k) => typeStr.includes(k) || categoryStr.includes(k) || tagsStr.includes(k))) {
+            return true;
+        }
+        if (product.options?.some((o: any) => o.name?.toLowerCase() === 'size')) {
+            return true;
+        }
+        return false;
+    }, [product, fabric, washCare, productCategory]);
 
     console.log('[PDP] All metafields:', product?.metafields);
     console.log('[PDP] Product Details Metafields:', { ageGroup, productSpecifications, productCategory });
@@ -1680,10 +1829,29 @@ const ProductDetailScreen = () => {
                         )}
                     </View>
 
+                    {/* Coupons Carousel */}
+                    {isAuthenticated && displayCoupons.length > 0 && (
+                        <View style={{ marginTop: 0, marginBottom: 16 }}>
+                            <PdpCouponCarousel
+                                coupons={displayCoupons}
+                                productPrice={selectedVariant
+                                    ? parseFloat(selectedVariant.price?.amount || '0')
+                                    : parseFloat(product?.priceRange?.minVariantPrice?.amount || '0')}
+                                onApply={handleApplyCoupon}
+                                onDetails={(item) => {
+                                    setSelectedCouponDetails(item);
+                                    setCouponModalVisible(true);
+                                }}
+                            />
+                        </View>
+                    )}
+
                     {/* 7 Days Easy Returns Bar */}
                     <ProductTrustStrip
                         refundPolicyText={refundPolicy}
                         onKnowMorePress={() => setShowRefundPolicyModal(true)}
+                        isFashion={isFashion}
+                        tryAndBuyEnabled={tryAndBuyEnabled}
                     />
 
                     {/* Product Specification - Tabbed Interface */}
@@ -2045,6 +2213,15 @@ const ProductDetailScreen = () => {
                     />
                 </BaseModal>
             )}
+
+            <CouponDetailsModal
+                visible={couponModalVisible}
+                onClose={() => setCouponModalVisible(false)}
+                selectedCoupon={selectedCouponDetails}
+                productPrice={selectedVariant
+                    ? parseFloat(selectedVariant.price?.amount || '0')
+                    : parseFloat(product?.priceRange?.minVariantPrice?.amount || '0')}
+            />
 
             <BaseModal
                 visible={showRefundPolicyModal}

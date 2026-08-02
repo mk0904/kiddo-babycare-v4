@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBackendApiPath } from './backendBase';
+import { getBackendApiPath, getBackendAuthHeaders } from './backendBase';
 
 /**
  * Cleanly integrates Analytics with our existing backend.
@@ -8,7 +8,10 @@ import { getBackendApiPath } from './backendBase';
 async function postToBackend(endpoint: string, body: object): Promise<void> {
   try {
     const url = getBackendApiPath(endpoint);
-    await axios.post(url, body, { timeout: 5000 });
+    await axios.post(url, body, { 
+      timeout: 5000,
+      headers: getBackendAuthHeaders(),
+    });
   } catch (e) {
     if (__DEV__) {
       console.warn(`[Analytics] Backend request failed (${endpoint}):`, e);
