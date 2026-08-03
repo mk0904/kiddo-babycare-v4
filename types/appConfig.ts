@@ -446,7 +446,9 @@ export interface AppConfigResponse {
   referralConfig?: ReferralConfig;
   walletConfig?: WalletConfig;
   appDownloadConfig?: AppDownloadConfig;
+  isCodAvailable?: boolean;
   completePurchase?: string;
+  forceUpdateConfig?: ForceUpdateConfig;
 }
 
 export interface AppDownloadPlatformConfig {

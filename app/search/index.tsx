@@ -464,7 +464,7 @@ export default function SearchScreen() {
         });
     };
 
-    const handleProductPress = (product: any) => {
+    const handleProductPress = useCallback((product: any) => {
         // Track the click in Searchanise analytics so it shows in the dashboard
         if (searchQuery.trim()) {
             const config = appConfigService.getConfig();
@@ -478,7 +478,16 @@ export default function SearchScreen() {
             pathname: '/products/[id]',
             params: { id: product.id, handle: product.handle },
         } as any);
-    };
+    }, [searchQuery, router]);
+
+    const handleAddToCart = useCallback((product: any) => {
+        if (searchQuery.trim()) {
+            const config = appConfigService.getConfig();
+            if (config?.isSelfSearchEnabled) {
+                selfSearchApi.trackAddToCart(searchQuery.trim(), product.id);
+            }
+        }
+    }, [searchQuery]);
 
     const handleSortSelect = (option: { value: string; order: string }) => {
         setSortBy(option.value);
@@ -524,11 +533,12 @@ export default function SearchScreen() {
                 <ProductCard
                     product={item}
                     onPress={() => handleProductPress(item)}
+                    onAddToCart={() => handleAddToCart(item)}
                     width={cardWidth}
                 />
             </View>
         );
-    }, [cardWidth]);
+    }, [cardWidth, handleProductPress, handleAddToCart]);
 
     const handleLoadMore = useCallback(() => {
         // Prevent multiple simultaneous load more requests

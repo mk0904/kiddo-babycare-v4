@@ -346,6 +346,10 @@ class AppConfigService {
   getAppDownloadConfig(): AppDownloadConfig | null {
     return this.config?.appDownloadConfig ?? null;
   }
+
+  isCodAvailable(): boolean {
+    return this.config?.isCodAvailable ?? true;
+  }
 }
 
 export const appConfigService = new AppConfigService();
