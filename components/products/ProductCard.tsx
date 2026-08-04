@@ -249,6 +249,11 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     setImageErrorCount(0);
   }, [product.id, product._id, productHandle]);
 
+  const handleSuccessfulAdd = useCallback(() => {
+    onPromoDealAddSuccess?.();
+    onAddToCart?.(product);
+  }, [onPromoDealAddSuccess, onAddToCart, product]);
+
   // Handle image error - try next image in fallback list
   const handleImageError = useCallback(() => {
     const currentUrl = allImageUrls[imageErrorCount];
@@ -707,7 +712,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                       ? effectiveDealPromoPct
                       : dealPromoPercentOff
                 }
-                onSuccessfulAdd={onPromoDealAddSuccess}
+                onSuccessfulAdd={handleSuccessfulAdd}
               />
             </View>
           )}

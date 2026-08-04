@@ -163,6 +163,7 @@ export default function CartScreen() {
         [appConfigRefresh]
     );
     const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [appConfigRefresh]);
+    const isCodAvailable = useMemo(() => appConfigService.isCodAvailable(), [appConfigRefresh]);
     const milestoneFreeKind = useMemo(
         () => getMilestoneFreeGiftKind(milestoneUI ?? null),
         [milestoneUI]
@@ -703,12 +704,12 @@ export default function CartScreen() {
         }
     }, [loading, cartItems.length, router]);
 
-    // Automatically switch to razorpay if COD is selected and ticketing products are added
+    // Automatically switch to razorpay if COD is selected and ticketing products are added or COD is unavailable
     useEffect(() => {
-        if (hasTicketingProducts && paymentMethod === 'cod') {
+        if ((hasTicketingProducts || !isCodAvailable) && paymentMethod === 'cod') {
             setPaymentMethod('razorpay');
         }
-    }, [hasTicketingProducts, paymentMethod]);
+    }, [hasTicketingProducts, isCodAvailable, paymentMethod]);
 
     // When the free-shoes gift code (e.g. "Free Shoes") is applied, auto-select first free shoe (milestone 3 / shoes rail only)
     useEffect(() => {
@@ -2411,8 +2412,8 @@ export default function CartScreen() {
                         {cartItems.length > 0 && total > 0 && (
                             <View style={styles.paymentMethodSection}>
                                 <Text style={styles.paymentMethodSectionTitle}>Payment method</Text>
-                                {/* Hide COD option for ticketing products */}
-                                {!hasTicketingProducts && (
+                                {/* Hide COD option for ticketing products and when COD is not available */}
+                                {!hasTicketingProducts && isCodAvailable && (
                                     <TouchableOpacity
                                         style={styles.paymentMethodOption}
                                         onPress={() => {

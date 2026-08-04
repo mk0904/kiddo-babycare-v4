@@ -9,6 +9,7 @@ const client = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'x-api-key': SELF_SEARCH_API_KEY,
+        'x-tenant-id': '0e87eda2-3758-4d5c-aed1-97d75ddff33a',
     },
 });
 
@@ -16,12 +17,19 @@ const APP_SESSION_ID = Math.random().toString(36).substring(2, 15) + Math.random
 
 export const trackEvent = async (eventType: string, productId?: string, metadata?: any) => {
     try {
-        await client.post('/api/events', {
+        const payload = {
             sessionId: APP_SESSION_ID,
             eventType,
             productId,
             metadata
+        };
+        console.log('[selfSearchApi] req:', {
+            url: client.defaults.baseURL + '/api/events',
+            headers: client.defaults.headers,
+            payload
         });
+
+        await client.post('/api/events', payload);
     } catch (error) {
         if (!axios.isCancel(error)) {
             console.error('Error tracking self search event:', error);
@@ -30,11 +38,15 @@ export const trackEvent = async (eventType: string, productId?: string, metadata
 };
 
 export const trackProductClick = (query: string, productId: string) => {
-    trackEvent('view', productId, { query }).catch(() => {});
+    trackEvent('view', productId, { query }).catch(() => { });
 };
 
 export const trackSearch = (query: string, totalItems: number) => {
-    trackEvent('search', undefined, { query, resultCount: totalItems }).catch(() => {});
+    trackEvent('search', undefined, { query, resultCount: totalItems }).catch(() => { });
+};
+
+export const trackAddToCart = (query: string, productId: string) => {
+    trackEvent('add_to_cart', productId, { query }).catch(() => { });
 };
 
 export const searchProducts = async ({
@@ -44,7 +56,7 @@ export const searchProducts = async ({
 }: SearchParams, signal?: AbortSignal) => {
     try {
         const page = Math.floor(startIndex / maxResults) + 1;
-        
+
         const response = await client.post('/api/search', {
             query: q || '',
             page,
@@ -132,4 +144,5 @@ export const selfSearchApi = {
     trackEvent,
     trackProductClick,
     trackSearch,
+    trackAddToCart,
 };
