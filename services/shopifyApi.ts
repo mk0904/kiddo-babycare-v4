@@ -339,7 +339,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
         {namespace: "custom", key: "Refund Policy"},
-        {namespace: "custom", key: "tryandbuyupto10"}
+        {namespace: "custom", key: "tryandbuyupto10"},
+        {namespace: "custom", key: "sizechart"}
       ]) {
         id
         key
@@ -354,6 +355,16 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
       }
       productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
         value
+      }
+      sizeChartMetafield: metafield(namespace: "custom", key: "sizechart") {
+        value
+        reference {
+          ... on MediaImage {
+            image {
+              url
+            }
+          }
+        }
       }
     }
   }
@@ -436,7 +447,8 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "highlights"},
         {namespace: "custom", key: "refund_policy"},
         {namespace: "custom", key: "Refund Policy"},
-        {namespace: "custom", key: "tryandbuyupto10"}
+        {namespace: "custom", key: "tryandbuyupto10"},
+        {namespace: "custom", key: "sizechart"}
       ]) {
         id
         key
@@ -451,6 +463,16 @@ const GET_PRODUCT_BY_ID_QUERY = `
       }
       productSpecifications: metafield(namespace: "custom", key: "discount_bucket") {
         value
+      }
+      sizeChartMetafield: metafield(namespace: "custom", key: "sizechart") {
+        value
+        reference {
+          ... on MediaImage {
+            image {
+              url
+            }
+          }
+        }
       }
     }
   }
@@ -1435,7 +1457,13 @@ export const shopifyApi = {
         return null;
       }
 
-      return response.data.data.product;
+      const product = response.data.data.product;
+      console.log('----------------------------------------------------');
+      console.log('[SHOPIFY API] getProductByHandle:', handle);
+      console.log('[SHOPIFY API] Metafields returned:', product?.metafields);
+      console.log('[SHOPIFY API] sizeChartMetafield:', product?.sizeChartMetafield);
+      console.log('----------------------------------------------------');
+      return product;
     } catch (error) {
       console.error('Error fetching product by handle:', error);
       return null;
@@ -1458,7 +1486,13 @@ export const shopifyApi = {
         return null;
       }
 
-      return response.data.data.product;
+      const product = response.data.data.product;
+      console.log('----------------------------------------------------');
+      console.log('[SHOPIFY API] getProductById:', id);
+      console.log('[SHOPIFY API] Metafields returned:', product?.metafields);
+      console.log('[SHOPIFY API] sizeChartMetafield:', product?.sizeChartMetafield);
+      console.log('----------------------------------------------------');
+      return product;
     } catch (error) {
       console.error('Error fetching product by ID:', error);
       return null;

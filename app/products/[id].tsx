@@ -293,6 +293,7 @@ const ProductDetailScreen = () => {
     const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
     const [couponModalVisible, setCouponModalVisible] = useState(false);
     const [selectedCouponDetails, setSelectedCouponDetails] = useState<any>(null);
+    const [sizeChartModalVisible, setSizeChartModalVisible] = useState(false);
     const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
     const [isSpecCollapsed, setIsSpecCollapsed] = useState(false);
     // Collection IDs that require date selection
@@ -636,6 +637,11 @@ const ProductDetailScreen = () => {
             }
 
             if (fullProduct) {
+                console.log('====================================');
+                console.log('[PDP LOADED PRODUCT]', fullProduct.title);
+                console.log('[PDP SIZECHART METAFIELD]', fullProduct.sizeChartMetafield);
+                console.log('[PDP ALL METAFIELDS]', JSON.stringify(fullProduct.metafields, null, 2));
+                console.log('====================================');
                 setProduct(fullProduct);
                 initializeVariant(fullProduct);
                 loadProductRecommendations(fullProduct.id);
@@ -1337,18 +1343,23 @@ const ProductDetailScreen = () => {
     }, [savings]);
 
     const getMetafieldValue = (product: any, key: string) => {
-        if (!product?.metafields) return null;
-        if (Array.isArray(product.metafields.edges)) {
-            const metafield = product.metafields.edges.find(
-                (edge: any) => edge?.node?.key?.toLowerCase() === key.toLowerCase()
-            );
-            if (metafield?.node?.value) return metafield.node.value;
-        }
-        if (Array.isArray(product.metafields)) {
-            const metafield = product.metafields.find(
-                (m: any) => m?.key?.toLowerCase() === key.toLowerCase()
-            );
-            if (metafield?.value) return metafield.value;
+        if (!product) return null;
+        const targetKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (product?.metafields) {
+            if (Array.isArray(product.metafields.edges)) {
+                const metafield = product.metafields.edges.find(
+                    (edge: any) => edge?.node?.key?.toLowerCase().replace(/[^a-z0-9]/g, '') === targetKey
+                );
+                if (metafield?.node?.value) return metafield.node.value;
+                if (metafield?.node?.reference?.image?.url) return metafield.node.reference.image.url;
+            }
+            if (Array.isArray(product.metafields)) {
+                const metafield = product.metafields.find(
+                    (m: any) => m?.key?.toLowerCase().replace(/[^a-z0-9]/g, '') === targetKey
+                );
+                if (metafield?.value) return metafield.value;
+                if (metafield?.reference?.image?.url) return metafield.reference.image.url;
+            }
         }
         return null;
     };
@@ -1360,7 +1371,31 @@ const ProductDetailScreen = () => {
         getMetafieldValue(product, 'Refund Policy');
     const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
     const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
-    console.log('tryAndBuyMetafield:', tryAndBuyMetafield, 'tryAndBuyEnabled:', tryAndBuyEnabled);
+
+    const rawSizeChartMetafield = product?.sizeChartMetafield?.reference?.image?.url ||
+        product?.sizeChartMetafield?.value ||
+        getMetafieldValue(product, 'sizechart') ||
+        getMetafieldValue(product, 'size_chart');
+
+    const sizeChartUrl = useMemo(() => {
+        if (!rawSizeChartMetafield) return null;
+        const valStr = typeof rawSizeChartMetafield === 'string' ? rawSizeChartMetafield.trim() : String(rawSizeChartMetafield).trim();
+        if (!valStr) return null;
+        if (valStr.startsWith('{') || valStr.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(valStr);
+                const url = parsed.url || parsed.src || parsed.image || (Array.isArray(parsed) ? (parsed[0]?.url || parsed[0]?.src || parsed[0]) : null);
+                if (url && typeof url === 'string') return url;
+            } catch (_) {}
+        }
+        return valStr;
+    }, [rawSizeChartMetafield]);
+
+    console.log('[PDP DEBUG] Product Title:', product?.title, 'Handle:', product?.handle);
+    console.log('[PDP DEBUG] Raw sizechart metafield value:', rawSizeChartMetafield);
+    console.log('[PDP DEBUG] Resolved sizeChartUrl:', sizeChartUrl);
+    console.log('[PDP DEBUG] All product metafields:', product?.metafields);
+    console.log('[PDP DEBUG] Single sizeChartMetafield object:', product?.sizeChartMetafield);
 
     const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
     const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
@@ -1708,6 +1743,8 @@ const ProductDetailScreen = () => {
                                 onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
                                 tryValue={pdpTrySizeValue}
                                 onTryValueChange={setPdpTrySizeValue}
+                                sizeChartUrl={sizeChartUrl}
+                                onOpenSizeChart={() => setSizeChartModalVisible(true)}
                             />
                         ) : null}
 
@@ -1725,22 +1762,41 @@ const ProductDetailScreen = () => {
                             </View>
                         </View>
 
+                        {/* Standalone Size Chart button — shown even for single-variant products */}
+                        {!!sizeChartUrl && productOptions.length === 0 && (
+                            <TouchableOpacity
+                                onPress={() => setSizeChartModalVisible(true)}
+                                style={styles.standaloneSizeChartBtn}
+                            >
+                                <Ionicons name="resize-outline" size={14} color="#2563EB" />
+                                <Text style={styles.standaloneSizeChartText}>View Size Chart</Text>
+                            </TouchableOpacity>
+                        )}
 
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
-                                {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
-                                    <View key={option.name} style={styles.optionContainer}>
-                                        <Text style={[
-                                            styles.optionLabel,
-                                            productStyles.variantLabel && {
-                                                fontSize: productStyles.variantLabel.fontSize,
-                                                color: productStyles.variantLabel.color,
-                                                ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
-                                            }
-                                        ]}>
-                                            {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
-                                        </Text>
-                                        <View style={styles.variantsList}>
+                                {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => {
+                                    const isSizeOption = option.name?.toLowerCase() === 'size' || option.name?.toLowerCase().includes('size');
+                                    return (
+                                        <View key={option.name} style={styles.optionContainer}>
+                                            <View style={styles.optionHeaderRow}>
+                                                <Text style={[
+                                                    styles.optionLabel,
+                                                    productStyles.variantLabel && {
+                                                        fontSize: productStyles.variantLabel.fontSize,
+                                                        color: productStyles.variantLabel.color,
+                                                        ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
+                                                    }
+                                                ]}>
+                                                    {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
+                                                </Text>
+                                                {isSizeOption && !!sizeChartUrl && (
+                                                    <TouchableOpacity onPress={() => setSizeChartModalVisible(true)} style={styles.sizeChartHeaderLink}>
+                                                        <Text style={styles.sizeChartHeaderText}>Size Chart</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                            <View style={styles.variantsList}>
                                             {(() => {
                                                 const availableValues: string[] = [];
                                                 const unavailableValues: string[] = [];
@@ -1789,7 +1845,8 @@ const ProductDetailScreen = () => {
                                             })()}
                                         </View>
                                     </View>
-                                ))}
+                                );
+                            })}
                             </View>
                         )}
 
@@ -2234,6 +2291,15 @@ const ProductDetailScreen = () => {
                 </Text>
             </BaseModal>
 
+            {!!sizeChartUrl && (
+                <ImageViewerModal
+                    visible={sizeChartModalVisible}
+                    images={[sizeChartUrl]}
+                    initialIndex={0}
+                    onClose={() => setSizeChartModalVisible(false)}
+                />
+            )}
+
             <FloatingCartButton showTabBar={false} />
         </View>
     );
@@ -2491,11 +2557,45 @@ const styles = StyleSheet.create({
     optionContainer: {
         marginBottom: 12,
     },
+    optionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
     optionLabel: {
         fontSize: 16,
         color: '#333',
-        marginBottom: 12,
         fontFamily: Fonts.SemiBold,
+    },
+    sizeChartHeaderLink: {
+        paddingVertical: 2,
+        paddingHorizontal: 4,
+    },
+    sizeChartHeaderText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#2563EB',
+        textDecorationLine: 'underline',
+    },
+    standaloneSizeChartBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        alignSelf: 'flex-start',
+        marginHorizontal: 16,
+        marginTop: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#2563EB',
+        backgroundColor: '#EFF6FF',
+    },
+    standaloneSizeChartText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#2563EB',
     },
     variantsList: {
         flexDirection: 'row',
