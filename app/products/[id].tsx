@@ -1,5 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
+import { CouponDetailsModal } from '@/components/products/CouponDetailsModal';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
+import { PdpCouponCarousel } from '@/components/products/PdpCouponCarousel';
 import { ProductTrustStrip } from '@/components/products/ProductTrustStrip';
 import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
 import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
@@ -25,8 +27,6 @@ import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PdpCouponCarousel } from '@/components/products/PdpCouponCarousel';
-import { CouponDetailsModal } from '@/components/products/CouponDetailsModal';
 import {
     ActivityIndicator,
     Alert,
@@ -816,18 +816,18 @@ const ProductDetailScreen = () => {
             try {
                 const { getAppVersionForApi } = require('@/constants/versionConfig');
                 const { couponService } = require('@/services/couponService');
-                
+
                 const price = selectedVariant
                     ? parseFloat(selectedVariant.price?.amount || '0')
                     : parseFloat(product.priceRange?.minVariantPrice?.amount || '0');
-                
+
                 const categories = product.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
                 const categorySubtotalsForFetch: Record<string, number> = {};
                 for (const tag of categories) {
                     categorySubtotalsForFetch[tag] = price;
                 }
-                
-                const hasClothing = categories.some((tagLower: string) => 
+
+                const hasClothing = categories.some((tagLower: string) =>
                     tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
                 );
 
@@ -844,7 +844,7 @@ const ProductDetailScreen = () => {
                 });
 
                 if (cancelled) return;
-                
+
                 const normalized = (visibleCoupons ?? []).map((c: any) => ({
                     ...c,
                     value: typeof c.value === 'number' ? c.value : typeof c.value === 'string' ? parseFloat(c.value) || undefined : undefined,
@@ -874,22 +874,22 @@ const ProductDetailScreen = () => {
     const displayCoupons = useMemo(() => {
         if (!availableCoupons || availableCoupons.length === 0) return [];
         const { couponService } = require('@/services/couponService');
-        
+
         const price = selectedVariant
             ? parseFloat(selectedVariant.price?.amount || '0')
             : parseFloat(product?.priceRange?.minVariantPrice?.amount || '0');
-            
+
         const categories = product?.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
         const categorySubtotalsForFetch: Record<string, number> = {};
         for (const tag of categories) {
             categorySubtotalsForFetch[tag] = price;
         }
-        const hasClothing = categories.some((tagLower: string) => 
+        const hasClothing = categories.some((tagLower: string) =>
             tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
         );
 
         const visibleOnly = availableCoupons.filter((c: any) => c.isVisible === true);
-        
+
         const mapped = visibleOnly.map((c: any) => {
             const codeObj = { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType };
             const applicability = c.code ? couponService.getCouponApplicabilityForDisplay(
@@ -905,11 +905,11 @@ const ProductDetailScreen = () => {
                     lineItems: [{ price, quantity: 1, tags: product?.tags || [], title: product?.title }],
                 }
             ) : { applicable: true };
-            
+
             const conditions = c.code ? couponService.getCouponConditionsText(codeObj) : [];
             return { coupon: c, applicability, conditions, applicable: applicability.applicable };
         });
-        
+
         return mapped.filter((m: any) => m.applicable);
     }, [availableCoupons, user, couponUsages, product, selectedVariant, isTicketingProduct]);
 
@@ -1372,20 +1372,11 @@ const ProductDetailScreen = () => {
     const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
     const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
 
-<<<<<<< HEAD
+
     const rawSizeChartMetafield = product?.sizeChartMetafield?.reference?.image?.url ||
         product?.sizeChartMetafield?.value ||
         getMetafieldValue(product, 'sizechart') ||
         getMetafieldValue(product, 'size_chart');
-=======
-    const sizeChartMetafield = getMetafieldNode(product, 'sizechart') || getMetafieldNode(product, 'sizeChartImage');
-    const sizeChartImageUrl = useMemo(() => {
-        if (!sizeChartMetafield) return null;
-        
-        // Resolve using Shopify metafield reference node
-        const refUrl = sizeChartMetafield.reference?.image?.url || sizeChartMetafield.reference?.url;
-        if (refUrl) return refUrl;
->>>>>>> fc7bfa5 (uncommited changes)
 
     const sizeChartUrl = useMemo(() => {
         if (!rawSizeChartMetafield) return null;
@@ -1396,7 +1387,7 @@ const ProductDetailScreen = () => {
                 const parsed = JSON.parse(valStr);
                 const url = parsed.url || parsed.src || parsed.image || (Array.isArray(parsed) ? (parsed[0]?.url || parsed[0]?.src || parsed[0]) : null);
                 if (url && typeof url === 'string') return url;
-            } catch (_) {}
+            } catch (_) { }
         }
         return valStr;
     }, [rawSizeChartMetafield]);
@@ -1807,56 +1798,56 @@ const ProductDetailScreen = () => {
                                                 )}
                                             </View>
                                             <View style={styles.variantsList}>
-                                            {(() => {
-                                                const availableValues: string[] = [];
-                                                const unavailableValues: string[] = [];
+                                                {(() => {
+                                                    const availableValues: string[] = [];
+                                                    const unavailableValues: string[] = [];
 
-                                                option.values.forEach((value: string) => {
-                                                    const isAvail = variants.some((variant: any) => {
-                                                        if (!variant.selectedOptions) return false;
-                                                        return variant.selectedOptions.some(
-                                                            (opt: any) => opt.name === option.name && opt.value === value
-                                                        ) && isVariantAvailable(variant) !== false;
+                                                    option.values.forEach((value: string) => {
+                                                        const isAvail = variants.some((variant: any) => {
+                                                            if (!variant.selectedOptions) return false;
+                                                            return variant.selectedOptions.some(
+                                                                (opt: any) => opt.name === option.name && opt.value === value
+                                                            ) && isVariantAvailable(variant) !== false;
+                                                        });
+                                                        if (isAvail) availableValues.push(value);
+                                                        else unavailableValues.push(value);
                                                     });
-                                                    if (isAvail) availableValues.push(value);
-                                                    else unavailableValues.push(value);
-                                                });
 
-                                                return [...availableValues, ...unavailableValues].map((value: string) => {
-                                                    const isSelected = selectedOptions[option.name] === value;
-                                                    const isOptionAvailable = availableValues.includes(value);
+                                                    return [...availableValues, ...unavailableValues].map((value: string) => {
+                                                        const isSelected = selectedOptions[option.name] === value;
+                                                        const isOptionAvailable = availableValues.includes(value);
 
-                                                    return (
-                                                        <TouchableOpacity
-                                                            key={value}
-                                                            style={[
-                                                                styles.variantButton,
-                                                                isSelected && styles.variantButtonActive,
-                                                                !isOptionAvailable && styles.variantButtonDisabled
-                                                            ]}
-                                                            onPress={() => handleOptionSelect(option.name, value)}
-                                                            disabled={!isOptionAvailable}
-                                                        >
-                                                            <Text style={[
-                                                                styles.variantText,
-                                                                isSelected && styles.variantTextActive,
-                                                                !isOptionAvailable && styles.variantTextDisabled,
-                                                                productStyles.variantButton && !isSelected && {
-                                                                    fontSize: productStyles.variantButton.fontSize,
-                                                                    color: productStyles.variantButton.color,
-                                                                    ...processFontStyle(productStyles.variantButton, Fonts.Medium),
-                                                                }
-                                                            ]}>
-                                                                {value}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    );
-                                                });
-                                            })()}
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={value}
+                                                                style={[
+                                                                    styles.variantButton,
+                                                                    isSelected && styles.variantButtonActive,
+                                                                    !isOptionAvailable && styles.variantButtonDisabled
+                                                                ]}
+                                                                onPress={() => handleOptionSelect(option.name, value)}
+                                                                disabled={!isOptionAvailable}
+                                                            >
+                                                                <Text style={[
+                                                                    styles.variantText,
+                                                                    isSelected && styles.variantTextActive,
+                                                                    !isOptionAvailable && styles.variantTextDisabled,
+                                                                    productStyles.variantButton && !isSelected && {
+                                                                        fontSize: productStyles.variantButton.fontSize,
+                                                                        color: productStyles.variantButton.color,
+                                                                        ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                                    }
+                                                                ]}>
+                                                                    {value}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    });
+                                                })()}
+                                            </View>
                                         </View>
-                                    </View>
-                                );
-                            })}
+                                    );
+                                })}
                             </View>
                         )}
 
