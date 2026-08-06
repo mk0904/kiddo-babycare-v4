@@ -1776,19 +1776,17 @@ const ProductDetailScreen = () => {
                                 {discountPercentage !== null && (
                                     <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
                                 )}
+                                {/* Standalone Size Chart button — shown even for single-variant products */}
+                                {!!sizeChartUrl && productOptions.length === 0 && (
+                                    <TouchableOpacity
+                                        onPress={() => setSizeChartModalVisible(true)}
+                                        style={styles.standaloneSizeChartBtn}
+                                    >
+                                        <Text style={styles.standaloneSizeChartText}>Size Chart</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
-
-                        {/* Standalone Size Chart button — shown even for single-variant products */}
-                        {!!sizeChartUrl && productOptions.length === 0 && (
-                            <TouchableOpacity
-                                onPress={() => setSizeChartModalVisible(true)}
-                                style={styles.standaloneSizeChartBtn}
-                            >
-                                <Ionicons name="resize-outline" size={14} color="#2563EB" />
-                                <Text style={styles.standaloneSizeChartText}>View Size Chart</Text>
-                            </TouchableOpacity>
-                        )}
 
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
@@ -2596,28 +2594,13 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     standaloneSizeChartBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        alignSelf: 'flex-start',
-        marginHorizontal: 16,
-        marginTop: 10,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#2563EB',
-        backgroundColor: '#EFF6FF',
+        marginLeft: 'auto',
+        marginRight: 16,
     },
     standaloneSizeChartText: {
         fontSize: 13,
         fontFamily: Fonts.LexendMedium,
-        color: '#2563EB',
-    },
-    variantsList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
+        color: '#EF4444',
     },
     variantButton: {
         paddingHorizontal: 20,

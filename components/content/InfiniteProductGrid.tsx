@@ -2,7 +2,6 @@ import { Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { InfiniteProductGridBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
-import React from 'react';
 import { StyleSheet } from 'react-native';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '../products/InfiniteProductGrid';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
