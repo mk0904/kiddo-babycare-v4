@@ -4220,7 +4220,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fashionfriday1.gif?v=1784831666",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Kiddo_SaturdayOffer_AppAnim_Sample2_Compressed_2.gif?v=1784313711",
           "link": {
             "type": "collection",
             "collection": {
@@ -4301,10 +4301,10 @@
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
-        "layout": "uniform",
+        "layout": "featured-left",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": -10,
+        "rowGap": 10,
         "limit": 9,
         "aspectRatio": 1,
         "showLabels": true,
@@ -4313,22 +4313,19 @@
       },
       "collectionIds": [
                 {
-          "id": "gid://shopify/Collection/516153508129"
+          "id": "gid://shopify/Collection/516184113441"
         },
         {
-          "id": "gid://shopify/Collection/516153606433"
+          "id": "gid://shopify/Collection/515917250849"
         },
         {
-          "id": "gid://shopify/Collection/516153639201"
+          "id": "gid://shopify/Collection/515916923169"
         },
                 {
-          "id": "gid://shopify/Collection/516153671969"
+          "id": "gid://shopify/Collection/515916562721"
         },
         {
-          "id": "gid://shopify/Collection/516153704737"
-        },
-        {
-          "id": "gid://shopify/Collection/516153737505"
+          "id": "gid://shopify/Collection/515916136737"
         }
 
       ],
@@ -4337,7 +4334,7 @@
           "position": "absolute",
           "marginTop": "-72%",
           "zIndex": 10,
-          "paddingHorizontal": 47,
+          "paddingHorizontal": 15,
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -4352,6 +4349,7 @@
           "color": "rgba(0, 0, 0, 0.3)"
         },
         "text": {
+          "display": "none",
           "marginTop": -5,
           "fontWeight": "700",
           "fontFamily": "lexend-bold",
@@ -4893,7 +4891,7 @@
     {
       "id": "category-grid-onbanner1",
       "type": "categoryGrid",
-      "order": 4,
+      "order": 3,
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
@@ -4933,9 +4931,9 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-51%",
+          "marginTop": "230%",
           "zIndex": 10,
-          "paddingHorizontal": "5%"
+          "paddingHorizontal": 25
         },
         "title": {
           "display": "none",
@@ -7335,7 +7333,7 @@
         "pageBackgroundColor": "#FCF9F8",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_13_3.png?v=1786036031",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_25_3.png?v=1786128868",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

@@ -191,7 +191,8 @@ export const trackProductViewed = (productId: string, productName?: string, pric
   trackContentViewAction(productId, price, 'INR');
 };
 
-export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number) => {
+export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number, l1Collection?: string, l2Collection?: string, l3Collection?: string) => {
+  console.log('[Mixpanel] trackAddToCart - L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
   trackEvent('Add to Cart', {
     productId,
     productName,
@@ -201,6 +202,9 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     content_type: 'product',
     value: price,
     currency: 'INR',
+    l1_collection: l1Collection,
+    l2_collection: l2Collection,
+    l3_collection: l3Collection,
   });
   if (price != null && Number.isFinite(price)) {
     trackAddToCartAction(productId, 'product', price, quantity || 1);
@@ -494,7 +498,15 @@ export const trackPaymentMethodSelected = (paymentMethod: string) => {
   });
 };
 
-export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[]) => {
+export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[], productMetafields?: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}>) => {
+  console.log('[Mixpanel] trackOrderPlaced - Product metafields:', productMetafields);
+  
+  const l1Collections = productMetafields?.map(m => m.l1Collection).filter(Boolean) || [];
+  const l2Collections = productMetafields?.map(m => m.l2Collection).filter(Boolean) || [];
+  const l3Collections = productMetafields?.map(m => m.l3Collection).filter(Boolean) || [];
+  
+  console.log('[Mixpanel] trackOrderPlaced - L1 Collections:', l1Collections, 'L2 Collections:', l2Collections, 'L3 Collections:', l3Collections);
+  
   trackEvent('Order Placed', {
     event_id: orderId,
     orderId,
@@ -505,6 +517,9 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     currency: 'INR',
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
+    l1_collections: l1Collections,
+    l2_collections: l2Collections,
+    l3_collections: l3Collections,
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
   trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');
