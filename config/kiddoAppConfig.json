@@ -4220,7 +4220,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_6_2.gif?v=1784691759",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/fashionfriday1.gif?v=1784831666",
           "link": {
             "type": "collection",
             "collection": {
@@ -4301,7 +4301,7 @@
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
-        "layout": "featured-left",
+        "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
         "rowGap": -10,
@@ -4312,21 +4312,25 @@
         "proportionalScale": true
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/516119757089"
+                {
+          "id": "gid://shopify/Collection/516153508129"
         },
         {
-          "id": "gid://shopify/Collection/516119691553"
+          "id": "gid://shopify/Collection/516153606433"
         },
         {
-          "id": "gid://shopify/Collection/516119953697"
+          "id": "gid://shopify/Collection/516153639201"
+        },
+                {
+          "id": "gid://shopify/Collection/516153671969"
         },
         {
-          "id": "gid://shopify/Collection/516120183073"
+          "id": "gid://shopify/Collection/516153704737"
         },
         {
-          "id": "gid://shopify/Collection/516120379681"
+          "id": "gid://shopify/Collection/516153737505"
         }
+
       ],
       "styles": {
         "container": {
@@ -4889,7 +4893,7 @@
     {
       "id": "category-grid-onbanner1",
       "type": "categoryGrid",
-      "order": 3,
+      "order": 4,
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
@@ -4929,9 +4933,9 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "230%",
+          "marginTop": "-51%",
           "zIndex": 10,
-          "paddingHorizontal": 25
+          "paddingHorizontal": "5%"
         },
         "title": {
           "display": "none",
@@ -5487,106 +5491,6 @@
         "content": {}
       },
       "order": 8
-    },
-    {
-      "id": "collection-carousel-grid-demo",
-      "type": "collectionImageCarouselGrid",
-      "visible": true,
-      "order": 9,
-      "title": "Explore Kiddo",
-      "carouselConfig": {
-        "cardHeight": 360,
-        "gap": 14,
-        "borderRadius": 20,
-        "paddingHorizontal": 16,
-        "showIndicators": true
-      },
-      "styles": {
-        "container": {
-          "backgroundColor": "#F5F5F5",
-          "paddingVertical": 12
-        },
-        "title": {
-          "fontSize": 15,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0,0,0,0.7)"
-        }
-      },
-      "cards": [
-        {
-          "id": "card-image-new-arrivals",
-          "layout": "image",
-          "title": "Newly Launched",
-          "subtitle": "Fresh arrivals just for you",
-          "collectionId": "gid://shopify/Collection/516137189665",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_3.png?v=1783577572",
-          "link": "/infinity/516137189665"
-        },
-        {
-          "id": "card-grid-categories",
-          "layout": "grid",
-          "title": "Top Categories",
-          "subtitle": "Browse by category",
-          "gradientColors": ["#FFF5F5", "#FFE0E0"],
-          "collectionId": "gid://shopify/Collection/507740487969",
-          "link": "/infinity/507740487969",
-          "gridConfig": {
-            "columns": 2,
-            "rows": 2,
-            "gap": 10,
-            "aspectRatio": 1,
-            "resizeMode": "cover",
-            "borderRadius": 14,
-            "showLabels": true
-          },
-          "gridItems": [
-            {
-              "id": "grid-item-gear",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_5.png?v=1783577695",
-              "label": "Baby Gear",
-              "collectionId": "gid://shopify/Collection/516137386273",
-              "link": "/infinity/516137386273"
-            },
-            {
-              "id": "grid-item-fashion",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_4_4fce33c1-6074-4518-865c-2be7969b1a74.png?v=1783577632",
-              "label": "Fashion",
-              "collectionId": "gid://shopify/Collection/516137320737",
-              "link": "/infinity/516137320737"
-            },
-            {
-              "id": "grid-item-gear-2",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_7_04c89d2c-a0df-4f96-b84e-be1e939410a3.png?v=1783577781",
-              "label": "Toys",
-              "collectionId": "gid://shopify/Collection/516137451809",
-              "link": "/infinity/516137451809"
-            },
-            {
-              "id": "grid-item-hopscotch",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690",
-              "label": "Hopscotch",
-              "collectionId": "gid://shopify/Collection/515304522017",
-              "link": "/infinity/515304522017"
-            }
-          ]
-        },
-        {
-          "id": "card-list-top-picks",
-          "layout": "list",
-          "title": "Top Picks",
-          "subtitle": "Best sellers this week",
-          "gradientColors": ["#F0F7FF", "#E0EFFE"],
-          "collectionId": "gid://shopify/Collection/507740487969",
-          "link": "/infinity/507740487969",
-          "listConfig": {
-            "limit": 4,
-            "showPrice": true,
-            "showAddToCart": true,
-            "imageSize": 72
-          }
-        }
-      ]
     },
     {
       "id": "all-infinite-grid-1",
@@ -7431,7 +7335,7 @@
         "pageBackgroundColor": "#FCF9F8",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_13_9c74b23a-5a25-4ac2-ae35-5ffc14f1ac3e.gif?v=1784691975",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_13_3.png?v=1786036031",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
