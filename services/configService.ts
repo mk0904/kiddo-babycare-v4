@@ -28,11 +28,8 @@ function getRemoteConfigApiUrl(): string {
 }
 
 /** TEMP: bundled `config/kiddoAppConfig.json` instead of kiddo-service → CDN. Set false before release. */
-const USE_LOCAL_KIDDO_APP_CONFIG = true;
+const USE_LOCAL_KIDDO_APP_CONFIG = false;
 
-/** Fallback JSON URL if remote-config API fails (offline / timeout). */
-export const KIDDO_APP_CONFIG_CDN_URL =
-  'https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddoAppConfig.json?v=1768512538';
 
 const defaultConfig: AppConfig = {
   version: 1,
@@ -106,42 +103,34 @@ class ConfigService {
       }
     }
 
-    const resolveUrl = async (): Promise<string> => {
+    const resolveUrlWithRetry = async (retries = 3, delayMs = 1000): Promise<string> => {
       if (remoteUrl?.trim()) return remoteUrl.trim();
 
-      const timeoutPromise = new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 2000)
-      );
-
-      try {
-        const url = await Promise.race([this.resolveConfigJsonUrl(), timeoutPromise]);
-        if (__DEV__) {
-          console.warn(`[KIDDO] config URL resolved via kiddo-service remote-config: ${url}`);
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const timeoutPromise = new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 5000)
+          );
+          const url = await Promise.race([this.resolveConfigJsonUrl(), timeoutPromise]);
+          if (__DEV__) {
+            console.warn(`[KIDDO] config URL resolved via kiddo-service remote-config (attempt ${attempt}): ${url}`);
+          }
+          return url;
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : String(e);
+          console.warn(`[ConfigService] remote-config resolution attempt ${attempt}/${retries} failed: ${message}`);
+          if (attempt < retries) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+          } else {
+            throw new Error(`Failed to resolve remote-config URL after ${retries} attempts: ${message}`);
+          }
         }
-        return url;
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (message === 'TIMEOUT') {
-          console.warn('[ConfigService] remote-config resolution timed out (2s), using fallback...');
-          this.resolveConfigJsonUrl()
-            .then((url) => {
-              if (__DEV__) {
-                console.warn('[ConfigService] Background remote-config resolved:', url);
-              }
-              this._loadRemoteConfig(url).catch(() => { });
-            })
-            .catch((bgError) => {
-              console.warn('[ConfigService] Background remote-config resolution failed:', bgError);
-            });
-        } else {
-          console.warn('[ConfigService] remote-config resolution failed, using fallback:', e);
-        }
-        return KIDDO_APP_CONFIG_CDN_URL;
       }
+      throw new Error('Failed to resolve remote-config URL');
     };
 
     this.isLoading = true;
-    this.loadPromise = resolveUrl().then((url) => this._loadRemoteConfig(url));
+    this.loadPromise = resolveUrlWithRetry().then((url) => this._loadRemoteConfig(url));
 
     try {
       return await this.loadPromise;

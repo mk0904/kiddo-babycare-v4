@@ -5467,6 +5467,110 @@
         }
       }
     },
+    {
+      "id": "collection-carousel-grid-demo",
+      "type": "collectionImageCarouselGrid",
+      "visible": true,
+      "order": 9,
+      "title": "Explore Kiddo",
+      "carouselConfig": {
+        "aspectRatio": 0.75,
+        "gap": 14,
+        "borderRadius": 20,
+        "paddingHorizontal": 16,
+        "showIndicators": true
+      },
+      "styles": {
+        "container": {
+          "backgroundColor": "#F5F5F5",
+          "paddingVertical": 12
+        },
+        "title": {
+          "fontSize": 15,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0,0,0,0.7)"
+        }
+      },
+      "cards": [
+        {
+          "id": "card-image-new-arrivals",
+          "layout": "image",
+          "title": "Newly Launched",
+          "subtitle": "Fresh arrivals just for you",
+          "collectionId": "gid://shopify/Collection/516137189665",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_3.png?v=1783577572",
+          "link": "/infinity/516137189665"
+        },
+        {
+          "id": "card-grid-categories",
+          "layout": "grid",
+          "title": "Top Categories",
+          "subtitle": "Browse by category",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_6_2.gif?v=1784691759",
+          "headerHeight": 80,
+          "gradientColors": ["#FFF5F5", "#FFE0E0"],
+          "collectionId": "gid://shopify/Collection/507740487969",
+          "link": "/infinity/507740487969",
+          "gridConfig": {
+            "columns": 2,
+            "rows": 2,
+            "gap": 10,
+            "aspectRatio": 0.5,
+            "resizeMode": "cover",
+            "borderRadius": 14,
+            "showLabels": true
+          },
+          "gridItems": [
+            {
+              "id": "grid-item-gear",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_5.png?v=1783577695",
+              "label": "Baby Gear",
+              "collectionId": "gid://shopify/Collection/516137386273",
+              "link": "/infinity/516137386273"
+            },
+            {
+              "id": "grid-item-fashion",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_4_4fce33c1-6074-4518-865c-2be7969b1a74.png?v=1783577632",
+              "label": "Fashion",
+              "collectionId": "gid://shopify/Collection/516137320737",
+              "link": "/infinity/516137320737"
+            },
+            {
+              "id": "grid-item-gear-2",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_7_04c89d2c-a0df-4f96-b84e-be1e939410a3.png?v=1783577781",
+              "label": "Toys",
+              "collectionId": "gid://shopify/Collection/516137451809",
+              "link": "/infinity/516137451809"
+            },
+            {
+              "id": "grid-item-hopscotch",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690",
+              "label": "Hopscotch",
+              "collectionId": "gid://shopify/Collection/515304522017",
+              "link": "/infinity/515304522017"
+            }
+          ]
+        },
+        {
+          "id": "card-list-top-picks",
+          "layout": "list",
+          "title": "Top Picks",
+          "subtitle": "Best sellers this week",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_3.png?v=1783577572",
+          "headerHeight": 80,
+          "gradientColors": ["#871F78", "#871F78"],
+          "collectionId": "gid://shopify/Collection/507740487969",
+          "link": "/infinity/507740487969",
+          "listConfig": {
+            "limit": 4,
+            "showPrice": true,
+            "showAddToCart": true,
+            "imageSize": 72
+          }
+        }
+      ]
+    },
     
     {
       "id": "all-infinite-grid-1",
@@ -7309,6 +7413,7 @@
         "label": "All",
         "pageBackgroundColor": "white",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_1.png?v=1786386864",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/10_6ac2ba8b-7a4b-4851-bd88-9e6f6394e507.png?v=1786463416",
         "header": {
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Header_1.png?v=1786392464",
           "labelColors": {
@@ -7321,6 +7426,7 @@
         "label": "Fashion",
         "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_1_dc5506d2-917c-4dd5-907a-d59d6c0d70fe.png?v=1786386561",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_1_dc5506d2-917c-4dd5-907a-d59d6c0d70fe.png?v=1786386561",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -7363,6 +7469,7 @@
         "label": "Baby Care",
         "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_afc3a323-5077-4443-b665-1f73e062796f.png?v=1786386625",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_afc3a323-5077-4443-b665-1f73e062796f.png?v=1786386625",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
@@ -7377,6 +7484,7 @@
         "label": "Toys",
         "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7.png?v=1786386703",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7.png?v=1786386703",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
@@ -7391,6 +7499,7 @@
         "label": "Baby Gear",
         "pageBackgroundColor": "#FCF9F8",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_1.png?v=1786386807",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_1.png?v=1786386807",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "white",
@@ -7405,6 +7514,7 @@
         "label": "Books",
         "pageBackgroundColor": "#FFFFFF",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_0774e16f-5695-4fe8-8f3d-e78d98578f64.png?v=1786390898",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_0774e16f-5695-4fe8-8f3d-e78d98578f64.png?v=1786390898",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "white",
@@ -7419,6 +7529,7 @@
         "label": "New Moms",
         "pageBackgroundColor": "#FCF9F8",
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_9549a214-7593-475e-a2c2-f2ea2d736cac.png?v=1786390844",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_9549a214-7593-475e-a2c2-f2ea2d736cac.png?v=1786390844",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFF5F7",

@@ -158,10 +158,13 @@ export default function HomeScreen() {
 
       const icon = (categoryDef as { icon?: string })?.icon;
       const iconUrl = typeof icon === 'string' ? icon : undefined;
+      const activeIcon = (categoryDef as { activeIcon?: string })?.activeIcon;
+      const activeIconUrl = typeof activeIcon === 'string' ? activeIcon : undefined;
       return {
         key,
         label: categoryDef?.label || key,
         iconUrl: iconUrl || undefined,
+        activeIconUrl: activeIconUrl || undefined,
       };
     });
   }, [configLoading]);

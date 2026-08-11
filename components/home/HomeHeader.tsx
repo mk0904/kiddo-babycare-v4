@@ -56,6 +56,8 @@ interface HomeHeaderProps {
     label: string;
     iconImage?: any;
     iconUrl?: string;
+    activeIconImage?: any;
+    activeIconUrl?: string;
   }>;
   selectedCategory?: string;
   onCategorySelect?: (key: string) => void;

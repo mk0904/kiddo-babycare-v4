@@ -1,14 +1,14 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -19,6 +19,8 @@ interface Category {
   label: string;
   iconImage?: any;
   iconUrl?: string;
+  activeIconImage?: any;
+  activeIconUrl?: string;
 }
 
 interface CategoryNavigationBarProps {
@@ -143,7 +145,37 @@ export function CategoryNavigationBar({
                 isSelected && customStyles.selectedIconContainer,
               ]}
             >
-              {category.iconUrl ? (
+              {isSelected ? (
+                category.activeIconUrl ? (
+                  <Image
+                    source={{ uri: category.activeIconUrl }}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.activeIconImage ? (
+                  <Image
+                    source={category.activeIconImage}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.iconUrl ? (
+                  <Image
+                    source={{ uri: category.iconUrl }}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.iconImage ? (
+                  <Image
+                    source={category.iconImage}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={defaultStyles.categoryIconText}>
+                    {category.label.charAt(0).toUpperCase()}
+                  </Text>
+                )
+              ) : category.iconUrl ? (
                 <Image
                   source={{ uri: category.iconUrl }}
                   style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
