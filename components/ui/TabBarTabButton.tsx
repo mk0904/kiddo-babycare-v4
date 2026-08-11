@@ -196,7 +196,7 @@ export function TabBarTabButton({
                         {icon}
                     </View>
                     <Reanimated.Text
-                        style={[styles.tabLabel, labelLensStyle]}
+                        style={[styles.tabLabel, labelLensStyle, { color: isFocused ? '#1A1A1A' : 'rgba(0, 0, 0, 0.5)' }]}
                         numberOfLines={1}
                         adjustsFontSizeToFit
                         minimumFontScale={0.85}
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     iconWrap: {
         alignItems: 'center',
         justifyContent: 'center',
-        width: 28,
-        height: 28,
+        width: 24,
+        height: 24,
         overflow: 'visible',
     },
     tabLabel: {
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         fontFamily: Fonts.LexendSemiBold,
         fontWeight: '600',
-        color: '#FAFAFA',
+        color: '#1A1A1A',
         textAlign: 'center',
         width: '100%',
     },

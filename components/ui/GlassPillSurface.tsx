@@ -13,6 +13,8 @@ const GLASS_CONTAINER_SPACING = 8;
 
 type GlassPillSurfaceProps = {
     borderRadius: number;
+    /** Override for bottom-left and bottom-right corners. Defaults to borderRadius. */
+    bottomRadius?: number;
     glassEffectStyle?: GlassStyle;
     tintColor?: string;
     /** Wrap in `GlassContainer` (matches tab bar grouping). */
@@ -33,17 +35,25 @@ export function isNativeGlassAvailable() {
  */
 export function GlassPillSurface({
     borderRadius,
+    bottomRadius,
     glassEffectStyle = 'regular',
     tintColor = GLASS_PILL_TINT,
     useContainer = false,
 }: GlassPillSurfaceProps) {
+    const br = bottomRadius !== undefined ? bottomRadius : borderRadius;
     if (Platform.OS === 'android') {
         return (
             <View
                 pointerEvents="none"
                 style={[
                     StyleSheet.absoluteFill,
-                    { borderRadius, overflow: 'hidden' },
+                    {
+                        borderTopLeftRadius: borderRadius,
+                        borderTopRightRadius: borderRadius,
+                        borderBottomLeftRadius: br,
+                        borderBottomRightRadius: br,
+                        overflow: 'hidden',
+                    },
                 ]}
             >
                 <BlurView
@@ -68,7 +78,13 @@ export function GlassPillSurface({
                 pointerEvents="none"
                 style={[
                     StyleSheet.absoluteFill,
-                    { borderRadius, backgroundColor: tintColor },
+                    {
+                        borderTopLeftRadius: borderRadius,
+                        borderTopRightRadius: borderRadius,
+                        borderBottomLeftRadius: br,
+                        borderBottomRightRadius: br,
+                        backgroundColor: tintColor,
+                    },
                 ]}
             />
         );
@@ -77,11 +93,20 @@ export function GlassPillSurface({
     const glass = (
         <GlassView
             pointerEvents="none"
-            {...glassShapeProps(borderRadius)}
-            style={[StyleSheet.absoluteFill, { borderRadius }]}
+            borderRadius={borderRadius}
+            borderCurve="continuous"
+            style={[
+                StyleSheet.absoluteFill,
+                {
+                    borderTopLeftRadius: borderRadius,
+                    borderTopRightRadius: borderRadius,
+                    borderBottomLeftRadius: br,
+                    borderBottomRightRadius: br,
+                },
+            ]}
             glassEffectStyle={glassEffectStyle}
             tintColor={tintColor}
-            colorScheme="dark"
+            colorScheme="light"
         />
     );
 

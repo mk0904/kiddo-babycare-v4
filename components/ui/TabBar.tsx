@@ -1,7 +1,7 @@
-import AccountIcon from '@/assets/icons/account.svg';
-import CategoriesIcon from '@/assets/icons/categories.svg';
-import HomeIcon from '@/assets/icons/home.svg';
-import TicketIcon from '@/assets/icons/ticket.svg';
+import HomeNewIcon from '@/assets/icons/home-new.svg';
+import CategoriesNewIcon from '@/assets/icons/categories-new.svg';
+import TicketingNewIcon from '@/assets/icons/ticketing-new.svg';
+import WishlistNewIcon from '@/assets/icons/wishlist-new.svg';
 import FloatingCartButton from '@/components/ui/FloatingCartButton';
 import { GlassPillSurface } from '@/components/ui/GlassPillSurface';
 import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
@@ -23,6 +23,7 @@ import { GlassContainer, GlassView } from 'expo-glass-effect';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
+    Image,
     Platform,
     StyleSheet,
     View,
@@ -96,13 +97,29 @@ function clampValue(value: number, min: number, max: number) {
 
 const SCREENS_WITH_TAB_BAR = ['index', 'category', 'ticketing', 'account'];
 
-type TabIconComponent = React.ComponentType<{ width?: number; height?: number }>;
+type TabIconComponent = React.ComponentType<{ width?: number; height?: number; color?: string; isFocused?: boolean }>;
 
 const TAB_ICONS: Record<string, TabIconComponent> = {
-    index: HomeIcon,
-    category: CategoriesIcon,
-    ticketing: TicketIcon,
-    account: AccountIcon,
+    index: ({ color }) => (
+        <View style={{ width: 24, height: 24, position: 'relative' }}>
+            <HomeNewIcon width={18} height={18.733} color={color} style={{ position: 'absolute', top: 2.27, left: 3 }} />
+        </View>
+    ),
+    category: ({ color }) => (
+        <View style={{ width: 24, height: 24, position: 'relative' }}>
+            <CategoriesNewIcon width={18} height={18.733} color={color} style={{ position: 'absolute', top: 2.27, left: 3 }} />
+        </View>
+    ),
+    ticketing: ({ color }) => (
+        <View style={{ width: 24, height: 24, position: 'relative' }}>
+            <TicketingNewIcon width={18} height={18.733} color={color} style={{ position: 'absolute', top: 2.27, left: 3 }} />
+        </View>
+    ),
+    account: ({ color }) => (
+        <View style={{ width: 24, height: 24, position: 'relative' }}>
+            <WishlistNewIcon width={18} height={18.733} color={color} style={{ position: 'absolute', top: 2.27, left: 3 }} />
+        </View>
+    ),
 };
 
 const DEFAULT_TAB_LABELS: Record<string, string> = {
@@ -535,7 +552,7 @@ export const TabBar = (props: BottomTabBarProps) => {
     const restIndicatorShape = getIndicatorVerticalMetrics(tabBarHeight);
 
     const renderNavGlassBackground = (borderRadius: number) => (
-        <GlassPillSurface borderRadius={borderRadius} glassEffectStyle="regular" />
+        <GlassPillSurface borderRadius={borderRadius} bottomRadius={0} glassEffectStyle="regular" />
     );
 
     const renderSlidingIndicator = () => {
@@ -546,9 +563,9 @@ export const TabBar = (props: BottomTabBarProps) => {
                     style={[
                         indicatorGlassAnimatedStyle,
                         {
-                            backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)',
                             borderWidth: 1.5,
-                            borderColor: 'rgba(255, 255, 255, 0.45)',
+                            borderColor: 'rgba(0, 0, 0, 0.12)',
                         }
                     ]}
                 />
@@ -564,7 +581,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                         style={StyleSheet.absoluteFill}
                         glassEffectStyle={indicatorReady ? 'clear' : 'none'}
                         isInteractive={false}
-                        tintColor="transparent"
+                        tintColor="rgba(0, 0, 0, 0.1)"
                         colorScheme="light"
                     />
                 </Reanimated.View>
@@ -572,10 +589,11 @@ export const TabBar = (props: BottomTabBarProps) => {
         );
     };
 
-    const renderTabIcon = (routeName: string) => {
+    const renderTabIcon = (routeName: string, isFocused: boolean) => {
         const IconComponent = TAB_ICONS[routeName];
         if (!IconComponent) return null;
-        return <IconComponent width={TAB_ICON_SIZE} height={TAB_ICON_SIZE} />;
+        const color = isFocused ? '#000000' : 'rgba(0, 0, 0, 0.5)';
+        return <IconComponent width={24} height={24} color={color} isFocused={isFocused} />;
     };
 
     const getTabLabel = (routeName: string, optionsTitle?: string) => {
@@ -657,7 +675,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                         onLongPress={onLongPress}
                         onLayout={handleTabLayout(visibleIndex)}
                         onIconLayout={handleIconLayout(visibleIndex)}
-                        icon={renderTabIcon(route.name)}
+                        icon={renderTabIcon(route.name, isFocused)}
                         label={getTabLabel(route.name, options.title)}
                     />
                 );
@@ -688,7 +706,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                     <View
                         style={[
                             styles.floatingOuter,
-                            { paddingBottom: bottomInset + FLOATING_BOTTOM_MARGIN },
+                            { paddingBottom: 0 },
                         ]}
                     >
                         <Reanimated.View
@@ -697,8 +715,11 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 navAnimatedStyle,
                                 {
                                     width: pillWidth,
-                                    height: tabBarHeight,
-                                    borderRadius: navBarBorderRadius,
+                                    height: tabBarHeight + bottomInset,
+                                    borderTopLeftRadius: navBarBorderRadius,
+                                    borderTopRightRadius: navBarBorderRadius,
+                                    borderBottomLeftRadius: 0,
+                                    borderBottomRightRadius: 0,
                                 },
                             ]}
                         >
@@ -706,12 +727,18 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 <View
                                     style={[
                                         StyleSheet.absoluteFill,
-                                        { borderRadius: navBarBorderRadius, overflow: 'hidden' },
+                                        {
+                                            borderTopLeftRadius: navBarBorderRadius,
+                                            borderTopRightRadius: navBarBorderRadius,
+                                            borderBottomLeftRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                            overflow: 'hidden',
+                                        },
                                     ]}
                                     pointerEvents="box-none"
                                 >
                                     {renderNavGlassBackground(navBarBorderRadius)}
-                                    <View style={styles.tabsRow} pointerEvents="box-none">
+                                    <View style={[styles.tabsRow, { bottom: bottomInset }]} pointerEvents="box-none">
                                         {renderTabButtons()}
                                         {renderSlidingIndicator()}
                                     </View>
@@ -720,13 +747,18 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 <GlassContainer
                                     style={[
                                         StyleSheet.absoluteFill,
-                                        { borderRadius: navBarBorderRadius },
+                                        {
+                                            borderTopLeftRadius: navBarBorderRadius,
+                                            borderTopRightRadius: navBarBorderRadius,
+                                            borderBottomLeftRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                        },
                                     ]}
                                     spacing={GLASS_CONTAINER_SPACING}
                                     pointerEvents="box-none"
                                 >
                                     {renderNavGlassBackground(navBarBorderRadius)}
-                                    <View style={styles.tabsRow} pointerEvents="box-none">
+                                    <View style={[styles.tabsRow, { bottom: bottomInset }]} pointerEvents="box-none">
                                         {renderTabButtons()}
                                         {renderSlidingIndicator()}
                                     </View>

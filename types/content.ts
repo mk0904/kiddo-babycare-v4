@@ -367,6 +367,10 @@ export interface CollectionImageCarouselGridCardConfig {
   title?: string;
   /** Optional subtitle shown below the card title. */
   subtitle?: string;
+  /** Optional header image/GIF URL shown in the card header (replaces text header if provided). */
+  headerImage?: string;
+  /** Custom header height in px (default 52). */
+  headerHeight?: number;
   /** Optional press-through link (used for image cards and card-level header taps). */
   link?: string;
   /** Card background color (default white). */
@@ -439,7 +443,9 @@ export interface CollectionImageCarouselGridBlock extends BaseBlock {
   carouselConfig?: {
     /** Fixed card width in px. Default ~85% of screen width. */
     cardWidth?: number;
-    /** Fixed card height in px. Default 340. */
+    /** Card aspect ratio (width / height). If provided, cardHeight is calculated as cardWidth / aspectRatio. Default 0.85 (approx 360/424). */
+    aspectRatio?: number;
+    /** Fixed card height in px (deprecated - use aspectRatio instead for responsive design). Default 340. */
     cardHeight?: number;
     /** Gap between cards in px. Default 12. */
     gap?: number;

@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
@@ -9,6 +8,7 @@ import {
 } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -111,7 +111,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     }, [card.gridItems, columns, maxRows]);
 
     const CARD_PADDING = 12;
-    const HEADER_HEIGHT = (card.title || card.subtitle) ? 52 : 0;
+    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
     const FOOTER_HEIGHT = 36;
     const LABEL_HEIGHT = showLabels ? 22 : 0; // per-row label area
 
@@ -154,15 +154,26 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
 
     const cardContent = (
         <>
-            {(card.title || card.subtitle) && (
-                <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.85} style={s.cardHeader}>
-                    <View style={s.cardHeaderTexts}>
-                        {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                        {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
-                    </View>
-                    <View style={s.cardHeaderArrow}>
-                        <Text style={s.cardHeaderArrowText}>›</Text>
-                    </View>
+            {(card.title || card.subtitle || card.headerImage) && (
+                <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.85} style={card.headerImage ? [s.cardHeaderImageContainer, { height: HEADER_HEIGHT }] : [s.cardHeader, { minHeight: HEADER_HEIGHT }]}>
+                    {card.headerImage ? (
+                        <OptimizedImage
+                            source={{ uri: shopifyImageUrl(card.headerImage, Math.round(cardWidth * 2)) }}
+                            style={[s.cardHeaderImage, { height: HEADER_HEIGHT }]}
+                            contentFit="cover"
+                            transition={0}
+                        />
+                    ) : (
+                        <View style={s.cardHeaderTexts}>
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
+                           {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                        </View>
+                    )}
+                    {!card.headerImage && (
+                        <View style={s.cardHeaderArrow}>
+                            <Text style={s.cardHeaderArrowText}>›</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             )}
             <View style={[s.gridBody, { padding: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden', justifyContent: 'center' }]}>
@@ -232,6 +243,8 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
     const [loading, setLoading] = useState(!card.products?.length && !!card.collectionId);
     const router = useRouter();
 
+    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
+
     useEffect(() => {
         if (card.products?.length) {
             setProducts(card.products.slice(0, limit));
@@ -277,20 +290,31 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
 
     const listCardContent = (
         <>
-            {(card.title || card.subtitle) && (
-                <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.85} style={s.cardHeader}>
-                    <View style={s.cardHeaderTexts}>
-                        {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                        {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
-                    </View>
-                    <View style={s.cardHeaderArrow}>
-                        <Text style={s.cardHeaderArrowText}>›</Text>
-                    </View>
+            {(card.title || card.subtitle || card.headerImage) && (
+                <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.85} style={card.headerImage ? [s.cardHeaderImageContainer, { height: HEADER_HEIGHT }] : [s.cardHeader, { minHeight: HEADER_HEIGHT }]}>
+                    {card.headerImage ? (
+                        <OptimizedImage
+                            source={{ uri: shopifyImageUrl(card.headerImage, Math.round(cardWidth * 2)) }}
+                            style={[s.cardHeaderImage, { height: HEADER_HEIGHT }]}
+                            contentFit="cover"
+                            transition={0}
+                        />
+                    ) : (
+                        <View style={s.cardHeaderTexts}>
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
+                            {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                        </View>
+                    )}
+                    {!card.headerImage && (
+                        <View style={s.cardHeaderArrow}>
+                            <Text style={s.cardHeaderArrowText}>›</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             )}
 
             {(() => {
-                const HEADER_HEIGHT = (card.title || card.subtitle) ? 52 : 0;
+                const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
                 const FOOTER_HEIGHT = 36;
                 const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
 
@@ -417,7 +441,8 @@ export function CollectionImageCarouselGrid({ block, onPress }: Props) {
     const { cards = [], title, carouselConfig = {}, styles: blockStyles } = block;
 
     const cardWidth = carouselConfig.cardWidth ?? Math.round(SCREEN_WIDTH * 0.85);
-    const cardHeight = carouselConfig.cardHeight ?? 340;
+    const aspectRatio = carouselConfig.aspectRatio;
+    const cardHeight = aspectRatio ? Math.round(cardWidth / aspectRatio) : (carouselConfig.cardHeight ?? 340);
     const gap = carouselConfig.gap ?? 12;
     const borderRadius = carouselConfig.borderRadius ?? 20;
     const paddingHorizontal = carouselConfig.paddingHorizontal ?? 16;
@@ -522,6 +547,15 @@ const s = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 10,
         borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border,
         minHeight: 52,
+    },
+    cardHeaderImageContainer: {
+        height: 52,
+        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border,
+    },
+    cardHeaderImage: {
+        flex: 1,
+        height: 52,
+        borderRadius: 0,
     },
     cardHeaderTexts: { flex: 1 },
     cardTitle: { fontFamily: Fonts.LexendBold, fontSize: 15, color: Colors.text },

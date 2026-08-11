@@ -2868,7 +2868,7 @@
         {
           "collectionId": "gid://shopify/Collection/516936499489",
           "label": "NewBorn Gifts",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_8_c1d1c050-8e60-4bc5-99e0-d14fd4d7a93a.png?v=1785920548"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_60.png?v=1786440420"
         },
         {
           "collectionId": "gid://shopify/Collection/516979753249",
@@ -3106,7 +3106,7 @@
         {
           "collectionId": "gid://shopify/Collection/517171118369",
           "label": "Boots & Loafers",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_1_73e17ba1-e559-4fa0-bb4a-f8bb3561639e.png?v=1785931628"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_15_2e2d2bf2-bf6b-4685-9f95-99b1dcc3bd78.png?v=1786005359"
         },
         {
           "collectionId": "gid://shopify/Collection/517171347745",
@@ -4220,7 +4220,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Kiddo_SaturdayOffer_AppAnim_Sample2_Compressed_2.gif?v=1784313711",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Banners-Short_4.gif?v=1786392416",
           "link": {
             "type": "collection",
             "collection": {
@@ -4233,7 +4233,7 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 1,
+        "height": 0.6,
         "resizeMode": "cover"
       },
       "styles": {
@@ -4282,7 +4282,7 @@
           "paddingHorizontal": 10,
           "paddingVertical": 0,
           "marginTop": 0,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "imageContainer": {},
         "image": {
@@ -4301,11 +4301,11 @@
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
-        "layout": "featured-left",
+        "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": 10,
-        "limit": 9,
+        "rowGap": -10,
+        "limit": 3,
         "aspectRatio": 1,
         "showLabels": true,
         "borderRadius": 12,
@@ -4313,28 +4313,32 @@
       },
       "collectionIds": [
                 {
-          "id": "gid://shopify/Collection/516184113441"
+          "id": "gid://shopify/Collection/517373296929"
         },
         {
-          "id": "gid://shopify/Collection/515917250849"
+          "id": "gid://shopify/Collection/517373362465"
         },
         {
-          "id": "gid://shopify/Collection/515916923169"
-        },
-                {
-          "id": "gid://shopify/Collection/515916562721"
+          "id": "gid://shopify/Collection/517373428001"
         },
         {
-          "id": "gid://shopify/Collection/515916136737"
+
+         "id": "gid://shopify/Collection/516059070753"
+        },
+        {
+          "id": "gid://shopify/Collection/516059169057"
+        },
+        {
+          "id": "gid://shopify/Collection/516059267361"
         }
 
       ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-72%",
+          "marginTop": "-40%",
           "zIndex": 10,
-          "paddingHorizontal": 15,
+          "paddingHorizontal": 35,
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -4368,7 +4372,7 @@
       "title": "Trending",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 3,
+        "numColumns": 4,
         "colGap": 12,
         "limit": 9,
         "aspectRatio": 1,
@@ -4400,9 +4404,6 @@
         },
         {
           "id": "gid://shopify/Collection/516861460769"
-        },
-        {
-          "id": "gid://shopify/Collection/517101256993"
         }
       ],
       "styles": {
@@ -4410,19 +4411,18 @@
           "marginTop": 40,
           "paddingHorizontal": 16,
           "paddingTop": 0,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
+          "fontFamily": "lexend-semibold",
+          "fontWeight": "100",
           "fontSize": 12,
           "lineHeight": 16,
           "letterSpacing": 0,
@@ -4453,76 +4453,10 @@
           "paddingHorizontal": 0,
           "paddingTop": -15,
           "paddingBottom": 0,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "wrapper": {
           "marginHorizontal": 0
-        }
-      }
-    },
-    {
-      "id": "frequently-bought-carousel",
-      "type": "categoryGrid",
-      "order": 6,
-      "visible": true,
-      "title": "Fashion",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 4,
-        "colGap": 12,
-        "rowGap": 12,
-        "limit": 12,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/517136646433"
-        },
-        {
-          "id": "gid://shopify/Collection/517136679201"
-        },
-        {
-          "id": "gid://shopify/Collection/517136711969"
-        },
-        {
-          "id": "gid://shopify/Collection/517136744737"
-        },
-        {
-          "id": "gid://shopify/Collection/517136875809"
-        },
-        {
-          "id": "gid://shopify/Collection/517137039649"
-        },
-        {
-          "id": "gid://shopify/Collection/517136941345"
-        },
-        {
-          "id": "gid://shopify/Collection/517137006881"
-        }
-      ],
-      "styles": {
-        "container": {
-          "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
-        },
-        "title": {
-          "marginBottom": 0,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
         }
       }
     },
@@ -4559,15 +4493,14 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display":"none",
@@ -4625,19 +4558,83 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display":"none",
           "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "frequently-bought-carousel",
+      "type": "categoryGrid",
+      "order": 6,
+      "visible": true,
+      "title": "Fashion",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 12,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/517136646433"
+        },
+        {
+          "id": "gid://shopify/Collection/517136679201"
+        },
+        {
+          "id": "gid://shopify/Collection/517136711969"
+        },
+        {
+          "id": "gid://shopify/Collection/517136744737"
+        },
+        {
+          "id": "gid://shopify/Collection/517136875809"
+        },
+        {
+          "id": "gid://shopify/Collection/517137039649"
+        },
+        {
+          "id": "gid://shopify/Collection/517136941345"
+        },
+        {
+          "id": "gid://shopify/Collection/517137006881"
+        }
+      ],
+      "styles": {
+        "container": {
+          "paddingHorizontal": 16,
+          "backgroundColor": "white"
+        },
+        "title": {
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        },
+        "text": {
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -4700,15 +4697,14 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -4745,7 +4741,7 @@
       "styles": {
         "container": {
           "marginTop": 0,
-          "backgroundColor": "#FCF9F8",
+          "backgroundColor": "white",
           "borderBottomLeftRadius": 800,
           "borderBottomRightRadius": 800
         },
@@ -4768,6 +4764,12 @@
       "visible": true,
       "order": 4,
       "data": [
+        {
+          "id": "brand-aretto",
+          "collectionId": "gid://shopify/Collection/517388566817",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_7.png?v=1786434285"
+        },
         {
           "id": "brand-adidas",
           "collectionId": "gid://shopify/Collection/517135008033",
@@ -4843,8 +4845,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         }
       }
     },
@@ -4854,7 +4855,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Final_for_farzan_29_July.gif?v=1785266750",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/banner_character_shop_3.gif?v=1786427595",
           "link": {
             "type": "collection",
             "collection": {
@@ -4874,7 +4875,7 @@
         "container": {
           "marginTop": 15,
           "paddingHorizontal": 10,
-          "backgroundColor": "#FCF9F8",
+          "backgroundColor": "white",
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -4931,7 +4932,7 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "230%",
+          "marginTop": "173%",
           "zIndex": 10,
           "paddingHorizontal": 25
         },
@@ -4942,8 +4943,7 @@
           "fontSize": 18,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display": "none",
@@ -5015,18 +5015,17 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5070,18 +5069,17 @@
         "container": {
           "marginTop":30,
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5128,18 +5126,17 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5189,18 +5186,17 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5257,11 +5253,10 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5311,18 +5306,17 @@
         "container": {
           "paddingHorizontal": 16,
           "paddingBottom": 10,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5382,7 +5376,7 @@
       "styles": {
         "container": {
           "paddingVertical": 8,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "fontFamily": "fredoka-semibold",
@@ -5403,10 +5397,10 @@
       "title": "Brand store",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 3,
+        "numColumns": 4,
         "colGap": 12,
         "rowGap": 12,
-        "limit": 6,
+        "limit": 12,
         "aspectRatio": 1,
         "resizeMode": "cover",
         "showLabels": true,
@@ -5431,22 +5425,40 @@
         {
           "id": "gid://shopify/Collection/516662296865"
         }
+        ,
+        {
+          "id": "gid://shopify/Collection/517388796193"
+        },
+        {
+          "id": "gid://shopify/Collection/517388927265"
+        },
+        {
+          "id": "gid://shopify/Collection/517389156641"
+        },
+        {
+          "id": "gid://shopify/Collection/517389484321"
+        },
+        {
+          "id": "gid://shopify/Collection/517389418785"
+        },
+        {
+          "id": "gid://shopify/Collection/517389582625"
+        }
       ],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "fontFamily": "lexend-semibold",
           "color": "#414651",
           "fontSize": 12,
           "lineHeight": 16,
@@ -5455,41 +5467,7 @@
         }
       }
     },
-    {
-      "id": "all-product-list-1",
-      "type": "horizontalProductList",
-      "collectionIds": [
-        "gid://shopify/Collection/517213094177"
-      ],
-      "title": "Featured Products",
-      "productListConfig": {
-        "limit": 20,
-        "showSeeAll": true,
-        "seeAllText": "View All",
-        "itemsPerView": 2.1
-      },
-      "styles": {
-        "container": {
-          "paddingTop": 10,
-          "paddingHorizontal": 16,
-          "backgroundColor": "#FCF9F8"
-        },
-        "title": {
-          "marginBottom": 0,
-          "marginTop": 20,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "titleContainer": {
-          "marginBottom": 0
-        },
-        "content": {}
-      },
-      "order": 8
-    },
+    
     {
       "id": "all-infinite-grid-1",
       "type": "infiniteProductGrid",
@@ -5511,7 +5489,7 @@
         "container": {
           "paddingTop": 10,
           "paddingBottom": 20,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "marginBottom": -15,
@@ -5519,8 +5497,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         }
       },
       "order": 21
@@ -7330,21 +7307,10 @@
     "items": {
       "all": {
         "label": "All",
-        "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/shopall-selected.png?v=1772801295",
+        "pageBackgroundColor": "white",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_1.png?v=1786386864",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/kiddo_app_banners_25_3.png?v=1786128868",
-          "labelColors": {
-            "selected": "#363636",
-            "unselected": "#363636"
-          }
-        }
-      },
-      "Pharmacy": {
-        "label": "Pharmacy",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Jun_8_2026_02_07_05_PM.png?v=1780907853",
-        "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_header.png?v=1780071110",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Header_1.png?v=1786392464",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -7354,7 +7320,7 @@
       "Fashion": {
         "label": "Fashion",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_3.png?v=1782390778",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_1_dc5506d2-917c-4dd5-907a-d59d6c0d70fe.png?v=1786386561",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -7396,7 +7362,7 @@
       "babycare": {
         "label": "Baby Care",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_5.png?v=1782395143",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_afc3a323-5077-4443-b665-1f73e062796f.png?v=1786386625",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
@@ -7410,7 +7376,7 @@
       "toys": {
         "label": "Toys",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/toys-selected.png?v=1772801403",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7.png?v=1786386703",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
@@ -7424,10 +7390,10 @@
       "babygear": {
         "label": "Baby Gear",
         "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_2.png?v=1782390992",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_1.png?v=1786386807",
         "header": {
           "textColor": "#363636",
-          "backgroundColor": "#FCF9F8",
+          "backgroundColor": "white",
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Gear_Header.png?v=1773995483",
           "labelColors": {
             "selected": "#363636",
@@ -7438,10 +7404,10 @@
       "books": {
         "label": "Books",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_-_Girls_1_2.png?v=1782391522",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_0774e16f-5695-4fe8-8f3d-e78d98578f64.png?v=1786390898",
         "header": {
           "textColor": "#363636",
-          "backgroundColor": "#FCF9F8",
+          "backgroundColor": "white",
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Books_Header.png?v=1776949655",
           "labelColors": {
             "selected": "#363636",
@@ -7452,7 +7418,7 @@
       "newmoms": {
         "label": "New Moms",
         "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Moms.png?v=1775484570",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_9549a214-7593-475e-a2c2-f2ea2d736cac.png?v=1786390844",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFF5F7",
@@ -8346,7 +8312,7 @@
       "styles": {
         "container": {
           "paddingVertical": 8,
-          "backgroundColor": "#FCF9F8"
+          "backgroundColor": "white"
         },
         "title": {
           "fontFamily": "fredoka-semibold",
