@@ -1,12 +1,12 @@
 import { Colors, Fonts } from '@/constants/theme';
 import {
-  resolveFixedImageHeight,
-  resolveImageHeightFromAspect,
-  resolveRowWidths,
+    resolveFixedImageHeight,
+    resolveImageHeightFromAspect,
+    resolveRowWidths,
 } from '@/utils/gridCellSizing';
+import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo } from 'react';
-import { shopifyImageUrl } from '@/utils/shopifyIds';
 import {
     Dimensions,
     Image,
@@ -97,6 +97,7 @@ export interface FlexibleGridProps {
   showLabels?: boolean;
   borderRadius?: number;
   labelStyle?: Record<string, any>; // Custom styles for labels (from blockStyles.text)
+  cellBackgroundColor?: string; // Background color for grid cells (default: white)
   firstItemSpan?: {
     colSpan?: number; // How many columns the first item should span (default: based on layout)
     rowSpan?: number; // How many rows the first item should span (default: based on layout)
@@ -120,6 +121,7 @@ export function FlexibleGrid({
   showLabels = true,
   borderRadius = 12,
   labelStyle,
+  cellBackgroundColor,
   firstItemSpan,
   rowAlign = 'top',
 }: FlexibleGridProps) {
@@ -360,6 +362,7 @@ export function FlexibleGrid({
           borderRadius,
           height: imageHeight,
           width: size.width,
+          backgroundColor: cellBackgroundColor || Colors.backgroundWhite,
         }]}>
           {item.imageUrl ? (
             <ExpoImage

@@ -100,6 +100,9 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     loadCollections();
   }, [loadCollections]);
 
+  // Get grid config with defaults (matching ImageGrid pattern)
+  const numColumns = gridConfig.numColumns ?? 3;
+
   // Get all categories from config
   const categories = useMemo(() => {
     const configCategories = configService.getCategories();
@@ -241,7 +244,6 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit, block.id, numColumns]);
 
   // Get grid config with defaults (matching ImageGrid pattern)
-  const numColumns = gridConfig.numColumns ?? 3;
   const colGap = gridConfig.colGap ?? gridConfig.gap ?? 12;
   const rowGap = gridConfig.rowGap ?? gridConfig.gap ?? 12;
   const aspectRatio = gridConfig.aspectRatio ?? 1;
@@ -255,6 +257,9 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   const showLabels = shouldHideLabels ? false : (gridConfig.showLabels !== false);
   
   const borderRadius = gridConfig.borderRadius ?? 12;
+  
+  // Get cell background color from config (fallback to white)
+  const cellBackgroundColor = (blockStyles as any)?.cell?.backgroundColor || (gridConfig as any)?.cellBackgroundColor;
   
   // Get container styles (matching ImageGrid pattern)
   // Extract paddingHorizontal before spreading, so we can use it for FlexibleGrid
@@ -295,7 +300,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   };
 
   // Calculate proportional scale if enabled (base width 390px - typical phone)
-  const scale = gridConfig.proportionalScale ? width / 390 : 1;
+  const scale = (gridConfig as any).proportionalScale ? width / 390 : 1;
   const scaledColGap = colGap * scale;
   const scaledRowGap = rowGap * scale;
 
@@ -341,6 +346,7 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         showLabels={showLabels}
         borderRadius={borderRadius}
         labelStyle={textStyle}
+        cellBackgroundColor={cellBackgroundColor}
         firstItemSpan={gridConfig.firstItemSpan}
         rowAlign={gridConfig.rowAlign}
         itemHeight={gridConfig.itemHeight}

@@ -3,7 +3,7 @@
     "visibleTabs": [
       "index",
       "category",
-      "wishlist",
+      "ticketing",
       "account"
     ],
     "items": {
@@ -14,11 +14,8 @@
       },
       "category": {
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-inactive-fill.svg",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active.svg",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/category-active-fill.svg",
         "label": "Category"
-      },
-      "wishlist": {
-        "label": "Wishlist"
       },
       "ticketing": {
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/heart-inactive-fill.svg",
@@ -4212,7 +4209,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_banner_GIF_29_July_2.gif?v=1785863063",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_banner_-_medium_1.gif?v=1786553696",
           "link": {
             "type": "collection",
             "collection": {
@@ -4225,12 +4222,13 @@
         "autoPlay": false,
         "autoPlayInterval": 3000,
         "loop": false,
-        "height": 0.7,
+        "height": 0.8,
         "resizeMode": "cover"
       },
       "styles": {
         "container": {
           "marginTop": 0,
+          "backgroundColor": "#F5F5F5",
           "borderBottomLeftRadius": 800,
           "borderBottomRightRadius": 800
         },
@@ -4295,37 +4293,38 @@
         "layout": "uniform",
         "numColumns": 3,
         "colGap": 12,
-        "rowGap": -10,
-        "limit": 3,
+        "rowGap": 10,
+        "limit": 6,
         "aspectRatio": 1,
         "showLabels": true,
         "borderRadius": 12,
-        "proportionalScale": true
+        "proportionalScale": true,
+        "cellBackgroundColor": "#FFFFFF"
       },
       "collectionIds": [
+
         {
-          "id": "gid://shopify/Collection/516881449249"
+          "id": "gid://shopify/Collection/517448892705"
         },
         {
-          "id": "gid://shopify/Collection/516881514785"
+          "id": "gid://shopify/Collection/517299568929"
         },
         {
-          "id": "gid://shopify/Collection/516881416481"
+          "id": "gid://shopify/Collection/517303402785"
         },
         {
-          "id": "gid://shopify/Collection/516059070753"
+          "id": "gid://shopify/Collection/517393547553"
         },
         {
-          "id": "gid://shopify/Collection/516059169057"
+          "id": "gid://shopify/Collection/517398855969"
         },
         {
-          "id": "gid://shopify/Collection/516059267361"
-        }
-      ],
+          "id": "gid://shopify/Collection/517399118113"
+        }      ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-38%",
+          "marginTop": "-63%",
           "zIndex": 10,
           "paddingHorizontal": 40,
           "borderBottomLeftRadius": 20,
@@ -4337,7 +4336,7 @@
           "marginTop": 20,
           "fontSize": 18,
           "lineHeight": 20,
-          "fontWeight": "700", 
+          "fontWeight": "700",
           "fontFamily": "lexend",
           "color": "rgba(0, 0, 0, 0.3)"
         },
@@ -4880,7 +4879,7 @@
     {
       "id": "category-grid-onbanner1",
       "type": "categoryGrid",
-      "order": 3,
+      "order": 4,
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
@@ -4920,9 +4919,9 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "173%",
+          "marginTop": "-50%",
           "zIndex": 10,
-          "paddingHorizontal": 25
+          "paddingHorizontal": "6%"
         },
         "title": {
           "display": "none",
@@ -7274,7 +7273,7 @@
   "categories": {
     "defaultPageBackgroundColor": "#FCF9F8",
     "navigationBar": {
-      "iconSize": 50,
+      "iconSize": 40,
       "iconContainerSize": 70
     },
     "order": [
@@ -7290,9 +7289,9 @@
       "all": {
         "label": "All",
         "pageBackgroundColor": "white",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_1.png?v=1786386864",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_7ef00c7d-1a35-45ef-88e4-24ed0ffd6de8.png?v=1786550529",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Header_29_July_2026_1_a6018398-341b-42e4-b669-20ffd9ad8a7b.png?v=1786506937",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_Header_3.png?v=1786553751",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -7302,7 +7301,7 @@
       "Fashion": {
         "label": "Fashion",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_1_dc5506d2-917c-4dd5-907a-d59d6c0d70fe.png?v=1786386561",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_2.png?v=1786547765",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -7344,7 +7343,7 @@
       "babycare": {
         "label": "Baby Care",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_afc3a323-5077-4443-b665-1f73e062796f.png?v=1786386625",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_2.png?v=1786552335",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
@@ -7358,7 +7357,7 @@
       "toys": {
         "label": "Toys",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7.png?v=1786386703",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_3.png?v=1786552850",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
@@ -7372,7 +7371,7 @@
       "babygear": {
         "label": "Baby Gear",
         "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_1.png?v=1786386807",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/18_37f6b260-5d73-4c95-9631-9934026a7c0d.png?v=1786547835",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "white",
@@ -7386,7 +7385,7 @@
       "books": {
         "label": "Books",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_0774e16f-5695-4fe8-8f3d-e78d98578f64.png?v=1786390898",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_4ba089d0-5113-42df-9305-da5bf4394e51.png?v=1786547853",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "white",
@@ -7400,7 +7399,7 @@
       "newmoms": {
         "label": "New Moms",
         "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_9549a214-7593-475e-a2c2-f2ea2d736cac.png?v=1786390844",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_2043751a-077d-420f-84ce-d7fae6fabd2f.png?v=1786547877",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFF5F7",

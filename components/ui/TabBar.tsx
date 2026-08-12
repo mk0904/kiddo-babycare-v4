@@ -308,7 +308,7 @@ export const TabBar = (props: BottomTabBarProps) => {
     // Smooth scroll progress using useDerivedValue
     const smoothProgress = useDerivedValue(() => {
         return withTiming(scrollProgressSv.value, {
-            duration: 300,
+            duration: 200,
         });
     });
 
