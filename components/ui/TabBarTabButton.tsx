@@ -10,15 +10,13 @@ import {
     Platform,
     Pressable,
     StyleSheet,
-    Text,
-    View,
+    View
 } from 'react-native';
 import Reanimated, {
     SharedValue,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
-    withTiming,
+    withTiming
 } from 'react-native-reanimated';
 
 type TabBarTabButtonProps = {
@@ -35,6 +33,7 @@ type TabBarTabButtonProps = {
     indicatorStartX: SharedValue<number>;
     pillDragging: SharedValue<number>;
     lensPreset: LensPresetParams;
+    scrollProgress: SharedValue<number>; // 0 = fully visible, 1 = fully shrunk
     accessibilityRole?: AccessibilityRole;
     accessibilityState?: { selected?: boolean };
     accessibilityLabel?: string;
@@ -87,6 +86,7 @@ export function TabBarTabButton({
     indicatorStartX,
     pillDragging,
     lensPreset,
+    scrollProgress,
     icon,
     label,
     onPress,
@@ -136,10 +136,18 @@ export function TabBarTabButton({
             fadeTravelPx
         );
 
+        // Move icon down when label fades out to center it vertically in pill
+        // Label height is 18px + 4px gap = 22px, move down by half (~11px)
+        const translateY = scrollProgress.value * 11;
+        const lensTransform = buildLensTransform(lens, 1);
+        
         return {
-            transform: buildLensTransform(lens, 1),
+            transform: [
+                { translateY },
+                ...lensTransform
+            ],
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV, scrollProgress]);
 
     const labelLensStyle = useAnimatedStyle(() => {
         if (Platform.OS === 'android') {
@@ -171,8 +179,9 @@ export function TabBarTabButton({
 
         return {
             transform: buildLensTransform(lens, 0.72),
+            opacity: 1 - scrollProgress.value, // Hide label when scrolled
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV, scrollProgress]);
 
     return (
         <Pressable
