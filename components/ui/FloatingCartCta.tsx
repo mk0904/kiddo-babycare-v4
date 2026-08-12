@@ -2,14 +2,12 @@ import { GlassPillSurface } from '@/components/ui/GlassPillSurface';
 import { Fonts } from '@/constants/theme';
 import { useCartItemCount } from '@/store/cartStore';
 import { MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
-import {
-    GLASS_PILL_BRAND_RED,
-    GLASS_PILL_TEXT_COLOR,
-} from '@/utils/tabBarLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const CART_BUTTON_TINT = 'rgba(241, 94, 94, 0.9)';
 
 export type FloatingCartCtaProps = {
     /** Sits in the 30% column next to `MilestoneTracker` (tighter padding, can shrink). */
@@ -60,6 +58,7 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
                 <GlassPillSurface
                     borderRadius={CART_PILL_RADIUS}
                     glassEffectStyle="regular"
+                    tintColor={CART_BUTTON_TINT}
                     useContainer
                 />
                 <View style={[styles.content, inMilestoneRow && styles.contentInMilestoneRow]}>
@@ -81,7 +80,7 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
 
                     <View style={styles.endSlot} pointerEvents="none">
                         <View style={styles.arrowRing}>
-                            <Ionicons name="arrow-forward" size={14} color={GLASS_PILL_TEXT_COLOR} />
+                            <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
                         </View>
                     </View>
                 </View>
@@ -164,21 +163,21 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         fontFamily: Fonts.LexendSemiBold,
         fontWeight: '600',
-        color: GLASS_PILL_BRAND_RED,
+        color: CART_BUTTON_TINT,
     },
     cartLabel: {
         fontSize: 18,
         lineHeight: 18,
         fontFamily: Fonts.LexendSemiBold,
         fontWeight: '600',
-        color: GLASS_PILL_TEXT_COLOR,
+        color: '#FFFFFF',
     },
     arrowRing: {
         width: 22,
         height: 22,
         borderRadius: 11,
         borderWidth: 1.5,
-        borderColor: GLASS_PILL_TEXT_COLOR,
+        borderColor: '#FFFFFF',
         backgroundColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'center',

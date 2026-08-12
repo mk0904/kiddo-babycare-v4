@@ -137,12 +137,20 @@ export function TabBarTabButton({
         );
 
         // Move icon down when label fades out to center it vertically in pill
-        // Label height is 18px + 4px gap = 22px, move down by half (~11px)
-        const translateY = scrollProgress.value * 11;
+        // Label height is 14px + 3px gap = 17px, move down by half (~8.5px)
+        const translateY = scrollProgress.value * 8.5;
         const lensTransform = buildLensTransform(lens, 1);
+        
+        // Counteract navbar shrink to keep icon size constant
+        // Navbar shrinks width to 0.9 and height to 0.75
+        // Scale icons by 1/0.9 = 1.11 for X and 1/0.75 = 1.33 for Y
+        const iconScaleX = 1 + (scrollProgress.value * 0.11);
+        const iconScaleY = 1 + (scrollProgress.value * 0.33);
         
         return {
             transform: [
+                { scaleX: iconScaleX },
+                { scaleY: iconScaleY },
                 { translateY },
                 ...lensTransform
             ],
@@ -233,21 +241,22 @@ const styles = StyleSheet.create({
     tabItemContent: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
+        gap: 3,
         width: '100%',
         paddingHorizontal: 2,
+        paddingTop: 4,
         overflow: 'visible',
     },
     iconWrap: {
         alignItems: 'center',
         justifyContent: 'center',
-        width: 24,
-        height: 24,
+        width: 18,
+        height: 18,
         overflow: 'visible',
     },
     tabLabel: {
-        fontSize: 12,
-        lineHeight: 18,
+        fontSize: 10,
+        lineHeight: 14,
         fontFamily: Fonts.LexendSemiBold,
         fontWeight: '600',
         color: '#1A1A1A',

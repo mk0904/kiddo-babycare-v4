@@ -1,15 +1,14 @@
+import { areAllMilestoneSlotsCompleted, buildMilestoneUIModel } from '@/components/home/milestoneUIFromConfig';
 import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
 import { useMilestoneInlineCartActive } from '@/context/MilestoneInlineCartContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { buildMilestoneUIModel, areAllMilestoneSlotsCompleted } from '@/components/home/milestoneUIFromConfig';
-import { getHomeMilestoneRowLayout } from '@/utils/homeMilestoneRowLayout';
 import { FloatingCartCta } from './FloatingCartCta';
 
 interface FloatingCartButtonProps {
@@ -56,6 +55,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const isHome = currentRoute === 'index' || currentRoute === '(tabs)/index' || pathname === '/';
     const isCategory = currentRoute === 'category' || currentRoute === '(tabs)/category' || pathname === '/category';
     const isInfinity = currentRoute?.startsWith('infinity/') || pathname?.startsWith('/infinity/');
+    const isWishlist = currentRoute === 'wishlist' || currentRoute === '(tabs)/wishlist' || pathname === '/wishlist' || pathname === '/(tabs)/wishlist';
     
     const [isCelebrationSeen, setIsCelebrationSeen] = React.useState<boolean | null>(null);
     React.useEffect(() => {
@@ -107,7 +107,7 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
     const hideBecauseCartIsInMilestoneRow = isMilestoneScreen && cartInMilestoneRow;
 
     const visible =
-        itemCount > 0 && !isCartScreen && !isAccount && !shouldHideGlobalCart && !hideBecauseCartIsInMilestoneRow;
+        itemCount > 0 && !isCartScreen && !isAccount && !isWishlist && !shouldHideGlobalCart && !hideBecauseCartIsInMilestoneRow;
 
     if (!visible) {
         return null;
