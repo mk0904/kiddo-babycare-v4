@@ -1398,7 +1398,7 @@
         {
           "collectionId": "gid://shopify/Collection/512672006433",
           "label": "Jogger & Upper Wear Sets",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Gemini_Generated_Image_tzkzmbtzkzmbtzkz.png?v=1776142175"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/BN_C63_SET_7163e125-42e4-4874-aacb-21f94ca42b7d.jpg?v=1776019109"
         }
       ]
     },
@@ -3752,7 +3752,337 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_4_43ba20be-0c12-4032-97b0-d6d820a2f80b.png?v=1786003231"
         }
       ]
+    },
+    "517448892705": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517357928737",
+      "label": "Must Have's",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_57bb9a90-a8e2-432f-acac-49a586a193b5.png?v=1786595524"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517393482017",
+      "label": "Boys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_78bfea0b-29b0-48fb-99a4-6c7286495fe9.png?v=1786595524"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517393416481",
+      "label": "Girls",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/10_efc41c3d-5612-4b2d-a1ef-d2e34492a6c9.png?v=1786595524"
     }
+  ]
+},
+"517299568929": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517301567777",
+      "label": "Learning & Activity Books",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_43581fee-1819-4791-aa5b-f362853a1c5f.png?v=1786595524"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517301600545",
+      "label": "First Learning Books",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_23dd1a6a-8826-4a0d-98c6-f46516113347.png?v=1786595524"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517302059297",
+      "label": "Interactive Books",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_be5237a0-b018-486e-9adc-556ddc190cf5.png?v=1786595525"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517302518049",
+      "label": "Sensory Books",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_961c77e4-66f0-4499-8c96-274746868692.png?v=1786595525"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517302845729",
+      "label": "Storybooks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_74ca973b-ed84-4b1f-bbcd-db4e02a749c1.png?v=1786595524"
+    }
+  ]
+},
+"517303402785": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517353636129",
+      "label": "Strollers & Accessories",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_2b1bea18-ecdd-4af3-a988-88256a708c58.png?v=1786595524"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517179539745",
+      "label": "Car seats",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-08-13_at_10.10.08_AM.png?v=1786596085"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517179605281",
+      "label": "Diaper bags",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-08-13_at_10.10.15_AM.png?v=1786596084"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517179867425",
+      "label": "Carriers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Screenshot_2026-08-13_at_10.10.24_AM.png?v=1786596085"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517354062113",
+      "label": "Furniture & Bedding",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_597a7453-efeb-4d0e-893c-0217ad158725.png?v=1786554514"
+    }
+  ]
+},
+"517398855969": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517393908001",
+      "label": "Wipes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/21_59bca757-e55a-4710-81ec-66273856777a.png?v=1786554973"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517394006305",
+      "label": "Skincare",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_ab3d19e3-b540-40ad-b4f9-22a9451d4639.png?v=1786554973"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517394891041",
+      "label": "Acessories",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_b7b620b2-69d3-4046-a4e1-248f7f30f6d8.png?v=1786595525"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517395087649",
+      "label": "Snacks & Drinks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/18_cfd6922c-5e27-4bd9-a03e-3e49600969c7.png?v=1786554973"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517450662177",
+      "label": "Kids Makeup",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350_6.png?v=1786596346"
+    }
+  ]
+},
+"517399118113": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517397315873",
+      "label": "Under 499",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_9306c2a4-aaaa-4a4e-b95f-1b8bbc221d0d.png?v=1786555206"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517397446945",
+      "label": "Under 999",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/31_89c25b91-4b3e-4c0d-aa16-51cfc1a60df7.png?v=1786555205"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517397938465",
+      "label": "Under 1499",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/32_46e86463-ad8e-4b4d-80d3-a6902d38347e.png?v=1786555205"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517398036769",
+      "label": "Above 1499",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/33.png?v=1786555206"
+    }
+  ]
+},
+"517431099681": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517432213793",
+      "label": "Half Sleeves T-shirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/487.png?v=1786601707"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517432508705",
+      "label": "Sleeveless Tees",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/488.png?v=1786601703"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517433131297",
+      "label": "Full Sleeve T-shirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/489.png?v=1786601705"
+    }
+  ]
+},
+"517433196833": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517433426209",
+      "label": "Shorts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/491.png?v=1786602079"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517436473633",
+      "label": "Leggings",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/492.png?v=1786602083"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517436637473",
+      "label": "Skirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/493.png?v=1786602082"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517436506401",
+      "label": "Jeans & Pants",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/494.png?v=1786602084"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517436899617",
+      "label": "Joggers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/495.png?v=1786602077"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517437194529",
+      "label": "Pyjamas",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/496.png?v=1786602081"
+    }
+  ]
+},
+"517441650977": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517441913121",
+      "label": "Jumpsuits",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/39_2fe65578-d3f6-4595-9fcf-7e29d4a42c58.jpg?v=1786597785"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517442470177",
+      "label": "Shorts & Upper Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/41_885b6988-f6ef-4c4c-9849-ca27b8fdf200.jpg?v=1786597785"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517442535713",
+      "label": "Pants & Upper Wear Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/42_cb1c5fcd-cb65-422a-9dbf-5cf06f2f1a94.jpg?v=1786597785"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517442732321",
+      "label": "Skirt & Upper Wear Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/43_bb23d1b7-f13d-47e3-a260-add376f05cc5.jpg?v=1786597786"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517443092769",
+      "label": "Jogger & Upper Wear Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350_1_c788ffdd-16f8-4f04-8f53-c344882caa83.png?v=1786614246"
+    }
+  ]
+},
+"517444108577": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517444141345",
+      "label": "Vests",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/39_2fe65578-d3f6-4595-9fcf-7e29d4a42c58.jpg?v=1786597785"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517444174113",
+      "label": "UnderWear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/47.jpg?v=1786597789"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517444272417",
+      "label": "Potty Training Pants",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/48.jpg?v=1786597789"
+    }
+  ]
+},
+"517445648673": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517445714209",
+      "label": "Half Sleeves T-shirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/78.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517445779745",
+      "label": "Sleeveless Tees",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/79.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517445910817",
+      "label": "New Polos",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/80.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517445943585",
+      "label": "Shirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/81.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517446205729",
+      "label": "Full Sleeve T-shirts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/82.png?v=1786598748"
+    }
+  ]
+},
+"517446336801": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517446500641",
+      "label": "Shorts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/84.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517446533409",
+      "label": "Jeans & Pants",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/85.png?v=1786598748"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517446598945",
+      "label": "Joggers & Cargos",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/87.png?v=1786598747"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517446795553",
+      "label": "Pyjamas Bottoms",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/87.png?v=1786598747"
+    }
+  ]
+},
+"517446893857": {
+  "subcategories": [
+    
+    {
+      "collectionId": "gid://shopify/Collection/517446959393",
+      "label": "Shorts - Tshirts/Shirts Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/99_copy.png?v=1786611747"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517447024929",
+      "label": "Jeans & Upper Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/100_copy.png?v=1786611746"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517447156001",
+      "label": "Joggers & Upper Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/101_copy.png?v=1786611747"
+    }
+  ]
+},
+"517448794401": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517449089313",
+      "label": "Vests",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350_106ae1f7-691a-43de-9a9b-8ad74b90db5b.png?v=1786602751"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517449154849",
+      "label": "UnderWear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/93.png?v=1786598749"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517449351457",
+      "label": "Potty Training Pants",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/94.png?v=1786598748"
+    }
+  ]
+}
   },
   "productGridDefaults": {
     "gap": 16,
@@ -5502,35 +5832,35 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510860001569",
+          "id": "gid://shopify/Collection/517431099681",
           "name": "Top Wear"
         },
         {
-          "id": "gid://shopify/Collection/510860067105",
+          "id": "gid://shopify/Collection/517433196833",
           "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/512670826785",
+          "id": "gid://shopify/Collection/517441093921",
           "name": "Dresses"
         },
         {
-          "id": "gid://shopify/Collection/510860198177",
+          "id": "gid://shopify/Collection/517441650977",
           "name": "Coord Sets"
         },
         {
-          "id": "gid://shopify/Collection/510860525857",
+          "id": "gid://shopify/Collection/517443354913",
           "name": "Nightwear"
         },
         {
-          "id": "gid://shopify/Collection/515418194209",
+          "id": "gid://shopify/Collection/517444108577",
           "name": "Innerwear"
         },
         {
-          "id": "gid://shopify/Collection/510860689697",
+          "id": "gid://shopify/Collection/517444305185",
           "name": "Ethnic Wear"
         },
         {
-          "id": "gid://shopify/Collection/510860788001",
+          "id": "gid://shopify/Collection/517444501793",
           "name": "Party Wear"
         }
       ],
@@ -5574,35 +5904,35 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/510861345057",
+          "id": "gid://shopify/Collection/517445648673",
           "name": "Top Wear"
         },
         {
-          "id": "gid://shopify/Collection/510861476129",
+          "id": "gid://shopify/Collection/517446336801",
           "name": "Bottom Wear"
         },
         {
-          "id": "gid://shopify/Collection/515569451297",
+          "id": "gid://shopify/Collection/517446828321",
           "name": "Dungarees"
         },
         {
-          "id": "gid://shopify/Collection/510861508897",
+          "id": "gid://shopify/Collection/517446893857",
           "name": "Coord Sets"
         },
         {
-          "id": "gid://shopify/Collection/510861771041",
+          "id": "gid://shopify/Collection/517447811361",
           "name": "Nightwear"
         },
         {
-          "id": "gid://shopify/Collection/515441230113",
+          "id": "gid://shopify/Collection/517448794401",
           "name": "Innerwear"
         },
         {
-          "id": "gid://shopify/Collection/510861836577",
+          "id": "gid://shopify/Collection/517449416993",
           "name": "Ethnic Wear"
         },
         {
-          "id": "gid://shopify/Collection/510861967649",
+          "id": "gid://shopify/Collection/517449548065",
           "name": "Party Wear"
         }
       ],
