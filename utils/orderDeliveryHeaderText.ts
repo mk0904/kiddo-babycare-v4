@@ -17,6 +17,7 @@ export const ARRIVED_AT_CUSTOMER_STATUSES = new Set([
   'reached_destination',
   'reached_customer',
   'reached_location',
+  'reached_delivery'
 ]);
 
 /** Rider actively en-route — live ETA, near-dropoff, WebSocket, etc. */
