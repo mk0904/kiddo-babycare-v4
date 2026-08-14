@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
-import { Freshchat } from 'react-native-freshchat-sdk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,

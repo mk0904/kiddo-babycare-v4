@@ -587,7 +587,12 @@ export default function RootLayout() {
                             <MilestoneDockProvider>
                               <MilestoneInlineCartProvider>
                                 <LiveDeliveryStackOffsetProvider>
-                                  <Stack screenOptions={{ headerShown: false }}>
+                                  <Stack 
+                                    screenOptions={{ 
+                                      headerShown: false,
+                                      animation: 'default',
+                                    }}
+                                  >
                                     <Stack.Screen name="index" />
                                     <Stack.Screen name="(auth)" />
                                     <Stack.Screen name="(tabs)" />

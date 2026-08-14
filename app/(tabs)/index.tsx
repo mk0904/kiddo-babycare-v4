@@ -53,6 +53,8 @@ export default function HomeScreen() {
   const [configLoading, setConfigLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const prevCategoryRef = useRef('all');
   /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
   const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
@@ -179,9 +181,10 @@ export default function HomeScreen() {
       console.warn('Mixpanel tracking error:', e);
     }
     if (categoryKey === selectedCategory) return;
+    
     setSelectedCategory(categoryKey);
     // Scroll to top of the new category content
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [selectedCategory, categories]);
 
   // Load config on mount
@@ -208,13 +211,27 @@ export default function HomeScreen() {
 
   // Update blocks when category changes
   useEffect(() => {
+    const prevCategory = prevCategoryRef.current;
+    prevCategoryRef.current = selectedCategory;
+    
     const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
     // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
     const filteredBlocks = screenBlocks.filter(
       (block) => block.type !== 'rail'
     );
+    
+    // Slide in animation for new category content
+    if (prevCategory !== selectedCategory) {
+      slideAnim.setValue(50);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+    
     setBlocks(filteredBlocks);
-  }, [selectedCategory]);
+  }, [selectedCategory, slideAnim]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
     try {
@@ -615,7 +632,13 @@ export default function HomeScreen() {
           scrollEnabled={true}
           directionalLockEnabled={false}
         >
-          <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
+          <Animated.View 
+            style={[
+              styles.scrollViewContent, 
+              { backgroundColor: pageBackgroundColor },
+              { transform: [{ translateX: slideAnim }] }
+            ]}
+          >
             {configLoading ? (
               <View style={styles.loadingContainer}>
                 {/* Loading state */}
@@ -623,7 +646,7 @@ export default function HomeScreen() {
             ) : (
               <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
             )}
-          </View>
+          </Animated.View>
         </Animated.ScrollView>
       </View>
 

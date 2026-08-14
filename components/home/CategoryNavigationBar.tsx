@@ -1,14 +1,15 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-    Animated,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,6 +22,7 @@ interface Category {
   iconUrl?: string;
   activeIconImage?: any;
   activeIconUrl?: string;
+  color?: string;
 }
 
 interface CategoryNavigationBarProps {
@@ -47,7 +49,18 @@ export function CategoryNavigationBar({
   onCategorySelect,
   styles: customStyles = {},
 }: CategoryNavigationBarProps) {
-  const borderAnimationsRef = useRef<{ [key: string]: Animated.Value }>({});
+  const iconPositionsRef = useRef<{ [key: string]: number }>({});
+  const borderPositionAnim = useRef(new Animated.Value(0)).current;
+
+  const selectedCategoryData = useMemo(
+    () => categories.find((cat) => cat.key === selectedCategory),
+    [categories, selectedCategory]
+  );
+
+  const categoryColor = useMemo(() => {
+    const configColors = (kiddoAppConfig as any)?.categories?.navigationBar?.colors;
+    return configColors?.[selectedCategory || 'all'] || selectedCategoryData?.color || '#D8B4FE';
+  }, [selectedCategory, selectedCategoryData]);
 
   // Get icon sizes from config
   const iconSize = useMemo(() => {
@@ -71,52 +84,22 @@ export function CategoryNavigationBar({
   }), [iconSize, iconContainerSize]);
 
   useEffect(() => {
-    categories.forEach((category) => {
-      if (!borderAnimationsRef.current[category.key]) {
-        borderAnimationsRef.current[category.key] = new Animated.Value(
-          category.key === selectedCategory ? 1 : 0
-        );
-      }
-    });
-  }, [categories, selectedCategory]);
-
-  useEffect(() => {
-    categories.forEach((category) => {
-      const isSelected = category.key === selectedCategory;
-      const animValue = borderAnimationsRef.current[category.key];
-
-      if (animValue) {
-        Animated.timing(animValue, {
-          toValue: isSelected ? 1 : 0,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
-      }
-    });
-  }, [selectedCategory, categories]);
+    if (selectedCategory && iconPositionsRef.current[selectedCategory] !== undefined) {
+      Animated.timing(borderPositionAnim, {
+        toValue: iconPositionsRef.current[selectedCategory],
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedCategory, borderPositionAnim]);
 
   const renderCategory = useCallback(
     (category: Category) => {
       const isSelected = category.key === selectedCategory;
 
-      if (!borderAnimationsRef.current[category.key]) {
-        borderAnimationsRef.current[category.key] = new Animated.Value(
-          isSelected ? 1 : 0
-        );
-      }
-
-      const borderAnim = borderAnimationsRef.current[category.key];
-
-      const borderAnimatedStyle = {
-        opacity: borderAnim,
-        transform: [
-          {
-            scaleX: borderAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 1],
-            }),
-          },
-        ],
+      const handleLayout = (event: any) => {
+        const { x } = event.nativeEvent.layout;
+        iconPositionsRef.current[category.key] = x; // Use exact x position
       };
 
       return (
@@ -127,6 +110,7 @@ export function CategoryNavigationBar({
             onCategorySelect?.(category.key);
           }}
           activeOpacity={0.6}
+          onLayout={handleLayout}
         >
           <View
             style={[
@@ -145,36 +129,18 @@ export function CategoryNavigationBar({
                 isSelected && customStyles.selectedIconContainer,
               ]}
             >
-              {isSelected ? (
-                category.activeIconUrl ? (
-                  <Image
-                    source={{ uri: category.activeIconUrl }}
-                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
-                    resizeMode="contain"
-                  />
-                ) : category.activeIconImage ? (
-                  <Image
-                    source={category.activeIconImage}
-                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
-                    resizeMode="contain"
-                  />
-                ) : category.iconUrl ? (
-                  <Image
-                    source={{ uri: category.iconUrl }}
-                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
-                    resizeMode="contain"
-                  />
-                ) : category.iconImage ? (
-                  <Image
-                    source={category.iconImage}
-                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <Text style={defaultStyles.categoryIconText}>
-                    {category.label.charAt(0).toUpperCase()}
-                  </Text>
-                )
+              {category.activeIconUrl ? (
+                <Image
+                  source={{ uri: category.activeIconUrl }}
+                  style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                  resizeMode="contain"
+                />
+              ) : category.activeIconImage ? (
+                <Image
+                  source={category.activeIconImage}
+                  style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                  resizeMode="contain"
+                />
               ) : category.iconUrl ? (
                 <Image
                   source={{ uri: category.iconUrl }}
@@ -204,13 +170,15 @@ export function CategoryNavigationBar({
           >
             {category.label}
           </Text>
-          <Animated.View
-            style={[defaultStyles.selectedBottomBorder, borderAnimatedStyle]}
-          />
         </TouchableOpacity>
       );
     },
-    [selectedCategory, customStyles, onCategorySelect]
+    [
+      selectedCategory,
+      dynamicStyles,
+      customStyles,
+      onCategorySelect,
+    ]
   );
 
   const containerStyle = useMemo(
@@ -244,7 +212,29 @@ export function CategoryNavigationBar({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={scrollContentStyle}
       >
-        <View style={categoriesWrapperStyle}>{categoryItems}</View>
+        <View style={categoriesWrapperStyle}>
+          <Animated.View
+            style={[
+              defaultStyles.slidingBorderContainer,
+              {
+                transform: [{ translateX: borderPositionAnim }],
+                left: -1,
+              },
+            ]}
+          >
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: categoryColor, borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'white', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, bottom: -3, top: 2, left: +1, right: +1 }]} />
+            <View style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, overflow: 'hidden' }]}>
+              <LinearGradient
+                colors={[`${categoryColor}15`, `${categoryColor}05`]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </View>
+          </Animated.View>
+          {categoryItems}
+        </View>
       </ScrollView>
     </View>
   );
@@ -275,6 +265,19 @@ const defaultStyles = StyleSheet.create({
     minWidth: 60,
     position: 'relative',
   },
+  slidingBorderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 76,
+    height: 76,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    pointerEvents: 'none',
+    marginTop: 0,
+  },
   categoryIconWrapper: {
     padding: 0,
     borderRadius: 0,
@@ -289,7 +292,7 @@ const defaultStyles = StyleSheet.create({
   categoryIconContainer: {
     width: 70,
     height: 70,
-    borderRadius: 0,
+    borderRadius: 12,
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
@@ -299,8 +302,18 @@ const defaultStyles = StyleSheet.create({
   },
   selectedIconContainer: {
     backgroundColor: 'transparent',
-    borderColor: 'transparent',
     borderWidth: 0,
+  },
+  gradientBorderContainer: {
+    width: 76,
+    height: 76,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   categoryIconImage: {
     width: 50,
@@ -326,17 +339,6 @@ const defaultStyles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Fonts.LexendSemiBold,
     lineHeight: 14,
-  },
-  selectedBottomBorder: {
-    position: 'absolute',
-    bottom: 0,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: '#222222',
-    marginTop: 4,
   },
 });
 
