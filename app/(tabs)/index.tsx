@@ -6,11 +6,10 @@ import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
     getDeliveryEta,
-    getDeliveryEtaForAddress,
     reverseGeocode,
 } from '@/config/deliveryConfig';
 import { getAppVersionForApi } from '@/constants/versionConfig';
-import { useAddress } from '@/context/AddressContext';
+import { Address, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -43,11 +42,10 @@ export default function HomeScreen() {
   const cartItemCount = useCartItemCount();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
-  /** Last GPS position when user has no saved address — re-check ETA when app config (e.g. servicableDistance) updates. */
+  /** Last GPS position — re-check ETA when app config (e.g. servicableDistance) updates. */
   const lastDetectedCoordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
-  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
-  const [loadingTime, setLoadingTime] = useState(false);
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
@@ -78,27 +76,25 @@ export default function HomeScreen() {
 
   const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
-  // Auto-detected location when user has no saved address (serviceable / unserviceable)
+  // Always detect live GPS location on app open (regardless of saved address / login state)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [detectedLocationLabel, setDetectedLocationLabel] = useState<string | null>(null);
   const [detectedEta, setDetectedEta] = useState<number | null>(null);
 
-  // Use address from AddressContext when set; otherwise show detected location or prompt
-  const address = defaultAddress
-    ? defaultAddress.address1 || 'Default Address'
-    : (detectedLocationLabel || (locationStatus === 'unserviceable' ? null : null));
-  const displayAddress = defaultAddress
-    ? (defaultAddress.address1 || 'Default Address')
-    : detectedLocationLabel;
+  // Always show the live detected location in the header (saved address is used for cart/checkout only)
+  const displayAddress = detectedLocationLabel;
+  const address = detectedLocationLabel;
 
   const addressCategoryLabel = useMemo(() => {
+    // Show tag label from saved address only when we have no live location yet
+    if (detectedLocationLabel) return null;
     if (!defaultAddress) return null;
     return getAddressTitleLabel(defaultAddress);
-  }, [defaultAddress]);
-  const isUnserviceable = !defaultAddress && locationStatus === 'unserviceable';
-  const homeEstimatedTime = defaultAddress ? estimatedTime : detectedEta;
-  const homeLoadingTime = defaultAddress ? loadingTime : locationStatus === 'loading';
+  }, [defaultAddress, detectedLocationLabel]);
+  const isUnserviceable = locationStatus === 'unserviceable';
+  const homeEstimatedTime = detectedEta;
+  const homeLoadingTime = locationStatus === 'loading';
 
   const searchSuggestions = [
     'Search for Toys & Games',
@@ -331,54 +327,42 @@ export default function HomeScreen() {
     setShowAddressModal(true);
   };
 
-  // Fetch estimated delivery time
-  const fetchEstimatedTime = useCallback(async () => {
-    if (!defaultAddress) {
-      setEstimatedTime(null);
-      setLoadingTime(false);
-      return;
-    }
-
-    setLoadingTime(true);
+  // When user explicitly picks a saved address from the modal, update the header display
+  const handleAddressSelected = useCallback(async (selectedAddress: Address) => {
+    const label = selectedAddress.address1 || 'Saved address';
+    setDetectedLocationLabel(label);
+    setLocationStatus('loading');
+    setDetectedEta(null);
     try {
-      let deliveryTime: number | null = null;
-      if (defaultAddress.latitude && defaultAddress.longitude) {
-        const eta = await getDeliveryEta(defaultAddress.latitude, defaultAddress.longitude);
-        deliveryTime = eta?.etaMinutes ?? null;
-      } else {
-        const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
-        if (!addressString) {
-          setEstimatedTime(null);
-          setLoadingTime(false);
-          return;
+      if (selectedAddress.latitude && selectedAddress.longitude) {
+        const eta = await getDeliveryEta(selectedAddress.latitude, selectedAddress.longitude);
+        if (eta) {
+          setDetectedEta(eta.etaMinutes);
+          setLocationStatus('serviceable');
+          setDetectedLocation('serviceable', eta.etaMinutes);
+        } else {
+          setLocationStatus('serviceable');
+          setDetectedLocation('serviceable', null);
         }
-        deliveryTime = await getDeliveryEtaForAddress(addressString);
+      } else {
+        setLocationStatus('serviceable');
+        setDetectedLocation('serviceable', null);
       }
-      setEstimatedTime(deliveryTime);
-
-      // Track delivery ETA checked
-      try {
-        const { trackDeliveryETAChecked } = require('@/utils/mixpanelHelpers');
-        trackDeliveryETAChecked(address || 'Unknown', deliveryTime);
-      } catch (e) {
-        console.warn('Mixpanel tracking error:', e);
-      }
-    } catch (error) {
-      console.error('Error fetching delivery time:', error);
-      setEstimatedTime(null);
-    } finally {
-      setLoadingTime(false);
+    } catch {
+      setLocationStatus('serviceable');
+      setDetectedLocation('serviceable', null);
     }
-  }, [defaultAddress]);
+  }, [setDetectedLocation]);
 
   const applyEtaForDetectedCoords = useCallback(
     async (latitude: number, longitude: number, cancelled: () => boolean) => {
       const eta = await getDeliveryEta(latitude, longitude);
       if (cancelled()) return;
       if (!eta) {
-        setLocationStatus('error');
-        setDetectedLocationLabel('Tap to add delivery address');
-        setDetectedLocation('error');
+        setLocationStatus('unserviceable');
+        setDetectedLocationLabel(null);
+        setDetectedEta(null);
+        setDetectedLocation('unserviceable');
         return;
       }
       const threshold = appConfigService.getServicableDistanceKm();
@@ -400,30 +384,10 @@ export default function HomeScreen() {
     [setDetectedLocation]
   );
 
-  useEffect(() => {
-    fetchEstimatedTime();
-  }, [fetchEstimatedTime]);
 
-  // When user clears their address, reset so we can re-detect location
-  const hadAddressRef = useRef(!!defaultAddress);
-  useEffect(() => {
-    if (defaultAddress) {
-      hadAddressRef.current = true;
-      return;
-    }
-    if (hadAddressRef.current) {
-      hadAddressRef.current = false;
-      lastDetectedCoordsRef.current = null;
-      setLocationStatus('idle');
-      setDetectedLocationLabel(null);
-      setDetectedEta(null);
-      setDetectedLocation('idle');
-    }
-  }, [defaultAddress, setDetectedLocation]);
 
-  // Auto-detect location on home when user has no saved address (e.g. after login)
+  // Always auto-detect live GPS location on app open (logged in or not, with or without saved address)
   useEffect(() => {
-    if (defaultAddress) return;
     if (locationStatus !== 'idle') return;
 
     let cancelled = false;
@@ -471,11 +435,10 @@ export default function HomeScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [defaultAddress, applyEtaForDetectedCoords]);
+  }, [applyEtaForDetectedCoords]);
 
   // Re-evaluate serviceability when app config loads or updates (e.g. `delivery.servicableDistance`).
   useEffect(() => {
-    if (defaultAddress) return;
     const c = lastDetectedCoordsRef.current;
     if (!c) return;
     let cancelled = false;
@@ -483,7 +446,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [milestoneUiRev, defaultAddress, applyEtaForDetectedCoords]);
+  }, [milestoneUiRev, applyEtaForDetectedCoords]);
 
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();
@@ -647,6 +610,7 @@ export default function HomeScreen() {
       <AddressModal
         visible={showAddressModal}
         onClose={() => setShowAddressModal(false)}
+        onSelectAddress={handleAddressSelected}
         fromHome={true}
       />
 
