@@ -11,14 +11,15 @@ import { isProductOutOfStock } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -382,6 +383,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       e.stopPropagation();
 
       if (wishlistLoading) return;
+
+      if (process.env.EXPO_OS === 'ios') {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
 
       setWishlistLoading(true);
       try {

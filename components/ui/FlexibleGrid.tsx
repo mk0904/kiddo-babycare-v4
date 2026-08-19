@@ -5,6 +5,7 @@ import {
     resolveRowWidths,
 } from '@/utils/gridCellSizing';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
+import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo } from 'react';
 import {
@@ -355,7 +356,14 @@ export function FlexibleGrid({
             height: size.height,
           },
         ]}
-        onPress={item.onPress}
+        onPressIn={() => {
+          if (process.env.EXPO_OS === 'ios') {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+        }}
+        onPress={() => {
+          item.onPress?.();
+        }}
         activeOpacity={0.8}
       >
         <View style={[styles.imageContainer, { 

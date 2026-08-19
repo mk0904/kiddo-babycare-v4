@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import React from 'react';
+import * as Haptics from 'expo-haptics';
 import {
     ActivityIndicator,
     Platform,
@@ -70,7 +70,12 @@ export function CartFooterPayment({
             {showPayButton ? (
                 <TouchableOpacity
                     style={[styles.payButton, (orderLoading || isSyncing || minOrderValueNotMet) && styles.payButtonDisabled]}
-                    onPress={isAuthenticated ? onPlaceOrder : (onLoginPress ?? onPlaceOrder)}
+                    onPress={() => {
+                        if (process.env.EXPO_OS === 'ios') {
+                            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        }
+                        (isAuthenticated ? onPlaceOrder : (onLoginPress ?? onPlaceOrder))();
+                    }}
                     disabled={orderLoading || isSyncing || minOrderValueNotMet}
                     activeOpacity={0.85}
                 >

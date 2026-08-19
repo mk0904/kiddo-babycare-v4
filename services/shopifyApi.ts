@@ -2037,6 +2037,40 @@ export const shopifyApi = {
   },
 
   /**
+   * Get page by ID
+   */
+  getPageById: async (pageId: string) => {
+    try {
+      const response = await client.post('', {
+        query: `
+          query getPage($id: ID!) {
+            page(id: $id) {
+              id
+              title
+              handle
+              body
+              bodySummary
+              updatedAt
+            }
+          }
+        `,
+        variables: {
+          id: `gid://shopify/Page/${pageId}`,
+        },
+      });
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0].message);
+      }
+
+      return response.data.data?.page;
+    } catch (error) {
+      console.error('Error fetching page:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get customer addresses
    */
   getCustomerAddresses: async (customerAccessToken: string, first: number = 50) => {

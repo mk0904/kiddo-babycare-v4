@@ -1130,7 +1130,6 @@ const ProductDetailScreen = () => {
     const productOptions = useMemo(() => {
         if (!product?.options) return [];
         const options = Array.isArray(product.options) ? product.options : [];
-        if (variants.length <= 1) return [];
         // For ticketing products, hide only the "Date" option pills (date is selected via the date picker).
         // Keep other option pills (e.g., time slot, ticket type) if present.
         const filtered = isTicketingProduct
@@ -1139,8 +1138,14 @@ const ProductDetailScreen = () => {
                 return !name.includes('date');
             })
             : options;
-        return filtered.filter((option: any) => (option.values || []).length > 1);
-    }, [product, variants.length, isTicketingProduct]);
+        // Filter out "Title" option with "Default Title" (Shopify default for single variant products)
+        return filtered.filter((option: any) => {
+            const name = String(option?.name || '');
+            const values = option?.values || [];
+            if (name === 'Title' && values.includes('Default Title')) return false;
+            return true;
+        });
+    }, [product, isTicketingProduct]);
 
     const tryBuyPdpEligible = useMemo(
         () =>

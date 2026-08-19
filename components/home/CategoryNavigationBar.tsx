@@ -1,4 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
@@ -124,6 +125,9 @@ export function CategoryNavigationBar({
           key={category.key}
           style={[defaultStyles.categoryItem, customStyles.categoryItem]}
           onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
             onCategorySelect?.(category.key);
           }}
           activeOpacity={0.6}

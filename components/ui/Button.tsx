@@ -1,6 +1,6 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface ButtonProps {
   title: string;
@@ -29,7 +29,14 @@ export function Button({
         (disabled || loading) && styles.buttonDisabled,
         style,
       ]}
-      onPress={onPress}
+      onPressIn={() => {
+        if (process.env.EXPO_OS === 'ios') {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      }}
+      onPress={() => {
+        onPress();
+      }}
       disabled={disabled || loading}
       activeOpacity={0.7}
     >

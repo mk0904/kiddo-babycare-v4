@@ -3,6 +3,7 @@ import { Fonts } from '@/constants/theme';
 import { useCartItemCount } from '@/store/cartStore';
 import { MILESTONE_CART_ROW_PILL_HEIGHT } from '@/utils/homeMilestoneRowLayout';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -32,6 +33,9 @@ export function FloatingCartCta({ inMilestoneRow = false, onPress, testID }: Flo
     }, [itemCount]);
 
     const handlePress = useCallback(() => {
+        if (process.env.EXPO_OS === 'ios') {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         if (onPress) {
             onPress();
             return;

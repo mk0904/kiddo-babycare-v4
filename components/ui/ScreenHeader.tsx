@@ -1,7 +1,7 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ScreenHeaderProps {
@@ -29,6 +29,9 @@ export function ScreenHeader({ title, showSearch = true, showBack = false, showW
   };
 
   const handleWishlistPress = () => {
+    if (process.env.EXPO_OS === 'ios') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     if (onWishlistPress) {
       onWishlistPress();
     } else {

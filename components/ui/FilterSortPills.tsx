@@ -1,15 +1,16 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    StyleProp,
-    ViewStyle,
-    Animated,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Animated,
+    StyleProp,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+} from 'react-native';
 import { FastFilters } from './FastFilters';
 
 interface FilterSortPillsProps {
@@ -203,7 +204,12 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                     >
                         <TouchableOpacity
                             style={styles.actionButtonInner}
-                            onPress={onFiltersPress}
+                            onPress={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                                onFiltersPress?.();
+                            }}
                             activeOpacity={0.7}
                         >
                                 <Animated.View
