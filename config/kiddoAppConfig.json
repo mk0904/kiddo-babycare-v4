@@ -5146,24 +5146,48 @@
 "517687705889": {
   "subcategories": [
     {
-      "collectionId": "gid://shopify/Collection/517698060577",
-      "label": "Trending",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/25_db1e756b-5c8b-46b3-b729-10751cbfbaf0.png?v=1787057804"
+      "collectionId": "gid://shopify/Collection/517742068001",
+      "label": "Fashion",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_47266da3-0aa6-423c-a03b-d105dc5c2698.png?v=1787210723"
     },
     {
-      "collectionId": "gid://shopify/Collection/517697012001",
-      "label": "Under 499",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_3_966db7b4-ae13-487d-a138-06ca0b4b6b82.png?v=1787058369"
+      "collectionId": "gid://shopify/Collection/517742133537",
+      "label": "Toys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_7da36353-bef6-423b-8aec-0dff26add58e.png?v=1787210721"
     },
     {
-      "collectionId": "gid://shopify/Collection/517698486561",
-      "label": "Kid's Favourites",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/24_425178d0-fa37-4ce1-8a36-46071a96316e.png?v=1787057810"
+      "collectionId": "gid://shopify/Collection/517742952737",
+      "label": "Essentials",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_c6cefdff-9f31-4442-8e7c-c11eba0307a0.png?v=1787210721"
     },
     {
-      "collectionId": "gid://shopify/Collection/517699764513",
-      "label": "Everyday Essentials",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_5_36d29398-62ad-48bd-b319-2f97c51f9dea.png?v=1787058376"
+      "collectionId": "gid://shopify/Collection/517743149345",
+      "label": "New Moms",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_d9d486c0-4424-45e1-bc35-efcb00b129fe.png?v=1787210723"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517743247649",
+      "label": "School Essentials",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_7ad0a036-2740-4e3b-9193-55cdae2eabc8.png?v=1787210723"
+    }
+  ]
+},
+"517770805537": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517735973153",
+      "label": "Ethnic Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/28_f48fa0bf-00b1-40b0-ac63-7f4b79bdb8f4.png?v=1787213146"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517739184417",
+      "label": "Books",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/29_5c5d585e-7afe-4cc2-a5a3-056517091f91.png?v=1787213146"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517770707233",
+      "label": "Toys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_e8b4cc84-f746-497f-8d63-789ec1495db7.png?v=1787213146"
     }
   ]
 }
@@ -5659,45 +5683,6 @@
       "order": 3
     },
     {
-      "id": "all-banner-6",
-      "type": "carousel",
-      "visible": false,
-      "data": [
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15k_products_banner.gif?v=1782221863",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": ""
-            }
-          }
-        }
-      ],
-      "carouselConfig": {
-        "autoPlay": false,
-        "autoPlayInterval": 3000,
-        "loop": false,
-        "height": 0.35,
-        "resizeMode": "cover"
-      },
-      "styles": {
-        "container": {
-          "paddingHorizontal": 10,
-          "paddingVertical": 0,
-          "marginTop": 0,
-          "backgroundColor": "white"
-        },
-        "imageContainer": {},
-        "image": {
-          "width": "100%",
-          "padding": 0,
-          "borderRadius": 20
-        },
-        "img": {}
-      },
-      "order": 5
-    },
-    {
       "id": "category-grid-onbanner",
       "type": "categoryGrid",
       "order": 3,
@@ -5794,10 +5779,10 @@
           "id": "gid://shopify/Collection/516891476257"
         },
         {
-          "id": "gid://shopify/Collection/517101158689"
+          "id": "gid://shopify/Collection/517738594593"
         },
         {
-          "id": "gid://shopify/Collection/516935745825"
+          "id": "gid://shopify/Collection/517770805537"
         },
         {
           "id": "gid://shopify/Collection/516935811361"
@@ -6983,92 +6968,61 @@
     }
   ],
   "Fashion": [
-    {
-      "id": "category-grid-banner-1",
-      "type": "categoryGrid",
+     {
+      "id": "all-banner-10",
+      "type": "carousel",
       "visible": true,
-      "title": "Girl Fashion",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 4,
-        "colGap": 12,
-        "limit": 13,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 12
-      },
-      "collectionIds": [
+      "data": [
         {
-          "id": "gid://shopify/Collection/517431099681",
-          "name": "Top Wear"
-        },
-        {
-          "id": "gid://shopify/Collection/517433196833",
-          "name": "Bottom Wear"
-        },
-        {
-          "id": "gid://shopify/Collection/517441093921",
-          "name": "Dresses"
-        },
-        {
-          "id": "gid://shopify/Collection/517441650977",
-          "name": "Coord Sets"
-        },
-        {
-          "id": "gid://shopify/Collection/517443354913",
-          "name": "Nightwear"
-        },
-        {
-          "id": "gid://shopify/Collection/517444108577",
-          "name": "Innerwear"
-        },
-        {
-          "id": "gid://shopify/Collection/517444305185",
-          "name": "Ethnic Wear"
-        },
-        {
-          "id": "gid://shopify/Collection/517444501793",
-          "name": "Party Wear"
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/correct.png?v=1787213523",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": ""
+            }
+          }
         }
       ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 1,
+        "resizeMode": "cover"
+      },
       "styles": {
         "container": {
-          "paddingHorizontal": 16,
-          "paddingTop": 20
+          "marginTop": 20,
+          "marginBottom": 20,
+          "paddingHorizontal": 5,
+          "backgroundColor": "white",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
-        "title": {
-          "marginBottom": -10,
-          "fontSize": 15,
-          "lineHeight": 20,
-          "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 30
         },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
-        }
+        "img": {}
       }
     },
-    {
-      "id": "category-grid-banner-2",
+{
+      "id": "category-grid-onbanner1",
       "type": "categoryGrid",
       "visible": true,
-      "title": "Boy Fashion",
+      "title": "bannergrid",
       "gridConfig": {
         "layout": "uniform",
         "numColumns": 4,
         "colGap": 12,
-        "limit": 13,
+        "rowGap": 0,
+        "limit": 8,
         "aspectRatio": 1,
-        "resizeMode": "cover",
         "showLabels": true,
-        "borderRadius": 12
+        "borderRadius": 12,
+        "proportionalScale": true
       },
       "collectionIds": [
         {
@@ -7106,21 +7060,145 @@
       ],
       "styles": {
         "container": {
-          "paddingHorizontal": 16
+          "position": "absolute",
+          "marginTop": "-73%",
+          "zIndex": 10,
+          "paddingHorizontal": "8%"
         },
         "title": {
-          "marginBottom": -10,
-          "fontSize": 15,
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 0,
+          "fontSize": 18,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
-          "fontFamily": "lexend-regular",
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
           "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
+          "fontSize": 11,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+
+    {
+      "id": "all-banner-10",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/boys.png?v=1787213711",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": ""
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 1,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginBottom": 20,
+          "paddingHorizontal": 5,
+          "backgroundColor": "white",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 30
+        },
+        "img": {}
+      }
+    },
+{
+      "id": "category-grid-onbanner1",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "bannergrid",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 4,
+        "colGap": 12,
+        "rowGap": 0,
+        "limit": 8,
+        "aspectRatio": 1,
+        "showLabels": true,
+        "borderRadius": 12,
+        "proportionalScale": true
+      },
+            "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/517445648673",
+          "name": "Top Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/517446336801",
+          "name": "Bottom Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/517446828321",
+          "name": "Dungarees"
+        },
+        {
+          "id": "gid://shopify/Collection/517446893857",
+          "name": "Coord Sets"
+        },
+        {
+          "id": "gid://shopify/Collection/517447811361",
+          "name": "Nightwear"
+        },
+        {
+          "id": "gid://shopify/Collection/517448794401",
+          "name": "Innerwear"
+        },
+        {
+          "id": "gid://shopify/Collection/517449416993",
+          "name": "Ethnic Wear"
+        },
+        {
+          "id": "gid://shopify/Collection/517449548065",
+          "name": "Party Wear"
+        }
+      ],
+
+
+      "styles": {
+        "container": {
+          "position": "absolute",
+          "marginTop": "-71%",
+          "zIndex": 10,
+          "paddingHorizontal": "6%"
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 18,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        },
+        "text": {
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
+          "color": "#414651",
+          "fontSize": 11,
           "letterSpacing": 0,
           "textAlign": "center"
         }
