@@ -81,6 +81,10 @@ export function CategoryNavigationBar({
       width: iconSize,
       height: iconSize,
     },
+    slidingBorderContainer: {
+      width: iconContainerSize + 8,
+      height: iconContainerSize + 20, // icon + label height
+    },
   }), [iconSize, iconContainerSize]);
 
   useEffect(() => {
@@ -216,6 +220,7 @@ export function CategoryNavigationBar({
           <Animated.View
             style={[
               defaultStyles.slidingBorderContainer,
+              dynamicStyles.slidingBorderContainer,
               {
                 transform: [{ translateX: borderPositionAnim }],
                 left: -1,
@@ -232,6 +237,9 @@ export function CategoryNavigationBar({
                 style={StyleSheet.absoluteFill}
               />
             </View>
+            {/* Right side border with corner at bottom */}
+            <View style={{ position: 'absolute', right: -1, top: '40%', bottom: -2, width: 2, backgroundColor: categoryColor, zIndex: 10 }} />
+            <View style={{ position: 'absolute', right: -1, bottom: -4, width: 8, height: 8, backgroundColor: categoryColor, borderBottomRightRadius: 400, zIndex: 10 }} />
           </Animated.View>
           {categoryItems}
         </View>
@@ -269,14 +277,12 @@ const defaultStyles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 76,
-    height: 76,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     pointerEvents: 'none',
-    marginTop: 0,
+    marginTop: 8,
   },
   categoryIconWrapper: {
     padding: 0,

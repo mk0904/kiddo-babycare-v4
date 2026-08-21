@@ -1,4 +1,5 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
+import { HomeContentSkeleton } from '@/components/home/HomeContentSkeleton';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
@@ -51,9 +52,11 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const prevCategoryRef = useRef('all');
   /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
@@ -213,25 +216,54 @@ export default function HomeScreen() {
   useEffect(() => {
     const prevCategory = prevCategoryRef.current;
     prevCategoryRef.current = selectedCategory;
-    
-    const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
-    // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
-    const filteredBlocks = screenBlocks.filter(
-      (block) => block.type !== 'rail'
-    );
-    
-    // Slide in animation for new category content
+
+    // Show skeleton immediately when category changes
     if (prevCategory !== selectedCategory) {
-      slideAnim.setValue(50);
-      Animated.timing(slideAnim, {
+      setCategoryLoading(true);
+      
+      // Fade out current content
+      Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 150,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        // After fade out, load new content
+        const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
+        // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
+        const filteredBlocks = screenBlocks.filter(
+          (block) => block.type !== 'rail'
+        );
+        
+        setBlocks(filteredBlocks);
+        
+        // Simulate minimal delay for smooth transition
+        setTimeout(() => {
+          setCategoryLoading(false);
+          // Fade in new content
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+          
+          // Slide in animation for new category content
+          slideAnim.setValue(50);
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }, 100);
+      });
+    } else {
+      // Initial load or same category
+      const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
+      const filteredBlocks = screenBlocks.filter(
+        (block) => block.type !== 'rail'
+      );
+      setBlocks(filteredBlocks);
     }
-    
-    setBlocks(filteredBlocks);
-  }, [selectedCategory, slideAnim]);
+  }, [selectedCategory, slideAnim, fadeAnim]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
     try {
@@ -636,13 +668,16 @@ export default function HomeScreen() {
             style={[
               styles.scrollViewContent, 
               { backgroundColor: pageBackgroundColor },
-              { transform: [{ translateX: slideAnim }] }
+              { transform: [{ translateX: slideAnim }] },
+              { opacity: fadeAnim }
             ]}
           >
             {configLoading ? (
               <View style={styles.loadingContainer}>
                 {/* Loading state */}
               </View>
+            ) : categoryLoading ? (
+              <HomeContentSkeleton />
             ) : (
               <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
             )}
