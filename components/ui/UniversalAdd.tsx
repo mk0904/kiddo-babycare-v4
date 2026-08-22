@@ -245,6 +245,13 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 }
                 trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
+                try {
+                    const { selfSearchApi } = require('@/services/selfSearchApi');
+                    selfSearchApi.trackAddToCart('', cartItem.productId);
+                } catch (e) {
+                    console.warn('Self search add_to_cart tracking error:', e);
+                }
+
                 // Firebase Ecommerce Tracking
                 analyticsService.logAddToCart({
                     items: [{
