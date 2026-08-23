@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View,
-    Modal,
-    StyleSheet,
     Dimensions,
     FlatList,
     Image,
-    TouchableOpacity,
+    Modal,
     SafeAreaView,
     StatusBar,
+    StyleSheet,
     Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+const ImageViewer: any = require('react-native-image-zoom-viewer').default;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -98,37 +99,17 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ visible, images, in
                     </TouchableOpacity>
                 </SafeAreaView>
 
-                <FlatList
-                    ref={flatListRef}
-                    data={safeImages}
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    onMomentumScrollEnd={handleImageScroll}
-                    onScrollToIndexFailed={(info) => {
-                        const wait = new Promise(resolve => setTimeout(resolve, 500));
-                        wait.then(() => {
-                            flatListRef.current?.scrollToOffset({
-                                offset: info.averageItemLength * info.index,
-                                animated: false,
-                            });
-                        });
+                <ImageViewer
+                    imageUrls={safeImages.map((url) => ({ url }))}
+                    index={currentIndex}
+                    onChange={(index: number) => {
+                        setCurrentIndex(index);
+                        scrollThumbnailToIndex(index);
                     }}
-                    keyExtractor={(_, index) => `image-${index}`}
-                    renderItem={({ item }) => (
-                        <View style={styles.imageContainer}>
-                            <Image
-                                source={{ uri: item }}
-                                style={styles.fullImage}
-                                resizeMode="contain"
-                            />
-                        </View>
-                    )}
-                    getItemLayout={(_, index) => ({
-                        length: SCREEN_WIDTH,
-                        offset: SCREEN_WIDTH * index,
-                        index,
-                    })}
+                    enableSwipeDown={true}
+                    onSwipeDown={onClose}
+                    renderIndicator={() => null}
+                    saveToLocalByLongPress={false}
                 />
 
                 {safeImages.length > 1 && (

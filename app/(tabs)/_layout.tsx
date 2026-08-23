@@ -55,7 +55,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wishlist"
         options={{
-          href: null,
+          title: 'Wishlist',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
+          href: visibleTabs.includes('wishlist') ? undefined : null,
         }}
       />
       <Tabs.Screen

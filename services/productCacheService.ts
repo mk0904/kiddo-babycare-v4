@@ -6,8 +6,8 @@ import { shopifyApi } from '@/services/shopifyApi';
 
 // Cache configuration
 const CACHE_CONFIG = {
-    productPrefix: 'product_cache_',
-    collectionPrefix: 'collection_cache_',
+    productPrefix: 'product_cache_v2_',
+    collectionPrefix: 'collection_cache_v2_',
     maxAge: 30 * 60 * 1000, // 30 minutes
     maxItems: 100, // Max items to cache
 };

@@ -3,6 +3,7 @@ import { TryAtHomePill } from '@/components/home/TryAtHomePill';
 import { LocationButton } from '@/components/ui/LocationButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
     headerGlassTintIsVisible,
@@ -56,6 +57,8 @@ interface HomeHeaderProps {
     label: string;
     iconImage?: any;
     iconUrl?: string;
+    activeIconImage?: any;
+    activeIconUrl?: string;
   }>;
   selectedCategory?: string;
   onCategorySelect?: (key: string) => void;
@@ -363,13 +366,15 @@ export function HomeHeader({
                     />
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity
-                  onPress={() => router.push('/wishlist')}
-                  style={styles.wishlistButton}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="heart-outline" size={28} color={textColor} />
-                </TouchableOpacity>
+                {!configService.getTabBarConfig()?.visibleTabs?.includes('wishlist') && (
+                  <TouchableOpacity
+                    onPress={() => router.push('/wishlist')}
+                    style={styles.wishlistButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="heart-outline" size={28} color={textColor} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </Animated.View>

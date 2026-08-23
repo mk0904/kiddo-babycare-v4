@@ -1,5 +1,7 @@
 import HorizontalProductList from '@/components/content/HorizontalProductList';
+import { CouponDetailsModal } from '@/components/products/CouponDetailsModal';
 import { InfiniteProductGrid as InfiniteProductGridComponent } from '@/components/products/InfiniteProductGrid';
+import { PdpCouponCarousel } from '@/components/products/PdpCouponCarousel';
 import { ProductTrustStrip } from '@/components/products/ProductTrustStrip';
 import { TryBuyModal as TryAndBuyModal } from '@/components/products/TryBuyModal';
 import { TryBuyPdpVariantSection } from '@/components/products/TryBuyPdpVariantSection';
@@ -25,8 +27,6 @@ import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PdpCouponCarousel } from '@/components/products/PdpCouponCarousel';
-import { CouponDetailsModal } from '@/components/products/CouponDetailsModal';
 import {
     ActivityIndicator,
     Alert,
@@ -293,6 +293,7 @@ const ProductDetailScreen = () => {
     const [showRefundPolicyModal, setShowRefundPolicyModal] = useState(false);
     const [couponModalVisible, setCouponModalVisible] = useState(false);
     const [selectedCouponDetails, setSelectedCouponDetails] = useState<any>(null);
+    const [sizeChartModalVisible, setSizeChartModalVisible] = useState(false);
     const [selectedSpecTab, setSelectedSpecTab] = useState<'description' | 'details'>('description');
     const [isSpecCollapsed, setIsSpecCollapsed] = useState(false);
     // Collection IDs that require date selection
@@ -636,6 +637,11 @@ const ProductDetailScreen = () => {
             }
 
             if (fullProduct) {
+                console.log('====================================');
+                console.log('[PDP LOADED PRODUCT]', fullProduct.title);
+                console.log('[PDP SIZECHART METAFIELD]', fullProduct.sizeChartMetafield);
+                console.log('[PDP ALL METAFIELDS]', JSON.stringify(fullProduct.metafields, null, 2));
+                console.log('====================================');
                 setProduct(fullProduct);
                 initializeVariant(fullProduct);
                 loadProductRecommendations(fullProduct.id);
@@ -810,18 +816,18 @@ const ProductDetailScreen = () => {
             try {
                 const { getAppVersionForApi } = require('@/constants/versionConfig');
                 const { couponService } = require('@/services/couponService');
-                
+
                 const price = selectedVariant
                     ? parseFloat(selectedVariant.price?.amount || '0')
                     : parseFloat(product.priceRange?.minVariantPrice?.amount || '0');
-                
+
                 const categories = product.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
                 const categorySubtotalsForFetch: Record<string, number> = {};
                 for (const tag of categories) {
                     categorySubtotalsForFetch[tag] = price;
                 }
-                
-                const hasClothing = categories.some((tagLower: string) => 
+
+                const hasClothing = categories.some((tagLower: string) =>
                     tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
                 );
 
@@ -838,7 +844,7 @@ const ProductDetailScreen = () => {
                 });
 
                 if (cancelled) return;
-                
+
                 const normalized = (visibleCoupons ?? []).map((c: any) => ({
                     ...c,
                     value: typeof c.value === 'number' ? c.value : typeof c.value === 'string' ? parseFloat(c.value) || undefined : undefined,
@@ -868,22 +874,22 @@ const ProductDetailScreen = () => {
     const displayCoupons = useMemo(() => {
         if (!availableCoupons || availableCoupons.length === 0) return [];
         const { couponService } = require('@/services/couponService');
-        
+
         const price = selectedVariant
             ? parseFloat(selectedVariant.price?.amount || '0')
             : parseFloat(product?.priceRange?.minVariantPrice?.amount || '0');
-            
+
         const categories = product?.tags ? product.tags.map((t: string) => t.trim().toLowerCase()).filter(Boolean) : [];
         const categorySubtotalsForFetch: Record<string, number> = {};
         for (const tag of categories) {
             categorySubtotalsForFetch[tag] = price;
         }
-        const hasClothing = categories.some((tagLower: string) => 
+        const hasClothing = categories.some((tagLower: string) =>
             tagLower === 'clothing' || tagLower === 'apparel' || tagLower === 'fashion'
         );
 
         const visibleOnly = availableCoupons.filter((c: any) => c.isVisible === true);
-        
+
         const mapped = visibleOnly.map((c: any) => {
             const codeObj = { ...c, code: c.code, valueType: c.valueType === 'fixed' ? 'fixed_amount' : c.valueType };
             const applicability = c.code ? couponService.getCouponApplicabilityForDisplay(
@@ -899,11 +905,11 @@ const ProductDetailScreen = () => {
                     lineItems: [{ price, quantity: 1, tags: product?.tags || [], title: product?.title }],
                 }
             ) : { applicable: true };
-            
+
             const conditions = c.code ? couponService.getCouponConditionsText(codeObj) : [];
             return { coupon: c, applicability, conditions, applicable: applicability.applicable };
         });
-        
+
         return mapped.filter((m: any) => m.applicable);
     }, [availableCoupons, user, couponUsages, product, selectedVariant, isTicketingProduct]);
 
@@ -1124,7 +1130,6 @@ const ProductDetailScreen = () => {
     const productOptions = useMemo(() => {
         if (!product?.options) return [];
         const options = Array.isArray(product.options) ? product.options : [];
-        if (variants.length <= 1) return [];
         // For ticketing products, hide only the "Date" option pills (date is selected via the date picker).
         // Keep other option pills (e.g., time slot, ticket type) if present.
         const filtered = isTicketingProduct
@@ -1133,8 +1138,14 @@ const ProductDetailScreen = () => {
                 return !name.includes('date');
             })
             : options;
-        return filtered.filter((option: any) => (option.values || []).length > 1);
-    }, [product, variants.length, isTicketingProduct]);
+        // Filter out "Title" option with "Default Title" (Shopify default for single variant products)
+        return filtered.filter((option: any) => {
+            const name = String(option?.name || '');
+            const values = option?.values || [];
+            if (name === 'Title' && values.includes('Default Title')) return false;
+            return true;
+        });
+    }, [product, isTicketingProduct]);
 
     const tryBuyPdpEligible = useMemo(
         () =>
@@ -1215,6 +1226,14 @@ const ProductDetailScreen = () => {
             ...prev,
             [optionName]: optionValue,
         }));
+        if (optionName.toLowerCase() === 'size' && (product?.id || (params as any)?.id)) {
+            try {
+                const { trackSizeSelected } = require('@/utils/mixpanelHelpers');
+                trackSizeSelected(product?.id || (params as any)?.id, optionValue);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+        }
     };
 
     const onImageScroll = (event: any) => {
@@ -1224,6 +1243,14 @@ const ProductDetailScreen = () => {
         const index = Math.round(offset / slideSize);
         if (index >= 0 && index < images.length && index !== selectedImageIndex) {
             setSelectedImageIndex(index);
+            if (product?.id || (params as any)?.id) {
+                try {
+                    const { trackProductImageSwiped } = require('@/utils/mixpanelHelpers');
+                    trackProductImageSwiped(product?.id || (params as any)?.id, index);
+                } catch (e) {
+                    console.warn('Mixpanel tracking error:', e);
+                }
+            }
         }
     };
 
@@ -1337,18 +1364,23 @@ const ProductDetailScreen = () => {
     }, [savings]);
 
     const getMetafieldValue = (product: any, key: string) => {
-        if (!product?.metafields) return null;
-        if (Array.isArray(product.metafields.edges)) {
-            const metafield = product.metafields.edges.find(
-                (edge: any) => edge?.node?.key?.toLowerCase() === key.toLowerCase()
-            );
-            if (metafield?.node?.value) return metafield.node.value;
-        }
-        if (Array.isArray(product.metafields)) {
-            const metafield = product.metafields.find(
-                (m: any) => m?.key?.toLowerCase() === key.toLowerCase()
-            );
-            if (metafield?.value) return metafield.value;
+        if (!product) return null;
+        const targetKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (product?.metafields) {
+            if (Array.isArray(product.metafields.edges)) {
+                const metafield = product.metafields.edges.find(
+                    (edge: any) => edge?.node?.key?.toLowerCase().replace(/[^a-z0-9]/g, '') === targetKey
+                );
+                if (metafield?.node?.value) return metafield.node.value;
+                if (metafield?.node?.reference?.image?.url) return metafield.node.reference.image.url;
+            }
+            if (Array.isArray(product.metafields)) {
+                const metafield = product.metafields.find(
+                    (m: any) => m?.key?.toLowerCase().replace(/[^a-z0-9]/g, '') === targetKey
+                );
+                if (metafield?.value) return metafield.value;
+                if (metafield?.reference?.image?.url) return metafield.reference.image.url;
+            }
         }
         return null;
     };
@@ -1360,7 +1392,32 @@ const ProductDetailScreen = () => {
         getMetafieldValue(product, 'Refund Policy');
     const tryAndBuyMetafield = getMetafieldValue(product, 'tryandbuyupto10');
     const tryAndBuyEnabled = tryAndBuyMetafield === 'true' || tryAndBuyMetafield === true;
-    console.log('tryAndBuyMetafield:', tryAndBuyMetafield, 'tryAndBuyEnabled:', tryAndBuyEnabled);
+
+
+    const rawSizeChartMetafield = product?.sizeChartMetafield?.reference?.image?.url ||
+        product?.sizeChartMetafield?.value ||
+        getMetafieldValue(product, 'sizechart') ||
+        getMetafieldValue(product, 'size_chart');
+
+    const sizeChartUrl = useMemo(() => {
+        if (!rawSizeChartMetafield) return null;
+        const valStr = typeof rawSizeChartMetafield === 'string' ? rawSizeChartMetafield.trim() : String(rawSizeChartMetafield).trim();
+        if (!valStr) return null;
+        if (valStr.startsWith('{') || valStr.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(valStr);
+                const url = parsed.url || parsed.src || parsed.image || (Array.isArray(parsed) ? (parsed[0]?.url || parsed[0]?.src || parsed[0]) : null);
+                if (url && typeof url === 'string') return url;
+            } catch (_) { }
+        }
+        return valStr;
+    }, [rawSizeChartMetafield]);
+
+    console.log('[PDP DEBUG] Product Title:', product?.title, 'Handle:', product?.handle);
+    console.log('[PDP DEBUG] Raw sizechart metafield value:', rawSizeChartMetafield);
+    console.log('[PDP DEBUG] Resolved sizeChartUrl:', sizeChartUrl);
+    console.log('[PDP DEBUG] All product metafields:', product?.metafields);
+    console.log('[PDP DEBUG] Single sizeChartMetafield object:', product?.sizeChartMetafield);
 
     const ageGroup = product?.ageGroup?.value || getMetafieldValue(product, 'age_group');
     const productSpecifications = product?.productSpecifications?.value || getMetafieldValue(product, 'discount_bucket');
@@ -1708,6 +1765,8 @@ const ProductDetailScreen = () => {
                                 onSelectPrimary={(v) => handleOptionSelect(pdpMainTryBuyOption.name, v)}
                                 tryValue={pdpTrySizeValue}
                                 onTryValueChange={setPdpTrySizeValue}
+                                sizeChartUrl={sizeChartUrl}
+                                onOpenSizeChart={() => setSizeChartModalVisible(true)}
                             />
                         ) : null}
 
@@ -1722,74 +1781,92 @@ const ProductDetailScreen = () => {
                                 {discountPercentage !== null && (
                                     <Text style={styles.productSavingsText}>{discountPercentage}% off</Text>
                                 )}
+                                {/* Standalone Size Chart button — shown even for single-variant products */}
+                                {!!sizeChartUrl && productOptions.length === 0 && (
+                                    <TouchableOpacity
+                                        onPress={() => setSizeChartModalVisible(true)}
+                                        style={styles.standaloneSizeChartBtn}
+                                    >
+                                        <Text style={styles.standaloneSizeChartText}>Size Chart</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
 
-
                         {productOptions.length > 0 && (
                             <View style={styles.variantsContainer}>
-                                {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => (
-                                    <View key={option.name} style={styles.optionContainer}>
-                                        <Text style={[
-                                            styles.optionLabel,
-                                            productStyles.variantLabel && {
-                                                fontSize: productStyles.variantLabel.fontSize,
-                                                color: productStyles.variantLabel.color,
-                                                ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
-                                            }
-                                        ]}>
-                                            {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
-                                        </Text>
-                                        <View style={styles.variantsList}>
-                                            {(() => {
-                                                const availableValues: string[] = [];
-                                                const unavailableValues: string[] = [];
+                                {(tryBuyPdpEligible ? pdpRestProductOptions : productOptions).map((option: any) => {
+                                    const isSizeOption = option.name?.toLowerCase() === 'size' || option.name?.toLowerCase().includes('size');
+                                    return (
+                                        <View key={option.name} style={styles.optionContainer}>
+                                            <View style={styles.optionHeaderRow}>
+                                                <Text style={[
+                                                    styles.optionLabel,
+                                                    productStyles.variantLabel && {
+                                                        fontSize: productStyles.variantLabel.fontSize,
+                                                        color: productStyles.variantLabel.color,
+                                                        ...processFontStyle(productStyles.variantLabel, Fonts.SemiBold),
+                                                    }
+                                                ]}>
+                                                    {option.name}{selectedOptions[option.name] ? `: ${selectedOptions[option.name]}` : ''}
+                                                </Text>
+                                                {isSizeOption && !!sizeChartUrl && (
+                                                    <TouchableOpacity onPress={() => setSizeChartModalVisible(true)} style={styles.sizeChartHeaderLink}>
+                                                        <Text style={styles.sizeChartHeaderText}>Size Chart</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                            <View style={styles.variantsList}>
+                                                {(() => {
+                                                    const availableValues: string[] = [];
+                                                    const unavailableValues: string[] = [];
 
-                                                option.values.forEach((value: string) => {
-                                                    const isAvail = variants.some((variant: any) => {
-                                                        if (!variant.selectedOptions) return false;
-                                                        return variant.selectedOptions.some(
-                                                            (opt: any) => opt.name === option.name && opt.value === value
-                                                        ) && isVariantAvailable(variant) !== false;
+                                                    option.values.forEach((value: string) => {
+                                                        const isAvail = variants.some((variant: any) => {
+                                                            if (!variant.selectedOptions) return false;
+                                                            return variant.selectedOptions.some(
+                                                                (opt: any) => opt.name === option.name && opt.value === value
+                                                            ) && isVariantAvailable(variant) !== false;
+                                                        });
+                                                        if (isAvail) availableValues.push(value);
+                                                        else unavailableValues.push(value);
                                                     });
-                                                    if (isAvail) availableValues.push(value);
-                                                    else unavailableValues.push(value);
-                                                });
 
-                                                return [...availableValues, ...unavailableValues].map((value: string) => {
-                                                    const isSelected = selectedOptions[option.name] === value;
-                                                    const isOptionAvailable = availableValues.includes(value);
+                                                    return [...availableValues, ...unavailableValues].map((value: string) => {
+                                                        const isSelected = selectedOptions[option.name] === value;
+                                                        const isOptionAvailable = availableValues.includes(value);
 
-                                                    return (
-                                                        <TouchableOpacity
-                                                            key={value}
-                                                            style={[
-                                                                styles.variantButton,
-                                                                isSelected && styles.variantButtonActive,
-                                                                !isOptionAvailable && styles.variantButtonDisabled
-                                                            ]}
-                                                            onPress={() => handleOptionSelect(option.name, value)}
-                                                            disabled={!isOptionAvailable}
-                                                        >
-                                                            <Text style={[
-                                                                styles.variantText,
-                                                                isSelected && styles.variantTextActive,
-                                                                !isOptionAvailable && styles.variantTextDisabled,
-                                                                productStyles.variantButton && !isSelected && {
-                                                                    fontSize: productStyles.variantButton.fontSize,
-                                                                    color: productStyles.variantButton.color,
-                                                                    ...processFontStyle(productStyles.variantButton, Fonts.Medium),
-                                                                }
-                                                            ]}>
-                                                                {value}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    );
-                                                });
-                                            })()}
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={value}
+                                                                style={[
+                                                                    styles.variantButton,
+                                                                    isSelected && styles.variantButtonActive,
+                                                                    !isOptionAvailable && styles.variantButtonDisabled
+                                                                ]}
+                                                                onPress={() => handleOptionSelect(option.name, value)}
+                                                                disabled={!isOptionAvailable}
+                                                            >
+                                                                <Text style={[
+                                                                    styles.variantText,
+                                                                    isSelected && styles.variantTextActive,
+                                                                    !isOptionAvailable && styles.variantTextDisabled,
+                                                                    productStyles.variantButton && !isSelected && {
+                                                                        fontSize: productStyles.variantButton.fontSize,
+                                                                        color: productStyles.variantButton.color,
+                                                                        ...processFontStyle(productStyles.variantButton, Fonts.Medium),
+                                                                    }
+                                                                ]}>
+                                                                    {value}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    });
+                                                })()}
+                                            </View>
                                         </View>
-                                    </View>
-                                ))}
+                                    );
+                                })}
                             </View>
                         )}
 
@@ -2234,6 +2311,15 @@ const ProductDetailScreen = () => {
                 </Text>
             </BaseModal>
 
+            {!!sizeChartUrl && (
+                <ImageViewerModal
+                    visible={sizeChartModalVisible}
+                    images={[sizeChartUrl]}
+                    initialIndex={0}
+                    onClose={() => setSizeChartModalVisible(false)}
+                />
+            )}
+
             <FloatingCartButton showTabBar={false} />
         </View>
     );
@@ -2491,16 +2577,35 @@ const styles = StyleSheet.create({
     optionContainer: {
         marginBottom: 12,
     },
+    optionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
     optionLabel: {
         fontSize: 16,
         color: '#333',
-        marginBottom: 12,
         fontFamily: Fonts.SemiBold,
     },
-    variantsList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
+    sizeChartHeaderLink: {
+        paddingVertical: 2,
+        paddingHorizontal: 4,
+    },
+    sizeChartHeaderText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#2563EB',
+        textDecorationLine: 'underline',
+    },
+    standaloneSizeChartBtn: {
+        marginLeft: 'auto',
+        marginRight: 16,
+    },
+    standaloneSizeChartText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#EF4444',
     },
     variantButton: {
         paddingHorizontal: 20,

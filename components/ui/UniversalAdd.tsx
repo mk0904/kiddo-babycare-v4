@@ -13,6 +13,7 @@ import {
 import { isVariantAvailable } from '@/utils/availability';
 import { hasTryAndBuyProduct, tryBuyTrialOptionValueFromVariant } from '@/utils/tryAndBuyProduct';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -474,6 +475,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 {count === 0 ? (
                     (variant === 'pdp' || isTicketing) ? (
                         <TouchableOpacity
+                            onPressIn={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                            }}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleAdd();
@@ -488,6 +494,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                         </TouchableOpacity>
                     ) : variant === 'prominent' ? (
                         <TouchableOpacity
+                            onPressIn={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                            }}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleAdd();
@@ -504,6 +515,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
+                            onPressIn={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                            }}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleAdd();
@@ -522,6 +538,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                 ) : (
                     <View style={currentStyles.counterContainer}>
                         <TouchableOpacity
+                            onPressIn={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                            }}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleDecrement();
@@ -536,6 +557,11 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                             {count}
                         </Text>
                         <TouchableOpacity
+                            onPressIn={() => {
+                                if (process.env.EXPO_OS === 'ios') {
+                                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }
+                            }}
                             onPress={(e) => {
                                 e.stopPropagation();
                                 handleIncrement();

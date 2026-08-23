@@ -1,32 +1,58 @@
-import { useUserStore } from '@/store/userStore';
 import { analyticsService } from '@/services/analyticsService';
 import { clevertapService } from '@/services/clevertapService';
-import { extractNumericId } from '@/utils/shopifyIds';
+import { useUserStore } from '@/store/userStore';
 import {
-  associateUserSession,
-  trackAddToCartAction,
-  trackInitiatedCheckoutAction,
-  trackPurchaseCompletion,
-  trackRegistrationAction,
-  trackLoginAction,
-  trackSearchAction,
-  trackContentViewAction,
-  trackListViewAction,
-  trackAddToWishlistAction,
+    associateUserSession,
+    trackAddToCartAction,
+    trackAddToWishlistAction,
+    trackContentViewAction,
+    trackInitiatedCheckoutAction,
+    trackListViewAction,
+    trackLoginAction,
+    trackPurchaseCompletion,
+    trackRegistrationAction,
+    trackSearchAction,
 } from '@/utils/appsFlyerAnalytics';
+import { extractNumericId } from '@/utils/shopifyIds';
 
 /**
  * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const ANON_DEVICE_ID_KEY = '@kiddo_anon_device_id';
+let _cachedAnonId: string | null = null;
+
+/** Returns a stable anonymous device ID, generating one on first call and caching it. */
+async function getOrCreateAnonId(): Promise<string> {
+  if (_cachedAnonId) return _cachedAnonId;
+  try {
+    let stored = await AsyncStorage.getItem(ANON_DEVICE_ID_KEY);
+    if (!stored) {
+      // Generate a simple UUID-like ID without external deps
+      stored = 'anon-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      await AsyncStorage.setItem(ANON_DEVICE_ID_KEY, stored);
+    }
+    _cachedAnonId = stored;
+    return stored;
+  } catch {
+    return 'anon-unknown';
+  }
+}
+
 function getDistinctId(): string {
   try {
     const user = useUserStore.getState().user;
-    return user?.id || user?.customerId || user?.email || user?.phone || '';
+    return user?.email || user?.id || user?.customerId || user?.phone || _cachedAnonId || '';
   } catch {
-    return '';
+    return _cachedAnonId || '';
   }
 }
+
+// Eagerly warm the anon ID cache on module load so it's ready before first event
+getOrCreateAnonId().catch(() => {});
+
 
 /**
  * Track a custom event (sent to backend → Mixpanel).
@@ -35,6 +61,17 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   try {
     const props = properties ?? {};
     analyticsService.track(eventName, props, getDistinctId());
+    
+    // Send event directly to local Mixpanel SDK
+    try {
+      const { mixpanel } = require('@/mixpanel');
+      if (mixpanel) {
+        mixpanel.track(eventName, props);
+      }
+    } catch (e) {
+      console.warn('[Mixpanel] Direct tracking failed:', e);
+    }
+
     // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
     const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
     clevertapService.recordEvent(ctEventName, props);
@@ -53,6 +90,30 @@ export const identifyUser = (userId: string, userProperties?: {
 }) => {
   try {
     analyticsService.identify(userId, userProperties ?? {});
+    
+    // Set properties directly in local Mixpanel SDK
+    try {
+      const { mixpanel } = require('@/mixpanel');
+      if (mixpanel) {
+        mixpanel.identify(userId);
+        const mixpanelProps: Record<string, any> = {};
+        if (userProperties?.name) mixpanelProps['$name'] = userProperties.name;
+        if (userProperties?.email) mixpanelProps['$email'] = userProperties.email;
+        if (userProperties?.phone) mixpanelProps['$phone'] = userProperties.phone;
+        
+        // Include any other metadata properties passed in
+        Object.entries(userProperties ?? {}).forEach(([k, v]) => {
+          if (!['name', 'email', 'phone'].includes(k)) {
+            mixpanelProps[k] = v;
+          }
+        });
+        
+        mixpanel.people.set(mixpanelProps);
+      }
+    } catch (e) {
+      console.warn('[Mixpanel] Direct identify/people.set failed:', e);
+    }
+
     const profile: Record<string, any> = {
       Identity: userId,
       ...(userProperties ?? {}),
@@ -88,6 +149,17 @@ export const trackScreenView = (screenName: string, additionalProperties?: Recor
 export const resetUser = () => {
   try {
     analyticsService.reset();
+    
+    // Reset local Mixpanel SDK identity
+    try {
+      const { mixpanel } = require('@/mixpanel');
+      if (mixpanel) {
+        mixpanel.reset();
+      }
+    } catch (e) {
+      console.warn('[Mixpanel] Direct reset failed:', e);
+    }
+
     clevertapService.logout();
   } catch (error) {
     console.error('Analytics reset error:', error);
@@ -119,7 +191,8 @@ export const trackProductViewed = (productId: string, productName?: string, pric
   trackContentViewAction(productId, price, 'INR');
 };
 
-export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number) => {
+export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number, l1Collection?: string, l2Collection?: string, l3Collection?: string) => {
+  console.log('[Mixpanel] trackAddToCart - L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
   trackEvent('Add to Cart', {
     productId,
     productName,
@@ -129,6 +202,9 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     content_type: 'product',
     value: price,
     currency: 'INR',
+    l1_collection: l1Collection,
+    l2_collection: l2Collection,
+    l3_collection: l3Collection,
   });
   if (price != null && Number.isFinite(price)) {
     trackAddToCartAction(productId, 'product', price, quantity || 1);
@@ -224,6 +300,27 @@ export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
   });
 };
 
+export const trackSecondOrderPlaced = (orderId: string, amount: number) => {
+  trackEvent('Second Order Placed', {
+    event_id: orderId,
+    orderId,
+    amount,
+    value: amount,
+    currency: 'INR',
+  });
+};
+
+export const trackThirdOrderPlaced = (orderId: string, amount: number) => {
+  trackEvent('Third Order Placed', {
+    event_id: orderId,
+    orderId,
+    amount,
+    value: amount,
+    currency: 'INR',
+  });
+};
+
+
 // ============================================
 // BROWSING & ENGAGEMENT EVENTS
 // ============================================
@@ -314,6 +411,20 @@ export const trackProductShareClicked = (productId: string, productName?: string
   });
 };
 
+export const trackProductImageSwiped = (productId: string, imageIndex: number) => {
+  trackEvent('Product Image Swiped', {
+    productId,
+    imageIndex,
+  });
+};
+
+export const trackSizeSelected = (productId: string, size: string) => {
+  trackEvent('Size Selected', {
+    productId,
+    size,
+  });
+};
+
 // ============================================
 // CART EVENTS
 // ============================================
@@ -333,11 +444,40 @@ export const trackCartViewed = (itemCount: number, cartValue: number) => {
   });
 };
 
+export const trackQuantityIncreased = (productId: string, oldQty: number, newQty: number) => {
+  trackEvent('Quantity Increased', {
+    productId,
+    oldQty,
+    newQty,
+  });
+};
+
+export const trackQuantityDecreased = (productId: string, oldQty: number, newQty: number) => {
+  trackEvent('Quantity Decreased', {
+    productId,
+    oldQty,
+    newQty,
+  });
+};
+
 export const trackCouponApplied = (couponCode: string, discountAmount?: number) => {
   trackEvent('Coupon Applied', {
     couponCode,
     discountAmount,
     value: discountAmount,
+  });
+};
+
+export const trackCouponFailed = (couponCode: string, reason?: string) => {
+  trackEvent('Coupon Failed', {
+    couponCode,
+    reason,
+  });
+};
+
+export const trackCouponRemoved = (couponCode: string) => {
+  trackEvent('Coupon Removed', {
+    couponCode,
   });
 };
 
@@ -358,7 +498,15 @@ export const trackPaymentMethodSelected = (paymentMethod: string) => {
   });
 };
 
-export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[]) => {
+export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[], productMetafields?: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}>) => {
+  console.log('[Mixpanel] trackOrderPlaced - Product metafields:', productMetafields);
+  
+  const l1Collections = productMetafields?.map(m => m.l1Collection).filter(Boolean) || [];
+  const l2Collections = productMetafields?.map(m => m.l2Collection).filter(Boolean) || [];
+  const l3Collections = productMetafields?.map(m => m.l3Collection).filter(Boolean) || [];
+  
+  console.log('[Mixpanel] trackOrderPlaced - L1 Collections:', l1Collections, 'L2 Collections:', l2Collections, 'L3 Collections:', l3Collections);
+  
   trackEvent('Order Placed', {
     event_id: orderId,
     orderId,
@@ -369,6 +517,9 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     currency: 'INR',
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
+    l1_collections: l1Collections,
+    l2_collections: l2Collections,
+    l3_collections: l3Collections,
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
   trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');
@@ -381,6 +532,69 @@ export const trackOrderConfirmed = (orderId: string, amount: number) => {
     amount,
     value: amount,
     currency: 'INR',
+  });
+};
+
+export const trackAddressAdded = (addressId: string, city?: string, pincode?: string) => {
+  trackEvent('Address Added', {
+    addressId,
+    city,
+    pincode,
+  });
+};
+
+export const trackAddressSelected = (addressId: string) => {
+  trackEvent('Address Selected', {
+    addressId,
+  });
+};
+
+export const trackDeliverySlotSelected = (slotDate: string, slotTime: string) => {
+  trackEvent('Delivery Slot Selected', {
+    slotDate,
+    slotTime,
+  });
+};
+
+// ============================================
+// WALLET EVENTS
+// ============================================
+
+export const trackWalletApplied = (walletAmountUsed: number) => {
+  trackEvent('Wallet Applied', {
+    walletAmountUsed,
+    value: walletAmountUsed,
+    currency: 'INR',
+  });
+};
+
+// ============================================
+// CART ABANDONMENT EVENTS
+// ============================================
+
+export const trackCartAbandoned = (cartValue: number, itemCount: number) => {
+  trackEvent('Cart Abandoned', {
+    cartValue,
+    itemCount,
+    value: cartValue,
+    currency: 'INR',
+  });
+};
+
+// ============================================
+// GRID CLICK EVENTS
+// ============================================
+
+export const trackGridCellClicked = (gridId: string, cellPosition: number, collectionId?: string, collectionName?: string, categoryKey?: string, categoryLabel?: string, gridSize?: number, numColumns?: number) => {
+  trackEvent('Grid Cell Clicked', {
+    gridId,
+    cellPosition,
+    collectionId,
+    collectionName,
+    categoryKey,
+    categoryLabel,
+    gridSize,
+    numColumns,
   });
 };
 

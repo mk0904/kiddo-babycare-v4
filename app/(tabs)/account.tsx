@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigationState } from '@react-navigation/native';
 import { useRouter, useSegments } from 'expo-router';
-import { Freshchat } from 'react-native-freshchat-sdk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -249,6 +248,7 @@ export default function AccountScreen() {
                         'ContactSupport': '/support',
                         'Profile': '/profile/edit',
                         'DemoBookings': '/demo/bookings',
+                        'ReturnRefund': '/return-refund',
                     };
 
                     const path = screenMap[params.screen];
@@ -458,7 +458,7 @@ export default function AccountScreen() {
                 {/* Menu Items */}
                 <View style={styles.menuCard}>
                     {config.menuItems && config.menuItems.length > 0 && config.menuItems.map((item, index) => {
-                        if (item.id === 'chat' && !appConfigService.isFreshChatEnabled()) {
+                        if ((item.id === 'chat' || item.id === 'quick_chat') && !appConfigService.isFreshChatEnabled()) {
                             return null;
                         }
 

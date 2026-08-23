@@ -599,6 +599,7 @@ export default function CartScreen() {
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
+    const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
     const [tryBuyEditLine, setTryBuyEditLine] = useState<any>(null);
     const [tryBuyEditProduct, setTryBuyEditProduct] = useState<any>(null);
 
@@ -705,6 +706,26 @@ export default function CartScreen() {
     }, [loading, cartItems.length, router]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added or COD is unavailable
+    // Track cart abandonment when user leaves cart without checkout
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                // Fire Cart Abandoned event if user leaves without placing order
+                if (!hasPlacedOrder && cartItems.length > 0) {
+                    try {
+                        const { trackCartAbandoned } = require('@/utils/mixpanelHelpers');
+                        const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                        const cartValue = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                        trackCartAbandoned(cartValue, itemCount);
+                    } catch (e) {
+                        console.warn('Cart abandoned tracking error:', e);
+                    }
+                }
+            };
+        }, [hasPlacedOrder, cartItems])
+    );
+
+    // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
         if ((hasTicketingProducts || !isCodAvailable) && paymentMethod === 'cod') {
             setPaymentMethod('razorpay');
@@ -1030,6 +1051,19 @@ export default function CartScreen() {
     const total = subtotalAfterDiscount + deliveryFee + giftWrappingFee;
     const totalSavings = Math.max(0, itemMrpTotal - subtotalAfterDiscount);
 
+    const handleKiddoCashChange = useCallback((enabled: boolean) => {
+        setKiddoCashEnabled(enabled);
+        if (enabled) {
+            const appliedAmount = Math.min(walletBalance ?? 0, total);
+            try {
+                const { trackWalletApplied } = require('@/utils/mixpanelHelpers');
+                trackWalletApplied(appliedAmount);
+            } catch (e) {
+                console.warn('Wallet applied tracking error:', e);
+            }
+        }
+    }, [walletBalance, total]);
+
     // Bill details display constants
     const HANDLING_FEE_ORIGINAL = 10;
     const DELIVERY_FEE_ORIGINAL = 50;
@@ -1109,6 +1143,7 @@ export default function CartScreen() {
     const handlePlaceOrder = async () => {
         if (status === 'loading' || orderLoading) return;
         setOrderLoading(true);
+        setHasPlacedOrder(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         // GET LATEST STORE STATE TO AVOID STALE CLOSURES
@@ -1753,18 +1788,59 @@ export default function CartScreen() {
 
             // Track Payment Success and Order Placed
             try {
-                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced } = require('@/utils/mixpanelHelpers');
+                const { trackEvent, trackOrderPlaced, trackFirstOrderPlaced, trackSecondOrderPlaced, trackThirdOrderPlaced } = require('@/utils/mixpanelHelpers');
                 const { extractNumericId } = require('@/utils/shopifyIds');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 const effectivePaymentMethod = isFreeOrder ? 'free' : (paymentMethod === 'cod' ? 'cod' : 'razorpay');
 
-                const hasPlacedOrder = await AsyncStorage.getItem('has_placed_order');
-                if (!hasPlacedOrder) {
+                const orderCountRaw = await AsyncStorage.getItem('user_order_count');
+                const orderCount = (parseInt(orderCountRaw || '0', 10) || 0) + 1;
+                await AsyncStorage.setItem('user_order_count', orderCount.toString());
+
+                if (orderCount === 1) {
                     trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
                     await AsyncStorage.setItem('has_placed_order', 'true');
+                } else if (orderCount === 2) {
+                    trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
+                } else if (orderCount === 3) {
+                    trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
                 }
+
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
-                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds);
+                
+                // Fetch product metafields for L1, L2, L3 collections
+                let productMetafields: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}> = [];
+                try {
+                    const { shopifyApi } = await import('@/services/shopifyApi');
+                    const metafieldPromises = cartItems.map(async (item) => {
+                        try {
+                            const product = await shopifyApi.getProductById(item.productId);
+                            if (product?.metafields) {
+                                console.log('[Cart] Product metafields for order:', product.metafields);
+                                const validMetafields = product.metafields.filter((m: any) => m != null);
+                                const l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
+                                const l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
+                                const l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
+                                console.log('[Cart] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+                                return {
+                                    productId: item.productId,
+                                    l1Collection,
+                                    l2Collection,
+                                    l3Collection
+                                };
+                            }
+                        } catch (error) {
+                            console.warn('[Cart] Failed to fetch metafields for product:', item.productId, error);
+                        }
+                        return { productId: item.productId };
+                    });
+                    productMetafields = (await Promise.all(metafieldPromises)).filter(m => m);
+                    console.log('[Cart] All product metafields for order:', productMetafields);
+                } catch (error) {
+                    console.warn('[Cart] Failed to fetch product metafields for order:', error);
+                }
+                
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, productMetafields);
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
@@ -2361,7 +2437,7 @@ export default function CartScreen() {
                                 kiddoCashApplied={kiddoCashApplied}
                                 formatCurrency={formatCurrency}
                                 onLoginPress={() => router.push('/(auth)/login')}
-                                onKiddoCashChange={setKiddoCashEnabled}
+                                onKiddoCashChange={handleKiddoCashChange}
                                 configRefreshKey={appConfigRefresh}
                             />
                         )}

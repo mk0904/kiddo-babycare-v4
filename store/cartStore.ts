@@ -1043,15 +1043,35 @@ export const useCartStore = create<CartState>()(
                     }, 150);
 
                     try {
-                        const { trackEvent } = require('@/utils/mixpanelHelpers');
-                        trackEvent('Add to Cart', {
-                            productId: item.productId,
-                            productName: item.title,
-                            variantId: item.variantId,
-                            price: item.price,
-                            quantity: item.quantity,
-                            currency: item.currencyCode || 'INR',
-                        });
+                        // Fetch product metafields to get L1, L2, L3 collections
+                        let l1Collection: string | undefined;
+                        let l2Collection: string | undefined;
+                        let l3Collection: string | undefined;
+
+                        try {
+                            const product = await shopifyApi.getProductById(item.productId);
+                            if (product?.metafields) {
+                                console.log('[CartStore] Product metafields:', product.metafields);
+                                const validMetafields = product.metafields.filter((m: any) => m != null);
+                                l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
+                                l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
+                                l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
+                                console.log('[CartStore] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+                            }
+                        } catch (metafieldError) {
+                            console.warn('[CartStore] Failed to fetch product metafields:', metafieldError);
+                        }
+
+                        const { trackAddToCart } = require('@/utils/mixpanelHelpers');
+                        trackAddToCart(
+                            item.productId,
+                            item.title,
+                            item.price,
+                            item.quantity,
+                            l1Collection,
+                            l2Collection,
+                            l3Collection
+                        );
                     } catch (e) {
                         console.warn('Analytics tracking error:', e);
                     }
@@ -1133,12 +1153,32 @@ export const useCartStore = create<CartState>()(
                         return;
                     }
 
+                    const existingItem = state.lineItems.find(li => li.id === itemId);
+                    const oldQty = existingItem?.quantity ?? 0;
+
                     const newLineItems = state.lineItems.map((li) => {
                         if (li.id !== itemId) return li;
                         const maxQty = li.quantityAvailable;
                         const capped = typeof maxQty === 'number' ? Math.min(quantity, maxQty) : quantity;
                         return { ...li, quantity: capped };
                     });
+
+                    const updatedItem = newLineItems.find(li => li.id === itemId);
+                    const newQty = updatedItem?.quantity ?? quantity;
+                    const prodId = updatedItem?.productId || updatedItem?.merchandiseId || itemId;
+
+                    if (newQty !== oldQty && prodId) {
+                        try {
+                            const { trackQuantityIncreased, trackQuantityDecreased } = require('@/utils/mixpanelHelpers');
+                            if (newQty > oldQty) {
+                                trackQuantityIncreased(prodId, oldQty, newQty);
+                            } else if (newQty < oldQty) {
+                                trackQuantityDecreased(prodId, oldQty, newQty);
+                            }
+                        } catch (e) {
+                            console.warn('Mixpanel tracking error:', e);
+                        }
+                    }
 
                     set({
                         lineItems: newLineItems,

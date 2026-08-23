@@ -1,4 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
@@ -19,6 +20,8 @@ interface Category {
   label: string;
   iconImage?: any;
   iconUrl?: string;
+  activeIconImage?: any;
+  activeIconUrl?: string;
 }
 
 interface CategoryNavigationBarProps {
@@ -122,6 +125,9 @@ export function CategoryNavigationBar({
           key={category.key}
           style={[defaultStyles.categoryItem, customStyles.categoryItem]}
           onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
             onCategorySelect?.(category.key);
           }}
           activeOpacity={0.6}
@@ -143,7 +149,37 @@ export function CategoryNavigationBar({
                 isSelected && customStyles.selectedIconContainer,
               ]}
             >
-              {category.iconUrl ? (
+              {isSelected ? (
+                category.activeIconUrl ? (
+                  <Image
+                    source={{ uri: category.activeIconUrl }}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.activeIconImage ? (
+                  <Image
+                    source={category.activeIconImage}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.iconUrl ? (
+                  <Image
+                    source={{ uri: category.iconUrl }}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : category.iconImage ? (
+                  <Image
+                    source={category.iconImage}
+                    style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={defaultStyles.categoryIconText}>
+                    {category.label.charAt(0).toUpperCase()}
+                  </Text>
+                )
+              ) : category.iconUrl ? (
                 <Image
                   source={{ uri: category.iconUrl }}
                   style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}

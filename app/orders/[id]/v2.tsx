@@ -1333,7 +1333,7 @@ export default function OrderDetailV2Screen() {
                                         Platform.OS === 'android' ? androidMarkersTracksView : !!darkStoreIconUrl
                                     }
                                 >
-                                    <View collapsable={false} style={styles.storeMarker}>
+                                    <View collapsable={false} style={[styles.storeMarker, darkStoreIconUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                         <View
                                             collapsable={false}
                                             style={[
@@ -1361,7 +1361,7 @@ export default function OrderDetailV2Screen() {
                                         tracksViewChanges={!!cusLocUrl}
                                         zIndex={destinationCoords ? 500 : 0}
                                     >
-                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
+                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }, cusLocUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {cusLocUrl ? (
                                                 <Image
                                                     source={{ uri: cusLocUrl }}
@@ -1381,7 +1381,7 @@ export default function OrderDetailV2Screen() {
                                         tracksViewChanges={androidMarkersTracksView}
                                         zIndex={500}
                                     >
-                                        <View collapsable={false} style={styles.destinationMarker}>
+                                        <View collapsable={false} style={[styles.destinationMarker, cusLocUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {cusLocUrl ? (
                                                 <Image
                                                     source={{ uri: cusLocUrl }}
@@ -1591,7 +1591,7 @@ export default function OrderDetailV2Screen() {
                                         Platform.OS === 'android' ? androidMarkersTracksView : !!darkStoreIconUrl
                                     }
                                 >
-                                    <View collapsable={false} style={styles.storeMarker}>
+                                    <View collapsable={false} style={[styles.storeMarker, darkStoreIconUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                         <View
                                             collapsable={false}
                                             style={[
@@ -1619,7 +1619,7 @@ export default function OrderDetailV2Screen() {
                                         tracksViewChanges={!!cusLocUrl}
                                         zIndex={destinationCoords ? 500 : 0}
                                     >
-                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }]}>
+                                        <View collapsable={false} style={[styles.destinationMarker, !destinationCoords && { opacity: 0 }, cusLocUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {cusLocUrl ? (
                                                 <Image
                                                     source={{ uri: cusLocUrl }}
@@ -1639,7 +1639,7 @@ export default function OrderDetailV2Screen() {
                                         tracksViewChanges={androidMarkersTracksView}
                                         zIndex={500}
                                     >
-                                        <View collapsable={false} style={styles.destinationMarker}>
+                                        <View collapsable={false} style={[styles.destinationMarker, cusLocUrl ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {cusLocUrl ? (
                                                 <Image
                                                     source={{ uri: cusLocUrl }}
@@ -1661,7 +1661,7 @@ export default function OrderDetailV2Screen() {
                                         zIndex={riderCoords ? 1000 : 0}
                                         tracksViewChanges={!!riderMapIconUri}
                                     >
-                                        <View collapsable={false} style={[styles.riderMarker, !riderCoords && { opacity: 0 }]}>
+                                        <View collapsable={false} style={[styles.riderMarker, !riderCoords && { opacity: 0 }, riderMapIconUri ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {riderMapIconUri ? (
                                                 <Image
                                                     source={{ uri: riderMapIconUri }}
@@ -1682,7 +1682,7 @@ export default function OrderDetailV2Screen() {
                                         zIndex={1000}
                                         tracksViewChanges={androidMarkersTracksView}
                                     >
-                                        <View collapsable={false} style={styles.riderMarker}>
+                                        <View collapsable={false} style={[styles.riderMarker, riderMapIconUri ? { backgroundColor: 'transparent', borderWidth: 0 } : null]}>
                                             {riderMapIconUri ? (
                                                 <Image
                                                     source={{ uri: riderMapIconUri }}

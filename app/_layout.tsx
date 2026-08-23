@@ -249,11 +249,11 @@ export default function RootLayout() {
         // Identify user on app open so CleverTap attributes App Launched to profile (DAU/WAU/MAU)
         const u = useUserStore.getState().user;
         if (u) {
-          const uid = u.id || u.customerId || u.email || u.phone;
-          if (uid) {
-            identifyUser(uid, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+          const identityId = u.email || u.id || u.customerId || u.phone;
+          if (identityId) {
+            identifyUser(identityId, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
             // Identify in Crashlytics
-            errorService.setUserInfo(uid, u.email);
+            errorService.setUserInfo(identityId, u.email);
           }
         }
         trackEvent('App Opened');

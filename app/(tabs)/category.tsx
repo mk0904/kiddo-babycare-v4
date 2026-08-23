@@ -1,18 +1,19 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
 import { useCartItemCount } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ScrollView,
+    Animated,
     StyleSheet,
-    ViewStyle,
+    ViewStyle
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,10 +23,15 @@ export default function CategoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cartItemCount = useCartItemCount();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollYValue = useRef(0);
   const [configLoading, setConfigLoading] = useState(true);
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
   const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+
+  // Tab bar visibility control
+  const { setScrollDirection, reset: resetTabBar } = useTabBarVisibility();
 
   useEffect(() => {
     const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
@@ -68,7 +74,7 @@ export default function CategoryScreen() {
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
     try {
       const { trackTappedInCategory } = require('@/utils/mixpanelHelpers');
-      const categoryName = item?.title || item?.name || item?.label || block.title || 'unknown_category';
+      const categoryName = item?.title || item?.name || item?.label || (block as any).title || 'unknown_category';
       trackTappedInCategory(categoryName);
     } catch (e) {
       console.warn('Analytics tracking error:', e);
@@ -119,6 +125,22 @@ export default function CategoryScreen() {
     }
   }, [router]);
 
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const isAtTop = offsetY <= 0;
+
+        scrollYValue.current = offsetY;
+
+        // Control tab bar visibility
+        setScrollDirection(offsetY, isAtTop);
+      },
+    }
+  );
+
   return (
     <SafeAreaView style={[styles.container, screenStyles]} edges={['top']}>
       <ScreenHeader
@@ -128,13 +150,15 @@ export default function CategoryScreen() {
         showBack
         onBackPress={() => router.replace('/(tabs)')}
       />
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPad }]}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} />
-      </ScrollView>
+      </Animated.ScrollView>
 
       <MilestoneTabDock
         milestoneUI={milestoneUI}

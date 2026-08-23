@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useRef, useState } from 'react';
 
 interface TabBarVisibilityContextType {
     isVisible: boolean;
+    scrollProgress: number; // 0 = fully visible, 1 = fully shrunk
     setScrollDirection: (scrollY: number, isAtTop?: boolean) => void;
     reset: () => void;
 }
@@ -18,15 +19,14 @@ export const useTabBarVisibility = () => {
 
 export const TabBarVisibilityProvider = ({ children }: { children: ReactNode }) => {
     const [isVisible, setIsVisible] = useState(true);
+    const [scrollProgress, setScrollProgress] = useState(0); // 0 = fully visible, 1 = fully shrunk
     const lastScrollY = useRef(0);
     const scrollThreshold = useRef(0);
 
     const setScrollDirection = useCallback((scrollY: number, isAtTop = false) => {
         // If at top, always show
         if (isAtTop) {
-            if (!isVisible) {
-                setIsVisible(true);
-            }
+            setScrollProgress(0);
             lastScrollY.current = scrollY;
             scrollThreshold.current = 0;
             return;
@@ -42,25 +42,30 @@ export const TabBarVisibilityProvider = ({ children }: { children: ReactNode }) 
 
         // Update threshold based on scroll direction
         if (scrollDelta > 0) {
-            // Scrolling down - decrease threshold (negative = hide)
+            // Scrolling down - decrease threshold (negative = shrink)
             scrollThreshold.current = Math.max(scrollThreshold.current - scrollDelta, -50);
         } else {
-            // Scrolling up - increase threshold (positive = show)
+            // Scrolling up - increase threshold (positive = expand)
             scrollThreshold.current = Math.min(scrollThreshold.current - scrollDelta, 50);
         }
 
-        // Show/hide based on threshold: negative = hide, positive = show
-        const shouldShow = scrollThreshold.current >= 0;
-
-        if (shouldShow !== isVisible) {
-            setIsVisible(shouldShow);
+        // Calculate scroll progress (0 to 1) based on threshold
+        // Only shrink when scrolling down (threshold negative)
+        // When scrolling up (threshold positive), always be fully visible (progress = 0)
+        let progress;
+        if (scrollThreshold.current < 0) {
+            progress = Math.min(1, Math.abs(scrollThreshold.current) / 50);
+        } else {
+            progress = 0;
         }
+        setScrollProgress(progress);
 
         lastScrollY.current = scrollY;
-    }, [isVisible]);
+    }, []);
 
     const reset = useCallback(() => {
         setIsVisible(true);
+        setScrollProgress(0);
         lastScrollY.current = 0;
         scrollThreshold.current = 0;
     }, []);
@@ -69,6 +74,7 @@ export const TabBarVisibilityProvider = ({ children }: { children: ReactNode }) 
         <TabBarVisibilityContext.Provider
             value={{
                 isVisible,
+                scrollProgress,
                 setScrollDirection,
                 reset,
             }}

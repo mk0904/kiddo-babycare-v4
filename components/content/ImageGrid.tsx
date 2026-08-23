@@ -16,6 +16,7 @@ import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
 import { ImageGridBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
@@ -293,7 +294,14 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                 justifyContent: 'center',
               },
             ]}
-            onPress={() => handleCollectionPress(item)}
+            onPressIn={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+            onPress={() => {
+              handleCollectionPress(item);
+            }}
             activeOpacity={0.8}
           >
             {imageUrl && !hasImageError ? (
@@ -435,7 +443,12 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                                 justifyContent: 'center',
                               },
                             ]}
-                            onPress={() => handleCollectionPress(item)}
+                            onPress={() => {
+                              if (process.env.EXPO_OS === 'ios') {
+                                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              }
+                              handleCollectionPress(item);
+                            }}
                             activeOpacity={0.8}
                           >
                             {imageUrl && !hasImageError ? (
@@ -580,7 +593,12 @@ export function ImageGrid({ block, onPress }: ImageGridProps) {
                 // Removed manual margins
               },
             ]}
-            onPress={() => handlePress(item)}
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              handlePress(item);
+            }}
             activeOpacity={0.8}
           >
             <Image

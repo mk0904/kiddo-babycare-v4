@@ -44,7 +44,13 @@ export default function AddressesScreen() {
 
     const handleSetDefault = async (addressId: string) => {
         try {
-        await setDefaultAddressById(addressId);
+            await setDefaultAddressById(addressId);
+            try {
+                const { trackAddressSelected } = require('@/utils/mixpanelHelpers');
+                trackAddressSelected(addressId);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
         } catch (error) {
             console.error('Error setting default address:', error);
         }

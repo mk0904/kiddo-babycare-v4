@@ -137,6 +137,13 @@ export default function AddressFormScreen() {
 
             await addAddress(addressData);
 
+            try {
+                const { trackAddressAdded } = require('@/utils/mixpanelHelpers');
+                trackAddressAdded(addressData.zip || addressData.pincode || 'new', addressData.city, addressData.pincode || addressData.zip);
+            } catch (e) {
+                console.warn('Mixpanel tracking error:', e);
+            }
+
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const goToCart = params.returnToCart === '1';
             const returnToHome = params.returnToHome === '1';

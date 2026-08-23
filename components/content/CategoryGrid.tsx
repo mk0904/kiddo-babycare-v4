@@ -100,6 +100,9 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     loadCollections();
   }, [loadCollections]);
 
+  // Get grid config with defaults (matching ImageGrid pattern)
+  const numColumns = gridConfig.numColumns ?? 3;
+
   // Get all categories from config
   const categories = useMemo(() => {
     const configCategories = configService.getCategories();
@@ -155,10 +158,10 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
 
     if (collectionIds && collectionIds.length > 0) {
       // Use collections from collectionIds
-      items = collections.map((collection) => {
+      items = collections.map((collection, index) => {
         // Use the full collection ID (keep gid:// format if present)
         const collectionId = collection.id;
-        
+
         return {
           id: collection.id,
           label: collection.name,
@@ -167,6 +170,22 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
           aspectRatio: collection.aspectRatio,
           widthFraction: collection.widthFraction,
           onPress: () => {
+            // Track grid cell click
+            try {
+              const { trackGridCellClicked } = require('@/utils/mixpanelHelpers');
+              trackGridCellClicked(
+                block.id || 'category-grid',
+                index + 1,
+                collectionId,
+                collection.name,
+                undefined,
+                undefined,
+                collections.length,
+                numColumns
+              );
+            } catch (e) {
+              console.warn('Grid cell click tracking error:', e);
+            }
             // Pass collection info to onPress handler (let parent handleBlockPress handle navigation)
             // This ensures consistent navigation behavior across home and category pages
             onPress?.(`/collections/${collectionId}`, {
@@ -180,12 +199,28 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
       });
     } else {
       // Use categories
-      items = filteredCategories.map((category) => ({
+      items = filteredCategories.map((category, index) => ({
         id: category.key,
         label: category.label,
         imageUrl: category.iconUrl,
         imageSource: category.iconImage,
         onPress: () => {
+          // Track grid cell click
+          try {
+            const { trackGridCellClicked } = require('@/utils/mixpanelHelpers');
+            trackGridCellClicked(
+              block.id || 'category-grid',
+              index + 1,
+              undefined,
+              undefined,
+              category.key,
+              category.label,
+              filteredCategories.length,
+              numColumns
+            );
+          } catch (e) {
+            console.warn('Grid cell click tracking error:', e);
+          }
           if (category.key === 'all') {
             router.push('/(tabs)' as any);
           } else {
@@ -206,10 +241,9 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     }
 
     return items;
-  }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit]);
+  }, [filteredCategories, collections, collectionIds, router, onPress, gridConfig.limit, block.id, numColumns]);
 
   // Get grid config with defaults (matching ImageGrid pattern)
-  const numColumns = gridConfig.numColumns ?? 3;
   const colGap = gridConfig.colGap ?? gridConfig.gap ?? 12;
   const rowGap = gridConfig.rowGap ?? gridConfig.gap ?? 12;
   const aspectRatio = gridConfig.aspectRatio ?? 1;
@@ -224,10 +258,19 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
   
   const borderRadius = gridConfig.borderRadius ?? 12;
   
+  // Get cell background color from config (fallback to white)
+  const cellBackgroundColor = (blockStyles as any)?.cell?.backgroundColor || (gridConfig as any)?.cellBackgroundColor;
+  
   // Get container styles (matching ImageGrid pattern)
   // Extract paddingHorizontal before spreading, so we can use it for FlexibleGrid
   const containerPaddingFromStyles = blockStyles?.container?.paddingHorizontal;
-  const containerPaddingHorizontal = containerPaddingFromStyles || gridConfig.padding || 16;
+  let rawPadding = containerPaddingFromStyles !== undefined ? containerPaddingFromStyles : (gridConfig.padding ?? 16);
+  let containerPaddingHorizontal = 16;
+  if (typeof rawPadding === 'string' && rawPadding.endsWith('%')) {
+    containerPaddingHorizontal = (parseFloat(rawPadding) / 100) * width;
+  } else {
+    containerPaddingHorizontal = Number(rawPadding) || 16;
+  }
   
   // Create container style without paddingHorizontal (FlexibleGrid will handle it)
   const {
@@ -256,23 +299,34 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
     ...processFontStyle(blockStyles?.title, Fonts.Black),
   };
 
+  // Calculate proportional scale if enabled (base width 390px - typical phone)
+  const scale = (gridConfig as any).proportionalScale ? width / 390 : 1;
+  const scaledColGap = colGap * scale;
+  const scaledRowGap = rowGap * scale;
+
   // Text/label style under each cell: configurable via styles.text (fontSize, fontWeight, fontFamily, etc.)
   // Do not spread raw blockStyles.text after processFontStyle — that re-applies fontWeight and can
   // break custom fonts (e.g. lexend-medium) on cell labels.
   const { fontWeight: _labelFw, fontFamily: _labelFf, ...textStyleRest } = blockStyles?.text || {};
   const processedTextStyle = processFontStyle(blockStyles?.text, Fonts.Bold);
+  const baseFontSize = textStyleRest.fontSize ?? processedTextStyle.fontSize ?? 12;
+  const baseLineHeight = textStyleRest.lineHeight ?? processedTextStyle.lineHeight;
+  const baseMarginTop = textStyleRest.marginTop ?? 0;
+  
   const textStyle = {
     color: '#666666',
     textAlign: 'center' as const,
-    fontSize: 12,
     ...processedTextStyle,
     ...textStyleRest,
+    fontSize: baseFontSize * scale,
+    lineHeight: baseLineHeight ? baseLineHeight * scale : undefined,
+    marginTop: baseMarginTop * scale,
   };
 
   // Calculate gap for FlexibleGrid (use colGap as default, FlexibleGrid will handle rowGap separately if needed)
   // Note: FlexibleGrid currently uses a single 'gap' prop, so we use colGap
   // If rowGap differs, we might need to update FlexibleGrid to support separate gaps
-  const gap = colGap;
+  const gap = scaledColGap;
 
   return (
     <BaseContentBlock block={block} style={containerStyle}>
@@ -284,14 +338,15 @@ export function CategoryGrid({ block, onPress }: CategoryGridProps) {
         layout={(gridConfig.layout || 'first-item-2-col') as GridLayoutType}
         numColumns={numColumns}
         gap={gap}
-        colGap={colGap}
-        rowGap={rowGap}
+        colGap={scaledColGap}
+        rowGap={scaledRowGap}
         padding={containerPaddingHorizontal}
         aspectRatio={aspectRatio}
         imageResizeMode={resizeMode as 'cover' | 'contain' | 'stretch'}
         showLabels={showLabels}
         borderRadius={borderRadius}
         labelStyle={textStyle}
+        cellBackgroundColor={cellBackgroundColor}
         firstItemSpan={gridConfig.firstItemSpan}
         rowAlign={gridConfig.rowAlign}
         itemHeight={gridConfig.itemHeight}

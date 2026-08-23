@@ -17,6 +17,8 @@ interface TryBuyPdpVariantSectionProps {
     onSelectPrimary: (value: string) => void;
     tryValue: string | null;
     onTryValueChange: (value: string | null) => void;
+    sizeChartUrl?: string | null;
+    onOpenSizeChart?: () => void;
 }
 
 export function TryBuyPdpVariantSection({
@@ -26,8 +28,12 @@ export function TryBuyPdpVariantSection({
     onSelectPrimary,
     tryValue,
     onTryValueChange,
+    sizeChartUrl,
+    onOpenSizeChart,
 }: TryBuyPdpVariantSectionProps) {
     const { name: optionName, values } = mainOption;
+
+    const isSizeOption = optionName.toLowerCase() === 'size' || optionName.toLowerCase().includes('size');
 
     const sortedValues = React.useMemo(() => {
         if (!optionName || !productVariants || values.length === 0) return values;
@@ -47,7 +53,14 @@ export function TryBuyPdpVariantSection({
 
     return (
         <View style={styles.wrap}>
-            <Text style={styles.sectionLabel}>Select {optionName}</Text>
+            <View style={styles.headerRow}>
+                <Text style={styles.sectionLabel}>Select {optionName}</Text>
+                {isSizeOption && !!sizeChartUrl && onOpenSizeChart && (
+                    <TouchableOpacity onPress={onOpenSizeChart} style={styles.sizeChartLink}>
+                        <Text style={styles.sizeChartText}>Size Chart</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -137,12 +150,27 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         paddingHorizontal: 16,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        marginTop: 12,
+    },
     sectionLabel: {
         fontSize: 14,
         fontFamily: Fonts.LexendSemiBold,
         color: '#717680',
-        marginBottom: 10,
-        marginTop: 12,
+    },
+    sizeChartLink: {
+        paddingVertical: 2,
+        paddingHorizontal: 6,
+    },
+    sizeChartText: {
+        fontSize: 13,
+        fontFamily: Fonts.LexendMedium,
+        color: '#2563EB',
+        textDecorationLine: 'underline',
     },
     chipRow: {
         flexDirection: 'row',

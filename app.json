@@ -177,7 +177,8 @@
             "deploymentTarget": "16.0"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "splash": {
       "image": "./assets/images/new-splash-screen.png",

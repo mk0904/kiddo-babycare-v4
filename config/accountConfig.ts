@@ -26,16 +26,15 @@ export const accountConfig = {
             },
         },
         {
-            id: "addresses",
-            title: "Saved\naddresses",
-            icon: "location-outline",
+            id: "quick_chat",
+            title: "Need\nHelp",
+            icon: "chatbubbles-outline",
             showBadge: false,
             badgeSource: "static",
             badgeValue: 0,
-            actionType: "navigate",
+            actionType: "freshchat",
             action: {
-                type: "navigate",
-                screen: "Addresses",
+                type: "freshchat",
             },
         },
         {
@@ -89,12 +88,13 @@ export const accountConfig = {
             },
         },
         {
-            id: "chat",
-            title: "Chat with us",
-            icon: "chatbubbles-outline",
-            actionType: "freshchat",
+            id: "return_refund",
+            title: "Return and Refund",
+            icon: "refresh-outline",
+            actionType: "navigate",
             action: {
-                type: "freshchat",
+                type: "navigate",
+                screen: "ReturnRefund",
             },
         },
         {

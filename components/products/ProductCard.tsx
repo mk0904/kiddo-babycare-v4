@@ -11,14 +11,15 @@ import { isProductOutOfStock } from '@/utils/availability';
 import { processFontStyle } from '@/utils/fontUtils';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -236,11 +237,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       allImageUrls[0] ||
       'https://via.placeholder.com/300';
 
-    // Request a Shopify CDN-resized image at 1× cardWidth.
-    // Using 2× was overshooting the CDN bucket (e.g. snapping to 1200x)
-    // which caused cache misses and slow TTFB. 1× still looks sharp on
-    // most devices and reliably hits the 200/300/400px cached buckets.
-    const targetWidth = Math.round(cardWidth);
+    // Request a Shopify CDN-resized image at 2× cardWidth for retina screens.
+    // 1× was causing pixelation on high-DPI displays.
+    // 2× provides a good balance between sharpness and performance.
+    const targetWidth = Math.round(cardWidth * 2);
     return shopifyImageUrl(url, targetWidth);
   }, [allImageUrls, imageErrorCount, cardWidth]);
 
@@ -383,6 +383,10 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       e.stopPropagation();
 
       if (wishlistLoading) return;
+
+      if (process.env.EXPO_OS === 'ios') {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
 
       setWishlistLoading(true);
       try {

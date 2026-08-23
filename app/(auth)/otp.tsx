@@ -201,13 +201,14 @@ export default function OTPScreen() {
       }
 
       const u = result.user;
+      const resolvedId = u?.id && !u.id.includes('existing') ? u.id : (u?.customerId && !u.customerId.includes('existing') ? u.customerId : `phone:${phoneNumber}`);
       const customerPayload: Customer = {
-        id: u?.id ?? 'gid://shopify/Customer/existing',
+        id: resolvedId,
         phone: phoneNumber,
         email: u?.email ?? '',
         firstName: u?.firstName ?? 'User',
         lastName: u?.lastName ?? '',
-        customerId: u?.customerId ?? u?.id ?? 'gid://shopify/Customer/existing',
+        customerId: u?.customerId && !u.customerId.includes('existing') ? u.customerId : resolvedId,
         customerAccessToken: result.accessToken,
         isGuest: false,
         displayName: u?.displayName ?? 'User',

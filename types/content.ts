@@ -358,6 +358,113 @@ export interface CollectionImageCarouselBlock extends BaseBlock {
   };
 }
 
+/** A single card inside a CollectionImageCarouselGrid. */
+export interface CollectionImageCarouselGridCardConfig {
+  id: string;
+  /** Layout mode for this card's interior. */
+  layout: 'image' | 'grid' | 'list';
+  /** Optional header label shown at the top of the card. */
+  title?: string;
+  /** Optional subtitle shown below the card title. */
+  subtitle?: string;
+  /** Optional header image/GIF URL shown in the card header (replaces text header if provided). */
+  headerImage?: string;
+  /** Custom header height in px (default 52). */
+  headerHeight?: number;
+  /** Optional press-through link (used for image cards and card-level header taps). */
+  link?: string;
+  /** Card background color (default white). */
+  backgroundColor?: string;
+  /** Optional gradient colors array (e.g. ['#FFF5F5', '#FFE0E0']). If provided, renders Expo LinearGradient as card background. */
+  gradientColors?: [string, string, ...string[]];
+
+  // --- layout='image' ---
+  /** Full-bleed image URL (for layout='image'). */
+  imageUrl?: string;
+  /** Shopify collection GID or numeric id (used with all layouts for navigation). */
+  collectionId?: string;
+
+  // --- layout='grid' ---
+  /** Items to show in the mini grid (for layout='grid'). */
+  gridItems?: Array<{
+    id: string;
+    imageUrl: string;
+    label?: string;
+    collectionId?: string;
+    link?: string;
+  }>;
+  /** Grid layout config (for layout='grid'). */
+  gridConfig?: {
+    /** Number of columns (e.g. 2 or 3). Default 2. */
+    columns?: number;
+    /** Maximum number of rows to show. Default shows all. */
+    rows?: number;
+    /** Gap between grid cells in px. Default 8. */
+    gap?: number;
+    /** Width / height ratio for each cell image. Default 1 (square). */
+    aspectRatio?: number;
+    /** Image resize mode. Default 'cover'. */
+    resizeMode?: 'cover' | 'contain';
+    /** Border radius for each cell. Default 12. */
+    borderRadius?: number;
+    /** Show label below each cell image. Default true. */
+    showLabels?: boolean;
+  };
+
+  // --- layout='list' ---
+  /** Direct product objects to show (for layout='list'). Takes priority over collectionId. */
+  products?: any[];
+  /** List display config (for layout='list'). */
+  listConfig?: {
+    /** Max products to display. Default 4. */
+    limit?: number;
+    /** Show product price. Default true. */
+    showPrice?: boolean;
+    /** Show add-to-cart button. Default true. */
+    showAddToCart?: boolean;
+    /** Product image size in px. Default 72. */
+    imageSize?: number;
+  };
+
+  /** Per-card custom style overrides. */
+  cardStyles?: {
+    header?: any;
+    title?: any;
+    subtitle?: any;
+  };
+}
+
+/** Horizontal snapping carousel of heterogeneous layout cards. */
+export interface CollectionImageCarouselGridBlock extends BaseBlock {
+  type: 'collectionImageCarouselGrid';
+  title?: string;
+  /** Array of card definitions — each can have a different layout. */
+  cards: CollectionImageCarouselGridCardConfig[];
+  carouselConfig?: {
+    /** Fixed card width in px. Default ~85% of screen width. */
+    cardWidth?: number;
+    /** Card aspect ratio (width / height). If provided, cardHeight is calculated as cardWidth / aspectRatio. Default 0.85 (approx 360/424). */
+    aspectRatio?: number;
+    /** Fixed card height in px (deprecated - use aspectRatio instead for responsive design). Default 340. */
+    cardHeight?: number;
+    /** Gap between cards in px. Default 12. */
+    gap?: number;
+    /** Card border radius in px. Default 20. */
+    borderRadius?: number;
+    /** Left/right inset padding for the list. Default 16. */
+    paddingHorizontal?: number;
+    /** Snap alignment. Default 'start'. */
+    snapToAlignment?: 'start' | 'center';
+    /** Show dot pagination indicators. Default true. */
+    showIndicators?: boolean;
+  };
+  styles?: {
+    container?: any;
+    title?: any;
+    card?: any;
+  };
+}
+
 export interface FeatureStripBlock extends BaseBlock {
   type: 'featureStrip';
   data: Array<{
@@ -415,6 +522,7 @@ export type ContentBlock =
   | FlashSaleBlock
   | CategoryRailBlock
   | CollectionImageCarouselBlock
+  | CollectionImageCarouselGridBlock
   | FeatureStripBlock
   | VideoBannerBlock
   | NoInternetBlock
