@@ -289,13 +289,13 @@ export function LiveDeliveryTabBanner({
     }
 
     const stateKey = `${numericId}:${phase}`;
-    // if (dismissedStateKeys.has(stateKey)) {
-    //   if (pollActiveRef.current) {
-    //     console.log('[LiveDeliveryTabBanner] Hiding because: dismissed');
-    //     setModel(null);
-    //   }
-    //   return;
-    // }
+    if (dismissedStateKeys.has(stateKey)) {
+      if (pollActiveRef.current) {
+        console.log('[LiveDeliveryTabBanner] Hiding because: dismissed');
+        setModel(null);
+      }
+      return;
+    }
 
     if (phase === 'delivered') {
       const dm = st.deliveredAt ? Date.parse(String(st.deliveredAt)) : NaN;

@@ -34,7 +34,11 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
+<<<<<<< HEAD
 	<string>12</string>
+=======
+	<string>7</string>
+>>>>>>> 29ea9cd (MOV)
 	<key>CTExpoLogLevel</key>
 	<integer>-1</integer>
 	<key>CTExpoNotificationProps</key>

@@ -363,6 +363,7 @@ export interface HotWheelConfig {
   deliveryFee: number;
   isEnabled: boolean;
   minCartValue: number;
+  deliveryText: string;
 }
 
 export interface MilestoneUIConfig {
@@ -425,7 +426,7 @@ export interface AppConfigResponse {
   isFreshChatEnabled?: boolean;
   isBackendGeocodingEnabled?: boolean;
   isHelpSupportEnabled?: boolean;
-  minOrderValue?: number;
+  minOrderValueV2?: number;
   isSelfSearchEnabled?: boolean;
   /** Some backends send special-deal promo at root instead of under `cart`. */
   speacialDealConfig?: SpecialDealConfig;

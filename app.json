@@ -178,7 +178,9 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset"
+
     ],
     "splash": {
       "image": "./assets/images/new-splash-screen.png",
