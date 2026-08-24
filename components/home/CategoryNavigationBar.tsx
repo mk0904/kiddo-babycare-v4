@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 
 /**
  * Chrome tab geometry, from the official chrome-tabs SVG (viewBox height 36):
@@ -30,16 +30,22 @@ const BOTTOM_C2Y = 3.5 * CHROME_SCALE;
 const TOP_C1Y = 4.5 * CHROME_SCALE;
 const TOP_C2X = 3.5 * CHROME_SCALE;
 
-function buildChromeTabPaths(width: number, height: number, stroke: number) {
-  const pad = stroke / 2;
+function buildTaperedTabPaths(width: number, height: number) {
+  const pad = 1;
   const x0 = pad;
   const y0 = pad;
   const w = width - pad;
-  const h = height - pad;
+  const h = height;
   const left = x0 + TAB_EAR;
   const right = w - TAB_EAR;
 
-  const strokeD = [
+  // Thickness configuration
+  const t_top = 3.2;        // Thick horizontal top border
+  const t_side = 1.0;       // Side borders thin after the curve
+  const t_bottom = 0.5;     // Very thin at the baseline
+
+  // Outer Path (left to right)
+  const outerD = [
     `M ${x0} ${h}`,
     `C ${x0 + BOTTOM_C1X} ${h} ${left} ${h - BOTTOM_C2Y} ${left} ${h - BOTTOM_CURVE}`,
     `L ${left} ${y0 + TOP_RADIUS}`,
@@ -48,11 +54,34 @@ function buildChromeTabPaths(width: number, height: number, stroke: number) {
     `C ${right - TOP_C2X} ${y0} ${right} ${y0 + TOP_RADIUS - TOP_C1Y} ${right} ${y0 + TOP_RADIUS}`,
     `L ${right} ${h - BOTTOM_CURVE}`,
     `C ${right} ${h - BOTTOM_C2Y} ${w - BOTTOM_C1X} ${h} ${w} ${h}`,
+  ];
+
+  // Inner Path (right to left)
+  // The top inner segment is a straight line at y = y0 + t_top, keeping it flat and thick across the top.
+  const innerD = [
+    `L ${w - t_bottom} ${h}`,
+    `C ${w - BOTTOM_C1X - t_bottom} ${h} ${right - t_side} ${h - BOTTOM_C2Y} ${right - t_side} ${h - BOTTOM_CURVE}`,
+    `L ${right - t_side} ${y0 + TOP_RADIUS}`,
+    `C ${right - t_side} ${y0 + TOP_RADIUS - TOP_C1Y} ${right - TOP_C2X} ${y0 + t_top} ${right - TOP_RADIUS} ${y0 + t_top}`,
+    `L ${left + TOP_RADIUS} ${y0 + t_top}`,
+    `C ${left + TOP_C2X} ${y0 + t_top} ${left + t_side} ${y0 + TOP_RADIUS - TOP_C1Y} ${left + t_side} ${y0 + TOP_RADIUS}`,
+    `L ${left + t_side} ${h - BOTTOM_CURVE}`,
+    `C ${left + t_side} ${h - BOTTOM_C2Y} ${x0 + BOTTOM_C1X + t_bottom} ${h} ${x0 + t_bottom} ${h}`,
+    `L ${x0} ${h}`,
+    `Z`
+  ];
+
+  const borderD = [...outerD, ...innerD].join(' ');
+
+  const fillD = [
+    ...outerD,
+    `L ${x0} ${h}`,
+    `Z`
   ].join(' ');
 
   return {
-    strokeD,
-    fillD: `${strokeD} L ${x0} ${h} Z`,
+    fillD,
+    borderD,
   };
 }
 
@@ -65,8 +94,8 @@ function ChromeTabHighlight({
   height: number;
   color: string;
 }) {
-  const { fillD, strokeD } = useMemo(
-    () => buildChromeTabPaths(width, height, TAB_STROKE),
+  const { fillD, borderD } = useMemo(
+    () => buildTaperedTabPaths(width, height),
     [width, height]
   );
 
@@ -78,14 +107,10 @@ function ChromeTabHighlight({
       pointerEvents="none"
     >
       <Path d={fillD} fill="#FFFFFF" />
-      <Path d={fillD} fill={color} fillOpacity={0.08} />
+      <Path d={fillD} fill={color} fillOpacity={0.12} />
       <Path
-        d={strokeD}
-        fill="none"
-        stroke={color}
-        strokeWidth={TAB_STROKE}
-        strokeLinejoin="round"
-        strokeLinecap="butt"
+        d={borderD}
+        fill={color}
       />
     </Svg>
   );
@@ -161,9 +186,9 @@ export function CategoryNavigationBar({
       height: iconSize,
     },
     slidingBorderContainer: {
-      width: iconContainerSize + 8 + TAB_EAR * 2,
+      width: iconContainerSize + 2 + TAB_EAR * 2,
       // Match the icon + label row so the scoops sit on the header edge, not in clipped overflow.
-      height: iconContainerSize + 2,
+      height: iconContainerSize + 10,
     },
   }), [iconSize, iconContainerSize]);
 
@@ -213,13 +238,13 @@ export function CategoryNavigationBar({
                 isSelected && customStyles.selectedIconContainer,
               ]}
             >
-              {category.activeIconUrl ? (
+              {(isSelected && category.activeIconUrl) ? (
                 <Image
                   source={{ uri: category.activeIconUrl }}
                   style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
                   resizeMode="contain"
                 />
-              ) : category.activeIconImage ? (
+              ) : (isSelected && category.activeIconImage) ? (
                 <Image
                   source={category.activeIconImage}
                   style={[defaultStyles.categoryIconImage, dynamicStyles.categoryIconImage]}
@@ -291,6 +316,8 @@ export function CategoryNavigationBar({
 
   return (
     <View style={containerStyle}>
+      {/* Baseline that extends to both edges, behind the active tab's white fill */}
+      <View style={[defaultStyles.baseline, { backgroundColor: '#D1D5DB' }]} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -325,6 +352,15 @@ const defaultStyles = StyleSheet.create({
     width: '100%',
     paddingTop: 0,
     overflow: 'visible',
+    position: 'relative',
+  },
+  baseline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 0,
@@ -358,7 +394,7 @@ const defaultStyles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     pointerEvents: 'none',
-    marginTop: 8,
+    marginTop: 2,
     overflow: 'visible',
   },
   categoryIconWrapper: {
