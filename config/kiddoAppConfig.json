@@ -4110,6 +4110,11 @@
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_bf541bc1-777c-4ea6-a13e-e2b762218ec7.png?v=1787064424"
     },
     {
+      "collectionId": "gid://shopify/Collection/517933891873",
+      "label": "Sibling Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_1_9c467734-a34f-49bd-801d-4e66fa50eddd.png?v=1787552622"
+    },
+    {
       "collectionId": "gid://shopify/Collection/517648449825",
       "label": "Casual & Party Wear",
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_1b5d85f4-eed7-4b5c-9094-3b644ff13561.png?v=1787064423"
@@ -4148,6 +4153,12 @@
       "label": "Ethnic Wear",
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_6283b06b-4a61-4e31-b991-220d836172b8.png?v=1787064424"
     },
+        {
+      "collectionId": "gid://shopify/Collection/517933891873",
+      "label": "Sibling Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_1_9c467734-a34f-49bd-801d-4e66fa50eddd.png?v=1787552622"
+    },
+
     {
       "collectionId": "gid://shopify/Collection/517651562785",
       "label": "Casual & Party Wear",
@@ -5190,6 +5201,310 @@
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_e8b4cc84-f746-497f-8d63-789ec1495db7.png?v=1787213146"
     }
   ]
+},
+"517700813089": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517702779169",
+      "label": "Baby Wipes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_8e22ffdb-e7e3-455e-b17e-5ae6efbafacd.png?v=1787295493"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517702811937",
+      "label": "Bed Protectors and changing mats",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_3f1cf903-ed57-454e-b921-d56f5e65265a.png?v=1787295496"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517702877473",
+      "label": "Cloth Diapers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_7804987a-d632-4e2f-9cc5-388052623226.png?v=1787295505"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517702910241",
+      "label": "Cloth Nappies",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_078f4f80-3b0f-4116-ad4b-44e521246005.png?v=1787295505"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517702975777",
+      "label": "Crib Mattresses",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_24b92556-7684-46ef-a45b-ebf1d0be820e.png?v=1787295511"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703172385",
+      "label": "Diaper Bag and Travel Pouches",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7_8192fa65-6639-41cc-abd9-cc4860adf1c6.png?v=1787295539"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703237921",
+      "label": "Diaper Rash Cream",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_a4b2b017-d455-482c-bf4d-192e6e6d87d4.png?v=1787295545"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703598369",
+      "label": "Pant Diaper",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_a9789156-ed27-4083-bf01-5cb25e5bf8ef.png?v=1787295551"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703663905",
+      "label": "Potty Training Pants",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/10_2ac34b96-62a9-4b55-8a5d-8f65d0f07fd6.png?v=1787295555"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703762209",
+      "label": "Taped Diapers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_319e2a60-9e15-4cb0-9d60-e30efe74bc00.png?v=1787295563"
+    }
+  ]
+},
+"517703827745": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517703860513",
+      "label": "Baby Cream",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_030c1a00-a86e-4f73-a595-e9276ecb11a4.png?v=1787295865"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703926049",
+      "label": "Baby Face Wash",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_5ddb30f5-f40d-4404-a33e-d217f6e7a802.png?v=1787295872"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517703958817",
+      "label": "Baby Gift Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_e756ff98-2a8c-48ec-8ff3-e4da654253bd.png?v=1787295879"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704024353",
+      "label": "Baby Lotion",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_c8fe5ec3-7817-4165-94f4-3520190c1b90.png?v=1787295884"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704155425",
+      "label": "Baby Oil / Massage Oil",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/17_fc0f0fb2-2227-4567-b29f-2198dad9361e.png?v=1787295889"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704253729",
+      "label": "Baby Powder",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/18_2e404b1f-ddec-4451-8e45-e0b2b2f6ac61.png?v=1787295896"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704352033",
+      "label": "Baby Soaps",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/19_d575266a-6e62-4ac0-a3a9-31d78648e7b5.png?v=1787295901"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704384801",
+      "label": "Bath Towels, Wraps & Wash Cloths",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_906643a7-7a41-446f-b5cd-af61a116bd4a.png?v=1787295905"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517704581409",
+      "label": "Bath Tub & Gear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/21_4a4acfbb-4a6d-4d7c-acdd-bb800f04bb31.png?v=1787295912"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517705236769",
+      "label": "Body Wash/Shampoo",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_e4059bf5-2ce0-4b7b-a7c8-912f144c2587.png?v=1787295917"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517705335073",
+      "label": "Kids Grooming Essentials",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/23_d6e75439-0928-49e3-b745-3ad66264b42d.png?v=1787295922"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517706055969",
+      "label": "Kids Toothbrush & Tooth paste",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/24_4232ddb7-552c-49a2-aafc-ba700fe1cc4e.png?v=1787295930"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517706088737",
+      "label": "Oral Care",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/25_850d2b80-31c0-4d5d-bb7e-ada469dc920d.png?v=1787295935"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517706121505",
+      "label": "Sunscreen",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Care_5.png?v=1787296780"
+    }
+  ]
+},
+"517706154273": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517713592609",
+      "label": "Baby Tableware & Containers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/28_d292f13a-f934-4ed8-9816-dcd331d5e73a.png?v=1787297228"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713625377",
+      "label": "Bibs, Aprons & Wash Cloths",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/29_a1b7c5fd-21ba-4e20-bc1e-01caa85c1ef4.png?v=1787297236"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713789217",
+      "label": "Bottle Brush",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_9c151272-228a-4439-93fd-60b48392e95b.png?v=1787297245"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713821985",
+      "label": "Bottle Covers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/31_c61308b0-225b-465b-85dd-268153e707dc.png?v=1787297252"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713854753",
+      "label": "Bottle Sterilizers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/32_f146d28b-577f-4528-877b-2081678f956e.png?v=1787297257"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713887521",
+      "label": "Burp Clothes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/33_120b582a-af59-4111-9671-8f8422c5ad0d.png?v=1787297262"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517713953057",
+      "label": "Cutlery",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/34_1bd233e8-9edc-4ea0-a3e9-9f0ae6d437ac.png?v=1787297267"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714084129",
+      "label": "Feeding Bottles & Nipples",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/35_ebfdfa14-5c9f-4888-b8ca-2079d1d64009.png?v=1787297272"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714149665",
+      "label": "Pacifiers & Feeders",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/36_5252f575-26f7-427c-9f11-a3a55e8a962f.png?v=1787297277"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714346273",
+      "label": "Plates & Bowls",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/37_020ee9ad-bdb8-4690-b147-d55dadd32c93.png?v=1787297283"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714411809",
+      "label": "Sippy Cups",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/38_815834c6-e288-4fcd-888c-a9d6510c6f1b.png?v=1787297290"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714444577",
+      "label": "Teethers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/39_629d5dc6-589b-4616-968d-ced860ea6c17.png?v=1787297296"
+    }
+  ]
+},
+"517714575649": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517714608417",
+      "label": "Preterm Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/41_94e83f86-2168-4391-8742-709d4f7ff679.png?v=1787298059"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714641185",
+      "label": "Special Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/42_04c73441-ec8c-4160-8246-92ef642c87dd.png?v=1787298070"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714706721",
+      "label": "Stage 1 Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/43_2645dd18-aa3e-445c-9e8c-58ccd988bac1.png?v=1787298079"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714772257",
+      "label": "Stage 2 Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/44_f567a328-277c-4f6e-81d2-ee3991e6476a.png?v=1787298084"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714870561",
+      "label": "Stage 3 Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/45_57213560-9a79-4a99-a4a0-41330359946c.png?v=1787298087"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517714968865",
+      "label": "Stage 4 Formula",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/46_49457950-b350-4056-aa06-3871c9ce9a02.png?v=1787298088"
+    }
+  ]
+},
+"517714673953": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517715951905",
+      "label": "Mosquito Protection",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/48_bda9f4b6-2c08-4569-8de1-4654427b09b8.png?v=1787298430"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716017441",
+      "label": "Cotton Balls and Swabs",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/49_1124c049-b9c1-4eb7-aa89-53fd2eb5d637.png?v=1787298436"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716082977",
+      "label": "Cough & Cold",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/50_60d2a243-54d5-4ba9-b218-32fe99afc857.png?v=1787298457"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716148513",
+      "label": "Kids Detergents & Cleaners",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/51_b40b19b6-f915-4caa-8058-2fe31df46b1b.png?v=1787298465"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716181281",
+      "label": "Stomach Care",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/52_2d04a42f-0c25-4b8c-ac1b-e4cb558a23d5.png?v=1787298478"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716279585",
+      "label": "Thermometer",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/53_3701eb9c-a5c6-4ed9-9cea-bb376f3a978d.png?v=1787298599"
+    }
+  ]
+},
+"517716312353": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/517716377889",
+      "label": "Cookies & Biscuits",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/55_d123119b-1859-4a1c-b1eb-db7b9d919217.png?v=1787298770"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716410657",
+      "label": "Gummies",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/56_6e7032eb-7f72-47f4-8134-7856f4a18d37.png?v=1787298774"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716443425",
+      "label": "Natural Sweeteners",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/57_0e0afd12-3165-44d9-95c1-fff5aee7a204.png?v=1787298783"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716541729",
+      "label": "Nutritional Drinks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/58_6c7a9a1f-7d8b-40e4-8887-64176def9301.png?v=1787298798"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716574497",
+      "label": "Puffs & Chips",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/59_14a463d6-4319-4068-a4ac-fd647d07957a.png?v=1787298805"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716607265",
+      "label": "Dry Fruits & Nuts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/60_efaee693-b684-4989-915f-bab4ca494188.png?v=1787298811"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716705569",
+      "label": "Pancake Mixes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/61_06e17055-9d9e-4f01-8610-8fb6fc50f57e.png?v=1787298986"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/517716771105",
+      "label": "Porridge & Khichdi",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/62_b824b6fe-2062-4f09-8ff8-d980ec2857ff.png?v=1787298992"
+    }
+  ]
 }
   },
   "productGridDefaults": {
@@ -5737,8 +6052,7 @@
           "fontSize": 18,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display": "none",
@@ -7024,40 +7338,33 @@
         "borderRadius": 12,
         "proportionalScale": true
       },
-      "collectionIds": [
+            "collectionIds": [
         {
-          "id": "gid://shopify/Collection/517445648673",
-          "name": "Top Wear"
+          "id": "gid://shopify/Collection/517431099681"
         },
         {
-          "id": "gid://shopify/Collection/517446336801",
-          "name": "Bottom Wear"
+          "id": "gid://shopify/Collection/517433196833"
         },
         {
-          "id": "gid://shopify/Collection/517446828321",
-          "name": "Dungarees"
+          "id": "gid://shopify/Collection/517441093921"
         },
         {
-          "id": "gid://shopify/Collection/517446893857",
-          "name": "Coord Sets"
+          "id": "gid://shopify/Collection/517441650977"
         },
         {
-          "id": "gid://shopify/Collection/517447811361",
-          "name": "Nightwear"
+          "id": "gid://shopify/Collection/517443354913"
         },
         {
-          "id": "gid://shopify/Collection/517448794401",
-          "name": "Innerwear"
+          "id": "gid://shopify/Collection/517444108577"
         },
         {
-          "id": "gid://shopify/Collection/517449416993",
-          "name": "Ethnic Wear"
+          "id": "gid://shopify/Collection/517444305185"
         },
         {
-          "id": "gid://shopify/Collection/517449548065",
-          "name": "Party Wear"
+          "id": "gid://shopify/Collection/517444501793"
         }
       ],
+
       "styles": {
         "container": {
           "position": "absolute",
@@ -7238,8 +7545,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7293,8 +7599,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7364,8 +7669,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7425,8 +7729,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         }
       }
     },
@@ -7483,8 +7786,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         }
       }
     },
@@ -7549,8 +7851,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display": "none",
@@ -7626,8 +7927,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "display": "none",
@@ -7703,8 +8003,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7755,8 +8054,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7807,8 +8105,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7845,8 +8142,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         }
       }
     }
@@ -7920,8 +8216,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -7957,8 +8252,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "imageContainer": {
           "borderRadius": 20,
@@ -8025,8 +8319,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8091,8 +8384,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8169,8 +8461,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8227,8 +8518,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8301,8 +8591,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8359,8 +8648,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8457,8 +8745,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8517,8 +8804,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8583,8 +8869,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8641,8 +8926,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -8715,8 +8999,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9055,8 +9338,7 @@
             "fontSize": 15,
             "lineHeight": 20,
             "fontWeight": "700",
-            "fontFamily": "lexend",
-            "color": "rgba(0, 0, 0, 0.3)"
+            "fontFamily": "lexend"
           }
         },
         "gap": {
@@ -9090,8 +9372,7 @@
             "fontSize": 15,
             "lineHeight": 20,
             "fontWeight": "700",
-            "fontFamily": "lexend",
-            "color": "rgba(0, 0, 0, 0.3)"
+            "fontFamily": "lexend"
           }
         },
         "gap": {
@@ -9109,7 +9390,7 @@
       "title": "Featured",
       "visible": true,
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/App_designs_500_x_600_mm_1_cd17998f-1e9b-4120-af77-eb2bd1a59b8a.png?v=1773980640",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ChatGPT_Image_Aug_24_2026_05_12_32_PM.png?v=1787571965",
         "height": 250,
         "borderRadius": 0,
         "borderBottomLeftRadius": 20,
@@ -9125,43 +9406,46 @@
         }
       }
     },
-    {
-      "id": "babycare-grid-2-3",
-      "type": "grid",
+        {
+      "id": "babycare-safety-health-grid",
+      "type": "categoryGrid",
+      "visible": true,
       "title": "Shop by Category",
-      "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/511117197601"
-        },
-        {
-          "id": "gid://shopify/Collection/511117263137"
-        },
-        {
-          "id": "gid://shopify/Collection/511117295905"
-        },
-        {
-          "id": "gid://shopify/Collection/511117328673"
-        },
-        {
-          "id": "gid://shopify/Collection/511117361441"
-        }
-      ],
       "gridConfig": {
-        "columnsPerRow": [
-          2,
-          3
-        ],
+        "layout": "uniform",
+        "numColumns": 3,
         "colGap": 12,
-        "rowGap": 6,
-        "limit": 0,
+        "rowGap": 12,
+        "limit": 7,
+        "aspectRatio": 1,
         "resizeMode": "cover",
-        "aspectRatio": 1.25
+        "showLabels": true,
+        "borderRadius": 12
       },
-      "styles": {
+"collectionIds": [
+        {
+          "id": "gid://shopify/Collection/517700813089"
+        },
+        {
+          "id": "gid://shopify/Collection/517703827745"
+        },
+        {
+          "id": "gid://shopify/Collection/517706154273"
+        },
+        {
+          "id": "gid://shopify/Collection/517714575649"
+        },
+        {
+          "id": "gid://shopify/Collection/517714673953"
+        },
+                {
+          "id": "gid://shopify/Collection/517716312353"
+        }
+
+      ],      "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "paddingTop": 10,
-          "paddingBottom": 28
+          "paddingTop": 20
         },
         "title": {
           "marginBottom": 0,
@@ -9169,18 +9453,9 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
-        "imageContainer": {
-          "borderRadius": 20,
-          "borderWidth": 1,
-          "borderColor": "#E5E7EB",
-          "backgroundColor": "#E8F4FD",
-          "overflow": "hidden"
+          "fontFamily": "lexend"
         },
         "text": {
-          "marginTop": 12,
           "fontFamily": "lexend-regular",
           "color": "#414651",
           "fontSize": 12,
@@ -9188,45 +9463,61 @@
           "letterSpacing": 0,
           "textAlign": "center"
         }
-      },
-      "visible": true
+      }
     },
     {
       "id": "babycare-grid-brands",
       "type": "grid",
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/508169584929",
+          "id": "gid://shopify/Collection/517713002785",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508169552161",
+          "id": "gid://shopify/Collection/517713068321",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508168634657",
+          "id": "gid://shopify/Collection/517713101089",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508168765729",
+          "id": "gid://shopify/Collection/517713133857",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508172075297",
+          "id": "gid://shopify/Collection/517713199393",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508172206369",
+          "id": "gid://shopify/Collection/517713232161",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508168831265",
+          "id": "gid://shopify/Collection/517713264929",
           "name": ""
         },
         {
-          "id": "gid://shopify/Collection/508172271905",
+          "id": "gid://shopify/Collection/517713330465",
+          "name": ""
+        },
+                {
+          "id": "gid://shopify/Collection/517718311201",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/517718376737",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/517718442273",
+          "name": ""
+        },
+        {
+          "id": "gid://shopify/Collection/517718606113",
           "name": ""
         }
+
       ],
       "title": "Shop by Brands",
       "gridConfig": {
@@ -9247,8 +9538,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "imageContainer": {
           "borderRadius": 20,
@@ -9285,39 +9575,31 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510757241121",
-          "name": "Moisturizer & Powders"
-        },
-        {
-          "id": "gid://shopify/Collection/510757306657",
-          "name": "Body Wash/Shampoo"
-        },
-        {
-          "id": "gid://shopify/Collection/510757372193",
-          "name": "Sunscreen"
-        },
-        {
-          "id": "gid://shopify/Collection/510757404961",
-          "name": "Face Wash"
-        },
-        {
-          "id": "gid://shopify/Collection/510757437729",
-          "name": "Kids Toothbrush and Tooth paste"
-        },
-        {
-          "id": "gid://shopify/Collection/510757470497",
-          "name": "Baby Oil / Massage Oil"
-        },
-        {
-          "id": "gid://shopify/Collection/510757503265",
-          "name": "Bath Towels and Wraps"
-        },
-        {
-          "id": "gid://shopify/Collection/510757536033",
-          "name": "Kids Grooming Essentials (Lip Balm, Combs, nail cutters)"
-        }
-      ],
+  {
+    "id": "gid://shopify/Collection/517714837793"
+  },
+  {
+    "id": "gid://shopify/Collection/517715034401"
+  },
+  {
+    "id": "gid://shopify/Collection/517715067169"
+  },
+  {
+    "id": "gid://shopify/Collection/517715132705"
+  },
+  {
+    "id": "gid://shopify/Collection/517715231009"
+  },
+  {
+    "id": "gid://shopify/Collection/517715296545"
+  },
+  {
+    "id": "gid://shopify/Collection/517715329313"
+  },
+  {
+    "id": "gid://shopify/Collection/517715362081"
+  }
+],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
@@ -9329,8 +9611,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9349,7 +9630,7 @@
       "title": "Diapers and wipes",
       "gridConfig": {
         "layout": "uniform",
-        "numColumns": 4,
+        "numColumns": 3,
         "colGap": 12,
         "rowGap": 12,
         "limit": 0,
@@ -9359,39 +9640,25 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510757667105",
-          "name": "Diapers"
-        },
-        {
-          "id": "gid://shopify/Collection/510757699873",
-          "name": "Wipes"
-        },
-        {
-          "id": "gid://shopify/Collection/510757732641",
-          "name": "Diaper bin"
-        },
-        {
-          "id": "gid://shopify/Collection/510757798177",
-          "name": "Changing mats"
-        },
-        {
-          "id": "gid://shopify/Collection/510757994785",
-          "name": "Potty Training Seats"
-        },
-        {
-          "id": "gid://shopify/Collection/510758027553",
-          "name": "Rash Cream"
-        },
-        {
-          "id": "gid://shopify/Collection/510758060321",
-          "name": "Swim Diapers"
-        },
-        {
-          "id": "gid://shopify/Collection/510758093089",
-          "name": "Cloth Nappies & Diapers"
-        }
-      ],
+  {
+    "id": "gid://shopify/Collection/517715427617"
+  },
+  {
+    "id": "gid://shopify/Collection/517715525921"
+  },
+  {
+    "id": "gid://shopify/Collection/517715624225"
+  },
+  {
+    "id": "gid://shopify/Collection/517715689761"
+  },
+  {
+    "id": "gid://shopify/Collection/517715722529"
+  },
+  {
+    "id": "gid://shopify/Collection/517715755297"
+  }
+],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
@@ -9403,8 +9670,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9433,23 +9699,19 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510759829793",
-          "name": "Infant Formula"
-        },
-        {
-          "id": "gid://shopify/Collection/510760190241",
-          "name": "Baby Snacks and Cereals"
-        },
-        {
-          "id": "gid://shopify/Collection/510760223009",
-          "name": "Kids Utensils & Containers"
-        },
-        {
-          "id": "gid://shopify/Collection/510760354081",
-          "name": "Ready-to-Feed Food"
-        }
-      ],
+  {
+    "id": "gid://shopify/Collection/517715886369"
+  },
+  {
+    "id": "gid://shopify/Collection/517716050209"
+  },
+  {
+    "id": "gid://shopify/Collection/517716214049"
+  },
+  {
+    "id": "gid://shopify/Collection/517716345121"
+  }
+],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
@@ -9461,8 +9723,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9491,35 +9752,31 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510760550689",
-          "name": "Feeding Bottles & Nipples"
-        },
-        {
-          "id": "gid://shopify/Collection/510760845601",
-          "name": "Pacifiers & Feeders"
-        },
-        {
-          "id": "gid://shopify/Collection/510760878369",
-          "name": "Breast Pumps"
-        },
-        {
-          "id": "gid://shopify/Collection/510760943905",
-          "name": "Bibs and Aprons"
-        },
-        {
-          "id": "gid://shopify/Collection/510761140513",
-          "name": "Teethers"
-        },
-        {
-          "id": "gid://shopify/Collection/510761238817",
-          "name": "Bottle Sterilizers & Warmers"
-        },
-        {
-          "id": "gid://shopify/Collection/510761369889",
-          "name": "Bottle Wash Brush and Soap"
-        }
-      ],
+  {
+    "id": "gid://shopify/Collection/517716836641"
+  },
+  {
+    "id": "gid://shopify/Collection/517716902177"
+  },
+  {
+    "id": "gid://shopify/Collection/517716934945"
+  },
+  {
+    "id": "gid://shopify/Collection/517717000481"
+  },
+  {
+    "id": "gid://shopify/Collection/517717066017"
+  },
+  {
+    "id": "gid://shopify/Collection/517717360929"
+  },
+  {
+    "id": "gid://shopify/Collection/517717459233"
+  },
+  {
+    "id": "gid://shopify/Collection/517717754145"
+  }
+],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
@@ -9531,8 +9788,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9561,23 +9817,19 @@
         "borderRadius": 12
       },
       "collectionIds": [
-        {
-          "id": "gid://shopify/Collection/510566367521",
-          "name": "Cough & Care"
-        },
-        {
-          "id": "gid://shopify/Collection/510566498593",
-          "name": "Mosquito patches"
-        },
-        {
-          "id": "gid://shopify/Collection/510566564129",
-          "name": "Kids Detergents & Cleaners"
-        },
-        {
-          "id": "gid://shopify/Collection/510566596897",
-          "name": "Safety Bed Rails"
-        }
-      ],
+  {
+    "id": "gid://shopify/Collection/517717786913"
+  },
+  {
+    "id": "gid://shopify/Collection/517717885217"
+  },
+  {
+    "id": "gid://shopify/Collection/517717983521"
+  },
+  {
+    "id": "gid://shopify/Collection/517718212897"
+  }
+],
       "styles": {
         "container": {
           "paddingHorizontal": 16,
@@ -9589,8 +9841,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9626,8 +9877,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "titleContainer": {
           "marginBottom": 0
@@ -9705,8 +9955,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9771,8 +10020,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "text": {
           "fontFamily": "lexend-regular",
@@ -9869,8 +10117,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "titleContainer": {
           "marginBottom": 16
@@ -9902,9 +10149,8 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
-        },
+          "fontFamily": "lexend"
+               },
         "titleContainer": {
           "marginBottom": 16
         },
@@ -9935,8 +10181,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "titleContainer": {
           "marginBottom": 16
@@ -9968,8 +10213,7 @@
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
-          "fontFamily": "lexend",
-          "color": "rgba(0, 0, 0, 0.3)"
+          "fontFamily": "lexend"
         },
         "titleContainer": {
           "marginBottom": 16
@@ -9978,211 +10222,6 @@
       }
     }
   ],
-  "discounts": {
-    "enabled": true,
-    "codes": [
-      {
-        "code": "HEYKIDDO",
-        "title": "free shoes",
-        "description": "Special discount on shoes",
-        "value": 0,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": 500,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": true,
-        "nonCombinable": false,
-        "isVisible": true
-      },
-      {
-        "code": "FIRSTKIDDOTICKET",
-        "title": "First Ticketing Order Discount",
-        "description": "Special discount for your first ticketing order",
-        "value": 300,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": true,
-        "ticketingOnly": true,
-        "isVisible": true
-      },
-      {
-        "code": "KIDDOTICKET",
-        "title": "Ticketing Discount",
-        "description": "Special discount for Events, Playhouses & Petting Farms",
-        "value": 10,
-        "valueType": "percentage",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": null,
-        "firstOrderOnly": false,
-        "ticketingOnly": true,
-        "isVisible": true
-      },
-      {
-        "code": "ALLFORKIDDO",
-        "title": "₹50 off",
-        "description": "Applicable thrice per user",
-        "value": 50,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 3,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "ILOVEKIDDO",
-        "title": "₹100 off",
-        "description": "Applicable twice per user",
-        "value": 100,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 2,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "KIDDOCARES",
-        "title": "₹150 off",
-        "description": "Once per user",
-        "value": 180,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "FUNWITHKIDDO",
-        "title": "₹200 off",
-        "description": "Once per user",
-        "value": 200,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "KIDDOMAGIC",
-        "title": "₹250 off",
-        "description": "Once per user",
-        "value": 250,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "WOWKIDDO",
-        "title": "₹300 off",
-        "description": "Once per user",
-        "value": 300,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "CHEERFULKIDDO",
-        "title": "₹350 off",
-        "description": "Once per user",
-        "value": 350,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "WONDERFULKIDDO",
-        "title": "₹400 off",
-        "description": "Once per user",
-        "value": 400,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      },
-      {
-        "code": "HEYTHEREKIDDO",
-        "title": "₹500 off",
-        "description": "Once per user",
-        "value": 500,
-        "valueType": "fixed_amount",
-        "minimumPurchaseAmount": null,
-        "minimumItemCount": null,
-        "startsAt": null,
-        "endsAt": null,
-        "usageLimitPerUser": 1,
-        "firstOrderOnly": false,
-        "ticketingOnly": false,
-        "clothingOnly": false,
-        "nonCombinable": false,
-        "isVisible": false
-      }
-    ]
-  },
   "account": {
     "profile": {
       "showAvatar": true,
