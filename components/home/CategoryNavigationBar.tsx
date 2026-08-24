@@ -317,7 +317,7 @@ export function CategoryNavigationBar({
   return (
     <View style={containerStyle}>
       {/* Baseline that extends to both edges, behind the active tab's white fill */}
-      <View style={[defaultStyles.baseline, { backgroundColor: '#D1D5DB' }]} />
+      <View style={[defaultStyles.baseline, { backgroundColor: categoryColor }]} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -359,7 +359,7 @@ const defaultStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 1,
+    height: 0.5,
     zIndex: 0,
   },
   scrollContent: {
