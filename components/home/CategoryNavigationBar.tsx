@@ -1,5 +1,4 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
@@ -11,6 +10,86 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
+/**
+ * Chrome tab geometry, from the official chrome-tabs SVG (viewBox height 36):
+ * bottom inverse: c 4.5 0 9 -3.5 9 -8
+ * top corner:     c 0 -4.5 3.5 -8 8 -8
+ *
+ * The bottom curve is an *inverse* corner: horizontal tangent on the baseline,
+ * vertical tangent on the side wall — not a convex hook.
+ */
+const TAB_EAR = 16;
+const TAB_STROKE = 2;
+const CHROME_SCALE = TAB_EAR / 9;
+const BOTTOM_CURVE = 8 * CHROME_SCALE;
+const TOP_RADIUS = 8 * CHROME_SCALE;
+const BOTTOM_C1X = 4.5 * CHROME_SCALE;
+const BOTTOM_C2Y = 3.5 * CHROME_SCALE;
+const TOP_C1Y = 4.5 * CHROME_SCALE;
+const TOP_C2X = 3.5 * CHROME_SCALE;
+
+function buildChromeTabPaths(width: number, height: number, stroke: number) {
+  const pad = stroke / 2;
+  const x0 = pad;
+  const y0 = pad;
+  const w = width - pad;
+  const h = height - pad;
+  const left = x0 + TAB_EAR;
+  const right = w - TAB_EAR;
+
+  const strokeD = [
+    `M ${x0} ${h}`,
+    `C ${x0 + BOTTOM_C1X} ${h} ${left} ${h - BOTTOM_C2Y} ${left} ${h - BOTTOM_CURVE}`,
+    `L ${left} ${y0 + TOP_RADIUS}`,
+    `C ${left} ${y0 + TOP_RADIUS - TOP_C1Y} ${left + TOP_C2X} ${y0} ${left + TOP_RADIUS} ${y0}`,
+    `L ${right - TOP_RADIUS} ${y0}`,
+    `C ${right - TOP_C2X} ${y0} ${right} ${y0 + TOP_RADIUS - TOP_C1Y} ${right} ${y0 + TOP_RADIUS}`,
+    `L ${right} ${h - BOTTOM_CURVE}`,
+    `C ${right} ${h - BOTTOM_C2Y} ${w - BOTTOM_C1X} ${h} ${w} ${h}`,
+  ].join(' ');
+
+  return {
+    strokeD,
+    fillD: `${strokeD} L ${x0} ${h} Z`,
+  };
+}
+
+function ChromeTabHighlight({
+  width,
+  height,
+  color,
+}: {
+  width: number;
+  height: number;
+  color: string;
+}) {
+  const { fillD, strokeD } = useMemo(
+    () => buildChromeTabPaths(width, height, TAB_STROKE),
+    [width, height]
+  );
+
+  return (
+    <Svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      pointerEvents="none"
+    >
+      <Path d={fillD} fill="#FFFFFF" />
+      <Path d={fillD} fill={color} fillOpacity={0.08} />
+      <Path
+        d={strokeD}
+        fill="none"
+        stroke={color}
+        strokeWidth={TAB_STROKE}
+        strokeLinejoin="round"
+        strokeLinecap="butt"
+      />
+    </Svg>
+  );
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
@@ -82,8 +161,9 @@ export function CategoryNavigationBar({
       height: iconSize,
     },
     slidingBorderContainer: {
-      width: iconContainerSize + 8,
-      height: iconContainerSize + 20, // icon + label height
+      width: iconContainerSize + 8 + TAB_EAR * 2,
+      // Match the icon + label row so the scoops sit on the header edge, not in clipped overflow.
+      height: iconContainerSize + 2,
     },
   }), [iconSize, iconContainerSize]);
 
@@ -223,23 +303,15 @@ export function CategoryNavigationBar({
               dynamicStyles.slidingBorderContainer,
               {
                 transform: [{ translateX: borderPositionAnim }],
-                left: -1,
+                left: -TAB_EAR - 1,
               },
             ]}
           >
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: categoryColor, borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]} />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'white', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, bottom: -3, top: 2, left: +1, right: +1 }]} />
-            <View style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, overflow: 'hidden' }]}>
-              <LinearGradient
-                colors={[`${categoryColor}15`, `${categoryColor}05`]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </View>
-            {/* Right side border with corner at bottom */}
-            <View style={{ position: 'absolute', right: -1, top: '40%', bottom: -2, width: 2, backgroundColor: categoryColor, zIndex: 10 }} />
-            <View style={{ position: 'absolute', right: -1, bottom: -4, width: 8, height: 8, backgroundColor: categoryColor, borderBottomRightRadius: 400, zIndex: 10 }} />
+            <ChromeTabHighlight
+              width={dynamicStyles.slidingBorderContainer.width}
+              height={dynamicStyles.slidingBorderContainer.height}
+              color={categoryColor}
+            />
           </Animated.View>
           {categoryItems}
         </View>
@@ -252,14 +324,16 @@ const defaultStyles = StyleSheet.create({
   container: {
     width: '100%',
     paddingTop: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   scrollContent: {
     paddingHorizontal: 0,
+    overflow: 'visible',
   },
   categoriesWrapper: {
     paddingTop: 0,
     paddingBottom: 0,
+    overflow: 'visible',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -272,17 +346,20 @@ const defaultStyles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 60,
     position: 'relative',
+    zIndex: 1,
   },
   slidingBorderContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
+    zIndex: 0,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     pointerEvents: 'none',
     marginTop: 8,
+    overflow: 'visible',
   },
   categoryIconWrapper: {
     padding: 0,
