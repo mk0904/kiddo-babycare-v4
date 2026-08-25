@@ -21,6 +21,10 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
   const height = config.height; // If not provided, will use responsive 16:9 aspect ratio
   const heightRatio = config.heightRatio ?? 0.5625; // 16:9 aspect ratio (9/16 = 0.5625) - best for mobile banners
   const borderRadius = config.borderRadius ?? 0;
+  const borderTopLeftRadius = config.borderTopLeftRadius ?? borderRadius;
+  const borderTopRightRadius = config.borderTopRightRadius ?? borderRadius;
+  const borderBottomLeftRadius = config.borderBottomLeftRadius ?? borderRadius;
+  const borderBottomRightRadius = config.borderBottomRightRadius ?? borderRadius;
   const resizeMode = config.resizeMode || 'contain';
   const alignSelf = config.alignSelf || 'stretch';
   const link = config.link || data?.link; // Optional link for redirection
@@ -55,7 +59,10 @@ export function ImageBanner({ block, onPress }: ImageBannerProps) {
     defaultStyles.image,
     {
       height: calculatedHeight,
-      borderRadius,
+      borderTopLeftRadius,
+      borderTopRightRadius,
+      borderBottomLeftRadius,
+      borderBottomRightRadius,
       alignSelf,
       ...(hasPadding ? { width: availableWidth } : { width: '100%' }),
       maxWidth: '100%', // Prevent overflow

@@ -6339,7 +6339,7 @@
       "visible": true,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Festive_Wear_banner_homepage_1.png?v=1787084938",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_banner_festive_wear.png?v=1787683662",
           "link": {
             "type": "collection",
             "collection": {
@@ -6415,7 +6415,7 @@
         }
       ],
       "carouselConfig": {
-        "itemHeight": 340,
+        "itemHeight": 300,
         "itemWidth": 260,
         "gap": 12,
         "borderRadius": 38,
@@ -7266,6 +7266,27 @@
     }
   ],
   "Fashion": [
+    {
+      "id": "babycare-banner-1",
+      "type": "imageBanner",
+      "title": "Featured",
+      "visible": true,
+      "imageBannerConfig": {
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_new_banner_below_header_with_rounded_edges.png?v=1787684307",
+        "height": 250,
+        "borderBottomLeftRadius": 20,
+        "borderBottomRightRadius": 20,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0
+        },
+        "wrapper": {
+          "marginHorizontal": 0
+        }
+      }
+    },
     {
       "id": "all-banner-10",
       "type": "carousel",
@@ -9118,7 +9139,7 @@
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Girl_Header.png?v=1774001066",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Fashion_Page_Header.png?v=1787684321",
           "labelColors": {
             "selected": "#FF1493",
             "unselected": "#363636"
