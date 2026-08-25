@@ -24,7 +24,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    useWindowDimensions
 } from 'react-native';
 
 const RIDER_ICON = require('@/assets/icons/riderIcon.png');
@@ -164,6 +165,9 @@ export function LiveDeliveryTabBanner({
   const pollFastMs = pollingConfig?.deliveryStatusPollFastMs ?? DEFAULT_POLL_FAST_MS;
   const pollSlowMs = pollingConfig?.deliveryStatusPollSlowMs ?? DEFAULT_POLL_SLOW_MS;
   const pollFastWindowMs = pollingConfig?.deliveryStatusPollFastWindowMs ?? DEFAULT_POLL_FAST_WINDOW_MS;
+
+  const { width: windowWidth } = useWindowDimensions();
+  const pillWidth = Math.min(368, windowWidth - 32);
 
   const partnerUri = partnerAvatarSource(cfg);
 
@@ -449,7 +453,7 @@ export function LiveDeliveryTabBanner({
 
   return (
     <View
-      style={[styles.wrap, { bottom: pillBottom }]}
+      style={[styles.wrap, { bottom: pillBottom, width: pillWidth, left: (windowWidth - pillWidth) / 2 }]}
       pointerEvents="box-none"
       onLayout={onLayoutBanner}
     >
@@ -490,8 +494,6 @@ export function LiveDeliveryTabBanner({
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 16,
-    right: 16,
     zIndex: 9998,
     elevation: 9998,
   },

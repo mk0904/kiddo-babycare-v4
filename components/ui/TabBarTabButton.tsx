@@ -136,26 +136,14 @@ export function TabBarTabButton({
             fadeTravelPx
         );
 
-        // Move icon down when label fades out to center it vertically in pill
-        // Label height is 14px + 3px gap = 17px, move down by half (~8.5px)
-        const translateY = scrollProgress.value * 8.5;
         const lensTransform = buildLensTransform(lens, 1);
-        
-        // Counteract navbar shrink to keep icon size constant
-        // Navbar shrinks width to 0.9 and height to 0.75
-        // Scale icons by 1/0.9 = 1.11 for X and 1/0.75 = 1.33 for Y
-        const iconScaleX = 1 + (scrollProgress.value * 0.11);
-        const iconScaleY = 1 + (scrollProgress.value * 0.33);
         
         return {
             transform: [
-                { scaleX: iconScaleX },
-                { scaleY: iconScaleY },
-                { translateY },
                 ...lensTransform
             ],
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV, scrollProgress]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
 
     const labelLensStyle = useAnimatedStyle(() => {
         if (Platform.OS === 'android') {
@@ -187,9 +175,8 @@ export function TabBarTabButton({
 
         return {
             transform: buildLensTransform(lens, 0.72),
-            opacity: 1 - scrollProgress.value, // Hide label when scrolled
         };
-    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV, scrollProgress]);
+    }, [maxScale, minScaleY, skew, pull, rotate, fadeTravelPx, focusedSV]);
 
     return (
         <Pressable

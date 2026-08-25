@@ -2,7 +2,7 @@ import { configService } from '@/services/configService';
 
 export const FLOATING_TAB_BAR_BOTTOM_MARGIN = 0;
 export const MILESTONE_NAV_GAP = 0;
-export const DEFAULT_TAB_BAR_HEIGHT = 68;
+export const DEFAULT_TAB_BAR_HEIGHT = 76;
 
 /** Shared glass pill surface (tab bar + view cart). */
 export const GLASS_PILL_TINT = 'rgba(255, 255, 255, 0.9)';

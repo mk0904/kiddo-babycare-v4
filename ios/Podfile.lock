@@ -2306,7 +2306,7 @@ DEPENDENCIES:
   - EXNotifications (from `../node_modules/expo-notifications/ios`)
   - Expo (from `../node_modules/expo`)
   - "ExpoAdapterCleverTap (from `../node_modules/@clevertap/clevertap-expo-plugin/ios`)"
-  - ExpoAsset (from `../node_modules/expo/node_modules/expo-asset/ios`)
+  - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
@@ -2450,7 +2450,7 @@ EXTERNAL SOURCES:
   ExpoAdapterCleverTap:
     :path: "../node_modules/@clevertap/clevertap-expo-plugin/ios"
   ExpoAsset:
-    :path: "../node_modules/expo/node_modules/expo-asset/ios"
+    :path: "../node_modules/expo-asset/ios"
   ExpoBlur:
     :path: "../node_modules/expo-blur/ios"
   ExpoFileSystem:
@@ -2789,6 +2789,6 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
 
-PODFILE CHECKSUM: 5a7fcc54f28fb4c135de8d99984b0d6527a2e121
+PODFILE CHECKSUM: 994deff68dc5ddf7618be36cf53fa8b73350c1cd
 
 COCOAPODS: 1.16.2

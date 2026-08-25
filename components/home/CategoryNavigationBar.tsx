@@ -1,10 +1,6 @@
 import { Colors, Fonts } from '@/constants/theme';
-<<<<<<< HEAD
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-=======
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
->>>>>>> header
 import {
   Animated,
   Dimensions,

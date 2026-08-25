@@ -535,18 +535,12 @@ export const TabBar = (props: BottomTabBarProps) => {
     };
 
     const navAnimatedStyle = useAnimatedStyle(() => {
-        // Calculate shrink scale based on smooth scroll progress
-        // When scrollProgress = 0, scale = 1
-        // When scrollProgress = 1, height scale = 0.75 (shrunk to 75%), width scale = 0.9 (shrunk to 90%)
-        const shrinkScaleY = 1 - (smoothProgress.value * 0.25);
-        const shrinkScaleX = 1 - (smoothProgress.value * 0.10);
-        // Move navbar down when shrinking
-        const translateY = smoothProgress.value * 10;
+        const translateY = smoothProgress.value * (totalHeight + 20); // Move fully off-screen
         return {
             transform: [
                 { translateY },
-                { scaleX: navPopX.value * shrinkScaleX },
-                { scaleY: navPopY.value * shrinkScaleY }
+                { scaleX: navPopX.value },
+                { scaleY: navPopY.value }
             ],
             transformOrigin: 'center',
         };
@@ -555,20 +549,12 @@ export const TabBar = (props: BottomTabBarProps) => {
     const navBarBorderRadius = getNavBarBorderRadius(tabBarHeight);
 
     const indicatorGlassAnimatedStyle = useAnimatedStyle(() => {
-        // Calculate pill scale based on smooth scroll progress
-        // Pill shrinks only in width, counteracts navbar height shrink to maintain original height
-        const pillScaleX = 1 - (smoothProgress.value * 0.05);
-        // Navbar shrinks to 0.75 in height, so scale pill by 1/0.75 = 1.33 to counteract
-        const pillScaleY = 1 + (smoothProgress.value * 0.12);
-        // Move pill down when shrinking to keep it within navbar bounds
-        const pillTranslateY = smoothProgress.value * 6;
-                
         if (Platform.OS === 'android') {
             // Use translateX instead of left — avoids native layout recalculation every frame
             return {
                 position: 'absolute',
                 left: 0,
-                transform: [{ translateX: indicatorX.value }, { translateY: pillTranslateY }, { scaleX: pillScaleX }, { scaleY: pillScaleY }],
+                transform: [{ translateX: indicatorX.value }],
                 width: indicatorWidth.value,
                 top: indicatorTop.value,
                 height: indicatorHeight.value,
@@ -581,7 +567,7 @@ export const TabBar = (props: BottomTabBarProps) => {
         return {
             position: 'absolute',
             left: indicatorX.value,
-            transform: [{ translateY: pillTranslateY }, { scaleX: pillScaleX }, { scaleY: pillScaleY }],
+            transform: [],
             width: indicatorWidth.value,
             top: indicatorTop.value,
             height: indicatorHeight.value,
@@ -595,7 +581,7 @@ export const TabBar = (props: BottomTabBarProps) => {
     const restIndicatorShape = getIndicatorVerticalMetrics(tabBarHeight);
 
     const renderNavGlassBackground = (borderRadius: number) => (
-        <GlassPillSurface borderRadius={borderRadius} bottomRadius={0} glassEffectStyle="regular" />
+        <GlassPillSurface borderRadius={borderRadius} glassEffectStyle="regular" />
     );
 
     const renderSlidingIndicator = () => {
@@ -752,7 +738,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                     <View
                         style={[
                             styles.floatingOuter,
-                            { paddingBottom: 0 },
+                            { paddingBottom: bottomInset + FLOATING_BOTTOM_MARGIN },
                         ]}
                     >
                         <Reanimated.View
@@ -761,11 +747,8 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 navAnimatedStyle,
                                 {
                                     width: pillWidth,
-                                    height: tabBarHeight + bottomInset,
-                                    borderTopLeftRadius: navBarBorderRadius,
-                                    borderTopRightRadius: navBarBorderRadius,
-                                    borderBottomLeftRadius: 0,
-                                    borderBottomRightRadius: 0,
+                                    height: tabBarHeight,
+                                    borderRadius: navBarBorderRadius,
                                 },
                             ]}
                         >
@@ -773,18 +756,12 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 <View
                                     style={[
                                         StyleSheet.absoluteFill,
-                                        {
-                                            borderTopLeftRadius: navBarBorderRadius,
-                                            borderTopRightRadius: navBarBorderRadius,
-                                            borderBottomLeftRadius: 0,
-                                            borderBottomRightRadius: 0,
-                                            overflow: 'hidden',
-                                        },
+                                        { borderRadius: navBarBorderRadius, overflow: 'hidden' },
                                     ]}
                                     pointerEvents="box-none"
                                 >
                                     {renderNavGlassBackground(navBarBorderRadius)}
-                                    <View style={[styles.tabsRow, { bottom: bottomInset }]} pointerEvents="box-none">
+                                    <View style={styles.tabsRow} pointerEvents="box-none">
                                         {renderTabButtons()}
                                         {renderSlidingIndicator()}
                                     </View>
@@ -793,18 +770,13 @@ export const TabBar = (props: BottomTabBarProps) => {
                                 <GlassContainer
                                     style={[
                                         StyleSheet.absoluteFill,
-                                        {
-                                            borderTopLeftRadius: navBarBorderRadius,
-                                            borderTopRightRadius: navBarBorderRadius,
-                                            borderBottomLeftRadius: 0,
-                                            borderBottomRightRadius: 0,
-                                        },
+                                        { borderRadius: navBarBorderRadius },
                                     ]}
                                     spacing={GLASS_CONTAINER_SPACING}
                                     pointerEvents="box-none"
                                 >
                                     {renderNavGlassBackground(navBarBorderRadius)}
-                                    <View style={[styles.tabsRow, { bottom: bottomInset }]} pointerEvents="box-none">
+                                    <View style={styles.tabsRow} pointerEvents="box-none">
                                         {renderTabButtons()}
                                         {renderSlidingIndicator()}
                                     </View>

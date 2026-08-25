@@ -65,14 +65,10 @@ target 'Kiddo' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
-    # Force c++20 for clevertap-react-native to fix Xcode build errors with RN 0.74+
+    # Force c++20 for ALL pods to fix Xcode build errors with RN 0.74+ (ReactCommon bridging uses C++20 'requires')
     installer.pods_project.targets.each do |target|
-      if target.name == 'clevertap-react-native'
-        target.build_configurations.each do |config|
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-        end
-      end
       target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         config.build_settings['OTHER_CFLAGS'] ||= ['$(inherited)']
         config.build_settings['OTHER_CFLAGS'] << '-Wno-non-modular-include-in-framework-module'
