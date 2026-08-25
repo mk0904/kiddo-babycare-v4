@@ -1847,40 +1847,6 @@ export default function CartScreen() {
                 } catch (e) {
                     console.warn('Self search analytics error:', e);
                 }
-
-                // Fetch product metafields for L1, L2, L3 collections
-                let productMetafields: Array<{ productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string }> = [];
-                try {
-                    const { shopifyApi } = await import('@/services/shopifyApi');
-                    const metafieldPromises = cartItems.map(async (item) => {
-                        try {
-                            const product = await shopifyApi.getProductById(item.productId);
-                            if (product?.metafields) {
-                                console.log('[Cart] Product metafields for order:', product.metafields);
-                                const validMetafields = product.metafields.filter((m: any) => m != null);
-                                const l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
-                                const l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
-                                const l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
-                                console.log('[Cart] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
-                                return {
-                                    productId: item.productId,
-                                    l1Collection,
-                                    l2Collection,
-                                    l3Collection
-                                };
-                            }
-                        } catch (error) {
-                            console.warn('[Cart] Failed to fetch metafields for product:', item.productId, error);
-                        }
-                        return { productId: item.productId };
-                    });
-                    productMetafields = (await Promise.all(metafieldPromises)).filter(m => m);
-                    console.log('[Cart] All product metafields for order:', productMetafields);
-                } catch (error) {
-                    console.warn('[Cart] Failed to fetch product metafields for order:', error);
-                }
-
-                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, productMetafields);
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
