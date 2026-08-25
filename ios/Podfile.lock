@@ -29,16 +29,16 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - EXApplication (6.1.5):
+  - EXApplication (7.0.8):
     - ExpoModulesCore
   - EXAV (16.0.8):
     - ExpoModulesCore
     - ReactCommon/turbomodule/core
-  - EXConstants (18.0.13):
+  - EXConstants (18.0.14):
     - ExpoModulesCore
-  - EXNotifications (0.31.5):
+  - EXNotifications (0.32.17):
     - ExpoModulesCore
-  - Expo (54.0.33):
+  - Expo (54.0.37):
     - ExpoModulesCore
     - hermes-engine
     - RCTRequired
@@ -68,19 +68,19 @@ PODS:
     - clevertap-react-native
     - ExpoModulesCore
     - React-Core
-  - ExpoAsset (12.0.12):
+  - ExpoAsset (12.0.13):
     - ExpoModulesCore
   - ExpoBlur (15.0.8):
     - ExpoModulesCore
-  - ExpoFileSystem (19.0.21):
+  - ExpoFileSystem (19.0.24):
     - ExpoModulesCore
-  - ExpoFont (14.0.11):
+  - ExpoFont (14.0.12):
     - ExpoModulesCore
   - ExpoGlassEffect (0.1.10):
     - ExpoModulesCore
   - ExpoHaptics (15.0.8):
     - ExpoModulesCore
-  - ExpoHead (6.0.23):
+  - ExpoHead (6.0.24):
     - ExpoModulesCore
     - RNScreens
   - ExpoImage (3.0.11):
@@ -94,11 +94,11 @@ PODS:
     - ExpoModulesCore
   - ExpoLinearGradient (15.0.8):
     - ExpoModulesCore
-  - ExpoLinking (8.0.11):
+  - ExpoLinking (8.0.12):
     - ExpoModulesCore
   - ExpoLocation (19.0.8):
     - ExpoModulesCore
-  - ExpoModulesCore (3.0.29):
+  - ExpoModulesCore (3.0.30):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -129,7 +129,7 @@ PODS:
     - ExpoModulesCore
   - ExpoTrackingTransparency (6.0.8):
     - ExpoModulesCore
-  - ExpoWebBrowser (15.0.10):
+  - ExpoWebBrowser (15.0.11):
     - ExpoModulesCore
   - FBLazyVector (0.81.5)
   - FreshchatSDK (6.4.7)
@@ -2306,7 +2306,7 @@ DEPENDENCIES:
   - EXNotifications (from `../node_modules/expo-notifications/ios`)
   - Expo (from `../node_modules/expo`)
   - "ExpoAdapterCleverTap (from `../node_modules/@clevertap/clevertap-expo-plugin/ios`)"
-  - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoAsset (from `../node_modules/expo/node_modules/expo-asset/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
@@ -2450,7 +2450,7 @@ EXTERNAL SOURCES:
   ExpoAdapterCleverTap:
     :path: "../node_modules/@clevertap/clevertap-expo-plugin/ios"
   ExpoAsset:
-    :path: "../node_modules/expo-asset/ios"
+    :path: "../node_modules/expo/node_modules/expo-asset/ios"
   ExpoBlur:
     :path: "../node_modules/expo-blur/ios"
   ExpoFileSystem:
@@ -2664,30 +2664,30 @@ SPEC CHECKSUMS:
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
   CleverTap-iOS-SDK: 000af11abfaa0e5ba779563a9a2e56555c0e07aa
   clevertap-react-native: 428c1d1eea4719deaa475734b5ea2fde17ec3b0f
-  EXApplication: 1e06972201838375ca1ec1ba34d586a98a5dc718
+  EXApplication: 1e98d4b1dccdf30627f92917f4b2c5a53c330e5f
   EXAV: b60fcf142fae6684d295bc28cd7cfcb3335570ea
-  EXConstants: fce59a631a06c4151602843667f7cfe35f81e271
-  EXNotifications: 6770976336aacdc7dc7aed7b538dd8f7ad2c55e8
-  Expo: aadbcc8c6c14ff3105a9154f1683cb1424ff0d2a
+  EXConstants: 18ac927605517285307ea8f7ffe6fe7ca538eb5d
+  EXNotifications: c67e92b9fdfe785ff9dbdc5f4c0ff935de357da7
+  Expo: 3ccbb4de93972b9a8214b8853ab0c4d4a317e62b
   ExpoAdapterCleverTap: a85288f9305572a5452f2a4a0748a600d7fa3b3c
-  ExpoAsset: f867e55ceb428aab99e1e8c082b5aee7c159ea18
+  ExpoAsset: 9e5a7c9c0a9fb83ad5b2bb365141f2bd7f289b66
   ExpoBlur: b90747a3f22a8b6ceffd9cb0dc41a4184efdc656
-  ExpoFileSystem: 858a44267a3e6e9057e0888ad7c7cfbf55d52063
-  ExpoFont: f543ce20a228dd702813668b1a07b46f51878d47
+  ExpoFileSystem: 8e87545aef1d8d31f244edbfdd0780df4e5bac2e
+  ExpoFont: dfb7c572372b610da45b41e3b436321fd6a97215
   ExpoGlassEffect: 2fd78765fb4633fc2575779a521ca6adb3488881
   ExpoHaptics: d3a6375d8dcc3a1083d003bc2298ff654fafb536
-  ExpoHead: 7e19b2272edf492262acf8afb391a295198a6b23
+  ExpoHead: 33924c5829f9a3f98a5bd432d23c0e02ef64afcc
   ExpoImage: 686f972bff29525733aa13357f6691dc90aa03d8
   ExpoKeepAwake: 55f75eca6499bb9e4231ebad6f3e9cb8f99c0296
   ExpoLinearGradient: 809102bdb979f590083af49f7fa4805cd931bd58
-  ExpoLinking: 8f0aaf69aa56f832913030503b6263dc6f647f37
+  ExpoLinking: 2ef632ad5013e3f1568fae9408d56ab9af5efc55
   ExpoLocation: d5b61cb4970fa982e39ca94246a206a0c3b812ca
-  ExpoModulesCore: f3da4f1ab5a8375d0beafab763739dbee8446583
+  ExpoModulesCore: 9e6a5514828e7dd5ded9e99d33557be2d284e660
   ExpoSplashScreen: bc3cffefca2716e5f22350ca109badd7e50ec14d
   ExpoSymbols: 349ee2b4d7d5ff3ea8436467914f8a67635aa354
   ExpoSystemUI: 2ad325f361a2fcd96a464e8574e19935c461c9cc
   ExpoTrackingTransparency: 4f823a38ff7c0efea4cac722ecbc0589278ff548
-  ExpoWebBrowser: 17b064c621789e41d4816c95c93f429b84971f52
+  ExpoWebBrowser: 970dd4c64c29c955c3af664c8058ba768a4c9187
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12
   FreshchatSDK: 23ccc87e8828397d69146c2dbe38089f9fc5ca65
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321

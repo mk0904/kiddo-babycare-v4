@@ -1,5 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 /**
  * Chrome tab geometry, from the official chrome-tabs SVG (viewBox height 36):
@@ -40,7 +40,7 @@ function buildTaperedTabPaths(width: number, height: number) {
   const right = w - TAB_EAR;
 
   // Thickness configuration
-  const t_top = 3.2;        // Thick horizontal top border
+  const t_top = 2.0;        // Thick horizontal top border
   const t_side = 1.0;       // Side borders thin after the curve
   const t_bottom = 0.5;     // Very thin at the baseline
 
@@ -107,7 +107,7 @@ function ChromeTabHighlight({
       pointerEvents="none"
     >
       <Path d={fillD} fill="#FFFFFF" />
-      <Path d={fillD} fill={color} fillOpacity={0.12} />
+      <Path d={fillD} fill={color} fillOpacity={0.20} />
       <Path
         d={borderD}
         fill={color}
@@ -155,6 +155,8 @@ export function CategoryNavigationBar({
 }: CategoryNavigationBarProps) {
   const iconPositionsRef = useRef<{ [key: string]: number }>({});
   const borderPositionAnim = useRef(new Animated.Value(0)).current;
+  const [layoutComplete, setLayoutComplete] = useState(false);
+  const initialPositionSetRef = useRef(false);
 
   const selectedCategoryData = useMemo(
     () => categories.find((cat) => cat.key === selectedCategory),
@@ -163,7 +165,15 @@ export function CategoryNavigationBar({
 
   const categoryColor = useMemo(() => {
     const configColors = (kiddoAppConfig as any)?.categories?.navigationBar?.colors;
-    return configColors?.[selectedCategory || 'all'] || selectedCategoryData?.color || '#D8B4FE';
+    if (!configColors) {
+      return selectedCategoryData?.color || '#D8B4FE';
+    }
+    // Case-insensitive lookup for category color
+    const keyToFind = (selectedCategory || 'all').toLowerCase();
+    const matchingKey = Object.keys(configColors).find(
+      (key) => key.toLowerCase() === keyToFind
+    );
+    return matchingKey ? configColors[matchingKey] : selectedCategoryData?.color || '#D8B4FE';
   }, [selectedCategory, selectedCategoryData]);
 
   // Get icon sizes from config
@@ -202,6 +212,14 @@ export function CategoryNavigationBar({
     }
   }, [selectedCategory, borderPositionAnim]);
 
+  // Set initial position after layout measurements complete (only once)
+  useEffect(() => {
+    if (layoutComplete && !initialPositionSetRef.current && selectedCategory && iconPositionsRef.current[selectedCategory] !== undefined) {
+      borderPositionAnim.setValue(iconPositionsRef.current[selectedCategory]);
+      initialPositionSetRef.current = true;
+    }
+  }, [layoutComplete, selectedCategory, borderPositionAnim]);
+
   const renderCategory = useCallback(
     (category: Category) => {
       const isSelected = category.key === selectedCategory;
@@ -209,6 +227,12 @@ export function CategoryNavigationBar({
       const handleLayout = (event: any) => {
         const { x } = event.nativeEvent.layout;
         iconPositionsRef.current[category.key] = x; // Use exact x position
+
+        // Check if all categories have been measured
+        const measuredCount = Object.keys(iconPositionsRef.current).length;
+        if (measuredCount === categories.length && !layoutComplete) {
+          setLayoutComplete(true);
+        }
       };
 
       return (
@@ -394,7 +418,7 @@ const defaultStyles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     pointerEvents: 'none',
-    marginTop: 2,
+    marginTop: 0,
     overflow: 'visible',
   },
   categoryIconWrapper: {
@@ -455,7 +479,7 @@ const defaultStyles = StyleSheet.create({
   },
   selectedCategoryLabel: {
     color: '#222222',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: Fonts.LexendSemiBold,
     lineHeight: 14,
   },
