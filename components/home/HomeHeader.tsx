@@ -348,8 +348,12 @@ export function HomeHeader({
                       <View style={[
                         styles.estimatedTimeWrapper,
                         {
-                          paddingTop: headerStyles?.topInfo?.eta?.paddingTop ?? 0,
-                          paddingBottom: headerStyles?.topInfo?.eta?.paddingBottom ?? 0,
+                          paddingTop: isUnserviceable 
+                            ? (headerStyles?.topInfo?.unserviceable?.paddingTop ?? 0)
+                            : (headerStyles?.topInfo?.eta?.paddingTop ?? 0),
+                          paddingBottom: isUnserviceable 
+                            ? (headerStyles?.topInfo?.unserviceable?.paddingBottom ?? 0)
+                            : (headerStyles?.topInfo?.eta?.paddingBottom ?? 0),
                         }
                       ]}>
                         {loadingTime ? (
@@ -419,7 +423,15 @@ export function HomeHeader({
                     ]}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="heart-outline" size={headerStyles?.wishlistButton?.iconSize ?? 28} color={textColor} />
+                    {headerStyles?.wishlistButton?.iconUrl ? (
+                      <Image
+                        source={{ uri: headerStyles?.wishlistButton?.iconUrl }}
+                        style={{ width: headerStyles?.wishlistButton?.iconSize ?? 28, height: headerStyles?.wishlistButton?.iconSize ?? 28 }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Ionicons name="heart-outline" size={headerStyles?.wishlistButton?.iconSize ?? 28} color={textColor} />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>

@@ -60,6 +60,10 @@ export const TabBarVisibilityProvider = ({ children }: { children: ReactNode }) 
         }
         setScrollProgress(progress);
 
+        // Update visibility based on scroll progress
+        // Consider tab bar hidden when progress > 0.8 (shrunk more than 80%)
+        setIsVisible(progress < 0.8);
+
         lastScrollY.current = scrollY;
     }, []);
 

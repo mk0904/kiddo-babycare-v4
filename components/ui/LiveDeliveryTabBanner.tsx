@@ -413,7 +413,7 @@ export function LiveDeliveryTabBanner({
     (e: LayoutChangeEvent) => {
       if (!visible) return;
       const h = e.nativeEvent.layout.height;
-      onStackOffsetChange(Math.ceil(h) + 32);
+      onStackOffsetChange(Math.ceil(h) + 8);
     },
     [visible, onStackOffsetChange],
   );

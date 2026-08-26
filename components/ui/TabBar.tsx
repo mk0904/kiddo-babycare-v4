@@ -14,9 +14,8 @@ import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { configService } from '@/services/configService';
 import { TabBarConfig } from '@/types/tabBarTypes';
 import {
-    FLOATING_TAB_BAR_BOTTOM_MARGIN,
     GLASS_PILL_TEXT_COLOR,
-    MILESTONE_NAV_GAP,
+    MILESTONE_NAV_GAP
 } from '@/utils/tabBarLayout';
 import { resolveLensPreset } from '@/utils/tabBarLensMath';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -48,7 +47,7 @@ const NAV_BAR_HEIGHT = 60;
 const PILL_OUTER_INSET = 2;
 const LABEL_COLOR = GLASS_PILL_TEXT_COLOR;
 const TAB_ITEM_CONTENT_PADDING = 0;
-const FLOATING_BOTTOM_MARGIN = FLOATING_TAB_BAR_BOTTOM_MARGIN;
+const FLOATING_BOTTOM_MARGIN = -10;
 const TAB_ICON_LABEL_GAP = 3;
 const TAB_LABEL_LINE_HEIGHT = 14;
 const TAB_ICON_SIZE = 14;

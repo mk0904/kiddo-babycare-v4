@@ -29,7 +29,8 @@
       }
     },
     "styles": {
-      "height": 60,
+      "height": 65,
+      "bottomMargin": 0,
       "backgroundColor": "#FFFFFF",
       "activeTintColor": "#E84E4B",
       "inactiveTintColor": "#999999",
@@ -9017,6 +9018,7 @@
   "header": {
     "textColor": "#363636",
     "primaryColor": "#363636",
+    "iconUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/inactive.png?v=1787585983",
     "styles": {
       "searchBar": {
         "backgroundColor": "#FFFFFF",
@@ -9052,20 +9054,25 @@
           "height": 44
         },
         "eta": {
-          "paddingTop": 7,
-          "paddingBottom": 7
+          "paddingTop": 2,
+          "paddingBottom": 2
+        },
+        "unserviceable": {
+          "paddingTop": 5,
+          "paddingBottom": 5
         }
       },
       "wishlistButton": {
         "size": 44,
         "iconSize": 28,
         "backgroundColor": "#0000000f",
-        "borderRadius": 24
+        "borderRadius": 24,
+        "iconUrl": ""
       },
       "heights": {
         "addressBarHeight": 60,
         "totalHeaderHeight": 185,
-        "stickyHeaderOffset": -75
+        "stickyHeaderOffset": -45
       },
       "scrollAnimation": {
         "searchTranslateY": 75,

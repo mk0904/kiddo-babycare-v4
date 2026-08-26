@@ -11,6 +11,7 @@ export interface TabBarStyles {
     activeTintColor?: string;
     inactiveTintColor?: string;
     height?: number;
+    bottomMargin?: number;
     iconSize?: number;   // Configurable icon size
     /** Simulated icon lens during tab slide: 'apple' (default) or 'water' (stronger liquid bulge). */
     lensPreset?: 'apple' | 'water';
