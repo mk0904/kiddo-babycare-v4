@@ -599,7 +599,7 @@ export default function HomeScreen() {
             categories={categories}
             selectedCategory={selectedCategory}
             onCategorySelect={handleCategorySelect}
-            onHeaderHeightChange={() => { }} // Not using dynamic height updates anymore
+            onHeaderHeightChange={setDynamicHeaderHeight}
           />
         </View>
 
@@ -609,7 +609,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: initialHeaderHeight, // Start content below the absolute header
+              paddingTop: effectiveHeaderHeight, // Start content below the absolute header
               minHeight: '100%',
               backgroundColor: pageBackgroundColor,
               paddingBottom: scrollBottomPad,

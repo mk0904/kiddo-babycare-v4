@@ -188,6 +188,20 @@ export function CategoryNavigationBar({
     return (kiddoAppConfig as any)?.categories?.navigationBar?.iconContainerSize || 70;
   }, []);
 
+  const collapsedBorderHeight = useMemo(() => {
+    return (kiddoAppConfig as any)?.categories?.navigationBar?.collapsedBorderHeight ?? 38;
+  }, []);
+
+  const animationConfig = useMemo(() => {
+    const cfg = (kiddoAppConfig as any)?.categories?.navigationBar?.animation ?? {};
+    return {
+      iconFadeScrollEnd: cfg.iconFadeScrollEnd ?? 40,
+      largeBorderFadeScrollEnd: cfg.largeBorderFadeScrollEnd ?? 50,
+      smallBorderFadeScrollStart: cfg.smallBorderFadeScrollStart ?? 30,
+      smallBorderFadeScrollEnd: cfg.smallBorderFadeScrollEnd ?? 80,
+    };
+  }, []);
+
   // Dynamic styles based on config
   const dynamicStyles = useMemo(() => ({
     categoryIconContainer: {
@@ -205,32 +219,32 @@ export function CategoryNavigationBar({
     },
     collapsedBorderContainer: {
       width: iconContainerSize + 2 + TAB_EAR * 2,
-      height: 38, // Enough to wrap the text
+      height: collapsedBorderHeight,
     }
-  }), [iconSize, iconContainerSize]);
+  }), [iconSize, iconContainerSize, collapsedBorderHeight]);
 
   const animatedScrollY = scrollY || new Animated.Value(0);
 
   const iconOpacity = animatedScrollY.interpolate({
-    inputRange: [0, 40],
+    inputRange: [0, animationConfig.iconFadeScrollEnd],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
   const iconHeight = animatedScrollY.interpolate({
-    inputRange: [0, 60],
+    inputRange: [0, animationConfig.iconFadeScrollEnd * 1.5],
     outputRange: [iconContainerSize, 0],
     extrapolate: 'clamp',
   });
 
   const largeBorderOpacity = animatedScrollY.interpolate({
-    inputRange: [0, 50],
+    inputRange: [0, animationConfig.largeBorderFadeScrollEnd],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
   const smallBorderOpacity = animatedScrollY.interpolate({
-    inputRange: [30, 80],
+    inputRange: [animationConfig.smallBorderFadeScrollStart, animationConfig.smallBorderFadeScrollEnd],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });

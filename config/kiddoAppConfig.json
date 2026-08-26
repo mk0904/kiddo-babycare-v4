@@ -6427,7 +6427,7 @@
           "position": "absolute",
           "marginTop": "-98%",
           "zIndex": 10,
-          "paddingHorizontal": "1%"
+          "paddingHorizontal": "10%"
         },
         "title": {
           "display": "none",
@@ -9015,7 +9015,53 @@
   ],
   "header": {
     "textColor": "#363636",
-    "primaryColor": "#363636"
+    "primaryColor": "#363636",
+    "styles": {
+      "searchBar": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 25,
+        "paddingHorizontal": 16,
+        "paddingVertical": 12,
+        "shadowOpacity": 0.1,
+        "shadowRadius": 4,
+        "elevation": 3,
+        "placeholder": {
+          "fontSize": 15,
+          "color": "#666666",
+          "letterSpacing": 0.2
+        },
+        "icon": {
+          "size": 20
+        },
+        "container": {
+          "paddingLeft": 10,
+          "paddingRight": 0,
+          "paddingTop": 0,
+          "paddingBottom": 10,
+          "marginTop": -20,
+          "marginBottom": 0
+        }
+      },
+      "topInfo": {
+        "paddingHorizontal": 20,
+        "tagline": {
+          "fontSize": 12,
+          "lineHeight": 12,
+          "letterSpacing": 0,
+          "height": 44
+        }
+      },
+      "wishlistButton": {
+        "size": 44,
+        "iconSize": 28,
+        "backgroundColor": "#0000000f",
+        "borderRadius": 24
+      },
+      "heights": {
+        "addressBarHeight": 60,
+        "totalHeaderHeight": 170
+      }
+    }
   },
   "ticketingScreen": {
     "header": {
@@ -9096,8 +9142,15 @@
   "categories": {
     "defaultPageBackgroundColor": "#FCF9F8",
     "navigationBar": {
-      "iconSize": 70,
-      "iconContainerSize": 70,
+      "iconSize": 50,
+      "iconContainerSize": 65,
+      "collapsedBorderHeight": 28,
+      "animation": {
+        "iconFadeScrollEnd": 40,
+        "largeBorderFadeScrollEnd": 50,
+        "smallBorderFadeScrollStart": 30,
+        "smallBorderFadeScrollEnd": 80
+      },
       "colors": {
         "all": "#F2C0C7",
         "Fashion": "#FFD700",
