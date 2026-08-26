@@ -427,6 +427,7 @@ export function HomeHeader({
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategorySelect={onCategorySelect}
+                scrollY={scrollY}
               />
             </Animated.View>
           ) : null}

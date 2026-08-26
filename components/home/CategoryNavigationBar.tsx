@@ -146,12 +146,14 @@ interface CategoryNavigationBarProps {
     scrollContent?: any;
     categoriesWrapper?: any;
   };
+  scrollY?: Animated.Value;
 }
 
 export function CategoryNavigationBar({
   categories = [],
   selectedCategory,
   onCategorySelect,
+  scrollY,
   styles: customStyles = {},
 }: CategoryNavigationBarProps) {
   const iconPositionsRef = useRef<{ [key: string]: number }>({});
@@ -201,7 +203,37 @@ export function CategoryNavigationBar({
       // Match the icon + label row so the scoops sit on the header edge, not in clipped overflow.
       height: iconContainerSize + 10,
     },
+    collapsedBorderContainer: {
+      width: iconContainerSize + 2 + TAB_EAR * 2,
+      height: 38, // Enough to wrap the text
+    }
   }), [iconSize, iconContainerSize]);
+
+  const animatedScrollY = scrollY || new Animated.Value(0);
+
+  const iconOpacity = animatedScrollY.interpolate({
+    inputRange: [0, 40],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const iconHeight = animatedScrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [iconContainerSize, 0],
+    extrapolate: 'clamp',
+  });
+
+  const largeBorderOpacity = animatedScrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const smallBorderOpacity = animatedScrollY.interpolate({
+    inputRange: [30, 80],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     if (selectedCategory && iconPositionsRef.current[selectedCategory] !== undefined) {
@@ -249,12 +281,13 @@ export function CategoryNavigationBar({
           activeOpacity={0.6}
           onLayout={handleLayout}
         >
-          <View
+          <Animated.View
             style={[
               defaultStyles.categoryIconWrapper,
               isSelected && defaultStyles.selectedIconWrapper,
               customStyles.categoryIconWrapper,
               isSelected && customStyles.selectedIconWrapper,
+              { opacity: iconOpacity, overflow: 'hidden' }
             ]}
           >
             <View
@@ -296,7 +329,7 @@ export function CategoryNavigationBar({
                 </Text>
               )}
             </View>
-          </View>
+          </Animated.View>
           <Text
             style={[
               defaultStyles.categoryLabel,
@@ -362,11 +395,20 @@ export function CategoryNavigationBar({
               },
             ]}
           >
-            <ChromeTabHighlight
-              width={dynamicStyles.slidingBorderContainer.width}
-              height={dynamicStyles.slidingBorderContainer.height}
-              color={categoryColor}
-            />
+            <Animated.View style={{ opacity: largeBorderOpacity, position: 'absolute', bottom: 0, left: 0 }}>
+              <ChromeTabHighlight
+                width={dynamicStyles.slidingBorderContainer.width}
+                height={dynamicStyles.slidingBorderContainer.height}
+                color={categoryColor}
+              />
+            </Animated.View>
+            <Animated.View style={{ opacity: smallBorderOpacity, position: 'absolute', bottom: 0, left: 0 }}>
+              <ChromeTabHighlight
+                width={dynamicStyles.collapsedBorderContainer.width}
+                height={dynamicStyles.collapsedBorderContainer.height}
+                color={categoryColor}
+              />
+            </Animated.View>
           </Animated.View>
           {categoryItems}
         </View>
@@ -399,7 +441,7 @@ const defaultStyles = StyleSheet.create({
     paddingBottom: 0,
     overflow: 'visible',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     paddingHorizontal: 20,
     minWidth: SCREEN_WIDTH,
@@ -414,15 +456,10 @@ const defaultStyles = StyleSheet.create({
   },
   slidingBorderContainer: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     zIndex: 0,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
     pointerEvents: 'none',
-    marginTop: 0,
     overflow: 'visible',
   },
   categoryIconWrapper: {
