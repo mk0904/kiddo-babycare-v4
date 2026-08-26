@@ -198,7 +198,7 @@ export function HomeHeader({
 
   const stickyTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [ADDRESS_BAR_HEIGHT, 0],
+    outputRange: [ADDRESS_BAR_HEIGHT, -25],
     extrapolate: 'clamp',
   });
 
@@ -232,13 +232,13 @@ export function HomeHeader({
 
   const searchTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 25],
+    outputRange: [0, 50],
     extrapolate: 'clamp',
   });
 
   const categoryTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 22],
+    outputRange: [0, 25],
     extrapolate: 'clamp',
   });
 
