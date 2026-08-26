@@ -29,6 +29,7 @@
       }
     },
     "styles": {
+      "height": 60,
       "backgroundColor": "#FFFFFF",
       "activeTintColor": "#E84E4B",
       "inactiveTintColor": "#999999",
@@ -9038,7 +9039,7 @@
           "paddingRight": 0,
           "paddingTop": 0,
           "paddingBottom": 10,
-          "marginTop": -20,
+          "marginTop": -10,
           "marginBottom": 0
         }
       },
@@ -9049,6 +9050,10 @@
           "lineHeight": 12,
           "letterSpacing": 0,
           "height": 44
+        },
+        "eta": {
+          "paddingTop": 7,
+          "paddingBottom": 7
         }
       },
       "wishlistButton": {
@@ -9059,7 +9064,34 @@
       },
       "heights": {
         "addressBarHeight": 60,
-        "totalHeaderHeight": 170
+        "totalHeaderHeight": 185,
+        "stickyHeaderOffset": -75
+      },
+      "scrollAnimation": {
+        "searchTranslateY": 75,
+        "categoryTranslateY": 23
+      },
+      "tryAtHomePill": {
+        "type": "text",
+        "imageUrl": "",
+        "width": 100,
+        "height": 46,
+        "borderRadius": 12,
+        "gradientColors": ["#ffe1a4", "#ff7c90"],
+        "text": {
+          "tryAtHome": "Try at home",
+          "instantRefund": "Instant Refund",
+          "tryAtHomeFontSize": 12,
+          "labelFontSize": 10,
+          "labelLineHeight": 12,
+          "fontFamily": "lexend",
+          "color": "#FFFFFF",
+          "textAlign": "center"
+        },
+        "container": {
+          "marginLeft": 0,
+          "left": 10
+        }
       }
     }
   },
@@ -9142,8 +9174,8 @@
   "categories": {
     "defaultPageBackgroundColor": "#FCF9F8",
     "navigationBar": {
-      "iconSize": 50,
-      "iconContainerSize": 65,
+      "iconSize": 60,
+      "iconContainerSize": 70,
       "collapsedBorderHeight": 28,
       "animation": {
         "iconFadeScrollEnd": 40,
@@ -9153,7 +9185,7 @@
       },
       "colors": {
         "all": "#F2C0C7",
-        "Fashion": "#FFD700",
+        "Fashion": "#A020F0",
         "babycare": "#87CEEB",
         "toys": "#FFD700",
         "babygear": "#c46447",

@@ -1,4 +1,5 @@
 import { Fonts } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SearchIcon } from './SearchIcon';
@@ -72,6 +73,7 @@ export function SearchBar({
       : placeholder;
 
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('SearchBar pressed, onPress:', !!onPress);
     if (onPress) {
       onPress();

@@ -106,7 +106,7 @@ export default function HomeScreen() {
     'Search for Baby Care Essentials',
     'Search for Diapers & Wipes',
     'Search for Baby Fashion',
-    'Search for Baby Food & Nutrition',
+    'Search for Baby Food',
   ];
 
   const headerConfig = useMemo(() => {

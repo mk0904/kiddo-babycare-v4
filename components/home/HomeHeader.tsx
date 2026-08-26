@@ -7,22 +7,22 @@ import { Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-    headerGlassTintIsVisible,
-    resolveHeaderGlassConfig,
+  headerGlassTintIsVisible,
+  resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Animated,
-    Image,
-    ImageBackground,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -207,7 +207,7 @@ export function HomeHeader({
 
   const stickyTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [ADDRESS_BAR_HEIGHT, -25],
+    outputRange: [ADDRESS_BAR_HEIGHT, headerStyles?.heights?.stickyHeaderOffset ?? -25],
     extrapolate: 'clamp',
   });
 
@@ -241,13 +241,13 @@ export function HomeHeader({
 
   const searchTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 50],
+    outputRange: [0, headerStyles?.scrollAnimation?.searchTranslateY ?? 50],
     extrapolate: 'clamp',
   });
 
   const categoryTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 25],
+    outputRange: [0, headerStyles?.scrollAnimation?.categoryTranslateY ?? 25],
     extrapolate: 'clamp',
   });
 
@@ -345,7 +345,13 @@ export function HomeHeader({
                   </Text>
                   {(address || isUnserviceable || locationStatus === 'loading') &&
                     (estimatedTime !== null || loadingTime || isUnserviceable) && (
-                      <View style={styles.estimatedTimeWrapper}>
+                      <View style={[
+                        styles.estimatedTimeWrapper,
+                        {
+                          paddingTop: headerStyles?.topInfo?.eta?.paddingTop ?? 0,
+                          paddingBottom: headerStyles?.topInfo?.eta?.paddingBottom ?? 0,
+                        }
+                      ]}>
                         {loadingTime ? (
                           <Text style={[styles.estimatedTimeText, { color: textColor, fontSize: headerStyles?.topInfo?.eta?.fontSize ?? 23, lineHeight: headerStyles?.topInfo?.eta?.lineHeight ?? 28, letterSpacing: headerStyles?.topInfo?.eta?.letterSpacing ?? 0.3 }]}>...</Text>
                         ) : isUnserviceable ? (
