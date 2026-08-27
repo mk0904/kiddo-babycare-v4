@@ -3,7 +3,6 @@ import { DEFAULT_ETA_MINUTES } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { appConfigService } from '@/services/appConfigService';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface DeliverySchedule {

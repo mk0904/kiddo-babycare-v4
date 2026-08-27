@@ -172,7 +172,7 @@ class AppConfigService {
   }
 
   getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
-    return this.config?.hotWheelConfig ?? null;
+    return this.config?.hotWheelConfigV2 ?? null;
   }
 
   getHelpSupportConfig(): HelpSupportConfig | null {
@@ -332,7 +332,7 @@ class AppConfigService {
   }
 
   getMinOrderValue(): number {
-    return this.config?.minOrderValue ?? 0;
+    return this.config?.minOrderValueV2 ?? 0;
   }
 
   getReferralConfig(): ReferralConfig | null {

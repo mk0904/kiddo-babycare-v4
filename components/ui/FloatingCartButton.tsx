@@ -6,8 +6,8 @@ import { appConfigService } from '@/services/appConfigService';
 import { useCartItemCount } from '@/store/cartStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePathname, useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingCartCta } from './FloatingCartCta';
 
@@ -99,7 +99,22 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
     const pdpBottomOffset = PDP_BOTTOM_BAR_HEIGHT + 12;
     const baseBottomOffset = tabBarBlockHeight + (anchorExtraOffset || 0);
-    const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 18;
+    const hiddenBottomOffset = isPDP ? pdpBottomOffset : bottomInset + 0;
+
+    const targetBottomOffset =
+        showTabBar && isTabBarVisible
+            ? baseBottomOffset
+            : hiddenBottomOffset + (anchorExtraOffset || 0);
+
+    const animatedBottom = useRef(new Animated.Value(targetBottomOffset)).current;
+
+    useEffect(() => {
+        Animated.timing(animatedBottom, {
+            toValue: targetBottomOffset,
+            duration: 200,
+            useNativeDriver: false,
+        }).start();
+    }, [targetBottomOffset, animatedBottom]);
 
     // `cartInMilestoneRow` stays true while Home/Category tabs stay mounted (React Navigation).
     // Stack routes like `/search` still read that flag and would hide the pill everywhere — only
@@ -119,20 +134,20 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
             : hiddenBottomOffset + (anchorExtraOffset || 0);
 
     return (
-        <View
+        <Animated.View
             style={[
-                styles.container, 
-                { bottom: currentBottomOffset },
+                styles.container,
+                { bottom: animatedBottom },
             ]}
             pointerEvents="box-none"
         >
             <View style={{ opacity: 1 }}>
-                <FloatingCartCta 
-                    onPress={() => router.push('/cart' as any)} 
-                    testID="floating-view-cart" 
+                <FloatingCartCta
+                    onPress={() => router.push('/cart' as any)}
+                    testID="floating-view-cart"
                 />
             </View>
-        </View>
+        </Animated.View>
     );
 };
 

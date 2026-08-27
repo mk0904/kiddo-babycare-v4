@@ -540,6 +540,7 @@ export interface AppConfig {
     primaryColor?: string;
     backgroundColor?: string;
     backgroundImage?: string;
+    iconUrl?: string;
     glass?: HeaderGlassConfig;
   };
   categories?: {

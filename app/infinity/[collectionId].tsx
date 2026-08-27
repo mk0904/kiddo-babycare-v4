@@ -72,12 +72,22 @@ export default function InfinityScreen() {
 
     const [milestoneExpanded, setMilestoneExpanded] = useState(false);
     const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+    const slideAnim = useRef(new Animated.Value(50)).current;
 
     useEffect(() => {
         const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
         setMilestoneUiRev((x) => x + 1);
         return off;
     }, []);
+
+    // Slide in animation on mount
+    useEffect(() => {
+        Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 170,
+            useNativeDriver: true,
+        }).start();
+    }, [slideAnim]);
 
     const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
@@ -827,7 +837,7 @@ export default function InfinityScreen() {
                     />
                 )}
 
-                <View style={styles.gridContainer}>
+                <Animated.View style={[styles.gridContainer, { transform: [{ translateX: slideAnim }] }]}>
                     <InfiniteProductGrid
                         collectionId={effectiveCollectionId.startsWith('gid://') ? effectiveCollectionId : `gid://shopify/Collection/${effectiveCollectionId}`}
                         sortKey={sortKey}
@@ -852,7 +862,7 @@ export default function InfinityScreen() {
                         ageFilter={selectedAge}
                         pageCategory={pageCategory}
                     />
-                </View>
+                </Animated.View>
 
                 {!shouldHideFilters && (
                     <FilterPanel

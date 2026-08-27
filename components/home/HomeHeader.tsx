@@ -1,29 +1,33 @@
 import { CategoryNavigationBar } from '@/components/home/CategoryNavigationBar';
 import { TryAtHomePill } from '@/components/home/TryAtHomePill';
 import { LocationButton } from '@/components/ui/LocationButton';
+import type { SearchBarStyleConfig } from '@/components/ui/SearchBar';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-    headerGlassTintIsVisible,
-    resolveHeaderGlassConfig,
+  headerGlassTintIsVisible,
+  resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Animated,
-    Image,
-    ImageBackground,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
@@ -85,6 +89,11 @@ export function HomeHeader({
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  // Read remote-configurable style overrides from kiddoAppConfig
+  const headerStyles = useMemo(() => {
+    return (kiddoAppConfig as any)?.header?.styles ?? {};
+  }, []);
 
   const {
     backgroundColor = 'transparent',
@@ -174,8 +183,8 @@ export function HomeHeader({
    * We use translateY to move the content.
    */
   const ADDRESS_BOTTOM_MARGIN = 12;
-  const ADDRESS_BAR_HEIGHT = 80 + ADDRESS_BOTTOM_MARGIN;
-  const TOTAL_HEADER_HEIGHT = 185 + ADDRESS_BOTTOM_MARGIN;
+  const ADDRESS_BAR_HEIGHT = (headerStyles?.heights?.addressBarHeight ?? 80) + ADDRESS_BOTTOM_MARGIN;
+  const TOTAL_HEADER_HEIGHT = (headerStyles?.heights?.totalHeaderHeight ?? 185) + ADDRESS_BOTTOM_MARGIN;
 
   const contentTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
@@ -198,7 +207,7 @@ export function HomeHeader({
 
   const stickyTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [ADDRESS_BAR_HEIGHT, 0],
+    outputRange: [ADDRESS_BAR_HEIGHT, headerStyles?.heights?.stickyHeaderOffset ?? -25],
     extrapolate: 'clamp',
   });
 
@@ -232,13 +241,13 @@ export function HomeHeader({
 
   const searchTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 25],
+    outputRange: [0, headerStyles?.scrollAnimation?.searchTranslateY ?? 50],
     extrapolate: 'clamp',
   });
 
   const categoryTranslateY = scrollY.interpolate({
     inputRange: [0, ADDRESS_BAR_HEIGHT],
-    outputRange: [0, 22],
+    outputRange: [0, headerStyles?.scrollAnimation?.categoryTranslateY ?? 25],
     extrapolate: 'clamp',
   });
 
@@ -312,29 +321,55 @@ export function HomeHeader({
             ]}
             collapsable={false}
           >
-            <View style={styles.topInfoBar} collapsable={false}>
+            <View
+              style={[
+                styles.topInfoBar,
+                { paddingHorizontal: headerStyles?.topInfo?.paddingHorizontal ?? 20 },
+              ]}
+              collapsable={false}
+            >
               <View style={styles.leftInfoContainer}>
                 <View style={styles.kiddoRow}>
-                  <Text style={[styles.kiddoHeaderText, { color: textColor }]}>
+                  <Text
+                    style={[
+                      styles.kiddoHeaderText,
+                      {
+                        color: textColor,
+                        fontSize: headerStyles?.topInfo?.tagline?.fontSize ?? 12,
+                        lineHeight: headerStyles?.topInfo?.tagline?.lineHeight ?? 16,
+                        letterSpacing: headerStyles?.topInfo?.tagline?.letterSpacing ?? 0,
+                      },
+                    ]}
+                  >
                     The best for kids in
                   </Text>
                   {(address || isUnserviceable || locationStatus === 'loading') &&
                     (estimatedTime !== null || loadingTime || isUnserviceable) && (
-                      <View style={styles.estimatedTimeWrapper}>
+                      <View style={[
+                        styles.estimatedTimeWrapper,
+                        {
+                          paddingTop: isUnserviceable 
+                            ? (headerStyles?.topInfo?.unserviceable?.paddingTop ?? 0)
+                            : (headerStyles?.topInfo?.eta?.paddingTop ?? 0),
+                          paddingBottom: isUnserviceable 
+                            ? (headerStyles?.topInfo?.unserviceable?.paddingBottom ?? 0)
+                            : (headerStyles?.topInfo?.eta?.paddingBottom ?? 0),
+                        }
+                      ]}>
                         {loadingTime ? (
-                          <Text style={[styles.estimatedTimeText, { color: textColor }]}>...</Text>
+                          <Text style={[styles.estimatedTimeText, { color: textColor, fontSize: headerStyles?.topInfo?.eta?.fontSize ?? 23, lineHeight: headerStyles?.topInfo?.eta?.lineHeight ?? 28, letterSpacing: headerStyles?.topInfo?.eta?.letterSpacing ?? 0.3 }]}>...</Text>
                         ) : isUnserviceable ? (
-                          <Text style={[styles.estimatedTimeText, styles.unserviceableText]}>
+                          <Text style={[styles.estimatedTimeText, styles.unserviceableText, { fontSize: headerStyles?.topInfo?.eta?.fontSize ?? 23, lineHeight: headerStyles?.topInfo?.eta?.lineHeight ?? 28 }]}>
                             Area unserviceable
                           </Text>
                         ) : estimatedTime !== null ? (
                           <View style={styles.estimatedTimeContent}>
-                            <Text style={[styles.estimatedTimeText, { color: textColor }]}>
+                            <Text style={[styles.estimatedTimeText, { color: textColor, fontSize: headerStyles?.topInfo?.eta?.fontSize ?? 23, lineHeight: headerStyles?.topInfo?.eta?.lineHeight ?? 28, letterSpacing: headerStyles?.topInfo?.eta?.letterSpacing ?? 0.3 }]}>
                               {estimatedTime} mins
                             </Text>
                             <Image
                               source={require('@/assets/fonts/lightningsymbol.png')}
-                              style={styles.lightningIcon}
+                              style={[styles.lightningIcon, { width: headerStyles?.topInfo?.lightningIcon?.width ?? 54, height: headerStyles?.topInfo?.lightningIcon?.height ?? 44 }]}
                               resizeMode="contain"
                               accessibilityIgnoresInvertColors
                             />
@@ -345,7 +380,7 @@ export function HomeHeader({
                 </View>
                 <View style={styles.addressRow}>
                   <LocationButton
-                    address={address}
+                    address={isUnserviceable ? 'Area Unserviceable' : address}
                     categoryLabel={addressCategoryLabel}
                     textColor={textColor}
                     onPress={onLocationPress}
@@ -356,12 +391,20 @@ export function HomeHeader({
                 {headerConfig?.iconUrl && (
                   <TouchableOpacity
                     onPress={() => router.push('/wallet')}
-                    style={styles.wishlistButton}
+                    style={[
+                      styles.wishlistButton,
+                      {
+                        width: headerStyles?.wishlistButton?.size ?? 44,
+                        height: headerStyles?.wishlistButton?.size ?? 44,
+                        backgroundColor: headerStyles?.wishlistButton?.backgroundColor ?? '#0000000f',
+                        borderRadius: headerStyles?.wishlistButton?.borderRadius ?? 24,
+                      },
+                    ]}
                     activeOpacity={0.7}
                   >
                     <Image
                       source={{ uri: headerConfig.iconUrl }}
-                      style={{ width: 28, height: 28 }}
+                      style={{ width: headerStyles?.wishlistButton?.iconSize ?? 28, height: headerStyles?.wishlistButton?.iconSize ?? 28 }}
                       resizeMode="contain"
                     />
                   </TouchableOpacity>
@@ -369,10 +412,26 @@ export function HomeHeader({
                 {!configService.getTabBarConfig()?.visibleTabs?.includes('wishlist') && (
                   <TouchableOpacity
                     onPress={() => router.push('/wishlist')}
-                    style={styles.wishlistButton}
+                    style={[
+                      styles.wishlistButton,
+                      {
+                        width: headerStyles?.wishlistButton?.size ?? 44,
+                        height: headerStyles?.wishlistButton?.size ?? 44,
+                        backgroundColor: headerStyles?.wishlistButton?.backgroundColor ?? '#0000000f',
+                        borderRadius: headerStyles?.wishlistButton?.borderRadius ?? 24,
+                      },
+                    ]}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="heart-outline" size={28} color={textColor} />
+                    {headerStyles?.wishlistButton?.iconUrl ? (
+                      <Image
+                        source={{ uri: headerStyles?.wishlistButton?.iconUrl }}
+                        style={{ width: headerStyles?.wishlistButton?.iconSize ?? 28, height: headerStyles?.wishlistButton?.iconSize ?? 28 }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Ionicons name="heart-outline" size={headerStyles?.wishlistButton?.iconSize ?? 28} color={textColor} />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
@@ -413,10 +472,28 @@ export function HomeHeader({
           </Animated.View>
         ) : null}
         <View pointerEvents="box-none">
-          <Animated.View style={[styles.searchContainer, { transform: [{ translateY: searchTranslateY }] }]} pointerEvents="box-none">
+          <Animated.View
+            style={[
+              styles.searchContainer,
+              {
+                paddingLeft: headerStyles?.searchBar?.container?.paddingLeft ?? 10,
+                paddingRight: headerStyles?.searchBar?.container?.paddingRight ?? 0,
+                paddingTop: headerStyles?.searchBar?.container?.paddingTop ?? 0,
+                paddingBottom: headerStyles?.searchBar?.container?.paddingBottom ?? 0,
+                marginTop: headerStyles?.searchBar?.container?.marginTop ?? -25,
+                marginBottom: headerStyles?.searchBar?.container?.marginBottom ?? 0,
+                transform: [{ translateY: searchTranslateY }],
+              },
+            ]}
+            pointerEvents="box-none"
+          >
             <View style={styles.searchRow}>
               <View style={styles.searchBarWrap}>
-                <SearchBar suggestions={searchSuggestions} onPress={onSearchPress} />
+                <SearchBar
+                  suggestions={searchSuggestions}
+                  onPress={onSearchPress}
+                  styleConfig={headerStyles?.searchBar as SearchBarStyleConfig}
+                />
               </View>
               <TryAtHomePill onPress={onTryAtHomePress} />
             </View>
@@ -427,6 +504,7 @@ export function HomeHeader({
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategorySelect={onCategorySelect}
+                scrollY={scrollY}
               />
             </Animated.View>
           ) : null}
@@ -468,7 +546,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 20,
     paddingTop: 0,
     backgroundColor: 'transparent',
   },
@@ -486,10 +563,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   kiddoHeaderText: {
-    fontSize: 12,
-    lineHeight: 16,
     fontFamily: Fonts.LexendBold,
-    letterSpacing: 0,
   },
   estimatedTimeWrapper: {
     flexDirection: 'row',
@@ -502,15 +576,10 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
   },
   lightningIcon: {
-    width: 54,
-    height: 44,
     marginLeft: 0,
   },
   estimatedTimeText: {
-    fontSize: 23,
-    lineHeight: 28,
     fontFamily: Fonts.FredokaSemiBold,
-    letterSpacing: 0.3,
   },
   unserviceableText: {
     color: '#DC2626',
@@ -539,10 +608,6 @@ const styles = StyleSheet.create({
   wishlistButton: {
     padding: 8,
     marginLeft: 10,
-    backgroundColor: '#0000000f',
-    borderRadius: 24,
-    width: 44,
-    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

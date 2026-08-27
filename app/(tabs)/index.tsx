@@ -1,16 +1,16 @@
 import { BlockRenderer } from '@/components/content/BlockRenderer';
+import { HomeContentSkeleton } from '@/components/home/HomeContentSkeleton';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
-    getDeliveryEta,
-    getDeliveryEtaForAddress,
-    reverseGeocode,
+  getDeliveryEta,
+  reverseGeocode,
 } from '@/config/deliveryConfig';
 import { getAppVersionForApi } from '@/constants/versionConfig';
-import { useAddress } from '@/context/AddressContext';
+import { Address, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -27,11 +27,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,16 +43,19 @@ export default function HomeScreen() {
   const cartItemCount = useCartItemCount();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
-  /** Last GPS position when user has no saved address — re-check ETA when app config (e.g. servicableDistance) updates. */
+  /** Last GPS position — re-check ETA when app config (e.g. servicableDistance) updates. */
   const lastDetectedCoordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
-  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
-  const [loadingTime, setLoadingTime] = useState(false);
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [configLoading, setConfigLoading] = useState(true);
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const prevCategoryRef = useRef('all');
   /** While Kiddo rewards welcome popup is open, hide the home milestone row (`getHomeMilestoneRowLayout` + `MilestoneCartRow`). */
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
   const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
@@ -78,34 +81,32 @@ export default function HomeScreen() {
 
   const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
 
-  // Auto-detected location when user has no saved address (serviceable / unserviceable)
+  // Always detect live GPS location on app open (regardless of saved address / login state)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [detectedLocationLabel, setDetectedLocationLabel] = useState<string | null>(null);
   const [detectedEta, setDetectedEta] = useState<number | null>(null);
 
-  // Use address from AddressContext when set; otherwise show detected location or prompt
-  const address = defaultAddress
-    ? defaultAddress.address1 || 'Default Address'
-    : (detectedLocationLabel || (locationStatus === 'unserviceable' ? null : null));
-  const displayAddress = defaultAddress
-    ? (defaultAddress.address1 || 'Default Address')
-    : detectedLocationLabel;
+  // Always show the live detected location in the header (saved address is used for cart/checkout only)
+  const displayAddress = detectedLocationLabel;
+  const address = detectedLocationLabel;
 
   const addressCategoryLabel = useMemo(() => {
+    // Show tag label from saved address only when we have no live location yet
+    if (detectedLocationLabel) return null;
     if (!defaultAddress) return null;
     return getAddressTitleLabel(defaultAddress);
-  }, [defaultAddress]);
-  const isUnserviceable = !defaultAddress && locationStatus === 'unserviceable';
-  const homeEstimatedTime = defaultAddress ? estimatedTime : detectedEta;
-  const homeLoadingTime = defaultAddress ? loadingTime : locationStatus === 'loading';
+  }, [defaultAddress, detectedLocationLabel]);
+  const isUnserviceable = locationStatus === 'unserviceable';
+  const homeEstimatedTime = detectedEta;
+  const homeLoadingTime = locationStatus === 'loading';
 
   const searchSuggestions = [
     'Search for Toys & Games',
     'Search for Baby Care Essentials',
     'Search for Diapers & Wipes',
     'Search for Baby Fashion',
-    'Search for Baby Food & Nutrition',
+    'Search for Baby Food',
   ];
 
   const headerConfig = useMemo(() => {
@@ -179,9 +180,10 @@ export default function HomeScreen() {
       console.warn('Mixpanel tracking error:', e);
     }
     if (categoryKey === selectedCategory) return;
+    
     setSelectedCategory(categoryKey);
     // Scroll to top of the new category content
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [selectedCategory, categories]);
 
   // Load config on mount
@@ -208,13 +210,56 @@ export default function HomeScreen() {
 
   // Update blocks when category changes
   useEffect(() => {
-    const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
-    // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
-    const filteredBlocks = screenBlocks.filter(
-      (block) => block.type !== 'rail'
-    );
-    setBlocks(filteredBlocks);
-  }, [selectedCategory]);
+    const prevCategory = prevCategoryRef.current;
+    prevCategoryRef.current = selectedCategory;
+
+    // Show skeleton immediately when category changes
+    if (prevCategory !== selectedCategory) {
+      setCategoryLoading(true);
+      
+      // Fade out current content
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => {
+        // After fade out, load new content
+        const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
+        // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
+        const filteredBlocks = screenBlocks.filter(
+          (block) => block.type !== 'rail'
+        );
+        
+        setBlocks(filteredBlocks);
+        
+        // Simulate minimal delay for smooth transition
+        setTimeout(() => {
+          setCategoryLoading(false);
+          // Fade in new content
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+          
+          // Slide in animation for new category content
+          slideAnim.setValue(50);
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }, 100);
+      });
+    } else {
+      // Initial load or same category
+      const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
+      const filteredBlocks = screenBlocks.filter(
+        (block) => block.type !== 'rail'
+      );
+      setBlocks(filteredBlocks);
+    }
+  }, [selectedCategory, slideAnim, fadeAnim]);
 
   const handleBlockPress = useCallback((block: ContentBlock, link?: string, item?: any) => {
     try {
@@ -331,54 +376,42 @@ export default function HomeScreen() {
     setShowAddressModal(true);
   };
 
-  // Fetch estimated delivery time
-  const fetchEstimatedTime = useCallback(async () => {
-    if (!defaultAddress) {
-      setEstimatedTime(null);
-      setLoadingTime(false);
-      return;
-    }
-
-    setLoadingTime(true);
+  // When user explicitly picks a saved address from the modal, update the header display
+  const handleAddressSelected = useCallback(async (selectedAddress: Address) => {
+    const label = selectedAddress.address1 || 'Saved address';
+    setDetectedLocationLabel(label);
+    setLocationStatus('loading');
+    setDetectedEta(null);
     try {
-      let deliveryTime: number | null = null;
-      if (defaultAddress.latitude && defaultAddress.longitude) {
-        const eta = await getDeliveryEta(defaultAddress.latitude, defaultAddress.longitude);
-        deliveryTime = eta?.etaMinutes ?? null;
-      } else {
-        const addressString = `${defaultAddress.address1 || ''} ${defaultAddress.city || ''} ${defaultAddress.state || ''} ${defaultAddress.pincode || ''}`.trim();
-        if (!addressString) {
-          setEstimatedTime(null);
-          setLoadingTime(false);
-          return;
+      if (selectedAddress.latitude && selectedAddress.longitude) {
+        const eta = await getDeliveryEta(selectedAddress.latitude, selectedAddress.longitude);
+        if (eta) {
+          setDetectedEta(eta.etaMinutes);
+          setLocationStatus('serviceable');
+          setDetectedLocation('serviceable', eta.etaMinutes);
+        } else {
+          setLocationStatus('serviceable');
+          setDetectedLocation('serviceable', null);
         }
-        deliveryTime = await getDeliveryEtaForAddress(addressString);
+      } else {
+        setLocationStatus('serviceable');
+        setDetectedLocation('serviceable', null);
       }
-      setEstimatedTime(deliveryTime);
-
-      // Track delivery ETA checked
-      try {
-        const { trackDeliveryETAChecked } = require('@/utils/mixpanelHelpers');
-        trackDeliveryETAChecked(address || 'Unknown', deliveryTime);
-      } catch (e) {
-        console.warn('Mixpanel tracking error:', e);
-      }
-    } catch (error) {
-      console.error('Error fetching delivery time:', error);
-      setEstimatedTime(null);
-    } finally {
-      setLoadingTime(false);
+    } catch {
+      setLocationStatus('serviceable');
+      setDetectedLocation('serviceable', null);
     }
-  }, [defaultAddress]);
+  }, [setDetectedLocation]);
 
   const applyEtaForDetectedCoords = useCallback(
     async (latitude: number, longitude: number, cancelled: () => boolean) => {
       const eta = await getDeliveryEta(latitude, longitude);
       if (cancelled()) return;
       if (!eta) {
-        setLocationStatus('error');
-        setDetectedLocationLabel('Tap to add delivery address');
-        setDetectedLocation('error');
+        setLocationStatus('unserviceable');
+        setDetectedLocationLabel(null);
+        setDetectedEta(null);
+        setDetectedLocation('unserviceable');
         return;
       }
       const threshold = appConfigService.getServicableDistanceKm();
@@ -400,30 +433,10 @@ export default function HomeScreen() {
     [setDetectedLocation]
   );
 
-  useEffect(() => {
-    fetchEstimatedTime();
-  }, [fetchEstimatedTime]);
 
-  // When user clears their address, reset so we can re-detect location
-  const hadAddressRef = useRef(!!defaultAddress);
-  useEffect(() => {
-    if (defaultAddress) {
-      hadAddressRef.current = true;
-      return;
-    }
-    if (hadAddressRef.current) {
-      hadAddressRef.current = false;
-      lastDetectedCoordsRef.current = null;
-      setLocationStatus('idle');
-      setDetectedLocationLabel(null);
-      setDetectedEta(null);
-      setDetectedLocation('idle');
-    }
-  }, [defaultAddress, setDetectedLocation]);
 
-  // Auto-detect location on home when user has no saved address (e.g. after login)
+  // Always auto-detect live GPS location on app open (logged in or not, with or without saved address)
   useEffect(() => {
-    if (defaultAddress) return;
     if (locationStatus !== 'idle') return;
 
     let cancelled = false;
@@ -471,11 +484,10 @@ export default function HomeScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [defaultAddress, applyEtaForDetectedCoords]);
+  }, [applyEtaForDetectedCoords]);
 
   // Re-evaluate serviceability when app config loads or updates (e.g. `delivery.servicableDistance`).
   useEffect(() => {
-    if (defaultAddress) return;
     const c = lastDetectedCoordsRef.current;
     if (!c) return;
     let cancelled = false;
@@ -483,7 +495,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [milestoneUiRev, defaultAddress, applyEtaForDetectedCoords]);
+  }, [milestoneUiRev, applyEtaForDetectedCoords]);
 
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();
@@ -587,7 +599,7 @@ export default function HomeScreen() {
             categories={categories}
             selectedCategory={selectedCategory}
             onCategorySelect={handleCategorySelect}
-            onHeaderHeightChange={() => { }} // Not using dynamic height updates anymore
+            onHeaderHeightChange={setDynamicHeaderHeight}
           />
         </View>
 
@@ -597,7 +609,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingTop: initialHeaderHeight, // Start content below the absolute header
+              paddingTop: effectiveHeaderHeight, // Start content below the absolute header
               minHeight: '100%',
               backgroundColor: pageBackgroundColor,
               paddingBottom: scrollBottomPad,
@@ -615,15 +627,24 @@ export default function HomeScreen() {
           scrollEnabled={true}
           directionalLockEnabled={false}
         >
-          <View style={[styles.scrollViewContent, { backgroundColor: pageBackgroundColor }]}>
+          <Animated.View 
+            style={[
+              styles.scrollViewContent, 
+              { backgroundColor: pageBackgroundColor },
+              { transform: [{ translateX: slideAnim }] },
+              { opacity: fadeAnim }
+            ]}
+          >
             {configLoading ? (
               <View style={styles.loadingContainer}>
                 {/* Loading state */}
               </View>
+            ) : categoryLoading ? (
+              <HomeContentSkeleton />
             ) : (
               <BlockRenderer blocks={blocks} onBlockPress={handleBlockPress} blockSpacing={0} />
             )}
-          </View>
+          </Animated.View>
         </Animated.ScrollView>
       </View>
 
@@ -647,6 +668,7 @@ export default function HomeScreen() {
       <AddressModal
         visible={showAddressModal}
         onClose={() => setShowAddressModal(false)}
+        onSelectAddress={handleAddressSelected}
         fromHome={true}
       />
 

@@ -249,6 +249,9 @@ export default function AccountScreen() {
                         'Profile': '/profile/edit',
                         'DemoBookings': '/demo/bookings',
                         'ReturnRefund': '/return-refund',
+                        'AboutUs': '/about-us',
+                        'TermsConditions': '/terms-conditions',
+                        'PrivacyPolicy': '/privacy-policy',
                     };
 
                     const path = screenMap[params.screen];
@@ -598,7 +601,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
     header: {
         paddingTop: 30,

@@ -1807,7 +1807,7 @@ export default function CartScreen() {
                 }
 
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
-                
+
                 // Fetch product metafields for L1, L2, L3 collections
                 let productMetafields: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}> = [];
                 try {
@@ -1839,8 +1839,14 @@ export default function CartScreen() {
                 } catch (error) {
                     console.warn('[Cart] Failed to fetch product metafields for order:', error);
                 }
-                
+
                 trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, productMetafields);
+                try {
+                    const { selfSearchApi } = require('@/services/selfSearchApi');
+                    selfSearchApi.trackOrderPlaced(orderIdForDisplay, { amount: cartTotal, productIds: cartProductIds });
+                } catch (e) {
+                    console.warn('Self search analytics error:', e);
+                }
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
@@ -2577,6 +2583,9 @@ export default function CartScreen() {
                             onLoginPress={() => router.push('/(auth)/login')}
                             payButtonLabel={checkoutConfig?.payButtonLabel}
                             minOrderValueNotMet={itemSubtotal < appConfigService.getMinOrderValue()}
+                            minOrderValue={appConfigService.getMinOrderValue()}
+                            cartSubtotal={itemSubtotal}
+                            hotWheelConfig={appConfigService.getHotWheelConfig()}
                         />
                     </View>
                 </View>
@@ -3484,7 +3493,7 @@ const styles = StyleSheet.create({
         borderTopColor: '#e8e6e3',
     },
     footerContent: {
-        padding: 15,
+        padding: 0,
     },
     footerPriceRow: {
         flexDirection: 'row',

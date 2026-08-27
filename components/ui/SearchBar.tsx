@@ -1,18 +1,40 @@
 import { Fonts } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SearchIcon } from './SearchIcon';
+
+export interface SearchBarStyleConfig {
+  backgroundColor?: string;
+  borderRadius?: number;
+  paddingHorizontal?: number;
+  paddingVertical?: number;
+  shadowOpacity?: number;
+  shadowRadius?: number;
+  elevation?: number;
+  placeholder?: {
+    fontSize?: number;
+    color?: string;
+    letterSpacing?: number;
+    fontFamily?: string;
+  };
+  icon?: {
+    size?: number;
+  };
+}
 
 interface SearchBarProps {
   placeholder?: string;
   suggestions?: string[];
   onPress?: () => void;
+  styleConfig?: SearchBarStyleConfig;
 }
 
 export function SearchBar({
   placeholder = 'Search for products...',
   suggestions = [],
   onPress,
+  styleConfig,
 }: SearchBarProps) {
   const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -51,12 +73,32 @@ export function SearchBar({
       : placeholder;
 
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('SearchBar pressed, onPress:', !!onPress);
     if (onPress) {
       onPress();
     } else {
       console.warn('SearchBar onPress is not defined');
     }
+  };
+
+  const iconSize = styleConfig?.icon?.size ?? 20;
+
+  const searchBarStyle = {
+    backgroundColor: styleConfig?.backgroundColor ?? '#FFFFFF',
+    borderRadius: styleConfig?.borderRadius ?? 25,
+    paddingHorizontal: styleConfig?.paddingHorizontal ?? 16,
+    paddingVertical: styleConfig?.paddingVertical ?? 12,
+    shadowOpacity: styleConfig?.shadowOpacity ?? 0.1,
+    shadowRadius: styleConfig?.shadowRadius ?? 4,
+    elevation: styleConfig?.elevation ?? 3,
+  };
+
+  const placeholderStyle = {
+    fontSize: styleConfig?.placeholder?.fontSize ?? 15,
+    color: styleConfig?.placeholder?.color ?? '#666666',
+    letterSpacing: styleConfig?.placeholder?.letterSpacing ?? 0.2,
+    fontFamily: styleConfig?.placeholder?.fontFamily ?? Fonts.Medium,
   };
 
   return (
@@ -66,13 +108,13 @@ export function SearchBar({
       style={styles.searchBarTouchable}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, searchBarStyle]}>
         <View style={styles.searchIconContainer}>
-          <SearchIcon size={20} />
+          <SearchIcon size={iconSize} />
         </View>
         <View style={styles.animatedPlaceholderContainer}>
           <Animated.Text
-            style={[styles.searchPlaceholder, { opacity: fadeAnim }]}
+            style={[styles.searchPlaceholder, placeholderStyle, { opacity: fadeAnim }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -91,15 +133,8 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   animatedPlaceholderContainer: {
     flex: 1,
@@ -109,12 +144,8 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   searchPlaceholder: {
-    fontSize: 15,
-    color: '#666666',
-    fontFamily: Fonts.Medium,
     includeFontPadding: false,
     textAlignVertical: 'center',
-    letterSpacing: 0.2,
   },
   searchIconContainer: {
     marginRight: 10,
@@ -122,4 +153,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
 
