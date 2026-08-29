@@ -7,27 +7,24 @@ import { Fonts } from '@/constants/theme';
 import { configService } from '@/services/configService';
 import type { HeaderGlassConfig } from '@/types/headerGlassTypes';
 import {
-  headerGlassTintIsVisible,
-  resolveHeaderGlassConfig,
+    headerGlassTintIsVisible,
+    resolveHeaderGlassConfig,
 } from '@/utils/headerGlassConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
-  Image,
-  ImageBackground,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    ImageBackground,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
 
 interface HomeHeaderProps {
   scrollY: Animated.Value;
@@ -92,7 +89,7 @@ export function HomeHeader({
 
   // Read remote-configurable style overrides from kiddoAppConfig
   const headerStyles = useMemo(() => {
-    return (kiddoAppConfig as any)?.header?.styles ?? {};
+    return (configService.getConfig() as any)?.header?.styles ?? {};
   }, []);
 
   const {

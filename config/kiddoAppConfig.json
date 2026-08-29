@@ -9779,7 +9779,7 @@
           "height": 44
         },
         "eta": {
-          "paddingTop": 2,
+          "paddingTop": 22,
           "paddingBottom": 2
         },
         "unserviceable": {
@@ -9792,7 +9792,7 @@
         "iconSize": 28,
         "backgroundColor": "#0000000f",
         "borderRadius": 24,
-        "iconUrl": ""
+        "iconUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestslide.gif?v=1788030361"
       },
       "heights": {
         "addressBarHeight": 60,
@@ -11069,31 +11069,6 @@
         "Ensures product meets personalized needs",
         "Option to buy via digital payment or cash"
       ]
-    }
-  },
-  "providers": {
-    "backend": {
-      "baseUrl": "https://kiddo-service-874125225773.asia-south1.run.app/api/v1"
-    },
-    "nector": {
-      "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
-      "appId": "shopify-kiddo-quick-baby-joy-m4bpo",
-      "appInstallTriggerId": null,
-      "razorpaySecretId": "fa26c7d4-cba3-47d0-aa73-66ab442a9484"
-    },
-    "razorpay": {
-      "keyId": "rzp_live_S4IH8bhsw9DjEe",
-      "keySecret": "OmdCqA5dFmc5GuL9uZk4YpDa"
-    },
-    "otp": {
-      "apiBaseUrl": "https://sms.shinenetcore.in/api/v2",
-      "senderId": "SNCOTP",
-      "apiKey": "3Ri5Du6T3fbCAfWs9L5gUfOSn4pbofa/DjZucAqwplo=",
-      "clientId": "b00a4a12-c1f3-420f-ae2c-e69988212928",
-      "messageTemplate": "One time OTP From Kiddo App {#var#} to login or activate your profile apsops SNC",
-      "expiryMinutes": 5,
-      "useAndroidHash": false,
-      "countryCode": "91"
     }
   }
 }
