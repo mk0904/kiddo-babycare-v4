@@ -5527,7 +5527,132 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_2b486d76-aba1-4931-ba12-575282385e6a.png?v=1787833948"
         }
       ]
+    },
+    "517972427041": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518003163425",
+      "label": "Shorts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_9889c2bf-a21b-4d4f-8a77-8c2cf6031cad.png?v=1787834320"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003228961",
+      "label": "Shorts - Tshirts/Shirt Co-ord Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_d4d56c91-f0b6-45c8-9913-65d7971d3d1f.png?v=1787834324"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003294497",
+      "label": "Girls Dresses",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/17_735d70a9-4d23-4d01-86be-8fe0fc375fd2.png?v=1787834329"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003360033",
+      "label": "Footwear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/18_113bf020-ae28-4095-82ab-33d8659265de.png?v=1787834334"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003425569",
+      "label": "Onsies & Rompers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/19_85c369d9-9489-4fe3-a04e-b33d8c87a218.png?v=1787834340"
     }
+  ]
+},
+"517972787489": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518003687713",
+      "label": "Dungaree Set",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_6f2175f9-947b-4d4a-8bc0-facd05b1454a.png?v=1787834679"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003753249",
+      "label": "Jhabla",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/23_5cd02270-4f18-4f0f-b4b6-f45d25ed4cb2.png?v=1787834684"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518003917089",
+      "label": "Onesies / Bodysuit",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/24_15744f90-103e-4198-aa7d-fbd98f4528ad.png?v=1787834689"
+    }
+  ]
+},
+"517972951329": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518004408609",
+      "label": "Amulya",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/26_ab840680-08b3-4532-9e30-45fc1f807142.png?v=1787834821"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518004441377",
+      "label": "Asthetika",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/27_57c1c520-ee35-4586-9ac0-1f728f716f96.png?v=1787834826"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518004474145",
+      "label": "Babydoe",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/28_c9e2a186-e3e1-4746-ae8c-d18945e7da26.png?v=1787834831"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518004605217",
+      "label": "Pepito",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/29_cdd62cdb-b729-490f-b2ec-3ed82897fd0d.png?v=1787834836"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518004703521",
+      "label": "Smarty",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_8f9105a0-2b23-4d74-9132-336a8777ea6e.png?v=1787834841"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518004736289",
+      "label": "My milestones",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/31_03618186-3056-45b7-b220-c70a57b8a2dc.png?v=1787834846"
+    }
+  ]
+},
+"517973311777": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518005031201",
+      "label": "Top Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/35_349fb948-8a88-4957-bf69-13d53bd512ab.png?v=1787835313"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518005063969",
+      "label": "One-Piece/ Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/36_0fbf3c09-29b8-4a2a-9cc1-0bcaac0e4c70.png?v=1787835318"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518005096737",
+      "label": "Bottom Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/37_495f6fc8-0640-472a-9a59-ab60976eb7db.png?v=1787835323"
+    }
+  ]
+},
+"517973508385": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518005162273",
+      "label": "Dresses",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/39_d41eb4fe-e809-4a51-9c47-47f5f8b3d59b.png?v=1787835995"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518005358881",
+      "label": "Top Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/40_671d672d-e4f6-48cb-9b21-e5debbc8ee28.png?v=1787836000"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518005424417",
+      "label": "Bottom Wear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/41_f587021b-ac06-4023-92fb-61ec106b567a.png?v=1787836005"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518005522721",
+      "label": "Co-ord sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/42_a34de608-0579-4a00-acba-ff2955232448.png?v=1787836010"
+    }
+  ]
+}
   },
   "productGridDefaults": {
     "gap": 16,
@@ -5980,32 +6105,29 @@
   "all": [
     {
       "id": "all-banner-1",
-      "type": "carousel",
+      "type": "videoBanner",
       "visible": true,
-      "data": [
-        {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350-16.png?v=1787999745",
-          "link": {
-            "type": "collection",
-            "collection": {
-              "id": ""
-            }
+      "data": {
+        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/dea396efd9a04e279f17fb8fc29c7a83.mp4",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": ""
           }
         }
-      ],
-      "carouselConfig": {
-        "autoPlay": false,
-        "autoPlayInterval": 3000,
-        "loop": false,
-        "height": 1,
-        "resizeMode": "cover"
+      },
+      "videoConfig": {
+        "aspectRatio": 1,
+        "loop": true,
+        "muted": true,
+        "autoPlay": true
       },
       "styles": {
         "container": {
           "marginTop": 0,
           "backgroundColor": "",
-          "borderBottomLeftRadius": 800,
-          "borderBottomRightRadius": 800
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
         "imageContainer": {},
         "image": {
@@ -6026,12 +6148,12 @@
       "visible": true,
       "title": "bannergrid",
       "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 3,
-        "colGap": 20,
-        "rowGap": 0,
-        "limit": 6,
-        "aspectRatio": 1.2,
+        "layout": "featured-left",
+        "numColumns": 4,
+        "colGap": 5,
+        "rowGap": -10,
+        "limit": 7,
+        "aspectRatio": 1,
         "showLabels": true,
         "borderRadius": 12,
         "proportionalScale": true,
@@ -6039,30 +6161,35 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/518000836897"
+          "id": "gid://shopify/Collection/517770805537",
+          "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestslide.gif?v=1788030361"
         },
         {
-          "id": "gid://shopify/Collection/518001000737"
+          "id": "gid://shopify/Collection/518104351009"
         },
         {
-          "id": "gid://shopify/Collection/518001099041"
+          "id": "gid://shopify/Collection/518104744225"
         },
         {
-          "id": "gid://shopify/Collection/518001131809"
+          "id": "gid://shopify/Collection/518105596193"
         },
         {
-          "id": "gid://shopify/Collection/518001230113"
+          "id": "gid://shopify/Collection/518107234593"
         },
         {
-          "id": "gid://shopify/Collection/518001393953"
+          "id": "gid://shopify/Collection/518107889953"
+        },
+        
+        {
+          "id": "gid://shopify/Collection/518108905761"
         }
       ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-67%",
+          "marginTop": "-65%",
           "zIndex": 10,
-          "paddingHorizontal": "6%",
+          "paddingHorizontal": "2%",
           "borderBottomLeftRadius": 20,
           "borderBottomRightRadius": 20
         },
@@ -7384,59 +7511,60 @@
       }
     },
     {
-      "id": "category-grid-banner-11",
-      "type": "categoryGrid",
+      "id": "shop-by-brand-carousel-8",
+      "type": "collectionImageCarousel",
+      "title": "SHOP THE SALE",
       "visible": true,
-      "title": "DRESS THEM FOR…",
-      "gridConfig": {
-        "layout": "uniform",
-        "numColumns": 3,
-        "colGap": 12,
-        "limit": 13,
-        "aspectRatio": 1,
-        "resizeMode": "cover",
-        "showLabels": true,
-        "borderRadius": 5
-      },
-      "collectionIds": [
+      "data": [
         {
-          "id": "gid://shopify/Collection/517973311777"
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/517972263201",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_39.png?v=1787983296"
         },
         {
-          "id": "gid://shopify/Collection/517973508385"
+          "id": "brand-hopscotch",
+          "collectionId": "gid://shopify/Collection/517972427041",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_40.png?v=1787983344"
         },
         {
-          "id": "gid://shopify/Collection/517973704993"
+          "id": "brand-mothercare",
+          "collectionId": "gid://shopify/Collection/517972590881",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_41.png?v=1787983381"
         },
         {
-          "id": "gid://shopify/Collection/517973803297"
+          "id": "brand-carters",
+          "collectionId": "gid://shopify/Collection/517972787489",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_42.png?v=1787983418"
         },
         {
-          "id": "gid://shopify/Collection/517973868833"
+          "id": "brand-puma1",
+          "collectionId": "gid://shopify/Collection/517972951329",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_43.png?v=1787983489"
         },
         {
-          "id": "gid://shopify/Collection/517973934369"
+          "id": "brand-puma2",
+          "collectionId": "gid://shopify/Collection/517973213473",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_45.png?v=1787991663"
         }
       ],
+      "carouselConfig": {
+        "itemWidth": 150,
+        "itemHeight": 150,
+        "gap": 8,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
       "styles": {
         "container": {
-          "paddingHorizontal": 16,
           "marginTop": 26
         },
         "title": {
-          "marginBottom": 0,
+          "marginBottom": 10,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
           "fontFamily": "lexend"
-        },
-        "text": {
-          "fontFamily": "lexend-regular",
-          "color": "#414651",
-          "fontSize": 12,
-          "lineHeight": 16,
-          "letterSpacing": 0,
-          "textAlign": "center"
         }
       }
     },
@@ -7875,63 +8003,64 @@
         }
       }
     },
-    {
-      "id": "shop-by-brand-carousel-8",
-      "type": "collectionImageCarousel",
-      "title": "SHOP THE SALE",
+        {
+      "id": "category-grid-banner-11",
+      "type": "categoryGrid",
       "visible": true,
-      "data": [
+      "title": "DRESS THEM FOR…",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "limit": 13,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 5
+      },
+      "collectionIds": [
         {
-          "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/517972263201",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_39.png?v=1787983296"
+          "id": "gid://shopify/Collection/517973311777"
         },
         {
-          "id": "brand-hopscotch",
-          "collectionId": "gid://shopify/Collection/517972427041",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_40.png?v=1787983344"
+          "id": "gid://shopify/Collection/517973508385"
         },
         {
-          "id": "brand-mothercare",
-          "collectionId": "gid://shopify/Collection/517972590881",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_41.png?v=1787983381"
+          "id": "gid://shopify/Collection/517973704993"
         },
         {
-          "id": "brand-carters",
-          "collectionId": "gid://shopify/Collection/517972787489",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_42.png?v=1787983418"
+          "id": "gid://shopify/Collection/517973803297"
         },
         {
-          "id": "brand-puma1",
-          "collectionId": "gid://shopify/Collection/517972951329",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_43.png?v=1787983489"
+          "id": "gid://shopify/Collection/517973868833"
         },
         {
-          "id": "brand-puma2",
-          "collectionId": "gid://shopify/Collection/517973213473",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_45.png?v=1787991663"
+          "id": "gid://shopify/Collection/517973934369"
         }
       ],
-      "carouselConfig": {
-        "itemWidth": 150,
-        "itemHeight": 150,
-        "gap": 8,
-        "borderRadius": 10,
-        "imageContentFit": "cover",
-        "paddingHorizontal": 16
-      },
       "styles": {
-        "container": {},
+        "container": {
+          "paddingHorizontal": 16,
+          "marginTop": 26
+        },
         "title": {
-          "marginBottom": 10,
-          "marginTop": 10,
+          "marginBottom": 0,
           "fontSize": 15,
           "lineHeight": 20,
           "fontWeight": "700",
           "fontFamily": "lexend"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
+
     {
       "id": "category-grid-banner-23",
       "type": "categoryGrid",
@@ -9787,7 +9916,7 @@
         "smallBorderFadeScrollEnd": 80
       },
       "colors": {
-        "all": "#F2C0C7",
+        "all": "#5BAB6E",
         "Fashion": "#A020F0",
         "babycare": "#87CEEB",
         "toys": "#FFD700",
@@ -9812,7 +9941,7 @@
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/allinactive.png?v=1787586392",
         "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/allactive.png?v=1787586404",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350-13.png?v=1787992558",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350-13_1.png?v=1788010780",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -10926,151 +11055,6 @@
       }
     }
   ],
-  "account": {
-    "profile": {
-      "showAvatar": true,
-      "avatarSize": 80,
-      "showPhone": true,
-      "showEmail": true,
-      "defaultUserName": "User",
-      "defaultPhoneText": "Not available",
-      "defaultEmailText": "Not available"
-    },
-    "quickActions": [
-      {
-        "id": "orders",
-        "title": "My Orders",
-        "icon": "receipt",
-        "showBadge": false,
-        "badgeSource": "static",
-        "badgeValue": 0,
-        "actionType": "navigate",
-        "action": {
-          "type": "navigate",
-          "screen": "Orders"
-        }
-      },
-      {
-        "id": "loyalty",
-        "title": "Rewards",
-        "icon": "wallet",
-        "showBadge": false,
-        "badgeSource": "static",
-        "badgeValue": 0,
-        "actionType": "navigate",
-        "action": {
-          "type": "navigate",
-          "screen": "Rewards"
-        }
-      },
-      {
-        "id": "addresses",
-        "title": "Saved Addresses",
-        "icon": "location",
-        "showBadge": false,
-        "badgeSource": "static",
-        "badgeValue": 0,
-        "actionType": "navigate",
-        "action": {
-          "type": "navigate",
-          "screen": "Addresses"
-        }
-      }
-    ],
-    "menuItems": [
-      {
-        "id": "help",
-        "title": "Help & Support",
-        "icon": "help-circle-outline",
-        "actionType": "navigate",
-        "action": {
-          "type": "navigate",
-          "screen": "ContactSupport"
-        }
-      },
-      {
-        "id": "about",
-        "title": "About Us",
-        "icon": "information-circle-outline",
-        "actionType": "webview",
-        "action": {
-          "type": "webview",
-          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/about-us",
-          "title": "About Us"
-        }
-      },
-      {
-        "id": "terms",
-        "title": "Terms & Conditions",
-        "icon": "document-text-outline",
-        "actionType": "webview",
-        "action": {
-          "type": "webview",
-          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/terms-and-conditions",
-          "title": "Terms & Conditions"
-        }
-      },
-      {
-        "id": "privacy",
-        "title": "Privacy Policy",
-        "icon": "shield-checkmark-outline",
-        "actionType": "webview",
-        "action": {
-          "type": "webview",
-          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/privacy-policy",
-          "title": "Privacy Policy"
-        }
-      }
-    ],
-    "logout": {
-      "enabled": true,
-      "title": "Logout",
-      "message": "Are you sure you want to logout?",
-      "confirmText": "Logout",
-      "cancelText": "Cancel"
-    },
-    "version": {
-      "enabled": false,
-      "text": "Kiddo App v1.0.0"
-    },
-    "styles": {
-      "header": {
-        "paddingTop": 60,
-        "paddingBottom": 20,
-        "paddingHorizontal": 20
-      },
-      "quickActions": {
-        "paddingHorizontal": 20,
-        "paddingVertical": 20
-      },
-      "menuContainer": {
-        "marginTop": 10,
-        "paddingHorizontal": 20
-      },
-      "logoutButton": {
-        "marginHorizontal": 20,
-        "marginTop": 20,
-        "paddingVertical": 16,
-        "borderRadius": 12,
-        "borderWidth": 1
-      },
-      "version": {
-        "marginTop": 20,
-        "paddingBottom": 10
-      }
-    }
-  },
-  "delivery": {
-    "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY",
-    "darkStoreLocation": {
-      "latitude": 28.540546501290788,
-      "longitude": 77.37018854503113
-    },
-    "packingTime": 5,
-    "maxDeliveryTime": 60,
-    "travelTimePerKm": 2,
-    "maxDeliveryDistance": null
-  },
   "demo": {
     "timeSlots": [
       "10AM - 1PM",
