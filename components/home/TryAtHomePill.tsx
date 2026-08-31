@@ -1,5 +1,5 @@
-import kiddoAppConfig from '@/config/kiddoAppConfig.json';
 import { Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import * as Haptics from 'expo-haptics';
 import { Image, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -8,9 +8,8 @@ interface TryAtHomePillProps {
   onPress?: () => void;
 }
 
-const tryAtHomePillConfig = kiddoAppConfig.header.styles?.tryAtHomePill;
-
 export function TryAtHomePill({ onPress }: TryAtHomePillProps) {
+  const tryAtHomePillConfig = (configService.getConfig() as any)?.header?.styles?.tryAtHomePill;
   const config = tryAtHomePillConfig || {};
   const isImageMode = config.type === 'image' && config.imageUrl;
 

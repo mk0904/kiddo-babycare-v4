@@ -1,4 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
+import { configService } from '@/services/configService';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -118,7 +119,6 @@ function ChromeTabHighlight({
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const kiddoAppConfig = require('@/config/kiddoAppConfig.json');
 
 interface Category {
   key: string;
@@ -167,7 +167,7 @@ export function CategoryNavigationBar({
   );
 
   const categoryColor = useMemo(() => {
-    const configColors = (kiddoAppConfig as any)?.categories?.navigationBar?.colors;
+    const configColors = (configService.getConfig() as any)?.categories?.navigationBar?.colors;
     if (!configColors) {
       return selectedCategoryData?.color || '#D8B4FE';
     }
@@ -181,19 +181,19 @@ export function CategoryNavigationBar({
 
   // Get icon sizes from config
   const iconSize = useMemo(() => {
-    return (kiddoAppConfig as any)?.categories?.navigationBar?.iconSize || 50;
+    return (configService.getConfig() as any)?.categories?.navigationBar?.iconSize || 50;
   }, []);
 
   const iconContainerSize = useMemo(() => {
-    return (kiddoAppConfig as any)?.categories?.navigationBar?.iconContainerSize || 70;
+    return (configService.getConfig() as any)?.categories?.navigationBar?.iconContainerSize || 70;
   }, []);
 
   const collapsedBorderHeight = useMemo(() => {
-    return (kiddoAppConfig as any)?.categories?.navigationBar?.collapsedBorderHeight ?? 38;
+    return (configService.getConfig() as any)?.categories?.navigationBar?.collapsedBorderHeight ?? 38;
   }, []);
 
   const animationConfig = useMemo(() => {
-    const cfg = (kiddoAppConfig as any)?.categories?.navigationBar?.animation ?? {};
+    const cfg = (configService.getConfig() as any)?.categories?.navigationBar?.animation ?? {};
     return {
       iconFadeScrollEnd: cfg.iconFadeScrollEnd ?? 40,
       largeBorderFadeScrollEnd: cfg.largeBorderFadeScrollEnd ?? 50,
