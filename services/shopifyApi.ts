@@ -671,6 +671,7 @@ const GET_ORDER_BY_ID_QUERY = `
                   url
                 }
                 product {
+                  id
                   featuredImage {
                     url
                   }

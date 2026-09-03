@@ -23,6 +23,7 @@ interface BaseModalProps {
     allowBackdropClose?: boolean;
     showDragHandle?: boolean;
     closeButtonPosition?: 'header' | 'above';
+    hideHeaderBorder?: boolean;
     containerStyle?: ViewStyle;
     contentStyle?: ViewStyle;
     animationType?: 'slide' | 'fade' | 'none';
@@ -37,6 +38,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
     allowBackdropClose = true,
     showDragHandle = false,
     closeButtonPosition = 'header',
+    hideHeaderBorder = false,
     containerStyle,
     contentStyle,
     animationType = 'slide',
@@ -98,7 +100,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
                     )}
 
                     {title && (
-                        <View style={styles.header}>
+                        <View style={[styles.header, hideHeaderBorder && styles.headerNoBorder]}>
                             <Text style={styles.headerTitle}>{title}</Text>
                             {closeButtonPosition === 'header' && (
                                 <TouchableOpacity
@@ -173,6 +175,9 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
+    },
+    headerNoBorder: {
+        borderBottomWidth: 0,
     },
     headerTitle: {
         fontSize: 18,

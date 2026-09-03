@@ -1,7 +1,11 @@
+import { CancelOrderModal } from '@/components/orders/CancelOrderModal';
+import { CancelOrderTimer } from '@/components/orders/CancelOrderTimer';
 import { DeliveryPartnerCard } from '@/components/orders/DeliveryPartnerCard';
 import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { OrderDetailsSection } from '@/components/orders/OrderDetailsSection';
 import { OrderSummaryDetails } from '@/components/orders/OrderSummaryDetails';
+import { RefundStatusCard } from '@/components/orders/RefundStatusCard';
+import { ReturnExchangeSection } from '@/components/orders/ReturnExchangeSection';
 import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -17,6 +21,7 @@ import {
     riderCoordsFromDeliveryStatus,
     type DeliveryPartnerOrderStatus,
 } from '@/services/deliveryPartnerService';
+import { Order, orderService } from '@/services/orderService';
 import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
@@ -332,6 +337,7 @@ export default function OrderDetailV2Screen() {
         [user?.customerAccessToken, user?.accessToken, persistedAccessToken],
     );
     const [order, setOrder] = useState<any>(null);
+    const [kiddoOrder, setKiddoOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(null);
@@ -362,6 +368,27 @@ export default function OrderDetailV2Screen() {
     const orderRef = useRef(order);
     orderRef.current = order;
 
+    const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+    const [showCancelTimer, setShowCancelTimer] = useState(true);
+
+    const isOrderJustPlaced = useMemo(() => {
+        if (!order?.createdAt && !order?.processedAt) return false;
+        const time = new Date(order.processedAt || order.createdAt).getTime();
+        const now = Date.now();
+        const diffSecs = (now - time) / 1000;
+        return diffSecs < 60;
+    }, [order?.createdAt, order?.processedAt]);
+
+    const testCreatedAt = useMemo(() => new Date().toISOString(), []);
+
+    const handleCancelConfirm = (reason: string) => {
+        setIsCancelModalVisible(false);
+        // Mock API call
+        console.log('Order cancelled for reason:', reason);
+        Alert.alert('Order Cancelled', `Reason: ${reason}. Refund has been initiated.`);
+        // In a real implementation, we would call an API here and then refetch the order
+    };
+
     useFocusEffect(
         useCallback(() => {
             setOrderDetailCfgRev((n) => n + 1);
@@ -375,12 +402,16 @@ export default function OrderDetailV2Screen() {
                         : '');
                 if (!numeric || cancelled) return;
                 try {
-                    const [st, extSt] = await Promise.all([
+                    const [stResult, extStResult] = await Promise.allSettled([
                         getDeliveryPartnerOrderStatus(numeric),
                         getExternalOrderStatus(numeric)
                     ]);
                     if (cancelled) return;
+
+                    const extSt = extStResult.status === 'fulfilled' ? extStResult.value : null;
                     if (extSt) setLimechatStatus(extSt);
+
+                    const st = stResult.status === 'fulfilled' ? stResult.value : null;
                     if (!st) return;
 
                     setDeliveryPartnerStatus(st);
@@ -594,6 +625,14 @@ export default function OrderDetailV2Screen() {
                 if (fetchedOrder) {
                     setOrder(fetchedOrder);
                     setError(null);
+
+                    const kOrder = await orderService.getOrderById(orderId);
+                    if (!kOrder && queryPart) {
+                        const kOrder2 = await orderService.getOrderById(orderId.split('?')[0]);
+                        setKiddoOrder(kOrder2);
+                    } else {
+                        setKiddoOrder(kOrder);
+                    }
                 } else {
                     setError('Order not found');
                 }
@@ -1724,6 +1763,15 @@ export default function OrderDetailV2Screen() {
                     scheduledTimeForPill={scheduledTimeForPill}
                 />
 
+                {showCancelTimer && (
+                    <CancelOrderTimer
+                        createdAt={testCreatedAt}
+                        onPress={() => setIsCancelModalVisible(true)}
+                        onExpire={() => setShowCancelTimer(false)}
+                        durationSeconds={600}
+                    />
+                )}
+
                 {/* Line items – single card like cart */}
                 <View style={styles.orderItemsSection}>
                     {/* Order summary header */}
@@ -1933,6 +1981,19 @@ export default function OrderDetailV2Screen() {
                     })()}
                 </View>
 
+
+
+                {deliveryStatusKey === 'cancelled' && (
+                    <RefundStatusCard
+                        amount={total}
+                        status={
+                            // Mock logic for demo purposes based on status strings
+                            order.financialStatus === 'REFUNDED' ? 'completed'
+                                : 'initiated'
+                        }
+                    />
+                )}
+
                 {/* Bill details – fetched from delivery partner system */}
                 <OrderSummaryDetails
                     deliveryPartnerStatus={deliveryPartnerStatus}
@@ -1953,7 +2014,100 @@ export default function OrderDetailV2Screen() {
                     deliveryStatusKey={deliveryStatusKey}
                 />
 
+                {/* Returns and Exchanges UI */}
+                {(() => {
+                    const dpsItems = Array.isArray(deliveryPartnerStatus?.items) && deliveryPartnerStatus.items.length > 0
+                        ? deliveryPartnerStatus.items
+                        : null;
+                    const shopifyItems = order?.lineItems?.edges?.map((e: any) => e.node) || [];
 
+                    const allVariantIds = Array.from(new Set([
+                        ...(limechatStatus?.order?.products?.map((p: any) => p.id) || []),
+                        ...(dpsItems?.map((i: any) => i.shopifyVariantId) || []),
+                        ...(shopifyItems?.map((i: any) => String(i.variant?.id).split('/').pop()) || [])
+                    ]));
+
+                    const getDetails = (vid: string) => {
+                        const shp = shopifyItems.find((i: any) => String(i.variant?.id).endsWith(String(vid)) || String(i.variant?.id).includes(String(vid)));
+                        const shpImage = shp?.variant?.image?.url || '';
+
+                        const lp = limechatStatus?.order?.products?.find((p: any) => String(p.id) === String(vid));
+                        if (lp) {
+                            return {
+                                id: vid,
+                                title: lp.title || '',
+                                price: String(lp.price || '0'),
+                                volume: '',
+                                quantity: lp.quantity || 1,
+                                image: lp.image || shpImage,
+                            };
+                        }
+                        const dps = dpsItems?.find((i: any) => String(i.shopifyVariantId) === String(vid));
+                        if (dps) {
+                            return {
+                                id: vid,
+                                title: dps.title || '',
+                                price: String(dps.unitPrice || '0'),
+                                volume: dps.variantTitle || '',
+                                quantity: 1,
+                                image: dps.imageUrl || shpImage,
+                            };
+                        }
+                        if (shp) {
+                            return {
+                                id: vid,
+                                title: shp.title || '',
+                                price: shp.originalTotalPrice?.amount || '0',
+                                volume: shp.variant?.title || '',
+                                quantity: 1,
+                                image: shpImage,
+                            };
+                        }
+                        return null;
+                    };
+
+
+                    let returnsItems = (limechatStatus?.order?.return_product_ids ?? kiddoOrder?.returnProductIds ?? [])
+                        .map(getDetails)
+                        .filter(Boolean) as any[];
+
+                    let exchangesItems = (limechatStatus?.order?.exchange_product_ids ?? kiddoOrder?.exchangeProductIds ?? [])
+                        .map(getDetails)
+                        .filter(Boolean) as any[];
+
+                    const isReturn = limechatStatus?.order?.is_return ?? kiddoOrder?.isReturn;
+                    const isExchange = limechatStatus?.order?.is_exchange ?? kiddoOrder?.isExchange;
+
+                    if (isReturn && returnsItems.length === 0) {
+                        returnsItems = allVariantIds.map(getDetails).filter(Boolean) as any[];
+                    }
+
+                    if (isExchange && exchangesItems.length === 0) {
+                        exchangesItems = allVariantIds.map(getDetails).filter(Boolean) as any[];
+                    }
+
+                    const returnStatus = limechatStatus?.order?.return_status ?? kiddoOrder?.returnStatus ?? 'return_initiated';
+                    console.log(returnStatus)
+                    return (
+                        <>
+                            {returnsItems.length > 0 && (
+                                <ReturnExchangeSection
+                                    type="Returns"
+                                    orderId={displayOrderId}
+                                    items={returnsItems}
+                                    status={returnStatus}
+                                />
+                            )}
+                            {exchangesItems.length > 0 && (
+                                <ReturnExchangeSection
+                                    type="Exchanges"
+                                    orderId={displayOrderId}
+                                    items={exchangesItems}
+                                />
+                            )}
+                        </>
+                    );
+                })()}
 
                 {appConfigService.isFreshChatEnabled() && (
                     <NeedHelpChatCard
@@ -1965,6 +2119,27 @@ export default function OrderDetailV2Screen() {
                 )}
 
             </ScrollView>
+
+            {/* Force visible for testing: deliveryStatusKey === 'delivered' || true */}
+            {(deliveryStatusKey === 'delivered' || true) && (
+                <View style={styles.fixedFooter}>
+                    <TouchableOpacity
+                        style={styles.footerBtnOutline}
+                        onPress={() => router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`)}
+                    >
+                        <Text style={styles.footerBtnOutlineText}>Return/Exchange</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.footerBtnOutline, styles.footerBtnWithBorder]}>
+                        <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Download invoice</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            <CancelOrderModal
+                visible={isCancelModalVisible}
+                onClose={() => setIsCancelModalVisible(false)}
+                onConfirm={handleCancelConfirm}
+            />
         </SafeAreaView>
     );
 }
@@ -2603,5 +2778,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: Fonts.SemiBold,
         color: '#fff',
+    },
+    fixedFooter: {
+        flexDirection: 'row',
+        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+        gap: 12,
+    },
+    footerBtnOutline: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    footerBtnOutlineText: {
+        fontSize: 16,
+        fontFamily: Fonts.LexendMedium,
+        color: '#F15E5E',
+    },
+    footerBtnWithBorder: {
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F15E5E',
+        backgroundColor: '#F15E5E',
+    },
+    footerBtnWithBorderText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: Fonts.LexendMedium,
     },
 });

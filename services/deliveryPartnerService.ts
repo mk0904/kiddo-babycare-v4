@@ -949,7 +949,53 @@ export interface ExternalOrderStatusResponse {
         exact_time: string;
         is_delayed: boolean;
         delayed_by: string;
+        is_return?: boolean;
+        is_exchange?: boolean;
+        return_product_ids?: string[];
+        exchange_product_ids?: string[];
+        return_status?: string;
+        products?: Array<{
+            id: string;
+            title: string;
+            quantity: number;
+            price: number;
+            image: string;
+        }>;
     };
+}
+
+export interface ScheduleReturnExchangePayload {
+    order_id: string;
+    date: string;
+    time: string;
+    is_exchange: boolean;
+    is_return: boolean;
+    return_product_ids: string[];
+    exchange_product_ids: string[];
+    reason?: string;
+    images?: string[];
+}
+
+export async function scheduleReturnExchange(payload: ScheduleReturnExchangePayload): Promise<boolean> {
+    try {
+        console.log('[deliveryPartnerService] scheduleReturnExchange Payload:', JSON.stringify(payload, null, 2));
+        const response = await fetch('https://delivery-partner-service-874125225773.asia-south1.run.app/api/limechat/orders/schedule-return-exchange', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-kiddo-secret': 'PLACEHOLDER_KIDDO_SECRET'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[deliveryPartnerService] scheduleReturnExchange API failed:', response.status, errorText);
+        }
+        return response.ok;
+    } catch (e) {
+        console.error('[deliveryPartnerService] scheduleReturnExchange error:', e);
+        return false;
+    }
 }
 
 export async function getExternalOrderStatus(orderId: string): Promise<ExternalOrderStatusResponse | null> {
@@ -964,10 +1010,12 @@ export async function getExternalOrderStatus(orderId: string): Promise<ExternalO
         });
         
         if (!response.ok) {
+            console.log('[deliveryPartnerService] API error status:', response.status);
             return null;
         }
 
         const body = await response.json();
+        console.log('[deliveryPartnerService] Raw API response:', JSON.stringify(body));
         return body as ExternalOrderStatusResponse;
     } catch (e) {
         console.error('[deliveryPartnerService] getExternalOrderStatus error:', e);
