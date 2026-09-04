@@ -4,7 +4,6 @@ import { DeliveryPartnerCard } from '@/components/orders/DeliveryPartnerCard';
 import { NeedHelpChatCard } from '@/components/orders/NeedHelpChatCard';
 import { OrderDetailsSection } from '@/components/orders/OrderDetailsSection';
 import { OrderSummaryDetails } from '@/components/orders/OrderSummaryDetails';
-import { RefundStatusCard } from '@/components/orders/RefundStatusCard';
 import { ReturnExchangeSection } from '@/components/orders/ReturnExchangeSection';
 import { DARK_STORE_LOCATION, geocodeAddress, getDeliveryEta } from '@/config/deliveryConfig';
 import { Colors, Fonts } from '@/constants/theme';
@@ -36,6 +35,7 @@ import {
 } from '@/utils/orderDeliveryHeaderText';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { sizeLabelFromVariantTitle } from '@/utils/tryAndBuyProduct';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -1763,12 +1763,15 @@ export default function OrderDetailV2Screen() {
                     scheduledTimeForPill={scheduledTimeForPill}
                 />
 
-                {showCancelTimer && (
+                {showCancelTimer && (order?.createdAt || order?.processedAt) && (
                     <CancelOrderTimer
-                        createdAt={testCreatedAt}
-                        onPress={() => setIsCancelModalVisible(true)}
+                        createdAt={order.createdAt || order.processedAt}
+                        onPress={() => {
+                            const { openFreshchat } = require('@/services/freshchatService');
+                            openFreshchat();
+                        }}
                         onExpire={() => setShowCancelTimer(false)}
-                        durationSeconds={600}
+                        durationSeconds={30}
                     />
                 )}
 
@@ -1983,17 +1986,6 @@ export default function OrderDetailV2Screen() {
 
 
 
-                {deliveryStatusKey === 'cancelled' && (
-                    <RefundStatusCard
-                        amount={total}
-                        status={
-                            // Mock logic for demo purposes based on status strings
-                            order.financialStatus === 'REFUNDED' ? 'completed'
-                                : 'initiated'
-                        }
-                    />
-                )}
-
                 {/* Bill details – fetched from delivery partner system */}
                 <OrderSummaryDetails
                     deliveryPartnerStatus={deliveryPartnerStatus}
@@ -2125,7 +2117,10 @@ export default function OrderDetailV2Screen() {
                 <View style={styles.fixedFooter}>
                     <TouchableOpacity
                         style={styles.footerBtnOutline}
-                        onPress={() => router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`)}
+                        onPress={() => {
+                            trackEvent('return_exchange_initiated', { order_id: displayOrderId });
+                            router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`);
+                        }}
                     >
                         <Text style={styles.footerBtnOutlineText}>Return/Exchange</Text>
                     </TouchableOpacity>

@@ -4,12 +4,13 @@ import { StepReasonSelection } from '@/components/orders/return-exchange/StepRea
 import { StepSuccess } from '@/components/orders/return-exchange/StepSuccess';
 import { StepSummary } from '@/components/orders/return-exchange/StepSummary';
 import { Fonts } from '@/constants/theme';
-import { scheduleReturnExchange, getExternalOrderStatus } from '@/services/deliveryPartnerService';
+import { getExternalOrderStatus, getReturnImageUploadUrl, scheduleReturnExchange, uploadImageToGCP } from '@/services/deliveryPartnerService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
+import { trackEvent, trackScreenView } from '@/utils/mixpanelHelpers';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ItemDetails } from '@/components/orders/return-exchange/types';
@@ -26,6 +27,10 @@ export default function ReturnExchangeScreen() {
     const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
     const [orderData, setOrderData] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        trackScreenView('Return Exchange Screen', { order_id: id });
+    }, [id]);
 
     React.useEffect(() => {
         let orderId = Array.isArray(id) ? id[0] : id;
@@ -74,7 +79,7 @@ export default function ReturnExchangeScreen() {
             const return_product_ids: string[] = [];
             const exchange_product_ids: string[] = [];
             let combinedReason = '';
-            const images: string[] = [];
+            const images: any[] = [];
 
             selectedItems.forEach(id => {
                 const detail = itemDetails[id];
@@ -92,7 +97,7 @@ export default function ReturnExchangeScreen() {
                         combinedReason = combinedReason ? `${combinedReason}, ${detail.reason}` : detail.reason;
                     }
                     if (detail.images) {
-                        detail.images.forEach(img => images.push(img.uri));
+                        detail.images.forEach(img => images.push(img));
                     }
                 }
             });
@@ -107,6 +112,26 @@ export default function ReturnExchangeScreen() {
                 return;
             }
 
+            const uploadedImagePaths: string[] = [];
+            if (images && images.length > 0) {
+                for (const img of images) {
+                    if (img.uri) {
+                        const contentType = img.type === 'image' ? 'image/jpeg' : 'application/octet-stream'; // Default to jpeg if not specified
+                        const uploadInfo = await getReturnImageUploadUrl(db_order_id, contentType);
+
+                        if (uploadInfo && uploadInfo.uploadUrl && uploadInfo.objectPath) {
+                            const uploaded = await uploadImageToGCP(uploadInfo.uploadUrl, img.uri, contentType);
+                            if (uploaded) {
+                                uploadedImagePaths.push(uploadInfo.objectPath);
+                            }
+                        }
+                    } else if (typeof img === 'string') {
+                        // If it's already a string path (e.g. from previous edit)
+                        uploadedImagePaths.push(img);
+                    }
+                }
+            }
+
             const payload = {
                 order_id: db_order_id,
                 date: schedule!.date,
@@ -116,7 +141,7 @@ export default function ReturnExchangeScreen() {
                 return_product_ids,
                 exchange_product_ids,
                 reason: combinedReason || undefined,
-                images: images.length > 0 ? images : undefined
+                images: uploadedImagePaths.length > 0 ? uploadedImagePaths : undefined
             };
 
             // IMMEDIATELY update local storage for instant UI reflection
@@ -138,6 +163,14 @@ export default function ReturnExchangeScreen() {
             const success = await scheduleReturnExchange(payload);
             console.log(payload.order_id, '---')
             if (success) {
+                trackEvent('return_exchange_requested', {
+                    order_id: db_order_id,
+                    is_return,
+                    is_exchange,
+                    return_product_ids: return_product_ids?.length || 0,
+                    exchange_product_ids: exchange_product_ids?.length || 0,
+                    reason: combinedReason
+                });
                 setCurrentStep(5);
             } else {
                 Alert.alert("Error", "Could not schedule return/exchange. Please try again.");
@@ -170,7 +203,7 @@ export default function ReturnExchangeScreen() {
                     <StepSuccess
                         selectedItems={selectedItems}
                         itemDetails={itemDetails}
-                        onClose={() => router.replace(`/orders/${Array.isArray(id) ? id[0] : id}`)}
+                        onClose={() => router.replace({ pathname: '/orders/[id]/v2', params: { id: Array.isArray(id) ? id[0] : id } } as any)}
                     />
                 )}
                 {currentStep === 1 && (

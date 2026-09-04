@@ -1,4 +1,5 @@
 import { getBackendApiPath, getBackendBase, backendFetch } from './backendBase';
+import * as FileSystem from 'expo-file-system';
 
 export interface AssignedDeliveryPartner {
   name: string | null;
@@ -994,6 +995,59 @@ export async function scheduleReturnExchange(payload: ScheduleReturnExchangePayl
         return response.ok;
     } catch (e) {
         console.error('[deliveryPartnerService] scheduleReturnExchange error:', e);
+        return false;
+    }
+}
+
+export async function getReturnImageUploadUrl(orderId: string, contentType: string): Promise<{ objectPath: string, uploadUrl: string } | null> {
+    try {
+        const response = await fetch('https://delivery-partner-service-874125225773.asia-south1.run.app/api/limechat/orders/return-image-upload-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Kiddo-secret': 'PLACEHOLDER_KIDDO_SECRET'
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                content_type: contentType
+            })
+        });
+
+        if (!response.ok) {
+            console.error('[deliveryPartnerService] getReturnImageUploadUrl API failed:', response.status);
+            return null;
+        }
+
+        const data = await response.json();
+        if (data.ok && data.uploadUrl && data.objectPath) {
+            return {
+                objectPath: data.objectPath,
+                uploadUrl: data.uploadUrl
+            };
+        }
+        return null;
+    } catch (e) {
+        console.error('[deliveryPartnerService] getReturnImageUploadUrl error:', e);
+        return null;
+    }
+}
+
+export async function uploadImageToGCP(uploadUrl: string, imageUri: string, contentType: string): Promise<boolean> {
+    try {
+        const uploadResponse = await FileSystem.uploadAsync(uploadUrl, imageUri, {
+            httpMethod: 'PUT',
+            headers: {
+                'Content-Type': contentType,
+            },
+        });
+
+        if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+            console.error('[deliveryPartnerService] uploadImageToGCP failed:', uploadResponse.status);
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error('[deliveryPartnerService] uploadImageToGCP error:', e);
         return false;
     }
 }

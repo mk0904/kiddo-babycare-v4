@@ -234,7 +234,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
             const availableVariants = productData.variants?.edges
                 ?.map((e: any) => e.node)
                 ?.filter((v: any) => v.availableForSale || v.id === orderedId) || [];
-            
+
             setSelectedVariantId((current) => {
                 const currentValid = availableVariants.some((v: any) => v.id === current);
                 if (!currentValid) {
@@ -333,46 +333,46 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
 
                         {['Poor quality/ Damaged product', 'Missing parts'].includes(selectedReason || '') && (
                             <View style={styles.proofContainer}>
-                                <Text style={styles.sectionTitle}>Attach proof*</Text>
+                                <View style={styles.proofHeader}>
+                                    <Text style={styles.sectionTitle}>Attach proof*</Text>
+                                    <Text style={styles.proofSubtitle}>PNG, JPG, Upto 5MB</Text>
+                                </View>
 
-                                {images.length === 0 ? (
-                                    <View style={styles.uploadRow}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.uploadTitle}>Upload a file</Text>
-                                            <Text style={styles.uploadSubtitle}>PNG, JPG, Upto 5MB</Text>
-                                            {imageError && <Text style={styles.errorText}>⊗ {imageError}</Text>}
-                                        </View>
-                                        <TouchableOpacity style={styles.selectFileBtn} onPress={handleAddProof}>
-                                            <Text style={styles.selectFileText}>Select file</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        {images.map((img, idx) => (
-                                            <View key={idx} style={styles.uploadedFileRow}>
-                                                <Image source={{ uri: img.uri }} style={styles.uploadedThumbnail} />
-                                                <View style={styles.uploadedFileInfo}>
-                                                    <Text style={styles.uploadedFileName} numberOfLines={1}>{img.name}</Text>
-                                                    <Text style={styles.uploadedFileSize}>
-                                                        {(img.size / (1024 * 1024)).toFixed(1)}MB
-                                                    </Text>
-                                                </View>
-                                                <TouchableOpacity onPress={() => removeImage(idx)} style={{ padding: 4 }}>
-                                                    <Text style={styles.removeText}>Remove</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        ))}
-
-                                        <View style={styles.uploadRow}>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.uploadTitle}>Add another file</Text>
-                                                <Text style={styles.uploadSubtitle}>PNG, JPG, Upto 5MB</Text>
-                                                {imageError && <Text style={styles.errorText}>⊗ {imageError}</Text>}
-                                            </View>
-                                            <TouchableOpacity style={styles.selectFileBtn} onPress={handleAddProof}>
-                                                <Text style={styles.selectFileText}>Select file</Text>
+                                <View style={styles.proofSlotsContainer}>
+                                    {[0, 1, 2].map((index) => {
+                                        const img = images[index];
+                                        return (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={styles.proofSlot}
+                                                onPress={() => {
+                                                    if (!img) handleAddProof();
+                                                }}
+                                                activeOpacity={img ? 1 : 0.8}
+                                            >
+                                                {img ? (
+                                                    <View style={styles.proofImageWrapper}>
+                                                        <Image source={{ uri: img.uri }} style={styles.proofImage} />
+                                                        <TouchableOpacity
+                                                            style={styles.proofRemoveBtn}
+                                                            onPress={() => removeImage(index)}
+                                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                        >
+                                                            <Ionicons name="close" size={16} color="#FFF" />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ) : (
+                                                    <Ionicons name="add" size={24} color="#F05A5D" />
+                                                )}
                                             </TouchableOpacity>
-                                        </View>
+                                        );
+                                    })}
+                                </View>
+
+                                {imageError && (
+                                    <View style={styles.proofErrorBanner}>
+                                        <Ionicons name="close-circle-outline" size={16} color="#F05A5D" />
+                                        <Text style={styles.proofErrorText}>{imageError}</Text>
                                     </View>
                                 )}
                             </View>
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: Fonts.LexendBold,
         color: '#111827',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         marginBottom: 8,
     },
     reasonContainer: {
@@ -647,82 +647,68 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     proofContainer: {
-        marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: '#F3F4F6',
     },
-    uploadRow: {
+    proofHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        marginBottom: 16,
     },
-    uploadTitle: {
-        fontSize: 13,
-        fontFamily: Fonts.LexendBold,
-        color: '#111827',
-    },
-    uploadSubtitle: {
+    proofSubtitle: {
         fontSize: 12,
         fontFamily: Fonts.LexendMedium,
-        color: '#6B7280',
-        marginTop: 2,
+        color: '#9CA3AF',
     },
-    selectFileBtn: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#F05A5D',
-    },
-    selectFileText: {
-        color: '#F05A5D',
-        fontSize: 12,
-        fontFamily: Fonts.LexendSemiBold,
-    },
-    errorText: {
-        color: '#F05A5D',
-        fontSize: 11,
-        fontFamily: Fonts.LexendMedium,
-        marginTop: 4,
-    },
-    uploadedFileRow: {
+    proofSlotsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
-        marginHorizontal: 20,
-        marginBottom: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        gap: 12,
+        marginBottom: 16,
     },
-    uploadedThumbnail: {
-        width: 40,
-        height: 40,
-        borderRadius: 4,
-        marginRight: 12,
-    },
-    uploadedFileInfo: {
+    proofSlot: {
         flex: 1,
+        aspectRatio: 1,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
     },
-    uploadedFileName: {
-        fontSize: 12,
-        fontFamily: Fonts.LexendMedium,
-        color: '#111827',
+    proofImageWrapper: {
+        width: '100%',
+        height: '100%',
+        position: 'relative',
     },
-    uploadedFileSize: {
-        fontSize: 11,
-        fontFamily: Fonts.LexendMedium,
-        color: '#6B7280',
-        marginTop: 2,
+    proofImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
     },
-    removeText: {
+    proofRemoveBtn: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        zIndex: 10,
+    },
+    proofErrorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FEE2E2',
+        marginHorizontal: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 8,
+        gap: 8,
+        marginBottom: 16,
+    },
+    proofErrorText: {
         color: '#F05A5D',
         fontSize: 12,
-        fontFamily: Fonts.LexendSemiBold,
+        fontFamily: Fonts.LexendMedium,
     },
 });

@@ -32,6 +32,7 @@
         "NSLocationWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show your address on the map",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to upload images for your profile and orders",
+        "NSCameraUsageDescription": "We need access to your camera to allow you to take photos for your profile and orders",
         "LSApplicationQueriesSchemes": [
           "upi",
           "gpay",

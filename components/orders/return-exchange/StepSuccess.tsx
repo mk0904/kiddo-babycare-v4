@@ -1,7 +1,7 @@
 import { Fonts } from '@/constants/theme';
 import { useUserStore } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,13 @@ export const StepSuccess: React.FC<StepSuccessProps> = ({ selectedItems, itemDet
     const insets = useSafeAreaInsets();
     // Attempt to grab user from store if available
     const user = useUserStore((s: any) => s.user);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
 
     const titleText = useMemo(() => {
         let hasExchange = false;
