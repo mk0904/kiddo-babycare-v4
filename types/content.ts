@@ -409,6 +409,10 @@ export interface CollectionImageCarouselGridCardConfig {
     borderRadius?: number;
     /** Show label below each cell image. Default true. */
     showLabels?: boolean;
+    /** Padding above grid in px. Default 0. */
+    paddingTop?: number;
+    /** Padding below grid in px. Default 8. */
+    paddingBottom?: number;
   };
 
   // --- layout='list' ---
@@ -431,6 +435,16 @@ export interface CollectionImageCarouselGridCardConfig {
     header?: any;
     title?: any;
     subtitle?: any;
+  };
+
+  /** Per-card color overrides. */
+  cardColors?: {
+    /** "See all" text color. Default Colors.primary. */
+    seeAllColor?: string;
+    /** Card title text color. Default Colors.text. */
+    titleColor?: string;
+    /** Card subtitle text color. Default Colors.textSecondary. */
+    subtitleColor?: string;
   };
 }
 

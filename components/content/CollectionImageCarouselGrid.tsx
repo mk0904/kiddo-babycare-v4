@@ -103,6 +103,8 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     const cellBorderRadius = cfg.borderRadius ?? 12;
     const showLabels = cfg.showLabels !== false;
     const maxRows = cfg.rows;
+    const paddingTop = cfg.paddingTop ?? 0;
+    const paddingBottom = cfg.paddingBottom ?? 8;
 
     const items = useMemo(() => {
         let all = card.gridItems ?? [];
@@ -110,27 +112,29 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         return all;
     }, [card.gridItems, columns, maxRows]);
 
-    const CARD_PADDING = 12;
+    const CARD_PADDING = 8;
     const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
     const FOOTER_HEIGHT = 36;
     const LABEL_HEIGHT = showLabels ? 22 : 0; // per-row label area
 
-    // Available height for the grid body (card minus header, footer, top+bottom padding)
-    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT - CARD_PADDING * 2;
+    // Available height for the grid body (card minus header, footer)
+    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
 
     const cellWidth = (cardWidth - CARD_PADDING * 2 - gap * (columns - 1)) / columns;
 
-    // Ideal height from aspect ratio
-    const idealImageHeight = cellWidth / aspectRatio;
-
-    // Max height allowed so all rows fit without clipping:
-    // bodyHeight = numRows * (imageH + LABEL_HEIGHT) + (numRows - 1) * gap
-    // => imageH = (bodyHeight - (numRows-1)*gap - numRows*LABEL_HEIGHT) / numRows
+    // Ideal height from aspect ratio - prioritize this for cell shape
+    // When aspectRatio is 1, calculate height to fit available space but preserve image ratio via resizeMode
     const numRows = maxRows ?? Math.ceil((card.gridItems?.length ?? 0) / columns);
     const safeRows = Math.max(numRows, 1);
-    const maxImageHeight = (bodyHeight - (safeRows - 1) * gap - safeRows * LABEL_HEIGHT) / safeRows;
-
-    const cellImageHeight = Math.min(idealImageHeight, Math.max(maxImageHeight, 20));
+    
+    let cellImageHeight: number;
+    if (aspectRatio === 1) {
+        // Use available space to determine height, let resizeMode handle aspect ratio
+        const maxImageHeight = (bodyHeight - paddingTop - paddingBottom - (safeRows - 1) * gap - safeRows * LABEL_HEIGHT) / safeRows;
+        cellImageHeight = Math.max(maxImageHeight, 20);
+    } else {
+        cellImageHeight = Math.max(cellWidth / aspectRatio, 20);
+    }
 
     const rows = useMemo(() => {
         const result: typeof items[number][][] = [];
@@ -165,8 +169,8 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                         />
                     ) : (
                         <View style={s.cardHeaderTexts}>
-                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                           {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title, card.cardColors?.titleColor && { color: card.cardColors.titleColor }]} numberOfLines={1}>{card.title}</Text>}
+                           {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle, card.cardColors?.subtitleColor && { color: card.cardColors.subtitleColor }]} numberOfLines={1}>{card.subtitle}</Text>}
                         </View>
                     )}
                     {!card.headerImage && (
@@ -176,7 +180,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                     )}
                 </TouchableOpacity>
             )}
-            <View style={[s.gridBody, { padding: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden', justifyContent: 'center' }]}>
+            <View style={[s.gridBody, { paddingTop, paddingBottom, paddingHorizontal: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden' }]}>
                 {rows.map((row, rowIdx) => (
                     <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
                         {row.map((gridItem) => (
@@ -196,7 +200,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                 ))}
             </View>
             <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.7} style={s.cardFooter}>
-                <Text style={s.seeAllText}>See all »</Text>
+                <Text style={[s.seeAllText, card.cardColors?.seeAllColor && { color: card.cardColors.seeAllColor }]}>See all »</Text>
             </TouchableOpacity>
         </>
     );
@@ -238,6 +242,8 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
     const showPrice = cfg.showPrice !== false;
     const showAddToCart = cfg.showAddToCart !== false;
     const imageSize = cfg.imageSize ?? 72;
+    const textColor = cfg.textColor ?? Colors.text;
+    const priceColor = cfg.priceColor ?? Colors.text;
 
     const [products, setProducts] = useState<any[]>(card.products ?? []);
     const [loading, setLoading] = useState(!card.products?.length && !!card.collectionId);
@@ -301,8 +307,8 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                         />
                     ) : (
                         <View style={s.cardHeaderTexts}>
-                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                            {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title, card.cardColors?.titleColor && { color: card.cardColors.titleColor }]} numberOfLines={1}>{card.title}</Text>}
+                            {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle, card.cardColors?.subtitleColor && { color: card.cardColors.subtitleColor }]} numberOfLines={1}>{card.subtitle}</Text>}
                         </View>
                     )}
                     {!card.headerImage && (
@@ -359,10 +365,10 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                                         )}
                                     </View>
                                     <View style={s.listInfo}>
-                                        <Text style={s.listProductName} numberOfLines={2} ellipsizeMode="tail">
+                                        <Text style={[s.listProductName, { color: textColor }]} numberOfLines={2} ellipsizeMode="tail">
                                             {product.title || product.name || ''}
                                         </Text>
-                                        {priceStr && <Text style={s.listPrice} numberOfLines={1}>{priceStr}</Text>}
+                                        {priceStr && <Text style={[s.listPrice, { color: priceColor }]} numberOfLines={1}>{priceStr}</Text>}
                                     </View>
                                     {showAddToCart && (
                                         <View style={s.listAddWrap} pointerEvents="box-none">
@@ -381,7 +387,7 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                 );
             })()}
             <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.7} style={s.cardFooter}>
-                <Text style={s.seeAllText}>See all »</Text>
+                <Text style={[s.seeAllText, card.cardColors?.seeAllColor && { color: card.cardColors.seeAllColor }]}>See all »</Text>
             </TouchableOpacity>
         </>
     );

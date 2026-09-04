@@ -5192,6 +5192,11 @@
           "collectionId": "gid://shopify/Collection/517770707233",
           "label": "Toys",
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_e8b4cc84-f746-497f-8d63-789ec1495db7.png?v=1787213146"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518108283169",
+          "label": "Costumes & Acessories",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami_1_e03e1bb9-55b2-49c5-aeff-df9b08bff757.png?v=1788071439"
         }
       ]
     },
@@ -5652,7 +5657,211 @@
       "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/42_a34de608-0579-4a00-acba-ff2955232448.png?v=1787836010"
     }
   ]
+},
+"518104351009": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518104482081",
+      "label": "Boys Ethnic",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami-2.png?v=1788017419"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518104547617",
+      "label": "Girls Ethnic",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami.png?v=1788017302"
+    }
+  ]
+},
+"518104744225": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518105399585",
+      "label": "Full Co-ord Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami-4.png?v=1788017856"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518105432353",
+      "label": "Shorts & Skirt Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami-5.png?v=1788017888"
+    }
+  ]
+},
+"518105596193": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518105891105",
+      "label": "Sandals & Ballerinas",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_2c93b141-6d7f-4786-a366-b8df2704b93d.png?v=1788019323"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518106448161",
+      "label": "Infant Shoes/Booties",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_96218765-9ec4-4575-87dc-10b2f1aef31f.png?v=1788019409"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518106644769",
+      "label": "Casual Shoes & Sneakers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/10_28097713-e567-4b46-9b76-036ba1ca6352.png?v=1788019413"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518106710305",
+      "label": "Clogs & Slippers",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_b7d5c3be-621e-451c-a47e-c278287516a0.png?v=1788019419"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518106841377",
+      "label": "Ethnic Footwear",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_6053d9f2-fb13-4c46-8b79-675683e11386.png?v=1788019423"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518106939681",
+      "label": "Sports Shoes",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_2684f7b7-acd3-4049-b7b0-50ab4d7b2428.png?v=1788019490"
+    }
+  ]
+},"518107234593": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518107300129",
+      "label": "Activity & Learning",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_838d8389-55ef-4d06-acda-233fedf86dc0.png?v=1788019669"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518107398433",
+      "label": "Musical Toys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_210aa989-eb94-4c7b-b124-262a381ac279.png?v=1788019564"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518107496737",
+      "label": "Push, Pull & Sorting Toys",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/17_adc3caec-93fa-441a-ac39-224ca19002e4.png?v=1788019574"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518107627809",
+      "label": "Rattles & Teether",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/18_9ab09425-f115-485b-ac03-29c72cbd0e45.png?v=1788019577"
+    }
+  ]
+},
+"518107889953": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518108315937",
+      "label": "Belts",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_f2185dfa-3e4c-496b-91ac-dfa7e472cec5.png?v=1788019929"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108578081",
+      "label": "Hair Accessories",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami_2c5cbcea-dc5c-442a-875c-69a214fe36c8.png?v=1788071285"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108610849",
+      "label": "Handbags",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/21_1c5484a3-c16d-48dd-b370-7bae9c920f71.png?v=1788019943"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108643617",
+      "label": "Jewellery & Makeup",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_c6d21269-5471-46d2-a55d-4859299409cc.png?v=1788019943"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108807457",
+      "label": "Mittens & Booties",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/23_924e017b-0f17-4213-8277-fb98769a6f1d.png?v=1788019936"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108840225",
+      "label": "Socks",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/24_a8f2d254-1f8b-40b8-8eb1-d5a265ff438a.png?v=1788019944"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518108872993",
+      "label": "Sunglasses & Watches",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/25_efb97e24-1e28-4bac-bcd8-fb034bcb6db6.png?v=1788019940"
+    }
+  ]
+},
+"518108905761": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518108938529",
+      "label": "Baby Cream & Lotion",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/28_449bf922-507a-41ad-9caf-6bfd37b0e9d9.png?v=1788020264"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109004065",
+      "label": "Baby Face Wash & Oils",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Janmashtami_3.png?v=1788160109"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109069601",
+      "label": "Baby Gift Sets",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/30_d42fa250-1729-49c1-84ca-25d245259efb.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109102369",
+      "label": "Baby Powder & Sunscreen",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/31_dc51436a-6e4d-4993-8da2-7a12830eabe4.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/new",
+      "label": "Baby Soaps",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/32_57a974fb-c879-453e-9466-af9d9b81e208.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109167905",
+      "label": "Bath Towels, Wraps & Wash Cloths",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/33_272902c2-8d97-4c09-aee2-98486ddadb67.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109200673",
+      "label": "Body Wash/Shampoo",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/34_41fe7f5d-65ef-43df-996e-11b8f2b3a5cf.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109266209",
+      "label": "Kids Grooming Essentials",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/35_d1aab676-790a-4945-a852-fac83abd9599.png?v=1788020280"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518109298977",
+      "label": "Kids Toothbrush & Tooth paste",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/36_3c65c19e-6db5-43ef-98b4-b88dbda4cb8d.png?v=1788020281"
+    }
+  ]
+},
+"518420168993": {
+  "subcategories": [
+    {
+      "collectionId": "gid://shopify/Collection/518420168993",
+      "label": "Umbrella",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_348ddb0d-ddbb-4716-a207-9a26c9a5490e.png?v=1788523264"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518420693281",
+      "label": "Raincoat",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_f4d73c01-c5ca-458a-ae95-94fc00c6240d.png?v=1788523265"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518420726049",
+      "label": "Boots",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_74ac96dd-45a6-4c73-8d62-819a8973486d.png?v=1788523265"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518422135073",
+      "label": "Mosquito Repellent",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_7c6995e5-28d3-4a07-93af-a50b2ae6488c.png?v=1788523265"
+    },
+    {
+      "collectionId": "gid://shopify/Collection/518420955425",
+      "label": "Full Sleeves",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Monsoon_Essentials.png?v=1788523779"
+    }
+  ]
 }
+
+
   },
   "productGridDefaults": {
     "gap": 16,
@@ -6231,10 +6440,10 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/517687705889"
+          "id": "gid://shopify/Collection/518347817249"
         },
         {
-          "id": "gid://shopify/Collection/517116723489"
+          "id": "gid://shopify/Collection/517687705889"
         },
         {
           "id": "gid://shopify/Collection/516891476257"
@@ -6243,7 +6452,7 @@
           "id": "gid://shopify/Collection/517738594593"
         },
         {
-          "id": "gid://shopify/Collection/517770805537"
+          "id": "gid://shopify/Collection/516864934177"
         },
         {
           "id": "gid://shopify/Collection/516935811361"
@@ -6252,7 +6461,7 @@
           "id": "gid://shopify/Collection/516861362465"
         },
         {
-          "id": "gid://shopify/Collection/516861460769"
+          "id": "gid://shopify/Collection/518420168993"
         }
       ],
       "styles": {
@@ -7425,6 +7634,7 @@
     }
   ],
   "Fashion": [
+
     {
       "id": "babycare-banner-1z",
       "type": "imageBanner",
@@ -8003,7 +8213,7 @@
         }
       }
     },
-        {
+     {
       "id": "category-grid-banner-11",
       "type": "categoryGrid",
       "visible": true,
@@ -8569,6 +8779,247 @@
           "textAlign": "center"
         }
       }
+    },
+    {
+      "id": "collection-carousel-grid-demo",
+      "type": "collectionImageCarouselGrid",
+      "visible": true,
+      "order": 9,
+      "title": "Explore Kiddo",
+      "carouselConfig": {
+        "cardHeight": 400,
+        "gap": 14,
+        "borderRadius": 20,
+        "paddingHorizontal": 16,
+        "showIndicators": true
+      },
+      "styles": {
+        "container": {
+          "paddingVertical": 12
+        },
+        "title": {
+          "fontSize": 15,
+          "fontWeight": "700",
+          "fontFamily": "lexend",
+          "color": "rgba(0,0,0,0.7)"
+        }
+      },
+      "cards": [
+        {
+          "id": "card-image-new-arrivals",
+          "layout": "image",
+          "title": "",
+          "subtitle": "",
+          "collectionId": "gid://shopify/Collection/516137189665",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Bathtime_Routine-12.png?v=1788527595",
+          "link": "/infinity/516137189665"
+        },
+        {
+          "id": "card-list-top-picks",
+          "layout": "list",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slider_Banner_-4.png?v=1788427237",
+          "headerHeight": 120,
+          "title": "Top Picks",
+          "subtitle": "Best sellers this week",
+          "gradientColors": ["#FFE98E", "#FFE98E"],
+          "collectionId": "gid://shopify/Collection/518383468833",
+          "link": "/infinity/518383468833",
+          "listConfig": {
+            "limit": 6,
+            "showPrice": true,
+            "showAddToCart": true,
+            "imageSize": 30
+          }
+        },
+        {
+          "id": "card-grid-categories",
+          "layout": "grid",
+          "title": "Top Categories",
+          "subtitle": "Browse by category",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/dwaaw.gif?v=1788270567",
+          "headerHeight": 60,
+          "gradientColors": ["#FC7C0F", "#FC7C0F"],
+          "collectionId": "gid://shopify/Collection/507740487969",
+          "link": "/infinity/507740487969",
+          "gridConfig": {
+            "columns": 2,
+            "rows": 2,
+            "gap": 10,
+            "aspectRatio": 1.7,
+            "resizeMode": "cover",
+            "borderRadius": 14,
+            "showLabels": true,
+            "paddingTop": 110,
+            "paddingBottom": 0
+          },
+          "gridItems": [
+            {
+              "id": "grid-item-gear",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-31.png?v=1788519168",
+              "collectionId": "gid://shopify/Collection/516137386273",
+              "label":"",
+              "link": "/infinity/516137386273"
+            },
+            {
+              "id": "grid-item-fashion",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-32.png?v=1788519168",
+              "label":"",
+              "collectionId": "gid://shopify/Collection/516137320737",
+              "link": "/infinity/516137320737"
+            },
+            {
+              "id": "grid-item-gear-2",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-35_1.png?v=1788519791",
+              "label":"",
+              "collectionId": "gid://shopify/Collection/516137451809",
+              "link": "/infinity/516137451809"
+            },
+            {
+              "id": "grid-item-hopscotch",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-34.png?v=1788519169",
+              "label":"",
+              "collectionId": "gid://shopify/Collection/515304522017",
+              "link": "/infinity/515304522017"
+            }
+          ]
+        },
+                       {
+          "id": "card-list-top-picks",
+          "layout": "list",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/hotwheelsbanner.png?v=1788515816",
+          "headerHeight": 80,
+          "title": "Top Picks",
+          "subtitle": "Best sellers this week",
+          "gradientColors": ["#D83936", "#D83936"],
+          "collectionId": "gid://shopify/Collection/517738594593",
+          "link": "/infinity/517738594593",
+          "listConfig": {
+            "limit": 6,
+            "showPrice": true,
+            "showAddToCart": true,
+            "imageSize": 30,
+            "textColor": "#FFFFFF",
+            "priceColor": "#FFFFFF"
+          },
+          "cardColors": {
+            "seeAllColor": "#FFFFFF",
+            "titleColor": "#FFFFFF",
+            "subtitleColor": "#FFFFFF"
+          }
+        },
+
+        {
+          "id": "card-grid-categories",
+          "layout": "grid",
+          "title": "Top Categories",
+          "subtitle": "Browse by category",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slider_Banner_-11.gif?v=1788419304",
+          "headerHeight": 110,
+          "gradientColors": ["#B8EBF9", "#B8EBF9"],
+          "collectionId": "gid://shopify/Collection/507740487969",
+          "link": "/infinity/507740487969",
+          "gridConfig": {
+            "columns": 2,
+            "rows": 2,
+            "gap": 10,
+            "aspectRatio": 1,
+            "resizeMode": "cover",
+            "borderRadius": 14,
+            "showLabels": true
+          },
+          "gridItems": [
+            {
+              "id": "grid-item-gear",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-36.png?v=1788520920",
+              "label": "             ",
+              "collectionId": "gid://shopify/Collection/516137386273",
+              "link": "/infinity/516137386273"
+            },
+            {
+              "id": "grid-item-fashion",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-37.png?v=1788520920",
+              "label": "           ",
+              "collectionId": "gid://shopify/Collection/516137320737",
+              "link": "/infinity/516137320737"
+            },
+            {
+              "id": "grid-item-gear-2",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-38.png?v=1788520920",
+              "label": "        ",
+              "collectionId": "gid://shopify/Collection/516137451809",
+              "link": "/infinity/516137451809"
+            },
+            {
+              "id": "grid-item-hopscotch",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-39.png?v=1788520920",
+              "label": "          ",
+              "collectionId": "gid://shopify/Collection/515304522017",
+              "link": "/infinity/515304522017"
+            }
+          ]
+        }
+        ,
+        {
+          "id": "card-grid-categories",
+          "layout": "grid",
+          "title": "Top Categories",
+          "subtitle": "Browse by category",
+          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slider_Banner_-10.gif?v=1788417875",
+          "headerHeight": 90,
+          "gradientColors": ["#8FBB44", "#8FBB44"],
+          "collectionId": "gid://shopify/Collection/507740487969",
+          "link": "/infinity/507740487969",
+          "gridConfig": {
+            "columns": 2,
+            "rows": 2,
+            "gap": 10,
+            "aspectRatio": 1,
+            "resizeMode": "cover",
+            "borderRadius": 14,
+            "showLabels": true
+          },
+          "gridItems": [
+            {
+              "id": "grid-item-gear",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-22.png?v=1788516571",
+              "label": "         ",
+              "collectionId": "gid://shopify/Collection/516137386273",
+              "link": "/infinity/516137386273"
+            },
+            {
+              "id": "grid-item-fashion",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-23.png?v=1788516574",
+              "label": "       ",
+              "collectionId": "gid://shopify/Collection/516137320737",
+              "link": "/infinity/516137320737"
+            },
+            {
+              "id": "grid-item-gear-2",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-24.png?v=1788516578",
+              "label": "     ",
+              "collectionId": "gid://shopify/Collection/516137451809",
+              "link": "/infinity/516137451809"
+            },
+            {
+              "id": "grid-item-hopscotch",
+              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-25.png?v=1788516580",
+              "label": "       ",
+              "collectionId": "gid://shopify/Collection/515304522017",
+              "link": "/infinity/515304522017"
+            }
+          ]
+        },
+
+        {
+          "id": "card-image-new-arrivals",
+          "layout": "image",
+          "title": "",
+          "subtitle": "",
+          "collectionId": "gid://shopify/Collection/516137189665",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Bathtime_Routine-10_1.png?v=1788520649",
+          "link": "/infinity/516137189665"
+        }
+      ]
     }
   ],
   "toys": [
@@ -8578,7 +9029,7 @@
       "title": "Featured",
       "visible": true,
       "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/finaltoy.png?v=1787688162",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toy_banner_-7.gif?v=1788163926",
         "height": 250,
         "borderRadius": 0,
         "borderBottomLeftRadius": 20,
@@ -8594,6 +9045,167 @@
         }
       }
     },
+        {
+      "id": "all-banner-10",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toy_banner_250_x_50_mm_-5.png?v=1788167874",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": ""
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 0.3,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "paddingHorizontal": 0,
+          "backgroundColor": "white",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20,
+          "marginBottom":-20,
+          "marginLeft":-40,
+          "marginTop":0
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 30
+        },
+        "img": {}
+      }
+    },
+
+        {
+      "id": "AgeWiseToys",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "SHOP BY EXCITEMENT",
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 12,
+        "limit": 5,
+        "aspectRatio": 1,
+        "resizeMode": "cover",
+        "showLabels": true,
+        "borderRadius": 12
+      },
+"collectionIds": [
+  {
+    "id": "gid://shopify/Collection/518103990561"
+  },
+  {
+    "id": "gid://shopify/Collection/518009094433"
+  },
+  {
+    "id": "gid://shopify/Collection/518009192737"
+  },
+  {
+    "id": "gid://shopify/Collection/518009389345"
+  },
+  {
+    "id": "gid://shopify/Collection/518009487649"
+  },
+  {
+    "id": "gid://shopify/Collection/518009651489"
+  }
+],      "styles": {
+        "container": {
+          "paddingHorizontal": 16
+        },
+        "title": {
+          "display":"none",
+          "marginBottom": 0,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        },
+        "text": {
+          "fontFamily": "lexend-regular",
+          "color": "#414651",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+
+        {
+      "id": "shop-by-brand-carousel-8",
+      "type": "collectionImageCarousel",
+      "title": "SHOP THE SALE",
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidassss",
+          "collectionId": "gid://shopify/Collection/518039896353",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_13.png?v=1788005027"
+        },
+        {
+          "id": "brand-hopscotchhhh",
+          "collectionId": "gid://shopify/Collection/518040256801",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_14.png?v=1788005112"
+        },
+        {
+          "id": "brand-mothercareeee",
+          "collectionId": "gid://shopify/Collection/518040125729",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_15.png?v=1788005203"
+        },
+        {
+          "id": "brand-carterssss",
+          "collectionId": "gid://shopify/Collection/518040420641",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_16.png?v=1788005289"
+        },
+        {
+          "id": "brand-puma123",
+          "collectionId": "gid://shopify/Collection/518040060193",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_17.png?v=1788005356"
+        },
+        {
+          "id": "brand-puma234",
+          "collectionId": "gid://shopify/Collection/518040551713",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_18.png?v=1788005437"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 150,
+        "itemHeight": 150,
+        "gap": 8,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "marginTop": 26
+        },
+        "title": {
+          "marginBottom": 10,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        }
+      }
+    },
+
+
+
     {
       "id": "AgeWiseToys",
       "type": "categoryGrid",
@@ -8668,6 +9280,57 @@
         }
       }
     },
+    {
+  "id": "trending-most-wanted",
+  "type": "categoryGrid",
+  "visible": true,
+  "title": "Trending & Most-Wanted",
+  "gridConfig": {
+    "layout": "uniform",
+    "numColumns": 4,
+    "colGap": 12,
+    "rowGap": 12,
+    "limit": 0,
+    "aspectRatio": 1,
+    "resizeMode": "cover",
+    "showLabels": true,
+    "borderRadius": 12
+  },
+  "collectionIds": [
+    {
+      "id": "gid://shopify/Collection/518040781089"
+    },
+    {
+      "id": "gid://shopify/Collection/518040944929"
+    },
+    {
+      "id": "gid://shopify/Collection/518041010465"
+    },
+    {
+      "id": "gid://shopify/Collection/518041043233"
+    }
+  ],
+  "styles": {
+    "container": {
+      "paddingHorizontal": 16
+    },
+    "title": {
+      "marginBottom": 0,
+      "fontSize": 15,
+      "lineHeight": 20,
+      "fontWeight": "700",
+      "fontFamily": "lexend"
+    },
+    "text": {
+      "fontFamily": "lexend-regular",
+      "color": "#414651",
+      "fontSize": 12,
+      "lineHeight": 16,
+      "letterSpacing": 0,
+      "textAlign": "center"
+    }
+  }
+},
     {
       "id": "toys-grid-collections",
       "type": "categoryGrid",
@@ -8791,6 +9454,157 @@
           "lineHeight": 16,
           "letterSpacing": 0,
           "textAlign": "center"
+        }
+      }
+    },
+    {
+  "id": "gift-by-budget",
+  "type": "categoryGrid",
+  "visible": true,
+  "title": "Gift by Budget",
+  "gridConfig": {
+    "layout": "uniform",
+    "numColumns": 4,
+    "colGap": 12,
+    "rowGap": 12,
+    "limit": 0,
+    "aspectRatio": 1,
+    "resizeMode": "cover",
+    "showLabels": true,
+    "borderRadius": 12
+  },
+  "collectionIds": [
+    {
+      "id": "gid://shopify/Collection/518041141537"
+    },
+    {
+      "id": "gid://shopify/Collection/518041272609"
+    },
+    {
+      "id": "gid://shopify/Collection/518041370913"
+    },
+    {
+      "id": "gid://shopify/Collection/518041403681"
+    }
+  ],
+  "styles": {
+    "container": {
+      "paddingHorizontal": 16
+    },
+    "title": {
+      "marginBottom": 0,
+      "fontSize": 15,
+      "lineHeight": 20,
+      "fontWeight": "700",
+      "fontFamily": "lexend"
+    },
+    "text": {
+      "fontFamily": "lexend-regular",
+      "color": "#414651",
+      "fontSize": 12,
+      "lineHeight": 16,
+      "letterSpacing": 0,
+      "textAlign": "center"
+    }
+  }
+},
+{
+  "id": "shop-by-play-stage",
+  "type": "categoryGrid",
+  "visible": true,
+  "title": "Shop by Play Stage",
+  "gridConfig": {
+    "layout": "uniform",
+    "numColumns": 4,
+    "colGap": 12,
+    "rowGap": 12,
+    "limit": 0,
+    "aspectRatio": 1,
+    "resizeMode": "cover",
+    "showLabels": true,
+    "borderRadius": 12
+  },
+  "collectionIds": [
+    {
+      "id": "gid://shopify/Collection/518041731361"
+    },
+    {
+      "id": "gid://shopify/Collection/518101336353"
+    },
+    {
+      "id": "gid://shopify/Collection/518101205281"
+    },
+    {
+      "id": "gid://shopify/Collection/518101565729"
+    }
+  ],
+  "styles": {
+    "container": {
+      "paddingHorizontal": 16
+    },
+    "title": {
+      "marginBottom": 0,
+      "fontSize": 15,
+      "lineHeight": 20,
+      "fontWeight": "700",
+      "fontFamily": "lexend"
+    },
+    "text": {
+      "fontFamily": "lexend-regular",
+      "color": "#414651",
+      "fontSize": 12,
+      "lineHeight": 16,
+      "letterSpacing": 0,
+      "textAlign": "center"
+    }
+  }
+},
+{
+      "id": "shop-by-brand-carousel-8",
+      "type": "collectionImageCarousel",
+      "title": "FINAL CALL",
+      "visible": true,
+      "data": [
+        {
+          "id": "brand-adidasssse",
+          "collectionId": "gid://shopify/Collection/518102090017",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_30.png?v=1788006285"
+        },
+        {
+          "id": "brand-hopscotchhhhf",
+          "collectionId": "gid://shopify/Collection/518102679841",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_31.png?v=1788006384"
+        },
+        {
+          "id": "brand-mothercareeees",
+          "collectionId": "gid://shopify/Collection/518103204129",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_32.png?v=1788006444"
+        },
+        {
+          "id": "brand-cartersssss",
+          "collectionId": "gid://shopify/Collection/518103564577",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/EOSS_Toys_33.png?v=1788006486"
+        }
+      ],
+      "carouselConfig": {
+        "itemWidth": 150,
+        "itemHeight": 150,
+        "gap": 8,
+        "borderRadius": 10,
+        "imageContentFit": "cover",
+        "paddingHorizontal": 16
+      },
+      "styles": {
+        "container": {
+          "marginTop": 0,
+          "marginBottom":26
+        },
+        "title": {
+          "marginBottom": 10,
+          "fontSize": 15,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
         }
       }
     },
@@ -9779,7 +10593,7 @@
           "height": 44
         },
         "eta": {
-          "paddingTop": 22,
+          "paddingTop": 2,
           "paddingBottom": 2
         },
         "unserviceable": {
@@ -9792,7 +10606,7 @@
         "iconSize": 28,
         "backgroundColor": "#0000000f",
         "borderRadius": 24,
-        "iconUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/latestslide.gif?v=1788030361"
+        "iconUrl": ""
       },
       "heights": {
         "addressBarHeight": 60,
@@ -9906,7 +10720,7 @@
   "categories": {
     "defaultPageBackgroundColor": "#FCF9F8",
     "navigationBar": {
-      "iconSize": 60,
+      "iconSize": 90,
       "iconContainerSize": 70,
       "collapsedBorderHeight": 28,
       "animation": {
@@ -9917,7 +10731,7 @@
       },
       "colors": {
         "all": "#5BAB6E",
-        "Fashion": "#A020F0",
+        "Fashion": "#C8B58A",
         "babycare": "#87CEEB",
         "toys": "#FFD700",
         "babygear": "#c46447",
@@ -9938,8 +10752,8 @@
       "all": {
         "label": "All",
         "pageBackgroundColor": "white",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/allinactive.png?v=1787586392",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/allactive.png?v=1787586404",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_3.png?v=1788526113",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7_1.png?v=1788526113",
         "header": {
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/New_Homepage_Icons_350_x_350-13_1.png?v=1788010780",
           "labelColors": {
@@ -9951,8 +10765,8 @@
       "Fashion": {
         "label": "Fashion",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/inactive.png?v=1787585983",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/active.png?v=1787585934",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_1.png?v=1788526113",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_5.png?v=1788526113",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -9966,7 +10780,8 @@
       "girls": {
         "label": "Girls",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/girls-fashion-selected_7f879987-cfc3-466e-b437-2e76459361d6.png?v=1772801275",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_6.png?v=1788526113",
+       "activeIcon":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_6.png?v=1788526113",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FF69B4",
@@ -9994,9 +10809,9 @@
       "babycare": {
         "label": "Baby Care",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_5.png?v=1787586941",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_5.png?v=1787586941",
-        "header": {
+       "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/10_5.png?v=1788526113",
+       "activeIcon":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_6.png?v=1788526113",
+         "header": {
           "textColor": "#363636",
           "backgroundColor": "#87CEEB",
           "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_14.png?v=1787572426",
@@ -10009,12 +10824,12 @@
       "toys": {
         "label": "Toys",
         "pageBackgroundColor": "#FFFFFF",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/taii.png?v=1787588103",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/tay.png?v=1787587954",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_5.png?v=1788526113",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_8.png?v=1788526113",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toys_Main_Header.png?v=1774002462",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toy_banner_-header.png?v=1788165728",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"
@@ -10024,8 +10839,8 @@
       "babygear": {
         "label": "Baby Gear",
         "pageBackgroundColor": "#FCF9F8",
-        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_3.png?v=1787588169",
-        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_2.png?v=1787588209",
+        "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_7.png?v=1788526113",
+        "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_3.png?v=1788526113",
         "header": {
           "textColor": "#363636",
           "backgroundColor": "white",
@@ -11055,6 +11870,151 @@
       }
     }
   ],
+  "account": {
+    "profile": {
+      "showAvatar": true,
+      "avatarSize": 80,
+      "showPhone": true,
+      "showEmail": true,
+      "defaultUserName": "User",
+      "defaultPhoneText": "Not available",
+      "defaultEmailText": "Not available"
+    },
+    "quickActions": [
+      {
+        "id": "orders",
+        "title": "My Orders",
+        "icon": "receipt",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Orders"
+        }
+      },
+      {
+        "id": "loyalty",
+        "title": "Rewards",
+        "icon": "wallet",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Rewards"
+        }
+      },
+      {
+        "id": "addresses",
+        "title": "Saved Addresses",
+        "icon": "location",
+        "showBadge": false,
+        "badgeSource": "static",
+        "badgeValue": 0,
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "Addresses"
+        }
+      }
+    ],
+    "menuItems": [
+      {
+        "id": "help",
+        "title": "Help & Support",
+        "icon": "help-circle-outline",
+        "actionType": "navigate",
+        "action": {
+          "type": "navigate",
+          "screen": "ContactSupport"
+        }
+      },
+      {
+        "id": "about",
+        "title": "About Us",
+        "icon": "information-circle-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/about-us",
+          "title": "About Us"
+        }
+      },
+      {
+        "id": "terms",
+        "title": "Terms & Conditions",
+        "icon": "document-text-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/terms-and-conditions",
+          "title": "Terms & Conditions"
+        }
+      },
+      {
+        "id": "privacy",
+        "title": "Privacy Policy",
+        "icon": "shield-checkmark-outline",
+        "actionType": "webview",
+        "action": {
+          "type": "webview",
+          "url": "https://kiddo-quick-baby-joy-m4bpo.myshopify.com/pages/privacy-policy",
+          "title": "Privacy Policy"
+        }
+      }
+    ],
+    "logout": {
+      "enabled": true,
+      "title": "Logout",
+      "message": "Are you sure you want to logout?",
+      "confirmText": "Logout",
+      "cancelText": "Cancel"
+    },
+    "version": {
+      "enabled": false,
+      "text": "Kiddo App v1.0.0"
+    },
+    "styles": {
+      "header": {
+        "paddingTop": 60,
+        "paddingBottom": 20,
+        "paddingHorizontal": 20
+      },
+      "quickActions": {
+        "paddingHorizontal": 20,
+        "paddingVertical": 20
+      },
+      "menuContainer": {
+        "marginTop": 10,
+        "paddingHorizontal": 20
+      },
+      "logoutButton": {
+        "marginHorizontal": 20,
+        "marginTop": 20,
+        "paddingVertical": 16,
+        "borderRadius": 12,
+        "borderWidth": 1
+      },
+      "version": {
+        "marginTop": 20,
+        "paddingBottom": 10
+      }
+    }
+  },
+  "delivery": {
+    "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY",
+    "darkStoreLocation": {
+      "latitude": 28.540546501290788,
+      "longitude": 77.37018854503113
+    },
+    "packingTime": 5,
+    "maxDeliveryTime": 60,
+    "travelTimePerKm": 2,
+    "maxDeliveryDistance": null
+  },
   "demo": {
     "timeSlots": [
       "10AM - 1PM",
@@ -11069,6 +12029,31 @@
         "Ensures product meets personalized needs",
         "Option to buy via digital payment or cash"
       ]
+    }
+  },
+  "providers": {
+    "backend": {
+      "baseUrl": "https://kiddo-service-874125225773.asia-south1.run.app/api/v1"
+    },
+    "nector": {
+      "leadId": "c6418060-56e5-4017-90ad-737b340bc25c",
+      "appId": "shopify-kiddo-quick-baby-joy-m4bpo",
+      "appInstallTriggerId": null,
+      "razorpaySecretId": "fa26c7d4-cba3-47d0-aa73-66ab442a9484"
+    },
+    "razorpay": {
+      "keyId": "rzp_live_S4IH8bhsw9DjEe",
+      "keySecret": "OmdCqA5dFmc5GuL9uZk4YpDa"
+    },
+    "otp": {
+      "apiBaseUrl": "https://sms.shinenetcore.in/api/v2",
+      "senderId": "SNCOTP",
+      "apiKey": "3Ri5Du6T3fbCAfWs9L5gUfOSn4pbofa/DjZucAqwplo=",
+      "clientId": "b00a4a12-c1f3-420f-ae2c-e69988212928",
+      "messageTemplate": "One time OTP From Kiddo App {#var#} to login or activate your profile apsops SNC",
+      "expiryMinutes": 5,
+      "useAndroidHash": false,
+      "countryCode": "91"
     }
   }
 }
