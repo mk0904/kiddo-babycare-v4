@@ -1,6 +1,5 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const SUPPORT_PHONE = '+919310993990';
@@ -61,7 +60,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
-       
+        marginTop: 12,
     },
     iconWrap: {
         width: 44,

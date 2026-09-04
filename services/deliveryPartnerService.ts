@@ -1,5 +1,5 @@
 import { getBackendApiPath, getBackendBase, backendFetch } from './backendBase';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface AssignedDeliveryPartner {
   name: string | null;
@@ -1036,6 +1036,7 @@ export async function uploadImageToGCP(uploadUrl: string, imageUri: string, cont
     try {
         const uploadResponse = await FileSystem.uploadAsync(uploadUrl, imageUri, {
             httpMethod: 'PUT',
+            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
             headers: {
                 'Content-Type': contentType,
             },
