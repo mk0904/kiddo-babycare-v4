@@ -120,7 +120,8 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
             return false;
         } else {
             // Mock exchange validation
-            return !selectedVariantId;
+            const orderedId = item?.variant?.id;
+            return !selectedVariantId || selectedVariantId === orderedId;
         }
     };
 
@@ -296,7 +297,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
 
                 <View style={styles.disclaimerBox}>
                     <Text style={styles.disclaimerText}>
-                        Please note: Products must be unused and have all original tags attached to qualify for a return or exchange.
+                        Please note: Products must be unused and have all original tags attached to qualify for a return or exchange. Requests for items that do not meet our eligibility criteria cannot be processed. If your item is damaged or has missing parts, please contact Customer Support.
                     </Text>
                 </View>
 
@@ -334,7 +335,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                         {['Poor quality/ Damaged product', 'Missing parts'].includes(selectedReason || '') && (
                             <View style={styles.proofContainer}>
                                 <View style={styles.proofHeader}>
-                                    <Text style={styles.sectionTitle}>Attach proof*</Text>
+                                    <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Attach proof*</Text>
                                     <Text style={styles.proofSubtitle}>PNG, JPG, Upto 10MB</Text>
                                 </View>
 
@@ -384,17 +385,27 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                             <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 24 }} />
                         ) : (
                             <View>
-                                <Text style={styles.sectionTitle}>Select Variant</Text>
+                                <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Select Variant</Text>
                                 <View style={styles.pillContainer}>
                                     {variantOptions.map((v: any) => {
                                         const isSelected = selectedVariantId === v.id;
+                                        const isOrdered = v.id === orderedId;
                                         return (
                                             <TouchableOpacity
                                                 key={v.id}
-                                                style={[styles.pill, isSelected && styles.pillSelected]}
+                                                style={[
+                                                    styles.pill,
+                                                    isSelected && styles.pillSelected,
+                                                    isOrdered && styles.pillDisabled
+                                                ]}
                                                 onPress={() => setSelectedVariantId(v.id)}
+                                                disabled={isOrdered}
                                             >
-                                                <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
+                                                <Text style={[
+                                                    styles.pillText,
+                                                    isSelected && styles.pillTextSelected,
+                                                    isOrdered && styles.pillTextDisabled
+                                                ]}>
                                                     {v.title}
                                                 </Text>
                                             </TouchableOpacity>
@@ -622,6 +633,14 @@ const styles = StyleSheet.create({
     pillTextSelected: {
         color: '#F05A5D',
     },
+    pillDisabled: {
+        backgroundColor: '#F3F4F6',
+        borderColor: '#E5E7EB',
+        opacity: 0.6,
+    },
+    pillTextDisabled: {
+        color: '#9CA3AF',
+    },
     emptyText: {
         fontSize: 13,
         fontFamily: Fonts.LexendMedium,
@@ -639,7 +658,7 @@ const styles = StyleSheet.create({
         height: 52,
     },
     proceedBtnDisabled: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#85868aff',
     },
     proceedBtnText: {
         fontFamily: Fonts.LexendSemiBold,

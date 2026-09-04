@@ -36,7 +36,7 @@ export const ReturnExchangeSection: React.FC<ReturnExchangeSectionProps> = ({ ty
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.headerRow}>
-                <Text style={styles.sectionTitle}>{type}</Text>
+                <Text style={styles.sectionTitle}>{type === 'Returns' ? 'Return Order' : 'Exchange Order'}</Text>
                 <TouchableOpacity style={styles.orderIdRow} onPress={copyOrderId} activeOpacity={0.7}>
                     <Text style={styles.orderIdText}>Order ID #{orderId}</Text>
                 </TouchableOpacity>

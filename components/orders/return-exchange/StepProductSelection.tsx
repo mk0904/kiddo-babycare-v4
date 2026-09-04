@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
         height: 52,
     },
     proceedBtnDisabled: {
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#85868aff',
     },
     proceedBtnText: {
         fontFamily: Fonts.LexendSemiBold,
