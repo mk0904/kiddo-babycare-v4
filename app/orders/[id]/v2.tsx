@@ -25,6 +25,7 @@ import { shopifyAdminApi } from '@/services/shopifyAdminApi';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore } from '@/store/userStore';
 import type { OrderDetailConfig } from '@/types/appConfig';
+import { trackEvent } from '@/utils/mixpanelHelpers';
 import {
     ARRIVED_AT_CUSTOMER_STATUSES,
     computeDeliveryHeaderStatusText,
@@ -35,7 +36,6 @@ import {
 } from '@/utils/orderDeliveryHeaderText';
 import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { sizeLabelFromVariantTitle } from '@/utils/tryAndBuyProduct';
-import { trackEvent } from '@/utils/mixpanelHelpers';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -1531,6 +1531,22 @@ export default function OrderDetailV2Screen() {
     // Use calculated subtotal for bill display so discount math matches Shopify (subtotal − discount = total before tax/shipping).
     const subtotalDisplay = calculatedSubtotal > 0 ? calculatedSubtotal : parseFloat(order.subtotalPrice?.amount || order.subtotalPriceV2?.amount || '0');
 
+    const deliveredAtStr = deliveryPartnerStatus?.deliveredAt || order?.processedAt;
+    let isPastReturnWindow = false;
+    if (deliveredAtStr && isDelivered) {
+        const deliveredDate = new Date(deliveredAtStr);
+        if (!isNaN(deliveredDate.getTime())) {
+            const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - deliveredDate.getTime() > sevenDaysInMs) {
+                isPastReturnWindow = true;
+            }
+        }
+    }
+
+    const hasActiveReturnOrExchange =
+        !!(limechatStatus?.order?.is_return ?? kiddoOrder?.isReturn) ||
+        !!(limechatStatus?.order?.is_exchange ?? kiddoOrder?.isExchange);
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header - light beige */}
@@ -1771,7 +1787,7 @@ export default function OrderDetailV2Screen() {
                             openFreshchat();
                         }}
                         onExpire={() => setShowCancelTimer(false)}
-                        durationSeconds={30}
+                        durationSeconds={45}
                     />
                 )}
 
@@ -2112,23 +2128,21 @@ export default function OrderDetailV2Screen() {
 
             </ScrollView>
 
-            {/* Force visible for testing: deliveryStatusKey === 'delivered' || true */}
-            {(deliveryStatusKey === 'delivered' || true) && (
-                <View style={styles.fixedFooter}>
-                    <TouchableOpacity
-                        style={styles.footerBtnOutline}
-                        onPress={() => {
-                            trackEvent('return_exchange_initiated', { order_id: displayOrderId });
-                            router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`);
-                        }}
-                    >
-                        <Text style={styles.footerBtnOutlineText}>Return/Exchange</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.footerBtnOutline, styles.footerBtnWithBorder]}>
-                        <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Download invoice</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
+            <View style={styles.fixedFooter}>
+                <TouchableOpacity
+                    style={[styles.footerBtnOutline, styles.footerBtnWithBorder, (deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange) && { opacity: 0.5 }]}
+                    disabled={deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange}
+                    onPress={() => {
+                        trackEvent('return_exchange_initiated', { order_id: displayOrderId });
+                        router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`);
+                    }}
+                >
+                    <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Return/Exchange</Text>
+                </TouchableOpacity>
+                {/* <TouchableOpacity style={[styles.footerBtnOutline, styles.footerBtnWithBorder]}>
+                    <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Download invoice</Text>
+                </TouchableOpacity> */}
+            </View>
 
             <CancelOrderModal
                 visible={isCancelModalVisible}

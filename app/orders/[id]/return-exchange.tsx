@@ -229,6 +229,7 @@ export default function ReturnExchangeScreen() {
                         schedule={schedule!}
                         onSubmit={handleSubmit}
                         isSubmitting={isSubmitting}
+                        onEditSchedule={() => setIsScheduleModalVisible(true)}
                     />
                 )}
             </View>

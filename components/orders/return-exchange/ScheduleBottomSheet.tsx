@@ -21,6 +21,23 @@ const formatDate = (dateString: string) => {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
+const isSlotInFuture = (dateStr: string, slotStr: string) => {
+    try {
+        const startTimeStr = slotStr.split(' - ')[0]; // e.g. "10:00 AM"
+        if (!startTimeStr) return true;
+        const [time, period] = startTimeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const slotDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        return slotDate.getTime() > Date.now();
+    } catch(e) {
+        return true; 
+    }
+};
+
 export const ScheduleBottomSheet: React.FC<ScheduleBottomSheetProps> = ({
     visible,
     onClose,
@@ -42,11 +59,16 @@ export const ScheduleBottomSheet: React.FC<ScheduleBottomSheetProps> = ({
                 .then(res => res.json())
                 .then(res => {
                     if (res.ok && res.data) {
-                        setAvailableSlots(res.data);
-                        if (res.data.length > 0) {
-                            setSelectedDate(res.data[0].date);
-                            if (res.data[0].slots.length > 0) {
-                                setSelectedTime(res.data[0].slots[0]);
+                        const filteredData = res.data.map((dayData: any) => ({
+                            ...dayData,
+                            slots: dayData.slots.filter((slot: string) => isSlotInFuture(dayData.date, slot))
+                        })).filter((dayData: any) => dayData.slots.length > 0);
+                        
+                        setAvailableSlots(filteredData);
+                        if (filteredData.length > 0) {
+                            setSelectedDate(filteredData[0].date);
+                            if (filteredData[0].slots.length > 0) {
+                                setSelectedTime(filteredData[0].slots[0]);
                             }
                         }
                     }

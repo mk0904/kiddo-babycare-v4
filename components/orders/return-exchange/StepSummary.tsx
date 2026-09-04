@@ -12,6 +12,7 @@ interface StepSummaryProps {
     schedule: { date: string; time: string };
     onSubmit: () => void;
     isSubmitting?: boolean;
+    onEditSchedule?: () => void;
 }
 
 export const StepSummary: React.FC<StepSummaryProps> = ({
@@ -21,6 +22,7 @@ export const StepSummary: React.FC<StepSummaryProps> = ({
     schedule,
     onSubmit,
     isSubmitting,
+    onEditSchedule,
 }) => {
     const returningItems = selectedItems.filter(id => itemDetails[id]?.type === 'Return');
     const exchangingItems = selectedItems.filter(id => itemDetails[id]?.type === 'Exchange');
@@ -77,7 +79,7 @@ export const StepSummary: React.FC<StepSummaryProps> = ({
                         <Text style={styles.bannerSubtitle}>
                             For {schedule.time} - {schedule.date}
                         </Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={onEditSchedule}>
                             <Text style={styles.bannerLink}>Changed your mind? Update now</Text>
                         </TouchableOpacity>
                     </View>

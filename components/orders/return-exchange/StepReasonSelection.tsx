@@ -152,8 +152,8 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
     };
 
     const processFile = (file: any) => {
-        if (file.size && file.size > 5 * 1024 * 1024) {
-            setImageError('File size should be <5MB');
+        if (file.size && file.size > 10 * 1024 * 1024) {
+            setImageError('File size should be <10MB');
             return;
         }
         setImageError(null);
@@ -335,7 +335,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                             <View style={styles.proofContainer}>
                                 <View style={styles.proofHeader}>
                                     <Text style={styles.sectionTitle}>Attach proof*</Text>
-                                    <Text style={styles.proofSubtitle}>PNG, JPG, Upto 5MB</Text>
+                                    <Text style={styles.proofSubtitle}>PNG, JPG, Upto 10MB</Text>
                                 </View>
 
                                 <View style={styles.proofSlotsContainer}>
