@@ -379,7 +379,7 @@ export default function AccountScreen() {
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.customHeader}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Account</Text>
             </View>
@@ -403,18 +403,6 @@ export default function AccountScreen() {
                 {config.profile && (
                     <View style={styles.header}>
                         <View style={styles.profileSection}>
-                            {config.profile.showAvatar && (
-                                <View style={styles.avatarContainer}>
-                                    <View style={[
-                                        styles.avatar,
-                                        { width: config.profile.avatarSize, height: config.profile.avatarSize, borderRadius: config.profile.avatarSize / 2 }
-                                    ]}>
-                                        <Text style={styles.avatarText}>
-                                            {getUserInitials()}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
                             <View style={styles.userInfo}>
                                 {userName && <Text style={styles.userName}>{userName}</Text>}
                                 {config.profile.showPhone && userPhone && (
@@ -586,16 +574,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingTop: 35,
+        paddingBottom: 15,
+        backgroundColor: '#D83936',
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        marginHorizontal: 16,
+        marginTop: 16,
     },
     backButton: {
         padding: 4,
-        marginRight: 15,
+        marginLeft: -8,
+        marginRight: 12,
     },
     headerTitle: {
         fontSize: 24,
         fontFamily: Fonts.Bold,
-        color: Colors.text,
+        color: '#FFFFFF',
     },
     scrollView: {
         flex: 1,
@@ -604,13 +599,16 @@ const styles = StyleSheet.create({
         paddingBottom: 120,
     },
     header: {
-        paddingTop: 30,
-        paddingBottom: 20,
-        backgroundColor: '#F8F9FB',
+        paddingTop: 40,
+        paddingBottom: 30,
+        backgroundColor: '#D83936',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        marginHorizontal: 16,
     },
     profileSection: {
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         paddingHorizontal: 20,
     },
@@ -628,20 +626,20 @@ const styles = StyleSheet.create({
         fontSize: 32,
     },
     userInfo: {
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     userName: {
         fontSize: 22,
-        color: Colors.text,
+        color: '#FFFFFF',
         fontFamily: Fonts.Bold,
         marginBottom: 4,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     userPhone: {
         fontSize: 12,
-        color: Colors.textSecondary,
+        color: 'rgba(255, 255, 255, 0.8)',
         fontFamily: Fonts.Medium,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     quickActionsContainer: {
         flexDirection: 'row',
