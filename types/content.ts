@@ -409,10 +409,10 @@ export interface CollectionImageCarouselGridCardConfig {
     borderRadius?: number;
     /** Show label below each cell image. Default true. */
     showLabels?: boolean;
-    /** Padding above grid in px. Default 0. */
-    paddingTop?: number;
-    /** Padding below grid in px. Default 8. */
-    paddingBottom?: number;
+    /** Padding above grid in px (or percentage as string like "10%"). Default 0. */
+    paddingTop?: number | string;
+    /** Padding below grid in px (or percentage as string like "10%"). Default 8. */
+    paddingBottom?: number | string;
   };
 
   // --- layout='list' ---

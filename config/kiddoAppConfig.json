@@ -8849,7 +8849,7 @@
             "resizeMode": "cover",
             "borderRadius": 14,
             "showLabels": true,
-            "paddingTop": 110,
+            "paddingTop": "0%",
             "paddingBottom": 0
           },
           "gridItems": [

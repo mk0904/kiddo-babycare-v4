@@ -103,8 +103,29 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     const cellBorderRadius = cfg.borderRadius ?? 12;
     const showLabels = cfg.showLabels !== false;
     const maxRows = cfg.rows;
-    const paddingTop = cfg.paddingTop ?? 0;
-    const paddingBottom = cfg.paddingBottom ?? 8;
+    
+    // Parse padding values - support both px numbers and percentage strings
+    const parsePadding = (value: number | string | undefined, fallback: number, referenceSize: number) => {
+        if (value === undefined) return fallback;
+        if (typeof value === 'string') {
+            if (value.endsWith('%')) {
+                const pct = parseFloat(value) / 100;
+                return pct * referenceSize;
+            }
+            return parseFloat(value) || fallback;
+        }
+        return value;
+    };
+    
+    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
+    const FOOTER_HEIGHT = 36;
+    const LABEL_HEIGHT = showLabels ? 22 : 0;
+
+    // Available height for the grid body (card minus header, footer)
+    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+    
+    const paddingTop = parsePadding(cfg.paddingTop, 0, bodyHeight);
+    const paddingBottom = parsePadding(cfg.paddingBottom, 8, bodyHeight);
 
     const items = useMemo(() => {
         let all = card.gridItems ?? [];
@@ -113,12 +134,6 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     }, [card.gridItems, columns, maxRows]);
 
     const CARD_PADDING = 8;
-    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
-    const FOOTER_HEIGHT = 36;
-    const LABEL_HEIGHT = showLabels ? 22 : 0; // per-row label area
-
-    // Available height for the grid body (card minus header, footer)
-    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
 
     const cellWidth = (cardWidth - CARD_PADDING * 2 - gap * (columns - 1)) / columns;
 
