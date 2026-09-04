@@ -413,6 +413,10 @@ export interface CollectionImageCarouselGridCardConfig {
     paddingTop?: number | string;
     /** Padding below grid in px (or percentage as string like "10%"). Default 8. */
     paddingBottom?: number | string;
+    /** Horizontal padding around grid in px (or percentage as string like "5%"). Default 8. */
+    paddingHorizontal?: number | string;
+    /** Grid layout type: 'default' (even grid), 'featured-left' (first item large), 'featured-right' (last item large). Default 'default'. */
+    layoutType?: 'default' | 'featured-left' | 'featured-right';
   };
 
   // --- layout='list' ---

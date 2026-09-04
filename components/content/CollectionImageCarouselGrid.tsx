@@ -103,6 +103,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     const cellBorderRadius = cfg.borderRadius ?? 12;
     const showLabels = cfg.showLabels !== false;
     const maxRows = cfg.rows;
+    const layoutType = cfg.layoutType ?? 'default';
     
     // Parse padding values - support both px numbers and percentage strings
     const parsePadding = (value: number | string | undefined, fallback: number, referenceSize: number) => {
@@ -126,6 +127,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     
     const paddingTop = parsePadding(cfg.paddingTop, 0, bodyHeight);
     const paddingBottom = parsePadding(cfg.paddingBottom, 8, bodyHeight);
+    const paddingHorizontal = parsePadding(cfg.paddingHorizontal, 8, cardWidth);
 
     const items = useMemo(() => {
         let all = card.gridItems ?? [];
@@ -133,7 +135,7 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         return all;
     }, [card.gridItems, columns, maxRows]);
 
-    const CARD_PADDING = 8;
+    const CARD_PADDING = paddingHorizontal;
 
     const cellWidth = (cardWidth - CARD_PADDING * 2 - gap * (columns - 1)) / columns;
 
@@ -151,13 +153,40 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         cellImageHeight = Math.max(cellWidth / aspectRatio, 20);
     }
 
+    // Featured cell dimensions (for featured-left and featured-right layouts)
+    const featuredCellWidth = (cardWidth - CARD_PADDING * 2 - gap) / 2;
+    // Calculate featured cell height based on regular grid rows
+    const regularItems = layoutType === 'featured-left' || layoutType === 'featured-right' 
+        ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
+        : items;
+    const numRegularRows = Math.ceil(regularItems.length / columns);
+    const featuredCellHeight = numRegularRows * cellImageHeight + (numRegularRows - 1) * gap;
+
     const rows = useMemo(() => {
         const result: typeof items[number][][] = [];
-        for (let i = 0; i < items.length; i += columns) {
-            result.push(items.slice(i, i + columns));
+        
+        if (layoutType === 'featured-left' && items.length > 0) {
+            // First item is featured (full height, left side)
+            // Remaining items in grid (right side)
+            const remaining = items.slice(1);
+            for (let i = 0; i < remaining.length; i += columns) {
+                result.push(remaining.slice(i, i + columns));
+            }
+        } else if (layoutType === 'featured-right' && items.length > 0) {
+            // Last item is featured (full height, right side)
+            const regularItems = items.slice(0, -1);
+            for (let i = 0; i < regularItems.length; i += columns) {
+                result.push(regularItems.slice(i, i + columns));
+            }
+        } else {
+            // Default layout
+            for (let i = 0; i < items.length; i += columns) {
+                result.push(items.slice(i, i + columns));
+            }
         }
+        
         return result;
-    }, [items, columns]);
+    }, [items, columns, layoutType]);
 
     const handleCellPress = useCallback((gridItem: typeof items[number]) => {
         if (!onPress) return;
@@ -196,23 +225,69 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                 </TouchableOpacity>
             )}
             <View style={[s.gridBody, { paddingTop, paddingBottom, paddingHorizontal: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden' }]}>
-                {rows.map((row, rowIdx) => (
-                    <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
-                        {row.map((gridItem) => (
-                            <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth }}>
+                {layoutType === 'featured-left' || layoutType === 'featured-right' ? (
+                    // Featured layout: featured cell + regular grid side by side
+                    <View style={{ flexDirection: 'row', gap, height: '100%' }}>
+                        {/* Featured cell */}
+                        {(layoutType === 'featured-left' ? items[0] : items[items.length - 1]) && (
+                            <TouchableOpacity 
+                                key={layoutType === 'featured-left' ? items[0].id : items[items.length - 1].id}
+                                activeOpacity={0.85} 
+                                onPress={() => handleCellPress(layoutType === 'featured-left' ? items[0] : items[items.length - 1])} 
+                                style={{ width: featuredCellWidth }}
+                            >
                                 <OptimizedImage
-                                    source={{ uri: shopifyImageUrl(gridItem.imageUrl, Math.round(cellWidth * 2)) }}
-                                    style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
+                                    source={{ uri: shopifyImageUrl((layoutType === 'featured-left' ? items[0] : items[items.length - 1]).imageUrl, Math.round(featuredCellWidth * 2)) }}
+                                    style={{ width: featuredCellWidth, height: featuredCellHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
                                     contentFit={resizeMode}
                                     transition={0}
                                 />
-                                {showLabels && gridItem.label && (
-                                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{gridItem.label}</Text>
+                                {showLabels && (layoutType === 'featured-left' ? items[0].label : items[items.length - 1].label) && (
+                                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{layoutType === 'featured-left' ? items[0].label : items[items.length - 1].label}</Text>
                                 )}
                             </TouchableOpacity>
-                        ))}
+                        )}
+                        {/* Regular grid */}
+                        <View style={{ flex: 1, gap }}>
+                            {rows.map((row, rowIdx) => (
+                                <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
+                                    {row.map((gridItem) => (
+                                        <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth }}>
+                                            <OptimizedImage
+                                                source={{ uri: shopifyImageUrl(gridItem.imageUrl, Math.round(cellWidth * 2)) }}
+                                                style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
+                                                contentFit={resizeMode}
+                                                transition={0}
+                                            />
+                                            {showLabels && gridItem.label && (
+                                                <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{gridItem.label}</Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            ))}
+                        </View>
                     </View>
-                ))}
+                ) : (
+                    // Default layout
+                    rows.map((row, rowIdx) => (
+                        <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
+                            {row.map((gridItem) => (
+                                <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth }}>
+                                    <OptimizedImage
+                                        source={{ uri: shopifyImageUrl(gridItem.imageUrl, Math.round(cellWidth * 2)) }}
+                                        style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
+                                        contentFit={resizeMode}
+                                        transition={0}
+                                    />
+                                    {showLabels && gridItem.label && (
+                                        <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{gridItem.label}</Text>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ))
+                )}
             </View>
             <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.7} style={s.cardFooter}>
                 <Text style={[s.seeAllText, card.cardColors?.seeAllColor && { color: card.cardColors.seeAllColor }]}>See all »</Text>

@@ -8780,7 +8780,7 @@
         }
       }
     },
-    {
+   {
       "id": "collection-carousel-grid-demo",
       "type": "collectionImageCarouselGrid",
       "visible": true,
@@ -8837,7 +8837,7 @@
           "title": "Top Categories",
           "subtitle": "Browse by category",
           "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/dwaaw.gif?v=1788270567",
-          "headerHeight": 110,
+          "headerHeight": 60,
           "gradientColors": ["#FC7C0F", "#FC7C0F"],
           "collectionId": "gid://shopify/Collection/507740487969",
           "link": "/infinity/507740487969",
@@ -8845,12 +8845,12 @@
             "columns": 2,
             "rows": 2,
             "gap": 10,
-            "aspectRatio": 1.4,
+            "aspectRatio": 1.7,
             "resizeMode": "cover",
             "borderRadius": 14,
             "showLabels": true,
-            "paddingTop": "30%",
-            "paddingBottom": "0%"
+            "paddingTop": 110,
+            "paddingBottom": 0
           },
           "gridItems": [
             {
@@ -8883,59 +8883,6 @@
             }
           ]
         },
-                {
-          "id": "card-grid-categories",
-          "layout": "grid",
-          "title": "Top Categories",
-          "subtitle": "Browse by category",
-          "headerImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Slider_Banner_-11.gif?v=1788419304",
-          "headerHeight": 110,
-          "gradientColors": ["#B8EBF9", "#B8EBF9"],
-          "collectionId": "gid://shopify/Collection/507740487969",
-          "link": "/infinity/507740487969",
-          "gridConfig": {
-            "columns": 2,
-            "rows": 2,
-            "gap": 10,
-            "aspectRatio": 1.4,
-            "resizeMode": "cover",
-            "borderRadius": 14,
-            "showLabels": true,
-            "paddingTop": "20%",
-            "paddingBottom": 0
-          },
-          "gridItems": [
-            {
-              "id": "grid-item-gear",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-36.png?v=1788520920",
-              "label": "             ",
-              "collectionId": "gid://shopify/Collection/516137386273",
-              "link": "/infinity/516137386273"
-            },
-            {
-              "id": "grid-item-fashion",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-37.png?v=1788520920",
-              "label": "           ",
-              "collectionId": "gid://shopify/Collection/516137320737",
-              "link": "/infinity/516137320737"
-            },
-            {
-              "id": "grid-item-gear-2",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-38.png?v=1788520920",
-              "label": "        ",
-              "collectionId": "gid://shopify/Collection/516137451809",
-              "link": "/infinity/516137451809"
-            },
-            {
-              "id": "grid-item-hopscotch",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Icons_--Ayushi-39.png?v=1788520920",
-              "label": "          ",
-              "collectionId": "gid://shopify/Collection/515304522017",
-              "link": "/infinity/515304522017"
-            }
-          ]
-        },
-
                        {
           "id": "card-list-top-picks",
           "layout": "list",
@@ -8975,11 +8922,10 @@
             "columns": 2,
             "rows": 2,
             "gap": 10,
-            "aspectRatio": 1.4,
+            "aspectRatio": 1,
             "resizeMode": "cover",
             "borderRadius": 14,
-            "showLabels": true,
-            "paddingTop":"0%"
+            "showLabels": true
           },
           "gridItems": [
             {
@@ -9073,8 +9019,7 @@
           "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Bathtime_Routine-10_1.png?v=1788520649",
           "link": "/infinity/516137189665"
         }
-      ]
-    }
+      ]}
   ],
   "toys": [
     {
