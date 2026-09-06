@@ -104,6 +104,13 @@ export interface Order {
     couponCode?: string;
 
     /** User identifier when order was placed (for coupon usageLimitPerUser). Same as user.id || customerId || email || phone. */
+    isExchange?: boolean;
+    isReturn?: boolean;
+    returnStatus?: string;
+    returnProductIds?: string[];
+    exchangeProductIds?: string[];
+    returnExchangeImages?: string[];
+
     userId?: string;
 }
 
@@ -123,6 +130,13 @@ export interface CreateOrderInput {
     note?: string;
     estimatedDeliveryMinutes?: number;
     /** User identifier (for coupon usage tracking). Same as user.id || customerId || email || phone. */
+    isExchange?: boolean;
+    isReturn?: boolean;
+    returnStatus?: string;
+    returnProductIds?: string[];
+    exchangeProductIds?: string[];
+    returnExchangeImages?: string[];
+
     userId?: string;
 }
 
