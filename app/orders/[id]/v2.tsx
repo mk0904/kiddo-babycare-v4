@@ -1533,11 +1533,18 @@ export default function OrderDetailV2Screen() {
 
     const deliveredAtStr = deliveryPartnerStatus?.deliveredAt || order?.processedAt;
     let isPastReturnWindow = false;
-    if (deliveredAtStr && isDelivered) {
+    
+    const returnConfig = appConfigService.getReturnExchangeConfig();
+    const isReturnExchangeEnabled = returnConfig?.isReturnExchangeEnabled ?? true;
+
+    if (!isReturnExchangeEnabled) {
+        isPastReturnWindow = true;
+    } else if (deliveredAtStr && isDelivered) {
         const deliveredDate = new Date(deliveredAtStr);
         if (!isNaN(deliveredDate.getTime())) {
-            const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-            if (new Date().getTime() - deliveredDate.getTime() > sevenDaysInMs) {
+            const eligibleDays = returnConfig?.eligibleDaysForReturn ?? 7;
+            const returnWindowMs = eligibleDays * 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - deliveredDate.getTime() > returnWindowMs) {
                 isPastReturnWindow = true;
             }
         }
@@ -2128,21 +2135,23 @@ export default function OrderDetailV2Screen() {
 
             </ScrollView>
 
-            <View style={styles.fixedFooter}>
-                <TouchableOpacity
-                    style={[styles.footerBtnOutline, styles.footerBtnWithBorder, (deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange) && { opacity: 0.5 }]}
-                    disabled={deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange}
-                    onPress={() => {
-                        trackEvent('return_exchange_initiated', { order_id: displayOrderId });
-                        router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`);
-                    }}
-                >
-                    <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Return/Exchange</Text>
-                </TouchableOpacity>
-                {/* <TouchableOpacity style={[styles.footerBtnOutline, styles.footerBtnWithBorder]}>
-                    <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Download invoice</Text>
-                </TouchableOpacity> */}
-            </View>
+            {isReturnExchangeEnabled && (
+                <View style={styles.fixedFooter}>
+                    <TouchableOpacity
+                        style={[styles.footerBtnOutline, styles.footerBtnWithBorder, (deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange) && { opacity: 0.5 }]}
+                        disabled={deliveryStatusKey !== 'delivered' || isPastReturnWindow || hasActiveReturnOrExchange}
+                        onPress={() => {
+                            trackEvent('return_exchange_initiated', { order_id: displayOrderId });
+                            router.push(`/orders/${encodeURIComponent(orderRouteIdRef.current)}/return-exchange`);
+                        }}
+                    >
+                        <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Return/Exchange</Text>
+                    </TouchableOpacity>
+                    {/* <TouchableOpacity style={[styles.footerBtnOutline, styles.footerBtnWithBorder]}>
+                        <Text style={[styles.footerBtnOutlineText, styles.footerBtnWithBorderText]}>Download invoice</Text>
+                    </TouchableOpacity> */}
+                </View>
+            )}
 
             <CancelOrderModal
                 visible={isCancelModalVisible}

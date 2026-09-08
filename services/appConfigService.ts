@@ -350,6 +350,10 @@ class AppConfigService {
   isCodAvailable(): boolean {
     return this.config?.isCodAvailable ?? true;
   }
+
+  getReturnExchangeConfig(): import('@/types/appConfig').ReturnExchangeConfig | null {
+    return this.config?.returnExchangeConfig ?? null;
+  }
 }
 
 export const appConfigService = new AppConfigService();

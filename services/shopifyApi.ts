@@ -384,6 +384,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
       handle
       availableForSale
       totalInventory
+      productType
       tags
       vendor
       priceRange {

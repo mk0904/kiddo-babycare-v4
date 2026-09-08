@@ -20,6 +20,7 @@ export interface SavingsCornerCouponItem {
     value?: number;
     valueType?: 'percentage' | 'fixed';
     title?: string;
+    description?: string;
     isVisible?: boolean;
     /** If true, this coupon opens the special deal promo modal (e.g. Mother’s Day kit). */
     isDealCoupon?: boolean;
@@ -30,20 +31,11 @@ export interface SavingsCornerCouponItem {
 const TICKET_CARD_HEIGHT = 135;
 
 function getCouponHeadline(coupon: SavingsCornerCouponItem): string {
-    if (coupon.isMilestone) return 'Milestone Reward';
-    if (coupon.value != null && coupon.value !== 0) {
-        if (coupon.valueType === 'percentage') return `${coupon.value}% off upto ₹500`;
-        return `Save ₹${coupon.value}`;
-    }
     return coupon.title?.trim() || 'Special offer';
 }
 
 function getCouponSubline(coupon: SavingsCornerCouponItem): string {
-    if (coupon.value != null && coupon.value !== 0) {
-        if (coupon.valueType === 'percentage') return `Flat ${coupon.value}% OFF, min purchase ₹500, max discount ₹500`;
-        return `Flat ₹${coupon.value} OFF on your order`;
-    }
-    return 'Apply this coupon on eligible items.';
+    return coupon.description?.trim() || 'Apply this coupon on eligible items.';
 }
 
 export interface SavingsCornerCouponCarouselProps {
