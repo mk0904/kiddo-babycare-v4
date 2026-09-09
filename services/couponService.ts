@@ -1,6 +1,5 @@
 // Coupon Service - Backend (kiddo-service) only; no kiddoAppConfig fallback.
 import { SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_ADMIN_API_URL } from '@/config/shopify';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Platform } from 'react-native';
 
@@ -250,6 +249,7 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
       return {
         ...c,
         code: (c.code ?? c.couponCode ?? '').toString().trim(),
+        description: c.description != null ? String(c.description).trim() : undefined,
         applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
         allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
         isMilestone: c.isMilestone === true || c.is_milestone === true,
@@ -451,7 +451,7 @@ export const getCouponApplicabilityForDisplay = (
       if (effectiveSubtotal === 0 && categoryLabel) {
         return { applicable: false, reason: `Add ${categoryLabel} products to avail this coupon` };
       }
-      return { applicable: false, reason: `Add products worth ₹${remaining} more${inLabel} to avail this coupon` };
+      return { applicable: false, reason: `Add products worth ₹${remaining} more ${inLabel} to avail this coupon` };
     }
   }
   if (coupon.minimumItemCount && cartItemCount < coupon.minimumItemCount) {
@@ -562,8 +562,8 @@ const getDistinctUserCountForCoupon = async (couponCode: string): Promise<number
 };
 
 /**
- * Get coupon usage count for a specific user
- * Checks actual completed orders (not cancelled) instead of just AsyncStorage
+ * Get coupon usage count for a specific user.
+ * Checks actual completed orders (not cancelled)
  * @param couponCode - The coupon code
  * @param userId - User ID (can be customer ID, email, or phone)
  * @returns Number of times the user has used this coupon in completed orders
@@ -575,8 +575,6 @@ const getCouponUsageForUser = async (
   if (!userId) return 0; // Guest users can't have usage limits tracked
 
   try {
-    // Check actual completed orders instead of just AsyncStorage
-    // This ensures cancelled orders don't count towards usage limit
     const { orderService } = await import('./orderService');
     const allOrders = await orderService.getAllOrders();
 
@@ -593,40 +591,9 @@ const getCouponUsageForUser = async (
       return hasCoupon && belongsToUser && isNotCancelled && isCompleted;
     });
 
-    const usageCount = completedOrdersWithCoupon.length;
-
-    // Always prioritize actual orders over AsyncStorage
-    // If we have actual orders, use that count and sync AsyncStorage
-    if (usageCount > 0) {
-      const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
-      await AsyncStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          count: usageCount,
-          lastUsedAt: completedOrdersWithCoupon[completedOrdersWithCoupon.length - 1]?.createdAt || new Date().toISOString(),
-        })
-      );
-      return usageCount;
-    }
-
-    // No local orders for this user+coupon: use AsyncStorage (orders may exist only in Shopify)
-    const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
-    const data = await AsyncStorage.getItem(storageKey);
-    const storageCount = data ? (JSON.parse(data).count || 0) : 0;
-    return storageCount;
+    return completedOrdersWithCoupon.length;
   } catch (error) {
     console.error('[CouponService] Error getting coupon usage:', error);
-    // Fallback to AsyncStorage if order service fails
-    try {
-      const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
-      const data = await AsyncStorage.getItem(storageKey);
-      if (data) {
-        const usage = JSON.parse(data);
-        return usage.count || 0;
-      }
-    } catch (fallbackError) {
-      console.error('[CouponService] Fallback error:', fallbackError);
-    }
     return 0;
   }
 };
@@ -656,22 +623,8 @@ export const incrementCouponUsage = async (
   couponCode: string,
   userId: string | null
 ): Promise<void> => {
-  if (!userId) return; // Don't track for guest users
-
-  try {
-    const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
-    const currentUsage = await getCouponUsageForUser(couponCode, userId);
-    await AsyncStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        count: currentUsage + 1,
-        lastUsedAt: new Date().toISOString(),
-      })
-    );
-    console.log(`[CouponService] Incremented usage for ${couponCode} by user ${userId}`);
-  } catch (error) {
-    console.error('[CouponService] Error incrementing coupon usage:', error);
-  }
+  // Usage is now computed dynamically from completed orders
+  return Promise.resolve();
 };
 
 /**
@@ -854,21 +807,8 @@ export const resetCouponUsage = async (
   couponCode: string,
   userId: string | null
 ): Promise<void> => {
-  if (!userId) return;
-
-  try {
-    const storageKey = `coupon_usage_${couponCode.toUpperCase()}_${userId}`;
-    await AsyncStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        count: 0,
-        lastUsedAt: null,
-      })
-    );
-    console.log(`[CouponService] Reset usage for ${couponCode} by user ${userId}`);
-  } catch (error) {
-    console.error('[CouponService] Error resetting coupon usage:', error);
-  }
+  // Usage is now computed dynamically from completed orders
+  return Promise.resolve();
 };
 
 /**

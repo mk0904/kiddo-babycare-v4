@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { Colors, Fonts } from '@/constants/theme';
+import { appConfigService } from '@/services/appConfigService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -34,9 +35,12 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
 
     // Current item state
     const currentItemId = selectedItems[currentIndex];
-    const currentEdge = order?.lineItems?.edges?.find((e: any) =>
-        (e.node.id || e.node.variant?.id) === currentItemId
-    );
+    const currentEdge = order?.lineItems?.edges?.find((e: any) => {
+        const nodeId = String(e.node?.id || '');
+        const variantId = String(e.node?.variant?.id || '');
+        const currId = String(currentItemId || '');
+        return nodeId === currId || variantId === currId || nodeId.includes(currId) || variantId.includes(currId);
+    });
     const item = currentEdge?.node;
 
     const savedDetail = details[currentItemId] || { type: 'Return' };
@@ -49,7 +53,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
     const [imageError, setImageError] = useState<string | null>(null);
 
     // Exchange State
-    const [loadingProduct, setLoadingProduct] = useState(false);
+    const [loadingProduct, setLoadingProduct] = useState(true);
     const [productData, setProductData] = useState<any>(null);
     const [selectedSize, setSelectedSize] = useState<string | null>(savedDetail.size || null);
     const [selectedColor, setSelectedColor] = useState<string | null>(savedDetail.color || null);
@@ -68,25 +72,49 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
         setSelectedVariantId(d.type === 'Exchange' ? (d.variant?.id || null) : null);
     }, [currentIndex, currentItemId]);
 
-    // Fetch product variants for exchange
+    // Fetch product variants and data for eligibility and exchange
     useEffect(() => {
-        if (type === 'Exchange' && item?.variant?.product?.id) {
+        if (item?.variant?.product?.id) {
             setLoadingProduct(true);
             shopifyApi.getProductById(item.variant.product.id).then((res) => {
                 if (res) setProductData(res);
                 setLoadingProduct(false);
             }).catch(() => setLoadingProduct(false));
+        } else {
+            setProductData(null);
+            setLoadingProduct(false);
         }
-    }, [type, item]);
+    }, [item]);
+
+    const isCategoryEligible = React.useMemo(() => {
+        const returnConfig = appConfigService.getReturnExchangeConfig();
+        // Provide a fallback in case the local app config cache hasn't updated yet
+        const categories = returnConfig?.returnApplicableCategory || ['fashion'];
+        if (categories.length === 0) return true;
+        if (!productData) return false;
+
+        const pType = (productData.productType || '').toLowerCase();
+        const tagsLower = (productData.tags || []).map((t: string) => t.toLowerCase());
+        const metaCategories = (productData.metafields || [])
+            .filter((m: any) => m && ['l1_collection', 'l2_collection', 'l3_collection'].includes(m.key))
+            .map((m: any) => String(m.value).toLowerCase());
+
+        return categories.some((c: string) => {
+            let cat = c.toLowerCase().trim();
+
+            if (pType.includes(cat)) return true;
+            if (tagsLower.some(t => t.includes(cat))) return true;
+            if (metaCategories.some(mc => mc.includes(cat))) return true;
+            return false;
+        });
+    }, [productData]);
 
     const handleProceed = () => {
         let currentDetail: ItemDetails = { type };
+        currentDetail.images = images;
 
         if (type === 'Return') {
             currentDetail.reason = selectedReason === 'My reason not listed' ? customReason.trim() : (selectedReason || '');
-            if (['Poor quality/ Damaged product', 'Missing parts'].includes(currentDetail.reason || '')) {
-                currentDetail.images = images;
-            }
         } else {
             currentDetail.size = selectedSize || undefined;
             currentDetail.color = selectedColor || undefined;
@@ -96,7 +124,6 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                 if (variantNode) currentDetail.variant = variantNode;
             }
         }
-
         const newDetails = {
             ...details,
             [currentItemId]: currentDetail
@@ -112,11 +139,13 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
     };
 
     const isProceedDisabled = () => {
+        if (images.length === 0) return true;
+        if (imageError) return true;
+
         if (type === 'Return') {
+            if (!isCategoryEligible) return true;
             if (!selectedReason) return true;
             if (selectedReason === 'My reason not listed' && !customReason.trim()) return true;
-            if (['Poor quality/ Damaged product', 'Missing parts'].includes(selectedReason) && images.length === 0) return true;
-            if (imageError) return true;
             return false;
         } else {
             // Mock exchange validation
@@ -249,6 +278,53 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
         }
     }, [productData, type, currentItemId, item?.variant?.id]);
 
+    const renderProofSection = () => (
+        <View style={styles.proofContainer}>
+            <View style={styles.proofHeader}>
+                <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Attach proof*</Text>
+                <Text style={styles.proofSubtitle}>PNG, JPG, Upto 10MB</Text>
+            </View>
+
+            <View style={styles.proofSlotsContainer}>
+                {[0, 1, 2].map((index) => {
+                    const img = images[index];
+                    return (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.proofSlot}
+                            onPress={() => {
+                                if (!img) handleAddProof();
+                            }}
+                            activeOpacity={img ? 1 : 0.8}
+                        >
+                            {img ? (
+                                <View style={styles.proofImageWrapper}>
+                                    <Image source={{ uri: img.uri }} style={styles.proofImage} />
+                                    <TouchableOpacity
+                                        style={styles.proofRemoveBtn}
+                                        onPress={() => removeImage(index)}
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    >
+                                        <Ionicons name="close" size={16} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <Ionicons name="add" size={24} color="#F05A5D" />
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+
+            {imageError && (
+                <View style={styles.proofErrorBanner}>
+                    <Ionicons name="close-circle-outline" size={16} color="#F05A5D" />
+                    <Text style={styles.proofErrorText}>{imageError}</Text>
+                </View>
+            )}
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             {/* Progress Bar Area */}
@@ -303,80 +379,43 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
 
                 {type === 'Return' ? (
                     <View style={styles.returnSection}>
-                        <Text style={styles.sectionTitle}>What went wrong?</Text>
-                        {CANCEL_REASONS.map((reason) => {
-                            const isSelected = selectedReason === reason;
-                            return (
-                                <View key={reason} style={styles.reasonContainer}>
-                                    <TouchableOpacity
-                                        style={styles.reasonRow}
-                                        activeOpacity={0.7}
-                                        onPress={() => setSelectedReason(reason)}
-                                    >
-                                        <Text style={styles.reasonText}>{reason}</Text>
-                                        <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                                            {isSelected && <View style={styles.radioInner} />}
-                                        </View>
-                                    </TouchableOpacity>
-                                    {isSelected && reason === 'My reason not listed' && (
-                                        <TextInput
-                                            style={styles.customInput}
-                                            placeholder="Write your reason here"
-                                            placeholderTextColor="#9CA3AF"
-                                            value={customReason}
-                                            onChangeText={setCustomReason}
-                                            multiline
-                                        />
-                                    )}
-                                </View>
-                            );
-                        })}
-
-                        {['Poor quality/ Damaged product', 'Missing parts'].includes(selectedReason || '') && (
-                            <View style={styles.proofContainer}>
-                                <View style={styles.proofHeader}>
-                                    <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Attach proof*</Text>
-                                    <Text style={styles.proofSubtitle}>PNG, JPG, Upto 10MB</Text>
-                                </View>
-
-                                <View style={styles.proofSlotsContainer}>
-                                    {[0, 1, 2].map((index) => {
-                                        const img = images[index];
-                                        return (
+                        {loadingProduct ? (
+                            <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 24 }} />
+                        ) : !isCategoryEligible ? (
+                            <Text style={styles.emptyText}>This product is not eligible for return.</Text>
+                        ) : (
+                            <>
+                                <Text style={styles.sectionTitle}>What went wrong?</Text>
+                                {CANCEL_REASONS.map((reason) => {
+                                    const isSelected = selectedReason === reason;
+                                    return (
+                                        <View key={reason} style={styles.reasonContainer}>
                                             <TouchableOpacity
-                                                key={index}
-                                                style={styles.proofSlot}
-                                                onPress={() => {
-                                                    if (!img) handleAddProof();
-                                                }}
-                                                activeOpacity={img ? 1 : 0.8}
+                                                style={styles.reasonRow}
+                                                activeOpacity={0.7}
+                                                onPress={() => setSelectedReason(reason)}
                                             >
-                                                {img ? (
-                                                    <View style={styles.proofImageWrapper}>
-                                                        <Image source={{ uri: img.uri }} style={styles.proofImage} />
-                                                        <TouchableOpacity
-                                                            style={styles.proofRemoveBtn}
-                                                            onPress={() => removeImage(index)}
-                                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                                        >
-                                                            <Ionicons name="close" size={16} color="#FFF" />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                ) : (
-                                                    <Ionicons name="add" size={24} color="#F05A5D" />
-                                                )}
+                                                <Text style={styles.reasonText}>{reason}</Text>
+                                                <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+                                                    {isSelected && <View style={styles.radioInner} />}
+                                                </View>
                                             </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
+                                            {isSelected && reason === 'My reason not listed' && (
+                                                <TextInput
+                                                    style={styles.customInput}
+                                                    placeholder="Write your reason here"
+                                                    placeholderTextColor="#9CA3AF"
+                                                    value={customReason}
+                                                    onChangeText={setCustomReason}
+                                                    multiline
+                                                />
+                                            )}
+                                        </View>
+                                    );
+                                })}
 
-                                {imageError && (
-                                    <View style={styles.proofErrorBanner}>
-                                        <Ionicons name="close-circle-outline" size={16} color="#F05A5D" />
-                                        <Text style={styles.proofErrorText}>{imageError}</Text>
-                                    </View>
-                                )}
-                            </View>
+                                {renderProofSection()}
+                            </>
                         )}
                     </View>
                 ) : (
@@ -415,6 +454,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                                 {variantOptions.length === 0 && !loadingProduct && (
                                     <Text style={styles.emptyText}>No variants found for exchange.</Text>
                                 )}
+                                {renderProofSection()}
                             </View>
                         )}
                     </View>
@@ -642,10 +682,11 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
     },
     emptyText: {
-        fontSize: 13,
+        fontSize: 14,
         fontFamily: Fonts.LexendMedium,
         color: '#6B7280',
         marginTop: 12,
+        textAlign: 'center',
     },
     footer: {
         padding: 16,

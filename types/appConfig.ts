@@ -450,6 +450,13 @@ export interface AppConfigResponse {
   isCodAvailable?: boolean;
   completePurchase?: string;
   forceUpdateConfig?: ForceUpdateConfig;
+  returnExchangeConfig?: ReturnExchangeConfig;
+}
+
+export interface ReturnExchangeConfig {
+  eligibleDaysForReturn: number;
+  isReturnExchangeEnabled: boolean;
+  returnApplicableCategory: string[];
 }
 
 export interface AppDownloadPlatformConfig {
