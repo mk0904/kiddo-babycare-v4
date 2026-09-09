@@ -93,6 +93,21 @@ export const trackOrderPlaced = (orderId: string, metadata?: any) => {
     trackAnalyticsEvent('order_placed', undefined, { orderId, ...metadata }).catch(() => { });
 };
 
+export const getSuggestions = async (query: string, signal?: AbortSignal) => {
+    try {
+        const response = await client.post('/api/suggest', { query }, { signal });
+        if (response.data && response.data.status === 'success') {
+            return response.data.data;
+        }
+        return null;
+    } catch (error) {
+        if (!axios.isCancel(error)) {
+            console.error('Error fetching suggestions:', error);
+        }
+        return null;
+    }
+};
+
 export const searchProducts = async ({
     q,
     startIndex = 0,
@@ -189,6 +204,7 @@ export const searchProducts = async ({
 
 export const selfSearchApi = {
     searchProducts,
+    getSuggestions,
     trackEvent,
     trackAnalyticsEvent,
     trackProductClick,
