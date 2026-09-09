@@ -134,46 +134,51 @@ export const searchProducts = async ({
             throw new Error('Search failed');
         }
 
-        const transformedProducts = (responseData.results || []).map((item: any) => ({
-            id: item.productId,
-            title: item.title,
-            description: '',
-            handle: '',
-            tags: [],
-            vendor: null,
-            images: item.image
-                ? {
+        const transformedProducts = (responseData.results || []).map((item: any) => {
+            const rawId = item.productId || item.id || '';
+            const globalProductId = rawId.includes('gid://') ? rawId : `gid://shopify/Product/${rawId}`;
+
+            return {
+                id: globalProductId,
+                title: item.title,
+                description: '',
+                handle: '',
+                tags: [],
+                vendor: null,
+                images: item.image
+                    ? {
+                        edges: [
+                            {
+                                node: {
+                                    url: item.image,
+                                    altText: item.title,
+                                },
+                            },
+                        ],
+                    }
+                    : { edges: [] },
+                variants: {
                     edges: [
                         {
                             node: {
-                                url: item.image,
-                                altText: item.title,
+                                id: globalProductId.replace('Product', 'ProductVariant'),
+                                title: 'Default',
+                                price: String(item.price || '0.00'),
+                                compareAtPrice: null,
+                                availableForSale: true,
+                                quantityAvailable: 1,
                             },
                         },
                     ],
-                }
-                : { edges: [] },
-            variants: {
-                edges: [
-                    {
-                        node: {
-                            id: item.productId ? item.productId.replace('Product', 'ProductVariant') : `gid://shopify/ProductVariant/${item.id}`,
-                            title: 'Default',
-                            price: String(item.price || '0.00'),
-                            compareAtPrice: null,
-                            availableForSale: true,
-                            quantityAvailable: 1,
-                        },
-                    },
-                ],
-            },
-            priceRange: {
-                minVariantPrice: {
-                    amount: String(item.price || '0.00'),
-                    currencyCode: 'INR',
                 },
-            },
-        }));
+                priceRange: {
+                    minVariantPrice: {
+                        amount: String(item.price || '0.00'),
+                        currencyCode: 'INR',
+                    },
+                },
+            };
+        });
 
         const result = {
             products: {

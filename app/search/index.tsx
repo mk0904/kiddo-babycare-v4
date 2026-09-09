@@ -23,6 +23,7 @@ import {
     ActivityIndicator,
     FlatList,
     InteractionManager,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -111,17 +112,6 @@ export default function SearchScreen() {
         // Increment request ID to ignore stale responses
         requestIdRef.current += 1;
         const currentRequestId = requestIdRef.current;
-
-        // Don't search if query is empty and no collection
-        if (!searchQuery.trim() && !collectionHandle) {
-            setProducts([]);
-            setTotalItems(0);
-            setFacets([]);
-            setLoading(false);
-            setHasMore(false);
-            setStartIndex(0);
-            return;
-        }
 
         // Set loading state immediately
         setLoading(true);
@@ -619,7 +609,10 @@ export default function SearchScreen() {
                             style={styles.searchInput}
                             placeholder="Search products..."
                             value={searchQuery}
-                            onChangeText={setSearchQuery}
+                            onChangeText={(text) => {
+                                setSearchQuery(text);
+                                setIsInputFocused(true);
+                            }}
                             returnKeyType="search"
                             autoFocus={!initialQuery}
                             placeholderTextColor="#666666"
@@ -657,7 +650,8 @@ export default function SearchScreen() {
                 </View>
 
                 {/* Auto Suggestions UI */}
-                {isInputFocused && searchQuery.trim().length >= 3 && config?.isSelfSearchEnabled && (
+                {isInputFocused && searchQuery.trim().length >= 3 && config?.isSelfSearchEnabled && 
+                 (isSuggesting || (autoSuggestions && (autoSuggestions.searches?.length > 0 || autoSuggestions.brands?.length > 0 || autoSuggestions.categories?.length > 0))) && (
                     <View style={styles.suggestionsOverlay}>
                         <ScrollView style={styles.suggestionsContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                         {isSuggesting && !autoSuggestions ? (
@@ -666,25 +660,6 @@ export default function SearchScreen() {
                             </View>
                         ) : autoSuggestions ? (
                             <View style={styles.suggestionsContent}>
-                                {(!autoSuggestions.searches?.length && !autoSuggestions.brands?.length && !autoSuggestions.categories?.length) ? (
-                                    <TouchableOpacity 
-                                        style={styles.suggestionRow}
-                                        onPress={() => {
-                                            setIsInputFocused(false);
-                                            if (abortControllerRef.current) abortControllerRef.current.abort();
-                                            performSearch(false);
-                                        }}
-                                    >
-                                        <View style={[styles.suggestionImagePlaceholder, { width: 40, height: 40, marginRight: 12 }]}>
-                                            <Ionicons name="search" size={20} color="#666" />
-                                        </View>
-                                        <Text style={styles.suggestionText}>
-                                            Search for <Text style={{fontFamily: Fonts.SemiBold}}>"{searchQuery}"</Text>
-                                        </Text>
-                                        <Ionicons name="arrow-forward" size={16} color="#ccc" style={styles.suggestionIcon} />
-                                    </TouchableOpacity>
-                                ) : (
-                                    <>
                                         {autoSuggestions.searches?.length > 0 && (
                                     <View style={styles.suggestionSection}>
                                         <Text style={styles.suggestionSectionTitle}>SEARCHES</Text>
@@ -771,12 +746,18 @@ export default function SearchScreen() {
                                         ))}
                                     </View>
                                 )}
-                                    </>
-                                )}
+
                             </View>
                         ) : null}
                         </ScrollView>
-                        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setIsInputFocused(false)} />
+                        <TouchableOpacity 
+                            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} 
+                            activeOpacity={1} 
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setIsInputFocused(false);
+                            }} 
+                        />
                     </View>
                 )}
 
@@ -925,7 +906,6 @@ export default function SearchScreen() {
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
-                        keyboardDismissMode="on-drag"
                         scrollEventThrottle={16}
                         onScroll={handleScroll}
                         onEndReached={handleLoadMore}

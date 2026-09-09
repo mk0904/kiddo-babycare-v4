@@ -1503,7 +1503,11 @@ export const shopifyApi = {
       console.log('----------------------------------------------------');
       return product;
     } catch (error) {
-      console.error('Error fetching product by ID:', error);
+      if (isLikelyAxiosNetworkError(error)) {
+        console.warn(`Network error fetching product by ID ${id}`);
+      } else {
+        console.error('Error fetching product by ID:', error);
+      }
       return null;
     }
   },
