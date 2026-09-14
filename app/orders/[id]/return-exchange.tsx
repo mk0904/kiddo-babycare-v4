@@ -78,6 +78,7 @@ export default function ReturnExchangeScreen() {
             let is_return = false;
             const return_product_ids: string[] = [];
             const exchange_product_ids: string[] = [];
+            const exchange_variants: string[] = [];
             let combinedReason = '';
             const images: any[] = [];
 
@@ -90,6 +91,10 @@ export default function ReturnExchangeScreen() {
                 if (detail.type === 'Exchange') {
                     is_exchange = true;
                     exchange_product_ids.push(numericId);
+                    if (detail.variant) {
+                        const variantName = detail.variant.title || (detail.variant.id ? String(detail.variant.id).split('/').pop()?.split('?')[0] : String(detail.variant));
+                        if (variantName) exchange_variants.push(variantName);
+                    }
                 } else if (detail.type === 'Return') {
                     is_return = true;
                     return_product_ids.push(numericId);
@@ -140,6 +145,7 @@ export default function ReturnExchangeScreen() {
                 is_return,
                 return_product_ids,
                 exchange_product_ids,
+                exchange_variants: exchange_variants.length > 0 ? exchange_variants : undefined,
                 reason: combinedReason || undefined,
                 images: uploadedImagePaths.length > 0 ? uploadedImagePaths : undefined
             };
@@ -154,6 +160,7 @@ export default function ReturnExchangeScreen() {
                     orders[idx].isExchange = is_exchange;
                     orders[idx].returnProductIds = return_product_ids;
                     orders[idx].exchangeProductIds = exchange_product_ids;
+                    orders[idx].exchangeVariants = exchange_variants.length > 0 ? exchange_variants : undefined;
                     await AsyncStorage.setItem('kiddo_orders', JSON.stringify(orders));
                 }
             } catch (err) {

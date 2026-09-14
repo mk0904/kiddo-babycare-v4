@@ -109,6 +109,7 @@ export interface Order {
     returnStatus?: string;
     returnProductIds?: string[];
     exchangeProductIds?: string[];
+    exchangeVariants?: string[];
     returnExchangeImages?: string[];
 
     userId?: string;

@@ -16,7 +16,7 @@ import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetCon
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
-import { useCartItemCount } from '@/store/cartStore';
+import { useCartItemCount, useCartStore } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
@@ -80,6 +80,12 @@ export default function HomeScreen() {
   );
 
   const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
+  // Subscribe to cart items to refresh ETA when cart changes
+  const cartItems = useCartStore((s) => s.lineItems);
+  const cartItemsHash = useMemo(
+    () => JSON.stringify(cartItems.map((i) => ({ q: i.quantity, t: i.tags?.[0] }))),
+    [cartItems]
+  );
 
   // Always detect live GPS location on app open (regardless of saved address / login state)
   type LocationStatus = 'idle' | 'loading' | 'serviceable' | 'unserviceable' | 'denied' | 'error';
@@ -384,6 +390,7 @@ export default function HomeScreen() {
     setDetectedEta(null);
     try {
       if (selectedAddress.latitude && selectedAddress.longitude) {
+        lastDetectedCoordsRef.current = { latitude: selectedAddress.latitude, longitude: selectedAddress.longitude };
         const eta = await getDeliveryEta(selectedAddress.latitude, selectedAddress.longitude);
         if (eta) {
           setDetectedEta(eta.etaMinutes);
@@ -486,16 +493,40 @@ export default function HomeScreen() {
     return () => { cancelled = true; };
   }, [applyEtaForDetectedCoords]);
 
-  // Re-evaluate serviceability when app config loads or updates (e.g. `delivery.servicableDistance`).
+  // Re-evaluate serviceability when app config loads or updates, or cart changes.
   useEffect(() => {
     const c = lastDetectedCoordsRef.current;
     if (!c) return;
     let cancelled = false;
-    void applyEtaForDetectedCoords(c.latitude, c.longitude, () => cancelled);
+    
+    const refreshEta = async () => {
+      const eta = await getDeliveryEta(c.latitude, c.longitude);
+      if (cancelled) return;
+      if (!eta) {
+        setLocationStatus('unserviceable');
+        setDetectedEta(null);
+        setDetectedLocation('unserviceable');
+        return;
+      }
+      const threshold = appConfigService.getServicableDistanceKm();
+      const ok = resolveDeliveryServiceable(eta, threshold);
+      if (!ok) {
+        setLocationStatus('unserviceable');
+        setDetectedEta(null);
+        setDetectedLocation('unserviceable');
+        return;
+      }
+      setLocationStatus('serviceable');
+      setDetectedEta(eta.etaMinutes);
+      setDetectedLocation('serviceable', eta.etaMinutes);
+    };
+    
+    void refreshEta();
+    
     return () => {
       cancelled = true;
     };
-  }, [milestoneUiRev, applyEtaForDetectedCoords]);
+  }, [milestoneUiRev, cartItemsHash, setDetectedLocation]);
 
   // Track previous tab to detect tab switches vs back navigation
   const segments = useSegments();

@@ -32,7 +32,8 @@ export const trackAnalyticsEvent = async (eventType: string, productId?: string,
         const user = useUserStore.getState().user;
         
         const rawId = user?.customerId || user?.id;
-        const customerId = rawId ? extractNumericId(rawId) : 'guest';
+        const numericPart = rawId ? rawId.replace(/\D/g, '') : '';
+        const customerId = numericPart || 'guest';
 
         const payload = {
             user_id: customerId,

@@ -201,14 +201,31 @@ export default function OTPScreen() {
       }
 
       const u = result.user;
-      const resolvedId = u?.id && !u.id.includes('existing') ? u.id : (u?.customerId && !u.customerId.includes('existing') ? u.customerId : `phone:${phoneNumber}`);
+      let finalId = u?.id;
+      let finalCustomerId = u?.customerId;
+
+      // If backend returned a mock 'existing' ID, fetch the real one from Shopify immediately using phone number
+      if ((finalId && finalId.includes('existing')) || (finalCustomerId && finalCustomerId.includes('existing'))) {
+        try {
+          const { shopifyAdminApi } = require('@/services/shopifyAdminApi');
+          const fetchedId = await shopifyAdminApi.getCustomerIdByPhone(phoneNumber);
+          if (fetchedId) {
+            finalId = fetchedId;
+            finalCustomerId = fetchedId;
+          }
+        } catch (e) {
+          console.warn('Failed to fetch real customer ID on login by phone', e);
+        }
+      }
+
+      const resolvedId = finalId && !finalId.includes('existing') ? finalId : (finalCustomerId && !finalCustomerId.includes('existing') ? finalCustomerId : `phone:${phoneNumber}`);
       const customerPayload: Customer = {
         id: resolvedId,
         phone: phoneNumber,
         email: u?.email ?? '',
         firstName: u?.firstName ?? 'User',
         lastName: u?.lastName ?? '',
-        customerId: u?.customerId && !u.customerId.includes('existing') ? u.customerId : resolvedId,
+        customerId: finalCustomerId && !finalCustomerId.includes('existing') ? finalCustomerId : resolvedId,
         customerAccessToken: result.accessToken,
         isGuest: false,
         displayName: u?.displayName ?? 'User',

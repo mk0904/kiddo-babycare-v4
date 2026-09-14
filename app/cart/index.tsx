@@ -106,6 +106,13 @@ export default function CartScreen() {
     const insets = useSafeAreaInsets();
     const cartItemCount = useCartItemCount();
 
+    // Use Zustand store
+    const dealProducts = useCartStore(state => state.dealProducts);
+    const discountBreakdown = useCartStore(state => state.discountBreakdownSnapshot);
+    const cartItems = useCartItems();
+    const cartTotal = useCartTotal();
+    const isTryAndBuy = useIsTryAndBuy();
+
     // Track cart viewed on mount
     useEffect(() => {
         const trackCartView = async () => {
@@ -178,6 +185,11 @@ export default function CartScreen() {
     );
     const [cartMilestoneExpanded, setCartMilestoneExpanded] = useState(false);
     const giftWrapping = useGiftWrapping();
+    const etaRequestItems = useMemo(() => cartItems.map(item => ({
+        quantity: item.quantity,
+        l1: item.tags?.[0]
+    })), [cartItems]);
+
     const {
         deliveryTime: estimatedDeliveryMinutes,
         isServiceable: coordsServiceable,
@@ -186,7 +198,7 @@ export default function CartScreen() {
         defaultAddress?.latitude,
         defaultAddress?.longitude,
         defaultAddress ?? undefined,
-        { hasGiftWrap: !!giftWrapping }
+        { hasGiftWrap: !!giftWrapping, items: etaRequestItems }
     );
     // When address has no lat/lon, useDeliveryStatus returns null and we'd show default 30.
     // Match homepage: geocode then compute ETA (Google Maps + distance fallback) so cart shows same mins as homepage.
@@ -214,7 +226,7 @@ export default function CartScreen() {
                 return;
             }
             try {
-                const data = await getDeliveryEtaForAddressDetails(addressString, { hasGiftWrap: !!giftWrapping });
+                const data = await getDeliveryEtaForAddressDetails(addressString, { hasGiftWrap: !!giftWrapping, items: etaRequestItems });
                 if (cancelled) return;
                 setEtaFromGeocode(data?.etaMinutes ?? null);
                 const threshold = appConfigService.getServicableDistanceKm();
@@ -227,7 +239,7 @@ export default function CartScreen() {
         return () => {
             cancelled = true;
         };
-    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping, appConfigRefresh]);
+    }, [defaultAddress?.id, hasCoords, defaultAddress?.address1, defaultAddress?.city, defaultAddress?.state, defaultAddress?.pincode, giftWrapping, appConfigRefresh, JSON.stringify(etaRequestItems)]);
 
     const savedAddressOutsideDeliveryZone =
         !!defaultAddress &&
@@ -236,13 +248,6 @@ export default function CartScreen() {
             : !etaFromGeocodeServiceable && !geocodeEtaLoading);
 
     useTryAndBuy(); // Try & Buy is tag-only; checkout always uses normal order flow below
-
-    // Use Zustand store
-    const dealProducts = useCartStore(state => state.dealProducts);
-    const discountBreakdown = useCartStore(state => state.discountBreakdownSnapshot);
-    const cartItems = useCartItems();
-    const cartTotal = useCartTotal();
-    const isTryAndBuy = useIsTryAndBuy();
     const status = useCartStatus();
     const cartId = useCartId();
     const isApplyingCoupon = useCartIsApplyingCoupon();
@@ -1807,9 +1812,10 @@ export default function CartScreen() {
                 }
 
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
+                const cartVariantIds = cartItems.map(item => item.variantId).filter(Boolean);
 
-                // Fetch product metafields for L1, L2, L3 collections
-                let productMetafields: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}> = [];
+                // Fetch product metafields for L1, L2, L3 collections and empty metafields
+                let productMetafields: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string, emptyMetafield1?: string, emptyMetafield2?: string, emptyMetafield3?: string}> = [];
                 try {
                     const { shopifyApi } = await import('@/services/shopifyApi');
                     const metafieldPromises = cartItems.map(async (item) => {
@@ -1821,12 +1827,18 @@ export default function CartScreen() {
                                 const l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
                                 const l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
                                 const l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
+                                const emptyMetafield1 = validMetafields.find((m: any) => m.key === 'empty_metafield_1')?.value;
+                                const emptyMetafield2 = validMetafields.find((m: any) => m.key === 'empty_metafield_2')?.value;
+                                const emptyMetafield3 = validMetafields.find((m: any) => m.key === 'empty_metafield_3')?.value;
                                 console.log('[Cart] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
                                 return {
                                     productId: item.productId,
                                     l1Collection,
                                     l2Collection,
-                                    l3Collection
+                                    l3Collection,
+                                    emptyMetafield1,
+                                    emptyMetafield2,
+                                    emptyMetafield3
                                 };
                             }
                         } catch (error) {
@@ -1840,7 +1852,7 @@ export default function CartScreen() {
                     console.warn('[Cart] Failed to fetch product metafields for order:', error);
                 }
 
-                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, productMetafields);
+                trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, cartVariantIds, productMetafields);
                 try {
                     const { selfSearchApi } = require('@/services/selfSearchApi');
                     selfSearchApi.trackOrderPlaced(orderIdForDisplay, { amount: cartTotal, productIds: cartProductIds });
