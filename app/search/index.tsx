@@ -660,9 +660,9 @@ export default function SearchScreen() {
                             </View>
                         ) : autoSuggestions ? (
                             <View style={styles.suggestionsContent}>
-                                        {autoSuggestions.searches?.length > 0 && (
+                                {autoSuggestions.searches?.length > 0 && (
                                     <View style={styles.suggestionSection}>
-                                        <Text style={styles.suggestionSectionTitle}>SEARCHES</Text>
+                                        <Text style={styles.suggestionSectionTitle}>SUGGESTED SEARCHES</Text>
                                         {autoSuggestions.searches.slice(0, 5).map((item: any, idx: number) => (
                                             <TouchableOpacity 
                                                 key={`search-${idx}`} 
@@ -674,17 +674,13 @@ export default function SearchScreen() {
                                                     performSearch(false);
                                                 }}
                                             >
-                                                <View style={styles.suggestionImageContainer}>
-                                                    {item.imageUrl ? (
-                                                        <Image source={{ uri: item.imageUrl }} style={styles.suggestionImage} contentFit="cover" />
-                                                    ) : (
-                                                        <View style={styles.suggestionImagePlaceholder}>
-                                                            <Ionicons name="search" size={16} color="#999" />
-                                                        </View>
-                                                    )}
-                                                </View>
+                                                <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIconLeft} />
                                                 <Text style={styles.suggestionText} numberOfLines={2}>{item.text}</Text>
-                                                <Ionicons name="arrow-forward" size={16} color="#ccc" style={styles.suggestionIcon} />
+                                                {item.imageUrl && (
+                                                    <View style={styles.suggestionImageRightContainer}>
+                                                        <Image source={{ uri: item.imageUrl }} style={styles.suggestionImageRight} contentFit="contain" />
+                                                    </View>
+                                                )}
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -693,36 +689,29 @@ export default function SearchScreen() {
                                 {autoSuggestions.brands?.length > 0 && (
                                     <View style={styles.suggestionSection}>
                                         <Text style={styles.suggestionSectionTitle}>BRANDS</Text>
-                                        {autoSuggestions.brands.slice(0, 2).map((brand: any, idx: number) => (
-                                            <TouchableOpacity 
-                                                key={`brand-${idx}`} 
-                                                style={styles.suggestionRow}
-                                                onPress={() => {
-                                                    setSearchQuery(brand.name);
-                                                    setIsInputFocused(false);
-                                                    if (abortControllerRef.current) abortControllerRef.current.abort();
-                                                    performSearch(false);
-                                                }}
-                                            >
-                                                <View style={[styles.suggestionImageContainer, { borderRadius: 20 }]}>
+                                        <View style={styles.brandsContainer}>
+                                            {autoSuggestions.brands.slice(0, 6).map((brand: any, idx: number) => (
+                                                <TouchableOpacity 
+                                                    key={`brand-${idx}`} 
+                                                    style={styles.brandPillHorizontal}
+                                                    onPress={() => {
+                                                        setSearchQuery(brand.name);
+                                                        setIsInputFocused(false);
+                                                        if (abortControllerRef.current) abortControllerRef.current.abort();
+                                                        performSearch(false);
+                                                    }}
+                                                >
                                                     {brand.imageUrl ? (
-                                                        <Image source={{ uri: brand.imageUrl }} style={[styles.suggestionImage, { borderRadius: 20 }]} contentFit="contain" />
+                                                        <Image source={{ uri: brand.imageUrl }} style={styles.brandPillImage} contentFit="contain" />
                                                     ) : (
-                                                        <View style={[styles.suggestionImagePlaceholder, { borderRadius: 20 }]}>
-                                                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#666' }}>{brand.name.charAt(0).toUpperCase()}</Text>
+                                                        <View style={styles.brandPillImagePlaceholder}>
+                                                            <Text style={styles.brandPillPlaceholderText}>{brand.name.charAt(0).toUpperCase()}</Text>
                                                         </View>
                                                     )}
-                                                </View>
-                                                <Text style={styles.suggestionText} numberOfLines={2}>{brand.name}</Text>
-                                                {!brand.isCompound ? (
-                                                    <View style={styles.brandPill}>
-                                                        <Text style={styles.brandPillText}>Brand</Text>
-                                                    </View>
-                                                ) : (
-                                                    <Ionicons name="arrow-forward" size={16} color="#ccc" style={styles.suggestionIcon} />
-                                                )}
-                                            </TouchableOpacity>
-                                        ))}
+                                                    <Text style={styles.brandPillNameText}>{brand.name}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
                                     </View>
                                 )}
                                 
@@ -1234,49 +1223,78 @@ const createStyles = (horizontalPadding: number) => StyleSheet.create({
     suggestionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 12,
         paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F5',
     },
-    suggestionImageContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        backgroundColor: '#F5F5F5',
-        marginRight: 12,
+    searchIconLeft: {
+        marginRight: 16,
+    },
+    suggestionImageRightContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 4,
+        backgroundColor: '#F8F9FA',
+        marginLeft: 12,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
     },
-    suggestionImagePlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    suggestionImage: {
+    suggestionImageRight: {
         width: '100%',
         height: '100%',
     },
     suggestionText: {
         flex: 1,
-        fontSize: 15,
-        fontFamily: Fonts.Regular,
-        color: '#333',
-    },
-    suggestionIcon: {
-        marginLeft: 8,
-    },
-    brandPill: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        backgroundColor: '#FAFAFA',
-        marginLeft: 8,
-    },
-    brandPillText: {
-        fontSize: 10,
+        fontSize: 16,
         fontFamily: Fonts.Medium,
+        color: '#212529',
+    },
+    brandsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 20,
+        gap: 12,
+    },
+    brandPillHorizontal: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        borderRadius: 24,
+        paddingLeft: 4,
+        paddingRight: 16,
+        paddingVertical: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    brandPillImage: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        marginRight: 8,
+        backgroundColor: '#F8F9FA',
+    },
+    brandPillImagePlaceholder: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#F8F9FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    brandPillPlaceholderText: {
+        fontSize: 12,
+        fontWeight: 'bold',
         color: '#666',
+    },
+    brandPillNameText: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: '#212529',
     },
 });
