@@ -2086,8 +2086,15 @@ export default function OrderDetailV2Screen() {
                         .map(getDetails)
                         .filter(Boolean) as any[];
 
+                    const exchangeVariantsList = limechatStatus?.order?.exchange_variants ?? kiddoOrder?.exchangeVariants ?? [];
                     let exchangesItems = (limechatStatus?.order?.exchange_product_ids ?? kiddoOrder?.exchangeProductIds ?? [])
-                        .map(getDetails)
+                        .map((id: string, index: number) => {
+                            const detail = getDetails(id);
+                            if (detail && exchangeVariantsList[index]) {
+                                return { ...detail, exchangeVariant: exchangeVariantsList[index] };
+                            }
+                            return detail;
+                        })
                         .filter(Boolean) as any[];
 
                     const isReturn = limechatStatus?.order?.is_return ?? kiddoOrder?.isReturn;

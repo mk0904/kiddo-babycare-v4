@@ -11,6 +11,7 @@ export interface ReturnExchangeItem {
     volume: string;
     quantity: number;
     image?: string;
+    exchangeVariant?: string;
 }
 
 export type RefundTrackerStatus = 'return_initiated' | 'qc_initiated' | 'qc_rejected' | 'return_accepted' | 'refund_initiated' | 'refund_completed';
@@ -61,6 +62,11 @@ export const ReturnExchangeSection: React.FC<ReturnExchangeSectionProps> = ({ ty
                             <Text style={styles.productVolume}>{item.volume}</Text>
                             <Text style={styles.productQty}>QTY:{item.quantity}</Text>
                         </View>
+                        {item.exchangeVariant && (
+                            <View style={styles.exchangeVariantContainer}>
+                                <Text style={styles.exchangeVariantText}>Exchanging for: {item.exchangeVariant}</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             ))}
@@ -218,6 +224,19 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.LexendBold,
         fontSize: 13,
         color: '#6B7280',
+    },
+    exchangeVariantContainer: {
+        marginTop: 6,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    exchangeVariantText: {
+        fontFamily: Fonts.LexendMedium,
+        fontSize: 12,
+        color: '#4B5563',
     },
     trackerCard: {
         backgroundColor: '#FFFFFF',

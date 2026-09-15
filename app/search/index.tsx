@@ -23,6 +23,7 @@ import {
     ActivityIndicator,
     FlatList,
     InteractionManager,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -76,9 +77,16 @@ export default function SearchScreen() {
     const [totalItems, setTotalItems] = useState(0);
     const [sortOptions, setSortOptions] = useState(DEFAULT_SORT_OPTIONS);
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    
+    // Auto Suggestions states
+    const [isInputFocused, setIsInputFocused] = useState(!initialQuery);
+    const [autoSuggestions, setAutoSuggestions] = useState<any>(null);
+    const [isSuggesting, setIsSuggesting] = useState(false);
 
     const searchTimeoutRef = useRef<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const suggestionsTimeoutRef = useRef<any>(null);
+    const suggestionsAbortControllerRef = useRef<AbortController | null>(null);
     const requestIdRef = useRef(0);
     const tagFetchTimeoutsRef = useRef<any[]>([]);
     const isFirstMount = useRef(true);
@@ -104,17 +112,6 @@ export default function SearchScreen() {
         // Increment request ID to ignore stale responses
         requestIdRef.current += 1;
         const currentRequestId = requestIdRef.current;
-
-        // Don't search if query is empty and no collection
-        if (!searchQuery.trim() && !collectionHandle) {
-            setProducts([]);
-            setTotalItems(0);
-            setFacets([]);
-            setLoading(false);
-            setHasMore(false);
-            setStartIndex(0);
-            return;
-        }
 
         // Set loading state immediately
         setLoading(true);
@@ -148,6 +145,49 @@ export default function SearchScreen() {
         }
         isFirstMount.current = false;
     }, []);
+
+    // Fetch suggestions while typing
+    useEffect(() => {
+        if (!config?.isSelfSearchEnabled || !isInputFocused) return;
+
+        if (suggestionsAbortControllerRef.current) {
+            suggestionsAbortControllerRef.current.abort();
+        }
+        if (suggestionsTimeoutRef.current) {
+            clearTimeout(suggestionsTimeoutRef.current);
+        }
+
+        const query = searchQuery.trim();
+        if (query.length < 3) {
+            setAutoSuggestions(null);
+            setIsSuggesting(false);
+            return;
+        }
+
+        setIsSuggesting(true);
+        suggestionsAbortControllerRef.current = new AbortController();
+        const signal = suggestionsAbortControllerRef.current.signal;
+
+        suggestionsTimeoutRef.current = setTimeout(async () => {
+            try {
+                const data = await selfSearchApi.getSuggestions(query, signal);
+                if (!signal.aborted) {
+                    setAutoSuggestions(data);
+                }
+            } catch (error) {
+                // Ignore
+            } finally {
+                if (!signal.aborted) {
+                    setIsSuggesting(false);
+                }
+            }
+        }, 200);
+
+        return () => {
+            if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
+            if (suggestionsAbortControllerRef.current) suggestionsAbortControllerRef.current.abort();
+        };
+    }, [searchQuery, isInputFocused, config?.isSelfSearchEnabled]);
 
     // Re-search when filters or sort change
     useEffect(() => {
@@ -569,10 +609,22 @@ export default function SearchScreen() {
                             style={styles.searchInput}
                             placeholder="Search products..."
                             value={searchQuery}
-                            onChangeText={setSearchQuery}
+                            onChangeText={(text) => {
+                                setSearchQuery(text);
+                                setIsInputFocused(true);
+                            }}
                             returnKeyType="search"
                             autoFocus={!initialQuery}
                             placeholderTextColor="#666666"
+                            onFocus={() => setIsInputFocused(true)}
+                            onBlur={() => {
+                                // Short delay to allow tap on suggestions to register before blur hides them
+                                setTimeout(() => setIsInputFocused(false), 200);
+                            }}
+                            onSubmitEditing={() => {
+                                setIsInputFocused(false);
+                                performSearch(false);
+                            }}
                         />
                         {searchQuery.length > 0 && (
                             <TouchableOpacity
@@ -597,8 +649,109 @@ export default function SearchScreen() {
                     </View>
                 </View>
 
+                {/* Auto Suggestions UI */}
+                {isInputFocused && searchQuery.trim().length >= 3 && config?.isSelfSearchEnabled && 
+                 (isSuggesting || (autoSuggestions && (autoSuggestions.searches?.length > 0 || autoSuggestions.brands?.length > 0 || autoSuggestions.categories?.length > 0))) && (
+                    <View style={styles.suggestionsOverlay}>
+                        <ScrollView style={styles.suggestionsContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                        {isSuggesting && !autoSuggestions ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator color={Colors.primary} />
+                            </View>
+                        ) : autoSuggestions ? (
+                            <View style={styles.suggestionsContent}>
+                                {autoSuggestions.searches?.length > 0 && (
+                                    <View style={styles.suggestionSection}>
+                                        <Text style={styles.suggestionSectionTitle}>SUGGESTED SEARCHES</Text>
+                                        {autoSuggestions.searches.slice(0, 5).map((item: any, idx: number) => (
+                                            <TouchableOpacity 
+                                                key={`search-${idx}`} 
+                                                style={styles.suggestionRow}
+                                                onPress={() => {
+                                                    setSearchQuery(item.text);
+                                                    setIsInputFocused(false);
+                                                    if (abortControllerRef.current) abortControllerRef.current.abort();
+                                                    performSearch(false);
+                                                }}
+                                            >
+                                                <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIconLeft} />
+                                                <Text style={styles.suggestionText} numberOfLines={2}>{item.text}</Text>
+                                                {item.imageUrl && (
+                                                    <View style={styles.suggestionImageRightContainer}>
+                                                        <Image source={{ uri: item.imageUrl }} style={styles.suggestionImageRight} contentFit="contain" />
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+
+                                {autoSuggestions.brands?.length > 0 && (
+                                    <View style={styles.suggestionSection}>
+                                        <Text style={styles.suggestionSectionTitle}>BRANDS</Text>
+                                        <View style={styles.brandsContainer}>
+                                            {autoSuggestions.brands.slice(0, 6).map((brand: any, idx: number) => (
+                                                <TouchableOpacity 
+                                                    key={`brand-${idx}`} 
+                                                    style={styles.brandPillHorizontal}
+                                                    onPress={() => {
+                                                        setSearchQuery(brand.name);
+                                                        setIsInputFocused(false);
+                                                        if (abortControllerRef.current) abortControllerRef.current.abort();
+                                                        performSearch(false);
+                                                    }}
+                                                >
+                                                    {brand.imageUrl ? (
+                                                        <Image source={{ uri: brand.imageUrl }} style={styles.brandPillImage} contentFit="contain" />
+                                                    ) : (
+                                                        <View style={styles.brandPillImagePlaceholder}>
+                                                            <Text style={styles.brandPillPlaceholderText}>{brand.name.charAt(0).toUpperCase()}</Text>
+                                                        </View>
+                                                    )}
+                                                    <Text style={styles.brandPillNameText}>{brand.name}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+                                
+                                {autoSuggestions.categories?.length > 0 && (
+                                    <View style={styles.suggestionSection}>
+                                        <Text style={styles.suggestionSectionTitle}>CATEGORIES</Text>
+                                        {autoSuggestions.categories.slice(0, 2).map((cat: string, idx: number) => (
+                                            <TouchableOpacity 
+                                                key={`cat-${idx}`} 
+                                                style={styles.suggestionRow}
+                                                onPress={() => {
+                                                    setSearchQuery(cat);
+                                                    setIsInputFocused(false);
+                                                    if (abortControllerRef.current) abortControllerRef.current.abort();
+                                                    performSearch(false);
+                                                }}
+                                            >
+                                                <Text style={[styles.suggestionText, { marginLeft: 4 }]} numberOfLines={2}>{cat}</Text>
+                                                <Ionicons name="arrow-forward" size={16} color="#ccc" style={styles.suggestionIcon} />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+
+                            </View>
+                        ) : null}
+                        </ScrollView>
+                        <TouchableOpacity 
+                            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} 
+                            activeOpacity={1} 
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setIsInputFocused(false);
+                            }} 
+                        />
+                    </View>
+                )}
+
                 {/* Toolbar - Only show when there are results */}
-                {hasResults && (
+                        {hasResults && !config?.isSelfSearchEnabled && (
                     <>
                         <View style={styles.toolbarContainer}>
                             <FilterSortPills
@@ -742,7 +895,6 @@ export default function SearchScreen() {
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
-                        keyboardDismissMode="on-drag"
                         scrollEventThrottle={16}
                         onScroll={handleScroll}
                         onEndReached={handleLoadMore}
@@ -1031,5 +1183,118 @@ const createStyles = (horizontalPadding: number) => StyleSheet.create({
     },
     removeHistoryButton: {
         padding: 4,
+    },
+    suggestionsOverlay: {
+        position: 'absolute',
+        top: 65,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 100,
+        elevation: 10,
+    },
+    suggestionsContainer: {
+        flexGrow: 0,
+        flexShrink: 1,
+        backgroundColor: '#FFFFFF',
+        maxHeight: '75%',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    suggestionsContent: {
+        paddingVertical: 10,
+    },
+    suggestionSection: {
+        marginBottom: 16,
+    },
+    suggestionSectionTitle: {
+        fontSize: 12,
+        fontFamily: Fonts.SemiBold,
+        color: '#666',
+        letterSpacing: 1,
+        paddingHorizontal: 20,
+        marginBottom: 8,
+    },
+    suggestionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+    },
+    searchIconLeft: {
+        marginRight: 16,
+    },
+    suggestionImageRightContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 4,
+        backgroundColor: '#F8F9FA',
+        marginLeft: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    suggestionImageRight: {
+        width: '100%',
+        height: '100%',
+    },
+    suggestionText: {
+        flex: 1,
+        fontSize: 16,
+        fontFamily: Fonts.Medium,
+        color: '#212529',
+    },
+    brandsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 20,
+        gap: 12,
+    },
+    brandPillHorizontal: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        borderRadius: 24,
+        paddingLeft: 4,
+        paddingRight: 16,
+        paddingVertical: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    brandPillImage: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        marginRight: 8,
+        backgroundColor: '#F8F9FA',
+    },
+    brandPillImagePlaceholder: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#F8F9FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    brandPillPlaceholderText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#666',
+    },
+    brandPillNameText: {
+        fontSize: 14,
+        fontFamily: Fonts.SemiBold,
+        color: '#212529',
     },
 });

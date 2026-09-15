@@ -498,12 +498,16 @@ export const trackPaymentMethodSelected = (paymentMethod: string) => {
   });
 };
 
-export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[], productMetafields?: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string}>) => {
+export const trackOrderPlaced = (orderId: string, amount: number, itemCount: number, paymentMethod: string, productIds?: string[], variantIds?: string[], productMetafields?: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string, emptyMetafield1?: string, emptyMetafield2?: string, emptyMetafield3?: string}>) => {
   console.log('[Mixpanel] trackOrderPlaced - Product metafields:', productMetafields);
   
   const l1Collections = productMetafields?.map(m => m.l1Collection).filter(Boolean) || [];
   const l2Collections = productMetafields?.map(m => m.l2Collection).filter(Boolean) || [];
   const l3Collections = productMetafields?.map(m => m.l3Collection).filter(Boolean) || [];
+  
+  const emptyMetafield1s = productMetafields?.map(m => m.emptyMetafield1).filter(Boolean) || [];
+  const emptyMetafield2s = productMetafields?.map(m => m.emptyMetafield2).filter(Boolean) || [];
+  const emptyMetafield3s = productMetafields?.map(m => m.emptyMetafield3).filter(Boolean) || [];
   
   console.log('[Mixpanel] trackOrderPlaced - L1 Collections:', l1Collections, 'L2 Collections:', l2Collections, 'L3 Collections:', l3Collections);
   
@@ -516,10 +520,14 @@ export const trackOrderPlaced = (orderId: string, amount: number, itemCount: num
     value: amount,
     currency: 'INR',
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
+    variant: variantIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
     l1_collections: l1Collections,
     l2_collections: l2Collections,
     l3_collections: l3Collections,
+    'custom.empty_metafield_1': emptyMetafield1s,
+    'custom.empty_metafield_2': emptyMetafield2s,
+    'custom.empty_metafield_3': emptyMetafield3s,
   });
   clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
   trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');

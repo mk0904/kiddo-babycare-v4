@@ -2,9 +2,10 @@ import React, { useMemo, memo, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { getDeliveryEta } from '@/config/deliveryConfig';
+import { getDeliveryEta, EtaRequestItem } from '@/config/deliveryConfig';
 import { appConfigService } from '@/services/appConfigService';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
+import { useCartStore } from '@/store/cartStore';
 
 interface EstimatedDeliveryTimeProps {
   addressLatitude?: number;
@@ -24,9 +25,14 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
   style,
   showIcon = true,
 }) => {
-  // Extract coordinates once and use them as stable dependencies
   const lat = addressLatitude ?? address?.latitude;
   const lon = addressLongitude ?? address?.longitude;
+
+  const cartItems = useCartStore((s) => s.lineItems);
+  const etaRequestItems = useMemo(() => cartItems.map(item => ({
+      quantity: item.quantity,
+      l1: item.tags?.[0]
+  })), [cartItems]);
 
   const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
   const [isServiceable, setIsServiceable] = useState(true);
@@ -44,7 +50,7 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
     let cancelled = false;
     setLoadingEta(true);
 
-    getDeliveryEta(lat, lon)
+    getDeliveryEta(lat, lon, { items: etaRequestItems })
       .then((eta) => {
         if (!cancelled) {
           setDeliveryTime(eta?.etaMinutes ?? null);
@@ -65,7 +71,7 @@ const EstimatedDeliveryTimeComponent: React.FC<EstimatedDeliveryTimeProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [lat, lon, appConfigRev]);
+  }, [lat, lon, appConfigRev, JSON.stringify(etaRequestItems)]);
 
   // Show loading indicator while fetching ETA
   if (loadingEta && deliveryTime === null) {
@@ -113,11 +119,16 @@ export const useDeliveryStatus = (
   addressLatitude?: number,
   addressLongitude?: number,
   address?: { latitude?: number; longitude?: number },
-  options?: { hasGiftWrap?: boolean }
+  options?: { hasGiftWrap?: boolean; items?: EtaRequestItem[] }
 ) => {
-  // Extract coordinates once for stable dependencies
   const lat = addressLatitude ?? address?.latitude;
   const lon = addressLongitude ?? address?.longitude;
+
+  const cartItems = useCartStore((s) => s.lineItems);
+  const defaultEtaRequestItems = useMemo(() => cartItems.map(item => ({
+      quantity: item.quantity,
+      l1: item.tags?.[0]
+  })), [cartItems]);
 
   const [deliveryTime, setDeliveryTime] = useState<number | null>(null);
   const [isServiceable, setIsServiceable] = useState(true);
@@ -137,7 +148,9 @@ export const useDeliveryStatus = (
     let cancelled = false;
     setLoadingEta(true);
 
-    getDeliveryEta(lat, lon, { hasGiftWrap: options?.hasGiftWrap === true })
+    const finalItems = options?.items ?? defaultEtaRequestItems;
+
+    getDeliveryEta(lat, lon, { hasGiftWrap: options?.hasGiftWrap === true, items: finalItems })
       .then((eta) => {
         if (!cancelled) {
           setDeliveryTime(eta?.etaMinutes ?? null);
@@ -158,7 +171,7 @@ export const useDeliveryStatus = (
     return () => {
       cancelled = true;
     };
-  }, [lat, lon, options?.hasGiftWrap, appConfigRev]);
+  }, [lat, lon, options?.hasGiftWrap, JSON.stringify(options?.items ?? defaultEtaRequestItems), appConfigRev]);
 
   return { isServiceable, deliveryTime, loading: loadingEta && deliveryTime === null };
 };

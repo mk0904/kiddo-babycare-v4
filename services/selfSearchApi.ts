@@ -32,7 +32,8 @@ export const trackAnalyticsEvent = async (eventType: string, productId?: string,
         const user = useUserStore.getState().user;
         
         const rawId = user?.customerId || user?.id;
-        const customerId = rawId ? extractNumericId(rawId) : 'guest';
+        const numericPart = rawId ? rawId.replace(/\D/g, '') : '';
+        const customerId = numericPart || 'guest';
 
         const payload = {
             user_id: customerId,
@@ -93,6 +94,21 @@ export const trackOrderPlaced = (orderId: string, metadata?: any) => {
     trackAnalyticsEvent('order_placed', undefined, { orderId, ...metadata }).catch(() => { });
 };
 
+export const getSuggestions = async (query: string, signal?: AbortSignal) => {
+    try {
+        const response = await client.post('/api/suggest', { query }, { signal });
+        if (response.data && response.data.status === 'success') {
+            return response.data.data;
+        }
+        return null;
+    } catch (error) {
+        if (!axios.isCancel(error)) {
+            console.error('Error fetching suggestions:', error);
+        }
+        return null;
+    }
+};
+
 export const searchProducts = async ({
     q,
     startIndex = 0,
@@ -119,46 +135,51 @@ export const searchProducts = async ({
             throw new Error('Search failed');
         }
 
-        const transformedProducts = (responseData.results || []).map((item: any) => ({
-            id: item.productId,
-            title: item.title,
-            description: '',
-            handle: '',
-            tags: [],
-            vendor: null,
-            images: item.image
-                ? {
+        const transformedProducts = (responseData.results || []).map((item: any) => {
+            const rawId = item.productId || item.id || '';
+            const globalProductId = rawId.includes('gid://') ? rawId : `gid://shopify/Product/${rawId}`;
+
+            return {
+                id: globalProductId,
+                title: item.title,
+                description: '',
+                handle: '',
+                tags: [],
+                vendor: null,
+                images: item.image
+                    ? {
+                        edges: [
+                            {
+                                node: {
+                                    url: item.image,
+                                    altText: item.title,
+                                },
+                            },
+                        ],
+                    }
+                    : { edges: [] },
+                variants: {
                     edges: [
                         {
                             node: {
-                                url: item.image,
-                                altText: item.title,
+                                id: globalProductId.replace('Product', 'ProductVariant'),
+                                title: 'Default',
+                                price: String(item.price || '0.00'),
+                                compareAtPrice: null,
+                                availableForSale: true,
+                                quantityAvailable: 1,
                             },
                         },
                     ],
-                }
-                : { edges: [] },
-            variants: {
-                edges: [
-                    {
-                        node: {
-                            id: item.productId ? item.productId.replace('Product', 'ProductVariant') : `gid://shopify/ProductVariant/${item.id}`,
-                            title: 'Default',
-                            price: String(item.price || '0.00'),
-                            compareAtPrice: null,
-                            availableForSale: true,
-                            quantityAvailable: 1,
-                        },
-                    },
-                ],
-            },
-            priceRange: {
-                minVariantPrice: {
-                    amount: String(item.price || '0.00'),
-                    currencyCode: 'INR',
                 },
-            },
-        }));
+                priceRange: {
+                    minVariantPrice: {
+                        amount: String(item.price || '0.00'),
+                        currencyCode: 'INR',
+                    },
+                },
+            };
+        });
 
         const result = {
             products: {
@@ -189,6 +210,7 @@ export const searchProducts = async ({
 
 export const selfSearchApi = {
     searchProducts,
+    getSuggestions,
     trackEvent,
     trackAnalyticsEvent,
     trackProductClick,

@@ -637,4 +637,35 @@ export const shopifyAdminApi = {
     }
   },
 
+  async getCustomerIdByPhone(phone: string): Promise<string | null> {
+    try {
+      const query = `
+        query getCustomerByPhone($query: String!) {
+          customers(first: 1, query: $query) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      `;
+      // Ensure phone is in E.164 format or plain numeric, Shopify expects exact match or wildcard.
+      // Typically, phone number search in Shopify requires formatting.
+      const formattedPhone = phone.startsWith('+') ? phone : '+' + phone.replace(/\D/g, '');
+      const response = await adminClient.post('', {
+        query,
+        variables: { query: `phone:${formattedPhone}` },
+      });
+      const edges = response.data?.data?.customers?.edges;
+      if (edges && edges.length > 0) {
+        return edges[0].node.id;
+      }
+      return null;
+    } catch (error: any) {
+      console.error('[AdminAPI] Error fetching customer by phone:', error.message);
+      return null;
+    }
+  },
+
 };

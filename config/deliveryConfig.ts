@@ -1,7 +1,7 @@
 // Delivery Configuration
 // Calculate delivery time based on distance: 2 mins per km + 5 mins
-
 import { getBackendApiPath, backendFetch } from '@/services/backendBase';
+import { useCartStore } from '@/store/cartStore';
 export const DARK_STORE_LOCATION = {
   latitude: 28.540546501290788,
   longitude: 77.37018854503113,
@@ -38,10 +38,17 @@ export const estimateDeliveryTime = (distanceKm: number): number => {
 /** Default ETA (minutes) when distance/address is unknown. Used for order success and order detail when no stored ETA. */
 export const DEFAULT_ETA_MINUTES = 30;
 
+export interface EtaRequestItem {
+  quantity: number;
+  l1?: string;
+  l1Collection?: string;
+}
+
 interface EtaOptions {
   hasGiftWrap?: boolean;
   originLatitude?: number;
   originLongitude?: number;
+  items?: EtaRequestItem[];
 }
 
 export interface EtaResponse {
@@ -85,12 +92,26 @@ export const getDeliveryEta = async (
   longitude: number,
   options: EtaOptions = {}
 ): Promise<EtaResponse | null> => {
+  let finalItems = options.items;
+  if (finalItems === undefined) {
+    try {
+      const cartItems = useCartStore.getState().lineItems;
+      finalItems = cartItems.map(item => ({
+        quantity: item.quantity,
+        l1: item.tags?.[0]
+      }));
+    } catch (e) {
+      // Ignored
+    }
+  }
+
   return postJSON<EtaResponse>('eta', {
     lat: latitude,
     lng: longitude,
     originLat: typeof options.originLatitude === 'number' ? options.originLatitude : undefined,
     originLng: typeof options.originLongitude === 'number' ? options.originLongitude : undefined,
     hasGiftWrap: options.hasGiftWrap === true,
+    items: finalItems,
   });
 };
 
@@ -98,9 +119,23 @@ export const getDeliveryEtaForAddressDetails = async (
   address: string,
   options: EtaOptions = {}
 ): Promise<EtaResponse | null> => {
+  let finalItems = options.items;
+  if (finalItems === undefined) {
+    try {
+      const cartItems = useCartStore.getState().lineItems;
+      finalItems = cartItems.map(item => ({
+        quantity: item.quantity,
+        l1: item.tags?.[0]
+      }));
+    } catch (e) {
+      // Ignored
+    }
+  }
+
   return postJSON<EtaResponse>('eta', {
     address,
     hasGiftWrap: options.hasGiftWrap === true,
+    items: finalItems,
   });
 };
 

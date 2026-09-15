@@ -954,6 +954,7 @@ export interface ExternalOrderStatusResponse {
         is_exchange?: boolean;
         return_product_ids?: string[];
         exchange_product_ids?: string[];
+        exchange_variants?: string[];
         return_status?: string;
         products?: Array<{
             id: string;
