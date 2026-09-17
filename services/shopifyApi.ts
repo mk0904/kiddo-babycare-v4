@@ -456,7 +456,32 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "sizechart"},
         {namespace: "custom", key: "l1_collection"},
         {namespace: "custom", key: "l2_collection"},
-        {namespace: "custom", key: "l3_collection"}
+        {namespace: "custom", key: "l3_collection"},
+        {namespace: "custom", key: "empty_metafield_1"},
+        {namespace: "custom", key: "empty_metafield_2"},
+        {namespace: "custom", key: "empty_metafield_3"},
+        {namespace: "custom", key: "brand_collection"},
+        {namespace: "custom", key: "brand_margin"},
+        {namespace: "custom", key: "brand_positioning_collection"},
+        {namespace: "custom", key: "bucket_collection"},
+        {namespace: "custom", key: "color_collection"},
+        {namespace: "custom", key: "fabric_collection"},
+        {namespace: "custom", key: "gender_collection"},
+        {namespace: "custom", key: "new_discount_bucket"},
+        {namespace: "custom", key: "occasion_collection"},
+        {namespace: "custom", key: "pattern_collection"},
+        {namespace: "custom", key: "product_category"},
+        {namespace: "custom", key: "product_specs"},
+        {namespace: "custom", key: "product_sub_category"},
+        {namespace: "custom", key: "product_sub_sub_category"},
+        {namespace: "custom", key: "seasonality_collection"},
+        {namespace: "custom", key: "shalf"},
+        {namespace: "custom", key: "sku_id"},
+        {namespace: "custom", key: "sleeve_collection"},
+        {namespace: "global", key: "description_tag"},
+        {namespace: "global", key: "title_tag"},
+        {namespace: "mm-google-shopping", key: "gender"},
+        {namespace: "mm-google-shopping", key: "google_product_category"}
       ]) {
         id
         key

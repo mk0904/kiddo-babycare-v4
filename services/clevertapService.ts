@@ -28,7 +28,16 @@ export const clevertapService = {
       const ct = getCT();
       if (!ct?.recordEvent) return;
       if (properties && Object.keys(properties).length > 0) {
-        ct.recordEvent(eventName, properties);
+        const sanitizedProps: Record<string, any> = {};
+        for (const [key, value] of Object.entries(properties)) {
+          const safeKey = key.replace(/\./g, '_');
+          if (Array.isArray(value)) {
+            sanitizedProps[safeKey] = value.join(', ');
+          } else {
+            sanitizedProps[safeKey] = value;
+          }
+        }
+        ct.recordEvent(eventName, sanitizedProps);
       } else {
         ct.recordEvent(eventName);
       }

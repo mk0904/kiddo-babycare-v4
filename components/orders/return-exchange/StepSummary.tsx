@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button';
+import SwipeButton from '@/components/ui/SwipeButton';
 import { Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -104,11 +104,9 @@ export const StepSummary: React.FC<StepSummaryProps> = ({
             </ScrollView>
 
             <View style={styles.footer}>
-                <Button
-                    title="Confirm"
-                    onPress={onSubmit}
-                    style={styles.confirmBtn}
-                    textStyle={styles.confirmBtnText}
+                <SwipeButton
+                    title="Slide to Confirm"
+                    onComplete={onSubmit}
                     loading={isSubmitting}
                 />
             </View>

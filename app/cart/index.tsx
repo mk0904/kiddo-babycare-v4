@@ -1815,7 +1815,47 @@ export default function CartScreen() {
                 const cartVariantIds = cartItems.map(item => item.variantId).filter(Boolean);
 
                 // Fetch product metafields for L1, L2, L3 collections and empty metafields
-                let productMetafields: Array<{productId: string, l1Collection?: string, l2Collection?: string, l3Collection?: string, emptyMetafield1?: string, emptyMetafield2?: string, emptyMetafield3?: string}> = [];
+                let productMetafields: Array<{
+                    productId: string, 
+                    l1Collection?: string, 
+                    l2Collection?: string, 
+                    l3Collection?: string, 
+                    emptyMetafield1?: string, 
+                    emptyMetafield2?: string, 
+                    emptyMetafield3?: string,
+                    brandCollection?: string,
+                    brandMargin?: string,
+                    brandPositioningCollection?: string,
+                    bucketCollection?: string,
+                    colorCollection?: string,
+                    fabricCollection?: string,
+                    genderCollection?: string,
+                    newDiscountBucket?: string,
+                    occasionCollection?: string,
+                    patternCollection?: string,
+                    productCategory?: string,
+                    productSpecs?: string,
+                    productSubCategory?: string,
+                    productSubSubCategory?: string,
+                    seasonalityCollection?: string,
+                    shalf?: string,
+                    sizechart?: string,
+                    skuId?: string,
+                    sleeveCollection?: string,
+                    globalDescriptionTag?: string,
+                    globalTitleTag?: string,
+                    mmGoogleShoppingGender?: string,
+                    mmGoogleShoppingGoogleProductCategory?: string,
+                    productTitle?: string,
+                    variantTitle?: string,
+                    sku?: string,
+                    quantity?: number,
+                    mrp?: number,
+                    sellingPrice?: number,
+                    costPrice?: number,
+                    discountAmount?: number,
+                    lineItemTotal?: number
+                }> = [];
                 try {
                     const { shopifyApi } = await import('@/services/shopifyApi');
                     const metafieldPromises = cartItems.map(async (item) => {
@@ -1830,6 +1870,37 @@ export default function CartScreen() {
                                 const emptyMetafield1 = validMetafields.find((m: any) => m.key === 'empty_metafield_1')?.value;
                                 const emptyMetafield2 = validMetafields.find((m: any) => m.key === 'empty_metafield_2')?.value;
                                 const emptyMetafield3 = validMetafields.find((m: any) => m.key === 'empty_metafield_3')?.value;
+                                
+                                const brandCollection = validMetafields.find((m: any) => m.key === 'brand_collection')?.value;
+                                const brandMargin = validMetafields.find((m: any) => m.key === 'brand_margin')?.value;
+                                const brandPositioningCollection = validMetafields.find((m: any) => m.key === 'brand_positioning_collection')?.value;
+                                const bucketCollection = validMetafields.find((m: any) => m.key === 'bucket_collection')?.value;
+                                const colorCollection = validMetafields.find((m: any) => m.key === 'color_collection')?.value;
+                                const fabricCollection = validMetafields.find((m: any) => m.key === 'fabric_collection')?.value;
+                                const genderCollection = validMetafields.find((m: any) => m.key === 'gender_collection')?.value;
+                                const newDiscountBucket = validMetafields.find((m: any) => m.key === 'new_discount_bucket')?.value;
+                                const occasionCollection = validMetafields.find((m: any) => m.key === 'occasion_collection')?.value;
+                                const patternCollection = validMetafields.find((m: any) => m.key === 'pattern_collection')?.value;
+                                const productCategory = validMetafields.find((m: any) => m.key === 'product_category')?.value;
+                                const productSpecs = validMetafields.find((m: any) => m.key === 'product_specs')?.value;
+                                const productSubCategory = validMetafields.find((m: any) => m.key === 'product_sub_category')?.value;
+                                const productSubSubCategory = validMetafields.find((m: any) => m.key === 'product_sub_sub_category')?.value;
+                                const seasonalityCollection = validMetafields.find((m: any) => m.key === 'seasonality_collection')?.value;
+                                const shalf = validMetafields.find((m: any) => m.key === 'shalf')?.value;
+                                const sizechart = validMetafields.find((m: any) => m.key === 'sizechart')?.value;
+                                const skuId = validMetafields.find((m: any) => m.key === 'sku_id')?.value;
+                                const sleeveCollection = validMetafields.find((m: any) => m.key === 'sleeve_collection')?.value;
+                                
+                                const globalDescriptionTag = validMetafields.find((m: any) => m.namespace === 'global' && m.key === 'description_tag')?.value;
+                                const globalTitleTag = validMetafields.find((m: any) => m.namespace === 'global' && m.key === 'title_tag')?.value;
+                                const mmGoogleShoppingGender = validMetafields.find((m: any) => m.namespace === 'mm-google-shopping' && m.key === 'gender')?.value;
+                                const mmGoogleShoppingGoogleProductCategory = validMetafields.find((m: any) => m.namespace === 'mm-google-shopping' && m.key === 'google_product_category')?.value;
+
+                                const sellingPrice = item.price;
+                                const mrp = item.compareAtPrice !== undefined ? item.compareAtPrice : sellingPrice;
+                                const discountAmount = (mrp !== undefined && sellingPrice !== undefined) ? (mrp - sellingPrice) : undefined;
+                                const lineItemTotal = sellingPrice !== undefined ? sellingPrice * item.quantity : undefined;
+
                                 console.log('[Cart] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
                                 return {
                                     productId: item.productId,
@@ -1838,7 +1909,37 @@ export default function CartScreen() {
                                     l3Collection,
                                     emptyMetafield1,
                                     emptyMetafield2,
-                                    emptyMetafield3
+                                    emptyMetafield3,
+                                    brandCollection,
+                                    brandMargin,
+                                    brandPositioningCollection,
+                                    bucketCollection,
+                                    colorCollection,
+                                    fabricCollection,
+                                    genderCollection,
+                                    newDiscountBucket,
+                                    occasionCollection,
+                                    patternCollection,
+                                    productCategory,
+                                    productSpecs,
+                                    productSubCategory,
+                                    productSubSubCategory,
+                                    seasonalityCollection,
+                                    shalf,
+                                    sizechart,
+                                    skuId,
+                                    sleeveCollection,
+                                    globalDescriptionTag,
+                                    globalTitleTag,
+                                    mmGoogleShoppingGender,
+                                    mmGoogleShoppingGoogleProductCategory,
+                                    productTitle: item.title,
+                                    variantTitle: item.variantTitle,
+                                    quantity: item.quantity,
+                                    mrp,
+                                    sellingPrice,
+                                    discountAmount,
+                                    lineItemTotal
                                 };
                             }
                         } catch (error) {
