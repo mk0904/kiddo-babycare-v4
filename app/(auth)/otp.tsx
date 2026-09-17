@@ -174,13 +174,23 @@ export default function OTPScreen() {
     try {
       setOtpVerified(false);
 
-      // Verify OTP and complete login/signup on backend (single call)
+      // Capture location for geofenced campaign rewards (best-effort; never blocks login)
+      let coords: { lat: number; lng: number } | null = null;
+      try {
+        const { getCoordsBestEffort } = require('@/utils/getCoordsBestEffort');
+        coords = await getCoordsBestEffort();
+      } catch (e) {
+        console.warn('[OTP] location capture failed (continuing without coords)', e);
+      }
+
+      // Verify OTP and complete login/signup on backend (single call; lat/lng optional in body)
       const result = await otpService.verifyOTPAndLogin(
         phoneNumber,
         otpToVerify,
         'User',
         '',
-        referralCodeParam || undefined
+        referralCodeParam || undefined,
+        coords
       );
 
       if (!result.success || !result.accessToken) {

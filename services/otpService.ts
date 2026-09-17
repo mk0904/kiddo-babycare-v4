@@ -196,7 +196,8 @@ class OTPService {
     code: string,
     firstName?: string,
     lastName?: string,
-    referralCode?: string
+    referralCode?: string,
+    coords?: { lat: number; lng: number } | null
   ): Promise<VerifyAndLoginResponse> {
     const url = this.getVerifyAndLoginUrl();
     const formattedPhone = this.formatPhoneNumber(phoneNumber);
@@ -227,8 +228,17 @@ class OTPService {
       ...(firstName !== undefined && { firstName }),
       ...(lastName !== undefined && { lastName }),
       ...(referralCode !== undefined && { referral_code: referralCode }),
+      // Optional — omit when GPS unavailable so backend skips campaign credit safely
+      ...(coords != null &&
+        Number.isFinite(coords.lat) &&
+        Number.isFinite(coords.lng) && { lat: coords.lat, lng: coords.lng }),
     };
-    console.log('[OTP Service] verifyOTPAndLogin request', { url, phone: formattedPhone, codeLength: code?.length });
+    console.log('[OTP Service] verifyOTPAndLogin request', {
+      url,
+      phone: formattedPhone,
+      codeLength: code?.length,
+      hasCoords: !!(coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)),
+    });
 
     try {
       const response = await axios.post<VerifyAndLoginResponse>(url, body);
