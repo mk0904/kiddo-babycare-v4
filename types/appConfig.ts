@@ -451,6 +451,7 @@ export interface AppConfigResponse {
   completePurchase?: string;
   forceUpdateConfig?: ForceUpdateConfig;
   returnExchangeConfig?: ReturnExchangeConfig;
+  promoConfettiUrl?: string;
 }
 
 export interface ReturnExchangeConfig {

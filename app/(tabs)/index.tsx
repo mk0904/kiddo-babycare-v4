@@ -5,6 +5,7 @@ import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeM
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
+import { Colors } from '@/constants/theme';
 import {
   getDeliveryEta,
   reverseGeocode,
@@ -23,8 +24,10 @@ import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -32,15 +35,20 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const params = useLocalSearchParams<{ confettiUrl?: string }>();
   const isHomeTabFocused = useIsFocused();
   const router = useRouter();
   const { user } = useAuth();
   const { defaultAddress, setDetectedLocation } = useAddress();
   const cartItemCount = useCartItemCount();
+  const [showConfetti, setShowConfetti] = useState(!!params.confettiUrl);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   /** Last GPS position — re-check ETA when app config (e.g. servicableDistance) updates. */
@@ -60,6 +68,16 @@ export default function HomeScreen() {
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
   const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
   const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+
+  useEffect(() => {
+    if (showConfetti) {
+      const timer = setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfetti]);
+
   /** Subscribe + one bump on mount so we re-read if app config finished loading before this effect ran. */
   useEffect(() => {
     const off = appConfigService.subscribe(() => setMilestoneUiRev((x) => x + 1));
@@ -715,6 +733,25 @@ export default function HomeScreen() {
         visible={showTryAndBuyModal}
         onClose={() => setShowTryAndBuyModal(false)}
       />
+
+      {/* Confetti Modal */}
+      <Modal visible={showConfetti} transparent animationType="fade">
+        <TouchableWithoutFeedback onPress={() => setShowConfetti(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {params.confettiUrl && (
+                <Image source={{ uri: params.confettiUrl }} style={styles.confettiImage} contentFit="contain" />
+              )}
+              <TouchableOpacity
+                style={styles.closeButtonModal}
+                onPress={() => setShowConfetti(false)}
+              >
+                <Ionicons name="close" size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -751,5 +788,38 @@ const styles = StyleSheet.create({
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '100%',
+    height: '70%',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confettiImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  closeButtonModal: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 6,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

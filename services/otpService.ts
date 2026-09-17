@@ -1,7 +1,7 @@
 // OTP Service - Handles OTP generation, sending, and verification via backend API
 import axios from 'axios';
-import { configService } from './configService';
 import { getBackendApiPath, getBackendBase } from './backendBase';
+import { configService } from './configService';
 
 
 interface OTPResponse {
@@ -31,6 +31,9 @@ export interface VerifyAndLoginResponse {
   accessToken: string;
   user?: VerifyAndLoginUser | null;
   message?: string;
+  kiddo_cash_credited?: number;
+  render_confetti?: boolean;
+
 }
 
 class OTPService {
@@ -40,7 +43,7 @@ class OTPService {
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove all non-digit characters
     const cleaned = phoneNumber.replace(/\D/g, '');
-    
+
     // Check if it already has country code (assuming 91 for India as default)
     // If length is 10, add 91. If length is 12 and starts with 91, keep it.
     if (cleaned.length === 10) {
@@ -90,7 +93,7 @@ class OTPService {
           devOtp: '123456'
         };
       }
-      
+
       console.log(`[OTP Service] Sending OTP to ${formattedPhone} via ${url}`);
 
       const response = await axios.post(url, {
@@ -99,7 +102,7 @@ class OTPService {
 
       // Assuming backend returns { success: true, message: "..." } or similar
       const data = response.data;
-      
+
       if (data.success || response.status === 200 || response.status === 201) {
         return {
           success: true,
@@ -114,9 +117,9 @@ class OTPService {
       }
     } catch (error: any) {
       console.error('[OTP Service] Error sending OTP:', error);
-      
+
       const message = error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.';
-      
+
       return {
         success: false,
         message,
@@ -172,14 +175,14 @@ class OTPService {
       }
     } catch (error: any) {
       console.error('[OTP Service] Error verifying OTP:', error);
-      
+
       let message = error.response?.data?.message || error.message || 'Failed to verify OTP. Please try again.';
-      
+
       // Specifically handle 401 Unauthorized as Invalid OTP
       if (error.response?.status === 401) {
         message = 'Invalid OTP. Please try again.';
       }
-      
+
       return {
         success: false,
         message,
@@ -216,6 +219,9 @@ class OTPService {
             lastName: lastName || 'User',
             displayName: `${firstName || 'Test'} ${lastName || 'User'}`,
           },
+          kiddo_cash_credited: 100,
+          render_confetti: true,
+          message: 'Test user'
         };
       } else {
         throw new Error('Invalid OTP. Please try again.');
@@ -250,6 +256,9 @@ class OTPService {
           success: true,
           accessToken: data.accessToken,
           user: data.user ?? undefined,
+          kiddo_cash_credited: data.kiddo_cash_credited ?? 0,
+          render_confetti: data.render_confetti ?? false,
+          message: data.message ?? '',
         };
       }
       return {
