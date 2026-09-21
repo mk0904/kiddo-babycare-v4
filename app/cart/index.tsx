@@ -711,24 +711,6 @@ export default function CartScreen() {
     }, [loading, cartItems.length, router]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added or COD is unavailable
-    // Track cart abandonment when user leaves cart without checkout
-    useFocusEffect(
-        useCallback(() => {
-            return () => {
-                // Fire Cart Abandoned event if user leaves without placing order
-                if (!hasPlacedOrder && cartItems.length > 0) {
-                    try {
-                        const { trackCartAbandoned } = require('@/utils/mixpanelHelpers');
-                        const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                        const cartValue = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                        trackCartAbandoned(cartValue, itemCount);
-                    } catch (e) {
-                        console.warn('Cart abandoned tracking error:', e);
-                    }
-                }
-            };
-        }, [hasPlacedOrder, cartItems])
-    );
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
@@ -1315,16 +1297,7 @@ export default function CartScreen() {
             longitude: 0
         };
 
-        // Track Checkout Started
         try {
-            const { trackEvent } = require('@/utils/mixpanelHelpers');
-            trackEvent('Checkout Started', {
-                cartValue: latestToPay,
-                itemCount: latestCartItems.length,
-                hasCoupon: latestDiscountCodes.length > 0,
-                paymentMethod: paymentMethod || 'not_selected',
-            });
-
             // Firebase Ecommerce Tracking
             analyticsService.logAddPaymentInfo({
                 payment_type: paymentMethod,

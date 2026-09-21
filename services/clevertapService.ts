@@ -56,7 +56,18 @@ export const clevertapService = {
     try {
       const ct = getCT();
       if (!ct?.onUserLogin) return;
-      ct.onUserLogin(profile);
+      const formattedProfile = { ...profile };
+      if (formattedProfile.Phone) {
+        const cleaned = String(formattedProfile.Phone).replace(/\D/g, '');
+        if (cleaned.length === 10) {
+          formattedProfile.Phone = `+91${cleaned}`;
+        } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+          formattedProfile.Phone = `+${cleaned}`;
+        } else if (!String(formattedProfile.Phone).startsWith('+')) {
+          formattedProfile.Phone = `+${cleaned}`;
+        }
+      }
+      ct.onUserLogin(formattedProfile);
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] onUserLogin error:', e);
     }
@@ -65,7 +76,11 @@ export const clevertapService = {
   logout(): void {
     try {
       const ct = getCT();
-      if (ct?.logout) ct.logout();
+      // Note: CleverTap React Native SDK does not expose a ct.logout() method.
+      // Profile separation on logout is managed via fresh anonymous identity / onUserLogin.
+      if (typeof ct?.logout === 'function') {
+        ct.logout();
+      }
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] logout error:', e);
     }
@@ -73,25 +88,57 @@ export const clevertapService = {
 
   /**
    * CleverTap Charged event for revenue (order/payment). Call once per successful order.
+   * Conforms to standard CleverTap Charged event schema with Amount, Charged ID, Payment Mode,
+   * and product-level items array.
    */
   recordCharged(
     orderId: string,
     amount: number,
     itemCount: number,
     paymentMethod?: string,
-    currency: string = 'INR'
+    currency: string = 'INR',
+    items?: Array<{
+      name?: string;
+      title?: string;
+      category?: string;
+      price?: number;
+      quantity?: number;
+      productId?: string;
+      sku?: string;
+    }>
   ): void {
     try {
       const ct = getCT();
       if (!ct?.recordChargedEvent) return;
+
       const chargeDetails: Record<string, any> = {
-        totalValue: amount,
+        // Standard CleverTap revenue keys
+        'Amount': amount,
+        'Charged ID': orderId,
+        'Payment Mode': paymentMethod || 'Unknown',
+        'Payment Method': paymentMethod || 'Unknown',
+        'Currency': currency,
+        'Items Count': itemCount,
+        // Legacy / fallback keys for consistency
         orderId,
+        totalValue: amount,
         currency,
         itemCount,
+        paymentMethod: paymentMethod || 'Unknown',
       };
-      if (paymentMethod) chargeDetails.paymentMethod = paymentMethod;
-      ct.recordChargedEvent(chargeDetails, []);
+
+      const itemsArray = (items && items.length > 0)
+        ? items.map((item) => ({
+            'Product Name': item.title || item.name || 'Product',
+            'Category': item.category || 'General',
+            'Price': typeof item.price === 'number' ? item.price : 0,
+            'Quantity': typeof item.quantity === 'number' ? item.quantity : 1,
+            'Product ID': item.productId || '',
+            'SKU': item.sku || '',
+          }))
+        : [];
+
+      ct.recordChargedEvent(chargeDetails, itemsArray);
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] recordCharged error:', e);
     }

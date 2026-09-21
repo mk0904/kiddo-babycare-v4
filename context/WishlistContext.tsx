@@ -99,25 +99,34 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
             showLoginAlert();
             return;
         }
+        const productId = product.id || product._id;
+        const alreadyInWishlist = wishlistItems.some((item) => (item.id || item._id) === productId);
+        if (alreadyInWishlist) {
+            return;
+        }
+
+        // Track wishlist added outside state updater
+        try {
+            const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
+            const price = parseFloat(
+                product.price ||
+                product.priceRange?.minVariantPrice?.amount ||
+                product.variants?.edges?.[0]?.node?.price?.amount ||
+                '0'
+            ) || undefined;
+            trackWishlistAdded(productId, product.title || product.name, price);
+        } catch (e) {
+            console.warn('Mixpanel tracking error:', e);
+        }
+
         setWishlistItems((prevItems) => {
-            // Handle both id and _id logic from kiddo
-            const productId = product.id || product._id;
             const existingItem = prevItems.find((item) => (item.id || item._id) === productId);
             if (existingItem) {
-                return prevItems; // Already in wishlist
+                return prevItems;
             }
-            
-            // Track wishlist added
-            try {
-                const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
-                trackWishlistAdded(productId, product.title || product.name);
-            } catch (e) {
-                console.warn('Mixpanel tracking error:', e);
-            }
-            
             return [...prevItems, product];
         });
-    }, [isGuest, router]);
+    }, [isGuest, wishlistItems, showLoginAlert]);
 
     const removeFromWishlist = useCallback((productId: string) => {
         setWishlistItems((prevItems) => prevItems.filter((item) => (item.id || item._id) !== productId));

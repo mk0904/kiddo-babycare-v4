@@ -246,12 +246,18 @@ export default function RootLayout() {
 
       setAppIsReady(true);
       try {
-        // Identify user on app open so CleverTap attributes App Launched to profile (DAU/WAU/MAU)
+        // Identify user on app open so CleverTap attributes profile correctly
         const u = useUserStore.getState().user;
         if (u) {
-          const identityId = u.email || u.id || u.customerId || u.phone;
+          const { formatPhoneForAnalytics } = require('@/utils/mixpanelHelpers');
+          const formattedPhone = formatPhoneForAnalytics(u.phone);
+          const identityId = u.email || u.id || u.customerId || formattedPhone || u.phone;
           if (identityId) {
-            identifyUser(identityId, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+            identifyUser(identityId, {
+              name: u.displayName || u.firstName || (u as any).name,
+              email: u.email,
+              phone: formattedPhone || u.phone
+            });
             // Identify in Crashlytics
             errorService.setUserInfo(identityId, u.email);
           }

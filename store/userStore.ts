@@ -82,7 +82,7 @@ const initialState: UserState = {
 };
 
 export const useUserStore = create<UserStore>()(
-    persist(
+    persist<UserStore, any>(
         (set, get) => ({
             ...initialState,
 
@@ -100,19 +100,22 @@ export const useUserStore = create<UserStore>()(
                 console.log('[UserStore] User logged in:', user.email || user.phone);
 
                 try {
-                    const { trackEvent, identifyUser } = require('@/utils/mixpanelHelpers');
-                    const identityId = user.email || user.id || user.customerId || user.phone;
-                    identifyUser(identityId, {
-                        email: user.email,
-                        phone: user.phone,
-                        name: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
-                    });
-                    trackEvent('Login Success', {
-                        userId: identityId,
-                        loginProvider: 'phone',
-                        email: user.email,
-                        phone: user.phone,
-                    });
+                    const { trackEvent, identifyUser, formatPhoneForAnalytics } = require('@/utils/mixpanelHelpers');
+                    const formattedPhone = formatPhoneForAnalytics(user.phone);
+                    const identityId = user.email || user.id || user.customerId || formattedPhone || user.phone;
+                    if (identityId) {
+                        identifyUser(identityId, {
+                            email: user.email,
+                            phone: formattedPhone || user.phone,
+                            name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined,
+                        });
+                        trackEvent('Login Success', {
+                            userId: identityId,
+                            loginProvider: 'phone',
+                            email: user.email,
+                            phone: formattedPhone || user.phone,
+                        });
+                    }
                 } catch (e) {
                     console.warn('Analytics tracking error:', e);
                 }
@@ -122,7 +125,7 @@ export const useUserStore = create<UserStore>()(
                         const { oneSignalService } = require('@/services/oneSignalService');
                         const { pushRegistrationService } = require('@/services/pushRegistrationService');
                         const sub = await oneSignalService.checkSubscriptionStatus();
-                        const uid = user.id || user.customerId || user.email || user.phone;
+                        const uid = user.email || user.id || user.customerId || user.phone;
                         if (uid) {
                             await pushRegistrationService.registerWithBackend(
                                 uid,
@@ -238,7 +241,8 @@ export const useUserStore = create<UserStore>()(
         {
             name: 'user-storage',
             storage: (() => {
-                const base = createJSONStorage(() => AsyncStorage);
+                const base = createJSONStorage<any>(() => AsyncStorage);
+                if (!base) return undefined;
                 return {
                     getItem: async (name: string) => {
                         const value = await base.getItem(name);
@@ -249,11 +253,11 @@ export const useUserStore = create<UserStore>()(
                         }
                         return value;
                     },
-                    setItem: base.setItem,
-                    removeItem: base.removeItem,
+                    setItem: (name, value) => base.setItem(name, value),
+                    removeItem: (name) => base.removeItem(name),
                 };
             })(),
-            partialize: (state) => ({
+            partialize: (state): any => ({
                 authSchemaVersion: state.authSchemaVersion,
                 user: state.user,
                 status: state.status,

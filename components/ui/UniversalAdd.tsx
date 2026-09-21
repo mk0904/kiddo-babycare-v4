@@ -243,7 +243,6 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
                     trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
                     await AsyncStorage.setItem('has_added_to_cart', 'true');
                 }
-                trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                 try {
                     const { selfSearchApi } = require('@/services/selfSearchApi');
