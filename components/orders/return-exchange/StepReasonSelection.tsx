@@ -139,8 +139,8 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
     };
 
     const isProceedDisabled = () => {
-        if (images.length === 0) return true;
-        if (imageError) return true;
+        // if (images.length === 0) return true;
+        // if (imageError) return true;
 
         if (type === 'Return') {
             if (!isCategoryEligible) return true;
@@ -278,6 +278,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
         }
     }, [productData, type, currentItemId, item?.variant?.id]);
 
+    /* 
     const renderProofSection = () => (
         <View style={styles.proofContainer}>
             <View style={styles.proofHeader}>
@@ -323,7 +324,8 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                 </View>
             )}
         </View>
-    );
+    ); 
+    */
 
     return (
         <View style={styles.container}>
@@ -414,7 +416,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                                     );
                                 })}
 
-                                {renderProofSection()}
+                                {/* {renderProofSection()} */}
                             </>
                         )}
                     </View>
@@ -454,7 +456,7 @@ export const StepReasonSelection: React.FC<StepReasonSelectionProps> = ({
                                 {variantOptions.length === 0 && !loadingProduct && (
                                     <Text style={styles.emptyText}>No variants found for exchange.</Text>
                                 )}
-                                {renderProofSection()}
+                                {/* {renderProofSection()} */}
                             </View>
                         )}
                     </View>

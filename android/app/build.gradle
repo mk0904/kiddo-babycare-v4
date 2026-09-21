@@ -99,8 +99,8 @@ android {
         applicationId 'com.barereactnativeapp072'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 44
-        versionName "2.1.6"
+        versionCode 45
+        versionName "2.1.7"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -233,7 +233,7 @@ dependencies {
 
     // Google Play In-App Review (System In-App Functions - SDK 7.4.0+)
     if (project.hasProperty('clevertapPlayReviewEnabled') && project.clevertapPlayReviewEnabled.toBoolean()) {
-        implementation("com.google.android.play:review:${project.findProperty('playReviewVersion') ?: '2.1.6'}")
+        implementation("com.google.android.play:review:${project.findProperty('playReviewVersion') ?: '2.1.7'}")
     }
 // @generated end clevertap-sdk-dependencies
     // The version of react-native is set by the React Native Gradle Plugin

@@ -23,6 +23,7 @@ import {
 // Import SMS User Consent (exactly like gauntlet)
 import { useSmsUserConsent } from '@eabdullazyanov/react-native-sms-user-consent';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { appConfigService } from '@/services/appConfigService';
 
 export default function OTPScreen() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function OTPScreen() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [timer, setTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
+  const [confettiUrl, setConfettiUrl] = useState<string | null>(null);
 
   // Refs for OTP inputs and preventing duplicate verifications
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -140,7 +142,11 @@ export default function OTPScreen() {
 
     if (isAuthenticated && !loading && otpVerified && !isGuest) {
       const navigationTimer = setTimeout(() => {
-        router.replace('/(tabs)');
+        if (confettiUrl) {
+          router.replace({ pathname: '/(tabs)', params: { confettiUrl } });
+        } else {
+          router.replace('/(tabs)');
+        }
       }, 600);
 
       return () => clearTimeout(navigationTimer);
@@ -174,13 +180,23 @@ export default function OTPScreen() {
     try {
       setOtpVerified(false);
 
-      // Verify OTP and complete login/signup on backend (single call)
+      // Capture location for geofenced campaign rewards (best-effort; never blocks login)
+      let coords: { lat: number; lng: number } | null = null;
+      try {
+        const { getCoordsBestEffort } = require('@/utils/getCoordsBestEffort');
+        coords = await getCoordsBestEffort();
+      } catch (e) {
+        console.warn('[OTP] location capture failed (continuing without coords)', e);
+      }
+
+      // Verify OTP and complete login/signup on backend (single call; lat/lng optional in body)
       const result = await otpService.verifyOTPAndLogin(
         phoneNumber,
         otpToVerify,
         'User',
         '',
-        referralCodeParam || undefined
+        referralCodeParam || undefined,
+        coords
       );
 
       if (!result.success || !result.accessToken) {
@@ -247,6 +263,11 @@ export default function OTPScreen() {
       }
 
       await login(customerPayload, result.accessToken);
+      
+      const config = appConfigService.getConfig();
+      if (result.render_confetti && config?.promoConfettiUrl) {
+        setConfettiUrl(config.promoConfettiUrl);
+      }
       setOtpVerified(true);
     } catch (error: any) {
       let errorMessage = 'Something went wrong. Please try again.';
