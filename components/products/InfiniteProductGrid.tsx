@@ -1,10 +1,10 @@
-import React from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { ProductCard } from './ProductCard';
-import { CollectionComponentProps, ProductCollection, ProductCollectionProps } from './ProductCollection';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
+import { FlashList } from '@shopify/flash-list';
+import React from 'react';
+import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-native';
+import { ProductCard } from './ProductCard';
+import { CollectionComponentProps, ProductCollection, ProductCollectionProps } from './ProductCollection';
 
 const InfiniteGrid: React.FC<CollectionComponentProps & { scrollable?: boolean }> = ({
   products,
@@ -186,7 +186,7 @@ export interface InfiniteProductGridProps
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
-  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
 

@@ -59,7 +59,7 @@ export interface ProductCollectionProps {
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
-  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
 
@@ -216,6 +216,9 @@ export function ProductCollection({
       } else if (filter.variantOption) {
         if (!groupedFilters.variantOption) groupedFilters.variantOption = [];
         groupedFilters.variantOption.push(filter);
+      } else if (filter.size) {
+        if (!groupedFilters.size) groupedFilters.size = [];
+        groupedFilters.size.push(filter);
       } else if (filter.productCollection) {
         if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
         groupedFilters.productCollection.push(filter);
@@ -327,19 +330,56 @@ export function ProductCollection({
       if (groupedFilters.variantOption) {
         const variants = product.variants?.edges || product.variants || [];
         const variantList = variants.map((v: any) => v.node || v);
-        const variantMatch = groupedFilters.variantOption.some((filter: any) => {
-          return variantList.some((variant: any) => {
-            const selectedOptions = variant.selectedOptions || [];
-            return selectedOptions.some((option: any) => {
-              const optionName = String(option.name || '').toLowerCase().trim();
-              const optionValue = String(option.value || '').toLowerCase().trim();
+        
+        // For fashion grouped sizes, we want OR logic - match if product has ANY of the sizes in the group
+        const variantMatch = variantList.some((variant: any) => {
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const optionValue = String(option.value || '').toLowerCase().trim();
+            
+            return groupedFilters.variantOption.some((filter: any) => {
               const filterName = String(filter.variantOption.name || '').toLowerCase().trim();
-              const filterValue = String(filter.variantOption.value || '').toLowerCase().trim();
-              return optionName === filterName && optionValue === filterValue;
+              const filterValue = filter.variantOption.value;
+              const filterValues = Array.isArray(filterValue) ? filterValue : [filterValue];
+              const normalizedFilterValues = filterValues.map((v: string) => String(v).toLowerCase().trim());
+              
+              return optionName === filterName && normalizedFilterValues.includes(optionValue);
             });
           });
         });
         if (!variantMatch) return false;
+      }
+      
+      // Size filter group for fashion (array-based filtering)
+      if (groupedFilters.size) {
+        const sizeFilters = groupedFilters.size;
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+        
+        // Flatten all size filter values into a single array
+        const allSizeValues = sizeFilters.flatMap((filter: any) => {
+          const sizeValue = filter.size || filter;
+          return Array.isArray(sizeValue) ? sizeValue : [sizeValue];
+        });
+        
+        const sizeMatch = variantList.some((variant: any) => {
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const optionValue = String(option.value || '').toLowerCase().trim();
+            const isSizeOption = optionName.includes('size');
+            
+            if (isSizeOption) {
+              return allSizeValues.some((sizeVal: string) => 
+                String(sizeVal).toLowerCase().trim() === optionValue
+              );
+            }
+            return false;
+          });
+        });
+        
+        if (!sizeMatch) return false;
       }
       // Collection filter group - match ANY selected collection (OR logic)
       if (groupedFilters.productCollection) {

@@ -262,8 +262,8 @@ export default function InfinityScreen() {
 
     const shouldShowSizeFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Size filter specifically for Diapers
-        return pageCategory === 'diapers';
+        // Show Size filter for Diapers and Fashion
+        return pageCategory === 'diapers' || pageCategory === 'fashion';
     };
 
     const shouldShowStageFilter = () => {
@@ -351,6 +351,96 @@ export default function InfinityScreen() {
                     return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
                 });
                 sizeKey = diaperFacet?.attribute || diaperFacet?.id || 'filter.p.m.custom.sizes';
+            } else if (pageCategory === 'fashion') {
+                // For Fashion, use grouped size filtering (age-based + clothing sizes)
+                const fashionSizeGroups: { [key: string]: string[] } = {
+                    '0-6m': [
+                        '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                        '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                        '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                        '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                        '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                    ],
+                    '6-12m': [
+                    '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                    '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                    '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+                ],
+                    '1-2y': [
+                    '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                    '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                    '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                    '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                    '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                    '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                    '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                    '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y', '2 y'
+                ],
+                    '2-3y': [
+                    '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                    '2 -3 y', '2 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                    '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                    '24-36 m', '2.5 y', '3 y'
+                ],
+                    '3-4y': [
+                    '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                    '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                    '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+                ],
+                '4-5y': [
+                    '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                    '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                    '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+                ],
+                '5-6y': [
+                    '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                    '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                    '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+                ],
+                '6+y': [
+                    '6 - 7 y', '7 - 8 y', '12 - 13 y', '12 - 24 y', '9 - 10 y', '11 - 12 y', 
+                    '13 - 14 y', '6-7 y', '18 -24 y', '12 - 18 y', '9 - 12 y', '12 -18 y', 
+                    '6 - 7 y', '7- 8 y', '7-8 y', '6 - 6.6 y', '7 -8 y', '18 - 24 y', 
+                    '18 - 24 y', '6-7y', '7-8y', '9 - 12 y', '7 - 7.5 y', '6.5 - 7 y', 
+                    '8.5 - 9 y', '7.5 - 8 y', '6 - 12 y', '6 - 8 y', '6 - 6.5 y', '6.6-5y'
+                ],
+                    'xs-s': ['xs', 'extra small', 'x-small', 's', 'small'],
+                    'm-l': ['m', 'medium', 'l', 'large'],
+                    'xl-xxl': ['xl', 'extra large', 'x-large', 'xxl', '2xl', 'double xl'],
+                    '3xl+': ['xxxl', '3xl', 'triple xl', '4xl', '5xl', 'plus']
+                };
+                
+                const selectedGroup = Object.keys(fashionSizeGroups).find(group => 
+                    fashionSizeGroups[group].some(groupSize => 
+                        size.toLowerCase().includes(groupSize) || groupSize.includes(size.toLowerCase())
+                    )
+                );
+                
+                if (selectedGroup) {
+                    const groupSizes = fashionSizeGroups[selectedGroup];
+                    // Find the size facet to get the correct attribute name
+                    const sizeFacet = facets.find((f: any) => {
+                        const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                        const title = (f.title || f.label || '').toLowerCase();
+                        return attr.includes('size') || title.includes('size');
+                    });
+                    const sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
+                    
+                    // Use simple array format for grouped sizes
+                    const newFilters = { ...selectedFilters, [sizeKey]: groupSizes };
+                    setSelectedFilters(newFilters);
+                    handleApplyFilters(newFilters);
+                    setShowSizeModal(false);
+                    return;
+                }
+                
+                // Fallback to individual size if no group match
+                const sizeFacet = facets.find((f: any) => {
+                    const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                    const title = (f.title || f.label || '').toLowerCase();
+                    return attr.includes('size') || title.includes('size');
+                });
+                sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
             } else {
                 // Identify the correct filter key from facets for other categories
                 const sizeFacet = facets.find((f: any) => {
@@ -446,6 +536,102 @@ export default function InfinityScreen() {
                     ...opt,
                     value: facetMatch ? facetMatch.value : opt.value,
                     available: !!facetMatch
+                };
+            });
+            setSizeOptions(options);
+        } else if (pageCategory === 'fashion') {
+            // For Fashion, provide grouped size options
+            const FASHION_SIZE_GROUPS = [
+                { label: '0 - 6 M', value: '0-6m' },
+                { label: '6 - 12 M', value: '6-12m' },
+                { label: '1 - 2 Y', value: '1-2y' },
+                { label: '2 - 3 Y', value: '2-3y' },
+                { label: '3 - 4 Y', value: '3-4y' },
+                { label: '4 - 5 Y', value: '4-5y' },
+                { label: '5 - 6 Y', value: '5-6y' },
+                { label: '6+ Y', value: '6+y' },
+                { label: 'XS - S', value: 'xs-s' },
+                { label: 'M - L', value: 'm-l' },
+                { label: 'XL - XXL', value: 'xl-xxl' },
+                { label: '3XL+', value: '3xl+' }
+            ];
+            
+            // Check which groups have available sizes
+            const sizeFacets = loadedFacets.filter((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('size') || title.includes('size');
+            });
+
+            const allBuckets = sizeFacets.reduce((acc: any[], facet: any) => {
+                const buckets = (facet.buckets || facet.values || []);
+                return [...acc, ...buckets];
+            }, []);
+
+            const availableSizes = new Set();
+            allBuckets.forEach((b: any) => {
+                const label = (b.label || b.title || b.value || '').toLowerCase();
+                availableSizes.add(label);
+            });
+
+            const fashionSizeGroups: { [key: string]: string[] } = {
+                '0-6m': [
+                    '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                    '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                    '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                    '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                    '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                ],
+                '6-12m': [
+                    '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                    '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                    '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+                ],
+                '1-2y': [
+                    '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                    '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                    '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                    '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                    '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                    '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                    '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                    '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y', '2 y'
+                ],
+                '2-3y': [
+                    '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                    '2 -3 y', '2 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                    '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                    '24-36 m', '2.5 y', '3 y'
+                ],
+                '3-4y': [
+                    '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                    '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                    '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+                ],
+                '4-5y': [
+                    '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                    '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                    '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+                ],
+                '5-6y': [
+                    '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                    '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                    '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+                ],
+                'xs-s': ['xs', 'extra small', 'x-small', 's', 'small'],
+                'm-l': ['m', 'medium', 'l', 'large'],
+                'xl-xxl': ['xl', 'extra large', 'x-large', 'xxl', '2xl', 'double xl'],
+                '3xl+': ['xxxl', '3xl', 'triple xl', '4xl', '5xl', 'plus']
+            };
+
+            const options = FASHION_SIZE_GROUPS.map(group => {
+                const groupSizes = fashionSizeGroups[group.value] || [];
+                const hasAvailableSize = groupSizes.some(size => 
+                    availableSizes.has(size)
+                );
+                return {
+                    ...group,
+                    available: hasAvailableSize
                 };
             });
             setSizeOptions(options);
