@@ -68,6 +68,10 @@ export interface BillDetailsProps {
      * (e.g. slot title: "Mystery gift"), not a generic "Milestone discount" title.
      */
     milestoneIsGiftBillDiscountTitle?: string;
+    /** Discount from scheduled delivery on eligible categories (e.g. diapers & formula) */
+    scheduledDeliveryDiscount?: number;
+    /** Label for the scheduled delivery discount row (e.g. "5% off on diapers & formula") */
+    scheduledDeliveryDiscountLabel?: string;
     /** Gift wrap fee (0 = hide row or show FREE) */
     giftWrappingFee: number;
     /** Gift wrapping applied (when set, show row with this price; may include productIds to detect "applied") */
@@ -118,6 +122,8 @@ export const BillDetails = React.memo(function BillDetails({
     milestoneConfigDiscountCouponCode,
     milestoneConfigDiscountDescription,
     milestoneIsGiftBillDiscountTitle,
+    scheduledDeliveryDiscount = 0,
+    scheduledDeliveryDiscountLabel,
     giftWrappingFee,
     giftWrapping = null,
     kiddoCashEnabled,
@@ -325,6 +331,20 @@ export const BillDetails = React.memo(function BillDetails({
                                 </View>
                             )}
 
+                            {/* Scheduled Delivery Discount (e.g. 5% off on diapers & formula) */}
+                            {scheduledDeliveryDiscount > 0 && (
+                                <View style={styles.row}>
+                                    <Text style={[styles.label, styles.scheduledDiscountLabel]}>
+                                        {scheduledDeliveryDiscountLabel}
+                                    </Text>
+                                    <View style={styles.valueRow}>
+                                        <Text style={[styles.value, styles.discountText]}>
+                                            -{formatCurrency(scheduledDeliveryDiscount)}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
                             {/* Gift Wrap - only show when there is an actual fee (hide after user removes gift-wrapped items) */}
                             {giftWrappingFee > 0 && (
                                 <View style={styles.row}>
@@ -500,6 +520,10 @@ const styles = StyleSheet.create({
     discountText: {
         color: '#16a34a',
         fontFamily: Fonts.SemiBold,
+    },
+    scheduledDiscountLabel: {
+        color: '#16a34a',
+        fontFamily: Fonts.LexendMedium,
     },
     kiddoCashDeduction: {
         color: '#16a34a',

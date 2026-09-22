@@ -11,7 +11,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    Alert
 } from 'react-native';
 
 interface ScheduleDeliveryModalProps {
@@ -39,7 +40,7 @@ function getNextThreeDays(): { label: string; date: Date; dateLabel: string }[] 
     base.setHours(0, 0, 0, 0);
     const result: { label: string; date: Date; dateLabel: string }[] = [];
     const labels = ['Today', 'Tomorrow', 'Day after'];
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     for (let i = 0; i < 3; i++) {
         const d = new Date(base);
         d.setDate(d.getDate() + i);
@@ -54,7 +55,7 @@ const DESIGN_RED = '#E84E4E';
 const PILL_RADIUS = 999;
 
 /** Parse slot value like "10:00 AM" or "01:00 PM" to minutes since midnight (0–1439). */
-function parseSlotMinutes(value: string): number {
+export function parseSlotMinutes(value: string): number {
     const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
     if (!match) return 0;
     let hour = parseInt(match[1], 10);
@@ -62,6 +63,50 @@ function parseSlotMinutes(value: string): number {
     if ((match[3].toUpperCase()) === 'PM' && hour !== 12) hour += 12;
     if (match[3].toUpperCase() === 'AM' && hour === 12) hour = 0;
     return hour * 60 + min;
+}
+
+/**
+ * Checks if a delivery schedule (date and time) is still valid (in the future).
+ * Returns true if valid or if schedule is not set.
+ * Returns false if the scheduled date or time is in the past.
+ */
+export function isDeliveryScheduleValid(schedule: { date?: string; time?: string } | null | undefined): boolean {
+    if (!schedule || !schedule.date || !schedule.time) {
+        return true;
+    }
+
+    const trimmedDate = schedule.date.trim();
+    let scheduleDate: Date | null = null;
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmedDate)) {
+        const [day, month, year] = trimmedDate.split('/').map(Number);
+        scheduleDate = new Date(year, month - 1, day);
+    } else {
+        scheduleDate = new Date(trimmedDate);
+    }
+
+    if (!scheduleDate || isNaN(scheduleDate.getTime())) {
+        return false;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDay = new Date(scheduleDate.getFullYear(), scheduleDate.getMonth(), scheduleDate.getDate());
+
+    // If scheduled day is before today (yesterday or older), it's expired
+    if (targetDay.getTime() < today.getTime()) {
+        return false;
+    }
+
+    // If scheduled day is after today (tomorrow or later), it's valid
+    if (targetDay.getTime() > today.getTime()) {
+        return true;
+    }
+
+    // If scheduled day is today, slot start time must be in the future
+    const slotMinutes = parseSlotMinutes(schedule.time);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return slotMinutes > currentMinutes;
 }
 
 /** When date is today, return only slots whose start time is after the current time. */
@@ -146,9 +191,19 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
     const handleConfirm = () => {
         if (!selectedTime) return;
 
+        const formattedDate = formatDate(selectedDate);
+        if (!isDeliveryScheduleValid({ date: formattedDate, time: selectedTime })) {
+            Alert.alert(
+                "Time Slot Unavailable",
+                "The selected time slot is no longer available. Please select a different time."
+            );
+            setSelectedTime('');
+            return;
+        }
+
         const selectedSlot = TIME_SLOT_RANGES.find(s => s.value === selectedTime);
         const schedule: DeliverySchedule = {
-            date: formatDate(selectedDate),
+            date: formattedDate,
             time: selectedTime,
             day: getDayName(selectedDate),
             dateFormat: formatDateShort(selectedDate),
@@ -227,7 +282,7 @@ export const ScheduleDeliveryModal = ({ visible, onClose, onConfirm, initialSche
                                             <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
                                                 Today
                                             </Text>
-                                            
+
                                         </>
                                     ) : (
                                         <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>

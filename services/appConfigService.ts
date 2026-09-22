@@ -7,6 +7,7 @@
  */
 import type {
   AppConfigResponse,
+  AppDownloadConfig,
   CartConfig,
   CartFeatures,
   EntryScreenItem,
@@ -20,12 +21,12 @@ import type {
   MysteryGiftOfferConfig,
   OrderDetailConfig,
   ReferralConfig,
-  WalletConfig,
+  ScheduledDeliveryOfferConfig,
   SpecialDealConfig,
-  AppDownloadConfig,
+  WalletConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
-import { getBackendApiPath, backendFetch } from './backendBase';
+import { backendFetch, getBackendApiPath } from './backendBase';
 
 function getAppConfigUrl(payload?: AppConfigPayload): string {
   const url = getBackendApiPath('app/config');
@@ -124,7 +125,6 @@ class AppConfigService {
         }
         this.config = data;
         this.emitConfigListeners();
-        if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
         return data;
       } catch (e) {
         if (__DEV__) console.warn('[AppConfigService] Failed to load app config:', e);
@@ -269,6 +269,18 @@ class AppConfigService {
 
   getGiftWrapConfig(): GiftWrapConfig | null {
     return this.config?.cart?.giftWrap ?? null;
+  }
+
+  getScheduledDeliveryOfferConfig(): ScheduledDeliveryOfferConfig | null {
+    const offer =
+      this.config?.cart?.scheduledDeliveryOffer ??
+      (this.config?.cart as any)?.scheduled_delivery_offer ??
+      (this.config as any)?.scheduledDeliveryOffer ??
+      null;
+    if (__DEV__) {
+      console.log('[AppConfigService] scheduledDeliveryOffer from backend:', offer);
+    }
+    return offer;
   }
 
   getCheckoutConfig() {

@@ -13,6 +13,8 @@ export interface CheckoutBillDetails {
   deliveryFee: number;
   giftWrappingFee: number;
   discount: number;
+  /** Extra discount from scheduled delivery on eligible categories. */
+  scheduledDiscount?: number;
   /** Kiddo Cash / wallet amount applied at checkout (INR). */
   kiddoCashUsed?: number;
   total: number;
@@ -58,6 +60,8 @@ export interface CheckoutDraftRequest {
   giftWrapping?: { name: string; price: number };
   couponCode?: string;
   discountAmount?: number;
+  /** Extra discount from scheduled delivery on eligible categories. */
+  scheduledDeliveryDiscount?: number;
   deliverySchedule?: {
     date: string;
     time: string;
@@ -186,6 +190,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     couponCode: body.couponCode ?? '',
     coupon_code: body.couponCode ?? '',
     discountAmount: body.discountAmount ?? 0,
+    scheduledDeliveryDiscount: body.scheduledDeliveryDiscount,
     deliverySchedule: body.deliverySchedule,
     deliveryType: body.deliveryType ?? (body.deliverySchedule?.date && body.deliverySchedule?.time ? 'scheduled' : 'instant'),
     paymentMethod: body.paymentMethod ?? 'cod',

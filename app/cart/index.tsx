@@ -14,7 +14,7 @@ import MilestoneTracker from '@/components/home/MilestoneTracker';
 import { milestoneCurrentStepFromConfig } from '@/components/home/milestoneUIFromConfig';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
-import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { isDeliveryScheduleValid, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { SchoolCouponModal } from '@/components/modals/SchoolCouponModal';
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
@@ -43,11 +43,15 @@ import {
     useCartTotal,
     useCheckoutUrl,
     useGiftWrapping,
-    useIsTryAndBuy
+    useIsTryAndBuy,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
+import {
+    calculateScheduledDiscount,
+    getScheduledDiscountEligibleSubtotal,
+} from '@/utils/scheduledDeliveryDiscount';
 import {
     getActiveMilestoneSlotRaw,
     isMilestoneMinCartUnlocked,
@@ -275,6 +279,8 @@ export default function CartScreen() {
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
     const updateCartItem = useCartStore(state => state.updateCartItem);
     const shippingFee = useCartStore(state => state.shippingFee);
+    const deliverySchedule = useCartStore(state => state.deliverySchedule);
+    const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
 
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
@@ -503,7 +509,11 @@ export default function CartScreen() {
     useFocusEffect(
         useCallback(() => {
             fetchWalletBalance();
-        }, [fetchWalletBalance]),
+            const currentSchedule = useCartStore.getState().deliverySchedule;
+            if (currentSchedule?.date && currentSchedule?.time && !isDeliveryScheduleValid(currentSchedule)) {
+                setDeliverySchedule(null);
+            }
+        }, [fetchWalletBalance, setDeliverySchedule]),
     );
 
     const freeShoesOfferConfig = useMemo(
@@ -526,6 +536,13 @@ export default function CartScreen() {
         () => appConfigService.getMysteryGiftOfferConfig(),
         [appConfigRefresh]
     );
+    const scheduledOfferConfig = useMemo(() => {
+        const cfg = appConfigService.getScheduledDeliveryOfferConfig();
+        if (__DEV__) {
+            console.log('[CartScreen] Backend scheduledDeliveryOffer in cart:', cfg);
+        }
+        return cfg;
+    }, [appConfigRefresh]);
     /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
     const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
     const showPuzzleByBackend = freePuzzleOfferConfig?.visible !== false;
@@ -599,8 +616,6 @@ export default function CartScreen() {
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showSchoolModal, setShowSchoolModal] = useState(false);
-    const deliverySchedule = useCartStore(state => state.deliverySchedule);
-    const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
@@ -870,6 +885,7 @@ export default function CartScreen() {
 
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
+        console.log('[CartScreen] excludedCategories:', discountCodes.map(dc => dc.excludedCategories));
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
@@ -974,13 +990,38 @@ export default function CartScreen() {
 
     const discount = Math.min(Number(discountAmount) || 0, itemSubtotal);
 
+    // Scheduled delivery extra discount for eligible sub-categories (e.g. diapers & formula)
+    const isDeliveryScheduled = Boolean(
+        deliverySchedule?.date && deliverySchedule?.time && isDeliveryScheduleValid(deliverySchedule)
+    );
+    const scheduledEligibleSubtotal = useMemo(
+        () => getScheduledDiscountEligibleSubtotal(cartItems, scheduledOfferConfig?.categories),
+        [cartItems, scheduledOfferConfig?.categories]
+    );
+    const hasScheduledEligibleItems = scheduledEligibleSubtotal > 0;
+    const scheduledDeliveryDiscount = useMemo(
+        () =>
+            calculateScheduledDiscount(
+                scheduledEligibleSubtotal,
+                isDeliveryScheduled,
+                scheduledOfferConfig?.discountPercent ?? 0,
+                scheduledOfferConfig?.enabled ?? false
+            ),
+        [
+            scheduledEligibleSubtotal,
+            isDeliveryScheduled,
+            scheduledOfferConfig?.discountPercent,
+            scheduledOfferConfig?.enabled,
+        ]
+    );
+
     const appliedSaveAmount = useMemo(() => {
-        let total = discount;
+        let total = discount + scheduledDeliveryDiscount;
         if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) total += freeShoesGiftOriginalPrice;
         if (hasKidPuzzleApplied && kidPuzzleOriginalPrice != null) total += (kidPuzzleOriginalPrice || 0);
         if (hasMysteryGiftApplied && mysteryGiftOriginalPrice != null) total += (mysteryGiftOriginalPrice || 0);
         return total;
-    }, [discount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
+    }, [discount, scheduledDeliveryDiscount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
 
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
@@ -1016,12 +1057,13 @@ export default function CartScreen() {
             discountCodesLength: discountCodes?.length,
             calculatedDiscount,
             discount,
+            scheduledDeliveryDiscount,
             itemSubtotal,
         });
     }
 
-    // Subtotal after discount
-    const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
+    // Subtotal after discount (including scheduled delivery discount)
+    const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount - scheduledDeliveryDiscount);
 
     const deliveryFee = shippingFee();
     // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
@@ -1142,7 +1184,21 @@ export default function CartScreen() {
         const latestDiscount = latestStore.discountAmount();
         const latestDeliveryFee = latestStore.shippingFee();
         const latestGiftWrappingFee = latestStore.getGiftWrappingPrice();
-        const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount);
+        const latestSchedule = latestStore.deliverySchedule;
+        const latestIsScheduled = Boolean(
+            latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)
+        );
+        const latestScheduledEligibleSubtotal = getScheduledDiscountEligibleSubtotal(
+            latestCartItems,
+            scheduledOfferConfig?.categories
+        );
+        const latestScheduledDiscount = calculateScheduledDiscount(
+            latestScheduledEligibleSubtotal,
+            latestIsScheduled,
+            scheduledOfferConfig?.discountPercent ?? 0,
+            scheduledOfferConfig?.enabled ?? false
+        );
+        const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount - latestScheduledDiscount);
         const latestTotal = latestSubtotalAfterDiscount + latestDeliveryFee + latestGiftWrappingFee;
 
         let balanceForKiddo = walletBalance ?? 0;
@@ -1251,6 +1307,30 @@ export default function CartScreen() {
             setShowAddressModal(true);
             setOrderLoading(false);
             return;
+        }
+
+        // Validate delivery schedule if set
+        const currentDeliverySchedule = latestStore.deliverySchedule;
+        if (currentDeliverySchedule?.date && currentDeliverySchedule?.time) {
+            if (!isDeliveryScheduleValid(currentDeliverySchedule)) {
+                setDeliverySchedule(null);
+                setOrderLoading(false);
+                Alert.alert(
+                    'Delivery Slot Expired',
+                    'Your previously selected delivery time slot has passed. Please choose a new delivery slot or proceed with instant delivery.',
+                    [
+                        {
+                            text: 'Update Slot',
+                            onPress: () => setShowScheduleModal(true),
+                        },
+                        {
+                            text: 'Deliver Now',
+                            style: 'cancel',
+                        },
+                    ]
+                );
+                return;
+            }
         }
 
         const { schoolCouponData } = latestStore;
@@ -1556,8 +1636,9 @@ export default function CartScreen() {
                 } : undefined,
                 couponCode: latestCheckoutCouponCode || undefined,
                 discountAmount: latestDiscount > 0 ? latestDiscount : undefined,
-                deliverySchedule: (deliverySchedule?.date && deliverySchedule?.time) ? deliverySchedule : undefined,
-                deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
+                scheduledDeliveryDiscount: latestScheduledDiscount > 0 ? latestScheduledDiscount : undefined,
+                deliverySchedule: (latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)) ? latestSchedule : undefined,
+                deliveryType: (latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)) ? ('scheduled' as const) : ('instant' as const),
                 paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
                 billDetails: {
                     subtotal: latestItemSubtotal,
@@ -1565,6 +1646,7 @@ export default function CartScreen() {
                     deliveryFee: latestDeliveryFee,
                     giftWrappingFee: latestGiftWrappingFee,
                     discount: latestDiscount,
+                    ...(latestScheduledDiscount > 0 ? { scheduledDiscount: latestScheduledDiscount } : {}),
                     ...(latestKiddoCashApplied > 0 ? { kiddoCashUsed: latestKiddoCashApplied } : {}),
                     total: latestToPay,
                     currencyCode: 'INR',
@@ -2471,6 +2553,10 @@ export default function CartScreen() {
                                     (!defaultAddress && detectedLocationStatus === 'unserviceable') ||
                                     savedAddressOutsideDeliveryZone
                                 }
+                                showScheduleOfferBanner={Boolean(scheduledOfferConfig?.enabled && hasScheduledEligibleItems)}
+                                offerTitle={scheduledOfferConfig?.title}
+                                offerSubtitlePrefix={scheduledOfferConfig?.subtitlePrefix}
+                                offerHighlightText={scheduledOfferConfig?.highlightText}
                             />
                         )}
 
@@ -2566,6 +2652,8 @@ export default function CartScreen() {
                             milestoneConfigDiscountDescription={discountCodes.find(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)?.couponDescription}
                             milestoneIsGiftBillDiscountTitle={undefined}
                             otherCouponDiscount={otherCouponDiscountAmount}
+                            scheduledDeliveryDiscount={scheduledDeliveryDiscount}
+                            scheduledDeliveryDiscountLabel={scheduledOfferConfig?.billLabel}
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}
