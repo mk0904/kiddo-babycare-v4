@@ -236,8 +236,8 @@ export default function InfinityScreen() {
 
     const shouldShowBrandFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Brand filter for Essentials, Diapers, and Formula
-        return pageCategory === 'essentials' || pageCategory === 'diapers' || pageCategory === 'formula';
+        // Show Brand filter for all collections
+        return true;
     };
 
     const shouldShowSizeFilter = () => {
