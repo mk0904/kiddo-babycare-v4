@@ -516,10 +516,23 @@ export function ProductCollection({
         const isBookProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('book');
         
         if (isToyCategory || isToyProduct) {
-          // Toys: Tag matching only (e.g., "Toys for 6 - 12 M")
+          // Toys: Grouped tag matching based on age ranges
           const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
-          const toyPattern = `toysfor${ageFilter}`;
-          return tags.includes(toyPattern);
+          
+          // Group toy tags into broader age ranges
+          const toyAgeGroups: { [key: string]: string[] } = {
+            '0-6m': ['toysfornewborn', 'toysfor0-3months', 'toysfor3-6months'],
+            '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
+            '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
+            '2-3y': ['toysfor2-3years'],
+            '3-5y': ['toysfor3-4years', 'toysfor4-5years'],
+            '5+y': ['toysfor5-6years', 'toysfor6+years']
+          };
+          
+          const normalizedAgeFilter = ageFilter.toLowerCase().replace(/\s+/g, '');
+          const groupTags = toyAgeGroups[normalizedAgeFilter] || [];
+          
+          return tags.some((tag: string) => groupTags.includes(tag));
         } else if (isBookCategory || isBookProduct) {
           // Books: Exact tag matching (e.g., "Books for 0 - 6 M", "Books for 5+ Y")
           const tags = (product.tags || []).map((t: string) => t.toLowerCase());
@@ -614,10 +627,23 @@ export function ProductCollection({
         const isBookProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('book');
         
         if (isToyCategory || isToyProduct) {
-          // Toys: Tag matching only (e.g., "Toys for 6 - 12 M")
+          // Toys: Grouped tag matching based on age ranges
           const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
-          const toyPattern = `toysfor${ageFilter}`;
-          return tags.includes(toyPattern);
+          
+          // Group toy tags into broader age ranges
+          const toyAgeGroups: { [key: string]: string[] } = {
+            '0-6m': ['toysfornewborn', 'toysfor0-3months', 'toysfor3-6months'],
+            '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
+            '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
+            '2-3y': ['toysfor2-3years'],
+            '3-5y': ['toysfor3-4years', 'toysfor4-5years'],
+            '5+y': ['toysfor5-6years', 'toysfor6+years']
+          };
+          
+          const normalizedAgeFilter = ageFilter.toLowerCase().replace(/\s+/g, '');
+          const groupTags = toyAgeGroups[normalizedAgeFilter] || [];
+          
+          return tags.some((tag: string) => groupTags.includes(tag));
         } else if (isBookCategory || isBookProduct) {
           // Books: Exact tag matching (e.g., "Books for 0 - 6 M", "Books for 5+ Y")
           const tags = (product.tags || []).map((t: string) => t.toLowerCase());
