@@ -217,41 +217,21 @@ export default function InfinityScreen() {
     }, [sidebarHeight, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
-    // Gender filter should only be available in clothing category (girls/boys)
-    // and NOT when viewing a gender-specific collection
     const shouldShowGenderFilter = () => {
-        if (!collection) return false; // Default to false if collection not loaded yet
-
-        const collectionTitle = (collection.title || '').toLowerCase();
-        const collectionHandle = (collection.handle || '').toLowerCase();
+        if (!collection) return false;
         if (shouldHideFilters) return false;
 
-        // Show gender filter ONLY for fashion category
-        if (pageCategory === 'fashion') {
-            const allText = (effectiveTitle || '').toLowerCase();
-            const isGenderSpecific =
-                allText.includes('girls') ||
-                allText.includes('boys') ||
-                allText.includes("girl's") ||
-                allText.includes("boy's") ||
-                allText.includes("girl ") ||
-                allText.includes("boy ");
-
-            // If it's already gender-specific (e.g. "Girls Tops"), don't show the filter
-            if (isGenderSpecific) return false;
-            return true;
-        }
-
-        // Hide for Toys, Essentials, and others
-        return false;
+        // Only show if custom.genderfilter metafield is explicitly set to true
+        const genderFilterValue = collection?.genderFilterMetafield?.value?.toLowerCase();
+        return genderFilterValue === 'true';
     };
 
     const shouldShowAgeFilter = () => {
         if (shouldHideFilters) return false;
 
-        // Show age filter for Fashion and Toys
-        // (Essentials/Other usually use different sizing like weight or volume)
-        return pageCategory === 'fashion' || pageCategory === 'toys';
+        // Only show if custom.agefilter metafield is explicitly set to true
+        const ageFilterValue = collection?.ageFilterMetafield?.value?.toLowerCase();
+        return ageFilterValue === 'true';
     };
 
     const shouldShowBrandFilter = () => {
@@ -262,8 +242,10 @@ export default function InfinityScreen() {
 
     const shouldShowSizeFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Size filter for Diapers and Fashion
-        return pageCategory === 'diapers' || pageCategory === 'fashion';
+
+        // Only show if custom.sizefilter metafield is explicitly set to true
+        const sizeFilterValue = collection?.sizeFilterMetafield?.value?.toLowerCase();
+        return sizeFilterValue === 'true';
     };
 
     const shouldShowStageFilter = () => {
