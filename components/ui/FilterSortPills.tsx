@@ -4,12 +4,13 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Animated,
+    ScrollView,
     StyleProp,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    ViewStyle,
+    ViewStyle
 } from 'react-native';
 import { FastFilters } from './FastFilters';
 
@@ -190,7 +191,12 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     return (
         <View style={[styles.container, style]}>
             {/* Filter & Sort Buttons - Left side (with text, collapse to icons when scrolling left) */}
-            <View style={styles.actionsContainer}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.actionsContainer}
+                style={styles.actionsScrollView}
+            >
                 {showFilterButton && (
                     <Animated.View
                         style={[
@@ -545,7 +551,7 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                         </TouchableOpacity>
                     </Animated.View>
                 )}
-            </View>
+            </ScrollView>
 
             {/* Fast Filters - Right side (scrollable) */}
             {hasFastFilters && (
@@ -566,17 +572,19 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
         paddingVertical: 6,
         backgroundColor: Colors.backgroundWhite,
         gap: 8,
         height: 44,
     },
+    actionsScrollView: {
+        flexShrink: 0,
+    },
     actionsContainer: {
         flexDirection: 'row',
         gap: 6,
         alignItems: 'center',
-        flexShrink: 0,
+        paddingHorizontal: 16,
     },
     /** Match PDP variant chips: default + selected */
     actionButton: {
