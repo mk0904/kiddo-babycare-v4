@@ -134,7 +134,12 @@ export default function InfinityScreen() {
     // Stage Filter State
     const [showStageModal, setShowStageModal] = useState(false);
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
-    const [stageOptions, setStageOptions] = useState<{ label: string; value: string }[]>([]);
+    const [stageOptions, setStageOptions] = useState<{ label: string; value: string }[]>([
+        { label: 'Stage 1', value: 'Stage 1' },
+        { label: 'Stage 2', value: 'Stage 2' },
+        { label: 'Stage 3', value: 'Stage 3' },
+        { label: 'Stage 4', value: 'Stage 4' },
+    ]);
 
 
 
@@ -250,8 +255,13 @@ export default function InfinityScreen() {
 
     const shouldShowStageFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Stage filter specifically for Formula
-        return pageCategory === 'formula';
+
+        // Only show if custom.stage metafield is explicitly set to true
+        const stageValue = collection?.stageMetafield?.value;
+        console.log('[Stage Filter] stageMetafield value:', stageValue);
+        const result = stageValue?.toLowerCase() === 'true';
+        console.log('[Stage Filter] should show:', result);
+        return result;
     };
 
     useEffect(() => {
@@ -260,6 +270,7 @@ export default function InfinityScreen() {
                 setLoading(true);
                 try {
                     const info = await shopifyApi.getCollectionById(effectiveCollectionId);
+                    console.log('[Collection Info] Full collection data:', JSON.stringify(info, null, 2));
                     setCollection(info);
 
                     // Identify category from "Category" metafield
@@ -443,26 +454,20 @@ export default function InfinityScreen() {
     const handleStageSelect = (stage: string) => {
         if (selectedStage === stage) {
             setSelectedStage(null);
-            const { 'custom.pack_size': _, 'custom.stage': __, 'custom.Stage': ___, 'custom.Pack Size': ____, ...rest } = selectedFilters;
+            const { 'custom.pack_size': _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
         } else {
             setSelectedStage(stage);
-            // Identify the correct filter key from facets (look for Pack Size or Stage)
-            const stageFacet = facets.find((f: any) => {
-                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-                const title = (f.title || f.label || '').toLowerCase();
-                return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
-            });
-            const stageKey = stageFacet?.attribute || stageFacet?.id || 'custom.stage';
-            const newFilters = { ...selectedFilters, [stageKey]: [stage] };
+            // Use custom.pack_size metafield key for stage filtering
+            const newFilters = { ...selectedFilters, 'custom.pack_size': [stage] };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
         }
         setShowStageModal(false);
     };
 
-    // Sync gender and age from selectedFilters
+    // Sync gender, age, and stage from selectedFilters
     useEffect(() => {
         if (selectedFilters.gender && Array.isArray(selectedFilters.gender) && selectedFilters.gender.length > 0) {
             setSelectedGender(selectedFilters.gender[0]);
@@ -473,6 +478,11 @@ export default function InfinityScreen() {
             setSelectedAge(selectedFilters.age[0]);
         } else {
             setSelectedAge(null);
+        }
+        if (selectedFilters['custom.pack_size'] && Array.isArray(selectedFilters['custom.pack_size']) && selectedFilters['custom.pack_size'].length > 0) {
+            setSelectedStage(selectedFilters['custom.pack_size'][0]);
+        } else {
+            setSelectedStage(null);
         }
     }, [selectedFilters]);
 
@@ -641,20 +651,6 @@ export default function InfinityScreen() {
                 });
                 setSizeOptions(Array.from(uniqueOptionsMap.values()));
             }
-        }
-
-        // Extract stage options from Pack Size/Stage facet for the quick-filter bubble
-        const stageFacet = loadedFacets.find((f: any) => {
-            const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-            const title = (f.title || f.label || '').toLowerCase();
-            return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
-        });
-        if (stageFacet) {
-            const options = (stageFacet.buckets || stageFacet.values || []).map((b: any) => ({
-                label: b.label || b.title || b.value,
-                value: b.value || b.id || b.label
-            }));
-            setStageOptions(options);
         }
     };
     const handleApplyFilters = (filters: any) => {
@@ -831,6 +827,23 @@ export default function InfinityScreen() {
                                     newApiFilters.push(rigidSizeFilter);
                                     filterAdded = true;
                                 }
+                            }
+
+                            // RIGID STAGE FILTERING:
+                            // If it's a pack_size filter (stage filter), and not yet added,
+                            // force a productMetafield filter for the "pack_size" metafield.
+                            if (!filterAdded && key === 'custom.pack_size') {
+                                // Construct a rigid metafield filter for Shopify
+                                // We use 'custom' namespace and 'pack_size' key
+                                const rigidStageFilter = {
+                                    productMetafield: {
+                                        namespace: "custom",
+                                        key: "pack_size",
+                                        value: val
+                                    }
+                                };
+                                newApiFilters.push(rigidStageFilter);
+                                filterAdded = true;
                             }
                         }
                     }

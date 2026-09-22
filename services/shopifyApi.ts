@@ -116,6 +116,12 @@ const GET_COLLECTION_BY_ID_QUERY = `
       sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
         value
       }
+      stageMetafield: metafield(namespace: "custom", key: "stage") {
+        value
+      }
+      packSizeMetafield: metafield(namespace: "custom", key: "pack_size") {
+        value
+      }
     }
   }
 `;
@@ -181,6 +187,12 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
         value
       }
       sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
+        value
+      }
+      stageMetafield: metafield(namespace: "custom", key: "stage") {
+        value
+      }
+      packSizeMetafield: metafield(namespace: "custom", key: "pack_size") {
         value
       }
       products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
@@ -1276,6 +1288,12 @@ export interface CollectionResponse {
       value: string;
     };
     sizeFilterMetafield?: {
+      value: string;
+    };
+    stageMetafield?: {
+      value: string;
+    };
+    packSizeMetafield?: {
       value: string;
     };
     products?: {
