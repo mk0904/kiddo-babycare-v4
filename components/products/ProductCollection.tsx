@@ -3,6 +3,7 @@ import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
 import { shopifyApi } from '@/services/shopifyApi';
 import { analyticsService } from '@/services/analyticsService';
 import { sortInStockFirst } from '@/utils/availability';
+import { hasAgeVariantOption, matchesAgeByTags } from '@/utils/ageFilter';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
@@ -522,7 +523,11 @@ export function ProductCollection({
           // Others: Variant matching only (Size/Age options)
           const variants = product.variants?.edges || product.variants || [];
           const variantList = variants.map((v: any) => v.node || v);
-          return matchesAgeByVariant(variantList, ageFilter);
+          if (matchesAgeByVariant(variantList, ageFilter)) return true;
+          // No Size/Age option (e.g. single "Default Title" variant): fall back to age tags
+          // like "Girl 2-3y" so these products don't vanish when an age is selected.
+          if (!hasAgeVariantOption(variantList)) return matchesAgeByTags(product.tags, ageFilter);
+          return false;
         }
       });
     }
@@ -599,7 +604,11 @@ export function ProductCollection({
           // Others: Variant matching only
           const variants = product.variants?.edges || product.variants || [];
           const variantList = variants.map((v: any) => v.node || v);
-          return matchesAgeByVariant(variantList, ageFilter);
+          if (matchesAgeByVariant(variantList, ageFilter)) return true;
+          // No Size/Age option (e.g. single "Default Title" variant): fall back to age tags
+          // like "Girl 2-3y" so these products don't vanish when an age is selected.
+          if (!hasAgeVariantOption(variantList)) return matchesAgeByTags(product.tags, ageFilter);
+          return false;
         }
       });
     }

@@ -1171,6 +1171,22 @@ const ProductDetailScreen = () => {
     );
 
     const pdpMainTryBuyOption = tryBuyPdpEligible ? productOptions[0] : null;
+
+    /** First multi-value option the shopper still has to choose (e.g. deferred Try & Buy size). */
+    const pdpUnselectedOption = useMemo(() => {
+        if (isTicketingProduct) return null;
+        return (
+            productOptions.find(
+                (option: any) =>
+                    (option?.values || []).length > 1 && selectedOptions[option.name] === undefined,
+            ) || null
+        );
+    }, [isTicketingProduct, productOptions, selectedOptions]);
+
+    const pdpHasAnyInStockVariant = useMemo(
+        () => variants.some((v: any) => isVariantAvailable(v) === true),
+        [variants],
+    );
     const pdpRestProductOptions = useMemo(
         () => (tryBuyPdpEligible ? productOptions.slice(1) : productOptions),
         [tryBuyPdpEligible, productOptions],
@@ -1219,6 +1235,13 @@ const ProductDetailScreen = () => {
 
     useEffect(() => {
         if (productOptions.length > 0 && variants.length > 0) {
+            // Don't bind from a partial option map (e.g. Try & Buy defers the size until the shopper
+            // picks one). A partial/empty map matches variants[0] regardless of stock, which made
+            // PDPs open as "Out of Stock" whenever the first size was sold out.
+            const hasUnselectedOption = productOptions.some(
+                (option: any) => selectedOptions[option.name] === undefined,
+            );
+            if (hasUnselectedOption) return;
             const matchingVariant = findVariantByOptions(selectedOptions, variants);
             if (matchingVariant) {
                 setSelectedVariant(matchingVariant);
@@ -2194,7 +2217,21 @@ const ProductDetailScreen = () => {
                 </View>
 
                 {(() => {
-                    const cartButtonNode = selectedVariant && isVariantAvailable(selectedVariant) === true ? (
+                    const cartButtonNode = pdpUnselectedOption && pdpHasAnyInStockVariant ? (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton]}
+                            onPress={() => {
+                                const label = String(pdpUnselectedOption.name || 'option');
+                                Alert.alert(
+                                    `Select ${label}`,
+                                    `Please choose your ${label.toLowerCase()} above before adding to cart.`,
+                                    [{ text: 'OK' }],
+                                );
+                            }}
+                        >
+                            <Text style={styles.addToCartText}>Select {pdpUnselectedOption.name}</Text>
+                        </TouchableOpacity>
+                    ) : selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                         isTicketingProduct && !selectedEventDate ? (
                             <TouchableOpacity
                                 style={[styles.addToCartButton]}
