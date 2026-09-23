@@ -1,7 +1,9 @@
+import { FeedbackModal } from '@/components/modals/FeedbackModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { getDeliveryPartnerOrderStatus } from '@/services/deliveryPartnerService';
+import { feedbackService } from '@/services/feedbackService';
 import { orderService } from '@/services/orderService';
 import { shopifyApi } from '@/services/shopifyApi';
 import { useUserStore, type UserProfile } from '@/store/userStore';
@@ -259,6 +261,53 @@ export default function OrdersScreen() {
     const [deliveryPartnerStatusByShopifyId, setDeliveryPartnerStatusByShopifyId] = useState<Record<string, any>>(
         {},
     );
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackOrderId, setFeedbackOrderId] = useState<string | null>(null);
+    const [feedbackOrderItems, setFeedbackOrderItems] = useState<{ id: string; name: string }[]>([]);
+
+    const checkAndShowFeedback = async (ordersList: any[]) => {
+        try {
+            // TEMPORARY: Show feedback for testing - remove the delivery and time checks
+            const ordersNeedingFeedback = ordersList.slice(0, 1);
+
+            if (ordersNeedingFeedback.length > 0) {
+                const order = ordersNeedingFeedback[0];
+                const orderId = order.id || order.orderNumber;
+
+                const items = (order.lineItems?.edges || []).map((edge: any) => ({
+                    id: edge.node.id || edge.node.title,
+                    name: edge.node.title,
+                }));
+
+                setFeedbackOrderItems(items);
+                setFeedbackOrderId(orderId);
+                setShowFeedbackModal(true);
+            }
+        } catch (error) {
+            console.error('Error checking feedback status:', error);
+        }
+    };
+
+    const handleFeedbackSubmit = async (rating: number, comment: string) => {
+        if (!feedbackOrderId) return;
+
+        try {
+            await feedbackService.submitFeedback(feedbackOrderId, rating, comment);
+            console.log('Feedback submitted successfully');
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            Alert.alert('Error', 'Failed to submit feedback. Please try again.');
+        }
+    };
+
+    const handleFeedbackDismiss = async () => {
+        if (feedbackOrderId) {
+            await feedbackService.dismissFeedback(feedbackOrderId);
+        }
+        setShowFeedbackModal(false);
+        setFeedbackOrderId(null);
+        setFeedbackOrderItems([]);
+    };
 
     const loadOrders = async (isRefresh = false, isAutoRetry = false) => {
         try {
@@ -399,6 +448,8 @@ export default function OrdersScreen() {
 
             setDeliveryPartnerStatusByShopifyId(partnerMap);
             setOrders(deduplicatedOrders);
+
+            checkAndShowFeedback(deduplicatedOrders);
         } catch (err: any) {
             if (err?.message === 'UNAUTHORIZED_CUSTOMER') {
                 console.warn('[OrdersScreen] Token expired or invalid, prompting for relogin');
@@ -668,6 +719,14 @@ export default function OrdersScreen() {
                     })}
                 </ScrollView>
             )}
+
+            <FeedbackModal
+                visible={showFeedbackModal}
+                onClose={handleFeedbackDismiss}
+                onSubmit={handleFeedbackSubmit}
+                orderId={feedbackOrderId || undefined}
+                items={feedbackOrderItems}
+            />
         </SafeAreaView>
     );
 }
