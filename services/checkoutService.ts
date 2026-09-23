@@ -101,6 +101,10 @@ export interface CheckoutDraftRequest {
   deviceType: string;
   /** Kiddo Cash / wallet amount applied — backend should log on Shopify draft order. */
   kiddoCashUsed?: number;
+  /** Search attribution ID for S2S order analytics */
+  searchId?: string;
+  /** Session ID for S2S order analytics */
+  sessionId?: string;
 }
 
 export interface CheckoutDraftResponse {
@@ -212,6 +216,12 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     ...(body.kiddoCashUsed != null && body.kiddoCashUsed > 0
       ? { kiddoCashUsed: body.kiddoCashUsed, kiddo_cash_used: body.kiddoCashUsed }
       : {}),
+    ...(body.searchId ? { searchId: body.searchId, search_id: body.searchId } : {}),
+    ...(body.sessionId ? { sessionId: body.sessionId, session_id: body.sessionId } : {}),
+    note_attributes: [
+      ...(body.searchId ? [{ name: 'search_id', value: String(body.searchId) }] : []),
+      ...(body.sessionId ? [{ name: 'session_id', value: String(body.sessionId) }] : []),
+    ],
     // Always send non-empty appVersion and deviceType (same as get coupon by phone)
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
     deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,

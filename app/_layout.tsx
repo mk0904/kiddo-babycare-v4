@@ -245,6 +245,7 @@ export default function RootLayout() {
       });
 
       setAppIsReady(true);
+
       try {
         // Identify user on app open so CleverTap attributes profile correctly
         const u = useUserStore.getState().user;
@@ -519,6 +520,16 @@ export default function RootLayout() {
       setIsStartupGateOpen(true);
     }
   }, [entryScreens.length, isEntryScreensDecisionPending]);
+
+  // Root watchdog: Guarantee under ALL conditions that splash unmounts within 3 seconds
+  React.useEffect(() => {
+    if (!isSplashVisible) return;
+    const watchdog = setTimeout(() => {
+      if (__DEV__) console.warn('[RootLayout] Root splash watchdog triggered – forcing splash dismissal');
+      handleSplashFinish();
+    }, 3000);
+    return () => clearTimeout(watchdog);
+  }, [isSplashVisible, handleSplashFinish]);
 
   React.useEffect(() => {
     if (isSplashVisible) return;

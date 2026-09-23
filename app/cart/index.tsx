@@ -1658,6 +1658,22 @@ export default function CartScreen() {
                 selectedPuzzleAge: latestStore.selectedPuzzleAge || undefined,
                 isTryAndBuy: isTryAndBuy,
                 schoolCouponData: activeSchoolCoupon ? latestStore.schoolCouponData : null,
+                searchId: (() => {
+                    try {
+                        const { selfSearchApi } = require('@/services/selfSearchApi');
+                        return selfSearchApi.getCurrentSearchId();
+                    } catch {
+                        return undefined;
+                    }
+                })(),
+                sessionId: (() => {
+                    try {
+                        const { selfSearchApi } = require('@/services/selfSearchApi');
+                        return selfSearchApi.getCurrentSessionId();
+                    } catch {
+                        return undefined;
+                    }
+                })(),
             };
 
             // Call Payment Service
@@ -2009,12 +2025,6 @@ export default function CartScreen() {
                 }
 
                 trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, cartVariantIds, productMetafields);
-                try {
-                    const { selfSearchApi } = require('@/services/selfSearchApi');
-                    selfSearchApi.trackOrderPlaced(orderIdForDisplay, { amount: cartTotal, productIds: cartProductIds });
-                } catch (e) {
-                    console.warn('Self search analytics error:', e);
-                }
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,

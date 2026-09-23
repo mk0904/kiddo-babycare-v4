@@ -153,6 +153,10 @@ export interface OrderData {
         dob: string;
         gender: string;
     } | null;
+    /** Search ID for server-to-server analytics attribution */
+    searchId?: string;
+    /** Session ID for server-to-server analytics attribution */
+    sessionId?: string;
 }
 
 export interface CreateOrderResult {
@@ -207,6 +211,8 @@ function orderDataToCheckoutDraftRequest(
         schoolCouponData: orderData.schoolCouponData,
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
         isDemoOrder: orderData.isDemoOrder,
+        searchId: orderData.searchId,
+        sessionId: orderData.sessionId,
         appVersion: getAppVersionForApi(),
         deviceType: Platform.OS ?? '',
     };

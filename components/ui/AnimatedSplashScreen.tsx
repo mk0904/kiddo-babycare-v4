@@ -14,9 +14,9 @@ import { SvgUri } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
-const REMOTE_VIDEO_TIMEOUT = 6000;
-const MIN_SPLASH_DURATION = 1200;
-const FADE_OUT_DURATION = 400;
+const MAX_SPLASH_TIMEOUT = 2500;
+const MIN_SPLASH_DURATION = 1000;
+const FADE_OUT_DURATION = 350;
 const SPLASH_BG = '#F4EEE5';
 
 const isVideoUrl = (url: string | null | undefined): boolean => {
@@ -37,6 +37,13 @@ const isSvgUrl = (url: string | null | undefined): boolean => {
     return clean.endsWith('.svg');
 };
 
+const isValidUrl = (url: string | null | undefined): url is string => {
+    if (!url) return false;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return false;
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+};
+
 interface AnimatedSplashScreenProps {
     onFinish?: () => void;
     splashUrl?: string | null;
@@ -46,8 +53,9 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const [startTime] = useState(Date.now());
     const timeoutRef = useRef<any>(null);
-    const videoLoadTimeoutRef = useRef<any>(null);
+    const maxTimeoutRef = useRef<any>(null);
     const hasFinishedRef = useRef(false);
+    const [fallbackToLocal, setFallbackToLocal] = useState(false);
 
     const [dynamicUrl, setDynamicUrl] = useState<string | null>(() => {
         return propSplashUrl ?? appConfigService.getSplashUrl();
@@ -64,25 +72,32 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
         }
         appConfigService.loadAppConfig().then((cfg) => {
             const url = Platform.OS === 'android' ? cfg?.androidSplashUrl : cfg?.iosSplashUrl;
-            if (url) {
+            if (url && isValidUrl(url)) {
                 setDynamicUrl(url);
             }
         }).catch(() => { });
 
         const unsubscribe = appConfigService.subscribe(() => {
             const updatedUrl = appConfigService.getSplashUrl();
-            if (updatedUrl) {
+            if (updatedUrl && isValidUrl(updatedUrl)) {
                 setDynamicUrl(updatedUrl);
             }
         });
         return unsubscribe;
     }, [propSplashUrl]);
 
-    const finishSplash = useCallback(() => {
+    const finishSplash = useCallback((immediate = false) => {
         if (hasFinishedRef.current) return;
         hasFinishedRef.current = true;
+        
+        if (maxTimeoutRef.current) {
+            clearTimeout(maxTimeoutRef.current);
+            maxTimeoutRef.current = null;
+        }
+
         const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, MIN_SPLASH_DURATION - elapsed);
+        const remainingTime = immediate ? 0 : Math.max(0, MIN_SPLASH_DURATION - elapsed);
+        
         timeoutRef.current = setTimeout(() => {
             Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -91,31 +106,36 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
             }).start(() => {
                 onFinish?.();
             });
+
+            // Safety fallback in case animation callback is skipped
+            setTimeout(() => {
+                onFinish?.();
+            }, FADE_OUT_DURATION + 100);
         }, remainingTime);
     }, [fadeAnim, onFinish, startTime]);
 
     useEffect(() => {
         if (Platform.OS === 'android') {
-            // Hide bars completely for splash
             StatusBar.setHidden(true);
             NavigationBar.setVisibilityAsync('hidden');
             NavigationBar.setBehaviorAsync('overlay-swipe');
         }
 
-        videoLoadTimeoutRef.current = setTimeout(() => {
+        // Hard watchdog: under NO circumstance hold the splash screen longer than 2.5s
+        maxTimeoutRef.current = setTimeout(() => {
             if (!hasFinishedRef.current) {
-                finishSplash();
+                if (__DEV__) console.warn('[AnimatedSplashScreen] Max timeout reached – finishing splash');
+                finishSplash(true);
             }
-        }, REMOTE_VIDEO_TIMEOUT);
+        }, MAX_SPLASH_TIMEOUT);
 
         return () => {
-            // Restore bars when splash finishes
             if (Platform.OS === 'android') {
                 StatusBar.setHidden(false);
                 NavigationBar.setVisibilityAsync('visible');
             }
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            if (videoLoadTimeoutRef.current) clearTimeout(videoLoadTimeoutRef.current);
+            if (maxTimeoutRef.current) clearTimeout(maxTimeoutRef.current);
         };
     }, [finishSplash]);
 
@@ -123,19 +143,16 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
         if (__DEV__) {
             console.warn('[AnimatedSplashScreen] Media error loading splash:', error);
         }
-        if (!hasFinishedRef.current) {
-            finishSplash();
+        if (!fallbackToLocal && activeUrl) {
+            // Immediately fallback to local bundled media
+            setFallbackToLocal(true);
+        } else if (!hasFinishedRef.current) {
+            finishSplash(true);
         }
     };
 
     const rawUrl = propSplashUrl ?? dynamicUrl;
-    const isValidUrl = (url: string | null | undefined): url is string => {
-        if (!url) return false;
-        const trimmed = url.trim();
-        if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return false;
-        return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-    };
-    const activeUrl = isValidUrl(rawUrl) ? rawUrl.trim() : null;
+    const activeUrl = !fallbackToLocal && isValidUrl(rawUrl) ? rawUrl.trim() : null;
     const isSvg = activeUrl ? isSvgUrl(activeUrl) : false;
     const isVideo = activeUrl ? isVideoUrl(activeUrl) : !isSvg && Platform.OS === 'ios';
 
@@ -160,10 +177,6 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
                     height="100%"
                     onError={handleMediaError}
                     onLoad={() => {
-                        if (videoLoadTimeoutRef.current) {
-                            clearTimeout(videoLoadTimeoutRef.current);
-                            videoLoadTimeoutRef.current = null;
-                        }
                         finishSplash();
                     }}
                 />
@@ -178,12 +191,8 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
                     onError={handleMediaError}
                     onPlaybackStatusUpdate={(status) => {
                         if (!status.isLoaded) return;
-                        if (videoLoadTimeoutRef.current) {
-                            clearTimeout(videoLoadTimeoutRef.current);
-                            videoLoadTimeoutRef.current = null;
-                        }
                         if (status.didJustFinish) {
-                            finishSplash();
+                            finishSplash(true);
                         }
                     }}
                 />
@@ -194,10 +203,6 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
                     resizeMode="cover"
                     onError={handleMediaError}
                     onLoadEnd={() => {
-                        if (videoLoadTimeoutRef.current) {
-                            clearTimeout(videoLoadTimeoutRef.current);
-                            videoLoadTimeoutRef.current = null;
-                        }
                         finishSplash();
                     }}
                 />
