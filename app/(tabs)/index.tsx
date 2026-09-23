@@ -56,8 +56,11 @@ export default function HomeScreen() {
 
 
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [blocks, setBlocks] = useState<ContentBlock[]>([]);
-  const [configLoading, setConfigLoading] = useState(true);
+  const [blocks, setBlocks] = useState<ContentBlock[]>(() => {
+    const screenBlocks = configService.getScreenBlocks('home', 'all');
+    return screenBlocks.filter((block) => block.type !== 'rail');
+  });
+  const [configLoading, setConfigLoading] = useState(() => blocks.length === 0);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [milestoneExpanded, setMilestoneExpanded] = useState(false);
@@ -210,27 +213,33 @@ export default function HomeScreen() {
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [selectedCategory, categories]);
 
-  // Load config on mount
+  // Load config on mount & subscribe to background updates
   useEffect(() => {
+    const updateBlocksFromConfig = () => {
+      const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
+      const filteredBlocks = screenBlocks.filter((block) => block.type !== 'rail');
+      if (filteredBlocks.length > 0) {
+        setBlocks(filteredBlocks);
+        setConfigLoading(false);
+      }
+    };
+
+    const unsubscribe = configService.subscribe(updateBlocksFromConfig);
+
     const loadConfig = async () => {
-      setConfigLoading(true);
       try {
         await configService.loadConfig();
-        const screenBlocks = configService.getScreenBlocks('home', selectedCategory);
-        // Filter out horizontal rail blocks only (keep banners, carousels, and product lists)
-        const filteredBlocks = screenBlocks.filter(
-          (block) => block.type !== 'rail'
-        );
-        setBlocks(filteredBlocks);
+        updateBlocksFromConfig();
       } catch (error) {
-        console.error('[HomeScreen] Error loading config:', error);
+        if (__DEV__) console.error('[HomeScreen] Error loading config:', error);
       } finally {
         setConfigLoading(false);
       }
     };
 
     loadConfig();
-  }, []);
+    return unsubscribe;
+  }, [selectedCategory]);
 
   // Update blocks when category changes
   useEffect(() => {

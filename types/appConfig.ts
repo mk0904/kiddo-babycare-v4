@@ -470,6 +470,8 @@ export interface AppConfigResponse {
   forceUpdateConfig?: ForceUpdateConfig;
   returnExchangeConfig?: ReturnExchangeConfig;
   promoConfettiUrl?: string;
+  androidSplashUrl?: string;
+  iosSplashUrl?: string;
 }
 
 export interface ReturnExchangeConfig {

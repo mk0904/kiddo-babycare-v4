@@ -40,6 +40,7 @@ import { initializeFreshchat } from '@/services/freshchatService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import { EntryScreenItem } from '@/types/appConfig';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
@@ -55,7 +56,7 @@ const ANDROID_SPLASH_BG = '#F4EEE5';
 const ENTRY_SCREENS_SEEN_KEY = 'entry_screens_seen_v1';
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  initialRouteName: '(tabs)',
 };
 
 // Handle incoming notifications and forward to Freshchat if applicable
@@ -127,11 +128,6 @@ export default function RootLayout() {
   const [remoteUpdateRequired, setRemoteUpdateRequired] = React.useState(false);
   const updateRequired = remoteUpdateRequired;
 
-  React.useEffect(() => {
-    if (__DEV__) {
-      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
-    }
-  }, [currentVersion, updateRequired]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
@@ -141,6 +137,13 @@ export default function RootLayout() {
     }),
     [user?.phone, user?.customerId, user?.id],
   );
+
+  React.useEffect(() => {
+    if (__DEV__) {
+      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
+    }
+    appConfigService.loadAppConfig(false, appConfigPayload).catch(() => { });
+  }, [currentVersion, updateRequired, appConfigPayload]);
 
   const resolveEntryScreensDecision = useCallback((screens: EntryScreenItem[]) => {
     entryDecisionResolvedRef.current = true;
@@ -170,10 +173,7 @@ export default function RootLayout() {
       if (screens.length === 0) {
         await Promise.race([
           appConfigService.loadAppConfig(false, appConfigPayload),
-          new Promise<null>((resolve) => setTimeout(() => {
-            if (__DEV__) console.log('[RootLayout] appConfigService.loadAppConfig timed out');
-            resolve(null);
-          }, 3000)),
+          new Promise<null>((resolve) => setTimeout(resolve, 600)),
         ]);
         screens = appConfigService.getEntryScreens();
       }
@@ -510,14 +510,13 @@ export default function RootLayout() {
   }, [prefetchEntryScreens]);
 
   const handleSplashFinish = useCallback(() => {
-    if (bootExperienceCompletedForSession) {
-      setIsSplashVisible(false);
-      setIsStartupGateOpen(true);
-      return;
-    }
     setIsSplashVisible(false);
     if (!isEntryScreensDecisionPending && entryScreens.length > 0) {
       setIsEntryScreensVisible(true);
+    } else {
+      bootExperienceCompletedForSession = true;
+      setIsEntryScreensDecisionPending(false);
+      setIsStartupGateOpen(true);
     }
   }, [entryScreens.length, isEntryScreensDecisionPending]);
 
@@ -549,7 +548,7 @@ export default function RootLayout() {
 
   const shouldHoldForEntryScreens =
     !isSplashVisible &&
-    (isEntryScreensDecisionPending || (entryScreens.length > 0 && !isEntryScreensVisible));
+    isEntryScreensVisible;
 
   // Always render providers, even during loading, to prevent "useAuth must be used within AuthProvider" errors
   if (!isConnected) {
@@ -571,10 +570,7 @@ export default function RootLayout() {
               onDone={handleEntryScreensDone}
             />
           )}
-          {shouldHoldForEntryScreens && (
-            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: ANDROID_SPLASH_BG, zIndex: 99999 }} />
-          )}
-          {(!fontsLoaded || !appIsReady || !isStartupGateOpen || shouldHoldForEntryScreens) ? (
+          {(!fontsLoaded && !fontError) ? (
             null
           ) : updateRequired ? (
             <View style={{ flex: 1 }}>
@@ -593,16 +589,16 @@ export default function RootLayout() {
                             <MilestoneDockProvider>
                               <MilestoneInlineCartProvider>
                                 <LiveDeliveryStackOffsetProvider>
-                                  <Stack 
-                                    screenOptions={{ 
+                                  <Stack
+                                    screenOptions={{
                                       headerShown: false,
                                       animation: 'default',
                                     }}
                                   >
-                                    <Stack.Screen name="index" />
-                                    <Stack.Screen name="(auth)" />
-                                    <Stack.Screen name="(tabs)" />
-                                    <Stack.Screen name="products/[id]" />
+                                    <Stack.Screen name="index" options={{ animation: 'none' }} />
+                                    <Stack.Screen name="(auth)" options={{ animation: 'none' }} />
+                                    <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+                                    <Stack.Screen name="products/[id]" options={{ animation: 'default' }} />
                                     <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                                   </Stack>
                                 </LiveDeliveryStackOffsetProvider>
