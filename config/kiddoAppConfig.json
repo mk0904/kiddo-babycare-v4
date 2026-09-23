@@ -7625,70 +7625,39 @@
       "order": 4,
       "data": [
         {
-          "id": "brand-aretto",
-          "collectionId": "gid://shopify/Collection/517388566817",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_7.png?v=1786434285"
+          "id": "product-1",
+          "productId": "gid://shopify/Product/10549425766689",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/7afc8a6ab1ba4b7b89ace591f8a196f0.mp4"
         },
         {
-          "id": "brand-adidas",
-          "collectionId": "gid://shopify/Collection/517135008033",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_1.png?v=1786015627"
+          "id": "product-2",
+          "productId": "gid://shopify/Product/10549425897761",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/b4563dfe5f6a41cab9cafbe0dce54091.mp4"
         },
         {
-          "id": "brand-adidas12",
-          "collectionId": "gid://shopify/Collection/517135335713",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_2.png?v=1785827986"
+          "id": "product-3",
+          "productId": "gid://shopify/Product/10549426028833",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/62c6ceb3fcd7416c96363621d29c5301.mp4"
         },
         {
-          "id": "brand-adidass",
-          "collectionId": "gid://shopify/Collection/516137189665",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_3.png?v=1783577572"
+          "id": "product-4",
+          "productId": "gid://shopify/Product/10549426127137",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/4fa12bd9f799459d9c3bfce18b8b0731.mp4"
         },
         {
-          "id": "brand-adidas23",
-          "collectionId": "gid://shopify/Collection/516137320737",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_4_4fce33c1-6074-4518-865c-2be7969b1a74.png?v=1783577632"
+          "id": "product-5",
+          "productId": "gid://shopify/Product/10549426225441",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/8380013d563945e4836c439b3777766b.mp4"
         },
         {
-          "id": "brand-adidas1",
-          "collectionId": "gid://shopify/Collection/517135204641",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys.png?v=1785827959"
+          "id": "product-6",
+          "productId": "gid://shopify/Product/10549426323745",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/3e73a9723b924a299160ccf008fee429.mp4"
         },
         {
-          "id": "brand-adidas4",
-          "collectionId": "gid://shopify/Collection/515442802977",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908"
-        },
-        {
-          "id": "brand-adidas35",
-          "collectionId": "gid://shopify/Collection/516137451809",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_7_04c89d2c-a0df-4f96-b84e-be1e939410a3.png?v=1783577781"
-        },
-        {
-          "id": "brand-adidas29",
-          "collectionId": "gid://shopify/Collection/517135401249",
-          "label": "Adidas",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Banner_design_Boys_3_9d2c2834-3d3b-48ca-83dd-849b97ca111a.png?v=1786017751"
-        },
-        {
-          "id": "brand-doreme-2",
-          "collectionId": "gid://shopify/Collection/515304522017",
-          "label": "Hopscotch",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690"
-        },
-        {
-          "id": "brand-doreme-4",
-          "collectionId": "gid://shopify/Collection/515442835745",
-          "label": "Mothercare",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.19_PM.jpg?v=1781962723"
+          "id": "product-7",
+          "productId": "gid://shopify/Product/10549426880801",
+          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/0fb76c1010d4408080f9f93f29fc2a1f.mp4"
         }
       ],
       "carouselConfig": {

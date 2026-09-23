@@ -317,7 +317,7 @@ export interface CategoryRailBlock extends BaseBlock {
   };
 }
 
-/** Horizontal image-only carousel; each slide links to a collection (or custom `link`). */
+/** Horizontal image-only carousel; each slide links to a collection or product (or custom `link`). */
 export interface CollectionImageCarouselBlock extends BaseBlock {
   type: 'collectionImageCarousel';
   title?: string;
@@ -326,12 +326,14 @@ export interface CollectionImageCarouselBlock extends BaseBlock {
     /** Image URL shown in the carousel */
     imageUrl: string;
     /** Shopify collection GID or numeric id — used with home `onBlockPress` → `/infinity/[collectionId]` */
-    collectionId: string;
+    collectionId?: string;
+    /** Shopify product GID or numeric id — used with home `onBlockPress` → `/product/[handle]` */
+    productId?: string;
     /** Shown as listing screen title when navigating */
     title?: string;
     /**
      * Optional explicit route (Expo Router path), e.g. `/infinity/[collectionId]` params handled elsewhere.
-     * If set, passed to `router.push` when provided; otherwise navigation uses `collectionId`.
+     * If set, passed to `router.push` when provided; otherwise navigation uses `collectionId` or `productId`.
      */
     link?: string;
   }>;

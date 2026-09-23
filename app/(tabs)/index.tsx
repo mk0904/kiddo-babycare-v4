@@ -5,10 +5,9 @@ import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeM
 import { AddressModal } from '@/components/modals/AddressModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
-import { Colors } from '@/constants/theme';
 import {
-  getDeliveryEta,
-  reverseGeocode,
+    getDeliveryEta,
+    reverseGeocode,
 } from '@/config/deliveryConfig';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { Address, useAddress } from '@/context/AddressContext';
@@ -22,22 +21,22 @@ import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
 import { getTabBarStackBottom } from '@/utils/tabBarLayout';
-import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
-import * as Location from 'expo-location';
-import { useRouter, useSegments, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
+import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  Modal,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
+    Animated,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -295,7 +294,22 @@ export default function HomeScreen() {
       console.warn('Analytics tracking error:', e);
     }
 
-    if (!link && !item?.collectionId) {
+    if (!link && !item?.collectionId && !item?.productId) {
+      return;
+    }
+
+    // Check if this is a product click
+    if (item?.productId) {
+      const productId = item.productId;
+      // Ensure productId is properly formatted (handle gid:// format)
+      const formattedId = productId.startsWith('gid://')
+        ? productId
+        : productId;
+
+      router.push({
+        pathname: '/products/[id]',
+        params: { id: formattedId }
+      } as any);
       return;
     }
 
