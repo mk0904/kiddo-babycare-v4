@@ -25,6 +25,7 @@ interface FeedbackModalProps {
     onSubmit: (rating: number, comment: string) => Promise<void>;
     orderId?: string;
     items?: FeedbackItem[];
+    deliveryPersonName?: string;
 }
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5];
@@ -37,6 +38,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
     onSubmit,
     orderId,
     items = [],
+    deliveryPersonName,
 }) => {
     const [rating, setRating] = useState<number>(0);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -262,7 +264,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                             <View style={styles.deliveryInfo}>
                                 <Text style={styles.sectionTitle}>How was your delivery?</Text>
                                 <Text style={styles.deliveryText}>
-                                    Delivered by <Text style={styles.deliveryName}>Rohit Verma</Text>
+                                    Delivered by <Text style={styles.deliveryName}>{deliveryPersonName || 'your delivery partner'}</Text>
                                 </Text>
                             </View>
                             <View style={styles.thumbsContainer}>

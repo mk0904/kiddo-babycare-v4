@@ -186,6 +186,7 @@ export interface InfiniteProductGridProps
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  diaperSizeFilter?: string | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
@@ -216,6 +217,7 @@ export function InfiniteProductGrid({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  diaperSizeFilter,
   pageCategory,
   onScroll,
 }: InfiniteProductGridProps) {
@@ -252,6 +254,7 @@ export function InfiniteProductGrid({
       contentContainerStyle={contentContainerStyle}
       genderFilter={genderFilter}
       ageFilter={ageFilter}
+      diaperSizeFilter={diaperSizeFilter}
       pageCategory={pageCategory}
     />
   );

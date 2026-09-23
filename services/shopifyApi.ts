@@ -113,6 +113,9 @@ const GET_COLLECTION_BY_ID_QUERY = `
       ageFilterMetafield: metafield(namespace: "custom", key: "agefilter") {
         value
       }
+      diaperFilterMetafield: metafield(namespace: "custom", key: "diaperfilter") {
+        value
+      }
       sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
         value
       }
@@ -184,6 +187,9 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
         value
       }
       ageFilterMetafield: metafield(namespace: "custom", key: "agefilter") {
+        value
+      }
+      diaperFilterMetafield: metafield(namespace: "custom", key: "diaperfilter") {
         value
       }
       sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
@@ -268,7 +274,8 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
               { namespace: "custom", key: "size" },
               { namespace: "custom", key: "sizes" },
               { namespace: "custom", key: "quantity" },
-              { namespace: "custom", key: "pack_size" }
+              { namespace: "custom", key: "pack_size" },
+              { namespace: "custom", key: "size_collection" }
             ]) {
               id
               key
@@ -362,6 +369,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "sizes"},
         {namespace: "custom", key: "quantity"},
         {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "size_collection"},
         {namespace: "custom", key: "highlight_1"},
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
@@ -475,6 +483,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "sizes"},
         {namespace: "custom", key: "quantity"},
         {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "size_collection"},
         {namespace: "custom", key: "highlight_1"},
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
@@ -1285,6 +1294,9 @@ export interface CollectionResponse {
       value: string;
     };
     ageFilterMetafield?: {
+      value: string;
+    };
+    diaperFilterMetafield?: {
       value: string;
     };
     sizeFilterMetafield?: {

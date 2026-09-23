@@ -264,6 +264,7 @@ export default function OrdersScreen() {
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [feedbackOrderId, setFeedbackOrderId] = useState<string | null>(null);
     const [feedbackOrderItems, setFeedbackOrderItems] = useState<{ id: string; name: string }[]>([]);
+    const [feedbackDeliveryPersonName, setFeedbackDeliveryPersonName] = useState<string | undefined>(undefined);
 
     const checkAndShowFeedback = async (ordersList: any[]) => {
         try {
@@ -281,6 +282,12 @@ export default function OrdersScreen() {
 
                 setFeedbackOrderItems(items);
                 setFeedbackOrderId(orderId);
+
+                // Extract delivery partner name if available
+                const numericId = extractShopifyOrderNumericId(order.id);
+                const partnerStatus = numericId ? deliveryPartnerStatusByShopifyId[numericId] : null;
+                setFeedbackDeliveryPersonName(partnerStatus?.deliveryPartner?.name || undefined);
+
                 setShowFeedbackModal(true);
             }
         } catch (error) {
@@ -307,6 +314,7 @@ export default function OrdersScreen() {
         setShowFeedbackModal(false);
         setFeedbackOrderId(null);
         setFeedbackOrderItems([]);
+        setFeedbackDeliveryPersonName(undefined);
     };
 
     const loadOrders = async (isRefresh = false, isAutoRetry = false) => {
@@ -726,6 +734,7 @@ export default function OrdersScreen() {
                 onSubmit={handleFeedbackSubmit}
                 orderId={feedbackOrderId || undefined}
                 items={feedbackOrderItems}
+                deliveryPersonName={feedbackDeliveryPersonName}
             />
         </SafeAreaView>
     );

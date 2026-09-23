@@ -59,6 +59,7 @@ export interface ProductCollectionProps {
   contentContainerStyle?: any;
   genderFilter?: string | null;
   ageFilter?: string | null;
+  diaperSizeFilter?: string | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
@@ -104,6 +105,7 @@ export function ProductCollection({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  diaperSizeFilter,
   pageCategory,
   onScroll,
 }: ProductCollectionProps) {
@@ -565,8 +567,10 @@ export function ProductCollection({
             '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
             '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
             '2-3y': ['toysfor2-3years'],
-            '3-5y': ['toysfor3-4years', 'toysfor4-5years'],
-            '5+y': ['toysfor5-6years', 'toysfor6+years']
+            '3-4y': ['toysfor3-4years'],
+            '4-5y': ['toysfor4-5years'],
+            '5-6y': ['toysfor5-6years'],
+            '6-7y': ['toysfor6+years']
           };
           
           const normalizedAgeFilter = ageFilter.toLowerCase().replace(/\s+/g, '');
@@ -601,12 +605,27 @@ export function ProductCollection({
       });
     }
     
+    // Apply diaper size filter
+    if (diaperSizeFilter) {
+      products = products.filter((product: any) => {
+        const metafields = product.metafields || [];
+        return metafields.some((mf: any) => {
+          if (mf && mf.key === 'size_collection' && mf.value) {
+            const val = mf.value.toString().toLowerCase().trim();
+            const filterVal = diaperSizeFilter.toLowerCase().trim();
+            return val === filterVal;
+          }
+          return false;
+        });
+      });
+    }
+    
     // Sort in-stock first, out-of-stock at end
     products = sortInStockFirst(products);
 
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
-  }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, applyClientSideFilters]);
+  }, [data, limit, filters, genderFilter, ageFilter, diaperSizeFilter, matchesGender, matchesAgeByVariant, applyClientSideFilters]);
 
   // Notify parent about result count
   React.useEffect(() => {
@@ -676,8 +695,10 @@ export function ProductCollection({
             '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
             '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
             '2-3y': ['toysfor2-3years'],
-            '3-5y': ['toysfor3-4years', 'toysfor4-5years'],
-            '5+y': ['toysfor5-6years', 'toysfor6+years']
+            '3-4y': ['toysfor3-4years'],
+            '4-5y': ['toysfor4-5years'],
+            '5-6y': ['toysfor5-6years'],
+            '6-7y': ['toysfor6+years']
           };
           
           const normalizedAgeFilter = ageFilter.toLowerCase().replace(/\s+/g, '');

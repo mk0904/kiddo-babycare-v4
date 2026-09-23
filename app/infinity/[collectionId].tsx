@@ -141,6 +141,21 @@ export default function InfinityScreen() {
         { label: 'Stage 4', value: 'Stage 4' },
     ]);
 
+    // Diaper Size Filter State
+    const [showDiaperSizeModal, setShowDiaperSizeModal] = useState(false);
+    const [selectedDiaperSize, setSelectedDiaperSize] = useState<string | null>(null);
+    const [diaperSizeOptions, setDiaperSizeOptions] = useState<{ label: string; value: string }[]>([
+        { label: 'NB', value: 'nb' },
+        { label: 'XXS', value: 'xxs' },
+        { label: 'Extra Small', value: 'extra small' },
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+        { label: 'Extra Large', value: 'extra large' },
+        { label: 'XXL', value: 'xxl' },
+        { label: 'XXXL', value: 'xxxl' },
+    ]);
+
 
 
     // Transform local filters to Shopify API format
@@ -262,6 +277,14 @@ export default function InfinityScreen() {
         const result = stageValue?.toLowerCase() === 'true';
         console.log('[Stage Filter] should show:', result);
         return result;
+    };
+
+    const shouldShowDiaperSizeFilter = () => {
+        if (shouldHideFilters) return false;
+
+        // Only show if custom.diaperfilter metafield is explicitly set to true
+        const diaperFilterValue = collection?.diaperFilterMetafield?.value?.toLowerCase();
+        return diaperFilterValue === 'true';
     };
 
     useEffect(() => {
@@ -1015,6 +1038,9 @@ export default function InfinityScreen() {
                         showBrandFilter={shouldShowBrandFilter()}
                         showSizeFilter={shouldShowSizeFilter()}
                         showStageFilter={shouldShowStageFilter()}
+                        showDiaperSizeFilter={shouldShowDiaperSizeFilter()}
+                        onDiaperSizePress={() => setShowDiaperSizeModal(true)}
+                        selectedDiaperSize={selectedDiaperSize}
                     />
                 )}
 
@@ -1041,6 +1067,7 @@ export default function InfinityScreen() {
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGender}
                         ageFilter={selectedAge}
+                        diaperSizeFilter={selectedDiaperSize}
                         pageCategory={pageCategory}
                     />
                 </Animated.View>
@@ -1339,6 +1366,50 @@ export default function InfinityScreen() {
                                     key={index}
                                     style={styles.sortListItem}
                                     onPress={() => handleStageSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterSelected
+                                    ]}>
+                                        {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+
+                {/* Diaper Size Filter Modal */}
+                <BaseModal
+                    visible={showDiaperSizeModal}
+                    onClose={() => setShowDiaperSizeModal(false)}
+                    title="Select Diaper Size"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {diaperSizeOptions.map((option, index) => {
+                            const isSelected = selectedDiaperSize === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => {
+                                        setSelectedDiaperSize(isSelected ? null : option.value);
+                                        setShowDiaperSizeModal(false);
+                                    }}
                                 >
                                     <Text style={[
                                         styles.sortListItemText,

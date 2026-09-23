@@ -32,14 +32,17 @@ interface FilterSortPillsProps {
     showBrandFilter?: boolean;
     showSizeFilter?: boolean;
     showStageFilter?: boolean;
+    showDiaperSizeFilter?: boolean;
     showFilterButton?: boolean;
     showSortButton?: boolean;
     onBrandPress?: () => void;
     onSizePress?: () => void;
     onStagePress?: () => void;
+    onDiaperSizePress?: () => void;
     selectedBrand?: string | null;
     selectedSize?: string | null;
     selectedStage?: string | null;
+    selectedDiaperSize?: string | null;
 }
 
 export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
@@ -60,14 +63,17 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
     showBrandFilter = false,
     showSizeFilter = false,
     showStageFilter = false,
+    showDiaperSizeFilter = false,
     showFilterButton = true,
     showSortButton = true,
     onBrandPress,
     onSizePress,
     onStagePress,
+    onDiaperSizePress,
     selectedBrand,
     selectedSize,
     selectedStage,
+    selectedDiaperSize,
 }) => {
     const [scrollOffset, setScrollOffset] = useState(0);
     const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -546,6 +552,56 @@ export const FilterSortPills: React.FC<FilterSortPillsProps> = ({
                                 selectedStage && styles.actionButtonTextActive
                             ]}>
                                 Stage
+                            </Text>
+                        </Animated.View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {onDiaperSizePress && showDiaperSizeFilter && (
+                    <Animated.View
+                        style={[
+                            styles.actionButton,
+                            selectedDiaperSize && styles.actionButtonActive,
+                            {
+                                width: standardButtonWidth,
+                                paddingHorizontal: paddingHorizontal,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.actionButtonInner}
+                            onPress={onDiaperSizePress}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View
+                                style={{
+                                    transform: [{ scale: iconScale }],
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons 
+                                    name="resize-outline" 
+                                    size={16} 
+                                    color={selectedDiaperSize ? Colors.variantSelection : Colors.text} 
+                                />
+                            </Animated.View>
+                            <Animated.View
+                                style={{
+                                    opacity: textOpacity,
+                                    width: standardTextWidth,
+                                    overflow: 'hidden',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginLeft: textMarginLeft,
+                                }}
+                            >
+                            <Text style={[
+                                styles.actionButtonText,
+                                selectedDiaperSize && styles.actionButtonTextActive
+                            ]}>
+                                Diaper Size
                             </Text>
                         </Animated.View>
                         </TouchableOpacity>
