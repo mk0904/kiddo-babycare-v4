@@ -156,13 +156,13 @@ class AppConfigService {
         if (androidSplash != null) {
           const trimmed = String(androidSplash).trim();
           this.cachedAndroidSplashUrl = trimmed;
-          AsyncStorage.setItem(CACHED_ANDROID_SPLASH_KEY, trimmed).catch(() => {});
+          AsyncStorage.setItem(CACHED_ANDROID_SPLASH_KEY, trimmed).catch(() => { });
         }
         const iosSplash = data.iosSplashUrl ?? (data as any).ios_splash_url;
         if (iosSplash != null) {
           const trimmed = String(iosSplash).trim();
           this.cachedIosSplashUrl = trimmed;
-          AsyncStorage.setItem(CACHED_IOS_SPLASH_KEY, trimmed).catch(() => {});
+          AsyncStorage.setItem(CACHED_IOS_SPLASH_KEY, trimmed).catch(() => { });
         }
 
         this.emitConfigListeners();
@@ -213,7 +213,7 @@ class AppConfigService {
   }
 
   getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
-    return this.config?.hotWheelConfigV2 ?? null;
+    return this.config?.hotWheelConfig ?? null;
   }
 
   getHelpSupportConfig(): HelpSupportConfig | null {

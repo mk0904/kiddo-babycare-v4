@@ -521,13 +521,13 @@ export default function RootLayout() {
     }
   }, [entryScreens.length, isEntryScreensDecisionPending]);
 
-  // Root watchdog: Guarantee under ALL conditions that splash unmounts within 3 seconds
+  // Root watchdog: Guarantee under ALL conditions that splash unmounts within 2s on Android (3s on iOS)
   React.useEffect(() => {
     if (!isSplashVisible) return;
     const watchdog = setTimeout(() => {
       if (__DEV__) console.warn('[RootLayout] Root splash watchdog triggered – forcing splash dismissal');
       handleSplashFinish();
-    }, 3000);
+    }, Platform.OS === 'android' ? 2000 : 3000);
     return () => clearTimeout(watchdog);
   }, [isSplashVisible, handleSplashFinish]);
 

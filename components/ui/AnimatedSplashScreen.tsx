@@ -1,23 +1,27 @@
 import { appConfigService } from '@/services/appConfigService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ResizeMode, Video } from 'expo-av';
+import { Image as ExpoImage } from 'expo-image';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
-    Image,
     Platform,
     StatusBar,
     StyleSheet
 } from 'react-native';
-import { SvgUri } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
-const MAX_SPLASH_TIMEOUT = 2500;
-const MIN_SPLASH_DURATION = 1000;
-const FADE_OUT_DURATION = 350;
+const MAX_SPLASH_TIMEOUT = Platform.OS === 'android' ? 1800 : 2800;
+const MIN_SPLASH_DURATION = Platform.OS === 'android' ? 900 : 1300;
+const FADE_OUT_DURATION = 250;
 const SPLASH_BG = '#F4EEE5';
+const CACHE_WAIT_TIMEOUT = 100; // ms to wait for cache/backend before defaulting to local asset
+
+const CACHED_ANDROID_SPLASH_KEY = '@cached_splash_url_android';
+const CACHED_IOS_SPLASH_KEY = '@cached_splash_url_ios';
 
 const isVideoUrl = (url: string | null | undefined): boolean => {
     if (!url) return false;
@@ -31,17 +35,11 @@ const isVideoUrl = (url: string | null | undefined): boolean => {
     );
 };
 
-const isSvgUrl = (url: string | null | undefined): boolean => {
-    if (!url) return false;
-    const clean = url.split('?')[0].toLowerCase();
-    return clean.endsWith('.svg');
-};
-
 const isValidUrl = (url: string | null | undefined): url is string => {
     if (!url) return false;
     const trimmed = url.trim();
     if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return false;
-    return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('file://');
 };
 
 interface AnimatedSplashScreenProps {
@@ -55,41 +53,77 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
     const timeoutRef = useRef<any>(null);
     const maxTimeoutRef = useRef<any>(null);
     const hasFinishedRef = useRef(false);
-    const [fallbackToLocal, setFallbackToLocal] = useState(false);
 
-    const [dynamicUrl, setDynamicUrl] = useState<string | null>(() => {
-        return propSplashUrl ?? appConfigService.getSplashUrl();
-    });
+    // Initial check: if splashUrl is already resolved synchronously, start immediately
+    const initialSyncUrl = propSplashUrl ?? appConfigService.getSplashUrl();
+    const [activeUrl, setActiveUrl] = useState<string | null>(
+        isValidUrl(initialSyncUrl) ? initialSyncUrl.trim() : null
+    );
+    const [isSourceResolved, setIsSourceResolved] = useState<boolean>(
+        Boolean(initialSyncUrl)
+    );
+    const isLockedRef = useRef<boolean>(Boolean(initialSyncUrl));
 
+    // Resolve source once (from cache or backend) before starting playback so we NEVER switch sources mid-stream
     useEffect(() => {
-        if (propSplashUrl) {
-            setDynamicUrl(propSplashUrl);
-            return;
-        }
-        const currentUrl = appConfigService.getSplashUrl();
-        if (currentUrl) {
-            setDynamicUrl(currentUrl);
-        }
-        appConfigService.loadAppConfig().then((cfg) => {
-            const url = Platform.OS === 'android' ? cfg?.androidSplashUrl : cfg?.iosSplashUrl;
-            if (url && isValidUrl(url)) {
-                setDynamicUrl(url);
-            }
-        }).catch(() => { });
+        if (isLockedRef.current) return;
 
-        const unsubscribe = appConfigService.subscribe(() => {
-            const updatedUrl = appConfigService.getSplashUrl();
-            if (updatedUrl && isValidUrl(updatedUrl)) {
-                setDynamicUrl(updatedUrl);
+        let isCancelled = false;
+        const cacheKey = Platform.OS === 'android' ? CACHED_ANDROID_SPLASH_KEY : CACHED_IOS_SPLASH_KEY;
+
+        const resolveSource = async () => {
+            try {
+                // 1. Check AsyncStorage cache
+                const cached = await AsyncStorage.getItem(cacheKey);
+                if (isCancelled || isLockedRef.current) return;
+                if (isValidUrl(cached)) {
+                    isLockedRef.current = true;
+                    setActiveUrl(cached.trim());
+                    setIsSourceResolved(true);
+                    return;
+                }
+
+                // 2. Check appConfigService
+                const serviceUrl = appConfigService.getSplashUrl();
+                if (isCancelled || isLockedRef.current) return;
+                if (isValidUrl(serviceUrl)) {
+                    isLockedRef.current = true;
+                    setActiveUrl(serviceUrl.trim());
+                    setIsSourceResolved(true);
+                    return;
+                }
+            } catch (e) {
+                // Ignore error
             }
-        });
-        return unsubscribe;
-    }, [propSplashUrl]);
+
+            // 3. Fallback to local asset if no remote URL resolved within timeout
+            if (!isCancelled && !isLockedRef.current) {
+                isLockedRef.current = true;
+                setActiveUrl(null);
+                setIsSourceResolved(true);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            if (!isLockedRef.current) {
+                isLockedRef.current = true;
+                setActiveUrl(null);
+                setIsSourceResolved(true);
+            }
+        }, CACHE_WAIT_TIMEOUT);
+
+        resolveSource();
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(timer);
+        };
+    }, []);
 
     const finishSplash = useCallback((immediate = false) => {
         if (hasFinishedRef.current) return;
         hasFinishedRef.current = true;
-        
+
         if (maxTimeoutRef.current) {
             clearTimeout(maxTimeoutRef.current);
             maxTimeoutRef.current = null;
@@ -97,7 +131,7 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
 
         const elapsed = Date.now() - startTime;
         const remainingTime = immediate ? 0 : Math.max(0, MIN_SPLASH_DURATION - elapsed);
-        
+
         timeoutRef.current = setTimeout(() => {
             Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -107,7 +141,7 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
                 onFinish?.();
             });
 
-            // Safety fallback in case animation callback is skipped
+            // Safety fallback
             setTimeout(() => {
                 onFinish?.();
             }, FADE_OUT_DURATION + 100);
@@ -121,10 +155,10 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
             NavigationBar.setBehaviorAsync('overlay-swipe');
         }
 
-        // Hard watchdog: under NO circumstance hold the splash screen longer than 2.5s
+        // Global watchdog: unconditionally dismiss splash after MAX_SPLASH_TIMEOUT
         maxTimeoutRef.current = setTimeout(() => {
             if (!hasFinishedRef.current) {
-                if (__DEV__) console.warn('[AnimatedSplashScreen] Max timeout reached – finishing splash');
+                if (__DEV__) console.warn('[AnimatedSplashScreen] Watchdog timeout – finishing splash');
                 finishSplash(true);
             }
         }, MAX_SPLASH_TIMEOUT);
@@ -143,44 +177,29 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
         if (__DEV__) {
             console.warn('[AnimatedSplashScreen] Media error loading splash:', error);
         }
-        if (!fallbackToLocal && activeUrl) {
-            // Immediately fallback to local bundled media
-            setFallbackToLocal(true);
-        } else if (!hasFinishedRef.current) {
+        if (!hasFinishedRef.current) {
             finishSplash(true);
         }
     };
 
-    const rawUrl = propSplashUrl ?? dynamicUrl;
-    const activeUrl = !fallbackToLocal && isValidUrl(rawUrl) ? rawUrl.trim() : null;
-    const isSvg = activeUrl ? isSvgUrl(activeUrl) : false;
-    const isVideo = activeUrl ? isVideoUrl(activeUrl) : !isSvg && Platform.OS === 'ios';
+    if (!isSourceResolved) {
+        // Plain matching background while resolving the single media source (<= 300ms)
+        return <Animated.View style={[styles.container, { opacity: fadeAnim }]} />;
+    }
 
-    const videoSource = activeUrl
-        ? { uri: activeUrl }
-        : Platform.OS === 'ios'
-            ? require('../../assets/images/splash-screen.mp4')
-            : null;
+    const isVideo = activeUrl ? isVideoUrl(activeUrl) : Platform.OS === 'ios';
 
-    const imageSource = activeUrl
+    const videoSource = activeUrl && isVideo
         ? { uri: activeUrl }
-        : Platform.OS === 'android'
-            ? require('../../assets/images/new-splash-screen.png')
-            : null;
+        : (Platform.OS === 'ios' ? require('../../assets/images/splash-screen.mp4') : null);
+
+    const imageSource = activeUrl && !isVideo
+        ? { uri: activeUrl }
+        : require('../../assets/images/new-splash-screen.png');
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-            {isSvg && activeUrl ? (
-                <SvgUri
-                    uri={activeUrl}
-                    width="100%"
-                    height="100%"
-                    onError={handleMediaError}
-                    onLoad={() => {
-                        finishSplash();
-                    }}
-                />
-            ) : isVideo && videoSource ? (
+            {isVideo && videoSource ? (
                 <Video
                     source={videoSource}
                     style={StyleSheet.absoluteFill}
@@ -196,17 +215,19 @@ export const AnimatedSplashScreen = ({ onFinish, splashUrl: propSplashUrl }: Ani
                         }
                     }}
                 />
-            ) : imageSource ? (
-                <Image
+            ) : (
+                <ExpoImage
                     source={imageSource}
                     style={styles.splashImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    priority="high"
+                    cachePolicy="memory-disk"
                     onError={handleMediaError}
-                    onLoadEnd={() => {
+                    onLoad={() => {
                         finishSplash();
                     }}
                 />
-            ) : null}
+            )}
         </Animated.View>
     );
 };
