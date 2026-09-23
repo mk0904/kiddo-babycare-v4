@@ -9630,24 +9630,114 @@
   ],
   "toys": [
     {
-      "id": "babycare-banner-1zz",
-      "type": "imageBanner",
-      "title": "Featured",
+      "id": "all-banner-1",
+      "type": "videoBanner",
       "visible": true,
-      "imageBannerConfig": {
-        "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toy_banner_-7.gif?v=1788163926",
-        "height": 250,
-        "borderRadius": 0,
-        "borderBottomLeftRadius": 20,
-        "borderBottomRightRadius": 20,
-        "resizeMode": "cover"
+      "data": {
+        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/d7c36bfb1e5a4618b29184f14f70ecde.mp4",
+        "link": {
+          "type": "collection",
+          "collection": {
+            "id": "gid://shopify/Collection/518724026657"
+          }
+        }
+      },
+      "videoConfig": {
+        "aspectRatio": 1,
+        "loop": true,
+        "muted": true,
+        "autoPlay": true
       },
       "styles": {
         "container": {
-          "marginTop": 0
+          "marginTop": 0,
+          "backgroundColor": "",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
         },
-        "wrapper": {
-          "marginHorizontal": 0
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 0,
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "img": {}
+      }
+    },
+    {
+      "id": "category-grid-onbanner",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "bannergrid",
+      "gridConfig": {
+        "layout": "featured-left",
+        "numColumns": 4,
+        "colGap": 10,
+        "rowGap": 10,
+        "limit": 7,
+        "aspectRatio": 1.1,
+        "showLabels": true,
+        "borderRadius": 18,
+        "proportionalScale": true,
+        "cellBackgroundColor": "#FFFFFF"
+      },
+      "collectionIds": [
+        {  "id": "gid://shopify/Collection/518724026657",
+          "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ankitbanner.gif?v=1789652429"
+
+
+        },
+        
+
+        {
+          "id": "gid://shopify/Collection/518724419873"
+        },
+        {
+          "id": "gid://shopify/Collection/518724911393"
+        },
+                {
+          "id": "gid://shopify/Collection/518726091041"
+        },
+
+        {
+          "id": "gid://shopify/Collection/518726648097"
+        },
+        {
+          "id": "gid://shopify/Collection/518942621985"
+        },
+        {
+          "id": "gid://shopify/Collection/518726549793"
+        }
+      ],
+      "styles": {
+        "container": {
+          "position": "absolute",
+          "marginTop": "-53%",
+          "zIndex": 10,
+          "paddingHorizontal": "2%",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 18,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
+          "color": "#414651",
+          "fontSize": 11,
+          "letterSpacing": 0,
+          "textAlign": "center"
         }
       }
     },
@@ -11505,7 +11595,7 @@
         "header": {
           "textColor": "#363636",
           "backgroundColor": "#FFD700",
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Toy_banner_-header.png?v=1788165728",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Hamleys_2.png?v=1789363075",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

@@ -155,11 +155,18 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
                 <Text style={styles.productTitle} numberOfLines={2}>
                   {product.title}
                 </Text>
-                <Text style={styles.productPrice}>
-                  {product.priceRange?.minVariantPrice?.amount 
-                    ? `₹${Math.round(product.priceRange.minVariantPrice.amount)}`
-                    : ''}
-                </Text>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.productPrice}>
+                    {product.priceRange?.minVariantPrice?.amount 
+                      ? `₹${Math.round(product.priceRange.minVariantPrice.amount)}`
+                      : ''}
+                  </Text>
+                  {product.variants?.edges?.[0]?.node?.compareAtPrice?.amount && (
+                    <Text style={styles.compareAtPrice}>
+                      ₹{Math.round(product.variants.edges[0].node.compareAtPrice.amount)}
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
           </TouchableOpacity>
@@ -235,9 +242,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.LexendMedium,
     marginBottom: 4,
   },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   productPrice: {
     fontSize: 13,
     color: Colors.text,
     fontFamily: Fonts.LexendBold,
+  },
+  compareAtPrice: {
+    fontSize: 11,
+    color: '#999',
+    fontFamily: Fonts.LexendRegular,
+    textDecorationLine: 'line-through',
   },
 });
