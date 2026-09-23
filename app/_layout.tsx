@@ -21,6 +21,7 @@ import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
 import { getAppVersionForApi, isVersionBelowMinimum } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { FeedbackTriggerProvider } from '@/context/FeedbackTriggerContext';
 import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
 import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
 import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
@@ -587,18 +588,20 @@ export default function RootLayout() {
                             <MilestoneDockProvider>
                               <MilestoneInlineCartProvider>
                                 <LiveDeliveryStackOffsetProvider>
-                                  <Stack 
-                                    screenOptions={{ 
-                                      headerShown: false,
-                                      animation: 'default',
-                                    }}
-                                  >
-                                    <Stack.Screen name="index" />
-                                    <Stack.Screen name="(auth)" />
-                                    <Stack.Screen name="(tabs)" />
-                                    <Stack.Screen name="products/[id]" />
-                                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                                  </Stack>
+                                  <FeedbackTriggerProvider>
+                                    <Stack 
+                                      screenOptions={{ 
+                                        headerShown: false,
+                                        animation: 'default',
+                                      }}
+                                    >
+                                      <Stack.Screen name="index" />
+                                      <Stack.Screen name="(auth)" />
+                                      <Stack.Screen name="(tabs)" />
+                                      <Stack.Screen name="products/[id]" />
+                                      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                                    </Stack>
+                                  </FeedbackTriggerProvider>
                                 </LiveDeliveryStackOffsetProvider>
                               </MilestoneInlineCartProvider>
                             </MilestoneDockProvider>

@@ -142,6 +142,8 @@ export interface LiveDeliveryTabBannerProps {
    * Supplied by TabBar when Home tab + tab bar visible.
    */
   milestoneStripBottomReserve?: number;
+  /** Callback when banner is dismissed - passes order if delivered phase */
+  onDismiss?: (order: any | null) => void;
 }
 
 export function LiveDeliveryTabBanner({
@@ -149,6 +151,7 @@ export function LiveDeliveryTabBanner({
   tabStackHeight,
   onStackOffsetChange,
   milestoneStripBottomReserve = 0,
+  onDismiss,
 }: LiveDeliveryTabBannerProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -438,6 +441,12 @@ export function LiveDeliveryTabBanner({
       /* ignore */
     }
     setDismissedStateKeys((prev) => new Set(prev).add(stateKey));
+    
+    // Call callback if delivered phase
+    if (model.phase === 'delivered' && onDismiss) {
+      onDismiss(model.order);
+    }
+    
     setModel(null);
   };
 

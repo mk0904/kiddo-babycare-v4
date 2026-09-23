@@ -8,6 +8,7 @@ import { GlassPillSurface } from '@/components/ui/GlassPillSurface';
 import { LiveDeliveryTabBanner } from '@/components/ui/LiveDeliveryTabBanner';
 import { TabBarTabButton } from '@/components/ui/TabBarTabButton';
 import { Fonts } from '@/constants/theme';
+import { useFeedbackTrigger } from '@/context/FeedbackTriggerContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useMilestoneDockHeightSafe } from '@/context/MilestoneDockContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -172,6 +173,7 @@ export const TabBar = (props: BottomTabBarProps) => {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
     const { isVisible, scrollProgress } = useTabBarVisibility();
+    const { triggerFeedback } = useFeedbackTrigger();
     const translateY = useRef(new Animated.Value(0)).current;
 
     const indicatorX = useSharedValue(0);
@@ -717,6 +719,7 @@ export const TabBar = (props: BottomTabBarProps) => {
                 tabStackHeight={totalHeight}
                 onStackOffsetChange={setLiveDeliveryStackExtra}
                 milestoneStripBottomReserve={milestoneStripReserveForStack}
+                onDismiss={triggerFeedback}
             />
             <FloatingCartButton
                 showTabBar={shouldShowTabBar}

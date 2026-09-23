@@ -3,6 +3,7 @@ import { HomeContentSkeleton } from '@/components/home/HomeContentSkeleton';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { KiddoRewardsWelcomeModal } from '@/components/home/KiddoRewardsWelcomeModal';
 import { AddressModal } from '@/components/modals/AddressModal';
+import { FeedbackModal } from '@/components/modals/FeedbackModal';
 import { MilestoneTabDock } from '@/components/ui/MilestoneTabDock';
 import TryAndBuyModal from '@/components/ui/TryAndBuyModal';
 import {
@@ -12,14 +13,22 @@ import {
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { Address, useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
+import { useFeedbackTrigger } from '@/context/FeedbackTriggerContext';
 import { useLiveDeliveryStackOffset } from '@/context/LiveDeliveryStackOffsetContext';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import { appConfigService } from '@/services/appConfigService';
 import { configService } from '@/services/configService';
+import {
+    getDeliveryPartnerOrderStatus,
+    isDeliveryStatusDelivered,
+} from '@/services/deliveryPartnerService';
+import { feedbackService } from '@/services/feedbackService';
+import { orderService } from '@/services/orderService';
 import { useCartItemCount, useCartStore } from '@/store/cartStore';
 import { ContentBlock } from '@/types/content';
 import { getAddressTitleLabel } from '@/utils/addressDisplay';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
+import { storefrontVariantImageUrl } from '@/utils/storefrontVariantImage';
 import { getTabBarStackBottom } from '@/utils/tabBarLayout';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useIsFocused, useNavigationState } from '@react-navigation/native';
@@ -36,7 +45,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     TouchableWithoutFeedback,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,6 +55,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { defaultAddress, setDetectedLocation } = useAddress();
+  const { setFeedbackTrigger } = useFeedbackTrigger();
   const cartItemCount = useCartItemCount();
   const [showConfetti, setShowConfetti] = useState(!!params.confettiUrl);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -67,6 +77,12 @@ export default function HomeScreen() {
   const [kiddoWelcomePopupVisible, setKiddoWelcomePopupVisible] = useState(false);
   const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
   const [milestoneUiRev, setMilestoneUiRev] = useState(0);
+  
+  // Feedback modal state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackOrderId, setFeedbackOrderId] = useState<string | null>(null);
+  const [feedbackOrderItems, setFeedbackOrderItems] = useState<{ id: string; name: string; image?: string | null }[]>([]);
+  const [feedbackDeliveryPersonName, setFeedbackDeliveryPersonName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (showConfetti) {
@@ -84,6 +100,37 @@ export default function HomeScreen() {
     return off;
   }, []);
 
+  // Register feedback trigger callback for banner dismissal
+  useEffect(() => {
+    const handleFeedbackTrigger = async (order: any) => {
+      if (!order) return;
+      
+      const orderId = order.id;
+      if (!orderId) return;
+      
+      // Check if feedback already submitted or dismissed
+      const hasSubmitted = await feedbackService.hasSubmittedFeedback(orderId);
+      if (hasSubmitted) return;
+      
+      const hasDismissed = await feedbackService.hasDismissedFeedback(orderId);
+      if (hasDismissed) return;
+      
+      // Prepare order items for feedback modal
+      const items = (order.lineItems?.edges || []).map((edge: any) => ({
+        id: edge.node.id || edge.node.title,
+        name: edge.node.title,
+        image: storefrontVariantImageUrl(edge.node.variant),
+      }));
+      
+      setFeedbackOrderItems(items);
+      setFeedbackOrderId(orderId);
+      setFeedbackDeliveryPersonName(undefined);
+      setShowFeedbackModal(true);
+    };
+    
+    setFeedbackTrigger(handleFeedbackTrigger);
+  }, [setFeedbackTrigger]);
+
   // Refresh app-config whenever Home regains focus so milestone step moves in-session after checkout.
   useFocusEffect(
     useCallback(() => {
@@ -95,6 +142,99 @@ export default function HomeScreen() {
       });
     }, [user?.phone, user?.customerId, user?.id])
   );
+
+  // Check for orders needing feedback when home screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const checkAndShowFeedback = async () => {
+        if (!user?.phone) return;
+
+        try {
+          const orders = await orderService.getAllOrders();
+          
+          // Check delivery partner status for each order to determine if delivered
+          const ordersNeedingFeedback: any[] = [];
+          
+          for (const order of orders) {
+            const orderId = order.id;
+            if (!orderId) continue;
+            
+            // Check if feedback already submitted or dismissed
+            const hasSubmitted = await feedbackService.hasSubmittedFeedback(orderId);
+            if (hasSubmitted) continue;
+            
+            const hasDismissed = await feedbackService.hasDismissedFeedback(orderId);
+            if (hasDismissed) continue;
+            
+            // Check delivery partner status for delivered status
+            const numericId = String(orderId).match(/\d+/)?.[0];
+            if (!numericId) continue;
+            
+            try {
+              const partnerStatus = await getDeliveryPartnerOrderStatus(numericId);
+              if (partnerStatus && isDeliveryStatusDelivered(partnerStatus)) {
+                // Check if delivered within last 7 days
+                const deliveredAt = partnerStatus.deliveredAt;
+                if (deliveredAt) {
+                  const deliveryDate = new Date(deliveredAt);
+                  const now = new Date();
+                  const daysSinceDelivery = (now.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24);
+                  
+                  if (daysSinceDelivery <= 7) {
+                    ordersNeedingFeedback.push({ ...order, deliveredAt });
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('[HomeScreen] Error fetching delivery partner status:', err);
+            }
+          }
+
+          if (ordersNeedingFeedback.length > 0) {
+            const order = ordersNeedingFeedback[0];
+            const orderId = order.id || order.orderNumber;
+
+            const items = (order.lineItems?.edges || []).map((edge: any) => ({
+              id: edge.node.id || edge.node.title,
+              name: edge.node.title,
+              image: storefrontVariantImageUrl(edge.node.variant),
+            }));
+
+            setFeedbackOrderItems(items);
+            setFeedbackOrderId(orderId);
+            setFeedbackDeliveryPersonName(undefined);
+            setShowFeedbackModal(true);
+          }
+        } catch (error) {
+          console.error('[HomeScreen] Error checking feedback status:', error);
+        }
+      };
+
+      checkAndShowFeedback();
+    }, [user?.phone])
+  );
+
+  const handleFeedbackSubmit = async (rating: number, comment: string) => {
+    if (!feedbackOrderId) return;
+
+    try {
+      await feedbackService.submitFeedback(feedbackOrderId, rating, comment);
+      console.log('[HomeScreen] Feedback submitted successfully');
+    } catch (error) {
+      console.error('[HomeScreen] Error submitting feedback:', error);
+      Alert.alert('Error', 'Failed to submit feedback. Please try again.');
+    }
+  };
+
+  const handleFeedbackDismiss = async () => {
+    if (feedbackOrderId) {
+      await feedbackService.dismissFeedback(feedbackOrderId);
+    }
+    setShowFeedbackModal(false);
+    setFeedbackOrderId(null);
+    setFeedbackOrderItems([]);
+    setFeedbackDeliveryPersonName(undefined);
+  };
 
   const milestoneUI = useMemo(() => appConfigService.getMilestoneUI(), [milestoneUiRev]);
   // Subscribe to cart items to refresh ETA when cart changes
@@ -746,6 +886,16 @@ export default function HomeScreen() {
       <TryAndBuyModal
         visible={showTryAndBuyModal}
         onClose={() => setShowTryAndBuyModal(false)}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        visible={showFeedbackModal}
+        onClose={handleFeedbackDismiss}
+        onSubmit={handleFeedbackSubmit}
+        orderId={feedbackOrderId || undefined}
+        items={feedbackOrderItems}
+        deliveryPersonName={feedbackDeliveryPersonName}
       />
 
       {/* Confetti Modal */}

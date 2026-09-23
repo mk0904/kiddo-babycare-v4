@@ -17,6 +17,7 @@ import {
 export interface FeedbackItem {
     id: string;
     name: string;
+    image?: string | null;
 }
 
 interface FeedbackModalProps {
@@ -234,9 +235,17 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                                         ]}
                                     >
                                         <View style={styles.itemInfo}>
-                                            <View style={[styles.itemIconContainer, { backgroundColor: iconProps.bg }]}>
-                                                <Ionicons name={iconProps.name} size={18} color={iconProps.color} />
-                                            </View>
+                                            {item.image ? (
+                                                <Image
+                                                    source={{ uri: item.image }}
+                                                    style={styles.itemImage}
+                                                    resizeMode="cover"
+                                                />
+                                            ) : (
+                                                <View style={[styles.itemIconContainer, { backgroundColor: iconProps.bg }]}>
+                                                    <Ionicons name={iconProps.name} size={18} color={iconProps.color} />
+                                                </View>
+                                            )}
                                             <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
                                         </View>
                                         <View style={styles.thumbsContainer}>
@@ -472,6 +481,13 @@ const styles = StyleSheet.create({
         marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    itemImage: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        marginRight: 10,
+        backgroundColor: '#F7F8FA',
     },
     itemName: {
         fontSize: 13,
