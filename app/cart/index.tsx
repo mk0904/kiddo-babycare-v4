@@ -122,9 +122,11 @@ export default function CartScreen() {
         const trackCartView = async () => {
             try {
                 const { trackCartViewed } = require('@/utils/mixpanelHelpers');
+                const { fetchCartTaxonomy } = require('@/utils/productTaxonomy');
                 const itemCount = cartItems.length;
                 const cartValue = itemSubtotal;
-                trackCartViewed(itemCount, cartValue);
+                const taxonomy = await fetchCartTaxonomy(cartItems.map((i) => i.productId));
+                trackCartViewed(itemCount, cartValue, taxonomy);
 
                 // Firebase Ecommerce Tracking
                 analyticsService.logViewCart({
@@ -1254,7 +1256,10 @@ export default function CartScreen() {
         // Track Checkout Started event
         try {
             const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
-            trackCheckoutStarted(latestTotal, latestCartItems.length, latestCartItems.map(item => item.productId).filter(Boolean));
+            const { fetchCartTaxonomy } = require('@/utils/productTaxonomy');
+            const productIds = latestCartItems.map(item => item.productId).filter(Boolean);
+            const taxonomy = await fetchCartTaxonomy(productIds);
+            trackCheckoutStarted(latestTotal, latestCartItems.length, productIds, taxonomy);
 
             // Firebase Ecommerce Tracking
             analyticsService.logBeginCheckout({
@@ -1873,15 +1878,6 @@ export default function CartScreen() {
                 const orderCount = (parseInt(orderCountRaw || '0', 10) || 0) + 1;
                 await AsyncStorage.setItem('user_order_count', orderCount.toString());
 
-                if (orderCount === 1) {
-                    trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
-                    await AsyncStorage.setItem('has_placed_order', 'true');
-                } else if (orderCount === 2) {
-                    trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
-                } else if (orderCount === 3) {
-                    trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
-                }
-
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
                 const cartVariantIds = cartItems.map(item => item.variantId).filter(Boolean);
 
@@ -1890,7 +1886,9 @@ export default function CartScreen() {
                     productId: string, 
                     l1Collection?: string, 
                     l2Collection?: string, 
-                    l3Collection?: string, 
+                    l3Collection?: string,
+                    ageGroup?: string,
+                    gender?: string,
                     emptyMetafield1?: string, 
                     emptyMetafield2?: string, 
                     emptyMetafield3?: string,
@@ -1929,15 +1927,20 @@ export default function CartScreen() {
                 }> = [];
                 try {
                     const { shopifyApi } = await import('@/services/shopifyApi');
+                    const { getProductTaxonomyProps, cacheProductTaxonomy, aggregateTaxonomies } = await import('@/utils/productTaxonomy');
                     const metafieldPromises = cartItems.map(async (item) => {
                         try {
                             const product = await shopifyApi.getProductById(item.productId);
-                            if (product?.metafields) {
+                            if (product?.metafields || product?.ageGroup) {
                                 console.log('[Cart] Product metafields for order:', product.metafields);
-                                const validMetafields = product.metafields.filter((m: any) => m != null);
-                                const l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
-                                const l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
-                                const l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
+                                const validMetafields = (product.metafields || []).filter((m: any) => m != null);
+                                const taxonomy = getProductTaxonomyProps(product);
+                                cacheProductTaxonomy(item.productId, taxonomy);
+                                const l1Collection = taxonomy.l1_collection;
+                                const l2Collection = taxonomy.l2_collection;
+                                const l3Collection = taxonomy.l3_collection;
+                                const ageGroup = taxonomy.age_group;
+                                const gender = taxonomy.gender;
                                 const emptyMetafield1 = validMetafields.find((m: any) => m.key === 'empty_metafield_1')?.value;
                                 const emptyMetafield2 = validMetafields.find((m: any) => m.key === 'empty_metafield_2')?.value;
                                 const emptyMetafield3 = validMetafields.find((m: any) => m.key === 'empty_metafield_3')?.value;
@@ -1978,6 +1981,8 @@ export default function CartScreen() {
                                     l1Collection,
                                     l2Collection,
                                     l3Collection,
+                                    ageGroup,
+                                    gender,
                                     emptyMetafield1,
                                     emptyMetafield2,
                                     emptyMetafield3,
@@ -2020,8 +2025,35 @@ export default function CartScreen() {
                     });
                     productMetafields = (await Promise.all(metafieldPromises)).filter(m => m);
                     console.log('[Cart] All product metafields for order:', productMetafields);
+
+                    const orderTaxonomy = aggregateTaxonomies(
+                        productMetafields.map((m) => ({
+                            l1_collection: m.l1Collection,
+                            l2_collection: m.l2Collection,
+                            l3_collection: m.l3Collection,
+                            age_group: m.ageGroup,
+                            gender: m.gender || m.genderCollection || m.mmGoogleShoppingGender,
+                        })),
+                    );
+
+                    if (orderCount === 1) {
+                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal, orderTaxonomy);
+                        await AsyncStorage.setItem('has_placed_order', 'true');
+                    } else if (orderCount === 2) {
+                        trackSecondOrderPlaced(orderIdForDisplay, cartTotal, orderTaxonomy);
+                    } else if (orderCount === 3) {
+                        trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
+                    }
                 } catch (error) {
                     console.warn('[Cart] Failed to fetch product metafields for order:', error);
+                    if (orderCount === 1) {
+                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
+                        await AsyncStorage.setItem('has_placed_order', 'true');
+                    } else if (orderCount === 2) {
+                        trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
+                    } else if (orderCount === 3) {
+                        trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
+                    }
                 }
 
                 trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, cartVariantIds, productMetafields);

@@ -1059,20 +1059,24 @@ export const useCartStore = create<CartState>()(
                     }, 150);
 
                     try {
-                        // Fetch product metafields to get L1, L2, L3 collections
+                        // Fetch product metafields for taxonomy enrichment
                         let l1Collection: string | undefined;
                         let l2Collection: string | undefined;
                         let l3Collection: string | undefined;
+                        let ageGroup: string | undefined;
+                        let gender: string | undefined;
 
                         try {
                             const product = await shopifyApi.getProductById(item.productId);
-                            if (product?.metafields) {
-                                console.log('[CartStore] Product metafields:', product.metafields);
-                                const validMetafields = product.metafields.filter((m: any) => m != null);
-                                l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
-                                l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
-                                l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
-                                console.log('[CartStore] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+                            if (product) {
+                                const { getProductTaxonomyProps, cacheProductTaxonomy } = require('@/utils/productTaxonomy');
+                                const taxonomy = getProductTaxonomyProps(product);
+                                cacheProductTaxonomy(item.productId, taxonomy);
+                                l1Collection = taxonomy.l1_collection;
+                                l2Collection = taxonomy.l2_collection;
+                                l3Collection = taxonomy.l3_collection;
+                                ageGroup = taxonomy.age_group;
+                                gender = taxonomy.gender;
                             }
                         } catch (metafieldError) {
                             console.warn('[CartStore] Failed to fetch product metafields:', metafieldError);
@@ -1086,7 +1090,8 @@ export const useCartStore = create<CartState>()(
                             item.quantity,
                             l1Collection,
                             l2Collection,
-                            l3Collection
+                            l3Collection,
+                            { l1_collection: l1Collection, l2_collection: l2Collection, l3_collection: l3Collection, age_group: ageGroup, gender },
                         );
                     } catch (e) {
                         console.warn('Analytics tracking error:', e);
@@ -1112,11 +1117,17 @@ export const useCartStore = create<CartState>()(
                     if (itemToRemove) {
                         try {
                             const { trackRemoveFromCart } = require('@/utils/mixpanelHelpers');
-                            trackRemoveFromCart(
-                                itemToRemove.productId,
-                                itemToRemove.title,
-                                itemToRemove.price
-                            );
+                            const { fetchProductTaxonomy, getCachedProductTaxonomy } = require('@/utils/productTaxonomy');
+                            const cached = getCachedProductTaxonomy(itemToRemove.productId);
+                            if (cached) {
+                                trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price, cached);
+                            } else {
+                                void fetchProductTaxonomy(itemToRemove.productId).then((taxonomy: any) => {
+                                    trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price, taxonomy);
+                                }).catch(() => {
+                                    trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price);
+                                });
+                            }
                         } catch (e) {
                             console.warn('Mixpanel tracking error:', e);
                         }

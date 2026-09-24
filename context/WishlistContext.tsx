@@ -108,13 +108,19 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
         // Track wishlist added outside state updater
         try {
             const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
+            const { getProductTaxonomyProps, getCachedProductTaxonomy } = require('@/utils/productTaxonomy');
             const price = parseFloat(
                 product.price ||
                 product.priceRange?.minVariantPrice?.amount ||
                 product.variants?.edges?.[0]?.node?.price?.amount ||
                 '0'
             ) || undefined;
-            trackWishlistAdded(productId, product.title || product.name, price);
+            const fromProduct = getProductTaxonomyProps(product);
+            const taxonomy =
+                fromProduct.l1_collection || fromProduct.age_group || fromProduct.gender
+                    ? fromProduct
+                    : getCachedProductTaxonomy(productId) || fromProduct;
+            trackWishlistAdded(productId, product.title || product.name, price, taxonomy);
         } catch (e) {
             console.warn('Mixpanel tracking error:', e);
         }

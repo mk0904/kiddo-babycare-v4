@@ -202,7 +202,8 @@ export default function HomeScreen() {
     try {
       const { trackCategoryViewed } = require('@/utils/mixpanelHelpers');
       const categoryName = categories.find(c => c.key === categoryKey)?.label || categoryKey;
-      trackCategoryViewed(categoryName, categoryKey);
+      // Best-effort: home category tabs map to L1; age/gender come from product events
+      trackCategoryViewed(categoryName, categoryKey, { l1_collection: categoryName });
     } catch (e) {
       console.warn('Mixpanel tracking error:', e);
     }

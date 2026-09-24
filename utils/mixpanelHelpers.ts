@@ -14,10 +14,17 @@ import {
     trackSearchAction,
 } from '@/utils/appsFlyerAnalytics';
 import { extractNumericId } from '@/utils/shopifyIds';
+import {
+  taxonomyToEventProps,
+  type ProductTaxonomy,
+  type ProductTaxonomyArrays,
+} from '@/utils/productTaxonomy';
 
 /**
  * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
  */
+
+export type { ProductTaxonomy, ProductTaxonomyArrays };
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -193,7 +200,12 @@ export const trackLoginFailed = (reason?: string) => {
   trackEvent('Login Failed', { reason });
 };
 
-export const trackProductViewed = (productId: string, productName?: string, price?: number) => {
+export const trackProductViewed = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Product Viewed', {
     productId,
     productName,
@@ -202,12 +214,29 @@ export const trackProductViewed = (productId: string, productName?: string, pric
     content_type: 'product',
     value: price,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
   trackContentViewAction(productId, price, 'INR');
 };
 
-export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number, l1Collection?: string, l2Collection?: string, l3Collection?: string) => {
-  console.log('[Mixpanel] trackAddToCart - L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+export const trackAddToCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  quantity?: number,
+  l1Collection?: string,
+  l2Collection?: string,
+  l3Collection?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
+  const tax = taxonomyToEventProps({
+    l1_collection: taxonomy?.l1_collection ?? l1Collection,
+    l2_collection: taxonomy?.l2_collection ?? l2Collection,
+    l3_collection: taxonomy?.l3_collection ?? l3Collection,
+    age_group: taxonomy?.age_group,
+    gender: taxonomy?.gender,
+  });
+  console.log('[Mixpanel] trackAddToCart taxonomy:', tax);
   trackEvent('Add to Cart', {
     productId,
     productName,
@@ -217,16 +246,19 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     content_type: 'product',
     value: price,
     currency: 'INR',
-    l1_collection: l1Collection,
-    l2_collection: l2Collection,
-    l3_collection: l3Collection,
+    ...tax,
   });
   if (price != null && Number.isFinite(price)) {
     trackAddToCartAction(productId, 'product', price, quantity || 1);
   }
 };
 
-export const trackCheckoutStarted = (cartValue: number, itemCount: number, productIds?: string[]) => {
+export const trackCheckoutStarted = (
+  cartValue: number,
+  itemCount: number,
+  productIds?: string[],
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Checkout Started', {
     cartValue,
     itemCount,
@@ -235,6 +267,7 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number, produ
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
     num_items: itemCount,
+    ...taxonomyToEventProps(taxonomy),
   });
   trackInitiatedCheckoutAction(cartValue, itemCount, productIds, 'INR');
 };
@@ -289,39 +322,60 @@ export const trackProfileCreated = (properties: {
   trackEvent('Profile Created', properties);
 };
 
-export const trackFirstProductViewed = (productId: string, productName?: string) => {
+export const trackFirstProductViewed = (
+  productId: string,
+  productName?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('First Product Viewed', {
     productId,
     productName,
+    ...taxonomyToEventProps(taxonomy),
   });
   trackContentViewAction(productId);
 };
 
-export const trackFirstAddToCart = (productId: string, productName?: string, price?: number) => {
+export const trackFirstAddToCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('First Add to Cart', {
     productId,
     productName,
     price,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
+export const trackFirstOrderPlaced = (
+  orderId: string,
+  amount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('First Order Placed', {
     event_id: orderId,
     orderId,
     amount,
     value: amount,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackSecondOrderPlaced = (orderId: string, amount: number) => {
+export const trackSecondOrderPlaced = (
+  orderId: string,
+  amount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Second Order Placed', {
     event_id: orderId,
     orderId,
     amount,
     value: amount,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -370,10 +424,22 @@ export const trackTappedInProfile = (option: string) => {
   trackEvent('tapped_in_profile', { Option: option });
 };
 
-export const trackCategoryViewed = (categoryName: string, categoryId?: string) => {
+export const trackCategoryViewed = (
+  categoryName: string,
+  categoryId?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
+  const tax = taxonomyToEventProps({
+    l1_collection: taxonomy?.l1_collection ?? categoryName,
+    l2_collection: taxonomy?.l2_collection,
+    l3_collection: taxonomy?.l3_collection,
+    age_group: taxonomy?.age_group,
+    gender: taxonomy?.gender,
+  });
   trackEvent('Category Viewed', {
     categoryName,
     categoryId,
+    ...tax,
   });
   trackListViewAction(categoryName);
 };
@@ -396,15 +462,26 @@ export const trackFiltersApplied = (filters: {
   trackEvent('Filters Applied', filters);
 };
 
-export const trackRecommendationClicked = (recommendationType: string, itemId: string, itemName?: string) => {
+export const trackRecommendationClicked = (
+  recommendationType: string,
+  itemId: string,
+  itemName?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Recommendation Clicked', {
     recommendationType,
     itemId,
     itemName,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackWishlistAdded = (productId: string, productName?: string, price?: number) => {
+export const trackWishlistAdded = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Wishlist Added', {
     productId,
     productName,
@@ -413,16 +490,23 @@ export const trackWishlistAdded = (productId: string, productName?: string, pric
     content_type: 'product',
     value: price,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
   trackAddToWishlistAction(productId, price, 'INR');
 };
 
-export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
+export const trackProductShareClicked = (
+  productId: string,
+  productName?: string,
+  shareMethod?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Product Share Clicked', {
     productId,
     'product id': extractNumericId(productId) || productId,
     productName,
     shareMethod,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -444,18 +528,29 @@ export const trackSizeSelected = (productId: string, size: string) => {
 // CART EVENTS
 // ============================================
 
-export const trackRemoveFromCart = (productId: string, productName?: string, price?: number) => {
+export const trackRemoveFromCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Remove from Cart', {
     productId,
     productName,
     price,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackCartViewed = (itemCount: number, cartValue: number) => {
+export const trackCartViewed = (
+  itemCount: number,
+  cartValue: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Cart Viewed', {
     itemCount,
     cartValue,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -524,7 +619,9 @@ export const trackOrderPlaced = (
     productId: string, 
     l1Collection?: string, 
     l2Collection?: string, 
-    l3Collection?: string, 
+    l3Collection?: string,
+    ageGroup?: string,
+    gender?: string,
     emptyMetafield1?: string, 
     emptyMetafield2?: string, 
     emptyMetafield3?: string,
@@ -567,6 +664,8 @@ export const trackOrderPlaced = (
   const l1Collections = productMetafields?.map(m => m.l1Collection).filter(Boolean) || [];
   const l2Collections = productMetafields?.map(m => m.l2Collection).filter(Boolean) || [];
   const l3Collections = productMetafields?.map(m => m.l3Collection).filter(Boolean) || [];
+  const ageGroups = productMetafields?.map(m => m.ageGroup).filter(Boolean) || [];
+  const genders = productMetafields?.map(m => m.gender || m.genderCollection || m.mmGoogleShoppingGender).filter(Boolean) || [];
   
   const emptyMetafield1s = productMetafields?.map(m => m.emptyMetafield1).filter(Boolean) || [];
   const emptyMetafield2s = productMetafields?.map(m => m.emptyMetafield2).filter(Boolean) || [];
@@ -585,6 +684,13 @@ export const trackOrderPlaced = (
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     variant: variantIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
+    // CSV-requested singular keys (arrays for multi-item orders)
+    l1_collection: l1Collections,
+    l2_collection: l2Collections,
+    l3_collection: l3Collections,
+    age_group: ageGroups,
+    gender: genders,
+    // Legacy plural keys kept for existing dashboards
     l1_collections: l1Collections,
     l2_collections: l2Collections,
     l3_collections: l3Collections,
@@ -688,12 +794,17 @@ export const trackWalletApplied = (walletAmountUsed: number) => {
 // CART ABANDONMENT EVENTS
 // ============================================
 
-export const trackCartAbandoned = (cartValue: number, itemCount: number) => {
+export const trackCartAbandoned = (
+  cartValue: number,
+  itemCount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Cart Abandoned', {
     cartValue,
     itemCount,
     value: cartValue,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 

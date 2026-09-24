@@ -664,18 +664,21 @@ const ProductDetailScreen = () => {
                 // Track Product Viewed event
                 try {
                     const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps, cacheProductTaxonomy } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                     const price = parseFloat(
                         fullProduct.priceRange?.minVariantPrice?.amount ||
                         fullProduct.variants?.edges?.[0]?.node?.price?.amount ||
                         '0'
                     );
+                    const taxonomy = getProductTaxonomyProps(fullProduct);
+                    cacheProductTaxonomy(fullProduct.id, taxonomy);
                     const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
                     if (!hasViewedProduct) {
-                        trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                        trackFirstProductViewed(fullProduct.id, fullProduct.title, taxonomy);
                         await AsyncStorage.setItem('has_viewed_product', 'true');
                     }
-                    trackProductViewed(fullProduct.id, fullProduct.title, price);
+                    trackProductViewed(fullProduct.id, fullProduct.title, price, taxonomy);
 
                     // Firebase Ecommerce Tracking
                     analyticsService.logViewItem({
@@ -759,9 +762,15 @@ const ProductDetailScreen = () => {
             // Track recommendation clicked
             try {
                 const { trackRecommendationClicked } = require('@/utils/mixpanelHelpers');
+                const { getProductTaxonomyProps, getCachedProductTaxonomy } = require('@/utils/productTaxonomy');
                 const recommendationType = title === 'You May Also Like' ? 'product_recommendation' :
                     title === 'Recently Viewed' ? 'recently_viewed' : 'related';
-                trackRecommendationClicked(recommendationType, p.id, p.title);
+                const fromProduct = getProductTaxonomyProps(p);
+                const taxonomy =
+                    fromProduct.l1_collection || fromProduct.age_group || fromProduct.gender
+                        ? fromProduct
+                        : getCachedProductTaxonomy(p.id) || fromProduct;
+                trackRecommendationClicked(recommendationType, p.id, p.title, taxonomy);
             } catch (e) {
                 console.warn('Mixpanel tracking error:', e);
             }
@@ -972,12 +981,14 @@ const ProductDetailScreen = () => {
 
                 // Track Add to Cart event
                 try {
-                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const taxonomy = getProductTaxonomyProps(product);
 
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
-                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price, taxonomy);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
 
@@ -1091,12 +1102,14 @@ const ProductDetailScreen = () => {
 
                 // Track Add to Cart event
                 try {
-                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const taxonomy = getProductTaxonomyProps(product);
 
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
-                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price, taxonomy);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
 
@@ -1337,7 +1350,8 @@ const ProductDetailScreen = () => {
             // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
-                trackProductShareClicked(product.id, product.title, 'native');
+                const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
+                trackProductShareClicked(product.id, product.title, 'native', getProductTaxonomyProps(product));
             } catch (_) { }
 
         } catch (err: any) {
