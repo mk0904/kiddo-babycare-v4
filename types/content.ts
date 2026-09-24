@@ -393,6 +393,8 @@ export interface CollectionImageCarouselGridCardConfig {
     imageUrl: string;
     label?: string;
     collectionId?: string;
+    /** Shopify product GID or numeric id — shows wishlist + add to cart on the cell. */
+    productId?: string;
     link?: string;
   }>;
   /** Grid layout config (for layout='grid'). */

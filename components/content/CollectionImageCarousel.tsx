@@ -1,4 +1,5 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import { ProductImageActions } from '@/components/ui/ProductImageActions';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
 import { CollectionImageCarouselBlock } from '@/types/content';
@@ -116,40 +117,51 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
               blockStyles?.item,
             ]}
           >
-            {isVideo ? (
-              <Video
-                source={{ uri: item.imageUrl }}
-                style={[
-                  {
-                    width: itemWidth,
-                    height: itemHeight,
-                    borderRadius,
-                    backgroundColor: '#000',
-                  },
-                  blockStyles?.image,
-                ]}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
-                useNativeControls={false}
-              />
-            ) : (
-              <OptimizedImage
-                source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(itemWidth * 2)) }}
-                style={[
-                  {
-                    width: itemWidth,
-                    height: itemHeight,
-                    borderRadius,
-                    backgroundColor: 'transparent',
-                  },
-                  blockStyles?.image,
-                ]}
-                contentFit={imageContentFit}
-                transition={0}
-              />
-            )}
+            <View
+              style={{
+                width: itemWidth,
+                height: itemHeight,
+                borderRadius,
+                overflow: 'visible',
+              }}
+              pointerEvents="box-none"
+            >
+              {isVideo ? (
+                <Video
+                  source={{ uri: item.imageUrl }}
+                  style={[
+                    {
+                      width: itemWidth,
+                      height: itemHeight,
+                      borderRadius,
+                      backgroundColor: '#000',
+                    },
+                    blockStyles?.image,
+                  ]}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay
+                  isLooping
+                  isMuted
+                  useNativeControls={false}
+                />
+              ) : (
+                <OptimizedImage
+                  source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(itemWidth * 2)) }}
+                  style={[
+                    {
+                      width: itemWidth,
+                      height: itemHeight,
+                      borderRadius,
+                      backgroundColor: 'transparent',
+                    },
+                    blockStyles?.image,
+                  ]}
+                  contentFit={imageContentFit}
+                  transition={0}
+                />
+              )}
+              {isProduct ? <ProductImageActions product={product} /> : null}
+            </View>
             {isProduct && (
               <View style={styles.productInfo}>
                 <Text style={styles.productTitle} numberOfLines={2}>
@@ -229,7 +241,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   slide: {
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: 'transparent',
   },
   productInfo: {

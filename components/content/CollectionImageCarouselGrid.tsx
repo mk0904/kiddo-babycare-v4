@@ -1,4 +1,5 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import { ProductImageActions } from '@/components/ui/ProductImageActions';
 import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -110,6 +111,44 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         return all;
     }, [card.gridItems, columns, maxRows]);
 
+    const [productsData, setProductsData] = useState<Map<string, any>>(new Map());
+
+    useEffect(() => {
+        const productIds = items
+            .map((item) => item.productId)
+            .filter((id): id is string => !!id);
+        if (productIds.length === 0) {
+            setProductsData(new Map());
+            return;
+        }
+
+        let cancelled = false;
+        const fetchProducts = async () => {
+            const results = await Promise.all(
+                productIds.map(async (productId) => {
+                    try {
+                        const product = await shopifyApi.getProductById(productId);
+                        return product ? ([productId, product] as const) : null;
+                    } catch (error) {
+                        console.error('Error fetching product:', productId, error);
+                        return null;
+                    }
+                }),
+            );
+            if (cancelled) return;
+            const productsMap = new Map<string, any>();
+            for (const entry of results) {
+                if (entry) productsMap.set(entry[0], entry[1]);
+            }
+            setProductsData(productsMap);
+        };
+
+        fetchProducts();
+        return () => {
+            cancelled = true;
+        };
+    }, [items]);
+
     const CARD_PADDING = 12;
     const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
     const FOOTER_HEIGHT = 36;
@@ -142,7 +181,11 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
 
     const handleCellPress = useCallback((gridItem: typeof items[number]) => {
         if (!onPress) return;
-        const payload = { collectionId: gridItem.collectionId, title: gridItem.label };
+        const payload = {
+            collectionId: gridItem.collectionId,
+            productId: gridItem.productId,
+            title: gridItem.label,
+        };
         onPress(gridItem.link, payload);
     }, [onPress]);
 
@@ -176,22 +219,33 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                     )}
                 </TouchableOpacity>
             )}
-            <View style={[s.gridBody, { padding: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden', justifyContent: 'center' }]}>
+            <View style={[s.gridBody, { padding: CARD_PADDING, gap, height: bodyHeight, overflow: 'visible', justifyContent: 'center' }]}>
                 {rows.map((row, rowIdx) => (
                     <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
-                        {row.map((gridItem) => (
-                            <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth }}>
-                                <OptimizedImage
-                                    source={{ uri: shopifyImageUrl(gridItem.imageUrl, Math.round(cellWidth * 2)) }}
-                                    style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
-                                    contentFit={resizeMode}
-                                    transition={0}
-                                />
-                                {showLabels && gridItem.label && (
-                                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{gridItem.label}</Text>
+                        {row.map((gridItem) => {
+                            const product = gridItem.productId ? productsData.get(gridItem.productId) : null;
+                            const imageUrl = gridItem.imageUrl
+                                || product?.images?.edges?.[0]?.node?.url
+                                || product?.featuredImage?.url
+                                || '';
+                            const label = gridItem.label || (product ? product.title : undefined);
+                            return (
+                            <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth, overflow: 'visible' }}>
+                                <View style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, overflow: 'visible', backgroundColor: '#f5f5f5' }} pointerEvents="box-none">
+                                    <OptimizedImage
+                                        source={{ uri: shopifyImageUrl(imageUrl, Math.round(cellWidth * 2)) }}
+                                        style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
+                                        contentFit={resizeMode}
+                                        transition={0}
+                                    />
+                                    {product ? <ProductImageActions product={product} /> : null}
+                                </View>
+                                {showLabels && label && (
+                                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{label}</Text>
                                 )}
                             </TouchableOpacity>
-                        ))}
+                            );
+                        })}
                     </View>
                 ))}
             </View>
