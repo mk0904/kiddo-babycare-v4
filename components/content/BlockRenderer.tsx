@@ -20,6 +20,7 @@ import { PromoCarousel } from './PromoCarousel';
 import { SearchProductList } from './SearchProductList';
 import { VideoBanner } from './VideoBanner';
 import { VisualCategoryRail } from './VisualCategoryRail';
+import { ScrollableCategoryGrid } from './ScrollableCategoryGrid';
 
 interface BlockRendererProps {
   blocks: ContentBlock[];
@@ -39,6 +40,7 @@ const blockComponentMap: Record<
   carousel: ImageCarousel,
   grid: ImageGrid,
   categoryGrid: CategoryGrid,
+  scrollableCategoryGrid: ScrollableCategoryGrid,
   list: ImageList,
   horizontalProductList: ImageList,
   collectionList: CollectionList,
