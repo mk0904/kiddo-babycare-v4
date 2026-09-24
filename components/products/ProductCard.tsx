@@ -432,6 +432,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has Bestseller tag
+  const hasBestsellerTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'bestseller',
+      ),
+    [tags],
+  );
+
   // Get metafield value (supports edges or array, key match case-insensitive)
   const getMetafieldValue = useCallback((key: string) => {
     const productMetafields = product?.metafields;
@@ -658,6 +667,12 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             key={`img-${productId}-${imageErrorCount}`}
           />
           {outOfStock ? <OutOfStockOverlay style={{ borderRadius: 12 }} /> : null}
+          {/* Bestseller Tag - top left */}
+          <View style={styles.bestsellerBadge}>
+            <Text style={styles.bestsellerBadgeText} numberOfLines={1}>
+              Bestseller
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.wishlistButton}
             onPress={handleWishlistPress}
@@ -927,6 +942,22 @@ const styles = StyleSheet.create({
     color: '#CA8504',
     fontSize: 11,
     fontFamily: Fonts.Bold,
+  },
+  bestsellerBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  bestsellerBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: Fonts.LexendBold,
+    fontWeight: '600',
   },
   priceContainer: {
     flexDirection: 'row',

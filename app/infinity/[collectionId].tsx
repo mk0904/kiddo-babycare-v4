@@ -419,12 +419,7 @@ export default function InfinityScreen() {
                     '6 - 7 y', '7- 8 y', '7-8 y', '6 - 6.6 y', '7 -8 y', '18 - 24 y', 
                     '18 - 24 y', '6-7y', '7-8y', '9 - 12 y', '7 - 7.5 y', '6.5 - 7 y', 
                     '8.5 - 9 y', '7.5 - 8 y', '6 - 12 y', '6 - 8 y', '6 - 6.5 y', '6.6-5y'
-                ],
-                    'xs-s': ['xs', 'extra small', 'x-small', 's', 'small'],
-                    'm-l': ['m', 'medium', 'l', 'large'],
-                    'xl-xxl': ['xl', 'extra large', 'x-large', 'xxl', '2xl', 'double xl'],
-                    '3xl+': ['xxxl', '3xl', 'triple xl', '4xl', '5xl', 'plus']
-                };
+                ]  };
                 
                 const selectedGroup = Object.keys(fashionSizeGroups).find(group => 
                     fashionSizeGroups[group].some(groupSize => 
@@ -511,7 +506,24 @@ export default function InfinityScreen() {
 
     // Handle facets loaded from the product query
     const handleFacetsLoaded = (loadedFacets: any[]) => {
-        setFacets(loadedFacets);
+        // Filter out brand, product type, and size facets from the filter panel
+        const filteredFacets = loadedFacets.filter((facet: any) => {
+            const attr = (facet.attribute || facet.id || facet.field || facet.name || '').toLowerCase();
+            const title = (facet.title || facet.label || '').toLowerCase();
+            
+            // Exclude brand/vendor
+            if (attr === 'vendor' || title.includes('brand')) return false;
+            
+            // Exclude product type
+            if (attr === 'product_type' || attr === 'producttype' || title.includes('product type')) return false;
+            
+            // Exclude size
+            if (attr.includes('size') || title.includes('size')) return false;
+            
+            return true;
+        });
+        
+        setFacets(filteredFacets);
 
         // Extract brand options from vendor facet for the quick-filter bubble
         const vendorFacet = loadedFacets.find((f: any) =>
@@ -565,10 +577,6 @@ export default function InfinityScreen() {
                 { label: '4 - 5 Y', value: '4-5y' },
                 { label: '5 - 6 Y', value: '5-6y' },
                 { label: '6+ Y', value: '6+y' },
-                { label: 'XS - S', value: 'xs-s' },
-                { label: 'M - L', value: 'm-l' },
-                { label: 'XL - XXL', value: 'xl-xxl' },
-                { label: '3XL+', value: '3xl+' }
             ];
             
             // Check which groups have available sizes
@@ -632,12 +640,7 @@ export default function InfinityScreen() {
                     '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
                     '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
                     '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
-                ],
-                'xs-s': ['xs', 'extra small', 'x-small', 's', 'small'],
-                'm-l': ['m', 'medium', 'l', 'large'],
-                'xl-xxl': ['xl', 'extra large', 'x-large', 'xxl', '2xl', 'double xl'],
-                '3xl+': ['xxxl', '3xl', 'triple xl', '4xl', '5xl', 'plus']
-            };
+                ] };
 
             const options = FASHION_SIZE_GROUPS.map(group => {
                 const groupSizes = fashionSizeGroups[group.value] || [];
