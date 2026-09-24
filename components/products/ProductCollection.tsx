@@ -221,6 +221,9 @@ export function ProductCollection({
       } else if (filter.size) {
         if (!groupedFilters.size) groupedFilters.size = [];
         groupedFilters.size.push(filter);
+      } else if (filter.fashionSize) {
+        if (!groupedFilters.fashionSize) groupedFilters.fashionSize = [];
+        groupedFilters.fashionSize.push(filter);
       } else if (filter.productCollection) {
         if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
         groupedFilters.productCollection.push(filter);
@@ -383,6 +386,43 @@ export function ProductCollection({
         
         if (!sizeMatch) return false;
       }
+      // Fashion size filter — normalized variant-level matching.
+      // Strips all whitespace before comparing so variants like "3 - 4 y", "3-4 y", "3-4y"
+      // all match the group strings. Only considers variants that are available for sale.
+      if (groupedFilters.fashionSize) {
+        // Collect all group size strings across all fashionSize filters
+        const allGroupSizes: string[] = groupedFilters.fashionSize.flatMap((filter: any) =>
+          (filter.fashionSize?.groupSizes || []) as string[]
+        );
+        // Normalize: lowercase + strip ALL whitespace/hyphens for fuzzy comparison
+        const normalizeSize = (s: string) =>
+          String(s).toLowerCase().replace(/[\s\-=]+/g, '');
+        const normalizedGroupSizes = allGroupSizes.map(normalizeSize);
+
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+
+        // Product passes if at least one AVAILABLE variant has a size/age option
+        // whose normalized value matches any of the group's normalized size strings.
+        const fashionSizeMatch = variantList.some((variant: any) => {
+          // Only consider variants that are in stock
+          if (!variant.availableForSale && variant.quantityAvailable === 0) return false;
+
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const isSizeOrAgeOption =
+              optionName.includes('size') || optionName.includes('age') || optionName === 'size' || optionName === 'age';
+            if (!isSizeOrAgeOption) return false;
+
+            const normalizedOptionValue = normalizeSize(option.value || '');
+            return normalizedGroupSizes.includes(normalizedOptionValue);
+          });
+        });
+
+        if (!fashionSizeMatch) return false;
+      }
+
       // Collection filter group - match ANY selected collection (OR logic)
       if (groupedFilters.productCollection) {
         const collections = product.collections?.edges || product.collections || [];

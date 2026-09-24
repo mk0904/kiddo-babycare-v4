@@ -863,6 +863,21 @@ export default function InfinityScreen() {
                                 newApiFilters.push(rigidStageFilter);
                                 filterAdded = true;
                             }
+                            // FASHION SIZE FILTERING:
+                            // For fashion, size values are the raw group strings (e.g. '3 - 4 y', '3-4 y', ...).
+                            // Push a fashionSize filter object so ProductCollection can match with
+                            // normalized comparison instead of exact string matching.
+                            if (!filterAdded && pageCategory === 'fashion' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
+                                // Collect ALL size values for this key into one fashionSize filter
+                                // (We do this once per key, not per value, so guard with filterAdded)
+                                const allGroupSizes = value; // Full array of strings for the group
+                                const fashionSizeFilter = { fashionSize: { groupSizes: allGroupSizes } };
+                                // Only push once (the first value iteration)
+                                if (newApiFilters.every((f: any) => !f.fashionSize)) {
+                                    newApiFilters.push(fashionSizeFilter);
+                                }
+                                filterAdded = true;
+                            }
                         }
                     }
                 });
