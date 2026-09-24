@@ -413,6 +413,14 @@ export interface CollectionImageCarouselGridCardConfig {
     borderRadius?: number;
     /** Show label below each cell image. Default true. */
     showLabels?: boolean;
+    /** Padding above grid in px (or percentage as string like "10%"). Default 0. */
+    paddingTop?: number | string;
+    /** Padding below grid in px (or percentage as string like "10%"). Default 8. */
+    paddingBottom?: number | string;
+    /** Horizontal padding around grid in px (or percentage as string like "5%"). Default 8. */
+    paddingHorizontal?: number | string;
+    /** Grid layout type: 'default' (even grid), 'featured-left' (first item large), 'featured-right' (last item large). Default 'default'. */
+    layoutType?: 'default' | 'featured-left' | 'featured-right';
   };
 
   // --- layout='list' ---
@@ -428,6 +436,10 @@ export interface CollectionImageCarouselGridCardConfig {
     showAddToCart?: boolean;
     /** Product image size in px. Default 72. */
     imageSize?: number;
+    /** Product title color. Default Colors.text. */
+    textColor?: string;
+    /** Product price color. Default Colors.text. */
+    priceColor?: string;
   };
 
   /** Per-card custom style overrides. */
@@ -435,6 +447,16 @@ export interface CollectionImageCarouselGridCardConfig {
     header?: any;
     title?: any;
     subtitle?: any;
+  };
+
+  /** Per-card color overrides. */
+  cardColors?: {
+    /** "See all" text color. Default Colors.primary. */
+    seeAllColor?: string;
+    /** Card title text color. Default Colors.text. */
+    titleColor?: string;
+    /** Card subtitle text color. Default Colors.textSecondary. */
+    subtitleColor?: string;
   };
 }
 
