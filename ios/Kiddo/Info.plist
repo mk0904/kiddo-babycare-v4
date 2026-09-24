@@ -36,7 +36,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>CTExpoLogLevel</key>
-	<integer>-1</integer>
+	<integer>3</integer>
 	<key>CTExpoNotificationProps</key>
 	<dict>
 		<key>EnablePushInForeground</key>

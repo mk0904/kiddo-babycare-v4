@@ -34,6 +34,8 @@ import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
 import { initializeAppsFlyer } from '@/services/appsflyerService';
 import { clevertapService } from '@/services/clevertapService';
+import { deepLinkService } from '@/services/deepLinkService';
+import { deepLinkFromPushPayload } from '@/utils/deepLink';
 import { configService } from '@/services/configService';
 import { errorService } from '@/services/errorService';
 import { initializeFreshchat } from '@/services/freshchatService';
@@ -85,7 +87,16 @@ Notifications.addNotificationResponseReceivedListener((response) => {
       if (isFreshchat && Platform.OS == 'android') {
         console.log('[Freshchat] Forwarding tapped payload to Freshchat.handlePushNotification');
         Freshchat.handlePushNotification(data);
+        return;
       }
+      // Not a support notification: it may carry a deep link (CleverTap `wzrk_dl`,
+      // OneSignal `launch_url`). This path covers the case where expo-notifications is the
+      // notification-centre delegate, so the provider SDK never sees the tap itself.
+      // handleDeepLink de-duplicates, so it is harmless when the native path already fired.
+      deepLinkService.handleDeepLink(
+        deepLinkFromPushPayload(data),
+        'expo-notifications'
+      );
     });
   }
 });
@@ -207,6 +218,20 @@ export default function RootLayout() {
     if (fontsLoaded) console.log('[Fonts] Loaded OK:', fontsLoaded);
     if (fontError) console.warn('[Fonts] Error:', fontError);
   }, [fontsLoaded, fontError]);
+
+  // Deep links from CleverTap push taps. Registered once, for the life of the app.
+  React.useEffect(() => {
+    const unsubscribe = deepLinkService.registerCleverTapDeepLinks();
+    return unsubscribe;
+  }, []);
+
+  // A notification tap on a cold start reaches us before <Stack> exists, so links are queued
+  // until the navigator is mounted. These are exactly the conditions under which it renders.
+  React.useEffect(() => {
+    if ((fontsLoaded || fontError) && !updateRequired) {
+      deepLinkService.markNavigationReady();
+    }
+  }, [fontsLoaded, fontError, updateRequired]);
 
 
   // Hide the native splash screen as soon as component mounts

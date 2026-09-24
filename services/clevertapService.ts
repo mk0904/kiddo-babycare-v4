@@ -68,6 +68,11 @@ export const clevertapService = {
         }
       }
       ct.onUserLogin(formattedProfile);
+
+      // onUserLogin can fork a NEW device record on the profile when the identity differs from the
+      // one already bound to this device — and the fork starts with no push token, so campaigns
+      // silently skip it. Re-register straight after login so every record has a live token.
+      void clevertapService.syncNativePushTokenWithCleverTap();
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] onUserLogin error:', e);
     }
@@ -147,15 +152,17 @@ export const clevertapService = {
   /**
    * Register the native push token with CleverTap (required for push campaigns and uninstall tracking).
    *
-   * - **Android:** Uses `setFCMPushToken` (and `setPushToken` for redundancy) with the FCM token.
-   *   Requires `fcmSenderId` in `app.json` for uninstall tracking to work.
-   *   Also creates notification channel `default_channel`.
-   * - **iOS:** Uses `setPushToken` with the APNs token. Push does not work on Simulator.
+   * - **Android:** Uses `setFCMPushToken` with the FCM token, and creates the `default_channel`
+   *   notification channel. `fcmSenderId` in `app.json` is required for uninstall tracking.
+   * - **iOS:** No-op. The APNs token reaches CleverTap natively through
+   *   `CleverTap.autoIntegrate()`; there is no JS API to set it (`setPushToken` does not exist).
    *
-   * Safe to call multiple times (e.g. after login). Requests notification permission if needed.
+   * Safe to call multiple times. Call it after `onUserLogin`, which can fork a new device record
+   * that starts without a token. Requests notification permission if needed.
    */
   async syncNativePushTokenWithCleverTap(): Promise<void> {
-    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+    // iOS registers its APNs token natively via CleverTap.autoIntegrate(); see the note below.
+    if (Platform.OS !== 'android') return;
 
     const ct = getCT();
     if (!ct?.setFCMPushToken) return;
@@ -200,20 +207,12 @@ export const clevertapService = {
         return;
       }
 
-      if (Platform.OS === 'ios') {
-        // Use setPushToken for APNs (iOS)
-        if (ct.setPushToken) {
-          ct.setPushToken(token);
-        } else {
-          ct.setFCMPushToken(token);
-        }
-      } else {
-        // For Android, ensure the token is registered correctly for FCM
-        ct.setFCMPushToken(token);
-        if (ct.setPushToken) {
-          ct.setPushToken(token);
-        }
-      }
+      // Android only. `setPushToken` does not exist in clevertap-react-native (the only token
+      // method it exports is `setFCMPushToken`), so the old iOS branch fell through and registered
+      // the APNs token AS an FCM token — CleverTap then held a token FCM could never deliver to.
+      // On iOS the APNs token reaches CleverTap natively: `CleverTap.autoIntegrate()` observes
+      // `didRegisterForRemoteNotificationsWithDeviceToken`, so there is nothing to do from JS.
+      ct.setFCMPushToken(token);
 
       if (__DEV__) {
         console.log('[CleverTap] Native push token sent (', Platform.OS, ', length:', token.length, ')');
