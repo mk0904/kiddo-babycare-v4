@@ -64,7 +64,7 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
         title: 'Return Instant/7days',
-        description: 'Return items instantly/7days if you are not satisfied with the product.',
+        description: 'Return items instantly/7days Not satisfied with your purchase? Return it instantly or within 7 days, hassle-free.',
       },
       {
         icon: ICONS.headphone1,
