@@ -128,19 +128,19 @@
       ]
     },
     "519211286817": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/519279771937",
-      "label": "Full Sleeves Night Suits",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_898c5cb3-8dfe-42b6-855d-25d02758564c.png?v=1790169401"
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519279771937",
+          "label": "Full Sleeves Night Suits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_898c5cb3-8dfe-42b6-855d-25d02758564c.png?v=1790169401"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519281082657",
+          "label": "Half Sleeves Night Suits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_d3db9a46-5a59-415d-8da7-a6510c633447.png?v=1790169383"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/519281082657",
-      "label": "Half Sleeves Night Suits",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_d3db9a46-5a59-415d-8da7-a6510c633447.png?v=1790169383"
-    }
-  ]
-},
     "508173123873": {
       "subcategories": [
         {
@@ -6510,146 +6510,290 @@
       ]
     },
     "519210238241": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/518857130273",
-      "label": "Full Sleeve T-shirts",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/89_8865ba69-ba18-4f1f-a01b-b47596f96c79.png?v=1789471934"
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/518857130273",
+          "label": "Full Sleeve T-shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/89_8865ba69-ba18-4f1f-a01b-b47596f96c79.png?v=1789471934"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519212728609",
+          "label": "Half Sleeves T-shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Copy_of_Diapering.png?v=1790065820"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517171380513",
+          "label": "Polos",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_2_f01f8fd9-f845-4f50-980b-d2e9addeb3b5.png?v=1785930163"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517171446049",
+          "label": "Shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_3_759495b3-f1a0-4f9b-bbf1-d9893a551f0d.png?v=1785930164"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517171020065",
+          "label": "Tops",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_b9e305a3-cc77-4d90-bd9b-857b1a60dc8c.png?v=1785930163"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517172003105",
+          "label": "Winter Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_4_65892c44-02ad-4244-86db-d6aae2993f8b.png?v=1785930163"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/519212728609",
-      "label": "Half Sleeves T-shirts",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Copy_of_Diapering.png?v=1790065820"
+    "519211024673": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/517144969505",
+          "label": "Jeans & Joggers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_9_3c7f07b0-4957-49a4-be03-1811874c98db.png?v=1785929949"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517145035041",
+          "label": "Leggings",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_10_2e2d0252-9557-4831-84d0-856683486982.png?v=1785929949"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517145067809",
+          "label": "Pants & Trousers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_11_4a501ef2-9431-4083-bc26-27b3d6054202.png?v=1785929949"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517145166113",
+          "label": "Pyjamas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_12_12e77052-d564-4629-a53c-daa40c051a46.png?v=1785929949"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517145624865",
+          "label": "Shorts & Skirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_13_1e9f2550-c7f5-4a31-b2f2-18d46b7d9cc5.png?v=1785929949"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/517171380513",
-      "label": "Polos",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_2_f01f8fd9-f845-4f50-980b-d2e9addeb3b5.png?v=1785930163"
+    "519211483425": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/517172855073",
+          "label": "Jeans/Pant Co-ord Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_10_f2aa3c5b-f047-4123-a4f5-2584b77218a1.png?v=1785931628"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517172986145",
+          "label": "Jogger Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_11_77385075-5819-4f78-beb2-51c4d195354e.png?v=1785931628"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517173051681",
+          "label": "Jumpsuits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_12_8fca36dd-d5d0-42c6-9e54-eba0c8862c0f.png?v=1785931628"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/517173117217",
+          "label": "Shorts Co-ord Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_13_c7eccf30-c97b-4b79-8dc2-9f1f20abf15a.png?v=1785931628"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/517171446049",
-      "label": "Shirts",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_3_759495b3-f1a0-4f9b-bbf1-d9893a551f0d.png?v=1785930164"
+    "519272530209": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519272628513",
+          "label": "Bodysuits & Onesies",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_97420eb5-4bcd-4fbf-8706-5b5e1d34f1df.png?v=1790186129"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519272661281",
+          "label": "Rompers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/12_4493ad19-65f8-4075-b332-935ad6a9478d.png?v=1790186131"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519272759585",
+          "label": "Nightwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_6d65f970-105a-4510-b63e-cd970e8ae5e8.png?v=1790186138"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519273447713",
+          "label": "T-Shirts & Tops",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_879affea-79ae-4085-82c1-59a892fa080d.png?v=1790186146"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519273283873",
+          "label": "Leggings & Shorts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_48facb09-d6b2-465f-9ba3-c4d4ddc6a990.png?v=1790186156"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519273251105",
+          "label": "Dresses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/19_0da4e149-7243-41ec-8bbf-a1bf60f99855.png?v=1790186157"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519273185569",
+          "label": "Newborn Sets & Jhabla Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/17_273575ae-98ed-45dc-84b2-3ee82a9dfa98.png?v=1790186157"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/517171020065",
-      "label": "Tops",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_b9e305a3-cc77-4d90-bd9b-857b1a60dc8c.png?v=1785930163"
+    "519277150497": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519277805857",
+          "label": "Sweatshirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/26_3aeec98a-1b08-477b-bccf-e745d41e8c91.png?v=1790225283"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519277609249",
+          "label": "T-Shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/27_555e39e4-8dd0-4ed1-923a-91f14bc51cfe.png?v=1790225283"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519277281569",
+          "label": "Thermals",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/28_1512940a-e11e-48e2-bd1d-cfd5d6b44b79.png?v=1790225283"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519277936929",
+          "label": "Jackets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/29_cf83cabf-e27e-48c7-884d-09d5d0522130.png?v=1790225283"
+        }
+      ]
     },
-    {
-      "collectionId": "gid://shopify/Collection/517172003105",
-      "label": "Winter Wear",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_4_65892c44-02ad-4244-86db-d6aae2993f8b.png?v=1785930163"
+    "519277969697": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519278428449",
+          "label": "Night Suits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_917c5a1f-9812-41b9-9e34-57645129b1bc.png?v=1790186169"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519278559521",
+          "label": "Pyjama",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/23_f519c702-c2a3-4799-81e1-a80d3d8ceb65.png?v=1790186169"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519278690593",
+          "label": "Sleepsuits",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/24_e06abd66-f249-4078-afb2-461d4e1acc48.png?v=1790186169"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519278625057",
+          "label": "Onesies & Rompers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/25_55e80513-bb8a-4062-a8d2-fd20a606a607.png?v=1790186169"
+        }
+      ]
+    },
+    "519274103073": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519274594593",
+          "label": "Party Dresses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/16_24b3f471-9b84-4023-a963-7fd455d218b3.png?v=1790186157"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519276986657",
+          "label": "Ethnic Wear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/20_f273193b-1b98-4a9a-a6d6-4642fa761fc9.png?v=1790186157"
+        }
+      ]
+    },
+    "519213842721": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519212957985",
+          "label": "Pack of 3/5",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_4cf1ab8a-52cb-42f7-85e9-742b74acefa7.png?v=1790069430"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519211581729",
+          "label": "Onsies/Rompers",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_3c7a2054-1d97-4da0-b42c-5f5d3f09cccd.png?v=1790069430"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519211745569",
+          "label": "Footwear",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_bdbdb01d-de62-4a28-b2ea-748bbdb8c9ac.png?v=1790069429"
+        }
+      ]
+    },
+    "518724026657": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/518724419873",
+          "label": "Soft Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Hamleys_3.png?v=1790074830"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518724911393",
+          "label": "Cars & RC Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_f7a221ed-fdcf-463b-8001-df3234876d7b.png?v=1790074637"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518726091041",
+          "label": "Action Figures & Guns",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_861259d0-4284-4746-a092-0aa6b3d0855c.png?v=1790074638"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518726648097",
+          "label": "Pretend & Play",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Hamleys_2_3717c2a1-6d62-40b2-96a1-37d6f8c54558.png?v=1790074832"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518942621985",
+          "label": "Indoor & Outdoor Play",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_31b741ca-81da-4508-bbcb-5aac64dc7ef2.png?v=1790074638"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/518726549793",
+          "label": "Musical Toys",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_34e5b7a2-c935-4b14-a03c-17b735582352.png?v=1790074638"
+        }
+      ]
+    },
+    "519267680545": {
+      "subcategories": [
+        {
+          "collectionId": "gid://shopify/Collection/519269155105",
+          "label": "T-Shirts & Tops",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_31cc090f-b12c-410e-b85c-37ea966fcd8c.png?v=1790185948"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519269253409",
+          "label": "Shirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_9dba3173-b0cf-4868-8b2f-5626d5d0cbe6.png?v=1790185954"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519269384481",
+          "label": "Dresses",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/4_5f38ca5e-cf80-4264-9b0b-123c576fdfa2.png?v=1790185960"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519269548321",
+          "label": "Jeans & Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_cb7f5028-83fa-4982-8d2f-e1d5151a41b3.png?v=1790185971"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519269613857",
+          "label": "Shorts & Skirts",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_c94191e5-0b5d-4f13-9732-30931eddd1e6.png?v=1790185989"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519271481633",
+          "label": "Joggers & Track Pants",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7_b94bf5ca-296d-446b-840e-e03250a1c380.png?v=1790185999"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519271579937",
+          "label": "Co-ord Sets",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/8_fc033e21-9e4d-4cb4-aac7-4c8a96295f01.png?v=1790186005"
+        },
+        {
+          "collectionId": "gid://shopify/Collection/519272268065",
+          "label": "Jumpsuits & Dungarees",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/9_8807f0c7-c4d4-4010-b29a-c8366d370382.png?v=1790186013"
+        }
+      ]
     }
-  ]
-},
-"519211024673": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/517144969505",
-      "label": "Jeans & Joggers",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_9_3c7f07b0-4957-49a4-be03-1811874c98db.png?v=1785929949"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517145035041",
-      "label": "Leggings",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_10_2e2d0252-9557-4831-84d0-856683486982.png?v=1785929949"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517145067809",
-      "label": "Pants & Trousers",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_11_4a501ef2-9431-4083-bc26-27b3d6054202.png?v=1785929949"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517145166113",
-      "label": "Pyjamas",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_12_12e77052-d564-4629-a53c-daa40c051a46.png?v=1785929949"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517145624865",
-      "label": "Shorts & Skirts",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_13_1e9f2550-c7f5-4a31-b2f2-18d46b7d9cc5.png?v=1785929949"
-    }
-  ]
-},
-"519211483425": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/517172855073",
-      "label": "Jeans/Pant Co-ord Sets",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_10_f2aa3c5b-f047-4123-a4f5-2584b77218a1.png?v=1785931628"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517172986145",
-      "label": "Jogger Sets",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_11_77385075-5819-4f78-beb2-51c4d195354e.png?v=1785931628"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517173051681",
-      "label": "Jumpsuits",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_12_8fca36dd-d5d0-42c6-9e54-eba0c8862c0f.png?v=1785931628"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/517173117217",
-      "label": "Shorts Co-ord Sets",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Homepage_icons_13_c7eccf30-c97b-4b79-8dc2-9f1f20abf15a.png?v=1785931628"
-    }
-  ]
-},
-"519213842721": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/519212957985",
-      "label": "Pack of 3/5",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/1_4cf1ab8a-52cb-42f7-85e9-742b74acefa7.png?v=1790069430"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/519211581729",
-      "label": "Onsies/Rompers",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/2_3c7a2054-1d97-4da0-b42c-5f5d3f09cccd.png?v=1790069430"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/519211745569",
-      "label": "Footwear",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/3_bdbdb01d-de62-4a28-b2ea-748bbdb8c9ac.png?v=1790069429"
-    }
-  ]
-},
-"518724026657": {
-  "subcategories": [
-    {
-      "collectionId": "gid://shopify/Collection/518724419873",
-      "label": "Soft Toys",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Hamleys_3.png?v=1790074830"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/518724911393",
-      "label": "Cars & RC Toys",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/11_f7a221ed-fdcf-463b-8001-df3234876d7b.png?v=1790074637"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/518726091041",
-      "label": "Action Figures & Guns",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/13_861259d0-4284-4746-a092-0aa6b3d0855c.png?v=1790074638"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/518726648097",
-      "label": "Pretend & Play",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Hamleys_2_3717c2a1-6d62-40b2-96a1-37d6f8c54558.png?v=1790074832"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/518942621985",
-      "label": "Indoor & Outdoor Play",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/14_31b741ca-81da-4508-bbcb-5aac64dc7ef2.png?v=1790074638"
-    },
-    {
-      "collectionId": "gid://shopify/Collection/518726549793",
-      "label": "Musical Toys",
-      "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/15_34e5b7a2-c935-4b14-a03c-17b735582352.png?v=1790074638"
-    }
-  ]
-}
-
   },
   "productGridDefaults": {
     "gap": 16,
@@ -7105,7 +7249,7 @@
       "type": "videoBanner",
       "visible": true,
       "data": {
-        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/010b441435254e4d982bd6936010c037.mp4",
+        "videoUrl": "https://cdn.shopify.com/videos/c/o/v/7b82090d9461405c85566562cc96db5f.mp4",
         "link": {
           "type": "collection",
           "collection": {
@@ -7158,26 +7302,26 @@
       },
       "collectionIds": [
         {
-          "id": "gid://shopify/Collection/519213842721",
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Baby_Gear_1_75f6dfc5-b6d7-406c-be8e-046a0d944b2a.gif?v=1790066484"
+          "id": "gid://shopify/Collection/519274103073",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Copy_of_Baby_Gear.gif?v=1790228263"
         },
         {
-          "id": "gid://shopify/Collection/519211024673"
+          "id": "gid://shopify/Collection/519272530209"
         },
         {
-          "id": "gid://shopify/Collection/519210238241"
+          "id": "gid://shopify/Collection/519267680545"
         },
         {
-          "id": "gid://shopify/Collection/519211286817"
+          "id": "gid://shopify/Collection/519277150497"
         },
         {
-          "id": "gid://shopify/Collection/519211483425"
+          "id": "gid://shopify/Collection/519277969697"
         }
       ],
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-60%",
+          "marginTop": "-57%",
           "zIndex": 10,
           "paddingHorizontal": "2%",
           "borderBottomLeftRadius": 20,
@@ -7224,17 +7368,15 @@
         {
           "id": "gid://shopify/Collection/518509592865"
         },
-                {
+        {
           "id": "gid://shopify/Collection/517738594593"
         },
         {
           "id": "gid://shopify/Collection/518104351009"
         },
-
         {
           "id": "gid://shopify/Collection/518681198881"
         },
-
         {
           "id": "gid://shopify/Collection/518681559329"
         },
@@ -7271,6 +7413,59 @@
           "textAlign": "center"
         }
       }
+    },
+    {
+      "id": "carousel-below-trending",
+      "type": "carousel",
+      "visible": true,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/5_6_86f0eedc-ae22-4915-8e70-f742b8c7c84e.png?v=1790245307",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/519316439329"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/6_7_d4b3d528-3514-4d24-bbc1-dd7868b1c0a9.png?v=1790245307",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/519316177185"
+            }
+          }
+        },
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/7_5_f8294424-a7c1-4520-aa6b-fc7ee459e886.png?v=1790245306",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": "gid://shopify/Collection/519316472097"
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": true,
+        "autoPlayInterval": 3000,
+        "loop": true,
+        "height": 0.5,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginTop": 15,
+          "paddingHorizontal": 8,
+          "backgroundColor": "white"
+        },
+        "image": {
+          "width": "100%",
+          "borderRadius": 12
+        }
+      },
+      "order": 4.1
     },
     {
       "id": "all-banner-below-frequently-bought",
@@ -9729,23 +9924,19 @@
         "cellBackgroundColor": "#FFFFFF"
       },
       "collectionIds": [
-        {  "id": "gid://shopify/Collection/518724026657",
-          "imageUrl":"https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ankitbanner.gif?v=1789652429"
-
-
+        {
+          "id": "gid://shopify/Collection/518724026657",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/ankitbanner.gif?v=1789652429"
         },
-        
-
         {
           "id": "gid://shopify/Collection/518724419873"
         },
         {
           "id": "gid://shopify/Collection/518724911393"
         },
-                {
+        {
           "id": "gid://shopify/Collection/518726091041"
         },
-
         {
           "id": "gid://shopify/Collection/518726648097"
         },
@@ -9786,7 +9977,7 @@
         }
       }
     },
-        {
+    {
       "id": "trending-most-wanted",
       "type": "categoryGrid",
       "visible": true,
@@ -9819,7 +10010,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "marginTop":25
+          "marginTop": 25
         },
         "title": {
           "marginBottom": 0,
@@ -10022,7 +10213,6 @@
         }
       }
     },
-
     {
       "id": "AgeWiseToys",
       "type": "categoryGrid",
@@ -10062,7 +10252,7 @@
       "styles": {
         "container": {
           "paddingHorizontal": 16,
-          "marginTop":25
+          "marginTop": 25
         },
         "title": {
           "marginBottom": 0,
@@ -10081,7 +10271,6 @@
         }
       }
     },
-
     {
       "id": "shop-by-brand-carousel-8",
       "type": "collectionImageCarousel",
@@ -11542,7 +11731,7 @@
         "smallBorderFadeScrollEnd": 80
       },
       "colors": {
-        "all": "#FF6B00",
+        "all": "#87CEEB",
         "Fashion": "#C8B58A",
         "babycare": "#87CEEB",
         "toys": "#2196F3",
@@ -11567,7 +11756,7 @@
         "icon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_All_Unclicked.png?v=1788754067",
         "activeIcon": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Final_All_Clicked.png?v=1788754067",
         "header": {
-          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/22_Sep_Header_1.png?v=1790078986",
+          "backgroundImage": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gear_sale-9.png?v=1790247718",
           "labelColors": {
             "selected": "#363636",
             "unselected": "#363636"

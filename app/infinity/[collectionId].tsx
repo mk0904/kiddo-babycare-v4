@@ -31,8 +31,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Gender filter options
 const GENDER_OPTIONS = [
     { label: 'Boys', value: 'boys' },
-    { label: 'Girls', value: 'girls' },
-    { label: 'Unisex', value: 'unisex' },
+    { label: 'Girls', value: 'girls' }
 ];
 
 // Age filter options
