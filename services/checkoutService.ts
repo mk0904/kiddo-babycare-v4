@@ -13,6 +13,8 @@ export interface CheckoutBillDetails {
   deliveryFee: number;
   giftWrappingFee: number;
   discount: number;
+  /** Extra discount from scheduled delivery on eligible categories. */
+  scheduledDiscount?: number;
   /** Kiddo Cash / wallet amount applied at checkout (INR). */
   kiddoCashUsed?: number;
   total: number;
@@ -58,6 +60,8 @@ export interface CheckoutDraftRequest {
   giftWrapping?: { name: string; price: number };
   couponCode?: string;
   discountAmount?: number;
+  /** Extra discount from scheduled delivery on eligible categories. */
+  scheduledDeliveryDiscount?: number;
   deliverySchedule?: {
     date: string;
     time: string;
@@ -97,6 +101,10 @@ export interface CheckoutDraftRequest {
   deviceType: string;
   /** Kiddo Cash / wallet amount applied — backend should log on Shopify draft order. */
   kiddoCashUsed?: number;
+  /** Search attribution ID for S2S order analytics */
+  searchId?: string;
+  /** Session ID for S2S order analytics */
+  sessionId?: string;
 }
 
 export interface CheckoutDraftResponse {
@@ -186,6 +194,7 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     couponCode: body.couponCode ?? '',
     coupon_code: body.couponCode ?? '',
     discountAmount: body.discountAmount ?? 0,
+    scheduledDeliveryDiscount: body.scheduledDeliveryDiscount,
     deliverySchedule: body.deliverySchedule,
     deliveryType: body.deliveryType ?? (body.deliverySchedule?.date && body.deliverySchedule?.time ? 'scheduled' : 'instant'),
     paymentMethod: body.paymentMethod ?? 'cod',
@@ -207,6 +216,12 @@ export async function createDraft(body: CheckoutDraftRequest): Promise<CheckoutD
     ...(body.kiddoCashUsed != null && body.kiddoCashUsed > 0
       ? { kiddoCashUsed: body.kiddoCashUsed, kiddo_cash_used: body.kiddoCashUsed }
       : {}),
+    ...(body.searchId ? { searchId: body.searchId, search_id: body.searchId } : {}),
+    ...(body.sessionId ? { sessionId: body.sessionId, session_id: body.sessionId } : {}),
+    note_attributes: [
+      ...(body.searchId ? [{ name: 'search_id', value: String(body.searchId) }] : []),
+      ...(body.sessionId ? [{ name: 'session_id', value: String(body.sessionId) }] : []),
+    ],
     // Always send non-empty appVersion and deviceType (same as get coupon by phone)
     appVersion: (body.appVersion != null && String(body.appVersion).trim() !== '') ? String(body.appVersion).trim() : '0.0.0',
     deviceType: (body.deviceType != null && String(body.deviceType).trim() !== '') ? String(body.deviceType).trim() : Platform.OS,

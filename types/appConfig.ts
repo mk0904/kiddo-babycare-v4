@@ -244,6 +244,8 @@ export interface CartConfig {
   savingsCorner?: { title?: string; applyCta?: string };
   /** When true, show Kiddo Cash toggle and coins earn bar in Savings Corner. */
   kiddoCashEnabled?: boolean;
+  /** Offer extra discount when scheduling delivery for specific sub_categories (e.g. diapers & formula). */
+  scheduledDeliveryOffer?: ScheduledDeliveryOfferConfig;
   billDetails?: {
     subtotalLabel?: string;
     deliveryLabel?: string;
@@ -252,6 +254,22 @@ export interface CartConfig {
     totalLabel?: string;
   };
   completePurchase?: string;
+}
+
+export interface ScheduledDeliveryOfferConfig {
+  enabled?: boolean;
+  /** Percentage discount (e.g. 5 for 5% off) */
+  discountPercent?: number;
+  /** Sub-category / product tag keywords eligible for scheduled discount (e.g. ['diapers', 'formula']) */
+  categories?: string[];
+  /** Card banner top line (e.g. "Want to save more?") */
+  title?: string;
+  /** Card banner prefix text before highlight (e.g. "Schedule and get ") */
+  subtitlePrefix?: string;
+  /** Card banner highlighted text (e.g. "extra 5% off on diapers & formula") */
+  highlightText?: string;
+  /** Bill details row title (e.g. "5% off on diapers & formula") */
+  billLabel?: string;
 }
 
 export interface CheckoutConfig {
@@ -452,6 +470,8 @@ export interface AppConfigResponse {
   forceUpdateConfig?: ForceUpdateConfig;
   returnExchangeConfig?: ReturnExchangeConfig;
   promoConfettiUrl?: string;
+  androidSplashUrl?: string;
+  iosSplashUrl?: string;
 }
 
 export interface ReturnExchangeConfig {

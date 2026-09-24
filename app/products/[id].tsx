@@ -980,7 +980,6 @@ const ProductDetailScreen = () => {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                     try {
                         const { selfSearchApi } = require('@/services/selfSearchApi');
@@ -1100,7 +1099,6 @@ const ProductDetailScreen = () => {
                         trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                     try {
                         const { selfSearchApi } = require('@/services/selfSearchApi');
@@ -1588,17 +1586,13 @@ const ProductDetailScreen = () => {
             } else {
                 await addToWishlist(product);
 
-                // Track Wishlist Added event
+                // Firebase Ecommerce Tracking
                 try {
-                    const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
                     const price = parseFloat(
                         product.priceRange?.minVariantPrice?.amount ||
                         product.variants?.edges?.[0]?.node?.price?.amount ||
                         '0'
                     );
-                    trackWishlistAdded(product.id, product.title, price);
-
-                    // Firebase Ecommerce Tracking
                     analyticsService.logAddToWishlist({
                         items: [{
                             item_id: product.id,

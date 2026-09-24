@@ -41,10 +41,21 @@ async function getOrCreateAnonId(): Promise<string> {
   }
 }
 
-function getDistinctId(): string {
+/** Format phone number to standard E.164 format (+91XXXXXXXXXX) */
+export function formatPhoneForAnalytics(phone?: string | null): string {
+  if (!phone) return '';
+  const cleaned = String(phone).replace(/\D/g, '');
+  if (cleaned.length === 10) return `+91${cleaned}`;
+  if (cleaned.length === 12 && cleaned.startsWith('91')) return `+${cleaned}`;
+  return phone.startsWith('+') ? phone : (cleaned ? `+${cleaned}` : '');
+}
+
+export function getDistinctId(): string {
   try {
     const user = useUserStore.getState().user;
-    return user?.email || user?.id || user?.customerId || user?.phone || _cachedAnonId || '';
+    if (!user) return _cachedAnonId || '';
+    const formattedPhone = formatPhoneForAnalytics(user.phone);
+    return user.email || user.id || user.customerId || formattedPhone || user.phone || _cachedAnonId || '';
   } catch {
     return _cachedAnonId || '';
   }
@@ -55,7 +66,7 @@ getOrCreateAnonId().catch(() => {});
 
 
 /**
- * Track a custom event (sent to backend → Mixpanel).
+ * Track a custom event (sent to backend → Mixpanel and CleverTap).
  */
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   try {
@@ -72,9 +83,9 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
       console.warn('[Mixpanel] Direct tracking failed:', e);
     }
 
-    // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
-    const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
-    clevertapService.recordEvent(ctEventName, props);
+    // CleverTap records 'App Launched' automatically on app startup.
+    // Send custom events (including 'App Opened') directly without renaming to reserved 'App Launched'.
+    clevertapService.recordEvent(eventName, props);
   } catch (error) {
     console.error('Analytics tracking error:', error);
   }
@@ -86,9 +97,11 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 export const identifyUser = (userId: string, userProperties?: {
   name?: string;
   email?: string;
+  phone?: string;
   [key: string]: any;
 }) => {
   try {
+    const formattedPhone = formatPhoneForAnalytics(userProperties?.phone);
     analyticsService.identify(userId, userProperties ?? {});
     
     // Set properties directly in local Mixpanel SDK
@@ -99,7 +112,7 @@ export const identifyUser = (userId: string, userProperties?: {
         const mixpanelProps: Record<string, any> = {};
         if (userProperties?.name) mixpanelProps['$name'] = userProperties.name;
         if (userProperties?.email) mixpanelProps['$email'] = userProperties.email;
-        if (userProperties?.phone) mixpanelProps['$phone'] = userProperties.phone;
+        if (formattedPhone) mixpanelProps['$phone'] = formattedPhone;
         
         // Include any other metadata properties passed in
         Object.entries(userProperties ?? {}).forEach(([k, v]) => {
@@ -120,7 +133,7 @@ export const identifyUser = (userId: string, userProperties?: {
     };
     if (userProperties?.email) profile.Email = userProperties.email;
     if (userProperties?.name) profile.Name = userProperties.name;
-    if (userProperties?.phone) profile.Phone = userProperties.phone;
+    if (formattedPhone) profile.Phone = formattedPhone;
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
@@ -149,6 +162,8 @@ export const trackScreenView = (screenName: string, additionalProperties?: Recor
 export const resetUser = () => {
   try {
     analyticsService.reset();
+    _cachedAnonId = null;
+    AsyncStorage.removeItem(ANON_DEVICE_ID_KEY).catch(() => {});
     
     // Reset local Mixpanel SDK identity
     try {
@@ -608,9 +623,21 @@ export const trackOrderPlaced = (
     selling_price: productMetafields?.map(m => m.sellingPrice).filter(val => val !== undefined && val !== null) || [],
     cost_price: productMetafields?.map(m => m.costPrice).filter(val => val !== undefined && val !== null) || [],
     discount_amount: productMetafields?.map(m => m.discountAmount).filter(val => val !== undefined && val !== null) || [],
-    line_item_total: productMetafields?.map(m => m.lineItemTotal).filter(val => val !== undefined && val !== null) || [],
   });
-  clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
+
+  const chargedItems = (productMetafields && productMetafields.length > 0)
+    ? productMetafields.map(m => ({
+        title: m.productTitle || '',
+        name: m.productTitle || '',
+        category: m.l1Collection || m.productCategory || 'General',
+        price: typeof m.sellingPrice === 'number' ? m.sellingPrice : (amount / (itemCount || 1)),
+        quantity: typeof m.quantity === 'number' ? m.quantity : 1,
+        productId: m.productId || '',
+        sku: m.sku || m.skuId || '',
+      }))
+    : undefined;
+
+  clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR', chargedItems);
   trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');
 };
 

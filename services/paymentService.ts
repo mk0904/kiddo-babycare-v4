@@ -85,6 +85,8 @@ export interface OrderBillDetails {
     deliveryFee: number;
     giftWrappingFee: number;
     discount: number;
+    /** Extra discount from scheduled delivery on eligible categories. */
+    scheduledDiscount?: number;
     /** Kiddo Cash / wallet amount applied at checkout (INR). */
     kiddoCashUsed?: number;
     total: number;
@@ -117,6 +119,8 @@ export interface OrderData {
     giftWrapping?: { name: string; price: number };
     couponCode?: string;
     discountAmount?: number;
+    /** Extra discount from scheduled delivery on eligible categories. */
+    scheduledDeliveryDiscount?: number;
     selectedShoe?: string;
     /** Free shoes offer: selected size (e.g. S1, S2) – sent to backend for Shopify */
     selectedShoeSize?: string;
@@ -149,6 +153,10 @@ export interface OrderData {
         dob: string;
         gender: string;
     } | null;
+    /** Search ID for server-to-server analytics attribution */
+    searchId?: string;
+    /** Session ID for server-to-server analytics attribution */
+    sessionId?: string;
 }
 
 export interface CreateOrderResult {
@@ -190,6 +198,7 @@ function orderDataToCheckoutDraftRequest(
         giftWrapping: orderData.giftWrapping,
         couponCode: orderData.couponCode ?? '',
         discountAmount: orderData.discountAmount ?? 0,
+        scheduledDeliveryDiscount: orderData.scheduledDeliveryDiscount,
         deliverySchedule: orderData.deliverySchedule,
         deliveryType: orderData.deliveryType ?? (orderData.deliverySchedule?.date && orderData.deliverySchedule?.time ? 'scheduled' : 'instant'),
         paymentMethod: (orderData.paymentMethod ?? paymentMethod) as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
@@ -202,6 +211,8 @@ function orderDataToCheckoutDraftRequest(
         schoolCouponData: orderData.schoolCouponData,
         isTryAndBuy: paymentMethod === 'try_and_buy' || orderData.isTryAndBuy === true,
         isDemoOrder: orderData.isDemoOrder,
+        searchId: orderData.searchId,
+        sessionId: orderData.sessionId,
         appVersion: getAppVersionForApi(),
         deviceType: Platform.OS ?? '',
     };

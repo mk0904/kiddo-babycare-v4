@@ -1,4 +1,4 @@
-import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { isDeliveryScheduleValid, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAddress } from '@/context/AddressContext';
 import { useAuth } from '@/context/AuthContext';
@@ -228,6 +228,12 @@ const GetDemoScreen: React.FC<GetDemoProps> = ({ product }) => {
     const handleSendRequest = async () => {
         if (!demoSchedule?.date || !demoSchedule?.time) {
             Alert.alert('Error', 'Please select a date and time for the demo');
+            return;
+        }
+
+        if (!isDeliveryScheduleValid(demoSchedule)) {
+            Alert.alert('Time Slot Expired', 'The selected date or time slot has passed. Please choose a new time for your demo.');
+            setDemoSchedule(null);
             return;
         }
 

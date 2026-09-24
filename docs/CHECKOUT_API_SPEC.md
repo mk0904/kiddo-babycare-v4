@@ -103,9 +103,49 @@ When the app sends `address`, it may include:
 
 **Backend requirement:** When creating the Shopify draft order, set the draft’s shipping address from `address.addressType` (if present). The backend uses only `addressType`; when calling Shopify, map it to the field Shopify expects so the placed order shows the address type (e.g. Events) on the order’s shipping address.
 
+### 6. Search Engine S2S Attribution
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `searchId` / `search_id` | string (optional) | The query attribution search ID returned by the search engine. |
+| `sessionId` / `session_id` | string (optional) | App analytics session ID. |
+| `note_attributes` | `Array<{ name, value }>` (optional) | Pre-formatted array containing `{ name: 'search_id', value }` and `{ name: 'session_id', value }`. |
+
+**Backend recommendation:**
+- Pass `note_attributes` directly when creating the Shopify Draft Order so Shopify persists them into the final Order.
+- When an order is completed or when processing the Shopify `orders/create` webhook, read `order.note_attributes` and post the S2S event to the Search Engine:
+
+```typescript
+// Example kiddo-service S2S Order Placement Tracking
+const searchId = order.note_attributes?.find(a => a.name === 'search_id')?.value;
+const sessionId = order.note_attributes?.find(a => a.name === 'session_id')?.value;
+
+if (searchId || order.id) {
+  await axios.post('https://search-engine-api-144508817658.asia-south1.run.app/api/analytics/events', {
+    user_id: order.customer?.id ? String(order.customer.id) : 'guest',
+    session_id: sessionId || 'server_webhook',
+    event_type: 'ORDER_PLACED',
+    search_id: searchId || undefined,
+    product_id: order.line_items?.[0]?.product_id ? String(order.line_items[0].product_id) : undefined,
+    metadata: {
+      orderId: String(order.id || order.name),
+      productIds: order.line_items?.map(i => String(i.product_id)),
+      total: order.total_price,
+      source: 'kiddo_service_s2s',
+    },
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.SEARCH_ENGINE_API_KEY || 'PLACEHOLDER_SEARCH_API_KEY',
+      'x-tenant-id': '0e87eda2-3758-4d5c-aed1-97d75ddff33a',
+    },
+  });
+}
+```
+
 ---
 
-### 6. Other existing fields (unchanged)
+### 7. Other existing fields (unchanged)
 
 - `totalAmount`, `currencyCode`, `email`, `phone`, `name`, `customerId`, `address` (with optional `addressType` above)
 - `giftWrapping`, `couponCode`, `discountAmount`, `deliverySchedule` (legacy shape; prefer `deliveryType` + `deliverySchedule` for delivery)

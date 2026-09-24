@@ -52,46 +52,19 @@ export const trackAnalyticsEvent = async (eventType: string, productId?: string,
     }
 };
 
-export const trackEvent = async (eventType: string, productId?: string, metadata?: any) => {
-    try {
-        const payload = {
-            sessionId: APP_SESSION_ID,
-            eventType,
-            productId,
-            metadata
-        };
-        console.log('[selfSearchApi] req:', {
-            url: client.defaults.baseURL + '/api/events',
-            headers: client.defaults.headers,
-            payload
-        });
-
-        await client.post('/api/events', payload);
-    } catch (error) {
-        if (!axios.isCancel(error)) {
-            console.error('Error tracking self search event:', error);
-        }
-    }
-};
+export const getCurrentSearchId = () => currentSearchId;
+export const getCurrentSessionId = () => APP_SESSION_ID;
 
 export const trackProductClick = (query: string, productId: string) => {
-    trackEvent('view', productId, { query }).catch(() => { });
     trackAnalyticsEvent('view', productId, { query }).catch(() => { });
 };
 
 export const trackSearch = (query: string, totalItems: number) => {
-    trackEvent('search', undefined, { query, resultCount: totalItems }).catch(() => { });
     trackAnalyticsEvent('search', undefined, { query, resultCount: totalItems }).catch(() => { });
 };
 
 export const trackAddToCart = (query: string, productId: string) => {
-    trackEvent('add_to_cart', productId, { query }).catch(() => { });
     trackAnalyticsEvent('add_to_cart', productId, { query }).catch(() => { });
-};
-
-export const trackOrderPlaced = (orderId: string, metadata?: any) => {
-    trackEvent('order_placed', undefined, { orderId, ...metadata }).catch(() => { });
-    trackAnalyticsEvent('order_placed', undefined, { orderId, ...metadata }).catch(() => { });
 };
 
 export const getSuggestions = async (query: string, signal?: AbortSignal) => {
@@ -211,10 +184,10 @@ export const searchProducts = async ({
 export const selfSearchApi = {
     searchProducts,
     getSuggestions,
-    trackEvent,
     trackAnalyticsEvent,
     trackProductClick,
     trackSearch,
     trackAddToCart,
-    trackOrderPlaced,
+    getCurrentSearchId,
+    getCurrentSessionId,
 };
