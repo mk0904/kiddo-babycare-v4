@@ -504,26 +504,11 @@ export default function InfinityScreen() {
         }
     }, [selectedFilters]);
 
-    // Handle facets loaded from the product query
+    // Handle facets loaded from the product query.
+    // NOTE: Only store facets + brands here. Size options are computed separately
+    // in the useEffect below so they always use the correct (possibly async) pageCategory.
     const handleFacetsLoaded = (loadedFacets: any[]) => {
-        // Filter out brand, product type, and size facets from the filter panel
-        const filteredFacets = loadedFacets.filter((facet: any) => {
-            const attr = (facet.attribute || facet.id || facet.field || facet.name || '').toLowerCase();
-            const title = (facet.title || facet.label || '').toLowerCase();
-            
-            // Exclude brand/vendor
-            if (attr === 'vendor' || title.includes('brand')) return false;
-            
-            // Exclude product type
-            if (attr === 'product_type' || attr === 'producttype' || title.includes('product type')) return false;
-            
-            // Exclude size
-            if (attr.includes('size') || title.includes('size')) return false;
-            
-            return true;
-        });
-        
-        setFacets(filteredFacets);
+        setFacets(loadedFacets);
 
         // Extract brand options from vendor facet for the quick-filter bubble
         const vendorFacet = loadedFacets.find((f: any) =>
@@ -537,10 +522,16 @@ export default function InfinityScreen() {
             }));
             setBrandOptions(options);
         }
+    };
 
-        // For Diapers, we specifically look for the "Sizes" metafield facet
+    // Recompute size options whenever facets OR pageCategory changes.
+    // This fixes the race condition where facets loaded before pageCategory was set
+    // (from the async collection-info fetch), causing inconsistent size options.
+    useEffect(() => {
+        if (facets.length === 0) return;
+
         if (pageCategory === 'diapers') {
-            const diaperFacet = loadedFacets.find((f: any) => {
+            const diaperFacet = facets.find((f: any) => {
                 const attr = (f.attribute || f.id || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
                 return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
@@ -578,9 +569,9 @@ export default function InfinityScreen() {
                 { label: '5 - 6 Y', value: '5-6y' },
                 { label: '6+ Y', value: '6+y' },
             ];
-            
+
             // Check which groups have available sizes
-            const sizeFacets = loadedFacets.filter((f: any) => {
+            const sizeFacets = facets.filter((f: any) => {
                 const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
                 return attr.includes('size') || title.includes('size');
@@ -591,7 +582,7 @@ export default function InfinityScreen() {
                 return [...acc, ...buckets];
             }, []);
 
-            const availableSizes = new Set();
+            const availableSizes = new Set<string>();
             allBuckets.forEach((b: any) => {
                 const label = (b.label || b.title || b.value || '').toLowerCase();
                 availableSizes.add(label);
@@ -640,11 +631,12 @@ export default function InfinityScreen() {
                     '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
                     '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
                     '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
-                ] };
+                ]
+            };
 
             const options = FASHION_SIZE_GROUPS.map(group => {
                 const groupSizes = fashionSizeGroups[group.value] || [];
-                const hasAvailableSize = groupSizes.some(size => 
+                const hasAvailableSize = groupSizes.some(size =>
                     availableSizes.has(size)
                 );
                 return {
@@ -655,7 +647,7 @@ export default function InfinityScreen() {
             setSizeOptions(options);
         } else {
             // For other categories, extract size options from all Size/Sizes related facets
-            const sizeFacets = loadedFacets.filter((f: any) => {
+            const sizeFacets = facets.filter((f: any) => {
                 const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
                 return attr.includes('size') || title.includes('size');
@@ -678,7 +670,7 @@ export default function InfinityScreen() {
                 setSizeOptions(Array.from(uniqueOptionsMap.values()));
             }
         }
-    };
+    }, [facets, pageCategory]);
     const handleApplyFilters = (filters: any) => {
         setSelectedFilters(filters);
         setIsFilterPanelVisible(false);
