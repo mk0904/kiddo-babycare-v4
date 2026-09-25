@@ -8615,7 +8615,7 @@
           "collectionId": "",
           "link": "/?category=toys",
           "gridConfig": {
-            "layoutType": "uniform",
+            "layoutType": "featured-left",
             "columns": 2,
             "rows": 2,
             "gap": 10,
@@ -8623,7 +8623,7 @@
             "resizeMode": "cover",
             "borderRadius": 14,
             "showLabels": true,
-            "paddingTop":20
+            "paddingTop":10
           },
           "gridItems": [
             {
