@@ -1003,25 +1003,19 @@ export default function InfinityScreen() {
                             // RIGID DIAPER SIZE FILTERING:
                             // If it's a size filter in the diapers category, and not yet added, 
                             // force a productMetafield filter for the "Sizes" metafield.
+                            // NOTE: We skip this for diaper sizes since we handle them via the diaperSizeFilter prop
+                            // which supports multiple sizes correctly. Only process if this is NOT a diaper size filter.
                             if (!filterAdded && pageCategory === 'diapers' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
-                                // Only apply if it matches our standardized list values
+                                // Check if this is a diaper size from our standardized list
                                 const isStandardSize = DIAPER_SIZE_OPTIONS.some(o =>
                                     o.label.toLowerCase() === val.toLowerCase() ||
                                     o.value.toLowerCase() === val.toLowerCase()
                                 );
 
+                                // Skip adding individual productMetafield filters for diaper sizes
+                                // They are handled via the diaperSizeFilter prop which supports multiple values
                                 if (isStandardSize) {
-                                    // Construct a rigid metafield filter for Shopify
-                                    // We use 'custom' namespace and 'sizes' key as specified by user
-                                    const rigidSizeFilter = {
-                                        productMetafield: {
-                                            namespace: "custom",
-                                            key: "sizes",
-                                            value: val
-                                        }
-                                    };
-                                    newApiFilters.push(rigidSizeFilter);
-                                    filterAdded = true;
+                                    filterAdded = true; // Mark as handled but don't add to API filters
                                 }
                             }
 
@@ -1328,7 +1322,7 @@ export default function InfinityScreen() {
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGenders.length > 0 ? selectedGenders[0] : null}
                         ageFilter={selectedAges.length > 0 ? selectedAges : null}
-                        diaperSizeFilter={selectedDiaperSizes.length > 0 ? selectedDiaperSizes[0] : null}
+                        diaperSizeFilter={selectedDiaperSizes.length > 0 ? selectedDiaperSizes : null}
                         pageCategory={pageCategory}
                     />
                 </Animated.View>

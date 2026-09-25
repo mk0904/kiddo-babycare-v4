@@ -58,8 +58,8 @@ export interface ProductCollectionProps {
   onResultsCount?: (count: number) => void;
   contentContainerStyle?: any;
   genderFilter?: string | null;
-  ageFilter?: string | null;
-  diaperSizeFilter?: string | null;
+  ageFilter?: string | string[] | null;
+  diaperSizeFilter?: string | string[] | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
@@ -650,16 +650,25 @@ export function ProductCollection({
 
     // Apply diaper size filter
     if (diaperSizeFilter) {
+      const diaperSizeFilters = Array.isArray(diaperSizeFilter) ? diaperSizeFilter : [diaperSizeFilter];
+      console.log('[Diaper Size Filter] Applying filter for sizes:', diaperSizeFilters);
       products = products.filter((product: any) => {
         const metafields = product.metafields || [];
-        return metafields.some((mf: any) => {
-          if (mf && mf.key === 'size_collection' && mf.value) {
-            const val = mf.value.toString().toLowerCase().trim();
-            const filterVal = diaperSizeFilter.toLowerCase().trim();
-            return val === filterVal;
-          }
-          return false;
+        // Check if product matches ANY of the selected diaper sizes
+        const matchResult = diaperSizeFilters.some((filterVal: string) => {
+          return metafields.some((mf: any) => {
+            if (mf && mf.key === 'size_collection' && mf.value) {
+              const val = mf.value.toString().toLowerCase().trim();
+              const normalizedFilterVal = filterVal.toLowerCase().trim();
+              const matches = val === normalizedFilterVal;
+              console.log('[Diaper Size Filter] Product:', product.title, 'metafield value:', val, 'filter value:', normalizedFilterVal, 'matches:', matches);
+              return matches;
+            }
+            return false;
+          });
         });
+        console.log('[Diaper Size Filter] Product:', product.title, 'final match:', matchResult);
+        return matchResult;
       });
     }
     
@@ -780,7 +789,29 @@ export function ProductCollection({
     }
 
     // Apply diaper size filter
-    
+    if (diaperSizeFilter) {
+      const diaperSizeFilters = Array.isArray(diaperSizeFilter) ? diaperSizeFilter : [diaperSizeFilter];
+      console.log('[Diaper Size Filter] Provided products - Applying filter for sizes:', diaperSizeFilters);
+      filteredProducts = filteredProducts.filter((product: any) => {
+        const metafields = product.metafields || [];
+        // Check if product matches ANY of the selected diaper sizes
+        const matchResult = diaperSizeFilters.some((filterVal: string) => {
+          return metafields.some((mf: any) => {
+            if (mf && mf.key === 'size_collection' && mf.value) {
+              const val = mf.value.toString().toLowerCase().trim();
+              const normalizedFilterVal = filterVal.toLowerCase().trim();
+              const matches = val === normalizedFilterVal;
+              console.log('[Diaper Size Filter] Provided Product:', product.title, 'metafield value:', val, 'filter value:', normalizedFilterVal, 'matches:', matches);
+              return matches;
+            }
+            return false;
+          });
+        });
+        console.log('[Diaper Size Filter] Provided Product:', product.title, 'final match:', matchResult);
+        return matchResult;
+      });
+    }
+
     // Apply limit if specified
     const limitedProvidedProducts = limit && limit > 0 
       ? filteredProducts.slice(0, limit) 

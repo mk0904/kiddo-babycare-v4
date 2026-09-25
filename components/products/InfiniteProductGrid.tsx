@@ -185,8 +185,8 @@ export interface InfiniteProductGridProps
   onResultsCount?: (count: number) => void;
   contentContainerStyle?: any;
   genderFilter?: string | null;
-  ageFilter?: string | null;
-  diaperSizeFilter?: string | null;
+  ageFilter?: string | string[] | null;
+  diaperSizeFilter?: string | string[] | null;
   pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
