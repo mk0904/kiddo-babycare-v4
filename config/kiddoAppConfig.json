@@ -7616,6 +7616,102 @@
       }
     },
     {
+      "id": "all-banner-9",
+      "type": "carousel",
+      "visible": true,
+      "order":6,
+      "data": [
+        {
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/IMG_9046.png?v=1790156544",
+          "link": {
+            "type": "collection",
+            "collection": {
+              "id": ""
+            }
+          }
+        }
+      ],
+      "carouselConfig": {
+        "autoPlay": false,
+        "autoPlayInterval": 3000,
+        "loop": false,
+        "height": 0.8,
+        "resizeMode": "cover"
+      },
+      "styles": {
+        "container": {
+          "marginBottom": 5,
+          "paddingHorizontal": 10,
+          "backgroundColor": "white",
+          "borderBottomLeftRadius": 20,
+          "borderBottomRightRadius": 20
+        },
+        "imageContainer": {},
+        "image": {
+          "width": "100%",
+          "padding": 0,
+          "borderRadius": 20
+        },
+        "img": {}
+      }
+    },
+    {
+      "id": "category-grid-onbanner1",
+      "type": "categoryGrid",
+      "visible": true,
+      "title": "bannergrid",
+      "order":6,
+      "gridConfig": {
+        "layout": "uniform",
+        "numColumns": 3,
+        "colGap": 12,
+        "rowGap": 10,
+        "limit": 8,
+        "aspectRatio": 1,
+        "showLabels": true,
+        "borderRadius": 12,
+        "proportionalScale": true
+      },
+      "collectionIds": [
+        {
+          "id": "gid://shopify/Collection/519268040993"
+        },
+        {
+          "id": "gid://shopify/Collection/519268172065"
+        },
+        {
+          "id": "gid://shopify/Collection/519268237601"
+        }
+      ],
+      "styles": {
+        "container": {
+          "position": "absolute",
+          "marginTop": "-42%",
+          "zIndex": 10,
+          "paddingHorizontal": "6%"
+        },
+        "title": {
+          "display": "none",
+          "marginBottom": 0,
+          "marginTop": 20,
+          "fontSize": 18,
+          "lineHeight": 20,
+          "fontWeight": "700",
+          "fontFamily": "lexend"
+        },
+        "text": {
+          "display": "none",
+          "marginTop": -5,
+          "fontWeight": "700",
+          "fontFamily": "lexend-bold",
+          "color": "#414651",
+          "fontSize": 11,
+          "letterSpacing": 0,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
       "id": "frequently-bought-carousel",
       "type": "categoryGrid",
       "order": 6,
@@ -7831,12 +7927,73 @@
       "type": "collectionImageCarousel",
       "title": "Newly Launched",
       "visible": true,
-      "order": 4,
+      "order": 9,
       "data": [
         {
-        "id": "product-1",
-          "productId": "gid://shopify/Product/10549425766689",
-          "imageUrl": "https://cdn.shopify.com/videos/c/o/v/7afc8a6ab1ba4b7b89ace591f8a196f0.mp4"
+          "id": "brand-aretto",
+          "collectionId": "gid://shopify/Collection/517388566817",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_7.png?v=1786434285"
+        },
+        {
+          "id": "brand-adidas",
+          "collectionId": "gid://shopify/Collection/517135008033",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_1.png?v=1786015627"
+        },
+        {
+          "id": "brand-adidas12",
+          "collectionId": "gid://shopify/Collection/517135335713",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys_2.png?v=1785827986"
+        },
+        {
+          "id": "brand-adidass",
+          "collectionId": "gid://shopify/Collection/516137189665",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_3.png?v=1783577572"
+        },
+        {
+          "id": "brand-adidas23",
+          "collectionId": "gid://shopify/Collection/516137320737",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_4_4fce33c1-6074-4518-865c-2be7969b1a74.png?v=1783577632"
+        },
+        {
+          "id": "brand-adidas1",
+          "collectionId": "gid://shopify/Collection/517135204641",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Banner_design_Boys.png?v=1785827959"
+        },
+        {
+          "id": "brand-adidas4",
+          "collectionId": "gid://shopify/Collection/515442802977",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM_1.jpg?v=1781962908"
+        },
+        {
+          "id": "brand-adidas35",
+          "collectionId": "gid://shopify/Collection/516137451809",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/collections/Baby_Gear_7_04c89d2c-a0df-4f96-b84e-be1e939410a3.png?v=1783577781"
+        },
+        {
+          "id": "brand-adidas29",
+          "collectionId": "gid://shopify/Collection/517135401249",
+          "label": "Adidas",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Banner_design_Boys_3_9d2c2834-3d3b-48ca-83dd-849b97ca111a.png?v=1786017751"
+        },
+        {
+          "id": "brand-doreme-2",
+          "collectionId": "gid://shopify/Collection/515304522017",
+          "label": "Hopscotch",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.18_PM.jpg?v=1781962690"
+        },
+        {
+          "id": "brand-doreme-4",
+          "collectionId": "gid://shopify/Collection/515442835745",
+          "label": "Mothercare",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/WhatsApp_Image_2026-06-20_at_6.41.19_PM.jpg?v=1781962723"
         }
       ],
       "carouselConfig": {
