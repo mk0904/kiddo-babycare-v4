@@ -235,15 +235,16 @@ const UniversalAdd: React.FC<UniversalAddProps> = ({
 
             // Track Add to Cart event
             try {
-                const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                const { trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
                 const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                const taxonomy = getProductTaxonomyProps(currentItem);
 
                 const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                 if (!hasAddedToCart) {
-                    trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                    trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price, taxonomy);
                     await AsyncStorage.setItem('has_added_to_cart', 'true');
                 }
-                trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                 try {
                     const { selfSearchApi } = require('@/services/selfSearchApi');

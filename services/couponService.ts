@@ -52,6 +52,8 @@ export interface CouponCode {
   applicableCategory?: string | null;
   /** When set, min purchase and discount apply to combined cart value of products in any of these categories (e.g. ["fashion", "apparel", "clothing"]). Each item counted once. */
   allowedCategories?: string[] | null;
+  /** When set, items with tags/titles matching these categories are excluded from min purchase and discount calculation. */
+  excludedCategories?: string[] | null;
   /** If true, this coupon requires child details (name, parent name, age, class) to be collected. */
   isSchoolCoupon?: boolean;
   /** If true, this coupon is treated as a milestone reward in the UI. */
@@ -252,6 +254,7 @@ export const getEligibleCouponsFromBackend = async (params: GetEligibleCouponsPa
         description: c.description != null ? String(c.description).trim() : undefined,
         applicableCategory: c.applicableCategory ?? c.applicable_category ?? undefined,
         allowedCategories: c.allowedCategories ?? c.allowed_categories ?? undefined,
+        excludedCategories: c.excludedCategories ?? c.excluded_categories ?? undefined,
         isMilestone: c.isMilestone === true || c.is_milestone === true,
         ...(schoolTrim != null ? { schoolName: schoolTrim } : {}),
       };
@@ -319,18 +322,40 @@ export interface LineItemForCategory {
   quantity?: number;
 }
 
+export function isItemExcluded(
+  item: LineItemForCategory,
+  excludedCategories: string[] | null | undefined
+): boolean {
+  if (!excludedCategories?.length) return false;
+  const excludedLower = excludedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
+  const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+  const title = (item.title ?? '').toLowerCase();
+
+  return excludedLower.some((cat) => {
+    if (tags.includes(cat)) return true;
+    if (title.includes(cat)) return true;
+    if (cat.endsWith('s') && title.includes(cat.slice(0, -1))) return true;
+    if (!cat.endsWith('s') && title.includes(cat + 's')) return true;
+    return false;
+  });
+}
+
 /**
  * Combined subtotal for items that have at least one tag in allowedCategories (each item counted once).
+ * Items that match any of the excludedCategories will be skipped.
  * Used for allowedCategories coupons: min purchase and discount apply to this value.
  */
 export function getSubtotalForAllowedCategories(
   items: LineItemForCategory[],
-  allowedCategories: string[] | null | undefined
+  allowedCategories: string[] | null | undefined,
+  excludedCategories?: string[] | null | undefined
 ): number {
   if (!allowedCategories?.length) return 0;
   const allowedLower = allowedCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
   let sum = 0;
   for (const item of items) {
+    if (isItemExcluded(item, excludedCategories)) continue;
+
     const tags = (item.tags ?? []).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
     const title = (item.title ?? '').toLowerCase();
 
@@ -642,17 +667,33 @@ export const validateCouponConditions = async (
 ): Promise<{ isValid: boolean; error?: string }> => {
   try {
     const allowed = coupon.allowedCategories?.length ? coupon.allowedCategories : null;
+    const excluded = coupon.excludedCategories?.length ? coupon.excludedCategories : null;
     const singleCategory = coupon.applicableCategory?.trim().toLowerCase();
     let effectiveSubtotal = cartSubtotal;
     let categoryLabel = '';
+    
     if (allowed?.length) {
       effectiveSubtotal = Array.isArray(lineItems)
-        ? getSubtotalForAllowedCategories(lineItems, allowed)
+        ? getSubtotalForAllowedCategories(lineItems, allowed, excluded)
         : 0;
       categoryLabel = formatCategoryLabel(allowed);
     } else if (singleCategory && categorySubtotals) {
-      effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
+      // Recompute single category subtotal to skip excluded items
+      if (excluded?.length && Array.isArray(lineItems)) {
+        effectiveSubtotal = getSubtotalForAllowedCategories(lineItems, [singleCategory], excluded);
+      } else {
+        effectiveSubtotal = categorySubtotals[singleCategory] ?? 0;
+      }
       categoryLabel = singleCategory;
+    } else if (excluded?.length && Array.isArray(lineItems)) {
+      // Global coupon, but we must exclude certain items
+      let excludedSum = 0;
+      for (const item of lineItems) {
+        if (isItemExcluded(item, excluded)) {
+          excludedSum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+        }
+      }
+      effectiveSubtotal = Math.max(0, cartSubtotal - excludedSum);
     }
 
     if (coupon.clothingOnly && !(Array.isArray(lineItems) && lineItems.some((item) => (item.tags ?? []).some((tag) => {

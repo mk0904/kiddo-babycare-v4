@@ -322,6 +322,8 @@ export interface DiscountCode {
     applicableCategory?: string | null;
     /** When set, discount is applied on combined cart value of products in any of these categories. */
     allowedCategories?: string[] | null;
+    /** When set, items matching these categories are excluded from discount. */
+    excludedCategories?: string[] | null;
     /** If true, this coupon requires school/child details. */
     isSchoolCoupon?: boolean;
     /** From coupons API / validate response (e.g. `title` for bill row). */
@@ -602,6 +604,7 @@ export function computeDiscountBreakdown(
         if (val <= 0 && (!isMilestoneOrGift || !dc.originalPrice) && !isDeal) continue;
 
         const categoryKey = dc.applicableCategory?.trim().toLowerCase();
+        const excludedCategories = dc.excludedCategories;
         let baseAmount: number;
         if (isDeal) {
             // Requirement: "discount should be calculated from 1 only" for deal/category products
@@ -609,14 +612,23 @@ export function computeDiscountBreakdown(
             baseAmount = getSubtotalForDealEligibleLines(lineItems, dc, dealProducts, couponAllowedCategories, { limitToOne: true });
         } else {
             if (dc.allowedCategories?.length) {
-                baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories);
+                baseAmount = getSubtotalForAllowedCategories(lineItems, dc.allowedCategories, excludedCategories);
             } else if (categoryKey) {
                 // Calculate subtotal for single applicableCategory, capping to 1 unit TOTAL (highest price)
-                const { lineItemMatchesApplicableCategory } = require('@/services/couponService');
+                const { lineItemMatchesApplicableCategory, isItemExcluded } = require('@/services/couponService');
                 const eligiblePrices = lineItems
-                    .filter(item => lineItemMatchesApplicableCategory(item, categoryKey) && Number(item.quantity ?? 0) > 0)
+                    .filter(item => lineItemMatchesApplicableCategory(item, categoryKey) && !isItemExcluded(item, excludedCategories) && Number(item.quantity ?? 0) > 0)
                     .map(item => Number(item.price ?? 0));
                 baseAmount = eligiblePrices.length > 0 ? Math.max(...eligiblePrices) : 0;
+            } else if (excludedCategories?.length) {
+                const { isItemExcluded } = require('@/services/couponService');
+                let excludedSum = 0;
+                for (const item of lineItems) {
+                    if (isItemExcluded(item, excludedCategories)) {
+                        excludedSum += Number(item.price ?? 0) * Number(item.quantity ?? 1);
+                    }
+                }
+                baseAmount = Math.max(0, subtotalVal - excludedSum);
             } else {
                 // General coupon (no category/deal restriction) - apply to full quantity
                 baseAmount = subtotalVal;
@@ -909,6 +921,7 @@ export const useCartStore = create<CartState>()(
                         const couponDescription =
                             apiDesc != null && String(apiDesc).trim() !== '' ? String(apiDesc).trim() : undefined;
                         const cfgAllowed = configDiscount.allowedCategories ?? (configDiscount as any).allowed_categories;
+                        const cfgExcluded = configDiscount.excludedCategories ?? (configDiscount as any).excluded_categories;
                         const cfgApCat = configDiscount.applicableCategory ?? (configDiscount as any).applicable_category;
                         const snValid = schoolNameFromCouponApi(configDiscount as { schoolName?: string | null; school_name?: string | null });
                         stillValid.push({
@@ -918,6 +931,9 @@ export const useCartStore = create<CartState>()(
                             ...(couponDescription != null ? { couponDescription } : {}),
                             ...(Array.isArray(cfgAllowed) && cfgAllowed.length
                                 ? { allowedCategories: cfgAllowed }
+                                : {}),
+                            ...(Array.isArray(cfgExcluded) && cfgExcluded.length
+                                ? { excludedCategories: cfgExcluded }
                                 : {}),
                             ...(cfgApCat != null && String(cfgApCat).trim() !== ''
                                 ? { applicableCategory: String(cfgApCat).trim() }
@@ -1043,20 +1059,24 @@ export const useCartStore = create<CartState>()(
                     }, 150);
 
                     try {
-                        // Fetch product metafields to get L1, L2, L3 collections
+                        // Fetch product metafields for taxonomy enrichment
                         let l1Collection: string | undefined;
                         let l2Collection: string | undefined;
                         let l3Collection: string | undefined;
+                        let ageGroup: string | undefined;
+                        let gender: string | undefined;
 
                         try {
                             const product = await shopifyApi.getProductById(item.productId);
-                            if (product?.metafields) {
-                                console.log('[CartStore] Product metafields:', product.metafields);
-                                const validMetafields = product.metafields.filter((m: any) => m != null);
-                                l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
-                                l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
-                                l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
-                                console.log('[CartStore] L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+                            if (product) {
+                                const { getProductTaxonomyProps, cacheProductTaxonomy } = require('@/utils/productTaxonomy');
+                                const taxonomy = getProductTaxonomyProps(product);
+                                cacheProductTaxonomy(item.productId, taxonomy);
+                                l1Collection = taxonomy.l1_collection;
+                                l2Collection = taxonomy.l2_collection;
+                                l3Collection = taxonomy.l3_collection;
+                                ageGroup = taxonomy.age_group;
+                                gender = taxonomy.gender;
                             }
                         } catch (metafieldError) {
                             console.warn('[CartStore] Failed to fetch product metafields:', metafieldError);
@@ -1070,7 +1090,8 @@ export const useCartStore = create<CartState>()(
                             item.quantity,
                             l1Collection,
                             l2Collection,
-                            l3Collection
+                            l3Collection,
+                            { l1_collection: l1Collection, l2_collection: l2Collection, l3_collection: l3Collection, age_group: ageGroup, gender },
                         );
                     } catch (e) {
                         console.warn('Analytics tracking error:', e);
@@ -1096,11 +1117,17 @@ export const useCartStore = create<CartState>()(
                     if (itemToRemove) {
                         try {
                             const { trackRemoveFromCart } = require('@/utils/mixpanelHelpers');
-                            trackRemoveFromCart(
-                                itemToRemove.productId,
-                                itemToRemove.title,
-                                itemToRemove.price
-                            );
+                            const { fetchProductTaxonomy, getCachedProductTaxonomy } = require('@/utils/productTaxonomy');
+                            const cached = getCachedProductTaxonomy(itemToRemove.productId);
+                            if (cached) {
+                                trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price, cached);
+                            } else {
+                                void fetchProductTaxonomy(itemToRemove.productId).then((taxonomy: any) => {
+                                    trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price, taxonomy);
+                                }).catch(() => {
+                                    trackRemoveFromCart(itemToRemove.productId, itemToRemove.title, itemToRemove.price);
+                                });
+                            }
                         } catch (e) {
                             console.warn('Mixpanel tracking error:', e);
                         }
@@ -1507,6 +1534,9 @@ export const useCartStore = create<CartState>()(
                         ...(configDiscount.allowedCategories?.length
                             ? { allowedCategories: configDiscount.allowedCategories }
                             : {}),
+                        ...(configDiscount.excludedCategories?.length
+                            ? { excludedCategories: configDiscount.excludedCategories }
+                            : {}),
                         ...(configDiscount.maxDiscountAmount != null
                             ? { maxDiscountAmount: Number(configDiscount.maxDiscountAmount) }
                             : {}),
@@ -1757,6 +1787,7 @@ export const useCartStore = create<CartState>()(
                         maxDiscountAmount: configDiscount.maxDiscountAmount != null ? Number(configDiscount.maxDiscountAmount) : undefined,
                         ...(configDiscount.applicableCategory != null ? { applicableCategory: configDiscount.applicableCategory } : {}),
                         ...(configDiscount.allowedCategories?.length ? { allowedCategories: configDiscount.allowedCategories } : {}),
+                        ...(configDiscount.excludedCategories?.length ? { excludedCategories: configDiscount.excludedCategories } : {}),
                         isSchoolCoupon: configDiscount.isSchoolCoupon === true,
                         isMilestone: configDiscount.isMilestone === true || codeToApply.toUpperCase() === 'FOURTHMILESTONE',
                         isDealCoupon: false, // Since this is the regular coupon path
@@ -2128,6 +2159,12 @@ export const useCartStore = create<CartState>()(
                                     : prevApplied?.allowedCategories?.length
                                         ? prevApplied.allowedCategories
                                         : undefined;
+                            const excludedCategories =
+                                backendCoupon?.excludedCategories?.length
+                                    ? backendCoupon.excludedCategories
+                                    : prevApplied?.excludedCategories?.length
+                                        ? prevApplied.excludedCategories
+                                        : undefined;
                             const fetchSchool =
                                 schoolNameFromCouponApi(backendCoupon as { schoolName?: string | null; school_name?: string | null }) ??
                                 prevApplied?.schoolName;
@@ -2146,6 +2183,7 @@ export const useCartStore = create<CartState>()(
                                     ? { applicableCategory: String(applicableCategory).trim() }
                                     : {}),
                                 ...(allowedCategories?.length ? { allowedCategories } : {}),
+                                ...(excludedCategories?.length ? { excludedCategories } : {}),
                                 ...(fetchSchool != null && String(fetchSchool).trim() !== ''
                                     ? { schoolName: String(fetchSchool).trim() }
                                     : {}),

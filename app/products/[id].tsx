@@ -664,18 +664,21 @@ const ProductDetailScreen = () => {
                 // Track Product Viewed event
                 try {
                     const { trackProductViewed, trackFirstProductViewed } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps, cacheProductTaxonomy } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                     const price = parseFloat(
                         fullProduct.priceRange?.minVariantPrice?.amount ||
                         fullProduct.variants?.edges?.[0]?.node?.price?.amount ||
                         '0'
                     );
+                    const taxonomy = getProductTaxonomyProps(fullProduct);
+                    cacheProductTaxonomy(fullProduct.id, taxonomy);
                     const hasViewedProduct = await AsyncStorage.getItem('has_viewed_product');
                     if (!hasViewedProduct) {
-                        trackFirstProductViewed(fullProduct.id, fullProduct.title);
+                        trackFirstProductViewed(fullProduct.id, fullProduct.title, taxonomy);
                         await AsyncStorage.setItem('has_viewed_product', 'true');
                     }
-                    trackProductViewed(fullProduct.id, fullProduct.title, price);
+                    trackProductViewed(fullProduct.id, fullProduct.title, price, taxonomy);
 
                     // Firebase Ecommerce Tracking
                     analyticsService.logViewItem({
@@ -759,9 +762,15 @@ const ProductDetailScreen = () => {
             // Track recommendation clicked
             try {
                 const { trackRecommendationClicked } = require('@/utils/mixpanelHelpers');
+                const { getProductTaxonomyProps, getCachedProductTaxonomy } = require('@/utils/productTaxonomy');
                 const recommendationType = title === 'You May Also Like' ? 'product_recommendation' :
                     title === 'Recently Viewed' ? 'recently_viewed' : 'related';
-                trackRecommendationClicked(recommendationType, p.id, p.title);
+                const fromProduct = getProductTaxonomyProps(p);
+                const taxonomy =
+                    fromProduct.l1_collection || fromProduct.age_group || fromProduct.gender
+                        ? fromProduct
+                        : getCachedProductTaxonomy(p.id) || fromProduct;
+                trackRecommendationClicked(recommendationType, p.id, p.title, taxonomy);
             } catch (e) {
                 console.warn('Mixpanel tracking error:', e);
             }
@@ -972,15 +981,16 @@ const ProductDetailScreen = () => {
 
                 // Track Add to Cart event
                 try {
-                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const taxonomy = getProductTaxonomyProps(product);
 
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
-                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price, taxonomy);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                     try {
                         const { selfSearchApi } = require('@/services/selfSearchApi');
@@ -1092,15 +1102,16 @@ const ProductDetailScreen = () => {
 
                 // Track Add to Cart event
                 try {
-                    const { trackAddToCart, trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { trackFirstAddToCart } = require('@/utils/mixpanelHelpers');
+                    const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const taxonomy = getProductTaxonomyProps(product);
 
                     const hasAddedToCart = await AsyncStorage.getItem('has_added_to_cart');
                     if (!hasAddedToCart) {
-                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price);
+                        trackFirstAddToCart(cartItem.productId, cartItem.title, cartItem.price, taxonomy);
                         await AsyncStorage.setItem('has_added_to_cart', 'true');
                     }
-                    trackAddToCart(cartItem.productId, cartItem.title, cartItem.price, cartItem.quantity);
 
                     try {
                         const { selfSearchApi } = require('@/services/selfSearchApi');
@@ -1171,6 +1182,22 @@ const ProductDetailScreen = () => {
     );
 
     const pdpMainTryBuyOption = tryBuyPdpEligible ? productOptions[0] : null;
+
+    /** First multi-value option the shopper still has to choose (e.g. deferred Try & Buy size). */
+    const pdpUnselectedOption = useMemo(() => {
+        if (isTicketingProduct) return null;
+        return (
+            productOptions.find(
+                (option: any) =>
+                    (option?.values || []).length > 1 && selectedOptions[option.name] === undefined,
+            ) || null
+        );
+    }, [isTicketingProduct, productOptions, selectedOptions]);
+
+    const pdpHasAnyInStockVariant = useMemo(
+        () => variants.some((v: any) => isVariantAvailable(v) === true),
+        [variants],
+    );
     const pdpRestProductOptions = useMemo(
         () => (tryBuyPdpEligible ? productOptions.slice(1) : productOptions),
         [tryBuyPdpEligible, productOptions],
@@ -1219,6 +1246,13 @@ const ProductDetailScreen = () => {
 
     useEffect(() => {
         if (productOptions.length > 0 && variants.length > 0) {
+            // Don't bind from a partial option map (e.g. Try & Buy defers the size until the shopper
+            // picks one). A partial/empty map matches variants[0] regardless of stock, which made
+            // PDPs open as "Out of Stock" whenever the first size was sold out.
+            const hasUnselectedOption = productOptions.some(
+                (option: any) => selectedOptions[option.name] === undefined,
+            );
+            if (hasUnselectedOption) return;
             const matchingVariant = findVariantByOptions(selectedOptions, variants);
             if (matchingVariant) {
                 setSelectedVariant(matchingVariant);
@@ -1316,7 +1350,8 @@ const ProductDetailScreen = () => {
             // Track
             try {
                 const { trackProductShareClicked } = require('@/utils/mixpanelHelpers');
-                trackProductShareClicked(product.id, product.title, 'native');
+                const { getProductTaxonomyProps } = require('@/utils/productTaxonomy');
+                trackProductShareClicked(product.id, product.title, 'native', getProductTaxonomyProps(product));
             } catch (_) { }
 
         } catch (err: any) {
@@ -1565,17 +1600,13 @@ const ProductDetailScreen = () => {
             } else {
                 await addToWishlist(product);
 
-                // Track Wishlist Added event
+                // Firebase Ecommerce Tracking
                 try {
-                    const { trackWishlistAdded } = require('@/utils/mixpanelHelpers');
                     const price = parseFloat(
                         product.priceRange?.minVariantPrice?.amount ||
                         product.variants?.edges?.[0]?.node?.price?.amount ||
                         '0'
                     );
-                    trackWishlistAdded(product.id, product.title, price);
-
-                    // Firebase Ecommerce Tracking
                     analyticsService.logAddToWishlist({
                         items: [{
                             item_id: product.id,
@@ -2194,7 +2225,21 @@ const ProductDetailScreen = () => {
                 </View>
 
                 {(() => {
-                    const cartButtonNode = selectedVariant && isVariantAvailable(selectedVariant) === true ? (
+                    const cartButtonNode = pdpUnselectedOption && pdpHasAnyInStockVariant ? (
+                        <TouchableOpacity
+                            style={[styles.addToCartButton]}
+                            onPress={() => {
+                                const label = String(pdpUnselectedOption.name || 'option');
+                                Alert.alert(
+                                    `Select ${label}`,
+                                    `Please choose your ${label.toLowerCase()} above before adding to cart.`,
+                                    [{ text: 'OK' }],
+                                );
+                            }}
+                        >
+                            <Text style={styles.addToCartText}>Select {pdpUnselectedOption.name}</Text>
+                        </TouchableOpacity>
+                    ) : selectedVariant && isVariantAvailable(selectedVariant) === true ? (
                         isTicketingProduct && !selectedEventDate ? (
                             <TouchableOpacity
                                 style={[styles.addToCartButton]}

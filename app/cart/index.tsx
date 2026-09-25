@@ -14,7 +14,7 @@ import MilestoneTracker from '@/components/home/MilestoneTracker';
 import { milestoneCurrentStepFromConfig } from '@/components/home/milestoneUIFromConfig';
 import { AddressModal } from '@/components/modals/AddressModal';
 import { GiftWrappingModal } from '@/components/modals/GiftWrappingModal';
-import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
+import { isDeliveryScheduleValid, ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { SchoolCouponModal } from '@/components/modals/SchoolCouponModal';
 import { StockLimitModal } from '@/components/modals/StockLimitModal';
 import type { TryAndBuyVariantSelectionResult } from '@/components/modals/VariantSelectionModal';
@@ -43,11 +43,15 @@ import {
     useCartTotal,
     useCheckoutUrl,
     useGiftWrapping,
-    useIsTryAndBuy
+    useIsTryAndBuy,
 } from '@/store/cartStore';
 import { isVariantAvailable } from '@/utils/availability';
 import { getMilestoneFreeGiftKind } from '@/utils/cartMilestoneFreeGift';
 import { resolveDeliveryServiceable } from '@/utils/deliveryServiceability';
+import {
+    calculateScheduledDiscount,
+    getScheduledDiscountEligibleSubtotal,
+} from '@/utils/scheduledDeliveryDiscount';
 import {
     getActiveMilestoneSlotRaw,
     isMilestoneMinCartUnlocked,
@@ -118,9 +122,11 @@ export default function CartScreen() {
         const trackCartView = async () => {
             try {
                 const { trackCartViewed } = require('@/utils/mixpanelHelpers');
+                const { fetchCartTaxonomy } = require('@/utils/productTaxonomy');
                 const itemCount = cartItems.length;
                 const cartValue = itemSubtotal;
-                trackCartViewed(itemCount, cartValue);
+                const taxonomy = await fetchCartTaxonomy(cartItems.map((i) => i.productId));
+                trackCartViewed(itemCount, cartValue, taxonomy);
 
                 // Firebase Ecommerce Tracking
                 analyticsService.logViewCart({
@@ -275,6 +281,8 @@ export default function CartScreen() {
     const getCheckoutUrl = useCartStore(state => state.getCheckoutUrl);
     const updateCartItem = useCartStore(state => state.updateCartItem);
     const shippingFee = useCartStore(state => state.shippingFee);
+    const deliverySchedule = useCartStore(state => state.deliverySchedule);
+    const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
 
     // Collection IDs that are ticketing products
     const TICKETING_COLLECTION_IDS = [
@@ -503,7 +511,11 @@ export default function CartScreen() {
     useFocusEffect(
         useCallback(() => {
             fetchWalletBalance();
-        }, [fetchWalletBalance]),
+            const currentSchedule = useCartStore.getState().deliverySchedule;
+            if (currentSchedule?.date && currentSchedule?.time && !isDeliveryScheduleValid(currentSchedule)) {
+                setDeliverySchedule(null);
+            }
+        }, [fetchWalletBalance, setDeliverySchedule]),
     );
 
     const freeShoesOfferConfig = useMemo(
@@ -526,6 +538,13 @@ export default function CartScreen() {
         () => appConfigService.getMysteryGiftOfferConfig(),
         [appConfigRefresh]
     );
+    const scheduledOfferConfig = useMemo(() => {
+        const cfg = appConfigService.getScheduledDeliveryOfferConfig();
+        if (__DEV__) {
+            console.log('[CartScreen] Backend scheduledDeliveryOffer in cart:', cfg);
+        }
+        return cfg;
+    }, [appConfigRefresh]);
     /** Visibility is backend-only: app just reads freeShoesOffer.visible from config (no local rules). */
     const showFreeShoesByBackend = freeShoesOfferConfig?.visible !== false;
     const showPuzzleByBackend = freePuzzleOfferConfig?.visible !== false;
@@ -599,8 +618,6 @@ export default function CartScreen() {
     const [showTryAndBuyModal, setShowTryAndBuyModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showSchoolModal, setShowSchoolModal] = useState(false);
-    const deliverySchedule = useCartStore(state => state.deliverySchedule);
-    const setDeliverySchedule = useCartStore(state => state.setDeliverySchedule);
     const [kiddoCashEnabled, setKiddoCashEnabled] = useState(false);
     const [walletBalance, setWalletBalance] = useState<number | null>(null);
     const [stockLimitModal, setStockLimitModal] = useState<{ visible: boolean; maxQty: number }>({ visible: false, maxQty: 0 });
@@ -711,24 +728,6 @@ export default function CartScreen() {
     }, [loading, cartItems.length, router]);
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added or COD is unavailable
-    // Track cart abandonment when user leaves cart without checkout
-    useFocusEffect(
-        useCallback(() => {
-            return () => {
-                // Fire Cart Abandoned event if user leaves without placing order
-                if (!hasPlacedOrder && cartItems.length > 0) {
-                    try {
-                        const { trackCartAbandoned } = require('@/utils/mixpanelHelpers');
-                        const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                        const cartValue = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                        trackCartAbandoned(cartValue, itemCount);
-                    } catch (e) {
-                        console.warn('Cart abandoned tracking error:', e);
-                    }
-                }
-            };
-        }, [hasPlacedOrder, cartItems])
-    );
 
     // Automatically switch to razorpay if COD is selected and ticketing products are added
     useEffect(() => {
@@ -888,6 +887,7 @@ export default function CartScreen() {
 
     if (__DEV__) {
         console.log('[CartScreen] discountCodes from store:', discountCodes);
+        console.log('[CartScreen] excludedCategories:', discountCodes.map(dc => dc.excludedCategories));
         console.log('[CartScreen] discountCodes length:', discountCodes?.length);
     }
 
@@ -992,13 +992,38 @@ export default function CartScreen() {
 
     const discount = Math.min(Number(discountAmount) || 0, itemSubtotal);
 
+    // Scheduled delivery extra discount for eligible sub-categories (e.g. diapers & formula)
+    const isDeliveryScheduled = Boolean(
+        deliverySchedule?.date && deliverySchedule?.time && isDeliveryScheduleValid(deliverySchedule)
+    );
+    const scheduledEligibleSubtotal = useMemo(
+        () => getScheduledDiscountEligibleSubtotal(cartItems, scheduledOfferConfig?.categories),
+        [cartItems, scheduledOfferConfig?.categories]
+    );
+    const hasScheduledEligibleItems = scheduledEligibleSubtotal > 0;
+    const scheduledDeliveryDiscount = useMemo(
+        () =>
+            calculateScheduledDiscount(
+                scheduledEligibleSubtotal,
+                isDeliveryScheduled,
+                scheduledOfferConfig?.discountPercent ?? 0,
+                scheduledOfferConfig?.enabled ?? false
+            ),
+        [
+            scheduledEligibleSubtotal,
+            isDeliveryScheduled,
+            scheduledOfferConfig?.discountPercent,
+            scheduledOfferConfig?.enabled,
+        ]
+    );
+
     const appliedSaveAmount = useMemo(() => {
-        let total = discount;
+        let total = discount + scheduledDeliveryDiscount;
         if (hasFreeShoesGiftApplied && freeShoesGiftOriginalPrice != null) total += freeShoesGiftOriginalPrice;
         if (hasKidPuzzleApplied && kidPuzzleOriginalPrice != null) total += (kidPuzzleOriginalPrice || 0);
         if (hasMysteryGiftApplied && mysteryGiftOriginalPrice != null) total += (mysteryGiftOriginalPrice || 0);
         return total;
-    }, [discount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
+    }, [discount, scheduledDeliveryDiscount, hasFreeShoesGiftApplied, freeShoesGiftOriginalPrice, hasKidPuzzleApplied, kidPuzzleOriginalPrice, hasMysteryGiftApplied, mysteryGiftOriginalPrice]);
 
     const milestoneCouponCodeCopy = useMemo(() => {
         if (milestoneConfigDiscountAmount > 0) {
@@ -1034,12 +1059,13 @@ export default function CartScreen() {
             discountCodesLength: discountCodes?.length,
             calculatedDiscount,
             discount,
+            scheduledDeliveryDiscount,
             itemSubtotal,
         });
     }
 
-    // Subtotal after discount
-    const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount);
+    // Subtotal after discount (including scheduled delivery discount)
+    const subtotalAfterDiscount = Math.max(0, itemSubtotal - discount - scheduledDeliveryDiscount);
 
     const deliveryFee = shippingFee();
     // Gift wrap fee: only when there are valid gift-wrapped items in cart (so removing the product zeros the fee).
@@ -1160,7 +1186,21 @@ export default function CartScreen() {
         const latestDiscount = latestStore.discountAmount();
         const latestDeliveryFee = latestStore.shippingFee();
         const latestGiftWrappingFee = latestStore.getGiftWrappingPrice();
-        const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount);
+        const latestSchedule = latestStore.deliverySchedule;
+        const latestIsScheduled = Boolean(
+            latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)
+        );
+        const latestScheduledEligibleSubtotal = getScheduledDiscountEligibleSubtotal(
+            latestCartItems,
+            scheduledOfferConfig?.categories
+        );
+        const latestScheduledDiscount = calculateScheduledDiscount(
+            latestScheduledEligibleSubtotal,
+            latestIsScheduled,
+            scheduledOfferConfig?.discountPercent ?? 0,
+            scheduledOfferConfig?.enabled ?? false
+        );
+        const latestSubtotalAfterDiscount = Math.max(0, latestItemSubtotal - latestDiscount - latestScheduledDiscount);
         const latestTotal = latestSubtotalAfterDiscount + latestDeliveryFee + latestGiftWrappingFee;
 
         let balanceForKiddo = walletBalance ?? 0;
@@ -1216,7 +1256,10 @@ export default function CartScreen() {
         // Track Checkout Started event
         try {
             const { trackCheckoutStarted } = require('@/utils/mixpanelHelpers');
-            trackCheckoutStarted(latestTotal, latestCartItems.length, latestCartItems.map(item => item.productId).filter(Boolean));
+            const { fetchCartTaxonomy } = require('@/utils/productTaxonomy');
+            const productIds = latestCartItems.map(item => item.productId).filter(Boolean);
+            const taxonomy = await fetchCartTaxonomy(productIds);
+            trackCheckoutStarted(latestTotal, latestCartItems.length, productIds, taxonomy);
 
             // Firebase Ecommerce Tracking
             analyticsService.logBeginCheckout({
@@ -1271,6 +1314,30 @@ export default function CartScreen() {
             return;
         }
 
+        // Validate delivery schedule if set
+        const currentDeliverySchedule = latestStore.deliverySchedule;
+        if (currentDeliverySchedule?.date && currentDeliverySchedule?.time) {
+            if (!isDeliveryScheduleValid(currentDeliverySchedule)) {
+                setDeliverySchedule(null);
+                setOrderLoading(false);
+                Alert.alert(
+                    'Delivery Slot Expired',
+                    'Your previously selected delivery time slot has passed. Please choose a new delivery slot or proceed with instant delivery.',
+                    [
+                        {
+                            text: 'Update Slot',
+                            onPress: () => setShowScheduleModal(true),
+                        },
+                        {
+                            text: 'Deliver Now',
+                            style: 'cancel',
+                        },
+                    ]
+                );
+                return;
+            }
+        }
+
         const { schoolCouponData } = latestStore;
 
         // Validate School Coupon requirements
@@ -1315,16 +1382,7 @@ export default function CartScreen() {
             longitude: 0
         };
 
-        // Track Checkout Started
         try {
-            const { trackEvent } = require('@/utils/mixpanelHelpers');
-            trackEvent('Checkout Started', {
-                cartValue: latestToPay,
-                itemCount: latestCartItems.length,
-                hasCoupon: latestDiscountCodes.length > 0,
-                paymentMethod: paymentMethod || 'not_selected',
-            });
-
             // Firebase Ecommerce Tracking
             analyticsService.logAddPaymentInfo({
                 payment_type: paymentMethod,
@@ -1583,8 +1641,9 @@ export default function CartScreen() {
                 } : undefined,
                 couponCode: latestCheckoutCouponCode || undefined,
                 discountAmount: latestDiscount > 0 ? latestDiscount : undefined,
-                deliverySchedule: (deliverySchedule?.date && deliverySchedule?.time) ? deliverySchedule : undefined,
-                deliveryType: (deliverySchedule?.date && deliverySchedule?.time) ? ('scheduled' as const) : ('instant' as const),
+                scheduledDeliveryDiscount: latestScheduledDiscount > 0 ? latestScheduledDiscount : undefined,
+                deliverySchedule: (latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)) ? latestSchedule : undefined,
+                deliveryType: (latestSchedule?.date && latestSchedule?.time && isDeliveryScheduleValid(latestSchedule)) ? ('scheduled' as const) : ('instant' as const),
                 paymentMethod: effectivePaymentMethod as 'razorpay' | 'cod' | 'free' | 'try_and_buy',
                 billDetails: {
                     subtotal: latestItemSubtotal,
@@ -1592,6 +1651,7 @@ export default function CartScreen() {
                     deliveryFee: latestDeliveryFee,
                     giftWrappingFee: latestGiftWrappingFee,
                     discount: latestDiscount,
+                    ...(latestScheduledDiscount > 0 ? { scheduledDiscount: latestScheduledDiscount } : {}),
                     ...(latestKiddoCashApplied > 0 ? { kiddoCashUsed: latestKiddoCashApplied } : {}),
                     total: latestToPay,
                     currencyCode: 'INR',
@@ -1603,6 +1663,22 @@ export default function CartScreen() {
                 selectedPuzzleAge: latestStore.selectedPuzzleAge || undefined,
                 isTryAndBuy: isTryAndBuy,
                 schoolCouponData: activeSchoolCoupon ? latestStore.schoolCouponData : null,
+                searchId: (() => {
+                    try {
+                        const { selfSearchApi } = require('@/services/selfSearchApi');
+                        return selfSearchApi.getCurrentSearchId();
+                    } catch {
+                        return undefined;
+                    }
+                })(),
+                sessionId: (() => {
+                    try {
+                        const { selfSearchApi } = require('@/services/selfSearchApi');
+                        return selfSearchApi.getCurrentSessionId();
+                    } catch {
+                        return undefined;
+                    }
+                })(),
             };
 
             // Call Payment Service
@@ -1802,15 +1878,6 @@ export default function CartScreen() {
                 const orderCount = (parseInt(orderCountRaw || '0', 10) || 0) + 1;
                 await AsyncStorage.setItem('user_order_count', orderCount.toString());
 
-                if (orderCount === 1) {
-                    trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
-                    await AsyncStorage.setItem('has_placed_order', 'true');
-                } else if (orderCount === 2) {
-                    trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
-                } else if (orderCount === 3) {
-                    trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
-                }
-
                 const cartProductIds = cartItems.map(item => item.productId).filter(Boolean);
                 const cartVariantIds = cartItems.map(item => item.variantId).filter(Boolean);
 
@@ -1819,7 +1886,9 @@ export default function CartScreen() {
                     productId: string, 
                     l1Collection?: string, 
                     l2Collection?: string, 
-                    l3Collection?: string, 
+                    l3Collection?: string,
+                    ageGroup?: string,
+                    gender?: string,
                     emptyMetafield1?: string, 
                     emptyMetafield2?: string, 
                     emptyMetafield3?: string,
@@ -1858,15 +1927,20 @@ export default function CartScreen() {
                 }> = [];
                 try {
                     const { shopifyApi } = await import('@/services/shopifyApi');
+                    const { getProductTaxonomyProps, cacheProductTaxonomy, aggregateTaxonomies } = await import('@/utils/productTaxonomy');
                     const metafieldPromises = cartItems.map(async (item) => {
                         try {
                             const product = await shopifyApi.getProductById(item.productId);
-                            if (product?.metafields) {
+                            if (product?.metafields || product?.ageGroup) {
                                 console.log('[Cart] Product metafields for order:', product.metafields);
-                                const validMetafields = product.metafields.filter((m: any) => m != null);
-                                const l1Collection = validMetafields.find((m: any) => m.key === 'l1_collection')?.value;
-                                const l2Collection = validMetafields.find((m: any) => m.key === 'l2_collection')?.value;
-                                const l3Collection = validMetafields.find((m: any) => m.key === 'l3_collection')?.value;
+                                const validMetafields = (product.metafields || []).filter((m: any) => m != null);
+                                const taxonomy = getProductTaxonomyProps(product);
+                                cacheProductTaxonomy(item.productId, taxonomy);
+                                const l1Collection = taxonomy.l1_collection;
+                                const l2Collection = taxonomy.l2_collection;
+                                const l3Collection = taxonomy.l3_collection;
+                                const ageGroup = taxonomy.age_group;
+                                const gender = taxonomy.gender;
                                 const emptyMetafield1 = validMetafields.find((m: any) => m.key === 'empty_metafield_1')?.value;
                                 const emptyMetafield2 = validMetafields.find((m: any) => m.key === 'empty_metafield_2')?.value;
                                 const emptyMetafield3 = validMetafields.find((m: any) => m.key === 'empty_metafield_3')?.value;
@@ -1907,6 +1981,8 @@ export default function CartScreen() {
                                     l1Collection,
                                     l2Collection,
                                     l3Collection,
+                                    ageGroup,
+                                    gender,
                                     emptyMetafield1,
                                     emptyMetafield2,
                                     emptyMetafield3,
@@ -1949,17 +2025,38 @@ export default function CartScreen() {
                     });
                     productMetafields = (await Promise.all(metafieldPromises)).filter(m => m);
                     console.log('[Cart] All product metafields for order:', productMetafields);
+
+                    const orderTaxonomy = aggregateTaxonomies(
+                        productMetafields.map((m) => ({
+                            l1_collection: m.l1Collection,
+                            l2_collection: m.l2Collection,
+                            l3_collection: m.l3Collection,
+                            age_group: m.ageGroup,
+                            gender: m.gender || m.genderCollection || m.mmGoogleShoppingGender,
+                        })),
+                    );
+
+                    if (orderCount === 1) {
+                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal, orderTaxonomy);
+                        await AsyncStorage.setItem('has_placed_order', 'true');
+                    } else if (orderCount === 2) {
+                        trackSecondOrderPlaced(orderIdForDisplay, cartTotal, orderTaxonomy);
+                    } else if (orderCount === 3) {
+                        trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
+                    }
                 } catch (error) {
                     console.warn('[Cart] Failed to fetch product metafields for order:', error);
+                    if (orderCount === 1) {
+                        trackFirstOrderPlaced(orderIdForDisplay, cartTotal);
+                        await AsyncStorage.setItem('has_placed_order', 'true');
+                    } else if (orderCount === 2) {
+                        trackSecondOrderPlaced(orderIdForDisplay, cartTotal);
+                    } else if (orderCount === 3) {
+                        trackThirdOrderPlaced(orderIdForDisplay, cartTotal);
+                    }
                 }
 
                 trackOrderPlaced(orderIdForDisplay, cartTotal, cartItems.length, effectivePaymentMethod, cartProductIds, cartVariantIds, productMetafields);
-                try {
-                    const { selfSearchApi } = require('@/services/selfSearchApi');
-                    selfSearchApi.trackOrderPlaced(orderIdForDisplay, { amount: cartTotal, productIds: cartProductIds });
-                } catch (e) {
-                    console.warn('Self search analytics error:', e);
-                }
                 trackEvent('Payment Success', {
                     orderId: orderIdForDisplay,
                     amount: cartTotal,
@@ -2498,6 +2595,10 @@ export default function CartScreen() {
                                     (!defaultAddress && detectedLocationStatus === 'unserviceable') ||
                                     savedAddressOutsideDeliveryZone
                                 }
+                                showScheduleOfferBanner={Boolean(scheduledOfferConfig?.enabled && hasScheduledEligibleItems)}
+                                offerTitle={scheduledOfferConfig?.title}
+                                offerSubtitlePrefix={scheduledOfferConfig?.subtitlePrefix}
+                                offerHighlightText={scheduledOfferConfig?.highlightText}
                             />
                         )}
 
@@ -2593,6 +2694,8 @@ export default function CartScreen() {
                             milestoneConfigDiscountDescription={discountCodes.find(dc => dc.code.toUpperCase() === milestoneDiscountCodeUc)?.couponDescription}
                             milestoneIsGiftBillDiscountTitle={undefined}
                             otherCouponDiscount={otherCouponDiscountAmount}
+                            scheduledDeliveryDiscount={scheduledDeliveryDiscount}
+                            scheduledDeliveryDiscountLabel={scheduledOfferConfig?.billLabel}
                             giftWrappingFee={giftWrappingFee}
                             giftWrapping={giftWrapping}
                             kiddoCashEnabled={kiddoCashEnabled}

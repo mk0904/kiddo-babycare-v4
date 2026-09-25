@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kiddo",
     "slug": "app",
-    "version": "2.1.7",
+    "version": "2.1.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": [
@@ -152,6 +152,7 @@
           "accountId": "69R-748-Z77Z",
           "accountToken": "b4a-2c6",
           "accountRegion": "eu1",
+          "logLevel": 3,
           "fcmSenderId": "1083846018645",
           "customIdentifiers": "Email,Phone",
           "android": {

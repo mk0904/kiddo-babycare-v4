@@ -14,10 +14,17 @@ import {
     trackSearchAction,
 } from '@/utils/appsFlyerAnalytics';
 import { extractNumericId } from '@/utils/shopifyIds';
+import {
+  taxonomyToEventProps,
+  type ProductTaxonomy,
+  type ProductTaxonomyArrays,
+} from '@/utils/productTaxonomy';
 
 /**
  * Analytics Helpers - Events are sent to the backend (Mixpanel, CleverTap) and CleverTap in-app.
  */
+
+export type { ProductTaxonomy, ProductTaxonomyArrays };
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -41,10 +48,21 @@ async function getOrCreateAnonId(): Promise<string> {
   }
 }
 
-function getDistinctId(): string {
+/** Format phone number to standard E.164 format (+91XXXXXXXXXX) */
+export function formatPhoneForAnalytics(phone?: string | null): string {
+  if (!phone) return '';
+  const cleaned = String(phone).replace(/\D/g, '');
+  if (cleaned.length === 10) return `+91${cleaned}`;
+  if (cleaned.length === 12 && cleaned.startsWith('91')) return `+${cleaned}`;
+  return phone.startsWith('+') ? phone : (cleaned ? `+${cleaned}` : '');
+}
+
+export function getDistinctId(): string {
   try {
     const user = useUserStore.getState().user;
-    return user?.email || user?.id || user?.customerId || user?.phone || _cachedAnonId || '';
+    if (!user) return _cachedAnonId || '';
+    const formattedPhone = formatPhoneForAnalytics(user.phone);
+    return user.email || user.id || user.customerId || formattedPhone || user.phone || _cachedAnonId || '';
   } catch {
     return _cachedAnonId || '';
   }
@@ -55,7 +73,7 @@ getOrCreateAnonId().catch(() => {});
 
 
 /**
- * Track a custom event (sent to backend → Mixpanel).
+ * Track a custom event (sent to backend → Mixpanel and CleverTap).
  */
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   try {
@@ -72,9 +90,9 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
       console.warn('[Mixpanel] Direct tracking failed:', e);
     }
 
-    // CleverTap Snapshot (DAU/WAU/MAU) uses "App Launched"; send it when app opens so metrics populate
-    const ctEventName = eventName === 'App Opened' ? 'App Launched' : eventName;
-    clevertapService.recordEvent(ctEventName, props);
+    // CleverTap records 'App Launched' automatically on app startup.
+    // Send custom events (including 'App Opened') directly without renaming to reserved 'App Launched'.
+    clevertapService.recordEvent(eventName, props);
   } catch (error) {
     console.error('Analytics tracking error:', error);
   }
@@ -86,9 +104,11 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 export const identifyUser = (userId: string, userProperties?: {
   name?: string;
   email?: string;
+  phone?: string;
   [key: string]: any;
 }) => {
   try {
+    const formattedPhone = formatPhoneForAnalytics(userProperties?.phone);
     analyticsService.identify(userId, userProperties ?? {});
     
     // Set properties directly in local Mixpanel SDK
@@ -99,7 +119,7 @@ export const identifyUser = (userId: string, userProperties?: {
         const mixpanelProps: Record<string, any> = {};
         if (userProperties?.name) mixpanelProps['$name'] = userProperties.name;
         if (userProperties?.email) mixpanelProps['$email'] = userProperties.email;
-        if (userProperties?.phone) mixpanelProps['$phone'] = userProperties.phone;
+        if (formattedPhone) mixpanelProps['$phone'] = formattedPhone;
         
         // Include any other metadata properties passed in
         Object.entries(userProperties ?? {}).forEach(([k, v]) => {
@@ -120,7 +140,7 @@ export const identifyUser = (userId: string, userProperties?: {
     };
     if (userProperties?.email) profile.Email = userProperties.email;
     if (userProperties?.name) profile.Name = userProperties.name;
-    if (userProperties?.phone) profile.Phone = userProperties.phone;
+    if (formattedPhone) profile.Phone = formattedPhone;
     clevertapService.onUserLogin(profile);
     // Attach native push token (FCM / APNs) to CleverTap profile for push campaigns
     void clevertapService.syncNativePushTokenWithCleverTap();
@@ -149,6 +169,8 @@ export const trackScreenView = (screenName: string, additionalProperties?: Recor
 export const resetUser = () => {
   try {
     analyticsService.reset();
+    _cachedAnonId = null;
+    AsyncStorage.removeItem(ANON_DEVICE_ID_KEY).catch(() => {});
     
     // Reset local Mixpanel SDK identity
     try {
@@ -178,7 +200,12 @@ export const trackLoginFailed = (reason?: string) => {
   trackEvent('Login Failed', { reason });
 };
 
-export const trackProductViewed = (productId: string, productName?: string, price?: number) => {
+export const trackProductViewed = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Product Viewed', {
     productId,
     productName,
@@ -187,12 +214,29 @@ export const trackProductViewed = (productId: string, productName?: string, pric
     content_type: 'product',
     value: price,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
   trackContentViewAction(productId, price, 'INR');
 };
 
-export const trackAddToCart = (productId: string, productName?: string, price?: number, quantity?: number, l1Collection?: string, l2Collection?: string, l3Collection?: string) => {
-  console.log('[Mixpanel] trackAddToCart - L1 Collection:', l1Collection, 'L2 Collection:', l2Collection, 'L3 Collection:', l3Collection);
+export const trackAddToCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  quantity?: number,
+  l1Collection?: string,
+  l2Collection?: string,
+  l3Collection?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
+  const tax = taxonomyToEventProps({
+    l1_collection: taxonomy?.l1_collection ?? l1Collection,
+    l2_collection: taxonomy?.l2_collection ?? l2Collection,
+    l3_collection: taxonomy?.l3_collection ?? l3Collection,
+    age_group: taxonomy?.age_group,
+    gender: taxonomy?.gender,
+  });
+  console.log('[Mixpanel] trackAddToCart taxonomy:', tax);
   trackEvent('Add to Cart', {
     productId,
     productName,
@@ -202,16 +246,19 @@ export const trackAddToCart = (productId: string, productName?: string, price?: 
     content_type: 'product',
     value: price,
     currency: 'INR',
-    l1_collection: l1Collection,
-    l2_collection: l2Collection,
-    l3_collection: l3Collection,
+    ...tax,
   });
   if (price != null && Number.isFinite(price)) {
     trackAddToCartAction(productId, 'product', price, quantity || 1);
   }
 };
 
-export const trackCheckoutStarted = (cartValue: number, itemCount: number, productIds?: string[]) => {
+export const trackCheckoutStarted = (
+  cartValue: number,
+  itemCount: number,
+  productIds?: string[],
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Checkout Started', {
     cartValue,
     itemCount,
@@ -220,6 +267,7 @@ export const trackCheckoutStarted = (cartValue: number, itemCount: number, produ
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
     num_items: itemCount,
+    ...taxonomyToEventProps(taxonomy),
   });
   trackInitiatedCheckoutAction(cartValue, itemCount, productIds, 'INR');
 };
@@ -274,39 +322,60 @@ export const trackProfileCreated = (properties: {
   trackEvent('Profile Created', properties);
 };
 
-export const trackFirstProductViewed = (productId: string, productName?: string) => {
+export const trackFirstProductViewed = (
+  productId: string,
+  productName?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('First Product Viewed', {
     productId,
     productName,
+    ...taxonomyToEventProps(taxonomy),
   });
   trackContentViewAction(productId);
 };
 
-export const trackFirstAddToCart = (productId: string, productName?: string, price?: number) => {
+export const trackFirstAddToCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('First Add to Cart', {
     productId,
     productName,
     price,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackFirstOrderPlaced = (orderId: string, amount: number) => {
+export const trackFirstOrderPlaced = (
+  orderId: string,
+  amount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('First Order Placed', {
     event_id: orderId,
     orderId,
     amount,
     value: amount,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackSecondOrderPlaced = (orderId: string, amount: number) => {
+export const trackSecondOrderPlaced = (
+  orderId: string,
+  amount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Second Order Placed', {
     event_id: orderId,
     orderId,
     amount,
     value: amount,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -355,10 +424,22 @@ export const trackTappedInProfile = (option: string) => {
   trackEvent('tapped_in_profile', { Option: option });
 };
 
-export const trackCategoryViewed = (categoryName: string, categoryId?: string) => {
+export const trackCategoryViewed = (
+  categoryName: string,
+  categoryId?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
+  const tax = taxonomyToEventProps({
+    l1_collection: taxonomy?.l1_collection ?? categoryName,
+    l2_collection: taxonomy?.l2_collection,
+    l3_collection: taxonomy?.l3_collection,
+    age_group: taxonomy?.age_group,
+    gender: taxonomy?.gender,
+  });
   trackEvent('Category Viewed', {
     categoryName,
     categoryId,
+    ...tax,
   });
   trackListViewAction(categoryName);
 };
@@ -381,15 +462,26 @@ export const trackFiltersApplied = (filters: {
   trackEvent('Filters Applied', filters);
 };
 
-export const trackRecommendationClicked = (recommendationType: string, itemId: string, itemName?: string) => {
+export const trackRecommendationClicked = (
+  recommendationType: string,
+  itemId: string,
+  itemName?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Recommendation Clicked', {
     recommendationType,
     itemId,
     itemName,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackWishlistAdded = (productId: string, productName?: string, price?: number) => {
+export const trackWishlistAdded = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Wishlist Added', {
     productId,
     productName,
@@ -398,16 +490,23 @@ export const trackWishlistAdded = (productId: string, productName?: string, pric
     content_type: 'product',
     value: price,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
   trackAddToWishlistAction(productId, price, 'INR');
 };
 
-export const trackProductShareClicked = (productId: string, productName?: string, shareMethod?: string) => {
+export const trackProductShareClicked = (
+  productId: string,
+  productName?: string,
+  shareMethod?: string,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Product Share Clicked', {
     productId,
     'product id': extractNumericId(productId) || productId,
     productName,
     shareMethod,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -429,18 +528,29 @@ export const trackSizeSelected = (productId: string, size: string) => {
 // CART EVENTS
 // ============================================
 
-export const trackRemoveFromCart = (productId: string, productName?: string, price?: number) => {
+export const trackRemoveFromCart = (
+  productId: string,
+  productName?: string,
+  price?: number,
+  taxonomy?: ProductTaxonomy | null,
+) => {
   trackEvent('Remove from Cart', {
     productId,
     productName,
     price,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
-export const trackCartViewed = (itemCount: number, cartValue: number) => {
+export const trackCartViewed = (
+  itemCount: number,
+  cartValue: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Cart Viewed', {
     itemCount,
     cartValue,
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 
@@ -509,7 +619,9 @@ export const trackOrderPlaced = (
     productId: string, 
     l1Collection?: string, 
     l2Collection?: string, 
-    l3Collection?: string, 
+    l3Collection?: string,
+    ageGroup?: string,
+    gender?: string,
     emptyMetafield1?: string, 
     emptyMetafield2?: string, 
     emptyMetafield3?: string,
@@ -552,6 +664,8 @@ export const trackOrderPlaced = (
   const l1Collections = productMetafields?.map(m => m.l1Collection).filter(Boolean) || [];
   const l2Collections = productMetafields?.map(m => m.l2Collection).filter(Boolean) || [];
   const l3Collections = productMetafields?.map(m => m.l3Collection).filter(Boolean) || [];
+  const ageGroups = productMetafields?.map(m => m.ageGroup).filter(Boolean) || [];
+  const genders = productMetafields?.map(m => m.gender || m.genderCollection || m.mmGoogleShoppingGender).filter(Boolean) || [];
   
   const emptyMetafield1s = productMetafields?.map(m => m.emptyMetafield1).filter(Boolean) || [];
   const emptyMetafield2s = productMetafields?.map(m => m.emptyMetafield2).filter(Boolean) || [];
@@ -570,6 +684,13 @@ export const trackOrderPlaced = (
     content_ids: productIds?.map(id => extractNumericId(id)) || [],
     variant: variantIds?.map(id => extractNumericId(id)) || [],
     content_type: 'product',
+    // CSV-requested singular keys (arrays for multi-item orders)
+    l1_collection: l1Collections,
+    l2_collection: l2Collections,
+    l3_collection: l3Collections,
+    age_group: ageGroups,
+    gender: genders,
+    // Legacy plural keys kept for existing dashboards
     l1_collections: l1Collections,
     l2_collections: l2Collections,
     l3_collections: l3Collections,
@@ -608,9 +729,21 @@ export const trackOrderPlaced = (
     selling_price: productMetafields?.map(m => m.sellingPrice).filter(val => val !== undefined && val !== null) || [],
     cost_price: productMetafields?.map(m => m.costPrice).filter(val => val !== undefined && val !== null) || [],
     discount_amount: productMetafields?.map(m => m.discountAmount).filter(val => val !== undefined && val !== null) || [],
-    line_item_total: productMetafields?.map(m => m.lineItemTotal).filter(val => val !== undefined && val !== null) || [],
   });
-  clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR');
+
+  const chargedItems = (productMetafields && productMetafields.length > 0)
+    ? productMetafields.map(m => ({
+        title: m.productTitle || '',
+        name: m.productTitle || '',
+        category: m.l1Collection || m.productCategory || 'General',
+        price: typeof m.sellingPrice === 'number' ? m.sellingPrice : (amount / (itemCount || 1)),
+        quantity: typeof m.quantity === 'number' ? m.quantity : 1,
+        productId: m.productId || '',
+        sku: m.sku || m.skuId || '',
+      }))
+    : undefined;
+
+  clevertapService.recordCharged(orderId, amount, itemCount, paymentMethod, 'INR', chargedItems);
   trackPurchaseCompletion(orderId, amount, itemCount, productIds, 'INR');
 };
 
@@ -661,12 +794,17 @@ export const trackWalletApplied = (walletAmountUsed: number) => {
 // CART ABANDONMENT EVENTS
 // ============================================
 
-export const trackCartAbandoned = (cartValue: number, itemCount: number) => {
+export const trackCartAbandoned = (
+  cartValue: number,
+  itemCount: number,
+  taxonomy?: ProductTaxonomyArrays | null,
+) => {
   trackEvent('Cart Abandoned', {
     cartValue,
     itemCount,
     value: cartValue,
     currency: 'INR',
+    ...taxonomyToEventProps(taxonomy),
   });
 };
 

@@ -7,6 +7,7 @@
  */
 import type {
   AppConfigResponse,
+  AppDownloadConfig,
   CartConfig,
   CartFeatures,
   EntryScreenItem,
@@ -20,12 +21,14 @@ import type {
   MysteryGiftOfferConfig,
   OrderDetailConfig,
   ReferralConfig,
-  WalletConfig,
+  ScheduledDeliveryOfferConfig,
   SpecialDealConfig,
-  AppDownloadConfig,
+  WalletConfig,
 } from '@/types/appConfig';
 import { normalizeSpecialDealConfig } from '@/utils/normalizeSpecialDealConfig';
-import { getBackendApiPath, backendFetch } from './backendBase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import { backendFetch, getBackendApiPath } from './backendBase';
 
 function getAppConfigUrl(payload?: AppConfigPayload): string {
   const url = getBackendApiPath('app/config');
@@ -96,10 +99,35 @@ function parseServicableDistanceFromRecord(rec: Record<string, unknown>): number
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+const CACHED_ANDROID_SPLASH_KEY = '@cached_splash_url_android';
+const CACHED_IOS_SPLASH_KEY = '@cached_splash_url_ios';
+
 class AppConfigService {
   private config: AppConfigResponse | null = null;
   private loadPromise: Promise<AppConfigResponse | null> | null = null;
   private readonly listeners = new Set<() => void>();
+  private cachedAndroidSplashUrl: string | null = null;
+  private cachedIosSplashUrl: string | null = null;
+
+  constructor() {
+    this.initCachedSplashUrls();
+  }
+
+  private async initCachedSplashUrls(): Promise<void> {
+    try {
+      const [androidUrl, iosUrl] = await Promise.all([
+        AsyncStorage.getItem(CACHED_ANDROID_SPLASH_KEY),
+        AsyncStorage.getItem(CACHED_IOS_SPLASH_KEY),
+      ]);
+      if (androidUrl) this.cachedAndroidSplashUrl = androidUrl;
+      if (iosUrl) this.cachedIosSplashUrl = iosUrl;
+      if (androidUrl || iosUrl) {
+        this.emitConfigListeners();
+      }
+    } catch (e) {
+      if (__DEV__) console.warn('[AppConfigService] Failed to load cached splash URLs:', e);
+    }
+  }
 
   async loadAppConfig(forceReload = false, payload?: AppConfigPayload): Promise<AppConfigResponse | null> {
     if (!forceReload && this.loadPromise) return this.loadPromise;
@@ -123,8 +151,21 @@ class AppConfigService {
           // console.log('[AppConfigService] GET app/config response (incl. milestoneUI for getMilestoneUI):', JSON.stringify(data, null, 2));
         }
         this.config = data;
+
+        const androidSplash = data.androidSplashUrl ?? (data as any).android_splash_url;
+        if (androidSplash != null) {
+          const trimmed = String(androidSplash).trim();
+          this.cachedAndroidSplashUrl = trimmed;
+          AsyncStorage.setItem(CACHED_ANDROID_SPLASH_KEY, trimmed).catch(() => { });
+        }
+        const iosSplash = data.iosSplashUrl ?? (data as any).ios_splash_url;
+        if (iosSplash != null) {
+          const trimmed = String(iosSplash).trim();
+          this.cachedIosSplashUrl = trimmed;
+          AsyncStorage.setItem(CACHED_IOS_SPLASH_KEY, trimmed).catch(() => { });
+        }
+
         this.emitConfigListeners();
-        if (__DEV__) console.log('[AppConfigService] Loaded app config from backend');
         return data;
       } catch (e) {
         if (__DEV__) console.warn('[AppConfigService] Failed to load app config:', e);
@@ -172,7 +213,7 @@ class AppConfigService {
   }
 
   getHotWheelConfig(): import('@/types/appConfig').HotWheelConfig | null {
-    return this.config?.hotWheelConfigV2 ?? null;
+    return this.config?.hotWheelConfig ?? null;
   }
 
   getHelpSupportConfig(): HelpSupportConfig | null {
@@ -271,6 +312,18 @@ class AppConfigService {
     return this.config?.cart?.giftWrap ?? null;
   }
 
+  getScheduledDeliveryOfferConfig(): ScheduledDeliveryOfferConfig | null {
+    const offer =
+      this.config?.cart?.scheduledDeliveryOffer ??
+      (this.config?.cart as any)?.scheduled_delivery_offer ??
+      (this.config as any)?.scheduledDeliveryOffer ??
+      null;
+    if (__DEV__) {
+      console.log('[AppConfigService] scheduledDeliveryOffer from backend:', offer);
+    }
+    return offer;
+  }
+
   getCheckoutConfig() {
     return this.config?.checkout ?? null;
   }
@@ -353,6 +406,31 @@ class AppConfigService {
 
   getReturnExchangeConfig(): import('@/types/appConfig').ReturnExchangeConfig | null {
     return this.config?.returnExchangeConfig ?? null;
+  }
+
+  getAndroidSplashUrl(): string | null {
+    const raw = this.config?.androidSplashUrl ?? (this.config as any)?.android_splash_url ?? null;
+    if (typeof raw === 'string' && raw.trim() && raw !== 'null' && raw !== 'undefined') return raw.trim();
+    if (this.cachedAndroidSplashUrl && this.cachedAndroidSplashUrl.trim() && this.cachedAndroidSplashUrl !== 'null' && this.cachedAndroidSplashUrl !== 'undefined') {
+      return this.cachedAndroidSplashUrl.trim();
+    }
+    return null;
+  }
+
+  getIosSplashUrl(): string | null {
+    const raw = this.config?.iosSplashUrl ?? (this.config as any)?.ios_splash_url ?? null;
+    if (typeof raw === 'string' && raw.trim() && raw !== 'null' && raw !== 'undefined') return raw.trim();
+    if (this.cachedIosSplashUrl && this.cachedIosSplashUrl.trim() && this.cachedIosSplashUrl !== 'null' && this.cachedIosSplashUrl !== 'undefined') {
+      return this.cachedIosSplashUrl.trim();
+    }
+    return null;
+  }
+
+  getSplashUrl(): string | null {
+    if (Platform.OS === 'android') {
+      return this.getAndroidSplashUrl();
+    }
+    return this.getIosSplashUrl();
   }
 }
 

@@ -10,7 +10,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -36,11 +36,14 @@ import { appConfigService } from '@/services/appConfigService';
 import { initializeAppsFlyer } from '@/services/appsflyerService';
 import { clevertapService } from '@/services/clevertapService';
 import { configService } from '@/services/configService';
+import { deepLinkService } from '@/services/deepLinkService';
 import { errorService } from '@/services/errorService';
 import { initializeFreshchat } from '@/services/freshchatService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
+import { EntryScreenItem } from '@/types/appConfig';
+import { deepLinkFromPushPayload } from '@/utils/deepLink';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
@@ -56,7 +59,7 @@ const ANDROID_SPLASH_BG = '#F4EEE5';
 const ENTRY_SCREENS_SEEN_KEY = 'entry_screens_seen_v1';
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  initialRouteName: '(tabs)',
 };
 
 // Handle incoming notifications and forward to Freshchat if applicable
@@ -85,7 +88,16 @@ Notifications.addNotificationResponseReceivedListener((response) => {
       if (isFreshchat && Platform.OS == 'android') {
         console.log('[Freshchat] Forwarding tapped payload to Freshchat.handlePushNotification');
         Freshchat.handlePushNotification(data);
+        return;
       }
+      // Not a support notification: it may carry a deep link (CleverTap `wzrk_dl`,
+      // OneSignal `launch_url`). This path covers the case where expo-notifications is the
+      // notification-centre delegate, so the provider SDK never sees the tap itself.
+      // handleDeepLink de-duplicates, so it is harmless when the native path already fired.
+      deepLinkService.handleDeepLink(
+        deepLinkFromPushPayload(data),
+        'expo-notifications'
+      );
     });
   }
 });
@@ -128,11 +140,6 @@ export default function RootLayout() {
   const [remoteUpdateRequired, setRemoteUpdateRequired] = React.useState(false);
   const updateRequired = remoteUpdateRequired;
 
-  React.useEffect(() => {
-    if (__DEV__) {
-      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
-    }
-  }, [currentVersion, updateRequired]);
   const appConfigPayload = useMemo(
     () => ({
       phone: user?.phone ?? undefined,
@@ -142,6 +149,13 @@ export default function RootLayout() {
     }),
     [user?.phone, user?.customerId, user?.id],
   );
+
+  React.useEffect(() => {
+    if (__DEV__) {
+      console.log(`[RootLayout] Current Version: "${currentVersion}", Update Required: ${updateRequired}`);
+    }
+    appConfigService.loadAppConfig(false, appConfigPayload).catch(() => { });
+  }, [currentVersion, updateRequired, appConfigPayload]);
 
   const resolveEntryScreensDecision = useCallback((screens: EntryScreenItem[]) => {
     entryDecisionResolvedRef.current = true;
@@ -171,10 +185,7 @@ export default function RootLayout() {
       if (screens.length === 0) {
         await Promise.race([
           appConfigService.loadAppConfig(false, appConfigPayload),
-          new Promise<null>((resolve) => setTimeout(() => {
-            if (__DEV__) console.log('[RootLayout] appConfigService.loadAppConfig timed out');
-            resolve(null);
-          }, 3000)),
+          new Promise<null>((resolve) => setTimeout(resolve, 600)),
         ]);
         screens = appConfigService.getEntryScreens();
       }
@@ -208,6 +219,20 @@ export default function RootLayout() {
     if (fontsLoaded) console.log('[Fonts] Loaded OK:', fontsLoaded);
     if (fontError) console.warn('[Fonts] Error:', fontError);
   }, [fontsLoaded, fontError]);
+
+  // Deep links from CleverTap push taps. Registered once, for the life of the app.
+  React.useEffect(() => {
+    const unsubscribe = deepLinkService.registerCleverTapDeepLinks();
+    return unsubscribe;
+  }, []);
+
+  // A notification tap on a cold start reaches us before <Stack> exists, so links are queued
+  // until the navigator is mounted. These are exactly the conditions under which it renders.
+  React.useEffect(() => {
+    if ((fontsLoaded || fontError) && !updateRequired) {
+      deepLinkService.markNavigationReady();
+    }
+  }, [fontsLoaded, fontError, updateRequired]);
 
 
   // Hide the native splash screen as soon as component mounts
@@ -246,13 +271,20 @@ export default function RootLayout() {
       });
 
       setAppIsReady(true);
+
       try {
-        // Identify user on app open so CleverTap attributes App Launched to profile (DAU/WAU/MAU)
+        // Identify user on app open so CleverTap attributes profile correctly
         const u = useUserStore.getState().user;
         if (u) {
-          const identityId = u.email || u.id || u.customerId || u.phone;
+          const { formatPhoneForAnalytics } = require('@/utils/mixpanelHelpers');
+          const formattedPhone = formatPhoneForAnalytics(u.phone);
+          const identityId = u.email || u.id || u.customerId || formattedPhone || u.phone;
           if (identityId) {
-            identifyUser(identityId, { name: u.firstName || (u as any).name, email: u.email, phone: u.phone });
+            identifyUser(identityId, {
+              name: u.displayName || u.firstName || (u as any).name,
+              email: u.email,
+              phone: formattedPhone || u.phone
+            });
             // Identify in Crashlytics
             errorService.setUserInfo(identityId, u.email);
           }
@@ -505,16 +537,25 @@ export default function RootLayout() {
   }, [prefetchEntryScreens]);
 
   const handleSplashFinish = useCallback(() => {
-    if (bootExperienceCompletedForSession) {
-      setIsSplashVisible(false);
-      setIsStartupGateOpen(true);
-      return;
-    }
     setIsSplashVisible(false);
     if (!isEntryScreensDecisionPending && entryScreens.length > 0) {
       setIsEntryScreensVisible(true);
+    } else {
+      bootExperienceCompletedForSession = true;
+      setIsEntryScreensDecisionPending(false);
+      setIsStartupGateOpen(true);
     }
   }, [entryScreens.length, isEntryScreensDecisionPending]);
+
+  // Root watchdog: Guarantee under ALL conditions that splash unmounts within 2s on Android (3s on iOS)
+  React.useEffect(() => {
+    if (!isSplashVisible) return;
+    const watchdog = setTimeout(() => {
+      if (__DEV__) console.warn('[RootLayout] Root splash watchdog triggered – forcing splash dismissal');
+      handleSplashFinish();
+    }, Platform.OS === 'android' ? 2000 : 3000);
+    return () => clearTimeout(watchdog);
+  }, [isSplashVisible, handleSplashFinish]);
 
   React.useEffect(() => {
     if (isSplashVisible) return;
@@ -544,7 +585,7 @@ export default function RootLayout() {
 
   const shouldHoldForEntryScreens =
     !isSplashVisible &&
-    (isEntryScreensDecisionPending || (entryScreens.length > 0 && !isEntryScreensVisible));
+    isEntryScreensVisible;
 
   // Always render providers, even during loading, to prevent "useAuth must be used within AuthProvider" errors
   if (!isConnected) {
@@ -566,10 +607,7 @@ export default function RootLayout() {
               onDone={handleEntryScreensDone}
             />
           )}
-          {shouldHoldForEntryScreens && (
-            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: ANDROID_SPLASH_BG, zIndex: 99999 }} />
-          )}
-          {(!fontsLoaded || !appIsReady || !isStartupGateOpen || shouldHoldForEntryScreens) ? (
+          {(!fontsLoaded && !fontError) ? (
             null
           ) : updateRequired ? (
             <View style={{ flex: 1 }}>

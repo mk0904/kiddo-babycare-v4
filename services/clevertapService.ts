@@ -56,7 +56,23 @@ export const clevertapService = {
     try {
       const ct = getCT();
       if (!ct?.onUserLogin) return;
-      ct.onUserLogin(profile);
+      const formattedProfile = { ...profile };
+      if (formattedProfile.Phone) {
+        const cleaned = String(formattedProfile.Phone).replace(/\D/g, '');
+        if (cleaned.length === 10) {
+          formattedProfile.Phone = `+91${cleaned}`;
+        } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+          formattedProfile.Phone = `+${cleaned}`;
+        } else if (!String(formattedProfile.Phone).startsWith('+')) {
+          formattedProfile.Phone = `+${cleaned}`;
+        }
+      }
+      ct.onUserLogin(formattedProfile);
+
+      // onUserLogin can fork a NEW device record on the profile when the identity differs from the
+      // one already bound to this device — and the fork starts with no push token, so campaigns
+      // silently skip it. Re-register straight after login so every record has a live token.
+      void clevertapService.syncNativePushTokenWithCleverTap();
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] onUserLogin error:', e);
     }
@@ -65,7 +81,11 @@ export const clevertapService = {
   logout(): void {
     try {
       const ct = getCT();
-      if (ct?.logout) ct.logout();
+      // Note: CleverTap React Native SDK does not expose a ct.logout() method.
+      // Profile separation on logout is managed via fresh anonymous identity / onUserLogin.
+      if (typeof ct?.logout === 'function') {
+        ct.logout();
+      }
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] logout error:', e);
     }
@@ -73,25 +93,57 @@ export const clevertapService = {
 
   /**
    * CleverTap Charged event for revenue (order/payment). Call once per successful order.
+   * Conforms to standard CleverTap Charged event schema with Amount, Charged ID, Payment Mode,
+   * and product-level items array.
    */
   recordCharged(
     orderId: string,
     amount: number,
     itemCount: number,
     paymentMethod?: string,
-    currency: string = 'INR'
+    currency: string = 'INR',
+    items?: Array<{
+      name?: string;
+      title?: string;
+      category?: string;
+      price?: number;
+      quantity?: number;
+      productId?: string;
+      sku?: string;
+    }>
   ): void {
     try {
       const ct = getCT();
       if (!ct?.recordChargedEvent) return;
+
       const chargeDetails: Record<string, any> = {
-        totalValue: amount,
+        // Standard CleverTap revenue keys
+        'Amount': amount,
+        'Charged ID': orderId,
+        'Payment Mode': paymentMethod || 'Unknown',
+        'Payment Method': paymentMethod || 'Unknown',
+        'Currency': currency,
+        'Items Count': itemCount,
+        // Legacy / fallback keys for consistency
         orderId,
+        totalValue: amount,
         currency,
         itemCount,
+        paymentMethod: paymentMethod || 'Unknown',
       };
-      if (paymentMethod) chargeDetails.paymentMethod = paymentMethod;
-      ct.recordChargedEvent(chargeDetails, []);
+
+      const itemsArray = (items && items.length > 0)
+        ? items.map((item) => ({
+            'Product Name': item.title || item.name || 'Product',
+            'Category': item.category || 'General',
+            'Price': typeof item.price === 'number' ? item.price : 0,
+            'Quantity': typeof item.quantity === 'number' ? item.quantity : 1,
+            'Product ID': item.productId || '',
+            'SKU': item.sku || '',
+          }))
+        : [];
+
+      ct.recordChargedEvent(chargeDetails, itemsArray);
     } catch (e) {
       if (__DEV__) console.warn('[CleverTap] recordCharged error:', e);
     }
@@ -100,15 +152,17 @@ export const clevertapService = {
   /**
    * Register the native push token with CleverTap (required for push campaigns and uninstall tracking).
    *
-   * - **Android:** Uses `setFCMPushToken` (and `setPushToken` for redundancy) with the FCM token.
-   *   Requires `fcmSenderId` in `app.json` for uninstall tracking to work.
-   *   Also creates notification channel `default_channel`.
-   * - **iOS:** Uses `setPushToken` with the APNs token. Push does not work on Simulator.
+   * - **Android:** Uses `setFCMPushToken` with the FCM token, and creates the `default_channel`
+   *   notification channel. `fcmSenderId` in `app.json` is required for uninstall tracking.
+   * - **iOS:** No-op. The APNs token reaches CleverTap natively through
+   *   `CleverTap.autoIntegrate()`; there is no JS API to set it (`setPushToken` does not exist).
    *
-   * Safe to call multiple times (e.g. after login). Requests notification permission if needed.
+   * Safe to call multiple times. Call it after `onUserLogin`, which can fork a new device record
+   * that starts without a token. Requests notification permission if needed.
    */
   async syncNativePushTokenWithCleverTap(): Promise<void> {
-    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+    // iOS registers its APNs token natively via CleverTap.autoIntegrate(); see the note below.
+    if (Platform.OS !== 'android') return;
 
     const ct = getCT();
     if (!ct?.setFCMPushToken) return;
@@ -153,20 +207,12 @@ export const clevertapService = {
         return;
       }
 
-      if (Platform.OS === 'ios') {
-        // Use setPushToken for APNs (iOS)
-        if (ct.setPushToken) {
-          ct.setPushToken(token);
-        } else {
-          ct.setFCMPushToken(token);
-        }
-      } else {
-        // For Android, ensure the token is registered correctly for FCM
-        ct.setFCMPushToken(token);
-        if (ct.setPushToken) {
-          ct.setPushToken(token);
-        }
-      }
+      // Android only. `setPushToken` does not exist in clevertap-react-native (the only token
+      // method it exports is `setFCMPushToken`), so the old iOS branch fell through and registered
+      // the APNs token AS an FCM token — CleverTap then held a token FCM could never deliver to.
+      // On iOS the APNs token reaches CleverTap natively: `CleverTap.autoIntegrate()` observes
+      // `didRegisterForRemoteNotificationsWithDeviceToken`, so there is nothing to do from JS.
+      ct.setFCMPushToken(token);
 
       if (__DEV__) {
         console.log('[CleverTap] Native push token sent (', Platform.OS, ', length:', token.length, ')');

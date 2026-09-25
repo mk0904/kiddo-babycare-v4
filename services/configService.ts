@@ -1,35 +1,24 @@
-// Config Service — resolves JSON URL via kiddo-service, then loads remote config
 import localKiddoAppConfig from '@/config/kiddoAppConfig.json';
 import { getAppVersionForApi } from '@/constants/versionConfig';
 import { AppConfig, ContentBlock, ScreenConfig } from '@/types/content';
 import { TabBarConfig } from '@/types/tabBarTypes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 /** Production API base (must stay in sync with `services/backendBase.ts` when env is unset). */
 const PRODUCTION_BACKEND_API_V1 = 'https://kiddo-service-874125225773.asia-south1.run.app/api/v1';
+const CACHED_KIDDO_CONFIG_KEY = '@cached_kiddo_remote_config';
 
 /**
  * GET /api/v1/remote-config?appVersion=...&deviceType=...
  * Returns { configUrl: "https://..." }. Do not import `backendBase` here (circular with configService).
  */
 function getRemoteConfigApiUrl(): string {
-  /*
-  const envBase =
-    typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_BACKEND_API_BASE
-      ? String(process.env.EXPO_PUBLIC_BACKEND_API_BASE).trim()
-      : '';
-  if (envBase) {
-    const base = envBase.replace(/\/+$/, '');
-    const prefix = base.endsWith('/api/v1') ? base : `${base}/api/v1`;
-    return `${prefix}/remote-config`;
-  }
-  */
   return `${PRODUCTION_BACKEND_API_V1}/remote-config`;
 }
 
 /** TEMP: bundled `config/kiddoAppConfig.json` instead of kiddo-service → CDN. Set false before release. */
 const USE_LOCAL_KIDDO_APP_CONFIG = true;
-
 
 const defaultConfig: AppConfig = {
   version: 1,
@@ -46,6 +35,29 @@ class ConfigService {
   private isLoading: boolean = false;
   private loadPromise: Promise<AppConfig> | null = null;
   private configLoadedAt: number | null = null;
+
+  constructor() {
+    // 1. Immediately hydrate with bundled config so app renders with zero delay
+    if (localKiddoAppConfig) {
+      this._applyRawConfig(localKiddoAppConfig as Record<string, unknown>);
+    }
+    // 2. Asynchronously load cached remote config from previous session
+    this.initCachedConfig();
+  }
+
+  private async initCachedConfig(): Promise<void> {
+    try {
+      const cached = await AsyncStorage.getItem(CACHED_KIDDO_CONFIG_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          this._applyRawConfig(parsed);
+        }
+      }
+    } catch (e) {
+      if (__DEV__) console.warn('[ConfigService] Failed to load cached config from storage:', e);
+    }
+  }
 
   /**
    * Resolves the JSON URL via kiddo-service:
@@ -161,6 +173,9 @@ class ConfigService {
     }
 
     const remoteConfig = await response.json();
+    if (remoteConfig && typeof remoteConfig === 'object') {
+      AsyncStorage.setItem(CACHED_KIDDO_CONFIG_KEY, JSON.stringify(remoteConfig)).catch(() => {});
+    }
     if (__DEV__) {
       const lensPreset = (remoteConfig as { tabBar?: TabBarConfig })?.tabBar?.styles?.lensPreset;
       console.warn(

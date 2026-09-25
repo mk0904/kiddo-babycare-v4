@@ -382,7 +382,8 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "sizeChartImage"},
         {namespace: "custom", key: "l1_collection"},
         {namespace: "custom", key: "l2_collection"},
-        {namespace: "custom", key: "l3_collection"}
+        {namespace: "custom", key: "l3_collection"},
+        {namespace: "custom", key: "gender_collection"}
       ]) {
         id
         key
@@ -602,6 +603,20 @@ const GET_PRODUCT_RECOMMENDATIONS_QUERY = `
         id
         name
         values
+      }
+      metafields(identifiers: [
+        {namespace: "custom", key: "l1_collection"},
+        {namespace: "custom", key: "l2_collection"},
+        {namespace: "custom", key: "l3_collection"},
+        {namespace: "custom", key: "gender_collection"}
+      ]) {
+        id
+        key
+        value
+        namespace
+      }
+      ageGroup: metafield(namespace: "custom", key: "age_group") {
+        value
       }
     }
   }
