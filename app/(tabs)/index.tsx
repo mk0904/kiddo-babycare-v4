@@ -50,7 +50,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const params = useLocalSearchParams<{ confettiUrl?: string }>();
+  const params = useLocalSearchParams<{ confettiUrl?: string; category?: string }>();
   const isHomeTabFocused = useIsFocused();
   const router = useRouter();
   const { user } = useAuth();
@@ -497,11 +497,17 @@ export default function HomeScreen() {
       }
     }
 
-    // Handle other navigation
+    // Handle category tab switch links like "/?category=Fashion"
     if (link && typeof link === 'string') {
+      const categoryMatch = link.match(/[?&]category=([^&]+)/);
+      if (categoryMatch) {
+        const categoryKey = decodeURIComponent(categoryMatch[1]);
+        handleCategorySelect(categoryKey);
+        return;
+      }
       router.push(link as any);
     }
-  }, [router]);
+  }, [router, handleCategorySelect]);
 
   const insets = useSafeAreaInsets();
 
