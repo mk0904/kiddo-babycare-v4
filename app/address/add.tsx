@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { appConfigService } from '@/services/appConfigService';
 import { reverseGeocodeFull } from '@/config/deliveryConfig';
 
-const GOOGLE_API_KEY = 'PLACEHOLDER_GOOGLE_MAPS_KEY';
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface LocationData {

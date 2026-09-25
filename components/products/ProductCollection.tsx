@@ -1,15 +1,14 @@
+import { ProductCardSkeleton } from '@/components/ui/SkeletonLoader';
 import { Colors, Fonts } from '@/constants/theme';
 import { useDeviceDimensions } from '@/hooks/useDeviceDimensions';
-import { shopifyApi } from '@/services/shopifyApi';
 import { analyticsService } from '@/services/analyticsService';
+import { shopifyApi } from '@/services/shopifyApi';
 import { sortInStockFirst } from '@/utils/availability';
-import { hasAgeVariantOption, matchesAgeByTags } from '@/utils/ageFilter';
 import { processFontStyle } from '@/utils/fontUtils';
 import { Ionicons } from '@expo/vector-icons';
-import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
-import { ProductCardSkeleton } from '@/components/ui/SkeletonLoader';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -59,8 +58,9 @@ export interface ProductCollectionProps {
   onResultsCount?: (count: number) => void;
   contentContainerStyle?: any;
   genderFilter?: string | null;
-  ageFilter?: string | null;
-  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'other' | null;
+  ageFilter?: string | string[] | null;
+  diaperSizeFilter?: string | string[] | null;
+  pageCategory?: 'fashion' | 'toys' | 'essentials' | 'diapers' | 'formula' | 'other' | null;
   onScroll?: (event: any) => void;
 }
 
@@ -105,6 +105,7 @@ export function ProductCollection({
   contentContainerStyle,
   genderFilter,
   ageFilter,
+  diaperSizeFilter,
   pageCategory,
   onScroll,
 }: ProductCollectionProps) {
@@ -217,6 +218,12 @@ export function ProductCollection({
       } else if (filter.variantOption) {
         if (!groupedFilters.variantOption) groupedFilters.variantOption = [];
         groupedFilters.variantOption.push(filter);
+      } else if (filter.size) {
+        if (!groupedFilters.size) groupedFilters.size = [];
+        groupedFilters.size.push(filter);
+      } else if (filter.fashionSize) {
+        if (!groupedFilters.fashionSize) groupedFilters.fashionSize = [];
+        groupedFilters.fashionSize.push(filter);
       } else if (filter.productCollection) {
         if (!groupedFilters.productCollection) groupedFilters.productCollection = [];
         groupedFilters.productCollection.push(filter);
@@ -328,20 +335,94 @@ export function ProductCollection({
       if (groupedFilters.variantOption) {
         const variants = product.variants?.edges || product.variants || [];
         const variantList = variants.map((v: any) => v.node || v);
-        const variantMatch = groupedFilters.variantOption.some((filter: any) => {
-          return variantList.some((variant: any) => {
-            const selectedOptions = variant.selectedOptions || [];
-            return selectedOptions.some((option: any) => {
-              const optionName = String(option.name || '').toLowerCase().trim();
-              const optionValue = String(option.value || '').toLowerCase().trim();
+        
+        // For fashion grouped sizes, we want OR logic - match if product has ANY of the sizes in the group
+        const variantMatch = variantList.some((variant: any) => {
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const optionValue = String(option.value || '').toLowerCase().trim();
+            
+            return groupedFilters.variantOption.some((filter: any) => {
               const filterName = String(filter.variantOption.name || '').toLowerCase().trim();
-              const filterValue = String(filter.variantOption.value || '').toLowerCase().trim();
-              return optionName === filterName && optionValue === filterValue;
+              const filterValue = filter.variantOption.value;
+              const filterValues = Array.isArray(filterValue) ? filterValue : [filterValue];
+              const normalizedFilterValues = filterValues.map((v: string) => String(v).toLowerCase().trim());
+              
+              return optionName === filterName && normalizedFilterValues.includes(optionValue);
             });
           });
         });
         if (!variantMatch) return false;
       }
+      
+      // Size filter group for fashion (array-based filtering)
+      if (groupedFilters.size) {
+        const sizeFilters = groupedFilters.size;
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+        
+        // Flatten all size filter values into a single array
+        const allSizeValues = sizeFilters.flatMap((filter: any) => {
+          const sizeValue = filter.size || filter;
+          return Array.isArray(sizeValue) ? sizeValue : [sizeValue];
+        });
+        
+        const sizeMatch = variantList.some((variant: any) => {
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const optionValue = String(option.value || '').toLowerCase().trim();
+            const isSizeOption = optionName.includes('size');
+            
+            if (isSizeOption) {
+              return allSizeValues.some((sizeVal: string) => 
+                String(sizeVal).toLowerCase().trim() === optionValue
+              );
+            }
+            return false;
+          });
+        });
+        
+        if (!sizeMatch) return false;
+      }
+      // Fashion size filter — normalized variant-level matching.
+      // Strips all whitespace before comparing so variants like "3 - 4 y", "3-4 y", "3-4y"
+      // all match the group strings. Only considers variants that are available for sale.
+      if (groupedFilters.fashionSize) {
+        // Collect all group size strings across all fashionSize filters
+        const allGroupSizes: string[] = groupedFilters.fashionSize.flatMap((filter: any) =>
+          (filter.fashionSize?.groupSizes || []) as string[]
+        );
+        // Normalize: lowercase + strip ALL whitespace/hyphens for fuzzy comparison
+        const normalizeSize = (s: string) =>
+          String(s).toLowerCase().replace(/[\s\-=]+/g, '');
+        const normalizedGroupSizes = allGroupSizes.map(normalizeSize);
+
+        const variants = product.variants?.edges || product.variants || [];
+        const variantList = variants.map((v: any) => v.node || v);
+
+        // Product passes if at least one AVAILABLE variant has a size/age option
+        // whose normalized value matches any of the group's normalized size strings.
+        const fashionSizeMatch = variantList.some((variant: any) => {
+          // Only consider variants that are in stock
+          if (!variant.availableForSale && variant.quantityAvailable === 0) return false;
+
+          const selectedOptions = variant.selectedOptions || [];
+          return selectedOptions.some((option: any) => {
+            const optionName = String(option.name || '').toLowerCase().trim();
+            const isSizeOrAgeOption =
+              optionName.includes('size') || optionName.includes('age') || optionName === 'size' || optionName === 'age';
+            if (!isSizeOrAgeOption) return false;
+
+            const normalizedOptionValue = normalizeSize(option.value || '');
+            return normalizedGroupSizes.includes(normalizedOptionValue);
+          });
+        });
+
+        if (!fashionSizeMatch) return false;
+      }
+
       // Collection filter group - match ANY selected collection (OR logic)
       if (groupedFilters.productCollection) {
         const collections = product.collections?.edges || product.collections || [];
@@ -508,27 +589,86 @@ export function ProductCollection({
       });
     }
     
-    // Apply age filter (Toy-aware filtering)
+    // Apply age filter (Toy-aware and Book-aware filtering)
     if (ageFilter) {
+      const ageFilters = Array.isArray(ageFilter) ? ageFilter : [ageFilter];
       products = products.filter((product: any) => {
         const isToyCategory = pageCategory === 'toys';
         const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
-        
-        if (isToyCategory || isToyProduct) {
-          // Toys: Tag matching only (e.g., "Toys for 6 - 12 M")
-          const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
-          const toyPattern = `toysfor${ageFilter}`;
-          return tags.includes(toyPattern);
-        } else {
-          // Others: Variant matching only (Size/Age options)
-          const variants = product.variants?.edges || product.variants || [];
-          const variantList = variants.map((v: any) => v.node || v);
-          if (matchesAgeByVariant(variantList, ageFilter)) return true;
-          // No Size/Age option (e.g. single "Default Title" variant): fall back to age tags
-          // like "Girl 2-3y" so these products don't vanish when an age is selected.
-          if (!hasAgeVariantOption(variantList)) return matchesAgeByTags(product.tags, ageFilter);
-          return false;
-        }
+        const isBookCategory = pageCategory === 'essentials';
+        const isBookProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('book');
+
+        // Check if product matches ANY of the selected ages
+        const matchResult = ageFilters.some((singleAgeFilter: string) => {
+          if (isToyCategory || isToyProduct) {
+            // Toys: Grouped tag matching based on age ranges
+            const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
+
+            // Group toy tags into broader age ranges
+            const toyAgeGroups: { [key: string]: string[] } = {
+              '0-6m': ['toysfornewborn', 'toysfor0-3months', 'toysfor3-6months'],
+              '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
+              '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
+              '2-3y': ['toysfor2-3years'],
+              '3-4y': ['toysfor3-4years'],
+              '4-5y': ['toysfor4-5years'],
+              '5-6y': ['toysfor5-6years'],
+              '6-7y': ['toysfor6+years']
+            };
+
+            const normalizedAgeFilter = singleAgeFilter.toLowerCase().replace(/\s+/g, '');
+            const groupTags = toyAgeGroups[normalizedAgeFilter] || [];
+
+            return tags.some((tag: string) => groupTags.includes(tag));
+          } else if (isBookCategory || isBookProduct) {
+            // Books: Exact tag matching (e.g., "Books for 0 - 6 M", "Books for 5+ Y")
+            const tags = (product.tags || []).map((t: string) => t.toLowerCase());
+            const normalizedAgeFilter = singleAgeFilter.toLowerCase().replace(/\s+/g, '');
+
+            return tags.some((tag: string) => {
+              // Match exact book tag patterns
+              const tagPatterns = [
+                `booksfor0-6m`,
+                `booksfor6-12m`,
+                `booksfor1-2y`,
+                `booksfor2-3y`,
+                `booksfor3-4y`,
+                `booksfor4-5y`,
+                `booksfor5+y`
+              ];
+              const normalizedTag = tag.replace(/\s+/g, '');
+              return tagPatterns.includes(normalizedTag) && normalizedTag.includes(normalizedAgeFilter);
+            });
+          } else {
+            // Age filter should only be used on toys/books collections
+            return false;
+          }
+        });
+        return matchResult;
+      });
+    }
+
+    // Apply diaper size filter
+    if (diaperSizeFilter) {
+      const diaperSizeFilters = Array.isArray(diaperSizeFilter) ? diaperSizeFilter : [diaperSizeFilter];
+      console.log('[Diaper Size Filter] Applying filter for sizes:', diaperSizeFilters);
+      products = products.filter((product: any) => {
+        const metafields = product.metafields || [];
+        // Check if product matches ANY of the selected diaper sizes
+        const matchResult = diaperSizeFilters.some((filterVal: string) => {
+          return metafields.some((mf: any) => {
+            if (mf && mf.key === 'size_collection' && mf.value) {
+              const val = mf.value.toString().toLowerCase().trim();
+              const normalizedFilterVal = filterVal.toLowerCase().trim();
+              const matches = val === normalizedFilterVal;
+              console.log('[Diaper Size Filter] Product:', product.title, 'metafield value:', val, 'filter value:', normalizedFilterVal, 'matches:', matches);
+              return matches;
+            }
+            return false;
+          });
+        });
+        console.log('[Diaper Size Filter] Product:', product.title, 'final match:', matchResult);
+        return matchResult;
       });
     }
     
@@ -537,7 +677,7 @@ export function ProductCollection({
 
     // Apply limit if specified
     return limit && limit > 0 ? products.slice(0, limit) : products;
-  }, [data, limit, filters, genderFilter, ageFilter, matchesGender, matchesAgeByVariant, applyClientSideFilters]);
+  }, [data, limit, filters, genderFilter, ageFilter, diaperSizeFilter, matchesGender, matchesAgeByVariant, applyClientSideFilters]);
 
   // Notify parent about result count
   React.useEffect(() => {
@@ -589,30 +729,89 @@ export function ProductCollection({
       });
     }
     
-    // Apply age filter (Toy-aware filtering)
+    // Apply age filter (Toy-aware and Book-aware filtering)
     if (ageFilter) {
+      const ageFilters = Array.isArray(ageFilter) ? ageFilter : [ageFilter];
       filteredProducts = filteredProducts.filter((product: any) => {
         const isToyCategory = pageCategory === 'toys';
         const isToyProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('toy');
-        
-        if (isToyCategory || isToyProduct) {
-          // Toys: Tag matching only
-          const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
-          const toyPattern = `toysfor${ageFilter}`;
-          return tags.includes(toyPattern);
-        } else {
-          // Others: Variant matching only
-          const variants = product.variants?.edges || product.variants || [];
-          const variantList = variants.map((v: any) => v.node || v);
-          if (matchesAgeByVariant(variantList, ageFilter)) return true;
-          // No Size/Age option (e.g. single "Default Title" variant): fall back to age tags
-          // like "Girl 2-3y" so these products don't vanish when an age is selected.
-          if (!hasAgeVariantOption(variantList)) return matchesAgeByTags(product.tags, ageFilter);
-          return false;
-        }
+        const isBookCategory = pageCategory === 'essentials';
+        const isBookProduct = (product.productType || product.node?.productType || '').toLowerCase().includes('book');
+
+        // Check if product matches ANY of the selected ages
+        const matchResult = ageFilters.some((singleAgeFilter: string) => {
+          if (isToyCategory || isToyProduct) {
+            // Toys: Grouped tag matching based on age ranges
+            const tags = (product.tags || []).map((t: string) => t.toLowerCase().replace(/\s+/g, ''));
+
+            // Group toy tags into broader age ranges
+            const toyAgeGroups: { [key: string]: string[] } = {
+              '0-6m': ['toysfornewborn', 'toysfor0-3months', 'toysfor3-6months'],
+              '6-12m': ['toysfor6-9months', 'toysfor9-12months'],
+              '1-2y': ['toysfor0-2years', 'toysfor12-18months', 'toysfor18-24months'],
+              '2-3y': ['toysfor2-3years'],
+              '3-4y': ['toysfor3-4years'],
+              '4-5y': ['toysfor4-5years'],
+              '5-6y': ['toysfor5-6years'],
+              '6-7y': ['toysfor6+years']
+            };
+
+            const normalizedAgeFilter = singleAgeFilter.toLowerCase().replace(/\s+/g, '');
+            const groupTags = toyAgeGroups[normalizedAgeFilter] || [];
+
+            return tags.some((tag: string) => groupTags.includes(tag));
+          } else if (isBookCategory || isBookProduct) {
+            // Books: Exact tag matching (e.g., "Books for 0 - 6 M", "Books for 5+ Y")
+            const tags = (product.tags || []).map((t: string) => t.toLowerCase());
+            const normalizedAgeFilter = singleAgeFilter.toLowerCase().replace(/\s+/g, '');
+
+            return tags.some((tag: string) => {
+              // Match exact book tag patterns
+              const tagPatterns = [
+                `booksfor0-6m`,
+                `booksfor6-12m`,
+                `booksfor1-2y`,
+                `booksfor2-3y`,
+                `booksfor3-4y`,
+                `booksfor4-5y`,
+                `booksfor5+y`
+              ];
+              const normalizedTag = tag.replace(/\s+/g, '');
+              return tagPatterns.includes(normalizedTag) && normalizedTag.includes(normalizedAgeFilter);
+            });
+          } else {
+            // Age filter should only be used on toys/books collections
+            return false;
+          }
+        });
+        return matchResult;
       });
     }
-    
+
+    // Apply diaper size filter
+    if (diaperSizeFilter) {
+      const diaperSizeFilters = Array.isArray(diaperSizeFilter) ? diaperSizeFilter : [diaperSizeFilter];
+      console.log('[Diaper Size Filter] Provided products - Applying filter for sizes:', diaperSizeFilters);
+      filteredProducts = filteredProducts.filter((product: any) => {
+        const metafields = product.metafields || [];
+        // Check if product matches ANY of the selected diaper sizes
+        const matchResult = diaperSizeFilters.some((filterVal: string) => {
+          return metafields.some((mf: any) => {
+            if (mf && mf.key === 'size_collection' && mf.value) {
+              const val = mf.value.toString().toLowerCase().trim();
+              const normalizedFilterVal = filterVal.toLowerCase().trim();
+              const matches = val === normalizedFilterVal;
+              console.log('[Diaper Size Filter] Provided Product:', product.title, 'metafield value:', val, 'filter value:', normalizedFilterVal, 'matches:', matches);
+              return matches;
+            }
+            return false;
+          });
+        });
+        console.log('[Diaper Size Filter] Provided Product:', product.title, 'final match:', matchResult);
+        return matchResult;
+      });
+    }
+
     // Apply limit if specified
     const limitedProvidedProducts = limit && limit > 0 
       ? filteredProducts.slice(0, limit) 

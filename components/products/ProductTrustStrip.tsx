@@ -1,14 +1,14 @@
 import { Colors, Fonts } from '@/constants/theme';
 import { useRef, useState } from 'react';
 import {
-    Animated,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Animated,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 const ICONS = {
@@ -60,11 +60,11 @@ export function ProductTrustStrip({ refundPolicyText, onKnowMorePress, isFashion
       },
       {
         icon: ICONS.replacement72,
-        label: 'Instant\nReturn',
+        label: 'Return\nInstant/7days',
         accentColor: '#F38744',
         bgColor: '#FEF6EE',
-        title: 'Instant Return',
-        description: 'Return items instantly if you are not satisfied with the product.',
+        title: 'Return Instant/7days',
+        description: 'Return items instantly/7days Not satisfied with your purchase? Return it instantly or within 7 days, hassle-free.',
       },
       {
         icon: ICONS.headphone1,

@@ -317,7 +317,7 @@ export interface CategoryRailBlock extends BaseBlock {
   };
 }
 
-/** Horizontal image-only carousel; each slide links to a collection (or custom `link`). */
+/** Horizontal image-only carousel; each slide links to a collection or product (or custom `link`). */
 export interface CollectionImageCarouselBlock extends BaseBlock {
   type: 'collectionImageCarousel';
   title?: string;
@@ -326,12 +326,14 @@ export interface CollectionImageCarouselBlock extends BaseBlock {
     /** Image URL shown in the carousel */
     imageUrl: string;
     /** Shopify collection GID or numeric id — used with home `onBlockPress` → `/infinity/[collectionId]` */
-    collectionId: string;
+    collectionId?: string;
+    /** Shopify product GID or numeric id — used with home `onBlockPress` → `/product/[handle]` */
+    productId?: string;
     /** Shown as listing screen title when navigating */
     title?: string;
     /**
      * Optional explicit route (Expo Router path), e.g. `/infinity/[collectionId]` params handled elsewhere.
-     * If set, passed to `router.push` when provided; otherwise navigation uses `collectionId`.
+     * If set, passed to `router.push` when provided; otherwise navigation uses `collectionId` or `productId`.
      */
     link?: string;
   }>;
@@ -391,6 +393,8 @@ export interface CollectionImageCarouselGridCardConfig {
     imageUrl: string;
     label?: string;
     collectionId?: string;
+    /** Shopify product GID or numeric id — shows wishlist + add to cart on the cell. */
+    productId?: string;
     link?: string;
   }>;
   /** Grid layout config (for layout='grid'). */
@@ -409,6 +413,14 @@ export interface CollectionImageCarouselGridCardConfig {
     borderRadius?: number;
     /** Show label below each cell image. Default true. */
     showLabels?: boolean;
+    /** Padding above grid in px (or percentage as string like "10%"). Default 0. */
+    paddingTop?: number | string;
+    /** Padding below grid in px (or percentage as string like "10%"). Default 8. */
+    paddingBottom?: number | string;
+    /** Horizontal padding around grid in px (or percentage as string like "5%"). Default 8. */
+    paddingHorizontal?: number | string;
+    /** Grid layout type: 'default' (even grid), 'featured-left' (first item large), 'featured-right' (last item large). Default 'default'. */
+    layoutType?: 'default' | 'featured-left' | 'featured-right';
   };
 
   // --- layout='list' ---
@@ -424,6 +436,10 @@ export interface CollectionImageCarouselGridCardConfig {
     showAddToCart?: boolean;
     /** Product image size in px. Default 72. */
     imageSize?: number;
+    /** Product title color. Default Colors.text. */
+    textColor?: string;
+    /** Product price color. Default Colors.text. */
+    priceColor?: string;
   };
 
   /** Per-card custom style overrides. */
@@ -431,6 +447,16 @@ export interface CollectionImageCarouselGridCardConfig {
     header?: any;
     title?: any;
     subtitle?: any;
+  };
+
+  /** Per-card color overrides. */
+  cardColors?: {
+    /** "See all" text color. Default Colors.primary. */
+    seeAllColor?: string;
+    /** Card title text color. Default Colors.text. */
+    titleColor?: string;
+    /** Card subtitle text color. Default Colors.textSecondary. */
+    subtitleColor?: string;
   };
 }
 

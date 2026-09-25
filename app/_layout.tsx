@@ -10,7 +10,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -21,6 +21,7 @@ import { EntryScreensCarousel } from '@/components/ui/EntryScreensCarousel';
 import { getAppVersionForApi, isVersionBelowMinimum } from '@/constants/versionConfig';
 import { AddressProvider } from '@/context/AddressContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { FeedbackTriggerProvider } from '@/context/FeedbackTriggerContext';
 import { LiveDeliveryStackOffsetProvider } from '@/context/LiveDeliveryStackOffsetContext';
 import { MilestoneDockProvider } from '@/context/MilestoneDockContext';
 import { MilestoneInlineCartProvider } from '@/context/MilestoneInlineCartContext';
@@ -34,15 +35,15 @@ import { useScreenTracking } from '@/hooks/useScreenTracking';
 import { appConfigService } from '@/services/appConfigService';
 import { initializeAppsFlyer } from '@/services/appsflyerService';
 import { clevertapService } from '@/services/clevertapService';
-import { deepLinkService } from '@/services/deepLinkService';
-import { deepLinkFromPushPayload } from '@/utils/deepLink';
 import { configService } from '@/services/configService';
+import { deepLinkService } from '@/services/deepLinkService';
 import { errorService } from '@/services/errorService';
 import { initializeFreshchat } from '@/services/freshchatService';
 import { oneSignalService } from '@/services/oneSignalService';
 import { pushRegistrationService } from '@/services/pushRegistrationService';
 import { useUserStore } from '@/store/userStore';
 import { EntryScreenItem } from '@/types/appConfig';
+import { deepLinkFromPushPayload } from '@/utils/deepLink';
 import { identifyUser, trackEvent } from '@/utils/mixpanelHelpers';
 
 // Create a QueryClient instance
@@ -625,18 +626,20 @@ export default function RootLayout() {
                             <MilestoneDockProvider>
                               <MilestoneInlineCartProvider>
                                 <LiveDeliveryStackOffsetProvider>
-                                  <Stack
-                                    screenOptions={{
-                                      headerShown: false,
-                                      animation: 'default',
-                                    }}
-                                  >
-                                    <Stack.Screen name="index" options={{ animation: 'none' }} />
-                                    <Stack.Screen name="(auth)" options={{ animation: 'none' }} />
-                                    <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
-                                    <Stack.Screen name="products/[id]" options={{ animation: 'default' }} />
-                                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                                  </Stack>
+                                  <FeedbackTriggerProvider>
+                                    <Stack 
+                                      screenOptions={{ 
+                                        headerShown: false,
+                                        animation: 'default',
+                                      }}
+                                    >
+                                      <Stack.Screen name="index" />
+                                      <Stack.Screen name="(auth)" />
+                                      <Stack.Screen name="(tabs)" />
+                                      <Stack.Screen name="products/[id]" />
+                                      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                                    </Stack>
+                                  </FeedbackTriggerProvider>
                                 </LiveDeliveryStackOffsetProvider>
                               </MilestoneInlineCartProvider>
                             </MilestoneDockProvider>

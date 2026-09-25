@@ -123,6 +123,7 @@ export function ImageCarousel({ block, onPress }: ImageCarouselProps) {
           height: carouselConfig.height ?? 0.6,
           resizeMode: carouselConfig.resizeMode ?? 'cover',
           showTextOverlay: true,
+          showPagination: carouselConfig.showPagination ?? false,
         }}
         styles={{
           container: blockStyles?.container,

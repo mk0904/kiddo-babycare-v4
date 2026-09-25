@@ -53,7 +53,7 @@ export const ScheduleBottomSheet: React.FC<ScheduleBottomSheetProps> = ({
             setLoading(true);
             fetch('https://delivery-partner-service-874125225773.asia-south1.run.app/api/limechat/orders/exchange-time-slots', {
                 headers: {
-                    'x-kiddo-secret': 'PLACEHOLDER_KIDDO_SECRET'
+                    'x-kiddo-secret': process.env.EXPO_PUBLIC_KIDDO_SECRET ?? ''
                 }
             })
                 .then(res => res.json())

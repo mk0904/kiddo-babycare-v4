@@ -1,4 +1,5 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import { ProductImageActions } from '@/components/ui/ProductImageActions';
 import UniversalAdd from '@/components/ui/UniversalAdd';
 import { Colors, Fonts } from '@/constants/theme';
 import { shopifyApi } from '@/services/shopifyApi';
@@ -101,56 +102,200 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     const aspectRatio = cfg.aspectRatio ?? 1;
     const resizeMode = cfg.resizeMode ?? 'cover';
     const cellBorderRadius = cfg.borderRadius ?? 12;
-    const showLabels = cfg.showLabels !== false;
+    const hasAnyLabel = useMemo(() => {
+        return card.gridItems?.some(item => !!item.label || !!item.productId) ?? false;
+    }, [card.gridItems]);
+    const showLabels = cfg.showLabels !== false && hasAnyLabel;
     const maxRows = cfg.rows;
+    const layoutType = cfg.layoutType ?? 'default';
+    const isFeaturedLayout = layoutType === 'featured-left' || layoutType === 'featured-right';
+    // Featured item occupies 1 column; remaining items fill the other columns stacked beside it.
+    const sideColumns = isFeaturedLayout ? Math.max(1, columns - 1) : columns;
+    
+    // Parse padding values - support both px numbers and percentage strings
+    const parsePadding = (value: number | string | undefined, fallback: number, referenceSize: number) => {
+        if (value === undefined) return fallback;
+        if (typeof value === 'string') {
+            if (value.endsWith('%')) {
+                const pct = parseFloat(value) / 100;
+                return pct * referenceSize;
+            }
+            return parseFloat(value) || fallback;
+        }
+        return value;
+    };
+    
+    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
+    const FOOTER_HEIGHT = 36;
+    const LABEL_HEIGHT = showLabels ? 22 : 0;
+
+    // Available height for the grid body (card minus header, footer)
+    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+    
+    const paddingTop = parsePadding(cfg.paddingTop, 0, bodyHeight);
+    const paddingBottom = parsePadding(cfg.paddingBottom, 8, bodyHeight);
+    const paddingHorizontal = parsePadding(cfg.paddingHorizontal, 8, cardWidth);
 
     const items = useMemo(() => {
         let all = card.gridItems ?? [];
-        if (maxRows) all = all.slice(0, columns * maxRows);
+        if (maxRows) {
+            const maxItems = isFeaturedLayout
+                ? 1 + sideColumns * maxRows
+                : columns * maxRows;
+            all = all.slice(0, maxItems);
+        }
         return all;
-    }, [card.gridItems, columns, maxRows]);
+    }, [card.gridItems, columns, maxRows, isFeaturedLayout, sideColumns]);
 
-    const CARD_PADDING = 12;
-    const HEADER_HEIGHT = (card.title || card.subtitle || card.headerImage) ? (card.headerHeight ?? 52) : 0;
-    const FOOTER_HEIGHT = 36;
-    const LABEL_HEIGHT = showLabels ? 22 : 0; // per-row label area
+    const [productsData, setProductsData] = useState<Map<string, any>>(new Map());
 
-    // Available height for the grid body (card minus header, footer, top+bottom padding)
-    const bodyHeight = cardHeight - HEADER_HEIGHT - FOOTER_HEIGHT - CARD_PADDING * 2;
+    useEffect(() => {
+        const productIds = items
+            .map((item) => item.productId)
+            .filter((id): id is string => !!id);
+        if (productIds.length === 0) {
+            setProductsData(new Map());
+            return;
+        }
 
-    const cellWidth = (cardWidth - CARD_PADDING * 2 - gap * (columns - 1)) / columns;
+        let cancelled = false;
+        const fetchProducts = async () => {
+            const results = await Promise.all(
+                productIds.map(async (productId) => {
+                    try {
+                        const product = await shopifyApi.getProductById(productId);
+                        return product ? ([productId, product] as const) : null;
+                    } catch (error) {
+                        console.error('Error fetching product:', productId, error);
+                        return null;
+                    }
+                }),
+            );
+            if (cancelled) return;
+            const productsMap = new Map<string, any>();
+            for (const entry of results) {
+                if (entry) productsMap.set(entry[0], entry[1]);
+            }
+            setProductsData(productsMap);
+        };
 
-    // Ideal height from aspect ratio
-    const idealImageHeight = cellWidth / aspectRatio;
+        fetchProducts();
+        return () => {
+            cancelled = true;
+        };
+    }, [items]);
 
-    // Max height allowed so all rows fit without clipping:
-    // bodyHeight = numRows * (imageH + LABEL_HEIGHT) + (numRows - 1) * gap
-    // => imageH = (bodyHeight - (numRows-1)*gap - numRows*LABEL_HEIGHT) / numRows
-    const numRows = maxRows ?? Math.ceil((card.gridItems?.length ?? 0) / columns);
-    const safeRows = Math.max(numRows, 1);
-    const maxImageHeight = (bodyHeight - (safeRows - 1) * gap - safeRows * LABEL_HEIGHT) / safeRows;
+    const CARD_PADDING = paddingHorizontal;
+    const availableWidth = cardWidth - CARD_PADDING * 2;
+    const gridColumns = isFeaturedLayout ? sideColumns + 1 : columns;
+    const cellWidth = (availableWidth - gap * (gridColumns - 1)) / gridColumns;
 
-    const cellImageHeight = Math.min(idealImageHeight, Math.max(maxImageHeight, 20));
+    const regularItems = isFeaturedLayout
+        ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
+        : items;
+    const numRegularRows = isFeaturedLayout
+        ? Math.max(regularItems.length > 0 ? Math.ceil(regularItems.length / sideColumns) : 1, 1)
+        : Math.max(maxRows ?? Math.ceil(items.length / columns), 1);
+    const safeRows = Math.max(numRegularRows, 1);
+
+    let cellImageHeight: number;
+    if (aspectRatio === 1) {
+        // Use available space to determine height, let resizeMode handle aspect ratio
+        const maxImageHeight = (bodyHeight - paddingTop - paddingBottom - (safeRows - 1) * gap - safeRows * LABEL_HEIGHT) / safeRows;
+        cellImageHeight = Math.max(maxImageHeight, 20);
+    } else {
+        cellImageHeight = Math.max(cellWidth / aspectRatio, 20);
+    }
+
+    // Featured image spans every side-grid row, minus its own label so bottoms align.
+    const featuredCellWidth = cellWidth;
+    const featuredCellHeight = Math.max(
+        safeRows * cellImageHeight + (safeRows - 1) * gap + Math.max(safeRows - 1, 0) * LABEL_HEIGHT,
+        20,
+    );
 
     const rows = useMemo(() => {
         const result: typeof items[number][][] = [];
-        for (let i = 0; i < items.length; i += columns) {
-            result.push(items.slice(i, i + columns));
+        const chunkSize = isFeaturedLayout ? sideColumns : columns;
+        const remaining = isFeaturedLayout
+            ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
+            : items;
+
+        for (let i = 0; i < remaining.length; i += chunkSize) {
+            result.push(remaining.slice(i, i + chunkSize));
         }
+
         return result;
-    }, [items, columns]);
+    }, [items, columns, layoutType, isFeaturedLayout, sideColumns]);
 
     const handleCellPress = useCallback((gridItem: typeof items[number]) => {
         if (!onPress) return;
-        const payload = { collectionId: gridItem.collectionId, title: gridItem.label };
+        const payload = {
+            collectionId: gridItem.collectionId,
+            productId: gridItem.productId,
+            title: gridItem.label,
+        };
         onPress(gridItem.link, payload);
     }, [onPress]);
+
+    const renderGridCell = (
+        gridItem: typeof items[number],
+        width: number,
+        height: number,
+    ) => {
+        const product = gridItem.productId ? productsData.get(gridItem.productId) : null;
+        const imageUrl = gridItem.imageUrl
+            || product?.images?.edges?.[0]?.node?.url
+            || product?.featuredImage?.url
+            || '';
+        const label = gridItem.label || (product ? product.title : undefined);
+        return (
+            <TouchableOpacity
+                key={gridItem.id}
+                activeOpacity={0.85}
+                onPress={() => handleCellPress(gridItem)}
+                style={{ width, overflow: 'visible' }}
+            >
+                <View
+                    style={{ width, height, borderRadius: cellBorderRadius, overflow: 'visible', backgroundColor: '#f5f5f5' }}
+                    pointerEvents="box-none"
+                >
+                    <OptimizedImage
+                        source={{ uri: shopifyImageUrl(imageUrl, Math.round(width * 2)) }}
+                        style={{ width, height, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
+                        contentFit={resizeMode}
+                        transition={0}
+                    />
+                    {product ? <ProductImageActions product={product} /> : null}
+                </View>
+                {showLabels ? (
+                    <View style={{ height: LABEL_HEIGHT, justifyContent: 'flex-start' }}>
+                        {label ? <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{label}</Text> : null}
+                    </View>
+                ) : null}
+            </TouchableOpacity>
+        );
+    };
 
     const handleHeaderPress = useCallback(() => {
         if (!onPress) return;
         const payload = { collectionId: card.collectionId, title: card.title };
         onPress(card.link, payload);
     }, [card, onPress]);
+
+    const featuredItem = layoutType === 'featured-left' ? items[0] : items[items.length - 1];
+    const featuredNode = isFeaturedLayout && featuredItem
+        ? renderGridCell(featuredItem, featuredCellWidth, featuredCellHeight)
+        : null;
+    const sideGrid = (
+        <View style={{ width: cellWidth * sideColumns + gap * Math.max(sideColumns - 1, 0), gap }}>
+            {rows.map((row, rowIdx) => (
+                <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
+                    {row.map((gridItem) => renderGridCell(gridItem, cellWidth, cellImageHeight))}
+                </View>
+            ))}
+        </View>
+    );
 
     const cardContent = (
         <>
@@ -165,8 +310,8 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                         />
                     ) : (
                         <View style={s.cardHeaderTexts}>
-                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                           {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title, card.cardColors?.titleColor && { color: card.cardColors.titleColor }]} numberOfLines={1}>{card.title}</Text>}
+                           {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle, card.cardColors?.subtitleColor && { color: card.cardColors.subtitleColor }]} numberOfLines={1}>{card.subtitle}</Text>}
                         </View>
                     )}
                     {!card.headerImage && (
@@ -176,27 +321,21 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                     )}
                 </TouchableOpacity>
             )}
-            <View style={[s.gridBody, { padding: CARD_PADDING, gap, height: bodyHeight, overflow: 'hidden', justifyContent: 'center' }]}>
-                {rows.map((row, rowIdx) => (
-                    <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
-                        {row.map((gridItem) => (
-                            <TouchableOpacity key={gridItem.id} activeOpacity={0.85} onPress={() => handleCellPress(gridItem)} style={{ width: cellWidth }}>
-                                <OptimizedImage
-                                    source={{ uri: shopifyImageUrl(gridItem.imageUrl, Math.round(cellWidth * 2)) }}
-                                    style={{ width: cellWidth, height: cellImageHeight, borderRadius: cellBorderRadius, backgroundColor: '#f5f5f5' }}
-                                    contentFit={resizeMode}
-                                    transition={0}
-                                />
-                                {showLabels && gridItem.label && (
-                                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{gridItem.label}</Text>
-                                )}
-                            </TouchableOpacity>
-                        ))}
+            <View style={[s.gridBody, { paddingTop, paddingBottom, paddingHorizontal: CARD_PADDING, gap, height: bodyHeight, overflow: 'visible' }]}>
+                {isFeaturedLayout ? (
+                    <View style={{ flexDirection: 'row', gap, alignItems: 'flex-start' }}>
+                        {layoutType === 'featured-right' ? <>{sideGrid}{featuredNode}</> : <>{featuredNode}{sideGrid}</>}
                     </View>
-                ))}
+                ) : (
+                    rows.map((row, rowIdx) => (
+                        <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
+                            {row.map((gridItem) => renderGridCell(gridItem, cellWidth, cellImageHeight))}
+                        </View>
+                    ))
+                )}
             </View>
             <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.7} style={s.cardFooter}>
-                <Text style={s.seeAllText}>See all »</Text>
+                <Text style={[s.seeAllText, card.cardColors?.seeAllColor && { color: card.cardColors.seeAllColor }]}>See all »</Text>
             </TouchableOpacity>
         </>
     );
@@ -238,6 +377,8 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
     const showPrice = cfg.showPrice !== false;
     const showAddToCart = cfg.showAddToCart !== false;
     const imageSize = cfg.imageSize ?? 72;
+    const textColor = cfg.textColor ?? Colors.text;
+    const priceColor = cfg.priceColor ?? Colors.text;
 
     const [products, setProducts] = useState<any[]>(card.products ?? []);
     const [loading, setLoading] = useState(!card.products?.length && !!card.collectionId);
@@ -301,8 +442,8 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                         />
                     ) : (
                         <View style={s.cardHeaderTexts}>
-                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title]} numberOfLines={1}>{card.title}</Text>}
-                            {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle]} numberOfLines={1}>{card.subtitle}</Text>}
+                            {card.title && <Text style={[s.cardTitle, card.cardStyles?.title, card.cardColors?.titleColor && { color: card.cardColors.titleColor }]} numberOfLines={1}>{card.title}</Text>}
+                            {card.subtitle && <Text style={[s.cardSubtitle, card.cardStyles?.subtitle, card.cardColors?.subtitleColor && { color: card.cardColors.subtitleColor }]} numberOfLines={1}>{card.subtitle}</Text>}
                         </View>
                     )}
                     {!card.headerImage && (
@@ -359,10 +500,10 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                                         )}
                                     </View>
                                     <View style={s.listInfo}>
-                                        <Text style={s.listProductName} numberOfLines={2} ellipsizeMode="tail">
+                                        <Text style={[s.listProductName, { color: textColor }]} numberOfLines={2} ellipsizeMode="tail">
                                             {product.title || product.name || ''}
                                         </Text>
-                                        {priceStr && <Text style={s.listPrice} numberOfLines={1}>{priceStr}</Text>}
+                                        {priceStr && <Text style={[s.listPrice, { color: priceColor }]} numberOfLines={1}>{priceStr}</Text>}
                                     </View>
                                     {showAddToCart && (
                                         <View style={s.listAddWrap} pointerEvents="box-none">
@@ -381,7 +522,7 @@ const ListCard: React.FC<ListCardProps> = ({ card, cardWidth, cardHeight, border
                 );
             })()}
             <TouchableOpacity onPress={handleHeaderPress} activeOpacity={0.7} style={s.cardFooter}>
-                <Text style={s.seeAllText}>See all »</Text>
+                <Text style={[s.seeAllText, card.cardColors?.seeAllColor && { color: card.cardColors.seeAllColor }]}>See all »</Text>
             </TouchableOpacity>
         </>
     );

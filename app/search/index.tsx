@@ -120,7 +120,7 @@ export default function SearchScreen() {
         abortControllerRef.current = new AbortController();
 
         // Debounce the search
-        const debounceDelay = config?.isSelfSearchEnabled ? 800 : 300;
+        const debounceDelay = config?.searchDebounceMs ?? (config?.isSelfSearchEnabled ? 800 : 300);
         searchTimeoutRef.current = setTimeout(() => {
             if (currentRequestId === requestIdRef.current) {
                 performSearch(false, abortControllerRef.current?.signal || undefined, currentRequestId);
@@ -181,7 +181,7 @@ export default function SearchScreen() {
                     setIsSuggesting(false);
                 }
             }
-        }, 200);
+        }, config?.searchDebounceMs ?? 200);
 
         return () => {
             if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);

@@ -80,7 +80,15 @@ export default function CategoryScreen() {
       console.warn('Analytics tracking error:', e);
     }
 
-    if (!link && !item?.collectionId && !item?.id) {
+    if (!link && !item?.collectionId && !item?.productId && !item?.id) {
+      return;
+    }
+
+    if (item?.productId) {
+      router.push({
+        pathname: '/products/[id]',
+        params: { id: item.productId },
+      } as any);
       return;
     }
 

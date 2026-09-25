@@ -25,7 +25,7 @@
         "n38lu8286q.skadnetwork"
       ],
       "config": {
-        "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
+        "googleMapsApiKey": "PLACEHOLDER_GOOGLE_MAPS_API_KEY"
       },
       "infoPlist": {
         "NSAdvertisingAttributionReportEndpoint": "https://appsflyer-skadnetwork.com/",
@@ -97,7 +97,7 @@
       "googleServicesFile": "./android/app/google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY"
+          "apiKey": "PLACEHOLDER_GOOGLE_MAPS_API_KEY"
         }
       }
     },

@@ -31,8 +31,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Gender filter options
 const GENDER_OPTIONS = [
     { label: 'Boys', value: 'boys' },
-    { label: 'Girls', value: 'girls' },
-    { label: 'Unisex', value: 'unisex' },
+    { label: 'Girls', value: 'girls' }
 ];
 
 // Age filter options
@@ -114,8 +113,8 @@ export default function InfinityScreen() {
     // Gender & Age Filter State
     const [showGenderModal, setShowGenderModal] = useState(false);
     const [showAgeModal, setShowAgeModal] = useState(false);
-    const [selectedGender, setSelectedGender] = useState<string | null>(null);
-    const [selectedAge, setSelectedAge] = useState<string | null>(null);
+    const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+    const [selectedAges, setSelectedAges] = useState<string[]>([]);
 
     const [totalItems, setTotalItems] = useState(0);
 
@@ -123,18 +122,38 @@ export default function InfinityScreen() {
 
     // Brand Filter State
     const [showBrandModal, setShowBrandModal] = useState(false);
-    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [brandOptions, setBrandOptions] = useState<{ label: string; value: string }[]>([]);
 
     // Size Filter State
     const [showSizeModal, setShowSizeModal] = useState(false);
-    const [selectedSize, setSelectedSize] = useState<string | null>(null);
+    const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
     const [sizeOptions, setSizeOptions] = useState<{ label: string; value: string }[]>([]);
 
     // Stage Filter State
     const [showStageModal, setShowStageModal] = useState(false);
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
-    const [stageOptions, setStageOptions] = useState<{ label: string; value: string }[]>([]);
+    const [stageOptions, setStageOptions] = useState<{ label: string; value: string }[]>([
+        { label: 'Stage 1', value: 'Stage 1' },
+        { label: 'Stage 2', value: 'Stage 2' },
+        { label: 'Stage 3', value: 'Stage 3' },
+        { label: 'Stage 4', value: 'Stage 4' },
+    ]);
+
+    // Diaper Size Filter State
+    const [showDiaperSizeModal, setShowDiaperSizeModal] = useState(false);
+    const [selectedDiaperSizes, setSelectedDiaperSizes] = useState<string[]>([]);
+    const [diaperSizeOptions, setDiaperSizeOptions] = useState<{ label: string; value: string }[]>([
+        { label: 'NB', value: 'nb' },
+        { label: 'XXS', value: 'xxs' },
+        { label: 'Extra Small', value: 'extra small' },
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+        { label: 'Extra Large', value: 'extra large' },
+        { label: 'XXL', value: 'xxl' },
+        { label: 'XXXL', value: 'xxxl' },
+    ]);
 
 
 
@@ -217,59 +236,54 @@ export default function InfinityScreen() {
     }, [sidebarHeight, sidebarSubcategories?.length]);
 
     // Helper function to determine if gender filter should be shown
-    // Gender filter should only be available in clothing category (girls/boys)
-    // and NOT when viewing a gender-specific collection
     const shouldShowGenderFilter = () => {
-        if (!collection) return false; // Default to false if collection not loaded yet
-
-        const collectionTitle = (collection.title || '').toLowerCase();
-        const collectionHandle = (collection.handle || '').toLowerCase();
+        if (!collection) return false;
         if (shouldHideFilters) return false;
 
-        // Show gender filter ONLY for fashion category
-        if (pageCategory === 'fashion') {
-            const allText = (effectiveTitle || '').toLowerCase();
-            const isGenderSpecific =
-                allText.includes('girls') ||
-                allText.includes('boys') ||
-                allText.includes("girl's") ||
-                allText.includes("boy's") ||
-                allText.includes("girl ") ||
-                allText.includes("boy ");
-
-            // If it's already gender-specific (e.g. "Girls Tops"), don't show the filter
-            if (isGenderSpecific) return false;
-            return true;
-        }
-
-        // Hide for Toys, Essentials, and others
-        return false;
+        // Only show if custom.genderfilter metafield is explicitly set to true
+        const genderFilterValue = collection?.genderFilterMetafield?.value?.toLowerCase();
+        return genderFilterValue === 'true';
     };
 
     const shouldShowAgeFilter = () => {
         if (shouldHideFilters) return false;
 
-        // Show age filter for Fashion and Toys
-        // (Essentials/Other usually use different sizing like weight or volume)
-        return pageCategory === 'fashion' || pageCategory === 'toys';
+        // Only show if custom.agefilter metafield is explicitly set to true
+        const ageFilterValue = collection?.ageFilterMetafield?.value?.toLowerCase();
+        return ageFilterValue === 'true';
     };
 
     const shouldShowBrandFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Brand filter for Essentials, Diapers, and Formula
-        return pageCategory === 'essentials' || pageCategory === 'diapers' || pageCategory === 'formula';
+        // Show Brand filter for all collections
+        return true;
     };
 
     const shouldShowSizeFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Size filter specifically for Diapers
-        return pageCategory === 'diapers';
+
+        // Only show if custom.sizefilter metafield is explicitly set to true
+        const sizeFilterValue = collection?.sizeFilterMetafield?.value?.toLowerCase();
+        return sizeFilterValue === 'true';
     };
 
     const shouldShowStageFilter = () => {
         if (shouldHideFilters) return false;
-        // Show Stage filter specifically for Formula
-        return pageCategory === 'formula';
+
+        // Only show if custom.stage metafield is explicitly set to true
+        const stageValue = collection?.stageMetafield?.value;
+        console.log('[Stage Filter] stageMetafield value:', stageValue);
+        const result = stageValue?.toLowerCase() === 'true';
+        console.log('[Stage Filter] should show:', result);
+        return result;
+    };
+
+    const shouldShowDiaperSizeFilter = () => {
+        if (shouldHideFilters) return false;
+
+        // Only show if custom.diaperfilter metafield is explicitly set to true
+        const diaperFilterValue = collection?.diaperFilterMetafield?.value?.toLowerCase();
+        return diaperFilterValue === 'true';
     };
 
     useEffect(() => {
@@ -278,6 +292,7 @@ export default function InfinityScreen() {
                 setLoading(true);
                 try {
                     const info = await shopifyApi.getCollectionById(effectiveCollectionId);
+                    console.log('[Collection Info] Full collection data:', JSON.stringify(info, null, 2));
                     setCollection(info);
 
                     // Identify category from "Category" metafield
@@ -295,7 +310,7 @@ export default function InfinityScreen() {
                     } else {
                         // Fallback logic if metafield is missing
                         const allText = (info?.title || info?.handle || '').toLowerCase();
-                        if (allText.includes('toys') || allText.includes('toy')) {
+                        if (allText.includes('toys') || allText.includes('toy') || allText.includes('art') || allText.includes('craft') || allText.includes('diy')) {
                             setPageCategory('toys');
                         } else if (allText.includes('formula')) {
                             setPageCategory('formula');
@@ -318,93 +333,369 @@ export default function InfinityScreen() {
     }, [effectiveCollectionId]);
 
     const handleBrandSelect = (brand: string) => {
-        if (selectedBrand === brand) {
-            setSelectedBrand(null);
+        const newSelectedBrands = selectedBrands.includes(brand)
+            ? selectedBrands.filter(b => b !== brand)
+            : [...selectedBrands, brand];
+
+        setSelectedBrands(newSelectedBrands);
+
+        // Handle multiple brand selection
+        if (newSelectedBrands.length === 0) {
+            // Clear vendor filter
             const { vendor: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
+            console.log('[Brand Filter] Cleared all brand filters - showing all products');
         } else {
-            setSelectedBrand(brand);
-            const newFilters = { ...selectedFilters, vendor: [brand] };
+            const newFilters = { ...selectedFilters, vendor: newSelectedBrands };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
+            console.log('[Brand Filter] Applied brand filters:', newSelectedBrands);
         }
-        setShowBrandModal(false);
     };
 
     const handleSizeSelect = (size: string) => {
-        if (selectedSize === size) {
-            setSelectedSize(null);
+        const newSelectedSizes = selectedSizes.includes(size)
+            ? selectedSizes.filter(s => s !== size)
+            : [...selectedSizes, size];
+
+        setSelectedSizes(newSelectedSizes);
+
+        // For Diapers, we want to EXCLUSIVELY use the Sizes metafield facet
+        let sizeKey = 'size';
+        if (pageCategory === 'diapers') {
+            const diaperFacet = facets.find((f: any) => {
+                const attr = (f.attribute || f.id || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
+            });
+            sizeKey = diaperFacet?.attribute || diaperFacet?.id || 'filter.p.m.custom.sizes';
+        } else if (pageCategory === 'fashion') {
+            // For Fashion, use grouped size filtering (age-based + clothing sizes)
+            const fashionSizeGroups: { [key: string]: string[] } = {
+                '0-6m': [
+                    '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                    '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                    '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                    '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                    '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                ],
+                '6-12m': [
+                '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+            ],
+                '1-2y': [
+                '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y'
+            ],
+                '2-3y': [
+                '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                '2 -3 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                '24-36 m', '2.5 y', '3 y'
+            ],
+                '3-4y': [
+                '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+            ],
+            '4-5y': [
+                '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+            ],
+            '5-6y': [
+                '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+            ],
+            '6+y': [
+                '6 - 7 y', '7 - 8 y', '12 - 13 y', '12 - 24 y', '9 - 10 y', '11 - 12 y', 
+                '13 - 14 y', '6-7 y', '18 -24 y', '12 - 18 y', '9 - 12 y', '12 -18 y', 
+                '6 - 7 y', '7- 8 y', '7-8 y', '6 - 6.6 y', '7 -8 y', '18 - 24 y', 
+                '18 - 24 y', '6-7y', '7-8y', '9 - 12 y', '7 - 7.5 y', '6.5 - 7 y', 
+                '8.5 - 9 y', '7.5 - 8 y', '6 - 12 y', '6 - 8 y', '6 - 6.5 y', '6.6-5y'
+            ]  };
+            
+            // Collect all individual sizes from all selected groups
+            const allSelectedSizes: string[] = [];
+            newSelectedSizes.forEach(selectedSize => {
+                // Direct match against group keys (0-6m, 6-12m, etc.)
+                const selectedGroup = Object.keys(fashionSizeGroups).find(group => 
+                    group === selectedSize.toLowerCase()
+                );
+                
+                if (selectedGroup) {
+                    const groupSizes = fashionSizeGroups[selectedGroup];
+                    allSelectedSizes.push(...groupSizes);
+                }
+            });
+            
+            // Find the size facet to get the correct attribute name
+            const sizeFacet = facets.find((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('size') || title.includes('size');
+            });
+            const sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
+            
+            // Handle multiple size selection with proper filtering
+            if (allSelectedSizes.length === 0) {
+                // Clear all possible size filter keys for fashion category
+                const rest = Object.keys(selectedFilters).reduce((acc, key) => {
+                    const keyLower = key.toLowerCase();
+                    if (!keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes')) {
+                        acc[key] = selectedFilters[key];
+                    }
+                    return acc;
+                }, {} as any);
+                setSelectedFilters(rest);
+                handleApplyFilters(rest);
+                console.log('[Size Filter] Cleared all size filters - showing all products');
+            } else {
+                // Store the group keys directly (0-6m, 1-2y, etc.) instead of expanded sizes
+                const newFilters = { ...selectedFilters, [sizeKey]: newSelectedSizes };
+                setSelectedFilters(newFilters);
+                handleApplyFilters(newFilters);
+                console.log('[Size Filter] Applied size filter groups:', newSelectedSizes);
+            }
+            return;
+        } else {
+            // Identify the correct filter key from facets for other categories
+            const sizeFacet = facets.find((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('size') || title.includes('size');
+            });
+            sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
+        }
+
+        // Handle multiple size selection
+        if (newSelectedSizes.length === 0) {
             // Clear all possible size filter keys
-            const { size: _, 'custom.sizes': __, 'custom.Sizes': ___, 'filter.p.m.custom.sizes': ____, ...rest } = selectedFilters;
+            const rest = Object.keys(selectedFilters).reduce((acc, key) => {
+                const keyLower = key.toLowerCase();
+                if (!keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes')) {
+                    acc[key] = selectedFilters[key];
+                }
+                return acc;
+            }, {} as any);
             setSelectedFilters(rest);
             handleApplyFilters(rest);
+            console.log('[Size Filter] Cleared all size filters (general case) - showing all products');
         } else {
-            setSelectedSize(size);
-
-            // For Diapers, we want to EXCLUSIVELY use the Sizes metafield facet
-            let sizeKey = 'size';
-            if (pageCategory === 'diapers') {
-                const diaperFacet = facets.find((f: any) => {
-                    const attr = (f.attribute || f.id || '').toLowerCase();
-                    const title = (f.title || f.label || '').toLowerCase();
-                    return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
-                });
-                sizeKey = diaperFacet?.attribute || diaperFacet?.id || 'filter.p.m.custom.sizes';
-            } else {
-                // Identify the correct filter key from facets for other categories
-                const sizeFacet = facets.find((f: any) => {
-                    const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-                    const title = (f.title || f.label || '').toLowerCase();
-                    return attr.includes('size') || title.includes('size');
-                });
-                sizeKey = sizeFacet?.attribute || sizeFacet?.id || 'size';
-            }
-
-            const newFilters = { ...selectedFilters, [sizeKey]: [size] };
+            const newFilters = { ...selectedFilters, [sizeKey]: newSelectedSizes };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
+            console.log('[Size Filter] Applied size filters (general case):', newSelectedSizes);
         }
-        setShowSizeModal(false);
     };
 
     const handleStageSelect = (stage: string) => {
         if (selectedStage === stage) {
             setSelectedStage(null);
-            const { 'custom.pack_size': _, 'custom.stage': __, 'custom.Stage': ___, 'custom.Pack Size': ____, ...rest } = selectedFilters;
+            const { 'custom.pack_size': _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
         } else {
             setSelectedStage(stage);
-            // Identify the correct filter key from facets (look for Pack Size or Stage)
-            const stageFacet = facets.find((f: any) => {
-                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-                const title = (f.title || f.label || '').toLowerCase();
-                return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
-            });
-            const stageKey = stageFacet?.attribute || stageFacet?.id || 'custom.stage';
-            const newFilters = { ...selectedFilters, [stageKey]: [stage] };
+            // Use custom.pack_size metafield key for stage filtering
+            const newFilters = { ...selectedFilters, 'custom.pack_size': [stage] };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
         }
         setShowStageModal(false);
     };
 
-    // Sync gender and age from selectedFilters
+    const handleDiaperSizeSelect = (diaperSize: string) => {
+        const newSelectedDiaperSizes = selectedDiaperSizes.includes(diaperSize)
+            ? selectedDiaperSizes.filter(s => s !== diaperSize)
+            : [...selectedDiaperSizes, diaperSize];
+
+        setSelectedDiaperSizes(newSelectedDiaperSizes);
+
+        // For Diapers, we want to EXCLUSIVELY use the Sizes metafield facet
+        const diaperFacet = facets.find((f: any) => {
+            const attr = (f.attribute || f.id || '').toLowerCase();
+            const title = (f.title || f.label || '').toLowerCase();
+            return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
+        });
+        const sizeKey = diaperFacet?.attribute || diaperFacet?.id || 'filter.p.m.custom.sizes';
+
+        // Handle multiple diaper size selection
+        if (newSelectedDiaperSizes.length === 0) {
+            // Clear all possible size filter keys
+            const rest = Object.keys(selectedFilters).reduce((acc, key) => {
+                const keyLower = key.toLowerCase();
+                if (!keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes')) {
+                    acc[key] = selectedFilters[key];
+                }
+                return acc;
+            }, {} as any);
+            setSelectedFilters(rest);
+            handleApplyFilters(rest);
+            console.log('[Diaper Size Filter] Cleared all diaper size filters - showing all products');
+        } else {
+            const newFilters = { ...selectedFilters, [sizeKey]: newSelectedDiaperSizes };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+            console.log('[Diaper Size Filter] Applied diaper size filters:', newSelectedDiaperSizes);
+        }
+    };
+
+    // Sync gender, age, stage, and diaper sizes from selectedFilters
     useEffect(() => {
         if (selectedFilters.gender && Array.isArray(selectedFilters.gender) && selectedFilters.gender.length > 0) {
-            setSelectedGender(selectedFilters.gender[0]);
+            setSelectedGenders(selectedFilters.gender);
         } else {
-            setSelectedGender(null);
+            setSelectedGenders([]);
         }
         if (selectedFilters.age && Array.isArray(selectedFilters.age) && selectedFilters.age.length > 0) {
-            setSelectedAge(selectedFilters.age[0]);
+            setSelectedAges(selectedFilters.age);
         } else {
-            setSelectedAge(null);
+            setSelectedAges([]);
         }
-    }, [selectedFilters]);
+        if (selectedFilters['custom.pack_size'] && Array.isArray(selectedFilters['custom.pack_size']) && selectedFilters['custom.pack_size'].length > 0) {
+            setSelectedStage(selectedFilters['custom.pack_size'][0]);
+        } else {
+            setSelectedStage(null);
+        }
+        // Sync brands from vendor filter
+        if (selectedFilters.vendor && Array.isArray(selectedFilters.vendor) && selectedFilters.vendor.length > 0) {
+            setSelectedBrands(selectedFilters.vendor);
+        } else {
+            setSelectedBrands([]);
+        }
+        // Sync sizes from any size-related filter key
+        const sizeKeys = Object.keys(selectedFilters).filter(key => 
+            key.toLowerCase().includes('size') || 
+            key.toLowerCase().includes('custom.sizes') || 
+            key.toLowerCase().includes('filter.p.m.custom.sizes')
+        );
+        if (sizeKeys.length > 0) {
+            const sizeValues = selectedFilters[sizeKeys[0]];
+            if (Array.isArray(sizeValues) && sizeValues.length > 0) {
+                // For fashion, sync to selectedSizes; for diapers, sync to selectedDiaperSizes
+                if (pageCategory === 'fashion') {
+                    // For fashion, check if the size values are group keys (0-6m, 1-2y, etc.)
+                    // or expanded individual sizes. If they're group keys, use them directly.
+                    const fashionGroupKeys = ['0-6m', '6-12m', '1-2y', '2-3y', '3-4y', '4-5y', '5-6y', '6+y'];
+                    const areGroupKeys = sizeValues.every((val: string) => 
+                        fashionGroupKeys.includes(val.toLowerCase())
+                    );
+                    
+                    if (areGroupKeys) {
+                        // Size values are already group keys, use them directly
+                        setSelectedSizes(sizeValues);
+                    } else {
+                        // Size values are expanded individual sizes, need to map back to groups
+                        // Use a more precise mapping that prioritizes unique matches
+                        const fashionSizeGroups: { [key: string]: string[] } = {
+                            '0-6m': [
+                                '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                                '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                                '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                                '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                                '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                            ],
+                            '6-12m': [
+                                '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                                '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                                '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+                            ],
+                            '1-2y': [
+                                '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                                '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                                '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                                '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                                '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                                '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                                '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                                '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y'
+                            ],
+                            '2-3y': [
+                                '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                                '2 -3 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                                '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                                '24-36 m', '2.5 y', '3 y'
+                            ],
+                            '3-4y': [
+                                '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                                '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                                '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+                            ],
+                            '4-5y': [
+                                '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                                '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                                '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+                            ],
+                            '5-6y': [
+                                '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                                '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                                '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+                            ],
+                            '6+y': [
+                                '6 - 7 y', '7 - 8 y', '12 - 13 y', '12 - 24 y', '9 - 10 y', '11 - 12 y', 
+                                '13 - 14 y', '6-7 y', '18 -24 y', '12 - 18 y', '9 - 12 y', '12 -18 y', 
+                                '6 - 7 y', '7- 8 y', '7-8 y', '6 - 6.6 y', '7 -8 y', '18 - 24 y', 
+                                '18 - 24 y', '6-7y', '7-8y', '9 - 12 y', '7 - 7.5 y', '6.5 - 7 y', 
+                                '8.5 - 9 y', '7.5 - 8 y', '6 - 12 y', '6 - 8 y', '6 - 6.5 y', '6.6-5y'
+                            ]
+                        };
+                        
+                        // Find which groups are represented in the selected size values
+                        // Use a scoring system to prefer groups with more unique matches
+                        const groupScores: { [key: string]: number } = {};
+                        Object.keys(fashionSizeGroups).forEach(groupKey => {
+                            const groupSizes = fashionSizeGroups[groupKey];
+                            let matchCount = 0;
+                            sizeValues.forEach((selectedSize: string) => {
+                                if (groupSizes.some(groupSize => 
+                                    selectedSize.toLowerCase() === groupSize.toLowerCase()
+                                )) {
+                                    matchCount++;
+                                }
+                            });
+                            if (matchCount > 0) {
+                                groupScores[groupKey] = matchCount;
+                            }
+                        });
+                        
+                        // Select groups that have matches, sorted by match count (descending)
+                        const selectedGroups = Object.keys(groupScores)
+                            .sort((a, b) => groupScores[b] - groupScores[a]);
+                        
+                        setSelectedSizes(selectedGroups);
+                    }
+                } else {
+                    setSelectedDiaperSizes(sizeValues);
+                }
+            } else {
+                if (pageCategory === 'fashion') {
+                    setSelectedSizes([]);
+                } else {
+                    setSelectedDiaperSizes([]);
+                }
+            }
+        } else {
+            if (pageCategory === 'fashion') {
+                setSelectedSizes([]);
+            } else {
+                setSelectedDiaperSizes([]);
+            }
+        }
+    }, [selectedFilters, pageCategory]);
 
-    // Handle facets loaded from the product query
+    // Handle facets loaded from the product query.
+    // NOTE: Only store facets + brands here. Size options are computed separately
+    // in the useEffect below so they always use the correct (possibly async) pageCategory.
     const handleFacetsLoaded = (loadedFacets: any[]) => {
         setFacets(loadedFacets);
 
@@ -420,10 +711,16 @@ export default function InfinityScreen() {
             }));
             setBrandOptions(options);
         }
+    };
 
-        // For Diapers, we specifically look for the "Sizes" metafield facet
+    // Recompute size options whenever facets OR pageCategory changes.
+    // This fixes the race condition where facets loaded before pageCategory was set
+    // (from the async collection-info fetch), causing inconsistent size options.
+    useEffect(() => {
+        if (facets.length === 0) return;
+
         if (pageCategory === 'diapers') {
-            const diaperFacet = loadedFacets.find((f: any) => {
+            const diaperFacet = facets.find((f: any) => {
                 const attr = (f.attribute || f.id || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
                 return attr.includes('custom.sizes') || title.toLowerCase() === 'sizes';
@@ -449,9 +746,97 @@ export default function InfinityScreen() {
                 };
             });
             setSizeOptions(options);
+        } else if (pageCategory === 'fashion') {
+            // For Fashion, provide grouped size options
+            const FASHION_SIZE_GROUPS = [
+                { label: '0 - 6 M', value: '0-6m' },
+                { label: '6 - 12 M', value: '6-12m' },
+                { label: '1 - 2 Y', value: '1-2y' },
+                { label: '2 - 3 Y', value: '2-3y' },
+                { label: '3 - 4 Y', value: '3-4y' },
+                { label: '4 - 5 Y', value: '4-5y' },
+                { label: '5 - 6 Y', value: '5-6y' },
+                { label: '6+ Y', value: '6+y' },
+            ];
+
+            // Check which groups have available sizes
+            const sizeFacets = facets.filter((f: any) => {
+                const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
+                const title = (f.title || f.label || '').toLowerCase();
+                return attr.includes('size') || title.includes('size');
+            });
+
+            const allBuckets = sizeFacets.reduce((acc: any[], facet: any) => {
+                const buckets = (facet.buckets || facet.values || []);
+                return [...acc, ...buckets];
+            }, []);
+
+            const availableSizes = new Set<string>();
+            allBuckets.forEach((b: any) => {
+                const label = (b.label || b.title || b.value || '').toLowerCase();
+                availableSizes.add(label);
+            });
+
+            const fashionSizeGroups: { [key: string]: string[] } = {
+                '0-6m': [
+                    '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                    '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                    '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                    '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                    '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                ],
+                '6-12m': [
+                    '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                    '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                    '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+                ],
+                '1-2y': [
+                    '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                    '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                    '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                    '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                    '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                    '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                    '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                    '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y', '2 y'
+                ],
+                '2-3y': [
+                    '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                    '2 -3 y', '2 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                    '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                    '24-36 m', '2.5 y', '3 y'
+                ],
+                '3-4y': [
+                    '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                    '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                    '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+                ],
+                '4-5y': [
+                    '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                    '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                    '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+                ],
+                '5-6y': [
+                    '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                    '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                    '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+                ]
+            };
+
+            const options = FASHION_SIZE_GROUPS.map(group => {
+                const groupSizes = fashionSizeGroups[group.value] || [];
+                const hasAvailableSize = groupSizes.some(size =>
+                    availableSizes.has(size)
+                );
+                return {
+                    ...group,
+                    available: hasAvailableSize
+                };
+            });
+            setSizeOptions(options);
         } else {
             // For other categories, extract size options from all Size/Sizes related facets
-            const sizeFacets = loadedFacets.filter((f: any) => {
+            const sizeFacets = facets.filter((f: any) => {
                 const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
                 const title = (f.title || f.label || '').toLowerCase();
                 return attr.includes('size') || title.includes('size');
@@ -474,21 +859,7 @@ export default function InfinityScreen() {
                 setSizeOptions(Array.from(uniqueOptionsMap.values()));
             }
         }
-
-        // Extract stage options from Pack Size/Stage facet for the quick-filter bubble
-        const stageFacet = loadedFacets.find((f: any) => {
-            const attr = (f.attribute || f.id || f.field || f.name || '').toLowerCase();
-            const title = (f.title || f.label || '').toLowerCase();
-            return attr.includes('pack_size') || attr.includes('stage') || title.includes('pack size') || title.includes('stage');
-        });
-        if (stageFacet) {
-            const options = (stageFacet.buckets || stageFacet.values || []).map((b: any) => ({
-                label: b.label || b.title || b.value,
-                value: b.value || b.id || b.label
-            }));
-            setStageOptions(options);
-        }
-    };
+    }, [facets, pageCategory]);
     const handleApplyFilters = (filters: any) => {
         setSelectedFilters(filters);
         setIsFilterPanelVisible(false);
@@ -497,15 +868,18 @@ export default function InfinityScreen() {
         let count = 0;
         const newApiFilters: any[] = [];
 
-        // Count gender and age filters separately
-        if (selectedGender) count += 1;
-        if (selectedAge) count += 1;
+        // Count gender, age, diaper size, and brand filters separately
+        if (selectedGenders.length > 0) count += 1;
+        if (selectedAges.length > 0) count += 1;
+        if (selectedDiaperSizes.length > 0) count += 1;
+        if (selectedBrands.length > 0) count += 1;
 
         Object.keys(filters).forEach(key => {
             const value = filters[key];
             if (Array.isArray(value) && value.length > 0) {
-                // Don't double count gender and age
-                if (key !== 'gender' && key !== 'age') {
+                // Don't double count gender, age, size-related, and brand filters
+                const keyLower = key.toLowerCase();
+                if (key !== 'gender' && key !== 'age' && !keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes') && !keyLower.includes('vendor') && !keyLower.includes('brand')) {
                     count += value.length;
                 }
 
@@ -643,26 +1017,111 @@ export default function InfinityScreen() {
                             // RIGID DIAPER SIZE FILTERING:
                             // If it's a size filter in the diapers category, and not yet added, 
                             // force a productMetafield filter for the "Sizes" metafield.
+                            // NOTE: We skip this for diaper sizes since we handle them via the diaperSizeFilter prop
+                            // which supports multiple sizes correctly. Only process if this is NOT a diaper size filter.
                             if (!filterAdded && pageCategory === 'diapers' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
-                                // Only apply if it matches our standardized list values
+                                // Check if this is a diaper size from our standardized list
                                 const isStandardSize = DIAPER_SIZE_OPTIONS.some(o =>
                                     o.label.toLowerCase() === val.toLowerCase() ||
                                     o.value.toLowerCase() === val.toLowerCase()
                                 );
 
+                                // Skip adding individual productMetafield filters for diaper sizes
+                                // They are handled via the diaperSizeFilter prop which supports multiple values
                                 if (isStandardSize) {
-                                    // Construct a rigid metafield filter for Shopify
-                                    // We use 'custom' namespace and 'sizes' key as specified by user
-                                    const rigidSizeFilter = {
-                                        productMetafield: {
-                                            namespace: "custom",
-                                            key: "sizes",
-                                            value: val
-                                        }
-                                    };
-                                    newApiFilters.push(rigidSizeFilter);
-                                    filterAdded = true;
+                                    filterAdded = true; // Mark as handled but don't add to API filters
                                 }
+                            }
+
+                            // RIGID STAGE FILTERING:
+                            // If it's a pack_size filter (stage filter), and not yet added,
+                            // force a productMetafield filter for the "pack_size" metafield.
+                            if (!filterAdded && key === 'custom.pack_size') {
+                                // Construct a rigid metafield filter for Shopify
+                                // We use 'custom' namespace and 'pack_size' key
+                                const rigidStageFilter = {
+                                    productMetafield: {
+                                        namespace: "custom",
+                                        key: "pack_size",
+                                        value: val
+                                    }
+                                };
+                                newApiFilters.push(rigidStageFilter);
+                                filterAdded = true;
+                            }
+                            // FASHION SIZE FILTERING:
+                            // For fashion, size values are group keys (e.g. '0-6m', '1-2y').
+                            // Expand them to individual size strings for ProductCollection filtering.
+                            if (pageCategory === 'fashion' && (key?.toLowerCase().includes('size') || filterKey?.toLowerCase().includes('size'))) {
+                                // Expand group keys to individual size strings
+                                const fashionSizeGroups: { [key: string]: string[] } = {
+                                    '0-6m': [
+                                        '0 - 3 m', '3 - 6 m', '0 - 6 m', '0-6 m', '3-6 m', '3 m', '6 m', 
+                                        '5 - 6 m', '1 - 6 m', '3- 6 m', '1 - 3 m', '0-3 m', '1 -3 m', 
+                                        '2 - 2.5 m', '2 - 6 m', '2 - 3 m', '3 - 4 m', '4 - 5 m', '0- 6 m', 
+                                        '3 -6 m', '3 - 6m', '0 -3 m', '2 - 4 m', '0 - 2 m', '0 - 1 m', 
+                                        '1 - 2 m', '3m - 6m', '0 - 4 m', '4 - 6 m', '0-3m', '3-6m', '0-6m'
+                                    ],
+                                    '6-12m': [
+                                        '6 - 12 m', '9 - 12 m', '6 - 9 m', '9-12 m', '6- 9 m', '12 m', 
+                                        '6 - 12 m', '9 - 12 m', '6-9 m', '9-12 m', '6 -9 m', '9-12m', 
+                                        '6 - 7 m', '6- 12 m', '6 - 12 m', '6-12-m-2', '6m', '9m'
+                                    ],
+                                    '1-2y': [
+                                        '1 - 2 y', '12 - 18 m', '18 - 24 m', '12 - 15 m', '15 - 18 m', 
+                                        '1 - 1.5 y', '1.5 - 2 y', '12-24 m toys', '12 - 24 m', '12 - 13 m', 
+                                        '12 -`18 m', '18 m', '24 m', '18-24 m', '12 = 18 m', '18 -24 m', 
+                                        '18 - 24 m', '18-24m', '1.5-2 y', '1-2y', '1-2 y', '1 - 2 y', 
+                                        '1 2- 24 m', '12-18 m', '12 -24 m', '12 - 18 m', '1-1.5 y', 
+                                        '12-18m', '18- 24 m', '21-24m', '12 - 18m', '12 -18 m', '12-15 m', 
+                                        '1 2 - 15 m', '12 - 13m', '18-24 months', '12 - 18 m', '18m - 24m', 
+                                        '1-2-y-1', '18-24-m-1', '12-18-m-1', '18 - 21 m', '1 y', '1.5 y'
+                                    ],
+                                    '2-3y': [
+                                        '2 - 3 y', '2 - 2.5 y', '2.5 - 3 y', '2 - 3 y', '36 m', '2-3 y', 
+                                        '2 -3 y', '2 - 3 y', '2- 3 y', '2-3y', '24 - 36 m', 
+                                        '2 - 3 y', '2-2.5 y', '2 - 3 y', '2-3-y-2', '2.5-3 y', '2-2.5y', 
+                                        '24-36 m', '2.5 y', '3 y'
+                                    ],
+                                    '3-4y': [
+                                        '3 - 4 y', '3 - 3.5 y', '3.5 - 4 y', '3-4 y', '3 - 4 y', '3- 4 y', 
+                                        '3-4 y', '3.5 -4 y', '3 -4 y', '3-4y', '3=4 y', '3 - 4 - y', 
+                                        '3.5 - 4y', '3 - 4 y', '3-4-years', '3.5-4 y', '3.5 -- 4y'
+                                    ],
+                                    '4-5y': [
+                                        '4 - 5 y', '4 - 4.5 y', '4.5 - 5 y', '4-5 y', '4 -5 y', '4.5-5y', 
+                                        '4 - 4.5y', '4.5 - 5y', '4- 5 y', '4 - 5 y', '4-5y', '4 - 5 .5 y', 
+                                        '4.5-5 y', '4 - 5 y', '4 - 5 y', '4-5-y-3', '3-4 y', '4-5 y', '4 y', '5 y'
+                                    ],
+                                    '5-6y': [
+                                        '5 - 6 y', '5 - 5.5 y', '5.5 - 6 y', '5-6 y', '5.5 - 5 y', '5 - 6 y', 
+                                        '5-6y', '5 - 6 y', '5 -6 y', '5- 6 y', '5 -6 y', '5 6 y', '5.5-6 y', 
+                                        '5 - 5.5y', '5-6 years', '5- 5.5 y', '5-6-y-3', '5 - 5.6 y'
+                                    ],
+                                    '6+y': [
+                                        '6 - 7 y', '7 - 8 y', '12 - 13 y', '12 - 24 y', '9 - 10 y', '11 - 12 y', 
+                                        '13 - 14 y', '6-7 y', '18 -24 y', '12 - 18 y', '9 - 12 y', '12 -18 y', 
+                                        '6 - 7 y', '7- 8 y', '7-8 y', '6 - 6.6 y', '7 -8 y', '18 - 24 y', 
+                                        '18 - 24 y', '6-7y', '7-8y', '9 - 12 y', '7 - 7.5 y', '6.5 - 7 y', 
+                                        '8.5 - 9 y', '7.5 - 8 y', '6 - 12 y', '6 - 8 y', '6 - 6.5 y', '6.6-5y'
+                                    ]
+                                };
+                                
+                                // Expand group keys to individual size strings
+                                const allGroupSizes: string[] = [];
+                                value.forEach((groupKey: string) => {
+                                    const groupSizes = fashionSizeGroups[groupKey.toLowerCase()];
+                                    if (groupSizes) {
+                                        allGroupSizes.push(...groupSizes);
+                                    }
+                                });
+                                
+                                const fashionSizeFilter = { fashionSize: { groupSizes: allGroupSizes } };
+                                // Only push once (the first value iteration)
+                                if (newApiFilters.every((f: any) => !f.fashionSize)) {
+                                    newApiFilters.push(fashionSizeFilter);
+                                }
+                                filterAdded = true;
                             }
                         }
                     }
@@ -697,33 +1156,47 @@ export default function InfinityScreen() {
     };
 
     const handleGenderSelect = (gender: string) => {
-        if (selectedGender === gender) {
-            setSelectedGender(null);
+        const newSelectedGenders = selectedGenders.includes(gender)
+            ? selectedGenders.filter(g => g !== gender)
+            : [...selectedGenders, gender];
+
+        setSelectedGenders(newSelectedGenders);
+
+        // If both genders are selected, clear the filter (show all)
+        if (newSelectedGenders.length === 2) {
+            setSelectedGenders([]);
+            const { gender: _, ...rest } = selectedFilters;
+            setSelectedFilters(rest);
+            handleApplyFilters(rest);
+        }
+        // Handle multiple gender selection
+        else if (newSelectedGenders.length === 0) {
             const { gender: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
         } else {
-            setSelectedGender(gender);
-            const newFilters = { ...selectedFilters, gender: [gender] };
+            const newFilters = { ...selectedFilters, gender: newSelectedGenders };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
         }
-        setShowGenderModal(false);
     };
 
     const handleAgeSelect = (age: string) => {
-        if (selectedAge === age) {
-            setSelectedAge(null);
+        const newSelectedAges = selectedAges.includes(age)
+            ? selectedAges.filter(a => a !== age)
+            : [...selectedAges, age];
+
+        setSelectedAges(newSelectedAges);
+
+        if (newSelectedAges.length > 0) {
+            const newFilters = { ...selectedFilters, age: newSelectedAges };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        } else {
             const { age: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
-        } else {
-            setSelectedAge(age);
-            const newFilters = { ...selectedFilters, age: [age] };
-            setSelectedFilters(newFilters);
-            handleApplyFilters(newFilters);
         }
-        setShowAgeModal(false);
     };
 
     const handleSharePress = async () => {
@@ -821,10 +1294,10 @@ export default function InfinityScreen() {
                         onBrandPress={() => setShowBrandModal(true)}
                         onSizePress={() => setShowSizeModal(true)}
                         onStagePress={() => setShowStageModal(true)}
-                        selectedGender={selectedGender}
-                        selectedAge={selectedAge}
-                        selectedBrand={selectedBrand}
-                        selectedSize={selectedSize}
+                        selectedGender={selectedGenders.length > 0 ? selectedGenders[0] : null}
+                        selectedAge={selectedAges.length > 0 ? selectedAges[0] : null}
+                        selectedBrand={selectedBrands.length > 0 ? selectedBrands[0] : null}
+                        selectedSizes={selectedSizes}
                         selectedStage={selectedStage}
                         facets={facets}
                         selectedFilters={selectedFilters}
@@ -834,6 +1307,9 @@ export default function InfinityScreen() {
                         showBrandFilter={shouldShowBrandFilter()}
                         showSizeFilter={shouldShowSizeFilter()}
                         showStageFilter={shouldShowStageFilter()}
+                        showDiaperSizeFilter={shouldShowDiaperSizeFilter()}
+                        onDiaperSizePress={() => setShowDiaperSizeModal(true)}
+                        selectedDiaperSize={selectedDiaperSizes.length > 0 ? selectedDiaperSizes[0] : null}
                     />
                 )}
 
@@ -858,8 +1334,9 @@ export default function InfinityScreen() {
                         scrollable={true}
                         onScroll={handleProductGridScroll}
                         // Pass gender and age for client-side filtering
-                        genderFilter={selectedGender}
-                        ageFilter={selectedAge}
+                        genderFilter={selectedGenders.length > 0 ? selectedGenders[0] : null}
+                        ageFilter={selectedAges.length > 0 ? selectedAges : null}
+                        diaperSizeFilter={selectedDiaperSizes.length > 0 ? selectedDiaperSizes : null}
                         pageCategory={pageCategory}
                     />
                 </Animated.View>
@@ -991,7 +1468,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {GENDER_OPTIONS.map((option, index) => {
-                            const isSelected = selectedGender === option.value;
+                            const isSelected = selectedGenders.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1005,10 +1482,10 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -1032,7 +1509,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {AGE_OPTIONS.map((option, index) => {
-                            const isSelected = selectedAge === option.value;
+                            const isSelected = selectedAges.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1046,15 +1523,21 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
                         })}
                     </ScrollView>
+                    <TouchableOpacity
+                        style={styles.doneButton}
+                        onPress={() => setShowAgeModal(false)}
+                    >
+                        <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
                 </BaseModal>
                 {/* Brand Filter Modal */}
                 <BaseModal
@@ -1072,7 +1555,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {brandOptions.map((option, index) => {
-                            const isSelected = selectedBrand === option.value;
+                            const isSelected = selectedBrands.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1086,15 +1569,21 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
                         })}
                     </ScrollView>
+                    <TouchableOpacity
+                        style={styles.doneButton}
+                        onPress={() => setShowBrandModal(false)}
+                    >
+                        <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
                 </BaseModal>
                 {/* Size Filter Modal */}
                 <BaseModal
@@ -1112,7 +1601,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {sizeOptions.map((option, index) => {
-                            const isSelected = selectedSize === option.value;
+                            const isSelected = selectedSizes.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1126,10 +1615,10 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -1170,6 +1659,47 @@ export default function InfinityScreen() {
                                         isSelected && styles.radioOuterSelected
                                     ]}>
                                         {isSelected && <View style={styles.radioInner} />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </BaseModal>
+
+                {/* Diaper Size Filter Modal */}
+                <BaseModal
+                    visible={showDiaperSizeModal}
+                    onClose={() => setShowDiaperSizeModal(false)}
+                    title="Select Diaper Size"
+                    type="bottomSheet"
+                    closeButtonPosition="above"
+                    containerStyle={styles.sortModalContent}
+                    contentStyle={styles.sortModalContentWrapper}
+                >
+                    <ScrollView
+                        style={styles.sortListContainer}
+                        contentContainerStyle={styles.sortListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {diaperSizeOptions.map((option, index) => {
+                            const isSelected = selectedDiaperSizes.includes(option.value);
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sortListItem}
+                                    onPress={() => handleDiaperSizeSelect(option.value)}
+                                >
+                                    <Text style={[
+                                        styles.sortListItemText,
+                                        isSelected && styles.sortListItemTextSelected
+                                    ]}>
+                                        {option.label}
+                                    </Text>
+                                    <View style={[
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
+                                    ]}>
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -1334,5 +1864,31 @@ const styles = StyleSheet.create({
         height: 12,
         borderRadius: 6,
         backgroundColor: Colors.primary,
+    },
+    checkboxOuter: {
+        width: 22,
+        height: 22,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: Colors.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkboxOuterSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: Colors.primary,
+    },
+    doneButton: {
+        backgroundColor: Colors.primary,
+        marginHorizontal: 20,
+        marginBottom: 20,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    doneButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: Fonts.LexendSemiBold,
     },
 });

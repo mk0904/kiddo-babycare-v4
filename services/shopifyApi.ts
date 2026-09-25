@@ -107,6 +107,24 @@ const GET_COLLECTION_BY_ID_QUERY = `
       categoryMetafield: metafield(namespace: "custom", key: "Category") {
         value
       }
+      genderFilterMetafield: metafield(namespace: "custom", key: "genderfilter") {
+        value
+      }
+      ageFilterMetafield: metafield(namespace: "custom", key: "agefilter") {
+        value
+      }
+      diaperFilterMetafield: metafield(namespace: "custom", key: "diaperfilter") {
+        value
+      }
+      sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
+        value
+      }
+      stageMetafield: metafield(namespace: "custom", key: "stage") {
+        value
+      }
+      packSizeMetafield: metafield(namespace: "custom", key: "pack_size") {
+        value
+      }
     }
   }
 `;
@@ -163,6 +181,24 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
       id
       title
       categoryMetafield: metafield(namespace: "custom", key: "Category") {
+        value
+      }
+      genderFilterMetafield: metafield(namespace: "custom", key: "genderfilter") {
+        value
+      }
+      ageFilterMetafield: metafield(namespace: "custom", key: "agefilter") {
+        value
+      }
+      diaperFilterMetafield: metafield(namespace: "custom", key: "diaperfilter") {
+        value
+      }
+      sizeFilterMetafield: metafield(namespace: "custom", key: "sizefilter") {
+        value
+      }
+      stageMetafield: metafield(namespace: "custom", key: "stage") {
+        value
+      }
+      packSizeMetafield: metafield(namespace: "custom", key: "pack_size") {
         value
       }
       products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
@@ -238,7 +274,8 @@ const GET_PRODUCTS_BY_COLLECTION_QUERY = `
               { namespace: "custom", key: "size" },
               { namespace: "custom", key: "sizes" },
               { namespace: "custom", key: "quantity" },
-              { namespace: "custom", key: "pack_size" }
+              { namespace: "custom", key: "pack_size" },
+              { namespace: "custom", key: "size_collection" }
             ]) {
               id
               key
@@ -332,6 +369,7 @@ const GET_PRODUCT_BY_HANDLE_QUERY = `
         {namespace: "custom", key: "sizes"},
         {namespace: "custom", key: "quantity"},
         {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "size_collection"},
         {namespace: "custom", key: "highlight_1"},
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
@@ -446,6 +484,7 @@ const GET_PRODUCT_BY_ID_QUERY = `
         {namespace: "custom", key: "sizes"},
         {namespace: "custom", key: "quantity"},
         {namespace: "custom", key: "pack_size"},
+        {namespace: "custom", key: "size_collection"},
         {namespace: "custom", key: "highlight_1"},
         {namespace: "custom", key: "highlight_2"},
         {namespace: "custom", key: "highlight_3"},
@@ -1262,6 +1301,27 @@ export interface CollectionResponse {
     image?: {
       url: string;
       altText?: string;
+    };
+    categoryMetafield?: {
+      value: string;
+    };
+    genderFilterMetafield?: {
+      value: string;
+    };
+    ageFilterMetafield?: {
+      value: string;
+    };
+    diaperFilterMetafield?: {
+      value: string;
+    };
+    sizeFilterMetafield?: {
+      value: string;
+    };
+    stageMetafield?: {
+      value: string;
+    };
+    packSizeMetafield?: {
+      value: string;
     };
     products?: {
       pageInfo: {

@@ -2,7 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 
 // Replace 'YOUR_PROJECT_TOKEN' with your actual Mixpanel project token
 // Get it from: https://mixpanel.com/project/settings
-const MIXPANEL_TOKEN = 'PLACEHOLDER_MIXPANEL_TOKEN';
+const MIXPANEL_TOKEN = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ?? '';
 
 // Initialize Mixpanel only if native module is available
 let mixpanel = null;

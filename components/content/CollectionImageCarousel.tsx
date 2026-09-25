@@ -1,17 +1,20 @@
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import { ProductImageActions } from '@/components/ui/ProductImageActions';
 import { Colors, Fonts } from '@/constants/theme';
+import { shopifyApi } from '@/services/shopifyApi';
 import { CollectionImageCarouselBlock } from '@/types/content';
 import { processFontStyle } from '@/utils/fontUtils';
 import { shopifyImageUrl } from '@/utils/shopifyIds';
-import React, { useCallback } from 'react';
+import { ResizeMode, Video } from 'expo-av';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Dimensions,
-    FlatList,
-    ListRenderItem,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  ListRenderItem,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { BaseContentBlock, BaseContentBlockProps } from './base/BaseContentBlock';
 
@@ -36,6 +39,36 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
   const itemHeight =
     carouselConfig.itemHeight ?? itemWidth / aspectRatio;
 
+  const [productsData, setProductsData] = useState<Map<string, any>>(new Map());
+
+  // Fetch product data for items with productId
+  useEffect(() => {
+    const productIds = data
+      .filter(item => item.productId)
+      .map(item => item.productId);
+
+    if (productIds.length === 0) return;
+
+    const fetchProducts = async () => {
+      const productsMap = new Map();
+      
+      for (const productId of productIds) {
+        try {
+          const product = await shopifyApi.getProductById(productId);
+          if (product) {
+            productsMap.set(productId, product);
+          }
+        } catch (error) {
+          console.error('Error fetching product:', productId, error);
+        }
+      }
+      
+      setProductsData(productsMap);
+    };
+
+    fetchProducts();
+  }, [data]);
+
   const titleStyle = React.useMemo(
     () => ({
       ...styles.title,
@@ -49,6 +82,7 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
       if (!onPress) return;
       const payload = {
         collectionId: item.collectionId,
+        productId: item.productId,
         title: item.title ?? '',
         collectionName: item.title,
         label: item.title,
@@ -64,36 +98,92 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
 
   const renderItem: ListRenderItem<CollectionImageCarouselBlock['data'][0]> =
     useCallback(
-      ({ item }) => (
-        <TouchableOpacity
-          activeOpacity={0.88}
-          onPress={() => handlePress(item)}
-          style={[
-            styles.slide,
-            {
-              width: itemWidth,
-              marginRight: gap,
-              borderRadius,
-            },
-            blockStyles?.item,
-          ]}
-        >
-          <OptimizedImage
-            source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(itemWidth * 2)) }}
+      ({ item }) => {
+        const product = item.productId ? productsData.get(item.productId) : null;
+        const isProduct = !!product;
+        const isVideo = item.imageUrl?.includes('.mp4') || item.imageUrl?.includes('.mov');
+
+        return (
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => handlePress(item)}
             style={[
+              styles.slide,
               {
+                width: itemWidth,
+                marginRight: gap,
+                borderRadius,
+              },
+              blockStyles?.item,
+            ]}
+          >
+            <View
+              style={{
                 width: itemWidth,
                 height: itemHeight,
                 borderRadius,
-                backgroundColor: 'transparent',
-              },
-              blockStyles?.image,
-            ]}
-            contentFit={imageContentFit}
-            transition={0}
-          />
-        </TouchableOpacity>
-      ),
+                overflow: 'visible',
+              }}
+              pointerEvents="box-none"
+            >
+              {isVideo ? (
+                <Video
+                  source={{ uri: item.imageUrl }}
+                  style={[
+                    {
+                      width: itemWidth,
+                      height: itemHeight,
+                      borderRadius,
+                      backgroundColor: '#000',
+                    },
+                    blockStyles?.image,
+                  ]}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay
+                  isLooping
+                  isMuted
+                  useNativeControls={false}
+                />
+              ) : (
+                <OptimizedImage
+                  source={{ uri: shopifyImageUrl(item.imageUrl, Math.round(itemWidth * 2)) }}
+                  style={[
+                    {
+                      width: itemWidth,
+                      height: itemHeight,
+                      borderRadius,
+                      backgroundColor: 'transparent',
+                    },
+                    blockStyles?.image,
+                  ]}
+                  contentFit={imageContentFit}
+                  transition={0}
+                />
+              )}
+              {isProduct ? <ProductImageActions product={product} /> : null}
+            </View>
+            {isProduct && (
+              <View style={styles.productInfo}>
+                <Text style={styles.productTitle} numberOfLines={2}>
+                  {product.title}
+                </Text>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.productPrice}>
+                    {product.priceRange?.minVariantPrice?.amount 
+                      ? `₹${Math.round(product.priceRange.minVariantPrice.amount)}`
+                      : ''}
+                  </Text>
+                  {product.variants?.edges?.[0]?.node?.compareAtPrice?.amount && (
+                    <Text style={styles.compareAtPrice}>
+                      ₹{Math.round(product.variants.edges[0].node.compareAtPrice.amount)}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      },
       [
         blockStyles?.image,
         blockStyles?.item,
@@ -103,6 +193,7 @@ export function CollectionImageCarousel({ block, onPress }: Props) {
         imageContentFit,
         itemHeight,
         itemWidth,
+        productsData,
       ],
     );
 
@@ -150,7 +241,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   slide: {
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: 'transparent',
+  },
+  productInfo: {
+    paddingTop: 8,
+    paddingHorizontal: 4,
+  },
+  productTitle: {
+    fontSize: 12,
+    color: Colors.text,
+    fontFamily: Fonts.LexendMedium,
+    marginBottom: 4,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  productPrice: {
+    fontSize: 13,
+    color: Colors.text,
+    fontFamily: Fonts.LexendBold,
+  },
+  compareAtPrice: {
+    fontSize: 11,
+    color: '#999',
+    fontFamily: Fonts.LexendRegular,
+    textDecorationLine: 'line-through',
   },
 });

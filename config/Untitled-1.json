@@ -2312,7 +2312,7 @@
       "apiVersion": "2025-01"
     },
     "googleMaps": {
-      "apiKey": "PLACEHOLDER_GOOGLE_MAPS_KEY",
+      "apiKey": "PLACEHOLDER_GOOGLE_MAPS_API_KEY",
       "darkStoreLocation": {
         "latitude": 28.5405465012908,
         "longitude": 77.3701885450311
@@ -2326,7 +2326,7 @@
     "otp": {
       "apiBaseUrl": "https://sms.shinenetcore.in/api/v2",
       "senderId": "SNCOTP",
-      "apiKey": "3Ri5Du6T3fbCAfWs9L5gUfOSn4pbofa/DjZucAqwplo=",
+      "apiKey": "PLACEHOLDER_FCM_SERVER_KEY",
       "clientId": "b00a4a12-c1f3-420f-ae2c-e69988212928",
       "messageTemplate": "One time OTP From Kiddo App {otp} to login or activate your profile apsops SNC",
       "expiryMinutes": 5,

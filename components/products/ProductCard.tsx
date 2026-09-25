@@ -131,8 +131,9 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const router = useRouter();
 
   // Product card text styles from config (fontSize, fontWeight, fontFamily, color)
+  const config = useMemo(() => configService.getProductCardStyles(), []);
+  
   const cardTextStyles = useMemo(() => {
-    const config = configService.getProductCardStyles();
     const merge = (baseStyle: object, key: string) => {
       const base = StyleSheet.flatten(baseStyle as any) || {};
       const fromConfig = config?.[key];
@@ -163,7 +164,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       };
     }
     return merged;
-  }, [compactTypographyScale]);
+  }, [compactTypographyScale, config]);
 
   // Get product handle
   const productHandle = useMemo(() => product.handle, [product]);
@@ -432,6 +433,24 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has Bestseller tag
+  const hasBestsellerTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'bestseller',
+      ),
+    [tags],
+  );
+
+  // Check if product has pricehighlight tag
+  const hasPriceHighlightTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'pricehighlight',
+      ),
+    [tags],
+  );
+
   // Get metafield value (supports edges or array, key match case-insensitive)
   const getMetafieldValue = useCallback((key: string) => {
     const productMetafields = product?.metafields;
@@ -619,6 +638,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         cardTextStyles.mainPrice,
         salePriceStrikethrough && styles.promoOfferStrikeThrough,
         promoOfferCaptionBelowPrice != null && styles.reducedPrice,
+        hasPriceHighlightTag && {
+          backgroundColor: '#FDE047', // Darker yellow highlight
+          color: '#000000', // Keep price text black
+          fontSize: ((cardTextStyles.mainPrice as any)?.fontSize || 14) + 2,
+          paddingHorizontal: 9,
+          paddingVertical: 4,
+          borderRadius: 8,
+          overflow: 'hidden',
+        },
       ]}
       numberOfLines={1}
       ellipsizeMode="tail"
@@ -658,6 +686,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             key={`img-${productId}-${imageErrorCount}`}
           />
           {outOfStock ? <OutOfStockOverlay style={{ borderRadius: 12 }} /> : null}
+          {/* Bestseller Tag - top left */}
+          {hasBestsellerTag && (
+            <View style={[styles.bestsellerBadge, config?.bestsellerBadge]}>
+              <Text style={[styles.bestsellerBadgeText, config?.bestsellerBadgeText]} numberOfLines={1}>
+                Bestseller
+              </Text>
+            </View>
+          )}
           <TouchableOpacity
             style={styles.wishlistButton}
             onPress={handleWishlistPress}
@@ -927,6 +963,24 @@ const styles = StyleSheet.create({
     color: '#CA8504',
     fontSize: 11,
     fontFamily: Fonts.Bold,
+  },
+  bestsellerBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FEF9C3',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#FDE047',
+  },
+  bestsellerBadgeText: {
+    color: '#854D0E',
+    fontSize: 10,
+    fontFamily: Fonts.LexendBold,
+    fontWeight: '600',
   },
   priceContainer: {
     flexDirection: 'row',

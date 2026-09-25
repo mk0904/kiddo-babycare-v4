@@ -1,13 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
 import BaseModal from '@/components/ui/BaseModal';
 import { PriceSlider } from '@/components/ui/PriceSlider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SearchIcon } from './SearchIcon';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FilterPanelProps {
     visible: boolean;
@@ -18,6 +14,8 @@ interface FilterPanelProps {
     totalResults?: number;
 }
 
+const SLIDER_MAX_RANGE = 5000;
+
 export const FilterPanel: React.FC<FilterPanelProps> = ({
     visible,
     onClose,
@@ -27,38 +25,54 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     totalResults,
 }) => {
     const [localFilters, setLocalFilters] = useState<any>(selectedFilters || {});
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
 
-    // Update local filters when selectedFilters prop changes
+    // Sync local state when parent filters change
     useEffect(() => {
         setLocalFilters(selectedFilters || {});
     }, [selectedFilters]);
 
-    // Set first category as selected when facets load
-    useEffect(() => {
-        if (facets && Array.isArray(facets) && facets.length > 0 && !selectedCategory) {
-            setSelectedCategory(facets[0].attribute);
-        }
-    }, [facets, selectedCategory]);
+    // Find the price facet from whatever the API returns
+    const priceFacet = facets.find((f: any) =>
+        f.type === 'PRICE_RANGE' ||
+        f.type === 'range' ||
+        f.type === 'slider' ||
+        (f.attribute || f.id || '').toLowerCase().includes('price')
+    );
 
-    const handleFilterToggle = (attribute: string, value: string) => {
-        setLocalFilters((prev: any) => {
-            const current = prev[attribute] || [];
-            const isSelected = current.includes(value);
+    const priceAttribute = priceFacet?.attribute || 'price';
 
-            if (isSelected) {
-                const updated = current.filter((v: string) => v !== value);
-                if (updated.length === 0) {
-                    const { [attribute]: _, ...rest } = prev;
-                    return rest;
-                }
-                return { ...prev, [attribute]: updated };
-            } else {
-                return { ...prev, [attribute]: [...current, value] };
+    // Derive slider bounds from facet buckets
+    const { priceMin, priceMax } = React.useMemo(() => {
+        let min = 0;
+        let max = SLIDER_MAX_RANGE;
+        const buckets = priceFacet?.buckets || [];
+        if (buckets.length > 0) {
+            const allMaxs = buckets
+                .map((b: any) => parseFloat(b.to || b.max || b.value || 0))
+                .filter((v: number) => !isNaN(v) && v > 0);
+            if (allMaxs.length > 0) {
+                const calculated = Math.max(...allMaxs);
+                if (calculated > min) max = Math.min(calculated, SLIDER_MAX_RANGE);
             }
-        });
-    };
+        }
+        max = Math.min(Math.ceil(max / 10) * 10, SLIDER_MAX_RANGE);
+        if (max <= min) max = SLIDER_MAX_RANGE;
+        return { priceMin: min, priceMax: max };
+    }, [priceFacet]);
+
+    // Parse current slider value from localFilters
+    const currentPriceValue = React.useMemo(() => {
+        const raw = (localFilters[priceAttribute] || [])[0];
+        if (raw) {
+            const parts = String(raw).split(/[,\-]/);
+            if (parts.length === 2) {
+                const lo = parseFloat(parts[0]);
+                const hi = parseFloat(parts[1]);
+                if (!isNaN(lo) && !isNaN(hi)) return { min: lo, max: hi };
+            }
+        }
+        return { min: priceMin, max: priceMax };
+    }, [localFilters, priceAttribute, priceMin, priceMax]);
 
     const handleApply = () => {
         onApplyFilters(localFilters);
@@ -69,163 +83,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         setLocalFilters({});
         onApplyFilters({});
         onClose();
-    };
-
-    const activeFacet = useMemo(() => {
-        return facets.find(f => f.attribute === selectedCategory);
-    }, [facets, selectedCategory]);
-
-    const filteredBuckets = useMemo(() => {
-        if (!activeFacet || !activeFacet.buckets) return [];
-        if (!searchQuery) return activeFacet.buckets;
-        return activeFacet.buckets.filter((b: any) => 
-            (b.label || b.value || '').toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [activeFacet, searchQuery]);
-
-    const renderFilterOptions = () => {
-        if (!activeFacet) return null;
-
-        const { attribute, type, title } = activeFacet;
-        const selectedValues = localFilters[attribute] || [];
-
-        // Special UI for Price
-        if (type === 'range' || type === 'slider' || attribute === 'price' || attribute === 'price_range' || type === 'PRICE_RANGE') {
-            const SLIDER_MAX_RANGE = 5000;
-            let priceMin = 0;
-            let priceMax = SLIDER_MAX_RANGE;
-            
-            const buckets = activeFacet.buckets || [];
-            if (buckets.length > 0) {
-                const firstBucket = buckets[0];
-                // Try to get from first bucket's from/to
-                if (firstBucket.from !== undefined && firstBucket.to !== undefined && firstBucket.from !== "" && firstBucket.to !== "") {
-                    const parsedFrom = parseFloat(firstBucket.from);
-                    const parsedTo = parseFloat(firstBucket.to);
-                    if (!isNaN(parsedFrom) && parsedFrom >= 0) priceMin = parsedFrom;
-                    if (!isNaN(parsedTo) && parsedTo > priceMin) priceMax = Math.min(parsedTo, SLIDER_MAX_RANGE);
-                } else {
-                    // Extract all min and max values from buckets
-                    const allMins = buckets
-                        .map((b: any) => {
-                            const val = parseFloat(b.from || b.min || b.value || 0);
-                            return isNaN(val) ? null : val;
-                        })
-                        .filter((v: number | null): v is number => v !== null && v >= 0);
-                    
-                    const allMaxs = buckets
-                        .map((b: any) => {
-                            const val = parseFloat(b.to || b.max || b.value || 0);
-                            return isNaN(val) ? null : val;
-                        })
-                        .filter((v: number | null): v is number => v !== null && v > 0);
-                    
-                    if (allMins.length > 0) {
-                        const calculatedMin = Math.min(...allMins);
-                        if (calculatedMin >= 0) priceMin = calculatedMin;
-                    }
-                    if (allMaxs.length > 0) {
-                        const calculatedMax = Math.max(...allMaxs);
-                        if (calculatedMax > priceMin) priceMax = Math.min(calculatedMax, SLIDER_MAX_RANGE);
-                    }
-                }
-            }
-            
-            // Allow price range to start from 0; cap max at SLIDER_MAX_RANGE
-            priceMin = 0;
-            priceMax = Math.min(Math.ceil(priceMax / 10) * 10, SLIDER_MAX_RANGE);
-            
-            // Ensure we have valid max - if max is 0 or <= min, use default range
-            if (priceMax <= priceMin || priceMax === 0) {
-                priceMax = SLIDER_MAX_RANGE;
-            }
-            
-            let currentValue: { min: number; max: number } | undefined;
-            if (selectedValues.length > 0) {
-                const valueStr = selectedValues[0];
-                const parts = valueStr.split(/[,\-]/);
-                if (parts.length === 2) {
-                    const parsedMin = parseFloat(parts[0]);
-                    const parsedMax = parseFloat(parts[1]);
-                    if (!isNaN(parsedMin) && !isNaN(parsedMax)) {
-                        currentValue = { min: parsedMin, max: parsedMax };
-                    }
-                }
-            }
-            // When no value is selected, show the full range (not just min to max, but actual min to actual max)
-            if (!currentValue) {
-                currentValue = { min: priceMin, max: priceMax };
-            }
-
-            return (
-                <View style={styles.priceContainer}>
-                    <Text style={styles.rightPaneTitle}>{title}</Text>
-                    <PriceSlider
-                        min={priceMin}
-                        max={priceMax}
-                        minRange={50}
-                        step={10}
-                        value={currentValue}
-                        onValueChange={(val) => {
-                            setLocalFilters((prev: any) => ({
-                                ...prev,
-                                [attribute]: [`${Math.round(val.min)},${Math.round(val.max)}`]
-                            }));
-                        }}
-                    />
-                </View>
-            );
-        }
-
-        // Standard List UI for Brands, Tags, Categories
-        return (
-            <View style={styles.optionsWrapper}>
-                <View style={styles.rightHeader}>
-                    <Text style={styles.rightPaneTitle}>{title}</Text>
-                    {activeFacet.buckets.length > 8 && (
-                        <View style={styles.searchContainer}>
-                            <SearchIcon size={16} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder={`Search ${title}...`}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor={Colors.textSecondary}
-                            />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                    <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    )}
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsList}>
-                    {filteredBuckets.map((bucket: any, index: number) => {
-                        const val = bucket.value || bucket.label;
-                        const isSelected = selectedValues.includes(val);
-                        
-                        return (
-                            <TouchableOpacity
-                                key={`${attribute}-${val}-${index}`}
-                                style={styles.optionRow}
-                                onPress={() => handleFilterToggle(attribute, val)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                                    {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" />}
-                                </View>
-                                <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
-                                    {bucket.label || bucket.value}
-                                </Text>
-                                <Text style={styles.optionCount}>{bucket.count}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-            </View>
-        );
     };
 
     return (
@@ -239,53 +96,28 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             contentStyle={styles.modalContent}
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <View style={styles.main}>
-                    {/* Left Pane: Categories */}
-                    <View style={styles.leftPane}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {facets.map((facet) => {
-                                const isSelected = selectedCategory === facet.attribute;
-                                const count = localFilters[facet.attribute]?.length || 0;
-                                return (
-                                    <TouchableOpacity
-                                        key={facet.attribute}
-                                        style={[styles.catItem, isSelected && styles.catItemSelected]}
-                                        onPress={() => {
-                                            setSelectedCategory(facet.attribute);
-                                            setSearchQuery('');
-                                        }}
-                                    >
-                                        <Text style={[styles.catText, isSelected && styles.catTextSelected]}>
-                                            {facet.title}
-                                        </Text>
-                                        {count > 0 && (
-                                            <View style={styles.dot} />
-                                        )}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-
-                    {/* Right Pane: Options */}
-                    <View style={styles.rightPane}>
-                        {renderFilterOptions()}
-                    </View>
+                <View style={styles.body}>
+                    <Text style={styles.sectionTitle}>Price Range</Text>
+                    <PriceSlider
+                        min={priceMin}
+                        max={priceMax}
+                        minRange={50}
+                        step={10}
+                        value={currentPriceValue}
+                        onValueChange={(val) => {
+                            setLocalFilters((prev: any) => ({
+                                ...prev,
+                                [priceAttribute]: [`${Math.round(val.min)},${Math.round(val.max)}`],
+                            }));
+                        }}
+                    />
                 </View>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={styles.clearBtn}
-                        onPress={handleClear}
-                        activeOpacity={0.8}
-                    >
+                    <TouchableOpacity style={styles.clearBtn} onPress={handleClear} activeOpacity={0.8}>
                         <Text style={styles.clearBtnText}>Clear All</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.applyBtn}
-                        onPress={handleApply}
-                        activeOpacity={0.8}
-                    >
+                    <TouchableOpacity style={styles.applyBtn} onPress={handleApply} activeOpacity={0.8}>
                         <Text style={styles.applyBtnText} numberOfLines={1}>
                             {totalResults ? `Show ${totalResults} Results` : 'Apply Filters'}
                         </Text>
@@ -297,125 +129,26 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 };
 
 const styles = StyleSheet.create({
-    modalContainer: { 
-        height: '75%',
-        maxHeight: '85%',
-        minHeight: 500,
+    modalContainer: {
+        height: '45%',
+        maxHeight: '55%',
+        minHeight: 320,
     },
-    modalContent: { 
+    modalContent: {
         flex: 1,
         paddingBottom: 20,
     },
-    main: { flex: 1, flexDirection: 'row' },
-    
-    // Left Pane
-    leftPane: {
-        width: 130,
-        backgroundColor: '#F8F9FA',
-        borderRightWidth: 1,
-        borderRightColor: '#E9ECEF',
-    },
-    catItem: {
-        paddingVertical: 18,
-        paddingHorizontal: 16,
-        borderLeftWidth: 4,
-        borderLeftColor: 'transparent',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    catItemSelected: {
-        backgroundColor: '#FFF',
-        borderLeftColor: Colors.primary,
-    },
-    catText: {
-        fontSize: 13,
-        fontFamily: Fonts.LexendMedium,
-        color: Colors.textSecondary,
+    body: {
         flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: 24,
     },
-    catTextSelected: {
-        color: Colors.primary,
-        fontFamily: Fonts.LexendBold,
-    },
-    dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: Colors.primary,
-        marginLeft: 4,
-    },
-
-    // Right Pane
-    rightPane: { flex: 1, backgroundColor: '#FFF' },
-    optionsWrapper: { flex: 1 },
-    rightHeader: {
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F3F5',
-    },
-    rightPaneTitle: {
+    sectionTitle: {
         fontSize: 18,
         fontFamily: Fonts.LexendBold,
         color: Colors.text,
-        marginBottom: 12,
+        marginBottom: 24,
     },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F1F3F5',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        height: 40,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 8,
-        fontSize: 14,
-        fontFamily: Fonts.LexendRegular,
-        color: Colors.text,
-        padding: 0,
-    },
-    optionsList: { paddingHorizontal: 20, paddingBottom: 30 },
-    optionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F8F9FA',
-    },
-    checkbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 6,
-        borderWidth: 2,
-        borderColor: '#CED4DA',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 14,
-    },
-    checkboxSelected: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    optionLabel: {
-        flex: 1,
-        fontSize: 15,
-        fontFamily: Fonts.LexendMedium,
-        color: Colors.textSecondary,
-    },
-    optionLabelSelected: {
-        color: Colors.text,
-        fontFamily: Fonts.LexendSemiBold,
-    },
-    optionCount: {
-        fontSize: 12,
-        fontFamily: Fonts.LexendRegular,
-        color: '#ADB5BD',
-    },
-    priceContainer: { padding: 20 },
-
-    // Footer — same row height; labels centered in each control
     footer: {
         flexDirection: 'row',
         alignItems: 'stretch',

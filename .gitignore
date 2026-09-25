@@ -39,3 +39,17 @@ yarn-error.*
 app-exampleapp-release.apk
 *.apk
 *.aab
+
+# Firebase config files (contain project credentials - add real files to .env or CI secrets)
+android/app/google-services.json
+ios/GoogleService-Info.plist
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Temp/scratch files
+temp_*.json
