@@ -375,7 +375,7 @@ export function HomeHeader({
                       </View>
                     )}
                 </View>
-                <View style={styles.addressRow}>
+                <View style={[styles.addressRow, address?.toLowerCase().includes('tap to add') && { marginTop: 4 }]}>
                   <LocationButton
                     address={isUnserviceable ? 'Area Unserviceable' : address}
                     categoryLabel={addressCategoryLabel}

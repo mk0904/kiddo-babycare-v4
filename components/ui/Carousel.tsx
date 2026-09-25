@@ -30,6 +30,7 @@ interface CarouselProps {
     borderRadius?: number;
     resizeMode?: 'cover' | 'contain';
     showTextOverlay?: boolean;
+    showPagination?: boolean;
   };
   styles?: {
     container?: any;
@@ -333,6 +334,19 @@ export function Carousel({
           );
         })}
       </ScrollView>
+      {config.showPagination && (
+        <View style={defaultStyles.paginationContainer}>
+          {data.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                defaultStyles.paginationDot,
+                i === currentIndex && defaultStyles.paginationDotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
     </ContainerWrapper>
   );
 }
@@ -378,6 +392,24 @@ const defaultStyles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginTop: -4,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    width: 12,
+    backgroundColor: '#000000',
   },
 });
 

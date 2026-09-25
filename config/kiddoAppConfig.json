@@ -7459,7 +7459,8 @@
         "autoPlayInterval": 3000,
         "loop": true,
         "height": 0.5,
-        "resizeMode": "cover"
+        "resizeMode": "cover",
+        "showPagination": true
       },
       "styles": {
         "container": {
