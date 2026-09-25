@@ -8607,40 +8607,32 @@
           "collectionId": "",
           "link": "",
           "gridConfig": {
+            "layoutType": "uniform",
             "columns": 2,
             "rows": 2,
             "gap": 10,
-            "aspectRatio": 0.6,
+            "aspectRatio": 1.1,
             "resizeMode": "cover",
             "borderRadius": 14,
-            "showLabels": true
+            "showLabels": true,
+            "paddingTop":20
           },
           "gridItems": [
             {
-              "id": "grid-item-gear-3",
-              "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Untitled_design_7_3cd6900b-6e41-4779-b9d0-4fd0fe6d422a.png?v=1789115232",
-              "label": "Lunch Time Essentials",
-              "collectionId": "gid://shopify/Collection/518537052449",
-              "link": "/infinity/518537052449"
-            },
-            {
               "id": "grid-item-gear-4",
               "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/349_699.png?v=1789117277",
-              "label": "Art & Craft Essentials",
               "collectionId": "gid://shopify/Collection/518537740577",
               "link": "/infinity/518537740577"
             },
             {
               "id": "grid-item-fashion-3",
               "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/349_699_1.png?v=1789117278",
-              "label": "Stationery Essentials",
               "collectionId": "gid://shopify/Collection/518537511201",
               "link": "/infinity/518537511201"
             },
             {
               "id": "grid-item-hopscotch-3",
               "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/349_699_2.png?v=1789117277",
-              "label": "Desk Essentials",
               "collectionId": "gid://shopify/Collection/518538068257",
               "link": "/infinity/518538068257"
             }

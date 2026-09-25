@@ -102,9 +102,15 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     const aspectRatio = cfg.aspectRatio ?? 1;
     const resizeMode = cfg.resizeMode ?? 'cover';
     const cellBorderRadius = cfg.borderRadius ?? 12;
-    const showLabels = cfg.showLabels !== false;
+    const hasAnyLabel = useMemo(() => {
+        return card.gridItems?.some(item => !!item.label || !!item.productId) ?? false;
+    }, [card.gridItems]);
+    const showLabels = cfg.showLabels !== false && hasAnyLabel;
     const maxRows = cfg.rows;
     const layoutType = cfg.layoutType ?? 'default';
+    const isFeaturedLayout = layoutType === 'featured-left' || layoutType === 'featured-right';
+    // Featured item occupies 1 column; remaining items fill the other columns stacked beside it.
+    const sideColumns = isFeaturedLayout ? Math.max(1, columns - 1) : columns;
     
     // Parse padding values - support both px numbers and percentage strings
     const parsePadding = (value: number | string | undefined, fallback: number, referenceSize: number) => {
@@ -132,9 +138,14 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
 
     const items = useMemo(() => {
         let all = card.gridItems ?? [];
-        if (maxRows) all = all.slice(0, columns * maxRows);
+        if (maxRows) {
+            const maxItems = isFeaturedLayout
+                ? 1 + sideColumns * maxRows
+                : columns * maxRows;
+            all = all.slice(0, maxItems);
+        }
         return all;
-    }, [card.gridItems, columns, maxRows]);
+    }, [card.gridItems, columns, maxRows, isFeaturedLayout, sideColumns]);
 
     const [productsData, setProductsData] = useState<Map<string, any>>(new Map());
 
@@ -175,14 +186,18 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
     }, [items]);
 
     const CARD_PADDING = paddingHorizontal;
+    const availableWidth = cardWidth - CARD_PADDING * 2;
+    const gridColumns = isFeaturedLayout ? sideColumns + 1 : columns;
+    const cellWidth = (availableWidth - gap * (gridColumns - 1)) / gridColumns;
 
-    const cellWidth = (cardWidth - CARD_PADDING * 2 - gap * (columns - 1)) / columns;
+    const regularItems = isFeaturedLayout
+        ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
+        : items;
+    const numRegularRows = isFeaturedLayout
+        ? Math.max(regularItems.length > 0 ? Math.ceil(regularItems.length / sideColumns) : 1, 1)
+        : Math.max(maxRows ?? Math.ceil(items.length / columns), 1);
+    const safeRows = Math.max(numRegularRows, 1);
 
-    // Ideal height from aspect ratio - prioritize this for cell shape
-    // When aspectRatio is 1, calculate height to fit available space but preserve image ratio via resizeMode
-    const numRows = maxRows ?? Math.ceil((card.gridItems?.length ?? 0) / columns);
-    const safeRows = Math.max(numRows, 1);
-    
     let cellImageHeight: number;
     if (aspectRatio === 1) {
         // Use available space to determine height, let resizeMode handle aspect ratio
@@ -192,40 +207,26 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         cellImageHeight = Math.max(cellWidth / aspectRatio, 20);
     }
 
-    // Featured cell dimensions (for featured-left and featured-right layouts)
-    const featuredCellWidth = (cardWidth - CARD_PADDING * 2 - gap) / 2;
-    // Calculate featured cell height based on regular grid rows
-    const regularItems = layoutType === 'featured-left' || layoutType === 'featured-right' 
-        ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
-        : items;
-    const numRegularRows = Math.ceil(regularItems.length / columns);
-    const featuredCellHeight = numRegularRows * cellImageHeight + (numRegularRows - 1) * gap;
+    // Featured image spans every side-grid row, minus its own label so bottoms align.
+    const featuredCellWidth = cellWidth;
+    const featuredCellHeight = Math.max(
+        safeRows * cellImageHeight + (safeRows - 1) * gap + Math.max(safeRows - 1, 0) * LABEL_HEIGHT,
+        20,
+    );
 
     const rows = useMemo(() => {
         const result: typeof items[number][][] = [];
-        
-        if (layoutType === 'featured-left' && items.length > 0) {
-            // First item is featured (full height, left side)
-            // Remaining items in grid (right side)
-            const remaining = items.slice(1);
-            for (let i = 0; i < remaining.length; i += columns) {
-                result.push(remaining.slice(i, i + columns));
-            }
-        } else if (layoutType === 'featured-right' && items.length > 0) {
-            // Last item is featured (full height, right side)
-            const regularItems = items.slice(0, -1);
-            for (let i = 0; i < regularItems.length; i += columns) {
-                result.push(regularItems.slice(i, i + columns));
-            }
-        } else {
-            // Default layout
-            for (let i = 0; i < items.length; i += columns) {
-                result.push(items.slice(i, i + columns));
-            }
+        const chunkSize = isFeaturedLayout ? sideColumns : columns;
+        const remaining = isFeaturedLayout
+            ? (layoutType === 'featured-left' ? items.slice(1) : items.slice(0, -1))
+            : items;
+
+        for (let i = 0; i < remaining.length; i += chunkSize) {
+            result.push(remaining.slice(i, i + chunkSize));
         }
-        
+
         return result;
-    }, [items, columns, layoutType]);
+    }, [items, columns, layoutType, isFeaturedLayout, sideColumns]);
 
     const handleCellPress = useCallback((gridItem: typeof items[number]) => {
         if (!onPress) return;
@@ -267,8 +268,10 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                     />
                     {product ? <ProductImageActions product={product} /> : null}
                 </View>
-                {showLabels && label ? (
-                    <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{label}</Text>
+                {showLabels ? (
+                    <View style={{ height: LABEL_HEIGHT, justifyContent: 'flex-start' }}>
+                        {label ? <Text style={s.gridCellLabel} numberOfLines={1} ellipsizeMode="tail">{label}</Text> : null}
+                    </View>
                 ) : null}
             </TouchableOpacity>
         );
@@ -279,6 +282,20 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
         const payload = { collectionId: card.collectionId, title: card.title };
         onPress(card.link, payload);
     }, [card, onPress]);
+
+    const featuredItem = layoutType === 'featured-left' ? items[0] : items[items.length - 1];
+    const featuredNode = isFeaturedLayout && featuredItem
+        ? renderGridCell(featuredItem, featuredCellWidth, featuredCellHeight)
+        : null;
+    const sideGrid = (
+        <View style={{ width: cellWidth * sideColumns + gap * Math.max(sideColumns - 1, 0), gap }}>
+            {rows.map((row, rowIdx) => (
+                <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
+                    {row.map((gridItem) => renderGridCell(gridItem, cellWidth, cellImageHeight))}
+                </View>
+            ))}
+        </View>
+    );
 
     const cardContent = (
         <>
@@ -305,23 +322,9 @@ const GridCard: React.FC<GridCardProps> = ({ card, cardWidth, cardHeight, border
                 </TouchableOpacity>
             )}
             <View style={[s.gridBody, { paddingTop, paddingBottom, paddingHorizontal: CARD_PADDING, gap, height: bodyHeight, overflow: 'visible' }]}>
-                {layoutType === 'featured-left' || layoutType === 'featured-right' ? (
-                    // Featured layout: featured cell + regular grid side by side
-                    <View style={{ flexDirection: 'row', gap, height: '100%' }}>
-                        {(layoutType === 'featured-left' ? items[0] : items[items.length - 1])
-                            ? renderGridCell(
-                                layoutType === 'featured-left' ? items[0] : items[items.length - 1],
-                                featuredCellWidth,
-                                featuredCellHeight,
-                            )
-                            : null}
-                        <View style={{ flex: 1, gap }}>
-                            {rows.map((row, rowIdx) => (
-                                <View key={`row-${rowIdx}`} style={[s.gridRow, { gap }]}>
-                                    {row.map((gridItem) => renderGridCell(gridItem, cellWidth, cellImageHeight))}
-                                </View>
-                            ))}
-                        </View>
+                {isFeaturedLayout ? (
+                    <View style={{ flexDirection: 'row', gap, alignItems: 'flex-start' }}>
+                        {layoutType === 'featured-right' ? <>{sideGrid}{featuredNode}</> : <>{featuredNode}{sideGrid}</>}
                     </View>
                 ) : (
                     rows.map((row, rowIdx) => (
