@@ -472,6 +472,7 @@ export interface AppConfigResponse {
   promoConfettiUrl?: string;
   androidSplashUrl?: string;
   iosSplashUrl?: string;
+  searchDebounceMs?: number;
 }
 
 export interface ReturnExchangeConfig {
