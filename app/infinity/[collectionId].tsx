@@ -114,7 +114,7 @@ export default function InfinityScreen() {
     const [showGenderModal, setShowGenderModal] = useState(false);
     const [showAgeModal, setShowAgeModal] = useState(false);
     const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
-    const [selectedAge, setSelectedAge] = useState<string | null>(null);
+    const [selectedAges, setSelectedAges] = useState<string[]>([]);
 
     const [totalItems, setTotalItems] = useState(0);
 
@@ -310,7 +310,7 @@ export default function InfinityScreen() {
                     } else {
                         // Fallback logic if metafield is missing
                         const allText = (info?.title || info?.handle || '').toLowerCase();
-                        if (allText.includes('toys') || allText.includes('toy')) {
+                        if (allText.includes('toys') || allText.includes('toy') || allText.includes('art') || allText.includes('craft') || allText.includes('diy')) {
                             setPageCategory('toys');
                         } else if (allText.includes('formula')) {
                             setPageCategory('formula');
@@ -551,9 +551,9 @@ export default function InfinityScreen() {
             setSelectedGenders([]);
         }
         if (selectedFilters.age && Array.isArray(selectedFilters.age) && selectedFilters.age.length > 0) {
-            setSelectedAge(selectedFilters.age[0]);
+            setSelectedAges(selectedFilters.age);
         } else {
-            setSelectedAge(null);
+            setSelectedAges([]);
         }
         if (selectedFilters['custom.pack_size'] && Array.isArray(selectedFilters['custom.pack_size']) && selectedFilters['custom.pack_size'].length > 0) {
             setSelectedStage(selectedFilters['custom.pack_size'][0]);
@@ -857,7 +857,7 @@ export default function InfinityScreen() {
 
         // Count gender, age, and diaper size filters separately
         if (selectedGenders.length > 0) count += 1;
-        if (selectedAge) count += 1;
+        if (selectedAges.length > 0) count += 1;
         if (selectedDiaperSizes.length > 0) count += 1;
 
         Object.keys(filters).forEach(key => {
@@ -1174,18 +1174,21 @@ export default function InfinityScreen() {
     };
 
     const handleAgeSelect = (age: string) => {
-        if (selectedAge === age) {
-            setSelectedAge(null);
+        const newSelectedAges = selectedAges.includes(age)
+            ? selectedAges.filter(a => a !== age)
+            : [...selectedAges, age];
+
+        setSelectedAges(newSelectedAges);
+
+        if (newSelectedAges.length > 0) {
+            const newFilters = { ...selectedFilters, age: newSelectedAges };
+            setSelectedFilters(newFilters);
+            handleApplyFilters(newFilters);
+        } else {
             const { age: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
-        } else {
-            setSelectedAge(age);
-            const newFilters = { ...selectedFilters, age: [age] };
-            setSelectedFilters(newFilters);
-            handleApplyFilters(newFilters);
         }
-        setShowAgeModal(false);
     };
 
     const handleSharePress = async () => {
@@ -1284,7 +1287,7 @@ export default function InfinityScreen() {
                         onSizePress={() => setShowSizeModal(true)}
                         onStagePress={() => setShowStageModal(true)}
                         selectedGender={selectedGenders.length > 0 ? selectedGenders[0] : null}
-                        selectedAge={selectedAge}
+                        selectedAge={selectedAges.length > 0 ? selectedAges[0] : null}
                         selectedBrand={selectedBrand}
                         selectedSizes={selectedSizes}
                         selectedStage={selectedStage}
@@ -1324,7 +1327,7 @@ export default function InfinityScreen() {
                         onScroll={handleProductGridScroll}
                         // Pass gender and age for client-side filtering
                         genderFilter={selectedGenders.length > 0 ? selectedGenders[0] : null}
-                        ageFilter={selectedAge}
+                        ageFilter={selectedAges.length > 0 ? selectedAges : null}
                         diaperSizeFilter={selectedDiaperSizes.length > 0 ? selectedDiaperSizes[0] : null}
                         pageCategory={pageCategory}
                     />
@@ -1498,7 +1501,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {AGE_OPTIONS.map((option, index) => {
-                            const isSelected = selectedAge === option.value;
+                            const isSelected = selectedAges.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1512,15 +1515,21 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
                         })}
                     </ScrollView>
+                    <TouchableOpacity
+                        style={styles.doneButton}
+                        onPress={() => setShowAgeModal(false)}
+                    >
+                        <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
                 </BaseModal>
                 {/* Brand Filter Modal */}
                 <BaseModal
@@ -1854,5 +1863,18 @@ const styles = StyleSheet.create({
     checkboxOuterSelected: {
         borderColor: Colors.primary,
         backgroundColor: Colors.primary,
+    },
+    doneButton: {
+        backgroundColor: Colors.primary,
+        marginHorizontal: 20,
+        marginBottom: 20,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    doneButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: Fonts.LexendSemiBold,
     },
 });

@@ -7622,7 +7622,7 @@
       "order":6,
       "data": [
         {
-          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/IMG_9046.png?v=1790156544",
+          "imageUrl": "https://cdn.shopify.com/s/files/1/0961/2787/7409/files/Gear_sale-11.png?v=1790328091",
           "link": {
             "type": "collection",
             "collection": {
@@ -7686,7 +7686,7 @@
       "styles": {
         "container": {
           "position": "absolute",
-          "marginTop": "-42%",
+          "marginTop": "-46%",
           "zIndex": 10,
           "paddingHorizontal": "6%"
         },
