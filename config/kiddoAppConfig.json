@@ -6832,6 +6832,13 @@
         "fontWeight": "600",
         "fontFamily": "lexend-semibold",
         "color": "#2c6975"
+      },
+      "bestsellerBadge": {
+        "backgroundColor": "#FFFFFF",
+        "borderColor": "#FDE047"
+      },
+      "bestsellerBadgeText": {
+        "color": "#854D0E"
       }
     }
   },

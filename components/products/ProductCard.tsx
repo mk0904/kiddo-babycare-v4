@@ -131,8 +131,9 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const router = useRouter();
 
   // Product card text styles from config (fontSize, fontWeight, fontFamily, color)
+  const config = useMemo(() => configService.getProductCardStyles(), []);
+  
   const cardTextStyles = useMemo(() => {
-    const config = configService.getProductCardStyles();
     const merge = (baseStyle: object, key: string) => {
       const base = StyleSheet.flatten(baseStyle as any) || {};
       const fromConfig = config?.[key];
@@ -163,7 +164,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       };
     }
     return merged;
-  }, [compactTypographyScale]);
+  }, [compactTypographyScale, config]);
 
   // Get product handle
   const productHandle = useMemo(() => product.handle, [product]);
@@ -441,6 +442,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     [tags],
   );
 
+  // Check if product has pricehighlight tag
+  const hasPriceHighlightTag = useMemo(
+    () =>
+      tags.some(
+        (tag: any) => typeof tag === 'string' && tag.toLowerCase() === 'pricehighlight',
+      ),
+    [tags],
+  );
+
   // Get metafield value (supports edges or array, key match case-insensitive)
   const getMetafieldValue = useCallback((key: string) => {
     const productMetafields = product?.metafields;
@@ -628,6 +638,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         cardTextStyles.mainPrice,
         salePriceStrikethrough && styles.promoOfferStrikeThrough,
         promoOfferCaptionBelowPrice != null && styles.reducedPrice,
+        hasPriceHighlightTag && {
+          backgroundColor: '#FDE047', // Darker yellow highlight
+          color: '#000000', // Keep price text black
+          fontSize: ((cardTextStyles.mainPrice as any)?.fontSize || 14) + 2,
+          paddingHorizontal: 9,
+          paddingVertical: 4,
+          borderRadius: 8,
+          overflow: 'hidden',
+        },
       ]}
       numberOfLines={1}
       ellipsizeMode="tail"
@@ -669,8 +688,8 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           {outOfStock ? <OutOfStockOverlay style={{ borderRadius: 12 }} /> : null}
           {/* Bestseller Tag - top left */}
           {hasBestsellerTag && (
-            <View style={styles.bestsellerBadge}>
-              <Text style={styles.bestsellerBadgeText} numberOfLines={1}>
+            <View style={[styles.bestsellerBadge, config?.bestsellerBadge]}>
+              <Text style={[styles.bestsellerBadgeText, config?.bestsellerBadgeText]} numberOfLines={1}>
                 Bestseller
               </Text>
             </View>
