@@ -122,7 +122,7 @@ export default function InfinityScreen() {
 
     // Brand Filter State
     const [showBrandModal, setShowBrandModal] = useState(false);
-    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [brandOptions, setBrandOptions] = useState<{ label: string; value: string }[]>([]);
 
     // Size Filter State
@@ -333,18 +333,25 @@ export default function InfinityScreen() {
     }, [effectiveCollectionId]);
 
     const handleBrandSelect = (brand: string) => {
-        if (selectedBrand === brand) {
-            setSelectedBrand(null);
+        const newSelectedBrands = selectedBrands.includes(brand)
+            ? selectedBrands.filter(b => b !== brand)
+            : [...selectedBrands, brand];
+
+        setSelectedBrands(newSelectedBrands);
+
+        // Handle multiple brand selection
+        if (newSelectedBrands.length === 0) {
+            // Clear vendor filter
             const { vendor: _, ...rest } = selectedFilters;
             setSelectedFilters(rest);
             handleApplyFilters(rest);
+            console.log('[Brand Filter] Cleared all brand filters - showing all products');
         } else {
-            setSelectedBrand(brand);
-            const newFilters = { ...selectedFilters, vendor: [brand] };
+            const newFilters = { ...selectedFilters, vendor: newSelectedBrands };
             setSelectedFilters(newFilters);
             handleApplyFilters(newFilters);
+            console.log('[Brand Filter] Applied brand filters:', newSelectedBrands);
         }
-        setShowBrandModal(false);
     };
 
     const handleSizeSelect = (size: string) => {
@@ -559,6 +566,12 @@ export default function InfinityScreen() {
             setSelectedStage(selectedFilters['custom.pack_size'][0]);
         } else {
             setSelectedStage(null);
+        }
+        // Sync brands from vendor filter
+        if (selectedFilters.vendor && Array.isArray(selectedFilters.vendor) && selectedFilters.vendor.length > 0) {
+            setSelectedBrands(selectedFilters.vendor);
+        } else {
+            setSelectedBrands([]);
         }
         // Sync sizes from any size-related filter key
         const sizeKeys = Object.keys(selectedFilters).filter(key => 
@@ -855,17 +868,18 @@ export default function InfinityScreen() {
         let count = 0;
         const newApiFilters: any[] = [];
 
-        // Count gender, age, and diaper size filters separately
+        // Count gender, age, diaper size, and brand filters separately
         if (selectedGenders.length > 0) count += 1;
         if (selectedAges.length > 0) count += 1;
         if (selectedDiaperSizes.length > 0) count += 1;
+        if (selectedBrands.length > 0) count += 1;
 
         Object.keys(filters).forEach(key => {
             const value = filters[key];
             if (Array.isArray(value) && value.length > 0) {
-                // Don't double count gender, age, and size-related filters
+                // Don't double count gender, age, size-related, and brand filters
                 const keyLower = key.toLowerCase();
-                if (key !== 'gender' && key !== 'age' && !keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes')) {
+                if (key !== 'gender' && key !== 'age' && !keyLower.includes('size') && !keyLower.includes('custom.sizes') && !keyLower.includes('filter.p.m.custom.sizes') && !keyLower.includes('vendor') && !keyLower.includes('brand')) {
                     count += value.length;
                 }
 
@@ -1282,7 +1296,7 @@ export default function InfinityScreen() {
                         onStagePress={() => setShowStageModal(true)}
                         selectedGender={selectedGenders.length > 0 ? selectedGenders[0] : null}
                         selectedAge={selectedAges.length > 0 ? selectedAges[0] : null}
-                        selectedBrand={selectedBrand}
+                        selectedBrand={selectedBrands.length > 0 ? selectedBrands[0] : null}
                         selectedSizes={selectedSizes}
                         selectedStage={selectedStage}
                         facets={facets}
@@ -1541,7 +1555,7 @@ export default function InfinityScreen() {
                         showsVerticalScrollIndicator={false}
                     >
                         {brandOptions.map((option, index) => {
-                            const isSelected = selectedBrand === option.value;
+                            const isSelected = selectedBrands.includes(option.value);
                             return (
                                 <TouchableOpacity
                                     key={index}
@@ -1555,15 +1569,21 @@ export default function InfinityScreen() {
                                         {option.label}
                                     </Text>
                                     <View style={[
-                                        styles.radioOuter,
-                                        isSelected && styles.radioOuterSelected
+                                        styles.checkboxOuter,
+                                        isSelected && styles.checkboxOuterSelected
                                     ]}>
-                                        {isSelected && <View style={styles.radioInner} />}
+                                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
                                     </View>
                                 </TouchableOpacity>
                             );
                         })}
                     </ScrollView>
+                    <TouchableOpacity
+                        style={styles.doneButton}
+                        onPress={() => setShowBrandModal(false)}
+                    >
+                        <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
                 </BaseModal>
                 {/* Size Filter Modal */}
                 <BaseModal
