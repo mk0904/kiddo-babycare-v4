@@ -82,11 +82,13 @@ export function DeliveryCard({
                         <Text style={styles.subtitle}>
                             For {deliverySchedule?.timeSlotLabel ?? deliverySchedule?.time} · {formatDeliveryDate(deliverySchedule?.date)}
                         </Text>
-                        <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
-                            <Text style={styles.link}>
-                                <Text>Changed your mind? Update now</Text>
-                            </Text>
-                        </TouchableOpacity>
+                        {!isUnserviceable && (
+                            <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
+                                <Text style={styles.link}>
+                                    <Text>Changed your mind? Update now</Text>
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             ) : (
@@ -108,13 +110,13 @@ export function DeliveryCard({
                                 </Text>
                                 <Ionicons name="chevron-forward" size={14} color="#717680" style={styles.offerChevron} />
                             </TouchableOpacity>
-                        ) : (
+                        ) : !isUnserviceable ? (
                             <TouchableOpacity onPress={onSchedulePress} activeOpacity={0.7}>
                                 <Text style={styles.link}>
                                     {scheduleCta}
                                 </Text>
                             </TouchableOpacity>
-                        )}
+                        ) : null}
                     </View>
                 </View>
             )}

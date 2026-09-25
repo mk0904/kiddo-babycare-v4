@@ -82,12 +82,21 @@ export const getSuggestions = async (query: string, signal?: AbortSignal) => {
     }
 };
 
+const searchCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const searchProducts = async ({
     q,
     startIndex = 0,
     maxResults = 24,
 }: SearchParams, signal?: AbortSignal) => {
     try {
+        const cacheKey = `${q || ''}-${startIndex}-${maxResults}`;
+        const cached = searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+            return cached.data;
+        }
+
         const page = Math.floor(startIndex / maxResults) + 1;
 
         const response = await client.post('/api/search', {
@@ -169,6 +178,8 @@ export const searchProducts = async ({
         if (startIndex === 0 && q && q.trim()) {
             trackSearch(q.trim(), result.totalItems);
         }
+
+        searchCache.set(cacheKey, { data: result, timestamp: Date.now() });
 
         return result;
     } catch (error) {
