@@ -668,11 +668,13 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           />
           {outOfStock ? <OutOfStockOverlay style={{ borderRadius: 12 }} /> : null}
           {/* Bestseller Tag - top left */}
-          <View style={styles.bestsellerBadge}>
-            <Text style={styles.bestsellerBadgeText} numberOfLines={1}>
-              Bestseller
-            </Text>
-          </View>
+          {hasBestsellerTag && (
+            <View style={styles.bestsellerBadge}>
+              <Text style={styles.bestsellerBadgeText} numberOfLines={1}>
+                Bestseller
+              </Text>
+            </View>
+          )}
           <TouchableOpacity
             style={styles.wishlistButton}
             onPress={handleWishlistPress}
@@ -947,14 +949,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#FEF9C3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#FDE047',
   },
   bestsellerBadgeText: {
-    color: '#FFFFFF',
+    color: '#854D0E',
     fontSize: 10,
     fontFamily: Fonts.LexendBold,
     fontWeight: '600',
